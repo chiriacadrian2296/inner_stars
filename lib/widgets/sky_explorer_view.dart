@@ -325,6 +325,8 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                   child: HintTarget(
                     tour: 'search-stars',
                     order: 1,
+                    pulse: true,
+                    showArrow: true,
                     title: strings.searchTourModeTitle,
                     description: strings.searchTourModeBody,
                     child: SegmentedButton<_SkyMode>(
@@ -361,6 +363,8 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                           child: HintTarget(
                             tour: 'search-stars',
                             order: 2,
+                            pulse: true,
+                            showArrow: true,
                             title: strings.searchTourFieldTitle,
                             description: strings.searchTourFieldBody,
                             child: AppTextField(
@@ -380,6 +384,8 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                         HintTarget(
                           tour: 'search-stars',
                           order: 3,
+                          pulse: true,
+                          showArrow: true,
                           title: strings.searchTourFilterButtonTitle,
                           description: strings.searchTourFilterButtonBody,
                           child: _AreaFilterButton(

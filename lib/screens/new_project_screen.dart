@@ -589,6 +589,8 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                         child: HintTarget(
                           tour: 'constellation-form',
                           order: 1,
+                          pulse: true,
+                          showArrow: true,
                           title: strings.constellationTourAreaTitle,
                           description: strings.constellationTourAreaBody,
                           child: _buildAreaField(colors, strings),
@@ -612,6 +614,8 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                 HintTarget(
                   tour: 'constellation-form',
                   order: 2,
+                  pulse: true,
+                  showArrow: true,
                   title: strings.constellationTourNameTitle,
                   description: strings.constellationTourNameBody,
                   child: AppTextField(
@@ -629,6 +633,8 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                 HintTarget(
                   tour: 'constellation-form',
                   order: 3,
+                  pulse: true,
+                  showArrow: true,
                   title: strings.constellationTourDescriptionTitle,
                   description: strings.constellationTourDescriptionBody,
                   child: AppTextField(
@@ -657,6 +663,8 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                 HintTarget(
                   tour: 'constellation-form',
                   order: 4,
+                  pulse: true,
+                  showArrow: true,
                   title: strings.constellationTourShapeTitle,
                   description: strings.constellationTourShapeBody,
                   child: LayoutBuilder(
@@ -731,6 +739,8 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                       return HintTarget(
                         tour: 'constellation-form',
                         order: 5,
+                        pulse: true,
+                        showArrow: true,
                         title: strings.constellationTourSaveTitle,
                         description: strings.constellationTourSaveBody,
                         child: SaveActionButton(

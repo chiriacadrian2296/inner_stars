@@ -124,6 +124,8 @@ class _VisionsScreenState extends State<VisionsScreen> {
                       HintTarget(
                         tour: 'supernova-vision',
                         order: 1,
+                        pulse: true,
+                        showArrow: true,
                         title: strings.supernovaTourListTitle,
                         description: strings.supernovaTourListBody,
                         child: _VisionCard(

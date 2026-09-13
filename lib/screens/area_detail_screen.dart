@@ -206,6 +206,8 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                   HintTarget(
                     tour: 'supernova-vision',
                     order: 2,
+                    pulse: true,
+                    showArrow: true,
                     title: strings.supernovaTourEditTitle,
                     description: strings.supernovaTourEditBody,
                     child: SizedBox(

@@ -1936,6 +1936,12 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       _starZoomPercent,
     ];
     final currentPercent = zoomPercent(_zoom);
+    // Already as far out as it goes — nothing to animate or announce.
+    // Without this, [zoomFromPercent]'s log/exp round trip can land a
+    // hair above [_zoom] even when both mean "the floor", which
+    // [_playZoomTransitionSound] then misreads as a genuine zoom-in and
+    // plays a whoosh for a tap that visibly did nothing.
+    if (currentPercent <= _zoomOutFloorPercent + 0.5) return;
     var target = _zoomOutFloorPercent;
     for (final rung in rungs) {
       // A tiny margin below the current reading — without it, being
@@ -2102,6 +2108,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                         child: HintTarget(
                           tour: 'sky-navigation',
                           order: 1,
+                          pulse: true,
+                          showArrow: true,
                           title: context.strings.skyTourLookAroundTitle,
                           description: context.strings.skyTourLookAroundBody,
                           child: const SizedBox.expand(),
@@ -2437,6 +2445,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                             child: HintTarget(
                               tour: 'sky-navigation',
                               order: 2,
+                              pulse: true,
+                              showArrow: true,
                               title: context.strings.skyTourMenuTitle,
                               description: context.strings.skyTourMenuBody,
                               child: _MenuStarButton(onTap: _openMenuModal),
@@ -2460,6 +2470,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                           child: HintTarget(
                             tour: 'sky-navigation',
                             order: 3,
+                            pulse: true,
+                            showArrow: true,
                             title: context.strings.skyTourSoundLabTitle,
                             description: context.strings.skyTourSoundLabBody,
                             child: _SkyOverlayButton(

@@ -811,6 +811,8 @@ class _StarFormScreenState extends State<StarFormScreen> {
                 HintTarget(
                   tour: 'star-form',
                   order: 2,
+                  pulse: true,
+                  showArrow: true,
                   title: strings.starTourTitleFieldTitle,
                   description: strings.starTourTitleFieldBody,
                   child: AppTextField(
@@ -829,6 +831,8 @@ class _StarFormScreenState extends State<StarFormScreen> {
                 HintTarget(
                   tour: 'star-form',
                   order: 3,
+                  pulse: true,
+                  showArrow: true,
                   title: strings.starTourDetailsFieldTitle,
                   description: strings.starTourDetailsFieldBody,
                   child: AppTextField(
@@ -847,6 +851,8 @@ class _StarFormScreenState extends State<StarFormScreen> {
                   HintTarget(
                     tour: 'star-form',
                     order: 4,
+                    pulse: true,
+                    showArrow: true,
                     title: strings.starTourDateFieldTitle,
                     description: strings.starTourDateFieldBody,
                     child: Row(
@@ -890,6 +896,8 @@ class _StarFormScreenState extends State<StarFormScreen> {
                   HintTarget(
                     tour: 'star-form',
                     order: 4,
+                    pulse: true,
+                    showArrow: true,
                     title: strings.starTourTargetDateFieldTitle,
                     description: strings.starTourTargetDateFieldBody,
                     child: AppPickerField(
@@ -931,6 +939,8 @@ class _StarFormScreenState extends State<StarFormScreen> {
                   HintTarget(
                     tour: 'star-form',
                     order: 5,
+                    pulse: true,
+                    showArrow: true,
                     title: strings.starTourIntensityTitle,
                     description: strings.starTourIntensityBody,
                     child: Center(
@@ -1108,6 +1118,8 @@ class _StarFormScreenState extends State<StarFormScreen> {
                   HintTarget(
                     tour: 'star-form',
                     order: 6,
+                    pulse: true,
+                    showArrow: true,
                     title: strings.starTourPhotoTitle,
                     description: strings.starTourPhotoBody,
                     child: PhotoPicker(
@@ -1146,6 +1158,8 @@ class _StarFormScreenState extends State<StarFormScreen> {
                           return HintTarget(
                             tour: 'star-form',
                             order: 7,
+                            pulse: true,
+                            showArrow: true,
                             title: strings.starTourSaveTitle,
                             description: strings.starTourSaveBody,
                             child: SaveActionButton(
@@ -1309,6 +1323,8 @@ class _StarKindSwitch extends StatelessWidget {
                   return HintTarget(
                     tour: 'star-form',
                     order: 1,
+                    pulse: true,
+                    showArrow: true,
                     title: strings.starTourKindTitle,
                     description: strings.starTourKindBody,
                     child: tile,

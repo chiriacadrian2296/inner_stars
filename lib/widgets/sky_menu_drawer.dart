@@ -240,6 +240,8 @@ class SkyMenuContent extends StatelessWidget {
           return HintTarget(
             tour: 'light-your-sky',
             order: tourOrder,
+            pulse: true,
+            showArrow: true,
             title: tourTitle,
             description: tourBody,
             child: tile,

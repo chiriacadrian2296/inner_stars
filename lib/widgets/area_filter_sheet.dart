@@ -102,6 +102,8 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
             HintTarget(
               tour: 'search-stars',
               order: 4,
+              pulse: true,
+              showArrow: true,
               title: strings.searchTourAllAreasTitle,
               description: strings.searchTourAllAreasBody,
               child: AppToggleChip(
@@ -143,6 +145,8 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
               HintTarget(
                 tour: 'search-stars',
                 order: 5,
+                pulse: true,
+                showArrow: true,
                 title: strings.searchTourAllKindsTitle,
                 description: strings.searchTourAllKindsBody,
                 child: AppToggleChip(
@@ -187,6 +191,8 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
             HintTarget(
               tour: 'search-stars',
               order: 6,
+              pulse: true,
+              showArrow: true,
               title: strings.searchTourApplyTitle,
               description: strings.searchTourApplyBody,
               child: SizedBox(
