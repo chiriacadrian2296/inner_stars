@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hint_kit/hint_kit.dart';
 
 import '../data/area_vision_repository.dart';
 import '../data/project_repository.dart';
@@ -39,6 +40,16 @@ class VisionsScreen extends StatefulWidget {
 }
 
 class _VisionsScreenState extends State<VisionsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // The "supernova-vision" tour — continues into [AreaDetailScreen]'s
+    // own edit-vision button once the user taps through.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Tour.read(context).start('supernova-vision');
+    });
+  }
+
   Future<void> _openArea(LifeArea area) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
@@ -108,12 +119,29 @@ class _VisionsScreenState extends State<VisionsScreen> {
                     ),
                   ),
                   const SizedBox(height: 22),
-                  for (final area in LifeArea.values) ...[
-                    _VisionCard(
-                      area: area,
-                      vision: widget.areaVisionRepository.getVision(area),
-                      onTap: () => _openArea(area),
-                    ),
+                  for (var i = 0; i < LifeArea.values.length; i++) ...[
+                    if (i == 0)
+                      HintTarget(
+                        tour: 'supernova-vision',
+                        order: 1,
+                        title: strings.supernovaTourListTitle,
+                        description: strings.supernovaTourListBody,
+                        child: _VisionCard(
+                          area: LifeArea.values[i],
+                          vision: widget.areaVisionRepository.getVision(
+                            LifeArea.values[i],
+                          ),
+                          onTap: () => _openArea(LifeArea.values[i]),
+                        ),
+                      )
+                    else
+                      _VisionCard(
+                        area: LifeArea.values[i],
+                        vision: widget.areaVisionRepository.getVision(
+                          LifeArea.values[i],
+                        ),
+                        onTap: () => _openArea(LifeArea.values[i]),
+                      ),
                     const SizedBox(height: 10),
                   ],
                 ],

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:hint_kit/hint_kit.dart';
 import 'package:marionette_flutter/marionette_flutter.dart';
 
 import 'audio/audio_service.dart';
@@ -23,7 +24,17 @@ import 'screens/onboarding_screen.dart';
 import 'screens/sky_screen.dart';
 import 'screens/star_form_screen.dart';
 import 'settings/settings_controller.dart';
+import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
+import 'tutorials/tour_storage.dart';
+
+/// Parks the old first-launch onboarding and the Sky menu's "Metaphor"
+/// guide, both superseded by `hint_kit`-driven live tutorials pointing at
+/// the real UI (see `lib/tutorials/`). Left in place rather than deleted —
+/// their written content is still a source to draw each tour's copy from.
+/// See the TRB entry for this. Flip back on to restore the old flow
+/// exactly as it was.
+const _kShowOnboarding = false;
 
 void main() {
   // Explicit opt-in to edge-to-edge (mandatory on Android 15+ regardless):
@@ -75,6 +86,7 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
   AudioSettingsRepository? _audioSettingsRepository;
   AudioService? _audioService;
   ReminderService? _reminderService;
+  TourStorage? _tourStorage;
 
   /// Set only if [_load] throws. A blank splash that silently never
   /// finishes loading (see [build]) is indistinguishable from a hang — this
@@ -105,6 +117,7 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
       final audioSettingsRepository = await AudioSettingsRepository.create();
       final audioService = await AudioService.create(audioSettingsRepository);
       final onboardingPrefs = await OnboardingPrefs.create();
+      final tourStorage = await PrefsTourStorage.create();
 
       // Debug builds only, and only for a genuinely empty install — the
       // same seeding "Settings > Seed sample data" already does by hand
@@ -165,13 +178,14 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
         _audioSettingsRepository = audioSettingsRepository;
         _audioService = audioService;
         _reminderService = reminderService;
+        _tourStorage = tourStorage;
       });
 
       if (await reminderService.launchedFromNotification()) {
         WidgetsBinding.instance.addPostFrameCallback(
           (_) => _openAddStarFromNotification(),
         );
-      } else if (!onboardingPrefs.hasSeenOnboarding) {
+      } else if (_kShowOnboarding && !onboardingPrefs.hasSeenOnboarding) {
         WidgetsBinding.instance.addPostFrameCallback(
           (_) => _showOnboarding(onboardingPrefs),
         );
@@ -246,6 +260,7 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
     final audioSettingsRepository = _audioSettingsRepository;
     final audioService = _audioService;
     final reminderService = _reminderService;
+    final tourStorage = _tourStorage;
     final loadError = _loadError;
     if (loadError != null) {
       return MaterialApp(
@@ -276,7 +291,8 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
         reflectionAnswerRepository == null ||
         audioSettingsRepository == null ||
         audioService == null ||
-        reminderService == null) {
+        reminderService == null ||
+        tourStorage == null) {
       // Nothing is known yet — a neutral, static splash rather than
       // guessing defaults that might flash-swap once everything loads.
       return const MaterialApp(
@@ -285,55 +301,100 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
       );
     }
 
-    return MaterialApp(
-      navigatorKey: _navigatorKey,
-      title: 'Victory Stars',
-      debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
-      locale: Locale(settings.locale),
-      supportedLocales: const [Locale('en'), Locale('it'), Locale('ro')],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      builder: (context, child) => StringsScope(
-        strings: stringsForLocale(settings.locale),
-        child: child!,
+    final strings = stringsForLocale(settings.locale);
+
+    // Above the MaterialApp, not inside its builder — a `hint_kit` tour is
+    // meant to be able to cross routes (see `TourScope`'s own doc comment),
+    // which only works if it sits above the Navigator rather than below it.
+    // `tourLengths` declares each tour's step count up front (see
+    // `lib/tutorials/`), so a card never reads "1 of 2" and grows to "3 of
+    // 5" as a cross-route tour's later targets mount — add an entry here
+    // whenever a new tour is built.
+    return TourScope(
+      storage: tourStorage,
+      tourLengths: const {
+        'sky-navigation': 3,
+        'star-form': 7,
+        'search-stars': 6,
+        'light-your-sky': 3,
+        'constellation-form': 5,
+        'supernova-vision': 2,
+      },
+      labels: TourLabels(
+        skip: strings.tourSkipAction,
+        back: strings.tourBackAction,
+        next: strings.tourNextAction,
+        done: strings.tourDoneAction,
+        progress: strings.tourProgressLabel,
       ),
-      home: AnnotatedRegion<SystemUiOverlayStyle>(
-        // Android draws its own status/navigation bars over the app by
-        // default with a plain white background regardless of the app's
-        // theme — without this, the back/home/recents bar (and the status
-        // bar) stay white instead of matching the app's always-dark look.
-        // Fully transparent (not colors.night) rather than an explicit
-        // opaque color: Android 15+ ignores an app-requested
-        // systemNavigationBarColor outright under mandatory edge-to-edge,
-        // so the only reliable way to get a dark bar there is to make it
-        // transparent and let the app's own (already-dark) Scaffold
-        // background — which edge-to-edge extends behind the bar
-        // automatically — show through.
-        value: const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
-          statusBarBrightness: Brightness.dark,
-          systemNavigationBarColor: Colors.transparent,
-          systemNavigationBarIconBrightness: Brightness.light,
-          systemNavigationBarDividerColor: Colors.transparent,
-          systemNavigationBarContrastEnforced: false,
+      // A step whose target lives behind a branch the user didn't take
+      // (e.g. a star-kind-specific field, or a filter sheet's kind
+      // section, only shown in some modes) would otherwise wait forever —
+      // this is the safety valve: give up on it and move on rather than
+      // stranding the tour.
+      stepTimeout: const Duration(seconds: 8),
+      // The app's own gold-on-night palette, inverted for the card itself
+      // (solid gold fill, dark navy text/icons) rather than hint_kit's own
+      // neutral default — reads as unmistakably *this app's* own chrome,
+      // and stands out hard against the dimmed sky behind it. Static
+      // `AppColors.dark` rather than `context.colors`: there is no light
+      // mode to switch on (see `AppColors`'s own doc comment), and this
+      // sits above the `MaterialApp`/`Theme` that would resolve it anyway.
+      theme: HintThemeData(
+        scrimOpacity: 0.75,
+        backgroundColor: AppColors.dark.gold,
+        foregroundColor: AppColors.dark.night,
+      ),
+      child: MaterialApp(
+        navigatorKey: _navigatorKey,
+        title: 'Victory Stars',
+        debugShowCheckedModeBanner: false,
+        theme: buildAppTheme(),
+        locale: Locale(settings.locale),
+        supportedLocales: const [Locale('en'), Locale('it'), Locale('ro')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        builder: (context, child) => StringsScope(
+          strings: strings,
+          child: child!,
         ),
-        child: SkyScreen(
-          settings: settings,
-          starRepository: starRepository,
-          projectRepository: projectRepository,
-          habitRepository: habitRepository,
-          habitCompletionRepository: habitCompletionRepository,
-          starsShapeRepository: starsShapeRepository,
-          areaVisionRepository: areaVisionRepository,
-          reflectionAnswerRepository: reflectionAnswerRepository,
-          audioSettingsRepository: audioSettingsRepository,
-          audioService: audioService,
-          reminderService: reminderService,
+        home: AnnotatedRegion<SystemUiOverlayStyle>(
+          // Android draws its own status/navigation bars over the app by
+          // default with a plain white background regardless of the app's
+          // theme — without this, the back/home/recents bar (and the status
+          // bar) stay white instead of matching the app's always-dark look.
+          // Fully transparent (not colors.night) rather than an explicit
+          // opaque color: Android 15+ ignores an app-requested
+          // systemNavigationBarColor outright under mandatory edge-to-edge,
+          // so the only reliable way to get a dark bar there is to make it
+          // transparent and let the app's own (already-dark) Scaffold
+          // background — which edge-to-edge extends behind the bar
+          // automatically — show through.
+          value: const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.light,
+            statusBarBrightness: Brightness.dark,
+            systemNavigationBarColor: Colors.transparent,
+            systemNavigationBarIconBrightness: Brightness.light,
+            systemNavigationBarDividerColor: Colors.transparent,
+            systemNavigationBarContrastEnforced: false,
+          ),
+          child: SkyScreen(
+            settings: settings,
+            starRepository: starRepository,
+            projectRepository: projectRepository,
+            habitRepository: habitRepository,
+            habitCompletionRepository: habitCompletionRepository,
+            starsShapeRepository: starsShapeRepository,
+            areaVisionRepository: areaVisionRepository,
+            reflectionAnswerRepository: reflectionAnswerRepository,
+            audioSettingsRepository: audioSettingsRepository,
+            audioService: audioService,
+            reminderService: reminderService,
+          ),
         ),
       ),
     );

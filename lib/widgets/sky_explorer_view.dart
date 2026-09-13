@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hint_kit/hint_kit.dart';
 
 import '../data/area_vision_repository.dart';
 import '../data/custom_constellation_repository.dart';
@@ -213,6 +214,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
     // to do synchronously while this widget is still mounting/building.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) widget.onModeLabelChanged(_labelFor(_mode, context.strings));
+      if (mounted) Tour.read(context).start('search-stars');
     });
   }
 
@@ -320,28 +322,34 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
-                  child: SegmentedButton<_SkyMode>(
-                    showSelectedIcon: false,
-                    segments: const [
-                      ButtonSegment(
-                        value: _SkyMode.supernovas,
-                        icon: Icon(Icons.flare, size: 20),
-                      ),
-                      ButtonSegment(
-                        value: _SkyMode.constellations,
-                        icon: Icon(Icons.auto_awesome, size: 20),
-                      ),
-                      ButtonSegment(
-                        value: _SkyMode.stars,
-                        icon: Icon(Icons.star, size: 20),
-                      ),
-                    ],
-                    selected: {_mode},
-                    onSelectionChanged: (selection) {
-                      final mode = selection.first;
-                      setState(() => _mode = mode);
-                      widget.onModeLabelChanged(_labelFor(mode, strings));
-                    },
+                  child: HintTarget(
+                    tour: 'search-stars',
+                    order: 1,
+                    title: strings.searchTourModeTitle,
+                    description: strings.searchTourModeBody,
+                    child: SegmentedButton<_SkyMode>(
+                      showSelectedIcon: false,
+                      segments: const [
+                        ButtonSegment(
+                          value: _SkyMode.supernovas,
+                          icon: Icon(Icons.flare, size: 20),
+                        ),
+                        ButtonSegment(
+                          value: _SkyMode.constellations,
+                          icon: Icon(Icons.auto_awesome, size: 20),
+                        ),
+                        ButtonSegment(
+                          value: _SkyMode.stars,
+                          icon: Icon(Icons.star, size: 20),
+                        ),
+                      ],
+                      selected: {_mode},
+                      onSelectionChanged: (selection) {
+                        final mode = selection.first;
+                        setState(() => _mode = mode);
+                        widget.onModeLabelChanged(_labelFor(mode, strings));
+                      },
+                    ),
                   ),
                 ),
                 if (_mode != _SkyMode.supernovas) ...[
@@ -350,23 +358,35 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                     child: Row(
                       children: [
                         Expanded(
-                          child: AppTextField(
-                            controller: _queryController,
-                            hintText: strings.searchHint,
-                            onChanged: (value) =>
-                                setState(() => _query = value),
-                            prefixIcon: Icon(
-                              Icons.search,
-                              color: colors.muted,
-                              size: 20,
+                          child: HintTarget(
+                            tour: 'search-stars',
+                            order: 2,
+                            title: strings.searchTourFieldTitle,
+                            description: strings.searchTourFieldBody,
+                            child: AppTextField(
+                              controller: _queryController,
+                              hintText: strings.searchHint,
+                              onChanged: (value) =>
+                                  setState(() => _query = value),
+                              prefixIcon: Icon(
+                                Icons.search,
+                                color: colors.muted,
+                                size: 20,
+                              ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 10),
-                        _AreaFilterButton(
-                          active: areaFilterActive,
-                          tooltip: strings.filterAreasAction,
-                          onTap: _openAreaFilter,
+                        HintTarget(
+                          tour: 'search-stars',
+                          order: 3,
+                          title: strings.searchTourFilterButtonTitle,
+                          description: strings.searchTourFilterButtonBody,
+                          child: _AreaFilterButton(
+                            active: areaFilterActive,
+                            tooltip: strings.filterAreasAction,
+                            onTap: _openAreaFilter,
+                          ),
                         ),
                       ],
                     ),

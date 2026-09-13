@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:hint_kit/hint_kit.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../data/custom_constellation_repository.dart';
@@ -268,6 +269,21 @@ class _StarFormScreenState extends State<StarFormScreen> {
       return StarKind.lit;
     }
     return widget.initialKind;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // The "star-form" tour — see its steps on `_StarKindSwitch`'s Unlit
+    // tile and below in this file's own `build`. Only for a brand new star:
+    // editing an existing one isn't the "how do I add a goal" moment this
+    // tour is for, and `Tour.start` itself already no-ops once the user has
+    // seen it (see `PrefsTourStorage`).
+    if (!widget.isEditing) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Tour.read(context).start('star-form');
+      });
+    }
   }
 
   @override
@@ -792,11 +808,17 @@ class _StarFormScreenState extends State<StarFormScreen> {
                   requirement: FieldRequirement.required,
                 ),
                 const SizedBox(height: 6),
-                AppTextField(
-                  controller: _titleController,
-                  textInputAction: TextInputAction.next,
-                  hintText: _titleHint(strings),
-                  onChanged: (_) => setState(() {}),
+                HintTarget(
+                  tour: 'star-form',
+                  order: 2,
+                  title: strings.starTourTitleFieldTitle,
+                  description: strings.starTourTitleFieldBody,
+                  child: AppTextField(
+                    controller: _titleController,
+                    textInputAction: TextInputAction.next,
+                    hintText: _titleHint(strings),
+                    onChanged: (_) => setState(() {}),
+                  ),
                 ),
                 const SizedBox(height: 20),
                 AppFieldLabel(
@@ -804,16 +826,30 @@ class _StarFormScreenState extends State<StarFormScreen> {
                   requirement: FieldRequirement.optional,
                 ),
                 const SizedBox(height: 6),
-                AppTextField(
-                  controller: _descriptionController,
-                  minLines: 4,
-                  maxLines: 6,
-                  hintText: _detailsHint(strings),
-                  onChanged: (_) => setState(() {}),
+                HintTarget(
+                  tour: 'star-form',
+                  order: 3,
+                  title: strings.starTourDetailsFieldTitle,
+                  description: strings.starTourDetailsFieldBody,
+                  child: AppTextField(
+                    controller: _descriptionController,
+                    minLines: 4,
+                    maxLines: 6,
+                    hintText: _detailsHint(strings),
+                    onChanged: (_) => setState(() {}),
+                  ),
                 ),
                 if (_kind == StarKind.lit) ...[
                   const SizedBox(height: 20),
-                  Row(
+                  // Same order as the Unlit branch's own target-date step
+                  // below — only one of the two is ever mounted for a given
+                  // `_kind`, so the tour always lands on whichever applies.
+                  HintTarget(
+                    tour: 'star-form',
+                    order: 4,
+                    title: strings.starTourDateFieldTitle,
+                    description: strings.starTourDateFieldBody,
+                    child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
@@ -847,18 +883,25 @@ class _StarFormScreenState extends State<StarFormScreen> {
                         ),
                       ),
                     ],
+                    ),
                   ),
                 ] else if (_kind == StarKind.unlit) ...[
                   const SizedBox(height: 20),
-                  AppPickerField(
-                    label: strings.targetDateLabel,
-                    requirement: FieldRequirement.optional,
-                    hint: strings.selectATargetDateHint,
-                    icon: Icons.flag_outlined,
-                    text: _targetDate == null
-                        ? null
-                        : formatDisplayDate(_targetDate!, strings),
-                    onTap: _pickTargetDate,
+                  HintTarget(
+                    tour: 'star-form',
+                    order: 4,
+                    title: strings.starTourTargetDateFieldTitle,
+                    description: strings.starTourTargetDateFieldBody,
+                    child: AppPickerField(
+                      label: strings.targetDateLabel,
+                      requirement: FieldRequirement.optional,
+                      hint: strings.selectATargetDateHint,
+                      icon: Icons.flag_outlined,
+                      text: _targetDate == null
+                          ? null
+                          : formatDisplayDate(_targetDate!, strings),
+                      onTap: _pickTargetDate,
+                    ),
                   ),
                 ],
                 // Every kind that's already burning carries an intensity —
@@ -885,28 +928,34 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  Center(
-                    child: FractionallySizedBox(
-                      widthFactor: 0.7,
-                      // A plain [Slider]'s own vertical padding defaults to
-                      // the height of its overlay shape (the halo around
-                      // the thumb) — invisible space that made the gap down
-                      // to whatever field comes next read as much bigger
-                      // than the standard 20 between every other pair of
-                      // fields, even with the same explicit `SizedBox` in
-                      // between. Zeroing it here makes this widget's own
-                      // bounding box actually match what's visible.
-                      child: SliderTheme(
-                        data: SliderTheme.of(
-                          context,
-                        ).copyWith(padding: EdgeInsets.zero),
-                        child: Slider(
-                          value: _intensity.toDouble(),
-                          min: 1,
-                          max: 5,
-                          divisions: 4,
-                          onChanged: (value) =>
-                              setState(() => _intensity = value.round()),
+                  HintTarget(
+                    tour: 'star-form',
+                    order: 5,
+                    title: strings.starTourIntensityTitle,
+                    description: strings.starTourIntensityBody,
+                    child: Center(
+                      child: FractionallySizedBox(
+                        widthFactor: 0.7,
+                        // A plain [Slider]'s own vertical padding defaults to
+                        // the height of its overlay shape (the halo around
+                        // the thumb) — invisible space that made the gap down
+                        // to whatever field comes next read as much bigger
+                        // than the standard 20 between every other pair of
+                        // fields, even with the same explicit `SizedBox` in
+                        // between. Zeroing it here makes this widget's own
+                        // bounding box actually match what's visible.
+                        child: SliderTheme(
+                          data: SliderTheme.of(
+                            context,
+                          ).copyWith(padding: EdgeInsets.zero),
+                          child: Slider(
+                            value: _intensity.toDouble(),
+                            min: 1,
+                            max: 5,
+                            divisions: 4,
+                            onChanged: (value) =>
+                                setState(() => _intensity = value.round()),
+                          ),
                         ),
                       ),
                     ),
@@ -1056,10 +1105,16 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     requirement: FieldRequirement.optional,
                   ),
                   const SizedBox(height: 6),
-                  PhotoPicker(
-                    photoPath: _photoPath,
-                    onPick: _pickPhoto,
-                    onRemove: _removePhoto,
+                  HintTarget(
+                    tour: 'star-form',
+                    order: 6,
+                    title: strings.starTourPhotoTitle,
+                    description: strings.starTourPhotoBody,
+                    child: PhotoPicker(
+                      photoPath: _photoPath,
+                      onPick: _pickPhoto,
+                      onRemove: _removePhoto,
+                    ),
                   ),
                 ],
                 // Wider than the standard 20 between fields — this is the
@@ -1088,16 +1143,22 @@ class _StarFormScreenState extends State<StarFormScreen> {
                               value.text.trim().isNotEmpty &&
                               _selectedProject != null &&
                               (!widget.isEditing || _hasUnsavedChanges);
-                          return SaveActionButton(
-                            label: widget.isEditing
-                                ? strings.saveChanges
-                                : (_kind == StarKind.lit
-                                      ? strings.lightThisStar
-                                      : strings.placeThisStarAction),
-                            lit: canSave,
-                            onPressed: canSave
-                                ? _save
-                                : _showCannotSaveMessage,
+                          return HintTarget(
+                            tour: 'star-form',
+                            order: 7,
+                            title: strings.starTourSaveTitle,
+                            description: strings.starTourSaveBody,
+                            child: SaveActionButton(
+                              label: widget.isEditing
+                                  ? strings.saveChanges
+                                  : (_kind == StarKind.lit
+                                        ? strings.lightThisStar
+                                        : strings.placeThisStarAction),
+                              lit: canSave,
+                              onPressed: canSave
+                                  ? _save
+                                  : _showCannotSaveMessage,
+                            ),
                           );
                         },
                       ),
@@ -1198,42 +1259,61 @@ class _StarKindSwitch extends StatelessWidget {
           for (var i = 0; i < kinds.length; i++) ...[
             if (i > 0) const SizedBox(width: 8),
             Expanded(
-              child: InkWell(
-                onTap: () => onChanged(kinds[i]),
-                borderRadius: BorderRadius.circular(kRadiusField),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: flatSelectableDecoration(
-                    colors,
-                    selected: kinds[i] == selected,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      StarGlyph(kind: kinds[i], size: 22),
-                      const SizedBox(height: 4),
-                      Text(
-                        kinds[i].label(strings),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: kinds[i] == selected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                          color: kinds[i] == selected
-                              ? colors.text
-                              : colors.muted,
-                        ),
+              child: Builder(
+                builder: (context) {
+                  final tile = InkWell(
+                    onTap: () => onChanged(kinds[i]),
+                    borderRadius: BorderRadius.circular(kRadiusField),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: flatSelectableDecoration(
+                        colors,
+                        selected: kinds[i] == selected,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        kinds[i].meaning(strings),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 11, color: colors.muted),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          StarGlyph(kind: kinds[i], size: 22),
+                          const SizedBox(height: 4),
+                          Text(
+                            kinds[i].label(strings),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: kinds[i] == selected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: kinds[i] == selected
+                                  ? colors.text
+                                  : colors.muted,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            kinds[i].meaning(strings),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: colors.muted,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                  // The "star-form" tour's first step — see
+                  // `StarFormScreen`'s own doc comment on where it starts.
+                  // Only the Unlit tile carries it: that's the one this
+                  // tour is actually about, not the switch as a whole.
+                  if (kinds[i] != StarKind.unlit) return tile;
+                  return HintTarget(
+                    tour: 'star-form',
+                    order: 1,
+                    title: strings.starTourKindTitle,
+                    description: strings.starTourKindBody,
+                    child: tile,
+                  );
+                },
               ),
             ),
           ],

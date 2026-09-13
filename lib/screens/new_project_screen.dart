@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hint_kit/hint_kit.dart';
 
 import '../data/constellation_presets.dart';
 import '../data/constellation_shape.dart';
@@ -100,6 +101,15 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     setState(() {
       _selectedStarsShape = null;
       _selectedPreset = null;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // The "constellation-form" tour — see its steps in [build] below.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Tour.read(context).start('constellation-form');
     });
   }
 
@@ -576,7 +586,13 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                     children: [
                       Expanded(
                         flex: 3,
-                        child: _buildAreaField(colors, strings),
+                        child: HintTarget(
+                          tour: 'constellation-form',
+                          order: 1,
+                          title: strings.constellationTourAreaTitle,
+                          description: strings.constellationTourAreaBody,
+                          child: _buildAreaField(colors, strings),
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -593,10 +609,16 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                   requirement: FieldRequirement.required,
                 ),
                 const SizedBox(height: 6),
-                AppTextField(
-                  controller: _nameController,
-                  autofocus: widget.presetArea != null,
-                  hintText: strings.newProjectNameHint,
+                HintTarget(
+                  tour: 'constellation-form',
+                  order: 2,
+                  title: strings.constellationTourNameTitle,
+                  description: strings.constellationTourNameBody,
+                  child: AppTextField(
+                    controller: _nameController,
+                    autofocus: widget.presetArea != null,
+                    hintText: strings.newProjectNameHint,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 AppFieldLabel(
@@ -604,10 +626,16 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                   requirement: FieldRequirement.optional,
                 ),
                 const SizedBox(height: 6),
-                AppTextField(
-                  controller: _descriptionController,
-                  maxLines: 3,
-                  hintText: strings.projectDescriptionHint,
+                HintTarget(
+                  tour: 'constellation-form',
+                  order: 3,
+                  title: strings.constellationTourDescriptionTitle,
+                  description: strings.constellationTourDescriptionBody,
+                  child: AppTextField(
+                    controller: _descriptionController,
+                    maxLines: 3,
+                    hintText: strings.projectDescriptionHint,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 AppFieldLabel(
@@ -626,7 +654,12 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                 // whatever height that makes the preview (square, so
                 // wider now also means taller) via [IntrinsicHeight] +
                 // `stretch` rather than a guessed fixed height.
-                LayoutBuilder(
+                HintTarget(
+                  tour: 'constellation-form',
+                  order: 4,
+                  title: strings.constellationTourShapeTitle,
+                  description: strings.constellationTourShapeBody,
+                  child: LayoutBuilder(
                   builder: (context, constraints) {
                     const gap = 12.0;
                     final side = (constraints.maxWidth - gap) * 3 / 4;
@@ -683,6 +716,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                       ),
                     );
                   },
+                  ),
                 ),
                 const SizedBox(height: 28),
                 Center(
@@ -694,10 +728,16 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                           _selectedArea != null &&
                           _selectedIconSlug != null &&
                           _hasShape;
-                      return SaveActionButton(
-                        label: strings.createProject,
-                        lit: canSave,
-                        onPressed: canSave ? _save : _showCannotSaveMessage,
+                      return HintTarget(
+                        tour: 'constellation-form',
+                        order: 5,
+                        title: strings.constellationTourSaveTitle,
+                        description: strings.constellationTourSaveBody,
+                        child: SaveActionButton(
+                          label: strings.createProject,
+                          lit: canSave,
+                          onPressed: canSave ? _save : _showCannotSaveMessage,
+                        ),
                       );
                     },
                   ),

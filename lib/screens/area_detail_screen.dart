@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hint_kit/hint_kit.dart';
 
 import '../data/area_vision_repository.dart';
 import '../data/project_repository.dart';
@@ -202,17 +203,23 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                       ),
                     ),
                   const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: _editingVision
-                          ? _confirmVision
-                          : _startEditingVision,
-                      icon: Icon(_editingVision ? Icons.check : Icons.edit),
-                      label: Text(
-                        _editingVision
-                            ? strings.saveChanges
-                            : strings.editVisionAction,
+                  HintTarget(
+                    tour: 'supernova-vision',
+                    order: 2,
+                    title: strings.supernovaTourEditTitle,
+                    description: strings.supernovaTourEditBody,
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _editingVision
+                            ? _confirmVision
+                            : _startEditingVision,
+                        icon: Icon(_editingVision ? Icons.check : Icons.edit),
+                        label: Text(
+                          _editingVision
+                              ? strings.saveChanges
+                              : strings.editVisionAction,
+                        ),
                       ),
                     ),
                   ),

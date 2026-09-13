@@ -223,6 +223,89 @@ abstract class AppStrings {
   String get skyWhooshE;
   String get skyWhooshF;
 
+  // Guided tutorials (hint_kit) — the card controls every tour shares
+  // (see `TourLabels`), and each individual tour's own step copy below it.
+  // Onboarding/`MetaphorScreen` are parked in favor of these (see the TRB).
+  String get tourSkipAction;
+  String get tourBackAction;
+  String get tourNextAction;
+  String get tourDoneAction;
+  String tourProgressLabel(int step, int length);
+
+  // "sky-navigation" tour — the Sky screen itself (`sky_screen.dart`):
+  // pan/zoom/tap, the menu, the Sound Lab. First tour a fresh install ever
+  // sees.
+  String get skyTourLookAroundTitle;
+  String get skyTourLookAroundBody;
+  String get skyTourMenuTitle;
+  String get skyTourMenuBody;
+  String get skyTourSoundLabTitle;
+  String get skyTourSoundLabBody;
+
+  // "star-form" tour (`lib/tutorials/`) — the whole star form, every
+  // creatable kind (lit victory, unlit goal, pulsar habit).
+  String get starTourKindTitle;
+  String get starTourKindBody;
+  String get starTourTitleFieldTitle;
+  String get starTourTitleFieldBody;
+  String get starTourDetailsFieldTitle;
+  String get starTourDetailsFieldBody;
+  String get starTourDateFieldTitle;
+  String get starTourDateFieldBody;
+  String get starTourTargetDateFieldTitle;
+  String get starTourTargetDateFieldBody;
+  String get starTourIntensityTitle;
+  String get starTourIntensityBody;
+  String get starTourPhotoTitle;
+  String get starTourPhotoBody;
+  String get starTourSaveTitle;
+  String get starTourSaveBody;
+
+  // "search-stars" tour — the Sky's search/filter popup
+  // (`SkyExplorerView`/`area_filter_sheet.dart`).
+  String get searchTourModeTitle;
+  String get searchTourModeBody;
+  String get searchTourFieldTitle;
+  String get searchTourFieldBody;
+  String get searchTourFilterButtonTitle;
+  String get searchTourFilterButtonBody;
+  String get searchTourAllAreasTitle;
+  String get searchTourAllAreasBody;
+  String get searchTourAllKindsTitle;
+  String get searchTourAllKindsBody;
+  String get searchTourApplyTitle;
+  String get searchTourApplyBody;
+
+  // "light-your-sky" tour — the Supernovas/Constellations/Stars chooser
+  // popup opened from the Sky's own menu (`sky_menu_drawer.dart`).
+  String get lightYourSkyTourSupernovaTitle;
+  String get lightYourSkyTourSupernovaBody;
+  String get lightYourSkyTourConstellationTitle;
+  String get lightYourSkyTourConstellationBody;
+  String get lightYourSkyTourStarTitle;
+  String get lightYourSkyTourStarBody;
+
+  // "constellation-form" tour — `NewProjectScreen`.
+  String get constellationTourAreaTitle;
+  String get constellationTourAreaBody;
+  String get constellationTourNameTitle;
+  String get constellationTourNameBody;
+  String get constellationTourDescriptionTitle;
+  String get constellationTourDescriptionBody;
+  String get constellationTourShapeTitle;
+  String get constellationTourShapeBody;
+  String get constellationTourSaveTitle;
+  String get constellationTourSaveBody;
+
+  // "supernova-vision" tour — `VisionsScreen` into `AreaDetailScreen`.
+  String get supernovaTourListTitle;
+  String get supernovaTourListBody;
+  String get supernovaTourEditTitle;
+  String get supernovaTourEditBody;
+
+  String get replayToursAction;
+  String get replayToursResult;
+
   // Sky + area projects
   String starsCount(int count);
   String areaEmptyProjects(String areaName);

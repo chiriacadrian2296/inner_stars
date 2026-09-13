@@ -451,6 +451,157 @@ class StringsRo implements AppStrings {
   @override
   String get skyWhooshF => 'Swoosh moale';
   @override
+  String get tourSkipAction => 'Omite';
+  @override
+  String get tourBackAction => 'Înapoi';
+  @override
+  String get tourNextAction => 'Următorul';
+  @override
+  String get tourDoneAction => 'Gata';
+  @override
+  String tourProgressLabel(int step, int length) => '$step din $length';
+  @override
+  String get skyTourLookAroundTitle => 'Privește în jur';
+  @override
+  String get skyTourLookAroundBody =>
+      'Trage pentru a te deplasa, ciupește pentru a mări, și atinge orice '
+      'stea, constelație sau supernovă pentru a zbura acolo.';
+  @override
+  String get skyTourMenuTitle => 'Deschide meniul';
+  @override
+  String get skyTourMenuBody =>
+      'Ține apăsată această stea pentru a crea ceva nou sau a te orienta.';
+  @override
+  String get skyTourSoundLabTitle => 'Laborator audio';
+  @override
+  String get skyTourSoundLabBody =>
+      'Alege aici sunetele și muzica cerului tău.';
+  @override
+  String get starTourKindTitle => 'Obiectivele sunt stele încă neaprinse';
+  @override
+  String get starTourKindBody =>
+      'Atinge aici pentru a stabili un obiectiv — te așteaptă pe cer, '
+      'neaprins, până îl atingi.';
+  @override
+  String get starTourTitleFieldTitle => 'Dă un nume obiectivului tău';
+  @override
+  String get starTourTitleFieldBody => 'Ce vrei să realizezi?';
+  @override
+  String get starTourDetailsFieldTitle => 'Adaugă detalii';
+  @override
+  String get starTourDetailsFieldBody =>
+      'Spune mai mult dacă te ajută — această parte este opțională.';
+  @override
+  String get starTourDateFieldTitle => 'Când s-a întâmplat';
+  @override
+  String get starTourDateFieldBody =>
+      'Data și ora la care această victorie s-a întâmplat cu adevărat.';
+  @override
+  String get starTourTargetDateFieldTitle => 'O dată țintă';
+  @override
+  String get starTourTargetDateFieldBody =>
+      'Opțional — până când vrei să-l atingi, dacă știi deja.';
+  @override
+  String get starTourIntensityTitle => 'Cât te-a costat';
+  @override
+  String get starTourIntensityBody =>
+      'Evaluează efortul, de la 1 la 5 — nu cât de mare pare rezultatul, '
+      'ci cât te-a costat cu adevărat.';
+  @override
+  String get starTourPhotoTitle => 'Adaugă o fotografie';
+  @override
+  String get starTourPhotoBody =>
+      'Opțional — o imagine a momentului, decupată pentru cerul tău.';
+  @override
+  String get starTourSaveTitle => 'Pune-l pe cerul tău';
+  @override
+  String get starTourSaveBody =>
+      'Când ești gata, salvează-l — va aștepta acolo, neaprins, până îl '
+      'atingi.';
+  @override
+  String get searchTourModeTitle => 'Trei moduri de a privi';
+  @override
+  String get searchTourModeBody =>
+      'Comută între Supernove, Constelații și Stele.';
+  @override
+  String get searchTourFieldTitle => 'Caută';
+  @override
+  String get searchTourFieldBody => 'Scrie pentru a filtra după nume.';
+  @override
+  String get searchTourFilterButtonTitle => 'Filtrează după arie';
+  @override
+  String get searchTourFilterButtonBody =>
+      'Restrânge la ariile care contează pentru tine acum.';
+  @override
+  String get searchTourAllAreasTitle => 'Toate ariile';
+  @override
+  String get searchTourAllAreasBody =>
+      'Dezactivează pentru a-ți construi propria selecție.';
+  @override
+  String get searchTourAllKindsTitle => 'Filtrează după tip';
+  @override
+  String get searchTourAllKindsBody =>
+      'Arată doar stele aprinse, obiective, pulsari sau stele stinse.';
+  @override
+  String get searchTourApplyTitle => 'Aplică';
+  @override
+  String get searchTourApplyBody => 'Salvează filtrul și vezi rezultatele.';
+  @override
+  String get lightYourSkyTourSupernovaTitle => 'Supernove';
+  @override
+  String get lightYourSkyTourSupernovaBody =>
+      'Revizuiește și editează viziunea pentru una dintre ariile tale de viață.';
+  @override
+  String get lightYourSkyTourConstellationTitle => 'Constelații';
+  @override
+  String get lightYourSkyTourConstellationBody =>
+      'Începe un proiect nou — o formă pe care stelele tale o vor umple.';
+  @override
+  String get lightYourSkyTourStarTitle => 'Stele';
+  @override
+  String get lightYourSkyTourStarBody =>
+      'Înregistrează un efort: o victorie, un obiectiv sau un obicei nou.';
+  @override
+  String get constellationTourAreaTitle => 'Alege o arie';
+  @override
+  String get constellationTourAreaBody =>
+      'Pentru ce parte din viața ta este acest proiect?';
+  @override
+  String get constellationTourNameTitle => 'Dă-i un nume';
+  @override
+  String get constellationTourNameBody => 'Cum se numește acest proiect?';
+  @override
+  String get constellationTourDescriptionTitle => 'Adaugă o descriere';
+  @override
+  String get constellationTourDescriptionBody =>
+      'Opțional — spune mai multe despre rostul lui.';
+  @override
+  String get constellationTourShapeTitle => 'Dă-i o formă';
+  @override
+  String get constellationTourShapeBody =>
+      'Desenează-ți propria formă sau alege una din bibliotecă — fiecare '
+      'proiect are nevoie de o formă pe care stelele lui o vor umple.';
+  @override
+  String get constellationTourSaveTitle => 'Creează-l';
+  @override
+  String get constellationTourSaveBody => 'Salvează noua ta constelație.';
+  @override
+  String get supernovaTourListTitle => 'Cele opt arii ale tale';
+  @override
+  String get supernovaTourListBody =>
+      'Atinge una pentru a vedea, și edita, viziunea pe care ai scris-o.';
+  @override
+  String get supernovaTourEditTitle => 'Editează-ți viziunea';
+  @override
+  String get supernovaTourEditBody =>
+      'Scrie aici realitatea pe care ți-o dorești — te poți întoarce '
+      'oricând să o revizuiești.';
+  @override
+  String get replayToursAction => 'Repetă tutorialele';
+  @override
+  String get replayToursResult =>
+      'Tutoriale resetate — redeschide fiecare ecran pentru a le revedea';
+  @override
   String get volumeSectionLabel => 'Volum';
   @override
   String get backgroundVolumeLabel => 'Fundal';

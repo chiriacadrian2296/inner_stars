@@ -449,6 +449,157 @@ class StringsEn implements AppStrings {
   @override
   String get skyWhooshF => 'Soft swoosh';
   @override
+  String get tourSkipAction => 'Skip';
+  @override
+  String get tourBackAction => 'Back';
+  @override
+  String get tourNextAction => 'Next';
+  @override
+  String get tourDoneAction => 'Done';
+  @override
+  String tourProgressLabel(int step, int length) => '$step of $length';
+  @override
+  String get skyTourLookAroundTitle => 'Look around';
+  @override
+  String get skyTourLookAroundBody =>
+      'Drag to pan, pinch to zoom, and tap any star, constellation, or '
+      'supernova to fly there.';
+  @override
+  String get skyTourMenuTitle => 'Open the menu';
+  @override
+  String get skyTourMenuBody =>
+      'Hold this star to create something new or find your way around.';
+  @override
+  String get skyTourSoundLabTitle => 'Sound Lab';
+  @override
+  String get skyTourSoundLabBody =>
+      'Pick the sounds and music for your sky here.';
+  @override
+  String get starTourKindTitle => 'Goals are stars not lit yet';
+  @override
+  String get starTourKindBody =>
+      'Tap here to set a goal — it waits in your sky, unlit, until you '
+      'reach it.';
+  @override
+  String get starTourTitleFieldTitle => 'Name your goal';
+  @override
+  String get starTourTitleFieldBody => 'What do you want to achieve?';
+  @override
+  String get starTourDetailsFieldTitle => 'Add details';
+  @override
+  String get starTourDetailsFieldBody =>
+      "Say more if it helps — this part's optional.";
+  @override
+  String get starTourDateFieldTitle => 'When it happened';
+  @override
+  String get starTourDateFieldBody =>
+      'The date and time this victory actually happened.';
+  @override
+  String get starTourTargetDateFieldTitle => 'A target date';
+  @override
+  String get starTourTargetDateFieldBody =>
+      "Optional — when you're aiming to reach this by, if you know it yet.";
+  @override
+  String get starTourIntensityTitle => 'How much it cost';
+  @override
+  String get starTourIntensityBody =>
+      "Rate the effort, 1 to 5 — not how big the result looks, what it "
+      'actually took from you.';
+  @override
+  String get starTourPhotoTitle => 'Add a photo';
+  @override
+  String get starTourPhotoBody =>
+      'Optional — a picture of the moment, cropped to fit your sky.';
+  @override
+  String get starTourSaveTitle => 'Place it in your sky';
+  @override
+  String get starTourSaveBody =>
+      "When you're ready, save it — it'll wait there, unlit, until you "
+      'reach it.';
+  @override
+  String get searchTourModeTitle => 'Three ways to look';
+  @override
+  String get searchTourModeBody =>
+      'Switch between Supernovas, Constellations, and Stars.';
+  @override
+  String get searchTourFieldTitle => 'Search';
+  @override
+  String get searchTourFieldBody => 'Type to filter by name.';
+  @override
+  String get searchTourFilterButtonTitle => 'Filter by area';
+  @override
+  String get searchTourFilterButtonBody =>
+      "Narrow things down to just the areas you care about right now.";
+  @override
+  String get searchTourAllAreasTitle => 'All areas';
+  @override
+  String get searchTourAllAreasBody =>
+      'Flip this off to build your own selection instead.';
+  @override
+  String get searchTourAllKindsTitle => 'Filter by kind';
+  @override
+  String get searchTourAllKindsBody =>
+      'Show just lit stars, goals, pulsars, or dead ones.';
+  @override
+  String get searchTourApplyTitle => 'Apply';
+  @override
+  String get searchTourApplyBody => 'Save your filter and see the results.';
+  @override
+  String get lightYourSkyTourSupernovaTitle => 'Supernovas';
+  @override
+  String get lightYourSkyTourSupernovaBody =>
+      'Revisit and edit the vision for one of your life areas.';
+  @override
+  String get lightYourSkyTourConstellationTitle => 'Constellations';
+  @override
+  String get lightYourSkyTourConstellationBody =>
+      'Start a new project — a shape your stars will fill in.';
+  @override
+  String get lightYourSkyTourStarTitle => 'Stars';
+  @override
+  String get lightYourSkyTourStarBody =>
+      'Record an effort: a victory, a goal, or a new habit.';
+  @override
+  String get constellationTourAreaTitle => 'Pick an area';
+  @override
+  String get constellationTourAreaBody =>
+      "Which part of your life is this project for?";
+  @override
+  String get constellationTourNameTitle => 'Name it';
+  @override
+  String get constellationTourNameBody => "What's this project called?";
+  @override
+  String get constellationTourDescriptionTitle => 'Add a description';
+  @override
+  String get constellationTourDescriptionBody =>
+      "Optional — say more about what it's for.";
+  @override
+  String get constellationTourShapeTitle => 'Give it a shape';
+  @override
+  String get constellationTourShapeBody =>
+      'Draw your own, or pick one from the library — every project needs '
+      'a shape its stars will fill.';
+  @override
+  String get constellationTourSaveTitle => 'Create it';
+  @override
+  String get constellationTourSaveBody => 'Save your new constellation.';
+  @override
+  String get supernovaTourListTitle => 'Your eight areas';
+  @override
+  String get supernovaTourListBody =>
+      'Tap one to see, and edit, the vision you wrote for it.';
+  @override
+  String get supernovaTourEditTitle => 'Edit your vision';
+  @override
+  String get supernovaTourEditBody =>
+      'Write down the reality you want here — you can always come back '
+      'and revise it.';
+  @override
+  String get replayToursAction => 'Replay tutorials';
+  @override
+  String get replayToursResult =>
+      'Tutorials reset — open each screen again to see them';
+  @override
   String get volumeSectionLabel => 'Volume';
   @override
   String get backgroundVolumeLabel => 'Background';

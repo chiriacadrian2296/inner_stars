@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:hint_kit/hint_kit.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:tooltip_card/tooltip_card.dart';
 
@@ -353,6 +354,12 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         break;
       }
     }
+    // The "sky-navigation" tour — see its steps further down in [build]
+    // (the invisible full-screen anchor, the menu button, the Sound Lab
+    // button). Runs once, ever, same as every other tour (`PrefsTourStorage`).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Tour.read(context).start('sky-navigation');
+    });
   }
 
   @override
@@ -2083,6 +2090,24 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                       zoom: _zoom,
                       showGrid: widget.settings.showGrid,
                     ),
+                    // An inert, invisible full-screen anchor purely so the
+                    // "sky-navigation" tour's first step has *something* to
+                    // spotlight — the sky itself is one hand-drawn canvas,
+                    // not discrete per-star widgets, so there's no single
+                    // real widget for "here's how to look around" to point
+                    // at. IgnorePointer keeps it out of the gesture arena
+                    // entirely; it never affects a real tap/pan/pinch.
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: HintTarget(
+                          tour: 'sky-navigation',
+                          order: 1,
+                          title: context.strings.skyTourLookAroundTitle,
+                          description: context.strings.skyTourLookAroundBody,
+                          child: const SizedBox.expand(),
+                        ),
+                      ),
+                    ),
                     // A decorative sigil behind each supernova — see
                     // sky_area_sigils.dart. Painted before SkySupernova so that
                     // widget's own glow/icon sit on top of it, not the other
@@ -2409,7 +2434,13 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                         child: Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: Center(
-                            child: _MenuStarButton(onTap: _openMenuModal),
+                            child: HintTarget(
+                              tour: 'sky-navigation',
+                              order: 2,
+                              title: context.strings.skyTourMenuTitle,
+                              description: context.strings.skyTourMenuBody,
+                              child: _MenuStarButton(onTap: _openMenuModal),
+                            ),
                           ),
                         ),
                       ),
@@ -2426,10 +2457,16 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                       child: SafeArea(
                         child: Padding(
                           padding: const EdgeInsets.all(12),
-                          child: _SkyOverlayButton(
-                            icon: Icons.graphic_eq,
-                            tooltip: context.strings.soundLabButtonTooltip,
-                            onTap: _openSoundLab,
+                          child: HintTarget(
+                            tour: 'sky-navigation',
+                            order: 3,
+                            title: context.strings.skyTourSoundLabTitle,
+                            description: context.strings.skyTourSoundLabBody,
+                            child: _SkyOverlayButton(
+                              icon: Icons.graphic_eq,
+                              tooltip: context.strings.soundLabButtonTooltip,
+                              onTap: _openSoundLab,
+                            ),
                           ),
                         ),
                       ),

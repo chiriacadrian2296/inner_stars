@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hint_kit/hint_kit.dart';
 
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
@@ -98,10 +99,16 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
           children: [
             _SectionTitle(strings.skyModeSupernovas),
             const SizedBox(height: 10),
-            AppToggleChip(
-              label: strings.allAreasLabel,
-              value: _allAreasSelected,
-              onChanged: (_) => _toggleAllAreas(),
+            HintTarget(
+              tour: 'search-stars',
+              order: 4,
+              title: strings.searchTourAllAreasTitle,
+              description: strings.searchTourAllAreasBody,
+              child: AppToggleChip(
+                label: strings.allAreasLabel,
+                value: _allAreasSelected,
+                onChanged: (_) => _toggleAllAreas(),
+              ),
             ),
             const SizedBox(height: 16),
             for (var row = 0; row * 2 < LifeArea.values.length; row++) ...[
@@ -133,10 +140,16 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
               const SizedBox(height: 16),
               _SectionTitle(strings.filterKindSectionTitle),
               const SizedBox(height: 10),
-              AppToggleChip(
-                label: strings.allKindsLabel,
-                value: _allKindsSelected,
-                onChanged: (_) => _toggleAllKinds(),
+              HintTarget(
+                tour: 'search-stars',
+                order: 5,
+                title: strings.searchTourAllKindsTitle,
+                description: strings.searchTourAllKindsBody,
+                child: AppToggleChip(
+                  label: strings.allKindsLabel,
+                  value: _allKindsSelected,
+                  onChanged: (_) => _toggleAllKinds(),
+                ),
               ),
               const SizedBox(height: 16),
               // Two per row, in [kListableStarKinds] order — one chip per
@@ -171,12 +184,19 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
               ],
             ],
             const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () =>
-                    Navigator.of(context).pop((areas: _areas, kinds: _kinds)),
-                child: Text(strings.applyAreaFilterAction),
+            HintTarget(
+              tour: 'search-stars',
+              order: 6,
+              title: strings.searchTourApplyTitle,
+              description: strings.searchTourApplyBody,
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pop((areas: _areas, kinds: _kinds)),
+                  child: Text(strings.applyAreaFilterAction),
+                ),
               ),
             ),
           ],

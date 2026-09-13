@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hint_kit/hint_kit.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../data/area_vision_repository.dart';
@@ -20,6 +21,12 @@ import '../theme/app_style.dart';
 import '../widgets/responsive_content.dart';
 import 'menu_button_gallery_screen.dart';
 import 'onboarding_screen.dart';
+
+/// Parks this screen's "Replay onboarding" debug button — see
+/// `main.dart`'s own `_kShowOnboarding` doc comment for why. Left wired up
+/// (`OnboardingScreen` and the `_push` call are both untouched), just not
+/// drawn.
+const _kShowOnboarding = false;
 
 /// Settings, opened from the Sky's own side menu — the drawer carries only
 /// one entry for it, everything else here is a section of this one page.
@@ -230,6 +237,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _push(Widget screen) {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+  }
+
+  /// Every `hint_kit` tour name currently built — see `lib/tutorials/`.
+  /// Kept in one place so [_replayAllTours] (and anything else that needs
+  /// to enumerate tours) has a single list to update when a new one is
+  /// added.
+  static const _kAllTourNames = [
+    'sky-navigation',
+    'star-form',
+    'search-stars',
+    'light-your-sky',
+    'constellation-form',
+    'supernova-vision',
+  ];
+
+  /// Un-marks every `hint_kit` tour as seen, so opening each of their
+  /// screens fresh shows them again — a dev/QA aid for tuning a tour's
+  /// copy or theme without needing to clear the whole app's data just to
+  /// see it once more.
+  Future<void> _replayAllTours() async {
+    final strings = context.strings;
+    final storage = Tour.read(context).storage;
+    for (final tour in _kAllTourNames) {
+      await storage.reset(tour);
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(strings.replayToursResult)));
+    }
   }
 
   @override
@@ -517,16 +554,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ],
                     ),
+                    if (_kShowOnboarding) ...[
+                      const SizedBox(height: 8),
+                      // Onboarding replay lived in the menu's own Info
+                      // section briefly; moved back here — a dev/QA aid for
+                      // checking the flow still works, not something a
+                      // regular user goes looking for on purpose.
+                      SizedBox(
+                        width: double.infinity,
+                        child: TextButton.icon(
+                          onPressed: () =>
+                              _push(const OnboardingScreen()),
+                          style: _debugButtonStyle(colors, colors.muted),
+                          icon: Icon(
+                            Icons.play_circle_outline,
+                            size: 16,
+                            color: colors.muted,
+                          ),
+                          label: Text(
+                            strings.menuOnboarding,
+                            style: TextStyle(color: colors.muted, fontSize: 12),
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
-                    // Onboarding replay lived in the menu's own Info
-                    // section briefly; moved back here — a dev/QA aid for
-                    // checking the flow still works, not something a
-                    // regular user goes looking for on purpose.
+                    // Dev/QA aid for tuning any hint_kit tour (see
+                    // [_replayAllTours]) without clearing all app data
+                    // just to see one again.
                     SizedBox(
                       width: double.infinity,
                       child: TextButton.icon(
-                        onPressed: () =>
-                            _push(const OnboardingScreen()),
+                        onPressed: _replayAllTours,
                         style: _debugButtonStyle(colors, colors.muted),
                         icon: Icon(
                           Icons.play_circle_outline,
@@ -534,7 +593,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           color: colors.muted,
                         ),
                         label: Text(
-                          strings.menuOnboarding,
+                          strings.replayToursAction,
                           style: TextStyle(color: colors.muted, fontSize: 12),
                         ),
                       ),

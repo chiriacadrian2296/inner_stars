@@ -451,6 +451,157 @@ class StringsIt implements AppStrings {
   @override
   String get skyWhooshF => 'Swoosh morbido';
   @override
+  String get tourSkipAction => 'Salta';
+  @override
+  String get tourBackAction => 'Indietro';
+  @override
+  String get tourNextAction => 'Avanti';
+  @override
+  String get tourDoneAction => 'Fatto';
+  @override
+  String tourProgressLabel(int step, int length) => '$step di $length';
+  @override
+  String get skyTourLookAroundTitle => 'Guardati intorno';
+  @override
+  String get skyTourLookAroundBody =>
+      'Trascina per muoverti, pizzica per zoomare, e tocca qualsiasi '
+      'stella, costellazione o supernova per volare lì.';
+  @override
+  String get skyTourMenuTitle => 'Apri il menu';
+  @override
+  String get skyTourMenuBody =>
+      'Tieni premuta questa stella per creare qualcosa di nuovo o '
+      'orientarti.';
+  @override
+  String get skyTourSoundLabTitle => 'Laboratorio audio';
+  @override
+  String get skyTourSoundLabBody =>
+      'Scegli qui i suoni e la musica del tuo cielo.';
+  @override
+  String get starTourKindTitle => 'Gli obiettivi sono stelle non ancora accese';
+  @override
+  String get starTourKindBody =>
+      'Tocca qui per fissare un obiettivo — resta nel tuo cielo, spento, '
+      'finché non lo raggiungi.';
+  @override
+  String get starTourTitleFieldTitle => 'Dai un nome al tuo obiettivo';
+  @override
+  String get starTourTitleFieldBody => 'Cosa vuoi raggiungere?';
+  @override
+  String get starTourDetailsFieldTitle => 'Aggiungi dettagli';
+  @override
+  String get starTourDetailsFieldBody =>
+      'Racconta di più se ti aiuta — questa parte è facoltativa.';
+  @override
+  String get starTourDateFieldTitle => 'Quando è successo';
+  @override
+  String get starTourDateFieldBody =>
+      'La data e l\'ora in cui questa vittoria è avvenuta davvero.';
+  @override
+  String get starTourTargetDateFieldTitle => 'Una data obiettivo';
+  @override
+  String get starTourTargetDateFieldBody =>
+      'Facoltativo — entro quando vuoi raggiungerlo, se già lo sai.';
+  @override
+  String get starTourIntensityTitle => 'Quanto è costato';
+  @override
+  String get starTourIntensityBody =>
+      "Valuta lo sforzo, da 1 a 5 — non quanto grande sembra il "
+      'risultato, quanto ti è davvero costato.';
+  @override
+  String get starTourPhotoTitle => 'Aggiungi una foto';
+  @override
+  String get starTourPhotoBody =>
+      "Facoltativo — un'immagine del momento, ritagliata per il tuo cielo.";
+  @override
+  String get starTourSaveTitle => 'Mettilo nel tuo cielo';
+  @override
+  String get starTourSaveBody =>
+      'Quando sei pronto, salvalo — resterà lì, spento, finché non lo '
+      'raggiungi.';
+  @override
+  String get searchTourModeTitle => 'Tre modi di guardare';
+  @override
+  String get searchTourModeBody =>
+      'Passa tra Supernove, Costellazioni e Stelle.';
+  @override
+  String get searchTourFieldTitle => 'Cerca';
+  @override
+  String get searchTourFieldBody => 'Digita per filtrare per nome.';
+  @override
+  String get searchTourFilterButtonTitle => 'Filtra per area';
+  @override
+  String get searchTourFilterButtonBody =>
+      'Restringi la vista solo alle aree che ti interessano ora.';
+  @override
+  String get searchTourAllAreasTitle => 'Tutte le aree';
+  @override
+  String get searchTourAllAreasBody =>
+      'Disattivalo per creare invece una tua selezione.';
+  @override
+  String get searchTourAllKindsTitle => 'Filtra per tipo';
+  @override
+  String get searchTourAllKindsBody =>
+      'Mostra solo stelle accese, obiettivi, pulsar o stelle spente.';
+  @override
+  String get searchTourApplyTitle => 'Applica';
+  @override
+  String get searchTourApplyBody => 'Salva il filtro e vedi i risultati.';
+  @override
+  String get lightYourSkyTourSupernovaTitle => 'Supernove';
+  @override
+  String get lightYourSkyTourSupernovaBody =>
+      "Rivedi e modifica la visione di una delle tue aree di vita.";
+  @override
+  String get lightYourSkyTourConstellationTitle => 'Costellazioni';
+  @override
+  String get lightYourSkyTourConstellationBody =>
+      'Avvia un nuovo progetto — una forma che le tue stelle riempiranno.';
+  @override
+  String get lightYourSkyTourStarTitle => 'Stelle';
+  @override
+  String get lightYourSkyTourStarBody =>
+      'Registra uno sforzo: una vittoria, un obiettivo o una nuova abitudine.';
+  @override
+  String get constellationTourAreaTitle => "Scegli un'area";
+  @override
+  String get constellationTourAreaBody =>
+      'Per quale parte della tua vita è questo progetto?';
+  @override
+  String get constellationTourNameTitle => 'Dagli un nome';
+  @override
+  String get constellationTourNameBody => 'Come si chiama questo progetto?';
+  @override
+  String get constellationTourDescriptionTitle => 'Aggiungi una descrizione';
+  @override
+  String get constellationTourDescriptionBody =>
+      'Facoltativo — racconta di più su a cosa serve.';
+  @override
+  String get constellationTourShapeTitle => 'Dagli una forma';
+  @override
+  String get constellationTourShapeBody =>
+      'Disegnane una tua, o scegline una dalla libreria — ogni progetto '
+      'ha bisogno di una forma che le sue stelle riempiranno.';
+  @override
+  String get constellationTourSaveTitle => 'Crealo';
+  @override
+  String get constellationTourSaveBody => 'Salva la tua nuova costellazione.';
+  @override
+  String get supernovaTourListTitle => 'Le tue otto aree';
+  @override
+  String get supernovaTourListBody =>
+      'Toccane una per vedere, e modificare, la visione che hai scritto.';
+  @override
+  String get supernovaTourEditTitle => 'Modifica la tua visione';
+  @override
+  String get supernovaTourEditBody =>
+      'Scrivi qui la realtà che vuoi — puoi sempre tornare e rivederla.';
+  @override
+  String get replayToursAction => 'Rivedi i tutorial';
+  @override
+  String get replayToursResult =>
+      'Tutorial azzerati — riapri ogni schermata per rivederli';
+  @override
   String get volumeSectionLabel => 'Volume';
   @override
   String get backgroundVolumeLabel => 'Sottofondo';

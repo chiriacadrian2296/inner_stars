@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:hint_kit/hint_kit.dart';
 
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
+
+/// Parks the menu's "Metaphor" entry (the full-length explainer screen),
+/// superseded by `hint_kit`-driven live tutorials — see the TRB entry for
+/// this and `main.dart`'s own `_kShowOnboarding`. The entry, its callback,
+/// and `MetaphorScreen` itself are all left wired up, just not drawn: flip
+/// this back on to restore it exactly as it was.
+const _kShowMetaphorMenuEntry = false;
 
 /// The Sky's side menu — the app's only navigation. There's exactly one
 /// screen now (the Sky itself); everything else opens from here as a page
@@ -164,6 +172,13 @@ class SkyMenuContent extends StatelessWidget {
     final colors = context.colors;
     final strings = context.strings;
 
+    // Fired here, not inside the dialog's own builder — by the time
+    // `showDialog` schedules that builder's first frame, this call has
+    // already reached `Tour.start`'s async storage check, so the "waits
+    // for its target" behavior (see `HintTarget`'s own doc comment) is
+    // what actually bridges the two rather than any ordering guarantee.
+    Tour.read(context).start('light-your-sky');
+
     showDialog<void>(
       context: context,
       builder: (dialogContext) {
@@ -171,8 +186,11 @@ class SkyMenuContent extends StatelessWidget {
           required IconData icon,
           required String label,
           required VoidCallback onTap,
+          int? tourOrder,
+          String? tourTitle,
+          String? tourBody,
         }) {
-          return InkWell(
+          final tile = InkWell(
             onTap: () {
               Navigator.of(dialogContext).pop();
               onTap();
@@ -218,6 +236,14 @@ class SkyMenuContent extends StatelessWidget {
               ),
             ),
           );
+          if (tourOrder == null) return tile;
+          return HintTarget(
+            tour: 'light-your-sky',
+            order: tourOrder,
+            title: tourTitle,
+            description: tourBody,
+            child: tile,
+          );
         }
 
         // A popup rather than a sheet, per request — [Dialog] alone (not
@@ -259,16 +285,25 @@ class SkyMenuContent extends StatelessWidget {
                       icon: Icons.flare,
                       label: strings.lightYourSkyChooserSupernovaOption,
                       onTap: onVisions,
+                      tourOrder: 1,
+                      tourTitle: strings.lightYourSkyTourSupernovaTitle,
+                      tourBody: strings.lightYourSkyTourSupernovaBody,
                     ),
                     choice(
                       icon: Icons.auto_awesome,
                       label: strings.menuNewConstellation,
                       onTap: onNewConstellation,
+                      tourOrder: 2,
+                      tourTitle: strings.lightYourSkyTourConstellationTitle,
+                      tourBody: strings.lightYourSkyTourConstellationBody,
                     ),
                     choice(
                       icon: Icons.star,
                       label: strings.menuLightAStar,
                       onTap: onLightAStar,
+                      tourOrder: 3,
+                      tourTitle: strings.lightYourSkyTourStarTitle,
+                      tourBody: strings.lightYourSkyTourStarBody,
                     ),
                   ],
                 ),
@@ -488,15 +523,17 @@ class SkyMenuContent extends StatelessWidget {
           onTap: onFriends,
         ),
 
-        if (!detailed) Divider(color: colors.nightBorder, height: 1),
-        sectionHeader(strings.menuInfoSection),
-        if (!detailed) const SizedBox(height: 8),
-        entry(
-          icon: Icons.auto_stories_outlined,
-          label: strings.menuMetaphor,
-          description: strings.menuMetaphorDescription,
-          onTap: onMetaphor,
-        ),
+        if (_kShowMetaphorMenuEntry) ...[
+          if (!detailed) Divider(color: colors.nightBorder, height: 1),
+          sectionHeader(strings.menuInfoSection),
+          if (!detailed) const SizedBox(height: 8),
+          entry(
+            icon: Icons.auto_stories_outlined,
+            label: strings.menuMetaphor,
+            description: strings.menuMetaphorDescription,
+            onTap: onMetaphor,
+          ),
+        ],
 
         // In [detailed] mode (the modal), Settings is just one more
         // section in the same scrollable list as everything else —
