@@ -356,6 +356,110 @@ class StringsEn implements AppStrings {
       'Your archive is still empty. Light your first star, even a small one.';
 
   @override
+  String get soundLabEyebrow => 'AUDIO';
+  @override
+  String get soundLabTitle => 'Sound Lab';
+  @override
+  String get soundLabSubtitle =>
+      'Background track, tap/hold sounds, and the sky\'s own movement whooshes — every sound experiment lives here.';
+  @override
+  String get soundLabButtonTooltip => 'Sound Lab';
+  @override
+  String get soundLabResetAction => 'Reset to defaults';
+  @override
+  String get backgroundTrackLabel => 'Background track';
+  @override
+  String get pauseBackgroundTrackAction => 'Pause';
+  @override
+  String get playBackgroundTrackAction => 'Play';
+  @override
+  String get tapSoundLabel => 'Tap sound';
+  @override
+  String get holdSoundLabel => 'Hold sound';
+  @override
+  String get whooshInLabel => 'Zoom-in whoosh';
+  @override
+  String get whooshOutLabel => 'Zoom-out whoosh';
+  @override
+  String get backgroundTrackObservingTheStar => 'Observing the Star';
+  @override
+  String get backgroundTrackHeavenlyLoop => 'Heavenly Drift';
+  @override
+  String get backgroundTrackOutThere => 'Out There';
+  @override
+  String get backgroundTrackAmbientRelaxing => 'Relaxing Ambience';
+  @override
+  String get backgroundTrackBackgroundSpace => 'Cosmic Meditation';
+  @override
+  String get skySoundPluckSoft => 'Soft pluck';
+  @override
+  String get skySoundPluckBright => 'Bright pluck';
+  @override
+  String get skySoundGlassLow => 'Low glass';
+  @override
+  String get skySoundGlassHigh => 'High glass';
+  @override
+  String get skySoundGlassChime => 'Glass chime';
+  @override
+  String get skySoundGlassBell => 'Glass bell';
+  @override
+  String get skySoundGlassShine => 'Glass shine';
+  @override
+  String get skySoundGlassTwinkle => 'Glass twinkle';
+  @override
+  String get skySoundBong => 'Bell';
+  @override
+  String get skySoundConfirmation => 'Confirmation';
+  @override
+  String get skySoundChimeSoft => 'Soft chime';
+  @override
+  String get skySoundChimeWarm => 'Warm ding';
+  @override
+  String get skySoundChimeBright => 'Bright ding';
+  @override
+  String get skySoundSelect => 'Select';
+  @override
+  String get skySoundBlip => 'Blip';
+  @override
+  String get skySoundStarBlip => 'Star blip';
+  @override
+  String get skySoundShimmer => 'Shimmer';
+  @override
+  String get skySoundTick => 'Tick';
+  @override
+  String get skySoundToggle => 'Toggle';
+  @override
+  String get skySoundClick => 'Click';
+  @override
+  String get skySoundCosmicDing => 'Cosmic ding';
+  @override
+  String get skySoundCosmicBlink => 'Cosmic blink';
+  @override
+  String get skySoundCosmicBeep => 'Cosmic beep';
+  @override
+  String get skyWhooshA => 'Light whoosh';
+  @override
+  String get skyWhooshB => 'Heavy whoosh';
+  @override
+  String get skyWhooshC => 'Swift whoosh';
+  @override
+  String get skyWhooshD => 'Airy whoosh';
+  @override
+  String get skyWhooshE => 'Quick swoosh';
+  @override
+  String get skyWhooshF => 'Soft swoosh';
+  @override
+  String get volumeSectionLabel => 'Volume';
+  @override
+  String get backgroundVolumeLabel => 'Background';
+  @override
+  String get tapVolumeLabel => 'Tap';
+  @override
+  String get holdVolumeLabel => 'Hold';
+  @override
+  String get whooshVolumeLabel => 'Movement';
+
+  @override
   String starsCount(int count) => '$count star${count == 1 ? '' : 's'}';
   @override
   String areaEmptyProjects(String areaName) =>

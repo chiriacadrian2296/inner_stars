@@ -358,6 +358,110 @@ class StringsIt implements AppStrings {
       'Il tuo archivio è ancora vuoto. Accendi la tua prima stella, anche piccola.';
 
   @override
+  String get soundLabEyebrow => 'AUDIO';
+  @override
+  String get soundLabTitle => 'Laboratorio audio';
+  @override
+  String get soundLabSubtitle =>
+      'Traccia di sottofondo, suoni al tocco/pressione, e gli swoosh dello spostamento nel cielo — tutti gli esperimenti sonori vivono qui.';
+  @override
+  String get soundLabButtonTooltip => 'Laboratorio audio';
+  @override
+  String get soundLabResetAction => 'Ripristina predefiniti';
+  @override
+  String get backgroundTrackLabel => 'Traccia di sottofondo';
+  @override
+  String get pauseBackgroundTrackAction => 'Metti in pausa';
+  @override
+  String get playBackgroundTrackAction => 'Riproduci';
+  @override
+  String get tapSoundLabel => 'Suono al tocco';
+  @override
+  String get holdSoundLabel => 'Suono alla pressione prolungata';
+  @override
+  String get whooshInLabel => 'Swoosh in avvicinamento';
+  @override
+  String get whooshOutLabel => 'Swoosh in allontanamento';
+  @override
+  String get backgroundTrackObservingTheStar => 'Osservando la stella';
+  @override
+  String get backgroundTrackHeavenlyLoop => 'Deriva celeste';
+  @override
+  String get backgroundTrackOutThere => 'Là fuori';
+  @override
+  String get backgroundTrackAmbientRelaxing => 'Ambiente rilassante';
+  @override
+  String get backgroundTrackBackgroundSpace => 'Meditazione cosmica';
+  @override
+  String get skySoundPluckSoft => 'Pizzicato lieve';
+  @override
+  String get skySoundPluckBright => 'Pizzicato brillante';
+  @override
+  String get skySoundGlassLow => 'Cristallo grave';
+  @override
+  String get skySoundGlassHigh => 'Cristallo acuto';
+  @override
+  String get skySoundGlassChime => 'Campanello di cristallo';
+  @override
+  String get skySoundGlassBell => 'Campana di cristallo';
+  @override
+  String get skySoundGlassShine => 'Bagliore di cristallo';
+  @override
+  String get skySoundGlassTwinkle => 'Scintillio di cristallo';
+  @override
+  String get skySoundBong => 'Campana';
+  @override
+  String get skySoundConfirmation => 'Conferma';
+  @override
+  String get skySoundChimeSoft => 'Campanellino lieve';
+  @override
+  String get skySoundChimeWarm => 'Ding caldo';
+  @override
+  String get skySoundChimeBright => 'Ding brillante';
+  @override
+  String get skySoundSelect => 'Selezione';
+  @override
+  String get skySoundBlip => 'Blip';
+  @override
+  String get skySoundStarBlip => 'Blip stellare';
+  @override
+  String get skySoundShimmer => 'Scintillio';
+  @override
+  String get skySoundTick => 'Tic';
+  @override
+  String get skySoundToggle => 'Interruttore';
+  @override
+  String get skySoundClick => 'Click';
+  @override
+  String get skySoundCosmicDing => 'Ding cosmico';
+  @override
+  String get skySoundCosmicBlink => 'Blink cosmico';
+  @override
+  String get skySoundCosmicBeep => 'Beep cosmico';
+  @override
+  String get skyWhooshA => 'Swoosh leggero';
+  @override
+  String get skyWhooshB => 'Swoosh pesante';
+  @override
+  String get skyWhooshC => 'Swoosh rapido';
+  @override
+  String get skyWhooshD => 'Swoosh arioso';
+  @override
+  String get skyWhooshE => 'Swoosh veloce';
+  @override
+  String get skyWhooshF => 'Swoosh morbido';
+  @override
+  String get volumeSectionLabel => 'Volume';
+  @override
+  String get backgroundVolumeLabel => 'Sottofondo';
+  @override
+  String get tapVolumeLabel => 'Tocco';
+  @override
+  String get holdVolumeLabel => 'Pressione prolungata';
+  @override
+  String get whooshVolumeLabel => 'Spostamento';
+
+  @override
   String starsCount(int count) => count == 1 ? '1 stella' : '$count stelle';
   @override
   String areaEmptyProjects(String areaName) =>

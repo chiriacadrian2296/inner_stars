@@ -21,6 +21,7 @@ dependencies:
   image: ^4.9.2
   share_plus: ^13.3.0
   tooltip_card: ^2.9.0
+  audioplayers: ^6.5.1
 
 dev_dependencies:
   flutter_test:
@@ -33,6 +34,8 @@ flutter:
   assets:
     - assets/icon/app_icon_ring_centered.png
     - assets/icon/app_icon_ring_centered_white.png
+    - assets/audio/bg/
+    - assets/audio/sfx/
   shaders:
     - shaders/nebula_particles.frag
     - shaders/constellation_flare.frag

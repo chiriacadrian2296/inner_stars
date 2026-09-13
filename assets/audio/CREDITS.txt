@@ -1,0 +1,48 @@
+Audio credits — every file under bg/ and sfx/ is CC0 (public domain), no
+attribution required. Credited here anyway, per each source's own request.
+
+## bg/ — background loop tracks
+
+- observing_the_star.ogg — "Observing the Star" by yd
+  https://opengameart.org/content/another-space-background-track
+- heavenly_loop.ogg — "Heavenly Loop" by isaiah658
+  https://opengameart.org/content/heavenly-loop
+- out_there.ogg — "Space Music: Out There" by yd
+  https://opengameart.org/content/space-music-out-there
+- ambient_relaxing_loop.ogg — "Ambient Relaxing Loop" by isaiah658
+  https://opengameart.org/content/ambient-relaxing-loop
+- background_space_track.ogg — "My Very Own Dead Ship" by yd
+  https://opengameart.org/content/background-space-track
+
+## sfx/ — tap/hold sounds
+
+Kenney's "Interface Sounds" pack (CC0) — https://kenney.nl/assets/interface-sounds
+Mirror used to fetch individual files:
+https://github.com/Calinou/kenney-interface-sounds
+(full pack license text: CREDITS_sfx_kenney.txt, kept out of assets/ so it
+isn't bundled into the app)
+
+Files used: bong_001.wav, click_003.wav, confirmation_001.wav,
+confirmation_002.wav, confirmation_003.wav, confirmation_004.wav,
+glass_001.wav, glass_002.wav, glass_003.wav, glass_004.wav, glass_005.wav,
+glass_006.wav, pluck_001.wav, pluck_002.wav, select_001.wav, select_003.wav,
+select_004.wav, select_006.wav, tick_002.wav, toggle_002.wav
+
+"50 CC0 retro / synth SFX" by rubberduck (CC0)
+https://opengameart.org/content/50-cc0-retro-synth-sfx
+
+digital_ding.ogg  — power_up_02.ogg
+digital_blink.ogg — retro_coin_01.ogg
+digital_beep.ogg  — synth_beep_02.ogg
+
+## sfx/ — camera zoom whoosh (in/out, both user-selectable)
+
+"Swishes Sound Pack" by artisticdude (CC0)
+https://opengameart.org/content/swishes-sound-pack
+
+whoosh_in.wav  — swish-2.wav
+whoosh_out.wav — swish-8.wav
+whoosh_a.wav   — swish-4.wav
+whoosh_b.wav   — swish-6.wav
+whoosh_c.wav   — swish-11.wav
+whoosh_d.wav   — swish-13.wav

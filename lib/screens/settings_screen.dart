@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../data/area_vision_repository.dart';
+import '../data/audio_settings_repository.dart';
 import '../data/custom_constellation_repository.dart';
 import '../data/habit_completion_repository.dart';
 import '../data/habit_repository.dart';
@@ -43,6 +44,7 @@ class SettingsScreen extends StatefulWidget {
     required this.starsShapeRepository,
     required this.areaVisionRepository,
     required this.reflectionAnswerRepository,
+    required this.audioSettingsRepository,
     required this.reminderService,
   });
 
@@ -54,6 +56,9 @@ class SettingsScreen extends StatefulWidget {
   final StarsShapeRepository starsShapeRepository;
   final AreaVisionRepository areaVisionRepository;
   final ReflectionAnswerRepository reflectionAnswerRepository;
+  // Kept only for the reset-all-data action's own `.clear()` call — the
+  // sound section itself moved to `SoundLabScreen`.
+  final AudioSettingsRepository audioSettingsRepository;
   final ReminderService reminderService;
 
   @override
@@ -216,6 +221,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await widget.starsShapeRepository.clear();
     await widget.areaVisionRepository.clear();
     await widget.reflectionAnswerRepository.clear();
+    await widget.audioSettingsRepository.clear();
     if (mounted) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(strings.allDataCleared)));

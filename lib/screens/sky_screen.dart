@@ -11,7 +11,9 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:share_plus/share_plus.dart';
 import 'package:tooltip_card/tooltip_card.dart';
 
+import '../audio/audio_service.dart';
 import '../data/area_vision_repository.dart';
+import '../data/audio_settings_repository.dart';
 import '../data/constellation_layout.dart';
 import '../data/custom_constellation_repository.dart';
 import '../data/habit_completion_repository.dart';
@@ -60,6 +62,7 @@ import 'metaphor_screen.dart';
 import 'pulsar_reader_screen.dart';
 import 'new_project_screen.dart';
 import 'settings_screen.dart';
+import 'sound_lab_screen.dart';
 import 'constellation_screen.dart';
 import 'shooting_stars_screen.dart';
 import 'star_form_screen.dart';
@@ -114,6 +117,8 @@ class SkyScreen extends StatefulWidget {
     required this.starsShapeRepository,
     required this.areaVisionRepository,
     required this.reflectionAnswerRepository,
+    required this.audioSettingsRepository,
+    required this.audioService,
     required this.reminderService,
   });
 
@@ -125,6 +130,8 @@ class SkyScreen extends StatefulWidget {
   final StarsShapeRepository starsShapeRepository;
   final AreaVisionRepository areaVisionRepository;
   final ReflectionAnswerRepository reflectionAnswerRepository;
+  final AudioSettingsRepository audioSettingsRepository;
+  final AudioService audioService;
   final ReminderService reminderService;
 
   @override
@@ -598,9 +605,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _openTooltipDuringFlight(
       _flyToWorld(
         world,
-        zoomFromPercent(
-          _starZoomPercent,
-        ).clamp(minZoomWithoutRepeats, _maxZoom),
+        zoomFromPercent(_starZoomPercent)
+            .clamp(minZoomWithoutRepeats, _maxZoom),
       ),
       _StarTooltip(constellation, starIndex),
     );
@@ -628,9 +634,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _openTooltipDuringFlight(
       _flyToWorld(
         world,
-        zoomFromPercent(
-          _starZoomPercent,
-        ).clamp(minZoomWithoutRepeats, _maxZoom),
+        zoomFromPercent(_starZoomPercent)
+            .clamp(minZoomWithoutRepeats, _maxZoom),
       ),
       _PulsarTooltip(constellation, habit),
     );
@@ -1001,6 +1006,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
           starsShapeRepository: widget.starsShapeRepository,
           areaVisionRepository: widget.areaVisionRepository,
           reflectionAnswerRepository: widget.reflectionAnswerRepository,
+          audioSettingsRepository: widget.audioSettingsRepository,
           reminderService: widget.reminderService,
         ),
       ),
@@ -1056,6 +1062,14 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// Opens the search/filter popup (three levels of the same sky, minus a
   /// header — see [SkySearchScreen]) and, if a card's "take me there"
   /// button closed it with a target, snaps the camera to it.
+  Future<void> _openSoundLab() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SoundLabScreen(audioService: widget.audioService),
+      ),
+    );
+  }
+
   Future<void> _openSearch() async {
     final target = await Navigator.of(context).push<SkyNavigationTarget>(
       MaterialPageRoute(
@@ -1181,6 +1195,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     }
 
     _stopInertia();
+    _playZoomTransitionSound(_zoom, targetZoom);
     _flyStartCamera = _camera;
     _flyTargetForward = targetForward;
     _flyStartZoom = _zoom;
@@ -1620,6 +1635,21 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     Haptics.vibrate(duration: _tapHapticDuration, amplitude: _hapticAmplitude);
   }
 
+  /// A whoosh for the camera actually moving — called from both
+  /// [_flyToWorld] (any tap/hold/search navigation) and [_zoomTo] (the
+  /// double-tap zoom-out), the two places that ever animate [_zoom],
+  /// right where each already knows both the zoom it's leaving and the
+  /// one it's headed for. Silent for a pan that lands on the same zoom
+  /// it started at — this is specifically about the zoom *changing*, not
+  /// about a flight happening at all.
+  void _playZoomTransitionSound(double fromZoom, double toZoom) {
+    if (toZoom > fromZoom) {
+      widget.audioService.playZoomInSound();
+    } else if (toZoom < fromZoom) {
+      widget.audioService.playZoomOutSound();
+    }
+  }
+
   /// Same three-step lookup [_resolveTapTarget] does, but read-only — no
   /// tooltip/flight side effects — so [_handleTapDown] can tell whether a
   /// hold starting here would actually land on something *before* the
@@ -1668,6 +1698,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       // of lingering on top of it.
       _holdRingController.value = 0;
       _stopHoldHaptic();
+      widget.audioService.playHoldSound();
       _handleHold(details.localPosition);
     });
   }
@@ -1794,6 +1825,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       // hold's own long buzz (see [_startHoldHaptic]) means "a tooltip
       // just opened" instead, so this only ever fires from a plain tap.
       if (isTouchOnlyMobile) _tapHaptic();
+      widget.audioService.playTapSound();
       _lastEmptyTapTime = null;
       return;
     }
@@ -1811,7 +1843,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       _lastEmptyTapPosition = null;
       // Same "a movement just started" buzz as a direct hit above — the
       // zoom-out this triggers is exactly that, just aimed at empty sky
-      // instead of a target.
+      // instead of a target. No tap sound here though: this isn't a tap
+      // on anything, it's a camera move, and [_zoomOutOneLevel] already
+      // plays its own whoosh via [_playZoomTransitionSound].
       if (isTouchOnlyMobile) _tapHaptic();
       _zoomOutOneLevel();
       return;
@@ -1912,6 +1946,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// at here, just [_camera]'s own current one, exactly).
   void _zoomTo(double targetZoom) {
     _stopInertia();
+    _playZoomTransitionSound(_zoom, targetZoom);
     _flyStartCamera = _camera;
     _flyTargetForward = _camera.forward;
     _flyStartZoom = _zoom;
@@ -2379,6 +2414,26 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
+                    // A dedicated way into the Sound Lab (see
+                    // `SoundLabScreen`) — top-right, clear of every other
+                    // control here. Placed for quick access while there's
+                    // a growing pool of candidate sounds to audition;
+                    // nothing behind it is destructive, so it's fine to
+                    // stay one tap away rather than buried in Settings.
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: _SkyOverlayButton(
+                            icon: Icons.graphic_eq,
+                            tooltip: context.strings.soundLabButtonTooltip,
+                            onTap: _openSoundLab,
+                          ),
+                        ),
+                      ),
+                    ),
                     // The hold-charging ring (see [_handleTapDown]/
                     // [_holdRingController]) — last so it paints above
                     // every star/constellation/control here, never under
@@ -2715,6 +2770,46 @@ class _HoldRingPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _HoldRingPainter oldDelegate) =>
       oldDelegate.center != center || oldDelegate.progress != progress;
+}
+
+/// A small, chrome-disc icon button floating directly on the sky — see the
+/// Sound Lab entry point's own doc comment for why this one exists.
+/// [skyControlDecoration] is the app's one "control that sits on the sky
+/// itself rather than on a page" surface (translucent panel, gold ring),
+/// defined in `app_style.dart` but never actually used until now.
+class _SkyOverlayButton extends StatelessWidget {
+  const _SkyOverlayButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: Ink(
+        decoration: skyControlDecoration(colors, circle: true),
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Tooltip(
+              message: tooltip,
+              child: Icon(icon, color: colors.gold, size: 20),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// The FAB's own dedicated supernova — the same glow [SkySupernova] draws

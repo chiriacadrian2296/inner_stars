@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'audio/audio_service.dart';
 import 'data/area_vision_repository.dart';
+import 'data/audio_settings_repository.dart';
 import 'data/custom_constellation_repository.dart';
 import 'data/habit_completion_repository.dart';
 import 'data/habit_repository.dart';
@@ -60,6 +62,8 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
   StarsShapeRepository? _starsShapeRepository;
   AreaVisionRepository? _areaVisionRepository;
   ReflectionAnswerRepository? _reflectionAnswerRepository;
+  AudioSettingsRepository? _audioSettingsRepository;
+  AudioService? _audioService;
   ReminderService? _reminderService;
 
   /// Set only if [_load] throws. A blank splash that silently never
@@ -88,6 +92,8 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
       final areaVisionRepository = await AreaVisionRepository.create();
       final reflectionAnswerRepository =
           await ReflectionAnswerRepository.create();
+      final audioSettingsRepository = await AudioSettingsRepository.create();
+      final audioService = await AudioService.create(audioSettingsRepository);
       final onboardingPrefs = await OnboardingPrefs.create();
 
       // Debug builds only, and only for a genuinely empty install — the
@@ -146,6 +152,8 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
         _starsShapeRepository = starsShapeRepository;
         _areaVisionRepository = areaVisionRepository;
         _reflectionAnswerRepository = reflectionAnswerRepository;
+        _audioSettingsRepository = audioSettingsRepository;
+        _audioService = audioService;
         _reminderService = reminderService;
       });
 
@@ -225,6 +233,8 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
     final starsShapeRepository = _starsShapeRepository;
     final areaVisionRepository = _areaVisionRepository;
     final reflectionAnswerRepository = _reflectionAnswerRepository;
+    final audioSettingsRepository = _audioSettingsRepository;
+    final audioService = _audioService;
     final reminderService = _reminderService;
     final loadError = _loadError;
     if (loadError != null) {
@@ -254,6 +264,8 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
         starsShapeRepository == null ||
         areaVisionRepository == null ||
         reflectionAnswerRepository == null ||
+        audioSettingsRepository == null ||
+        audioService == null ||
         reminderService == null) {
       // Nothing is known yet — a neutral, static splash rather than
       // guessing defaults that might flash-swap once everything loads.
@@ -309,6 +321,8 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
           starsShapeRepository: starsShapeRepository,
           areaVisionRepository: areaVisionRepository,
           reflectionAnswerRepository: reflectionAnswerRepository,
+          audioSettingsRepository: audioSettingsRepository,
+          audioService: audioService,
           reminderService: reminderService,
         ),
       ),

@@ -166,6 +166,63 @@ abstract class AppStrings {
   String get allDataCleared;
   String get archiveEmpty;
 
+  // Sound Lab — its own screen (not a Settings section anymore), opened
+  // from a dedicated button on the Sky: the background loop (pick a
+  // track, play/pause), its tap/hold/zoom-in/zoom-out sounds (pick one
+  // each), and a volume slider per category. The only place any of this
+  // is ever surfaced — see `AudioService`.
+  String get soundLabEyebrow;
+  String get soundLabTitle;
+  String get soundLabSubtitle;
+  String get soundLabButtonTooltip;
+  String get soundLabResetAction;
+  String get backgroundTrackLabel;
+  String get pauseBackgroundTrackAction;
+  String get playBackgroundTrackAction;
+  String get tapSoundLabel;
+  String get holdSoundLabel;
+  String get whooshInLabel;
+  String get whooshOutLabel;
+  String get volumeSectionLabel;
+  String get backgroundVolumeLabel;
+  String get tapVolumeLabel;
+  String get holdVolumeLabel;
+  String get whooshVolumeLabel;
+  String get backgroundTrackObservingTheStar;
+  String get backgroundTrackHeavenlyLoop;
+  String get backgroundTrackOutThere;
+  String get backgroundTrackAmbientRelaxing;
+  String get backgroundTrackBackgroundSpace;
+  String get skySoundPluckSoft;
+  String get skySoundPluckBright;
+  String get skySoundGlassLow;
+  String get skySoundGlassHigh;
+  String get skySoundGlassChime;
+  String get skySoundGlassBell;
+  String get skySoundGlassShine;
+  String get skySoundGlassTwinkle;
+  String get skySoundBong;
+  String get skySoundConfirmation;
+  String get skySoundChimeSoft;
+  String get skySoundChimeWarm;
+  String get skySoundChimeBright;
+  String get skySoundSelect;
+  String get skySoundBlip;
+  String get skySoundStarBlip;
+  String get skySoundShimmer;
+  String get skySoundTick;
+  String get skySoundToggle;
+  String get skySoundClick;
+  String get skySoundCosmicDing;
+  String get skySoundCosmicBlink;
+  String get skySoundCosmicBeep;
+  String get skyWhooshA;
+  String get skyWhooshB;
+  String get skyWhooshC;
+  String get skyWhooshD;
+  String get skyWhooshE;
+  String get skyWhooshF;
+
   // Sky + area projects
   String starsCount(int count);
   String areaEmptyProjects(String areaName);

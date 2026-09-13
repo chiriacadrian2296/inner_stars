@@ -358,6 +358,110 @@ class StringsRo implements AppStrings {
       'Arhiva ta e încă goală. Aprinde prima ta stea, chiar și una mică.';
 
   @override
+  String get soundLabEyebrow => 'AUDIO';
+  @override
+  String get soundLabTitle => 'Laborator audio';
+  @override
+  String get soundLabSubtitle =>
+      'Piesa de fundal, sunetele de atingere/apăsare și swoosh-urile deplasării pe cer — toate experimentele sonore sunt aici.';
+  @override
+  String get soundLabButtonTooltip => 'Laborator audio';
+  @override
+  String get soundLabResetAction => 'Resetează la valorile implicite';
+  @override
+  String get backgroundTrackLabel => 'Piesă de fundal';
+  @override
+  String get pauseBackgroundTrackAction => 'Pune pe pauză';
+  @override
+  String get playBackgroundTrackAction => 'Redă';
+  @override
+  String get tapSoundLabel => 'Sunet la atingere';
+  @override
+  String get holdSoundLabel => 'Sunet la apăsare prelungită';
+  @override
+  String get whooshInLabel => 'Swoosh la apropiere';
+  @override
+  String get whooshOutLabel => 'Swoosh la depărtare';
+  @override
+  String get backgroundTrackObservingTheStar => 'Privind steaua';
+  @override
+  String get backgroundTrackHeavenlyLoop => 'Derivă celestă';
+  @override
+  String get backgroundTrackOutThere => 'Acolo, departe';
+  @override
+  String get backgroundTrackAmbientRelaxing => 'Ambient relaxant';
+  @override
+  String get backgroundTrackBackgroundSpace => 'Meditație cosmică';
+  @override
+  String get skySoundPluckSoft => 'Pizzicato blând';
+  @override
+  String get skySoundPluckBright => 'Pizzicato strălucitor';
+  @override
+  String get skySoundGlassLow => 'Cristal grav';
+  @override
+  String get skySoundGlassHigh => 'Cristal acut';
+  @override
+  String get skySoundGlassChime => 'Clopoțel de cristal';
+  @override
+  String get skySoundGlassBell => 'Clopot de cristal';
+  @override
+  String get skySoundGlassShine => 'Strălucire de cristal';
+  @override
+  String get skySoundGlassTwinkle => 'Sclipire de cristal';
+  @override
+  String get skySoundBong => 'Clopot';
+  @override
+  String get skySoundConfirmation => 'Confirmare';
+  @override
+  String get skySoundChimeSoft => 'Clopoțel blând';
+  @override
+  String get skySoundChimeWarm => 'Ding cald';
+  @override
+  String get skySoundChimeBright => 'Ding strălucitor';
+  @override
+  String get skySoundSelect => 'Selecție';
+  @override
+  String get skySoundBlip => 'Blip';
+  @override
+  String get skySoundStarBlip => 'Blip stelar';
+  @override
+  String get skySoundShimmer => 'Sclipire';
+  @override
+  String get skySoundTick => 'Tic';
+  @override
+  String get skySoundToggle => 'Comutator';
+  @override
+  String get skySoundClick => 'Click';
+  @override
+  String get skySoundCosmicDing => 'Ding cosmic';
+  @override
+  String get skySoundCosmicBlink => 'Blink cosmic';
+  @override
+  String get skySoundCosmicBeep => 'Beep cosmic';
+  @override
+  String get skyWhooshA => 'Swoosh ușor';
+  @override
+  String get skyWhooshB => 'Swoosh greu';
+  @override
+  String get skyWhooshC => 'Swoosh rapid';
+  @override
+  String get skyWhooshD => 'Swoosh aerisit';
+  @override
+  String get skyWhooshE => 'Swoosh iute';
+  @override
+  String get skyWhooshF => 'Swoosh moale';
+  @override
+  String get volumeSectionLabel => 'Volum';
+  @override
+  String get backgroundVolumeLabel => 'Fundal';
+  @override
+  String get tapVolumeLabel => 'Atingere';
+  @override
+  String get holdVolumeLabel => 'Apăsare prelungită';
+  @override
+  String get whooshVolumeLabel => 'Deplasare';
+
+  @override
   String starsCount(int count) => count == 1 ? '1 stea' : '$count stele';
   @override
   String areaEmptyProjects(String areaName) =>
