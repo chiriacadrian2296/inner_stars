@@ -9,6 +9,7 @@ import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../tutorials/tour_glow.dart';
 import '../widgets/area_tag.dart';
 import '../widgets/responsive_content.dart';
 import 'area_detail_screen.dart';
@@ -126,14 +127,20 @@ class _VisionsScreenState extends State<VisionsScreen> {
                         order: 1,
                         pulse: true,
                         showArrow: true,
+                        spotlightPadding: kTourGlowSpotlightPadding,
                         title: strings.supernovaTourListTitle,
                         description: strings.supernovaTourListBody,
-                        child: _VisionCard(
-                          area: LifeArea.values[i],
-                          vision: widget.areaVisionRepository.getVision(
-                            LifeArea.values[i],
+                        child: TourGlow(
+                          tour: 'supernova-vision',
+                          order: 1,
+                          color: colors.gold,
+                          child: _VisionCard(
+                            area: LifeArea.values[i],
+                            vision: widget.areaVisionRepository.getVision(
+                              LifeArea.values[i],
+                            ),
+                            onTap: () => _openArea(LifeArea.values[i]),
                           ),
-                          onTap: () => _openArea(LifeArea.values[i]),
                         ),
                       )
                     else

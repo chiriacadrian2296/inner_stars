@@ -11,6 +11,7 @@ import '../models/custom_constellation.dart';
 import '../models/life_area.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../tutorials/tour_glow.dart';
 import '../widgets/app_field.dart';
 import '../utils/icon_for_slug.dart';
 import '../widgets/constellation_editor_painter.dart';
@@ -591,9 +592,15 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                           order: 1,
                           pulse: true,
                           showArrow: true,
+                          spotlightPadding: kTourGlowSpotlightPadding,
                           title: strings.constellationTourAreaTitle,
                           description: strings.constellationTourAreaBody,
-                          child: _buildAreaField(colors, strings),
+                          child: TourGlow(
+                            tour: 'constellation-form',
+                            order: 1,
+                            color: colors.gold,
+                            child: _buildAreaField(colors, strings),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -616,12 +623,18 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                   order: 2,
                   pulse: true,
                   showArrow: true,
+                  spotlightPadding: kTourGlowSpotlightPadding,
                   title: strings.constellationTourNameTitle,
                   description: strings.constellationTourNameBody,
-                  child: AppTextField(
-                    controller: _nameController,
-                    autofocus: widget.presetArea != null,
-                    hintText: strings.newProjectNameHint,
+                  child: TourGlow(
+                    tour: 'constellation-form',
+                    order: 2,
+                    color: colors.gold,
+                    child: AppTextField(
+                      controller: _nameController,
+                      autofocus: widget.presetArea != null,
+                      hintText: strings.newProjectNameHint,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -635,12 +648,18 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                   order: 3,
                   pulse: true,
                   showArrow: true,
+                  spotlightPadding: kTourGlowSpotlightPadding,
                   title: strings.constellationTourDescriptionTitle,
                   description: strings.constellationTourDescriptionBody,
-                  child: AppTextField(
-                    controller: _descriptionController,
-                    maxLines: 3,
-                    hintText: strings.projectDescriptionHint,
+                  child: TourGlow(
+                    tour: 'constellation-form',
+                    order: 3,
+                    color: colors.gold,
+                    child: AppTextField(
+                      controller: _descriptionController,
+                      maxLines: 3,
+                      hintText: strings.projectDescriptionHint,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -665,9 +684,14 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                   order: 4,
                   pulse: true,
                   showArrow: true,
+                  spotlightPadding: kTourGlowSpotlightPadding,
                   title: strings.constellationTourShapeTitle,
                   description: strings.constellationTourShapeBody,
-                  child: LayoutBuilder(
+                  child: TourGlow(
+                    tour: 'constellation-form',
+                    order: 4,
+                    color: colors.gold,
+                    child: LayoutBuilder(
                   builder: (context, constraints) {
                     const gap = 12.0;
                     final side = (constraints.maxWidth - gap) * 3 / 4;
@@ -725,6 +749,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                     );
                   },
                   ),
+                  ),
                 ),
                 const SizedBox(height: 28),
                 Center(
@@ -741,12 +766,21 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                         order: 5,
                         pulse: true,
                         showArrow: true,
+                        spotlightPadding: kTourGlowSpotlightPadding,
                         title: strings.constellationTourSaveTitle,
                         description: strings.constellationTourSaveBody,
-                        child: SaveActionButton(
-                          label: strings.createProject,
-                          lit: canSave,
-                          onPressed: canSave ? _save : _showCannotSaveMessage,
+                        child: TourGlow(
+                          tour: 'constellation-form',
+                          order: 5,
+                          color: colors.gold,
+                          borderRadius: BorderRadius.circular(100),
+                          child: SaveActionButton(
+                            label: strings.createProject,
+                            lit: canSave,
+                            onPressed: canSave
+                                ? _save
+                                : _showCannotSaveMessage,
+                          ),
                         ),
                       );
                     },

@@ -11,6 +11,7 @@ import '../models/reflection_answer.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
+import '../tutorials/tour_glow.dart';
 import '../utils/star_stats.dart';
 import '../widgets/area_tag.dart';
 import '../widgets/intensity_bolts.dart';
@@ -208,19 +209,28 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                     order: 2,
                     pulse: true,
                     showArrow: true,
+                    spotlightPadding: kTourGlowSpotlightPadding,
                     title: strings.supernovaTourEditTitle,
                     description: strings.supernovaTourEditBody,
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: _editingVision
-                            ? _confirmVision
-                            : _startEditingVision,
-                        icon: Icon(_editingVision ? Icons.check : Icons.edit),
-                        label: Text(
-                          _editingVision
-                              ? strings.saveChanges
-                              : strings.editVisionAction,
+                    child: TourGlow(
+                      tour: 'supernova-vision',
+                      order: 2,
+                      color: colors.gold,
+                      borderRadius: BorderRadius.circular(100),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _editingVision
+                              ? _confirmVision
+                              : _startEditingVision,
+                          icon: Icon(
+                            _editingVision ? Icons.check : Icons.edit,
+                          ),
+                          label: Text(
+                            _editingVision
+                                ? strings.saveChanges
+                                : strings.editVisionAction,
+                          ),
                         ),
                       ),
                     ),

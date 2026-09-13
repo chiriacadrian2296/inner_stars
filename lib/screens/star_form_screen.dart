@@ -16,6 +16,7 @@ import '../models/star.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../tutorials/tour_glow.dart';
 import '../utils/date_format.dart';
 import '../utils/icon_for_slug.dart';
 import '../widgets/app_field.dart';
@@ -813,13 +814,19 @@ class _StarFormScreenState extends State<StarFormScreen> {
                   order: 2,
                   pulse: true,
                   showArrow: true,
+                  spotlightPadding: kTourGlowSpotlightPadding,
                   title: strings.starTourTitleFieldTitle,
                   description: strings.starTourTitleFieldBody,
-                  child: AppTextField(
-                    controller: _titleController,
-                    textInputAction: TextInputAction.next,
-                    hintText: _titleHint(strings),
-                    onChanged: (_) => setState(() {}),
+                  child: TourGlow(
+                    tour: 'star-form',
+                    order: 2,
+                    color: colors.gold,
+                    child: AppTextField(
+                      controller: _titleController,
+                      textInputAction: TextInputAction.next,
+                      hintText: _titleHint(strings),
+                      onChanged: (_) => setState(() {}),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -833,14 +840,20 @@ class _StarFormScreenState extends State<StarFormScreen> {
                   order: 3,
                   pulse: true,
                   showArrow: true,
+                  spotlightPadding: kTourGlowSpotlightPadding,
                   title: strings.starTourDetailsFieldTitle,
                   description: strings.starTourDetailsFieldBody,
-                  child: AppTextField(
-                    controller: _descriptionController,
-                    minLines: 4,
-                    maxLines: 6,
-                    hintText: _detailsHint(strings),
-                    onChanged: (_) => setState(() {}),
+                  child: TourGlow(
+                    tour: 'star-form',
+                    order: 3,
+                    color: colors.gold,
+                    child: AppTextField(
+                      controller: _descriptionController,
+                      minLines: 4,
+                      maxLines: 6,
+                      hintText: _detailsHint(strings),
+                      onChanged: (_) => setState(() {}),
+                    ),
                   ),
                 ),
                 if (_kind == StarKind.lit) ...[
@@ -853,42 +866,49 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     order: 4,
                     pulse: true,
                     showArrow: true,
+                    spotlightPadding: kTourGlowSpotlightPadding,
                     title: strings.starTourDateFieldTitle,
                     description: strings.starTourDateFieldBody,
-                    child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: AppPickerField(
-                          label: strings.dateLabel,
-                          // Not checked by [_save] either — an unset date
-                          // silently becomes `DateTime.now()` rather than
-                          // blocking save — but a lit star's whole point is
-                          // recording *when* the victory happened, so this
-                          // reads as required same as Supernova above.
-                          requirement: FieldRequirement.required,
-                          hint: strings.selectADateHint,
-                          icon: Icons.calendar_today,
-                          text: _date == null
-                              ? null
-                              : formatDisplayDate(_date!, strings),
-                          onTap: _pickDate,
-                        ),
+                    child: TourGlow(
+                      tour: 'star-form',
+                      order: 4,
+                      color: colors.gold,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: AppPickerField(
+                              label: strings.dateLabel,
+                              // Not checked by [_save] either — an unset
+                              // date silently becomes `DateTime.now()`
+                              // rather than blocking save — but a lit
+                              // star's whole point is recording *when* the
+                              // victory happened, so this reads as
+                              // required same as Supernova above.
+                              requirement: FieldRequirement.required,
+                              hint: strings.selectADateHint,
+                              icon: Icons.calendar_today,
+                              text: _date == null
+                                  ? null
+                                  : formatDisplayDate(_date!, strings),
+                              onTap: _pickDate,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: AppPickerField(
+                              label: strings.timeLabel,
+                              requirement: FieldRequirement.required,
+                              hint: strings.selectATimeHint,
+                              icon: Icons.access_time,
+                              text: _date == null
+                                  ? null
+                                  : formatDisplayTime(_date!),
+                              onTap: _pickTime,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: AppPickerField(
-                          label: strings.timeLabel,
-                          requirement: FieldRequirement.required,
-                          hint: strings.selectATimeHint,
-                          icon: Icons.access_time,
-                          text: _date == null
-                              ? null
-                              : formatDisplayTime(_date!),
-                          onTap: _pickTime,
-                        ),
-                      ),
-                    ],
                     ),
                   ),
                 ] else if (_kind == StarKind.unlit) ...[
@@ -898,17 +918,23 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     order: 4,
                     pulse: true,
                     showArrow: true,
+                    spotlightPadding: kTourGlowSpotlightPadding,
                     title: strings.starTourTargetDateFieldTitle,
                     description: strings.starTourTargetDateFieldBody,
-                    child: AppPickerField(
-                      label: strings.targetDateLabel,
-                      requirement: FieldRequirement.optional,
-                      hint: strings.selectATargetDateHint,
-                      icon: Icons.flag_outlined,
-                      text: _targetDate == null
-                          ? null
-                          : formatDisplayDate(_targetDate!, strings),
-                      onTap: _pickTargetDate,
+                    child: TourGlow(
+                      tour: 'star-form',
+                      order: 4,
+                      color: colors.gold,
+                      child: AppPickerField(
+                        label: strings.targetDateLabel,
+                        requirement: FieldRequirement.optional,
+                        hint: strings.selectATargetDateHint,
+                        icon: Icons.flag_outlined,
+                        text: _targetDate == null
+                            ? null
+                            : formatDisplayDate(_targetDate!, strings),
+                        onTap: _pickTargetDate,
+                      ),
                     ),
                   ),
                 ],
@@ -941,9 +967,14 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     order: 5,
                     pulse: true,
                     showArrow: true,
+                    spotlightPadding: kTourGlowSpotlightPadding,
                     title: strings.starTourIntensityTitle,
                     description: strings.starTourIntensityBody,
-                    child: Center(
+                    child: TourGlow(
+                      tour: 'star-form',
+                      order: 5,
+                      color: colors.gold,
+                      child: Center(
                       child: FractionallySizedBox(
                         widthFactor: 0.7,
                         // A plain [Slider]'s own vertical padding defaults to
@@ -967,6 +998,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                                 setState(() => _intensity = value.round()),
                           ),
                         ),
+                      ),
                       ),
                     ),
                   ),
@@ -1120,12 +1152,18 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     order: 6,
                     pulse: true,
                     showArrow: true,
+                    spotlightPadding: kTourGlowSpotlightPadding,
                     title: strings.starTourPhotoTitle,
                     description: strings.starTourPhotoBody,
-                    child: PhotoPicker(
-                      photoPath: _photoPath,
-                      onPick: _pickPhoto,
-                      onRemove: _removePhoto,
+                    child: TourGlow(
+                      tour: 'star-form',
+                      order: 6,
+                      color: colors.gold,
+                      child: PhotoPicker(
+                        photoPath: _photoPath,
+                        onPick: _pickPhoto,
+                        onRemove: _removePhoto,
+                      ),
                     ),
                   ),
                 ],
@@ -1160,18 +1198,25 @@ class _StarFormScreenState extends State<StarFormScreen> {
                             order: 7,
                             pulse: true,
                             showArrow: true,
+                            spotlightPadding: kTourGlowSpotlightPadding,
                             title: strings.starTourSaveTitle,
                             description: strings.starTourSaveBody,
-                            child: SaveActionButton(
-                              label: widget.isEditing
-                                  ? strings.saveChanges
-                                  : (_kind == StarKind.lit
-                                        ? strings.lightThisStar
-                                        : strings.placeThisStarAction),
-                              lit: canSave,
-                              onPressed: canSave
-                                  ? _save
-                                  : _showCannotSaveMessage,
+                            child: TourGlow(
+                              tour: 'star-form',
+                              order: 7,
+                              color: colors.gold,
+                              borderRadius: BorderRadius.circular(100),
+                              child: SaveActionButton(
+                                label: widget.isEditing
+                                    ? strings.saveChanges
+                                    : (_kind == StarKind.lit
+                                          ? strings.lightThisStar
+                                          : strings.placeThisStarAction),
+                                lit: canSave,
+                                onPressed: canSave
+                                    ? _save
+                                    : _showCannotSaveMessage,
+                              ),
                             ),
                           );
                         },
@@ -1325,9 +1370,15 @@ class _StarKindSwitch extends StatelessWidget {
                     order: 1,
                     pulse: true,
                     showArrow: true,
+                    spotlightPadding: kTourGlowSpotlightPadding,
                     title: strings.starTourKindTitle,
                     description: strings.starTourKindBody,
-                    child: tile,
+                    child: TourGlow(
+                      tour: 'star-form',
+                      order: 1,
+                      color: colors.gold,
+                      child: tile,
+                    ),
                   );
                 },
               ),

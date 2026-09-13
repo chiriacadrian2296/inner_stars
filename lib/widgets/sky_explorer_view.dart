@@ -21,6 +21,7 @@ import '../screens/pulsar_reader_screen.dart';
 import '../screens/star_reader_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../tutorials/tour_glow.dart';
 import '../utils/date_format.dart';
 import '../utils/habit_stats.dart';
 import '../utils/icon_for_slug.dart';
@@ -327,30 +328,37 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                     order: 1,
                     pulse: true,
                     showArrow: true,
+                    spotlightPadding: kTourGlowSpotlightPadding,
                     title: strings.searchTourModeTitle,
                     description: strings.searchTourModeBody,
-                    child: SegmentedButton<_SkyMode>(
-                      showSelectedIcon: false,
-                      segments: const [
-                        ButtonSegment(
-                          value: _SkyMode.supernovas,
-                          icon: Icon(Icons.flare, size: 20),
-                        ),
-                        ButtonSegment(
-                          value: _SkyMode.constellations,
-                          icon: Icon(Icons.auto_awesome, size: 20),
-                        ),
-                        ButtonSegment(
-                          value: _SkyMode.stars,
-                          icon: Icon(Icons.star, size: 20),
-                        ),
-                      ],
-                      selected: {_mode},
-                      onSelectionChanged: (selection) {
-                        final mode = selection.first;
-                        setState(() => _mode = mode);
-                        widget.onModeLabelChanged(_labelFor(mode, strings));
-                      },
+                    child: TourGlow(
+                      tour: 'search-stars',
+                      order: 1,
+                      color: colors.gold,
+                      borderRadius: BorderRadius.circular(100),
+                      child: SegmentedButton<_SkyMode>(
+                        showSelectedIcon: false,
+                        segments: const [
+                          ButtonSegment(
+                            value: _SkyMode.supernovas,
+                            icon: Icon(Icons.flare, size: 20),
+                          ),
+                          ButtonSegment(
+                            value: _SkyMode.constellations,
+                            icon: Icon(Icons.auto_awesome, size: 20),
+                          ),
+                          ButtonSegment(
+                            value: _SkyMode.stars,
+                            icon: Icon(Icons.star, size: 20),
+                          ),
+                        ],
+                        selected: {_mode},
+                        onSelectionChanged: (selection) {
+                          final mode = selection.first;
+                          setState(() => _mode = mode);
+                          widget.onModeLabelChanged(_labelFor(mode, strings));
+                        },
+                      ),
                     ),
                   ),
                 ),
@@ -365,17 +373,23 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                             order: 2,
                             pulse: true,
                             showArrow: true,
+                            spotlightPadding: kTourGlowSpotlightPadding,
                             title: strings.searchTourFieldTitle,
                             description: strings.searchTourFieldBody,
-                            child: AppTextField(
-                              controller: _queryController,
-                              hintText: strings.searchHint,
-                              onChanged: (value) =>
-                                  setState(() => _query = value),
-                              prefixIcon: Icon(
-                                Icons.search,
-                                color: colors.muted,
-                                size: 20,
+                            child: TourGlow(
+                              tour: 'search-stars',
+                              order: 2,
+                              color: colors.gold,
+                              child: AppTextField(
+                                controller: _queryController,
+                                hintText: strings.searchHint,
+                                onChanged: (value) =>
+                                    setState(() => _query = value),
+                                prefixIcon: Icon(
+                                  Icons.search,
+                                  color: colors.muted,
+                                  size: 20,
+                                ),
                               ),
                             ),
                           ),
@@ -386,12 +400,18 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                           order: 3,
                           pulse: true,
                           showArrow: true,
+                          spotlightPadding: kTourGlowSpotlightPadding,
                           title: strings.searchTourFilterButtonTitle,
                           description: strings.searchTourFilterButtonBody,
-                          child: _AreaFilterButton(
-                            active: areaFilterActive,
-                            tooltip: strings.filterAreasAction,
-                            onTap: _openAreaFilter,
+                          child: TourGlow(
+                            tour: 'search-stars',
+                            order: 3,
+                            color: colors.gold,
+                            child: _AreaFilterButton(
+                              active: areaFilterActive,
+                              tooltip: strings.filterAreasAction,
+                              onTap: _openAreaFilter,
+                            ),
                           ),
                         ),
                       ],
