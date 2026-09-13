@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/widgets.dart';
 
@@ -81,7 +83,16 @@ class AudioService with WidgetsBindingObserver {
     );
     await backgroundPlayer.setVolume(settings.backgroundVolume);
     if (!settings.backgroundPaused) {
-      await backgroundPlayer.resume();
+      // Never awaited — confirmed live: on web, a browser that hasn't
+      // seen a user gesture yet blocks audio autoplay by leaving this
+      // call's underlying JS promise pending forever, which hung the
+      // *entire app* on its blank startup splash (this await sits in
+      // main.dart's own startup chain, before anything is ever shown).
+      // Fire it and move on: on every native platform it still starts
+      // the loop immediately same as before, and on a blocked web
+      // browser it resolves the moment the user's first tap/gesture
+      // anywhere in the app satisfies the autoplay policy.
+      unawaited(backgroundPlayer.resume());
     }
     WidgetsBinding.instance.addObserver(service);
     return service;
