@@ -569,11 +569,12 @@ class StringsEn implements AppStrings {
   @override
   String get nameLabel => 'Name';
   @override
-  String get newProjectNameHint => 'E.g. Build this app';
+  String get newProjectNameHint => 'E.g. Run a marathon';
   @override
   String get projectDescriptionLabel => 'Description';
   @override
-  String get projectDescriptionHint => "What's this project about?";
+  String get projectDescriptionHint =>
+      'E.g. Train three times a week and build up to 42K';
   @override
   String get iconLabel => 'Icon';
   @override

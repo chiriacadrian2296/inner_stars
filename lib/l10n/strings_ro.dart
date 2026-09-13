@@ -572,11 +572,12 @@ class StringsRo implements AppStrings {
   @override
   String get nameLabel => 'Nume';
   @override
-  String get newProjectNameHint => 'Ex. Construiesc această aplicație';
+  String get newProjectNameHint => 'Ex. Aleargă un maraton';
   @override
   String get projectDescriptionLabel => 'Descriere';
   @override
-  String get projectDescriptionHint => 'Despre ce este acest proiect?';
+  String get projectDescriptionHint =>
+      'Ex. Antrenează-te de trei ori pe săptămână până la 42K';
   @override
   String get iconLabel => 'Pictogramă';
   @override

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:marionette_flutter/marionette_flutter.dart';
 
 import 'audio/audio_service.dart';
 import 'data/area_vision_repository.dart';
@@ -30,7 +31,16 @@ void main() {
   // strip rather than transparent overlays on top of the app, so the
   // SystemUiOverlayStyle colors set below have nothing to actually show —
   // Android just paints its own default (white) behind them instead.
-  WidgetsFlutterBinding.ensureInitialized();
+  //
+  // Debug builds swap in Marionette's own binding instead of the plain
+  // Flutter one — it's a superset that also exposes the widget tree/
+  // tap/scroll/screenshot surface an MCP-connected agent drives, wired
+  // in only for `kDebugMode` so it never ships in a release build.
+  if (kDebugMode) {
+    MarionetteBinding.ensureInitialized();
+  } else {
+    WidgetsFlutterBinding.ensureInitialized();
+  }
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   // Portrait-only: the Sky's own overlay controls are laid out for a tall
   // window, and a phone turned sideways has nowhere near the height they

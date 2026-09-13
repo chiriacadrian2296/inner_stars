@@ -1743,6 +1743,7 @@ class _NameConstellationDialogState extends State<_NameConstellationDialog> {
       content: TextField(
         controller: _controller,
         autofocus: true,
+        textCapitalization: TextCapitalization.sentences,
         style: TextStyle(color: colors.text),
         decoration: InputDecoration(hintText: strings.constellationNameHint),
       ),

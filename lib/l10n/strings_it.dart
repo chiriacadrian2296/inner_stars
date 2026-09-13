@@ -572,11 +572,12 @@ class StringsIt implements AppStrings {
   @override
   String get nameLabel => 'Nome';
   @override
-  String get newProjectNameHint => 'Es. Costruire questa app';
+  String get newProjectNameHint => 'Es. Correre una maratona';
   @override
   String get projectDescriptionLabel => 'Descrizione';
   @override
-  String get projectDescriptionHint => 'Di cosa parla questo progetto?';
+  String get projectDescriptionHint =>
+      'Es. Allenarmi tre volte a settimana fino ad arrivare a 42K';
   @override
   String get iconLabel => 'Icona';
   @override

@@ -22,6 +22,7 @@ dependencies:
   share_plus: ^13.3.0
   tooltip_card: ^2.9.0
   audioplayers: ^6.5.1
+  marionette_flutter: ^0.6.0
 
 dev_dependencies:
   flutter_test:

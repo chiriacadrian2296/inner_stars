@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "marionette": {
+      "command": "C:\\Users\\chiri\\AppData\\Local\\Pub\\Cache\\bin\\marionette_mcp.bat",
+      "args": []
+    }
+  }
+}
