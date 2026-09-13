@@ -483,6 +483,18 @@ class StringsRo implements AppStrings {
       'Atinge aici pentru a stabili un obiectiv — te așteaptă pe cer, '
       'neaprins, până îl atingi.';
   @override
+  String get starTourSupernovaFieldTitle => 'Ce zonă a vieții';
+  @override
+  String get starTourSupernovaFieldBody =>
+      'Fiecare stea aparține uneia dintre cele opt supernove — alege-o pe '
+      'cea potrivită.';
+  @override
+  String get starTourConstellationFieldTitle => 'Ce constelație';
+  @override
+  String get starTourConstellationFieldBody =>
+      'Stelele se grupează în constelații — alege-o pe cea căreia îi '
+      'aparține.';
+  @override
   String get starTourTitleFieldTitle => 'Dă un nume obiectivului tău';
   @override
   String get starTourTitleFieldBody => 'Ce vrei să realizezi?';
@@ -507,6 +519,17 @@ class StringsRo implements AppStrings {
   String get starTourIntensityBody =>
       'Evaluează efortul, de la 1 la 5 — nu cât de mare pare rezultatul, '
       'ci cât te-a costat cu adevărat.';
+  @override
+  String get starTourHabitFrequencyTitle => 'Stabilește ritmul';
+  @override
+  String get starTourHabitFrequencyBody =>
+      'Cât de des vrei să faci asta — zilnic sau săptămânal, și de câte '
+      'ori.';
+  @override
+  String get starTourReminderTitle => 'Un memento';
+  @override
+  String get starTourReminderBody =>
+      'Opțional — activează-l pentru un memento la ora pe care o alegi.';
   @override
   String get starTourPhotoTitle => 'Adaugă o fotografie';
   @override
@@ -567,6 +590,11 @@ class StringsRo implements AppStrings {
   String get constellationTourAreaBody =>
       'Pentru ce parte din viața ta este acest proiect?';
   @override
+  String get constellationTourIconFieldTitle => 'Alege o pictogramă';
+  @override
+  String get constellationTourIconFieldBody =>
+      'Pictograma mică ce marchează această constelație în liste.';
+  @override
   String get constellationTourNameTitle => 'Dă-i un nume';
   @override
   String get constellationTourNameBody => 'Cum se numește acest proiect?';
@@ -596,6 +624,11 @@ class StringsRo implements AppStrings {
   String get supernovaTourEditBody =>
       'Scrie aici realitatea pe care ți-o dorești — te poți întoarce '
       'oricând să o revizuiești.';
+  @override
+  String get supernovaTourReflectionTitle => 'Întrebări de reflecție';
+  @override
+  String get supernovaTourReflectionBody =>
+      'Câteva întrebări pentru această zonă — răspunde când simți nevoia.';
   @override
   String get replayToursAction => 'Repetă tutorialele';
   @override

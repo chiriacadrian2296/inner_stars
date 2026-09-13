@@ -22,6 +22,7 @@ import '../screens/star_reader_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../tutorials/tour_glow.dart';
+import '../tutorials/tour_step_card.dart';
 import '../utils/date_format.dart';
 import '../utils/habit_stats.dart';
 import '../utils/icon_for_slug.dart';
@@ -326,9 +327,9 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                   child: HintTarget(
                     tour: 'search-stars',
                     order: 1,
-                    pulse: true,
                     showArrow: true,
                     spotlightPadding: kTourGlowSpotlightPadding,
+                    contentBuilder: appTourStepCard,
                     title: strings.searchTourModeTitle,
                     description: strings.searchTourModeBody,
                     child: TourGlow(
@@ -371,25 +372,19 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                           child: HintTarget(
                             tour: 'search-stars',
                             order: 2,
-                            pulse: true,
                             showArrow: true,
-                            spotlightPadding: kTourGlowSpotlightPadding,
+                            contentBuilder: appTourStepCard,
                             title: strings.searchTourFieldTitle,
                             description: strings.searchTourFieldBody,
-                            child: TourGlow(
-                              tour: 'search-stars',
-                              order: 2,
-                              color: colors.gold,
-                              child: AppTextField(
-                                controller: _queryController,
-                                hintText: strings.searchHint,
-                                onChanged: (value) =>
-                                    setState(() => _query = value),
-                                prefixIcon: Icon(
-                                  Icons.search,
-                                  color: colors.muted,
-                                  size: 20,
-                                ),
+                            child: AppTextField(
+                              controller: _queryController,
+                              hintText: strings.searchHint,
+                              onChanged: (value) =>
+                                  setState(() => _query = value),
+                              prefixIcon: Icon(
+                                Icons.search,
+                                color: colors.muted,
+                                size: 20,
                               ),
                             ),
                           ),
@@ -398,20 +393,14 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                         HintTarget(
                           tour: 'search-stars',
                           order: 3,
-                          pulse: true,
                           showArrow: true,
-                          spotlightPadding: kTourGlowSpotlightPadding,
+                          contentBuilder: appTourStepCard,
                           title: strings.searchTourFilterButtonTitle,
                           description: strings.searchTourFilterButtonBody,
-                          child: TourGlow(
-                            tour: 'search-stars',
-                            order: 3,
-                            color: colors.gold,
-                            child: _AreaFilterButton(
-                              active: areaFilterActive,
-                              tooltip: strings.filterAreasAction,
-                              onTap: _openAreaFilter,
-                            ),
+                          child: _AreaFilterButton(
+                            active: areaFilterActive,
+                            tooltip: strings.filterAreasAction,
+                            onTap: _openAreaFilter,
                           ),
                         ),
                       ],

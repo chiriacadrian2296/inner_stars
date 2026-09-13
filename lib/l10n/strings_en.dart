@@ -481,6 +481,17 @@ class StringsEn implements AppStrings {
       'Tap here to set a goal — it waits in your sky, unlit, until you '
       'reach it.';
   @override
+  String get starTourSupernovaFieldTitle => 'Which area of life';
+  @override
+  String get starTourSupernovaFieldBody =>
+      'Every star belongs to one of your eight supernovas — pick the one '
+      'this fits.';
+  @override
+  String get starTourConstellationFieldTitle => 'Which constellation';
+  @override
+  String get starTourConstellationFieldBody =>
+      'Stars group into constellations — pick the one this belongs to.';
+  @override
   String get starTourTitleFieldTitle => 'Name your goal';
   @override
   String get starTourTitleFieldBody => 'What do you want to achieve?';
@@ -505,6 +516,17 @@ class StringsEn implements AppStrings {
   String get starTourIntensityBody =>
       "Rate the effort, 1 to 5 — not how big the result looks, what it "
       'actually took from you.';
+  @override
+  String get starTourHabitFrequencyTitle => 'Set the pace';
+  @override
+  String get starTourHabitFrequencyBody =>
+      "How often you're aiming for this — daily or weekly, and how many "
+      'times.';
+  @override
+  String get starTourReminderTitle => 'A daily nudge';
+  @override
+  String get starTourReminderBody =>
+      'Optional — turn this on for a reminder at a time you pick.';
   @override
   String get starTourPhotoTitle => 'Add a photo';
   @override
@@ -565,6 +587,11 @@ class StringsEn implements AppStrings {
   String get constellationTourAreaBody =>
       "Which part of your life is this project for?";
   @override
+  String get constellationTourIconFieldTitle => 'Pick a badge';
+  @override
+  String get constellationTourIconFieldBody =>
+      'The small icon that marks this constellation in lists.';
+  @override
   String get constellationTourNameTitle => 'Name it';
   @override
   String get constellationTourNameBody => "What's this project called?";
@@ -594,6 +621,11 @@ class StringsEn implements AppStrings {
   String get supernovaTourEditBody =>
       'Write down the reality you want here — you can always come back '
       'and revise it.';
+  @override
+  String get supernovaTourReflectionTitle => 'Reflection questions';
+  @override
+  String get supernovaTourReflectionBody =>
+      'A few prompts for this area — answer whenever you feel like it.';
   @override
   String get replayToursAction => 'Replay tutorials';
   @override

@@ -484,6 +484,18 @@ class StringsIt implements AppStrings {
       'Tocca qui per fissare un obiettivo — resta nel tuo cielo, spento, '
       'finché non lo raggiungi.';
   @override
+  String get starTourSupernovaFieldTitle => 'Quale area della vita';
+  @override
+  String get starTourSupernovaFieldBody =>
+      'Ogni stella appartiene a una delle tue otto supernove — scegli '
+      'quella giusta.';
+  @override
+  String get starTourConstellationFieldTitle => 'Quale costellazione';
+  @override
+  String get starTourConstellationFieldBody =>
+      'Le stelle si raggruppano in costellazioni — scegli quella a cui '
+      'appartiene.';
+  @override
   String get starTourTitleFieldTitle => 'Dai un nome al tuo obiettivo';
   @override
   String get starTourTitleFieldBody => 'Cosa vuoi raggiungere?';
@@ -508,6 +520,17 @@ class StringsIt implements AppStrings {
   String get starTourIntensityBody =>
       "Valuta lo sforzo, da 1 a 5 — non quanto grande sembra il "
       'risultato, quanto ti è davvero costato.';
+  @override
+  String get starTourHabitFrequencyTitle => 'Imposta il ritmo';
+  @override
+  String get starTourHabitFrequencyBody =>
+      'Con che frequenza vuoi puntarci — ogni giorno o ogni settimana, e '
+      'quante volte.';
+  @override
+  String get starTourReminderTitle => 'Un promemoria';
+  @override
+  String get starTourReminderBody =>
+      "Facoltativo — attivalo per un promemoria all'ora che preferisci.";
   @override
   String get starTourPhotoTitle => 'Aggiungi una foto';
   @override
@@ -568,6 +591,12 @@ class StringsIt implements AppStrings {
   String get constellationTourAreaBody =>
       'Per quale parte della tua vita è questo progetto?';
   @override
+  String get constellationTourIconFieldTitle => "Scegli un'icona";
+  @override
+  String get constellationTourIconFieldBody =>
+      'La piccola icona che contrassegna questa costellazione negli '
+      'elenchi.';
+  @override
   String get constellationTourNameTitle => 'Dagli un nome';
   @override
   String get constellationTourNameBody => 'Come si chiama questo progetto?';
@@ -596,6 +625,11 @@ class StringsIt implements AppStrings {
   @override
   String get supernovaTourEditBody =>
       'Scrivi qui la realtà che vuoi — puoi sempre tornare e rivederla.';
+  @override
+  String get supernovaTourReflectionTitle => 'Domande di riflessione';
+  @override
+  String get supernovaTourReflectionBody =>
+      "Alcuni spunti per quest'area — rispondi quando ti va.";
   @override
   String get replayToursAction => 'Rivedi i tutorial';
   @override

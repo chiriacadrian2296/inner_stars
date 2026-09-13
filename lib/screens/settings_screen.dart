@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hint_kit/hint_kit.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -258,10 +260,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// see it once more.
   Future<void> _replayAllTours() async {
     final strings = context.strings;
-    final storage = Tour.read(context).storage;
-    for (final tour in _kAllTourNames) {
-      await storage.reset(tour);
+    final tour = Tour.read(context);
+    final storage = tour.storage;
+    for (final name in _kAllTourNames) {
+      await storage.reset(name);
     }
+    // Every other tour's screen is reopened fresh via Navigator.push, so
+    // its own initState naturally re-checks and restarts it. `sky-navigation`
+    // is the one exception: `SkyScreen` sits underneath this very Settings
+    // route rather than being pushed again, so its initState never reruns
+    // and the reset above alone would leave it silently un-replayed. Start
+    // it explicitly here instead — its target `HintTarget`s are still
+    // mounted (Navigator keeps routes below the top one in the tree), so
+    // the tour's own overlay simply appears on top of Settings immediately.
+    if (mounted) unawaited(tour.start('sky-navigation'));
     if (mounted) {
       ScaffoldMessenger.of(
         context,

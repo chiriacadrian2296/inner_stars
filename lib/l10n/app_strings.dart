@@ -246,6 +246,10 @@ abstract class AppStrings {
   // creatable kind (lit victory, unlit goal, pulsar habit).
   String get starTourKindTitle;
   String get starTourKindBody;
+  String get starTourSupernovaFieldTitle;
+  String get starTourSupernovaFieldBody;
+  String get starTourConstellationFieldTitle;
+  String get starTourConstellationFieldBody;
   String get starTourTitleFieldTitle;
   String get starTourTitleFieldBody;
   String get starTourDetailsFieldTitle;
@@ -256,6 +260,10 @@ abstract class AppStrings {
   String get starTourTargetDateFieldBody;
   String get starTourIntensityTitle;
   String get starTourIntensityBody;
+  String get starTourHabitFrequencyTitle;
+  String get starTourHabitFrequencyBody;
+  String get starTourReminderTitle;
+  String get starTourReminderBody;
   String get starTourPhotoTitle;
   String get starTourPhotoBody;
   String get starTourSaveTitle;
@@ -288,6 +296,8 @@ abstract class AppStrings {
   // "constellation-form" tour — `NewProjectScreen`.
   String get constellationTourAreaTitle;
   String get constellationTourAreaBody;
+  String get constellationTourIconFieldTitle;
+  String get constellationTourIconFieldBody;
   String get constellationTourNameTitle;
   String get constellationTourNameBody;
   String get constellationTourDescriptionTitle;
@@ -302,6 +312,8 @@ abstract class AppStrings {
   String get supernovaTourListBody;
   String get supernovaTourEditTitle;
   String get supernovaTourEditBody;
+  String get supernovaTourReflectionTitle;
+  String get supernovaTourReflectionBody;
 
   String get replayToursAction;
   String get replayToursResult;

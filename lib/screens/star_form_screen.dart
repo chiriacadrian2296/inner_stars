@@ -16,7 +16,7 @@ import '../models/star.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
-import '../tutorials/tour_glow.dart';
+import '../tutorials/tour_step_card.dart';
 import '../utils/date_format.dart';
 import '../utils/icon_for_slug.dart';
 import '../widgets/app_field.dart';
@@ -776,31 +776,63 @@ class _StarFormScreenState extends State<StarFormScreen> {
                 const FieldRequirementLegend(),
                 const SizedBox(height: 16),
                 if (widget.lockedProject == null) ...[
-                  AppPickerField(
-                    label: strings.areaLabel,
-                    // Not itself checked by [_save]/`canSave` — picking a
-                    // Constellation fills it in on its own (see
-                    // [_openProjectPicker]) — but there's no real path to
-                    // saving a star without one ending up set, so it reads
-                    // as required same as the field that actually is.
-                    requirement: FieldRequirement.required,
-                    hint: strings.selectASupernova,
-                    icon: _selectedArea?.icon ?? Icons.auto_awesome_outlined,
-                    text: _selectedArea?.displayName(strings),
-                    onTap: _openAreaPicker,
-                    trailing: Icon(Icons.expand_more, color: colors.muted),
+                  HintTarget(
+                    // Explicit keys on every HintTarget in this form: with
+                    // several of these steps only conditionally present
+                    // (branching on `_kind`), switching kind changes how
+                    // many widgets sit ahead of a given step in this
+                    // Column's children — without a stable key, Flutter's
+                    // positional reconciliation can match a step's old
+                    // Element to a *different* step's new widget for one
+                    // frame, which briefly registers two HintTargets under
+                    // the same order and crashes
+                    // (`hint_kit`'s own "Orders must be unique" assertion).
+                    // Confirmed live: switching Lit -> Pulsar crashed here
+                    // before every step in this file got its own key.
+                    key: const ValueKey('star-form-supernova'),
+                    tour: 'star-form',
+                    order: 2,
+                    showArrow: true,
+                    contentBuilder: appTourStepCard,
+                    title: strings.starTourSupernovaFieldTitle,
+                    description: strings.starTourSupernovaFieldBody,
+                    child: AppPickerField(
+                      label: strings.areaLabel,
+                      // Not itself checked by [_save]/`canSave` — picking a
+                      // Constellation fills it in on its own (see
+                      // [_openProjectPicker]) — but there's no real path to
+                      // saving a star without one ending up set, so it reads
+                      // as required same as the field that actually is.
+                      requirement: FieldRequirement.required,
+                      hint: strings.selectASupernova,
+                      icon: _selectedArea?.icon ?? Icons.auto_awesome_outlined,
+                      text: _selectedArea?.displayName(strings),
+                      onTap: _openAreaPicker,
+                      trailing: Icon(Icons.expand_more, color: colors.muted),
+                    ),
                   ),
                   const SizedBox(height: 20),
-                  AppPickerField(
-                    label: strings.projectLabel,
-                    requirement: FieldRequirement.required,
-                    hint: strings.selectAProject,
-                    icon: _selectedProject == null
-                        ? Icons.auto_awesome_outlined
-                        : iconForSlug(_selectedProject!.iconSlug),
-                    text: _selectedProject?.name,
-                    onTap: _openProjectPicker,
-                    trailing: Icon(Icons.expand_more, color: colors.muted),
+                  HintTarget(
+                    // Keyed — see the Supernova field's own HintTarget
+                    // above for why.
+                    key: const ValueKey('star-form-constellation'),
+                    tour: 'star-form',
+                    order: 3,
+                    showArrow: true,
+                    contentBuilder: appTourStepCard,
+                    title: strings.starTourConstellationFieldTitle,
+                    description: strings.starTourConstellationFieldBody,
+                    child: AppPickerField(
+                      label: strings.projectLabel,
+                      requirement: FieldRequirement.required,
+                      hint: strings.selectAProject,
+                      icon: _selectedProject == null
+                          ? Icons.auto_awesome_outlined
+                          : iconForSlug(_selectedProject!.iconSlug),
+                      text: _selectedProject?.name,
+                      onTap: _openProjectPicker,
+                      trailing: Icon(Icons.expand_more, color: colors.muted),
+                    ),
                   ),
                   const SizedBox(height: 20),
                 ],
@@ -810,23 +842,20 @@ class _StarFormScreenState extends State<StarFormScreen> {
                 ),
                 const SizedBox(height: 6),
                 HintTarget(
+                  // Keyed — see the Supernova field's own HintTarget above
+                  // for why.
+                  key: const ValueKey('star-form-title'),
                   tour: 'star-form',
-                  order: 2,
-                  pulse: true,
+                  order: 4,
                   showArrow: true,
-                  spotlightPadding: kTourGlowSpotlightPadding,
+                  contentBuilder: appTourStepCard,
                   title: strings.starTourTitleFieldTitle,
                   description: strings.starTourTitleFieldBody,
-                  child: TourGlow(
-                    tour: 'star-form',
-                    order: 2,
-                    color: colors.gold,
-                    child: AppTextField(
-                      controller: _titleController,
-                      textInputAction: TextInputAction.next,
-                      hintText: _titleHint(strings),
-                      onChanged: (_) => setState(() {}),
-                    ),
+                  child: AppTextField(
+                    controller: _titleController,
+                    textInputAction: TextInputAction.next,
+                    hintText: _titleHint(strings),
+                    onChanged: (_) => setState(() {}),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -836,24 +865,21 @@ class _StarFormScreenState extends State<StarFormScreen> {
                 ),
                 const SizedBox(height: 6),
                 HintTarget(
+                  // Keyed — see the Supernova field's own HintTarget above
+                  // for why.
+                  key: const ValueKey('star-form-details'),
                   tour: 'star-form',
-                  order: 3,
-                  pulse: true,
+                  order: 5,
                   showArrow: true,
-                  spotlightPadding: kTourGlowSpotlightPadding,
+                  contentBuilder: appTourStepCard,
                   title: strings.starTourDetailsFieldTitle,
                   description: strings.starTourDetailsFieldBody,
-                  child: TourGlow(
-                    tour: 'star-form',
-                    order: 3,
-                    color: colors.gold,
-                    child: AppTextField(
-                      controller: _descriptionController,
-                      minLines: 4,
-                      maxLines: 6,
-                      hintText: _detailsHint(strings),
-                      onChanged: (_) => setState(() {}),
-                    ),
+                  child: AppTextField(
+                    controller: _descriptionController,
+                    minLines: 4,
+                    maxLines: 6,
+                    hintText: _detailsHint(strings),
+                    onChanged: (_) => setState(() {}),
                   ),
                 ),
                 if (_kind == StarKind.lit) ...[
@@ -862,79 +888,73 @@ class _StarFormScreenState extends State<StarFormScreen> {
                   // below — only one of the two is ever mounted for a given
                   // `_kind`, so the tour always lands on whichever applies.
                   HintTarget(
+                    // Keyed — see the Supernova field's own HintTarget
+                    // above for why.
+                    key: const ValueKey('star-form-date'),
                     tour: 'star-form',
-                    order: 4,
-                    pulse: true,
+                    order: 6,
                     showArrow: true,
-                    spotlightPadding: kTourGlowSpotlightPadding,
+                    contentBuilder: appTourStepCard,
                     title: strings.starTourDateFieldTitle,
                     description: strings.starTourDateFieldBody,
-                    child: TourGlow(
-                      tour: 'star-form',
-                      order: 4,
-                      color: colors.gold,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: AppPickerField(
-                              label: strings.dateLabel,
-                              // Not checked by [_save] either — an unset
-                              // date silently becomes `DateTime.now()`
-                              // rather than blocking save — but a lit
-                              // star's whole point is recording *when* the
-                              // victory happened, so this reads as
-                              // required same as Supernova above.
-                              requirement: FieldRequirement.required,
-                              hint: strings.selectADateHint,
-                              icon: Icons.calendar_today,
-                              text: _date == null
-                                  ? null
-                                  : formatDisplayDate(_date!, strings),
-                              onTap: _pickDate,
-                            ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: AppPickerField(
+                            label: strings.dateLabel,
+                            // Not checked by [_save] either — an unset
+                            // date silently becomes `DateTime.now()`
+                            // rather than blocking save — but a lit
+                            // star's whole point is recording *when* the
+                            // victory happened, so this reads as
+                            // required same as Supernova above.
+                            requirement: FieldRequirement.required,
+                            hint: strings.selectADateHint,
+                            icon: Icons.calendar_today,
+                            text: _date == null
+                                ? null
+                                : formatDisplayDate(_date!, strings),
+                            onTap: _pickDate,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: AppPickerField(
-                              label: strings.timeLabel,
-                              requirement: FieldRequirement.required,
-                              hint: strings.selectATimeHint,
-                              icon: Icons.access_time,
-                              text: _date == null
-                                  ? null
-                                  : formatDisplayTime(_date!),
-                              onTap: _pickTime,
-                            ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: AppPickerField(
+                            label: strings.timeLabel,
+                            requirement: FieldRequirement.required,
+                            hint: strings.selectATimeHint,
+                            icon: Icons.access_time,
+                            text: _date == null
+                                ? null
+                                : formatDisplayTime(_date!),
+                            onTap: _pickTime,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ] else if (_kind == StarKind.unlit) ...[
                   const SizedBox(height: 20),
                   HintTarget(
+                    // Keyed — see the Supernova field's own HintTarget
+                    // above for why.
+                    key: const ValueKey('star-form-target-date'),
                     tour: 'star-form',
-                    order: 4,
-                    pulse: true,
+                    order: 6,
                     showArrow: true,
-                    spotlightPadding: kTourGlowSpotlightPadding,
+                    contentBuilder: appTourStepCard,
                     title: strings.starTourTargetDateFieldTitle,
                     description: strings.starTourTargetDateFieldBody,
-                    child: TourGlow(
-                      tour: 'star-form',
-                      order: 4,
-                      color: colors.gold,
-                      child: AppPickerField(
-                        label: strings.targetDateLabel,
-                        requirement: FieldRequirement.optional,
-                        hint: strings.selectATargetDateHint,
-                        icon: Icons.flag_outlined,
-                        text: _targetDate == null
-                            ? null
-                            : formatDisplayDate(_targetDate!, strings),
-                        onTap: _pickTargetDate,
-                      ),
+                    child: AppPickerField(
+                      label: strings.targetDateLabel,
+                      requirement: FieldRequirement.optional,
+                      hint: strings.selectATargetDateHint,
+                      icon: Icons.flag_outlined,
+                      text: _targetDate == null
+                          ? null
+                          : formatDisplayDate(_targetDate!, strings),
+                      onTap: _pickTargetDate,
                     ),
                   ),
                 ],
@@ -963,18 +983,16 @@ class _StarFormScreenState extends State<StarFormScreen> {
                   ),
                   const SizedBox(height: 14),
                   HintTarget(
+                    // Keyed — see the Supernova field's own HintTarget
+                    // above for why.
+                    key: const ValueKey('star-form-intensity'),
                     tour: 'star-form',
-                    order: 5,
-                    pulse: true,
+                    order: 7,
                     showArrow: true,
-                    spotlightPadding: kTourGlowSpotlightPadding,
+                    contentBuilder: appTourStepCard,
                     title: strings.starTourIntensityTitle,
                     description: strings.starTourIntensityBody,
-                    child: TourGlow(
-                      tour: 'star-form',
-                      order: 5,
-                      color: colors.gold,
-                      child: Center(
+                    child: Center(
                       child: FractionallySizedBox(
                         widthFactor: 0.7,
                         // A plain [Slider]'s own vertical padding defaults to
@@ -999,7 +1017,6 @@ class _StarFormScreenState extends State<StarFormScreen> {
                           ),
                         ),
                       ),
-                      ),
                     ),
                   ),
                 ],
@@ -1010,91 +1027,124 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     requirement: FieldRequirement.required,
                   ),
                   const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _HabitFrequencyChip(
-                          label: strings.habitFrequencyDaily,
-                          selected: _habitFrequency == HabitFrequency.daily,
-                          onTap: () => setState(() {
-                            _habitFrequency = HabitFrequency.daily;
-                            if (_habitTargetPerPeriod > 50) {
-                              _habitTargetPerPeriod = 50;
-                            }
-                          }),
+                  HintTarget(
+                    // Keyed — see the Supernova field's own HintTarget
+                    // above for why.
+                    key: const ValueKey('star-form-habit-frequency'),
+                    tour: 'star-form',
+                    order: 8,
+                    showArrow: true,
+                    contentBuilder: appTourStepCard,
+                    title: strings.starTourHabitFrequencyTitle,
+                    description: strings.starTourHabitFrequencyBody,
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _HabitFrequencyChip(
+                                label: strings.habitFrequencyDaily,
+                                selected:
+                                    _habitFrequency == HabitFrequency.daily,
+                                onTap: () => setState(() {
+                                  _habitFrequency = HabitFrequency.daily;
+                                  if (_habitTargetPerPeriod > 50) {
+                                    _habitTargetPerPeriod = 50;
+                                  }
+                                }),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _HabitFrequencyChip(
+                                label: strings.habitFrequencyWeekly,
+                                selected:
+                                    _habitFrequency == HabitFrequency.weekly,
+                                onTap: () => setState(() {
+                                  _habitFrequency = HabitFrequency.weekly;
+                                  if (_habitTargetPerPeriod > 7) {
+                                    _habitTargetPerPeriod = 7;
+                                  }
+                                }),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _HabitFrequencyChip(
-                          label: strings.habitFrequencyWeekly,
-                          selected: _habitFrequency == HabitFrequency.weekly,
-                          onTap: () => setState(() {
-                            _habitFrequency = HabitFrequency.weekly;
-                            if (_habitTargetPerPeriod > 7) {
-                              _habitTargetPerPeriod = 7;
-                            }
-                          }),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton(
+                              onPressed: _habitTargetPerPeriod > 1
+                                  ? () =>
+                                        setState(() => _habitTargetPerPeriod--)
+                                  : null,
+                              icon: Icon(
+                                Icons.remove_circle_outline,
+                                color: colors.gold,
+                              ),
+                            ),
+                            SizedBox(
+                              width: 48,
+                              child: Text(
+                                '$_habitTargetPerPeriod',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: colors.text,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed:
+                                  _habitTargetPerPeriod <
+                                      (_habitFrequency ==
+                                              HabitFrequency.weekly
+                                          ? 7
+                                          : 50)
+                                  ? () =>
+                                        setState(() => _habitTargetPerPeriod++)
+                                  : null,
+                              icon: Icon(
+                                Icons.add_circle_outline,
+                                color: colors.gold,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        onPressed: _habitTargetPerPeriod > 1
-                            ? () => setState(() => _habitTargetPerPeriod--)
-                            : null,
-                        icon: Icon(
-                          Icons.remove_circle_outline,
-                          color: colors.gold,
-                        ),
-                      ),
-                      SizedBox(
-                        width: 48,
-                        child: Text(
-                          '$_habitTargetPerPeriod',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: colors.text,
+                        const SizedBox(height: 4),
+                        Center(
+                          child: Text(
+                            _habitFrequency == HabitFrequency.daily
+                                ? strings.habitFrequencySummaryDaily(
+                                    _habitTargetPerPeriod,
+                                  )
+                                : strings.habitFrequencySummaryWeekly(
+                                    _habitTargetPerPeriod,
+                                  ),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: colors.muted,
+                            ),
                           ),
                         ),
-                      ),
-                      IconButton(
-                        onPressed:
-                            _habitTargetPerPeriod <
-                                (_habitFrequency == HabitFrequency.weekly
-                                    ? 7
-                                    : 50)
-                            ? () => setState(() => _habitTargetPerPeriod++)
-                            : null,
-                        icon: Icon(Icons.add_circle_outline, color: colors.gold),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Center(
-                    child: Text(
-                      _habitFrequency == HabitFrequency.daily
-                          ? strings.habitFrequencySummaryDaily(
-                              _habitTargetPerPeriod,
-                            )
-                          : strings.habitFrequencySummaryWeekly(
-                              _habitTargetPerPeriod,
-                            ),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: colors.muted,
-                      ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Material(
+                  HintTarget(
+                    // Keyed — see the Supernova field's own HintTarget
+                    // above for why.
+                    key: const ValueKey('star-form-reminder'),
+                    tour: 'star-form',
+                    order: 9,
+                    showArrow: true,
+                    contentBuilder: appTourStepCard,
+                    title: strings.starTourReminderTitle,
+                    description: strings.starTourReminderBody,
+                    child: Material(
                     color: Colors.transparent,
                     borderRadius: BorderRadius.circular(kRadiusCard),
                     child: Container(
@@ -1138,6 +1188,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                         ],
                       ),
                     ),
+                    ),
                   ),
                 ],
                 if (_kind == StarKind.lit) ...[
@@ -1148,22 +1199,19 @@ class _StarFormScreenState extends State<StarFormScreen> {
                   ),
                   const SizedBox(height: 6),
                   HintTarget(
+                    // Keyed — see the Supernova field's own HintTarget
+                    // above for why.
+                    key: const ValueKey('star-form-photo'),
                     tour: 'star-form',
-                    order: 6,
-                    pulse: true,
+                    order: 10,
                     showArrow: true,
-                    spotlightPadding: kTourGlowSpotlightPadding,
+                    contentBuilder: appTourStepCard,
                     title: strings.starTourPhotoTitle,
                     description: strings.starTourPhotoBody,
-                    child: TourGlow(
-                      tour: 'star-form',
-                      order: 6,
-                      color: colors.gold,
-                      child: PhotoPicker(
-                        photoPath: _photoPath,
-                        onPick: _pickPhoto,
-                        onRemove: _removePhoto,
-                      ),
+                    child: PhotoPicker(
+                      photoPath: _photoPath,
+                      onPick: _pickPhoto,
+                      onRemove: _removePhoto,
                     ),
                   ),
                 ],
@@ -1194,29 +1242,25 @@ class _StarFormScreenState extends State<StarFormScreen> {
                               _selectedProject != null &&
                               (!widget.isEditing || _hasUnsavedChanges);
                           return HintTarget(
+                            // Keyed — see the Supernova field's own
+                            // HintTarget above for why.
+                            key: const ValueKey('star-form-save'),
                             tour: 'star-form',
-                            order: 7,
-                            pulse: true,
+                            order: 11,
                             showArrow: true,
-                            spotlightPadding: kTourGlowSpotlightPadding,
+                            contentBuilder: appTourStepCard,
                             title: strings.starTourSaveTitle,
                             description: strings.starTourSaveBody,
-                            child: TourGlow(
-                              tour: 'star-form',
-                              order: 7,
-                              color: colors.gold,
-                              borderRadius: BorderRadius.circular(100),
-                              child: SaveActionButton(
-                                label: widget.isEditing
-                                    ? strings.saveChanges
-                                    : (_kind == StarKind.lit
-                                          ? strings.lightThisStar
-                                          : strings.placeThisStarAction),
-                                lit: canSave,
-                                onPressed: canSave
-                                    ? _save
-                                    : _showCannotSaveMessage,
-                              ),
+                            child: SaveActionButton(
+                              label: widget.isEditing
+                                  ? strings.saveChanges
+                                  : (_kind == StarKind.lit
+                                        ? strings.lightThisStar
+                                        : strings.placeThisStarAction),
+                              lit: canSave,
+                              onPressed: canSave
+                                  ? _save
+                                  : _showCannotSaveMessage,
                             ),
                           );
                         },
@@ -1366,19 +1410,14 @@ class _StarKindSwitch extends StatelessWidget {
                   // tour is actually about, not the switch as a whole.
                   if (kinds[i] != StarKind.unlit) return tile;
                   return HintTarget(
+                    key: const ValueKey('star-form-kind'),
                     tour: 'star-form',
                     order: 1,
-                    pulse: true,
                     showArrow: true,
-                    spotlightPadding: kTourGlowSpotlightPadding,
+                    contentBuilder: appTourStepCard,
                     title: strings.starTourKindTitle,
                     description: strings.starTourKindBody,
-                    child: TourGlow(
-                      tour: 'star-form',
-                      order: 1,
-                      color: colors.gold,
-                      child: tile,
-                    ),
+                    child: tile,
                   );
                 },
               ),

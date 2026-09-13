@@ -34,6 +34,7 @@ import '../settings/settings_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../tutorials/tour_glow.dart';
+import '../tutorials/tour_step_card.dart';
 import '../utils/habit_stats.dart';
 import '../utils/haptics.dart';
 import '../utils/responsive.dart';
@@ -2109,8 +2110,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                         child: HintTarget(
                           tour: 'sky-navigation',
                           order: 1,
-                          pulse: true,
                           showArrow: true,
+                          contentBuilder: appTourStepCard,
                           title: context.strings.skyTourLookAroundTitle,
                           description: context.strings.skyTourLookAroundBody,
                           child: const SizedBox.expand(),
@@ -2446,7 +2447,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                             child: HintTarget(
                               tour: 'sky-navigation',
                               order: 2,
-                              pulse: true,
                               showArrow: true,
                               // The spotlight's own hole is sized to the
                               // button's bounds plus this padding — the
@@ -2464,6 +2464,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                               // instead of leaving dimmed corners inside
                               // a squared-off hole.
                               spotlight: SpotlightShape.circle,
+                              contentBuilder: appTourStepCard,
                               title: context.strings.skyTourMenuTitle,
                               description: context.strings.skyTourMenuBody,
                               child: TourGlow(
@@ -2493,11 +2494,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                           child: HintTarget(
                             tour: 'sky-navigation',
                             order: 3,
-                            pulse: true,
                             showArrow: true,
                             // See the menu button's own HintTarget above.
                             spotlightPadding: kTourGlowSpotlightPadding,
                             spotlight: SpotlightShape.circle,
+                            contentBuilder: appTourStepCard,
                             title: context.strings.skyTourSoundLabTitle,
                             description: context.strings.skyTourSoundLabBody,
                             child: TourGlow(

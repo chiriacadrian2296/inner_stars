@@ -5,7 +5,7 @@ import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
-import '../tutorials/tour_glow.dart';
+import '../tutorials/tour_step_card.dart';
 
 /// Parks the menu's "Metaphor" entry (the full-length explainer screen),
 /// superseded by `hint_kit`-driven live tutorials — see the TRB entry for
@@ -241,17 +241,11 @@ class SkyMenuContent extends StatelessWidget {
           return HintTarget(
             tour: 'light-your-sky',
             order: tourOrder,
-            pulse: true,
             showArrow: true,
-            spotlightPadding: kTourGlowSpotlightPadding,
+            contentBuilder: appTourStepCard,
             title: tourTitle,
             description: tourBody,
-            child: TourGlow(
-              tour: 'light-your-sky',
-              order: tourOrder,
-              color: colors.gold,
-              child: tile,
-            ),
+            child: tile,
           );
         }
 

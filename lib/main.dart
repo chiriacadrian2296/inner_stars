@@ -314,11 +314,11 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
       storage: tourStorage,
       tourLengths: const {
         'sky-navigation': 3,
-        'star-form': 7,
+        'star-form': 11,
         'search-stars': 6,
         'light-your-sky': 3,
-        'constellation-form': 5,
-        'supernova-vision': 2,
+        'constellation-form': 6,
+        'supernova-vision': 3,
       },
       labels: TourLabels(
         skip: strings.tourSkipAction,

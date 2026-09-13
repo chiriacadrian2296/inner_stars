@@ -11,7 +11,7 @@ import '../models/custom_constellation.dart';
 import '../models/life_area.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
-import '../tutorials/tour_glow.dart';
+import '../tutorials/tour_step_card.dart';
 import '../widgets/app_field.dart';
 import '../utils/icon_for_slug.dart';
 import '../widgets/constellation_editor_painter.dart';
@@ -590,28 +590,42 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                         child: HintTarget(
                           tour: 'constellation-form',
                           order: 1,
-                          pulse: true,
                           showArrow: true,
-                          spotlightPadding: kTourGlowSpotlightPadding,
+                          contentBuilder: appTourStepCard,
                           title: strings.constellationTourAreaTitle,
                           description: strings.constellationTourAreaBody,
-                          child: TourGlow(
-                            tour: 'constellation-form',
-                            order: 1,
-                            color: colors.gold,
-                            child: _buildAreaField(colors, strings),
-                          ),
+                          child: _buildAreaField(colors, strings),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         flex: 1,
-                        child: _buildIconField(colors, strings),
+                        // Same order either way — only one of this and the
+                        // branch below is ever mounted for a given
+                        // `presetArea`, same mutual-exclusion trick the
+                        // star-form tour uses for its date fields.
+                        child: HintTarget(
+                          tour: 'constellation-form',
+                          order: 2,
+                          showArrow: true,
+                          contentBuilder: appTourStepCard,
+                          title: strings.constellationTourIconFieldTitle,
+                          description: strings.constellationTourIconFieldBody,
+                          child: _buildIconField(colors, strings),
+                        ),
                       ),
                     ],
                   )
                 else
-                  _buildIconField(colors, strings),
+                  HintTarget(
+                    tour: 'constellation-form',
+                    order: 2,
+                    showArrow: true,
+                    contentBuilder: appTourStepCard,
+                    title: strings.constellationTourIconFieldTitle,
+                    description: strings.constellationTourIconFieldBody,
+                    child: _buildIconField(colors, strings),
+                  ),
                 const SizedBox(height: 20),
                 AppFieldLabel(
                   strings.nameLabel,
@@ -620,21 +634,15 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                 const SizedBox(height: 6),
                 HintTarget(
                   tour: 'constellation-form',
-                  order: 2,
-                  pulse: true,
+                  order: 3,
                   showArrow: true,
-                  spotlightPadding: kTourGlowSpotlightPadding,
+                  contentBuilder: appTourStepCard,
                   title: strings.constellationTourNameTitle,
                   description: strings.constellationTourNameBody,
-                  child: TourGlow(
-                    tour: 'constellation-form',
-                    order: 2,
-                    color: colors.gold,
-                    child: AppTextField(
-                      controller: _nameController,
-                      autofocus: widget.presetArea != null,
-                      hintText: strings.newProjectNameHint,
-                    ),
+                  child: AppTextField(
+                    controller: _nameController,
+                    autofocus: widget.presetArea != null,
+                    hintText: strings.newProjectNameHint,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -645,21 +653,15 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                 const SizedBox(height: 6),
                 HintTarget(
                   tour: 'constellation-form',
-                  order: 3,
-                  pulse: true,
+                  order: 4,
                   showArrow: true,
-                  spotlightPadding: kTourGlowSpotlightPadding,
+                  contentBuilder: appTourStepCard,
                   title: strings.constellationTourDescriptionTitle,
                   description: strings.constellationTourDescriptionBody,
-                  child: TourGlow(
-                    tour: 'constellation-form',
-                    order: 3,
-                    color: colors.gold,
-                    child: AppTextField(
-                      controller: _descriptionController,
-                      maxLines: 3,
-                      hintText: strings.projectDescriptionHint,
-                    ),
+                  child: AppTextField(
+                    controller: _descriptionController,
+                    maxLines: 3,
+                    hintText: strings.projectDescriptionHint,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -681,17 +683,12 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                 // `stretch` rather than a guessed fixed height.
                 HintTarget(
                   tour: 'constellation-form',
-                  order: 4,
-                  pulse: true,
+                  order: 5,
                   showArrow: true,
-                  spotlightPadding: kTourGlowSpotlightPadding,
+                  contentBuilder: appTourStepCard,
                   title: strings.constellationTourShapeTitle,
                   description: strings.constellationTourShapeBody,
-                  child: TourGlow(
-                    tour: 'constellation-form',
-                    order: 4,
-                    color: colors.gold,
-                    child: LayoutBuilder(
+                  child: LayoutBuilder(
                   builder: (context, constraints) {
                     const gap = 12.0;
                     final side = (constraints.maxWidth - gap) * 3 / 4;
@@ -749,7 +746,6 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                     );
                   },
                   ),
-                  ),
                 ),
                 const SizedBox(height: 28),
                 Center(
@@ -763,24 +759,15 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                           _hasShape;
                       return HintTarget(
                         tour: 'constellation-form',
-                        order: 5,
-                        pulse: true,
+                        order: 6,
                         showArrow: true,
-                        spotlightPadding: kTourGlowSpotlightPadding,
+                        contentBuilder: appTourStepCard,
                         title: strings.constellationTourSaveTitle,
                         description: strings.constellationTourSaveBody,
-                        child: TourGlow(
-                          tour: 'constellation-form',
-                          order: 5,
-                          color: colors.gold,
-                          borderRadius: BorderRadius.circular(100),
-                          child: SaveActionButton(
-                            label: strings.createProject,
-                            lit: canSave,
-                            onPressed: canSave
-                                ? _save
-                                : _showCannotSaveMessage,
-                          ),
+                        child: SaveActionButton(
+                          label: strings.createProject,
+                          lit: canSave,
+                          onPressed: canSave ? _save : _showCannotSaveMessage,
                         ),
                       );
                     },

@@ -6,7 +6,7 @@ import '../models/life_area.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
-import '../tutorials/tour_glow.dart';
+import '../tutorials/tour_step_card.dart';
 import 'app_toggle_chip.dart';
 import 'star_glyph.dart';
 
@@ -103,20 +103,14 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
             HintTarget(
               tour: 'search-stars',
               order: 4,
-              pulse: true,
               showArrow: true,
-              spotlightPadding: kTourGlowSpotlightPadding,
+              contentBuilder: appTourStepCard,
               title: strings.searchTourAllAreasTitle,
               description: strings.searchTourAllAreasBody,
-              child: TourGlow(
-                tour: 'search-stars',
-                order: 4,
-                color: colors.gold,
-                child: AppToggleChip(
-                  label: strings.allAreasLabel,
-                  value: _allAreasSelected,
-                  onChanged: (_) => _toggleAllAreas(),
-                ),
+              child: AppToggleChip(
+                label: strings.allAreasLabel,
+                value: _allAreasSelected,
+                onChanged: (_) => _toggleAllAreas(),
               ),
             ),
             const SizedBox(height: 16),
@@ -152,20 +146,14 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
               HintTarget(
                 tour: 'search-stars',
                 order: 5,
-                pulse: true,
                 showArrow: true,
-                spotlightPadding: kTourGlowSpotlightPadding,
+                contentBuilder: appTourStepCard,
                 title: strings.searchTourAllKindsTitle,
                 description: strings.searchTourAllKindsBody,
-                child: TourGlow(
-                  tour: 'search-stars',
-                  order: 5,
-                  color: colors.gold,
-                  child: AppToggleChip(
-                    label: strings.allKindsLabel,
-                    value: _allKindsSelected,
-                    onChanged: (_) => _toggleAllKinds(),
-                  ),
+                child: AppToggleChip(
+                  label: strings.allKindsLabel,
+                  value: _allKindsSelected,
+                  onChanged: (_) => _toggleAllKinds(),
                 ),
               ),
               const SizedBox(height: 16),
@@ -204,24 +192,17 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
             HintTarget(
               tour: 'search-stars',
               order: 6,
-              pulse: true,
               showArrow: true,
-              spotlightPadding: kTourGlowSpotlightPadding,
+              contentBuilder: appTourStepCard,
               title: strings.searchTourApplyTitle,
               description: strings.searchTourApplyBody,
-              child: TourGlow(
-                tour: 'search-stars',
-                order: 6,
-                color: colors.gold,
-                borderRadius: BorderRadius.circular(100),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(
-                      context,
-                    ).pop((areas: _areas, kinds: _kinds)),
-                    child: Text(strings.applyAreaFilterAction),
-                  ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pop((areas: _areas, kinds: _kinds)),
+                  child: Text(strings.applyAreaFilterAction),
                 ),
               ),
             ),
