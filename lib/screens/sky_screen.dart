@@ -2447,12 +2447,24 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                               order: 2,
                               pulse: true,
                               showArrow: true,
+                              // The spotlight's own hole is sized to the
+                              // button's bounds plus this padding — the
+                              // default (8px) is far smaller than
+                              // [_TourGlow]'s blur/spread, so most of the
+                              // glow was being covered right back up by
+                              // the scrim surrounding that tight hole.
+                              // Confirmed live: the glow only became
+                              // genuinely visible once the hole was
+                              // widened enough to contain the whole
+                              // painted glow, not just the button itself.
+                              spotlightPadding: const EdgeInsets.all(40),
+                              // A circle, not the default rounded rect —
+                              // matches the button's own round shape
+                              // instead of leaving dimmed corners inside
+                              // a squared-off hole.
+                              spotlight: SpotlightShape.circle,
                               title: context.strings.skyTourMenuTitle,
                               description: context.strings.skyTourMenuBody,
-                              // See [_TourGlow]'s own doc comment — the
-                              // spotlight/pulse alone don't make a thin,
-                              // mostly-transparent button like this one
-                              // pop, confirmed live.
                               child: _TourGlow(
                                 tour: 'sky-navigation',
                                 order: 2,
@@ -2480,6 +2492,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                             order: 3,
                             pulse: true,
                             showArrow: true,
+                            // See the menu button's own HintTarget above.
+                            spotlightPadding: const EdgeInsets.all(40),
+                            spotlight: SpotlightShape.circle,
                             title: context.strings.skyTourSoundLabTitle,
                             description: context.strings.skyTourSoundLabBody,
                             child: _TourGlow(
