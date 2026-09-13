@@ -2449,7 +2449,15 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                               showArrow: true,
                               title: context.strings.skyTourMenuTitle,
                               description: context.strings.skyTourMenuBody,
-                              child: _MenuStarButton(onTap: _openMenuModal),
+                              // See [_TourGlow]'s own doc comment — the
+                              // spotlight/pulse alone don't make a thin,
+                              // mostly-transparent button like this one
+                              // pop, confirmed live.
+                              child: _TourGlow(
+                                tour: 'sky-navigation',
+                                order: 2,
+                                child: _MenuStarButton(onTap: _openMenuModal),
+                              ),
                             ),
                           ),
                         ),
@@ -2474,10 +2482,14 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                             showArrow: true,
                             title: context.strings.skyTourSoundLabTitle,
                             description: context.strings.skyTourSoundLabBody,
-                            child: _SkyOverlayButton(
-                              icon: Icons.graphic_eq,
-                              tooltip: context.strings.soundLabButtonTooltip,
-                              onTap: _openSoundLab,
+                            child: _TourGlow(
+                              tour: 'sky-navigation',
+                              order: 3,
+                              child: _SkyOverlayButton(
+                                icon: Icons.graphic_eq,
+                                tooltip: context.strings.soundLabButtonTooltip,
+                                onTap: _openSoundLab,
+                              ),
                             ),
                           ),
                         ),
@@ -2819,6 +2831,60 @@ class _HoldRingPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _HoldRingPainter oldDelegate) =>
       oldDelegate.center != center || oldDelegate.progress != progress;
+}
+
+/// A gold glow drawn behind [child] exactly while the `hint_kit` step
+/// identified by [tour]/[order] is the active one — reactive via [Tour.of],
+/// an [InheritedNotifier] that rebuilds this on every tour change, with
+/// [TourScope.of]'s (non-reactive, but re-read on every rebuild anyway)
+/// `orderAt` translating the controller's raw step index back to the
+/// `order` a [HintTarget] was actually registered with.
+///
+/// Exists because `hint_kit`'s own spotlight/pulse don't make a thin,
+/// mostly-transparent target — [_MenuStarButton], [_SkyOverlayButton]: a
+/// gold ring or icon on a transparent fill, no background of their own —
+/// read as "highlighted" no matter the scrim color: confirmed live that
+/// even hint_kit's own default (light) card theme left the menu button
+/// just as hard to make out, and that giving `HintThemeData.scrimColor`
+/// itself a bright color floods the *entire* screen with it (the pulse
+/// ring shares that same color, at low alpha, so there is no way to
+/// brighten just the ring through the theme alone). A glow that exists
+/// specifically because this step is active sidesteps the whole problem —
+/// it does not depend on the target's own brightness or the scrim at all.
+class _TourGlow extends StatelessWidget {
+  const _TourGlow({
+    required this.tour,
+    required this.order,
+    required this.child,
+  });
+
+  final String tour;
+  final int order;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = Tour.of(context);
+    final isActive =
+        controller.activeTour == tour &&
+        TourScope.of(context).orderAt(tour, controller.index) == order;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: isActive
+            ? [
+                BoxShadow(
+                  color: context.colors.gold,
+                  blurRadius: 28,
+                  spreadRadius: 10,
+                ),
+              ]
+            : null,
+      ),
+      child: child,
+    );
+  }
 }
 
 /// A small, chrome-disc icon button floating directly on the sky — see the
