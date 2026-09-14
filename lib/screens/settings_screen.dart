@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:hint_kit/hint_kit.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../data/area_vision_repository.dart';
@@ -239,46 +238,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _push(Widget screen) {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
-  }
-
-  /// Every `hint_kit` tour name currently built — see `lib/tutorials/`.
-  /// Kept in one place so [_replayAllTours] (and anything else that needs
-  /// to enumerate tours) has a single list to update when a new one is
-  /// added.
-  static const _kAllTourNames = [
-    'sky-navigation',
-    'star-form',
-    'search-stars',
-    'light-your-sky',
-    'constellation-form',
-    'supernova-vision',
-  ];
-
-  /// Un-marks every `hint_kit` tour as seen, so opening each of their
-  /// screens fresh shows them again — a dev/QA aid for tuning a tour's
-  /// copy or theme without needing to clear the whole app's data just to
-  /// see it once more.
-  Future<void> _replayAllTours() async {
-    final strings = context.strings;
-    final tour = Tour.read(context);
-    final storage = tour.storage;
-    for (final name in _kAllTourNames) {
-      await storage.reset(name);
-    }
-    // Every other tour's screen is reopened fresh via Navigator.push, so
-    // its own initState naturally re-checks and restarts it. `sky-navigation`
-    // is the one exception: `SkyScreen` sits underneath this very Settings
-    // route rather than being pushed again, so its initState never reruns
-    // and the reset above alone would leave it silently un-replayed. Start
-    // it explicitly here instead — its target `HintTarget`s are still
-    // mounted (Navigator keeps routes below the top one in the tree), so
-    // the tour's own overlay simply appears on top of Settings immediately.
-    if (mounted) unawaited(tour.start('sky-navigation'));
-    if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(strings.replayToursResult)));
-    }
   }
 
   @override
@@ -590,26 +549,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 8),
-                    // Dev/QA aid for tuning any hint_kit tour (see
-                    // [_replayAllTours]) without clearing all app data
-                    // just to see one again.
-                    SizedBox(
-                      width: double.infinity,
-                      child: TextButton.icon(
-                        onPressed: _replayAllTours,
-                        style: _debugButtonStyle(colors, colors.muted),
-                        icon: Icon(
-                          Icons.play_circle_outline,
-                          size: 16,
-                          color: colors.muted,
-                        ),
-                        label: Text(
-                          strings.replayToursAction,
-                          style: TextStyle(color: colors.muted, fontSize: 12),
-                        ),
-                      ),
-                    ),
                     const SizedBox(height: 8),
                     // Side-by-side comparison of the Sky's menu FAB with
                     // its logo drawn in different blend modes/opacities —

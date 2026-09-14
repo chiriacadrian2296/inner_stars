@@ -11,6 +11,7 @@ import '../models/custom_constellation.dart';
 import '../models/life_area.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../tutorials/tour_intro_target.dart';
 import '../tutorials/tour_step_card.dart';
 import '../widgets/app_field.dart';
 import '../utils/icon_for_slug.dart';
@@ -579,7 +580,21 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                const FieldRequirementLegend(),
+                TourIntroTarget(
+                  tour: 'constellation-form',
+                  order: 1,
+                  title: strings.constellationTourIntroTitle,
+                  description: strings.constellationTourIntroBody,
+                ),
+                HintTarget(
+                  tour: 'constellation-form',
+                  order: 2,
+                  showArrow: true,
+                  contentBuilder: appTourStepCard,
+                  title: strings.constellationTourLegendTitle,
+                  description: strings.constellationTourLegendBody,
+                  child: const FieldRequirementLegend(),
+                ),
                 const SizedBox(height: 16),
                 if (widget.presetArea == null)
                   Row(
@@ -589,7 +604,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                         flex: 3,
                         child: HintTarget(
                           tour: 'constellation-form',
-                          order: 1,
+                          order: 3,
                           showArrow: true,
                           contentBuilder: appTourStepCard,
                           title: strings.constellationTourAreaTitle,
@@ -606,7 +621,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                         // star-form tour uses for its date fields.
                         child: HintTarget(
                           tour: 'constellation-form',
-                          order: 2,
+                          order: 4,
                           showArrow: true,
                           contentBuilder: appTourStepCard,
                           title: strings.constellationTourIconFieldTitle,
@@ -619,7 +634,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                 else
                   HintTarget(
                     tour: 'constellation-form',
-                    order: 2,
+                    order: 4,
                     showArrow: true,
                     contentBuilder: appTourStepCard,
                     title: strings.constellationTourIconFieldTitle,
@@ -627,49 +642,54 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                     child: _buildIconField(colors, strings),
                   ),
                 const SizedBox(height: 20),
-                AppFieldLabel(
-                  strings.nameLabel,
-                  requirement: FieldRequirement.required,
-                ),
-                const SizedBox(height: 6),
                 HintTarget(
                   tour: 'constellation-form',
-                  order: 3,
+                  order: 5,
                   showArrow: true,
                   contentBuilder: appTourStepCard,
                   title: strings.constellationTourNameTitle,
                   description: strings.constellationTourNameBody,
-                  child: AppTextField(
-                    controller: _nameController,
-                    autofocus: widget.presetArea != null,
-                    hintText: strings.newProjectNameHint,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppFieldLabel(
+                        strings.nameLabel,
+                        requirement: FieldRequirement.required,
+                      ),
+                      const SizedBox(height: 6),
+                      AppTextField(
+                        controller: _nameController,
+                        autofocus: widget.presetArea != null,
+                        hintText: strings.newProjectNameHint,
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 20),
-                AppFieldLabel(
-                  strings.projectDescriptionLabel,
-                  requirement: FieldRequirement.optional,
-                ),
-                const SizedBox(height: 6),
                 HintTarget(
                   tour: 'constellation-form',
-                  order: 4,
+                  order: 6,
                   showArrow: true,
                   contentBuilder: appTourStepCard,
                   title: strings.constellationTourDescriptionTitle,
                   description: strings.constellationTourDescriptionBody,
-                  child: AppTextField(
-                    controller: _descriptionController,
-                    maxLines: 3,
-                    hintText: strings.projectDescriptionHint,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppFieldLabel(
+                        strings.projectDescriptionLabel,
+                        requirement: FieldRequirement.optional,
+                      ),
+                      const SizedBox(height: 6),
+                      AppTextField(
+                        controller: _descriptionController,
+                        maxLines: 3,
+                        hintText: strings.projectDescriptionHint,
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 20),
-                AppFieldLabel(
-                  strings.chooseShapeLabel,
-                  requirement: FieldRequirement.required,
-                ),
-                const SizedBox(height: 8),
                 // The shape being committed to, on the left — always on
                 // screen, always editable (tapping it, blank or not,
                 // opens the same editor `_editSelectedShape` always did)
@@ -681,14 +701,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                 // whatever height that makes the preview (square, so
                 // wider now also means taller) via [IntrinsicHeight] +
                 // `stretch` rather than a guessed fixed height.
-                HintTarget(
-                  tour: 'constellation-form',
-                  order: 5,
-                  showArrow: true,
-                  contentBuilder: appTourStepCard,
-                  title: strings.constellationTourShapeTitle,
-                  description: strings.constellationTourShapeBody,
-                  child: LayoutBuilder(
+                LayoutBuilder(
                   builder: (context, constraints) {
                     const gap = 12.0;
                     final side = (constraints.maxWidth - gap) * 3 / 4;
@@ -696,11 +709,33 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _SelectedShapePreview(
-                            shape: _selectedShape,
-                            label: _selectedShapeName(strings),
-                            onEdit: _editSelectedShape,
-                            side: side,
+                          // Label + preview together, separate from each of
+                          // the three buttons on the right — each gets its
+                          // own tour step now instead of one combined
+                          // highlight over the whole section.
+                          HintTarget(
+                            tour: 'constellation-form',
+                            order: 7,
+                            showArrow: true,
+                            contentBuilder: appTourStepCard,
+                            title: strings.constellationTourCanvasTitle,
+                            description: strings.constellationTourCanvasBody,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                AppFieldLabel(
+                                  strings.chooseShapeLabel,
+                                  requirement: FieldRequirement.required,
+                                ),
+                                const SizedBox(height: 8),
+                                _SelectedShapePreview(
+                                  shape: _selectedShape,
+                                  label: _selectedShapeName(strings),
+                                  onEdit: _editSelectedShape,
+                                  side: side,
+                                ),
+                              ],
+                            ),
                           ),
                           const SizedBox(width: gap),
                           Expanded(
@@ -715,27 +750,87 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                Expanded(
-                                  child: _ShapeSideButton(
-                                    icon: Icons.edit_outlined,
-                                    label: strings.drawShapeShort,
-                                    onTap: _editSelectedShape,
+                                // Invisible — reserves exactly the label's
+                                // own height above the preview on the left
+                                // (see the `HintTarget` above), so this
+                                // side stays the same height as *just the
+                                // square*, matching it the way the three
+                                // buttons are meant to (see the comment on
+                                // the `LayoutBuilder` above). Without this,
+                                // `IntrinsicHeight` balances the row
+                                // against label-plus-square on the left —
+                                // taller than the square alone — and
+                                // stretches these buttons to that taller
+                                // height too, leaving them visibly taller
+                                // than the preview they're supposed to
+                                // match. `Visibility.maintainSize` over a
+                                // real (if invisible) `AppFieldLabel`
+                                // guarantees the exact same height as the
+                                // real one, regardless of locale or text
+                                // scale — a bare `SizedBox` would have to
+                                // guess that number instead of matching it.
+                                Visibility(
+                                  visible: false,
+                                  maintainSize: true,
+                                  maintainAnimation: true,
+                                  maintainState: true,
+                                  child: AppFieldLabel(
+                                    strings.chooseShapeLabel,
+                                    requirement: FieldRequirement.required,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 Expanded(
-                                  child: _ShapeSideButton(
-                                    icon: Icons.insights,
-                                    label: strings.pickFromLibraryShort,
-                                    onTap: _openLibrary,
+                                  child: HintTarget(
+                                    tour: 'constellation-form',
+                                    order: 8,
+                                    showArrow: true,
+                                    contentBuilder: appTourStepCard,
+                                    title:
+                                        strings.constellationTourDrawButtonTitle,
+                                    description:
+                                        strings.constellationTourDrawButtonBody,
+                                    child: _ShapeSideButton(
+                                      icon: Icons.edit_outlined,
+                                      label: strings.drawShapeShort,
+                                      onTap: _editSelectedShape,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 Expanded(
-                                  child: _ShapeSideButton(
-                                    icon: Icons.refresh,
-                                    label: strings.resetShapeShort,
-                                    onTap: _hasShape ? _resetShape : null,
+                                  child: HintTarget(
+                                    tour: 'constellation-form',
+                                    order: 9,
+                                    showArrow: true,
+                                    contentBuilder: appTourStepCard,
+                                    title: strings
+                                        .constellationTourLibraryButtonTitle,
+                                    description: strings
+                                        .constellationTourLibraryButtonBody,
+                                    child: _ShapeSideButton(
+                                      icon: Icons.insights,
+                                      label: strings.pickFromLibraryShort,
+                                      onTap: _openLibrary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Expanded(
+                                  child: HintTarget(
+                                    tour: 'constellation-form',
+                                    order: 10,
+                                    showArrow: true,
+                                    contentBuilder: appTourStepCard,
+                                    title:
+                                        strings.constellationTourResetButtonTitle,
+                                    description: strings
+                                        .constellationTourResetButtonBody,
+                                    child: _ShapeSideButton(
+                                      icon: Icons.refresh,
+                                      label: strings.resetShapeShort,
+                                      onTap: _hasShape ? _resetShape : null,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -745,7 +840,6 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                       ),
                     );
                   },
-                  ),
                 ),
                 const SizedBox(height: 28),
                 Center(
@@ -759,7 +853,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                           _hasShape;
                       return HintTarget(
                         tour: 'constellation-form',
-                        order: 6,
+                        order: 11,
                         showArrow: true,
                         contentBuilder: appTourStepCard,
                         title: strings.constellationTourSaveTitle,

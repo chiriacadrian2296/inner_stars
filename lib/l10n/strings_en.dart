@@ -459,27 +459,61 @@ class StringsEn implements AppStrings {
   @override
   String tourProgressLabel(int step, int length) => '$step of $length';
   @override
-  String get skyTourLookAroundTitle => 'Look around';
+  String get skyTourTapSupernovaTitle => 'Tap a supernova';
   @override
-  String get skyTourLookAroundBody =>
-      'Drag to pan, pinch to zoom, and tap any star, constellation, or '
-      'supernova to fly there.';
+  String get skyTourTapSupernovaBody =>
+      'Go on — tap any supernova to fly there.';
+  @override
+  String get skyTourTapConstellationTitle => 'Tap a constellation';
+  @override
+  String get skyTourTapConstellationBody =>
+      'Now tap a constellation inside it to fly closer still.';
+  @override
+  String get skyTourTapStarTitle => 'Tap a star';
+  @override
+  String get skyTourTapStarBody => 'Tap any star to fly right up to it.';
+  @override
+  String get skyTourDoubleTapTitle => 'Double-tap to zoom out';
+  @override
+  String get skyTourDoubleTapBody =>
+      'Double-tap anywhere on empty sky to zoom back out.';
+  @override
+  String get skyTourHoldTitle => 'Hold to peek';
+  @override
+  String get skyTourHoldBody =>
+      'Press and hold a constellation to peek at it before deciding '
+      'whether to fly there.';
+  @override
+  String get skyTourTooltipTitle => 'Every kind shows something different';
+  @override
+  String get skyTourTooltipBody =>
+      'A supernova, a constellation, a star — each one\'s popup shows its '
+      'own info and options. Close this one — the X, tapping elsewhere, '
+      'or moving on — to continue.';
   @override
   String get skyTourMenuTitle => 'Open the menu';
   @override
   String get skyTourMenuBody =>
       'Hold this star to create something new or find your way around.';
   @override
-  String get skyTourSoundLabTitle => 'Sound Lab';
+  String get starTourIntroTitle => 'Recording a victory';
   @override
-  String get skyTourSoundLabBody =>
-      'Pick the sounds and music for your sky here.';
+  String get starTourIntroBody =>
+      'This form covers all three kinds of stars — a victory already won, '
+      'a goal you\'re working toward, and a habit you\'re building. Here\'s '
+      'a quick look at every field.';
   @override
   String get starTourKindTitle => 'Goals are stars not lit yet';
   @override
   String get starTourKindBody =>
       'Tap here to set a goal — it waits in your sky, unlit, until you '
       'reach it.';
+  @override
+  String get starTourLegendTitle => 'Required or optional';
+  @override
+  String get starTourLegendBody =>
+      'A solid dot means a field is required; an outlined one means it\'s '
+      'optional. Every field below shows one of these.';
   @override
   String get starTourSupernovaFieldTitle => 'Which area of life';
   @override
@@ -539,6 +573,12 @@ class StringsEn implements AppStrings {
       "When you're ready, save it — it'll wait there, unlit, until you "
       'reach it.';
   @override
+  String get searchTourIntroTitle => 'Finding anything in your sky';
+  @override
+  String get searchTourIntroBody =>
+      'Search and filter your supernovas, constellations, and stars from '
+      'here.';
+  @override
   String get searchTourModeTitle => 'Three ways to look';
   @override
   String get searchTourModeBody =>
@@ -567,6 +607,12 @@ class StringsEn implements AppStrings {
   @override
   String get searchTourApplyBody => 'Save your filter and see the results.';
   @override
+  String get lightYourSkyTourIntroTitle => 'Three ways to light your sky';
+  @override
+  String get lightYourSkyTourIntroBody =>
+      'Every star starts here — pick whichever one matches what you want '
+      'to record.';
+  @override
   String get lightYourSkyTourSupernovaTitle => 'Supernovas';
   @override
   String get lightYourSkyTourSupernovaBody =>
@@ -581,6 +627,17 @@ class StringsEn implements AppStrings {
   @override
   String get lightYourSkyTourStarBody =>
       'Record an effort: a victory, a goal, or a new habit.';
+  @override
+  String get constellationTourIntroTitle => 'Starting a new project';
+  @override
+  String get constellationTourIntroBody =>
+      "A quick look at every field before you fill them in.";
+  @override
+  String get constellationTourLegendTitle => 'Required or optional';
+  @override
+  String get constellationTourLegendBody =>
+      'A solid dot means a field is required; an outlined one means it\'s '
+      'optional. Every field below shows one of these.';
   @override
   String get constellationTourAreaTitle => 'Pick an area';
   @override
@@ -601,15 +658,36 @@ class StringsEn implements AppStrings {
   String get constellationTourDescriptionBody =>
       "Optional — say more about what it's for.";
   @override
-  String get constellationTourShapeTitle => 'Give it a shape';
+  String get constellationTourCanvasTitle => 'Give it a shape';
   @override
-  String get constellationTourShapeBody =>
-      'Draw your own, or pick one from the library — every project needs '
-      'a shape its stars will fill.';
+  String get constellationTourCanvasBody =>
+      'Every project needs a shape its stars will fill — this is what '
+      "you've chosen so far. Tap it any time to change it.";
+  @override
+  String get constellationTourDrawButtonTitle => 'Draw your own';
+  @override
+  String get constellationTourDrawButtonBody =>
+      'Sketch a custom shape from scratch.';
+  @override
+  String get constellationTourLibraryButtonTitle => 'Pick from the library';
+  @override
+  String get constellationTourLibraryButtonBody =>
+      "Choose a ready-made shape instead of drawing your own.";
+  @override
+  String get constellationTourResetButtonTitle => 'Start over';
+  @override
+  String get constellationTourResetButtonBody =>
+      'Clears the shape you\'ve picked so far.';
   @override
   String get constellationTourSaveTitle => 'Create it';
   @override
   String get constellationTourSaveBody => 'Save your new constellation.';
+  @override
+  String get supernovaTourIntroTitle => 'Reflecting on your life areas';
+  @override
+  String get supernovaTourIntroBody =>
+      'Each of your eight areas keeps its own reflections — here\'s how '
+      'to get to them.';
   @override
   String get supernovaTourListTitle => 'Your eight areas';
   @override
@@ -631,6 +709,15 @@ class StringsEn implements AppStrings {
   @override
   String get replayToursResult =>
       'Tutorials reset — open each screen again to see them';
+  @override
+  String get tutorialsButtonTooltip => 'Tutorials';
+  @override
+  String get tutorialsManagementTitle => 'Tutorials';
+  @override
+  String get tutorialsEnabledLabel => 'Show tutorials';
+  @override
+  String get tutorialsEnabledDescription =>
+      'Guided tips appear the first time you open a screen that has one.';
   @override
   String get volumeSectionLabel => 'Volume';
   @override

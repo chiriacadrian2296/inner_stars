@@ -21,7 +21,7 @@ import '../screens/pulsar_reader_screen.dart';
 import '../screens/star_reader_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
-import '../tutorials/tour_glow.dart';
+import '../tutorials/tour_intro_target.dart';
 import '../tutorials/tour_step_card.dart';
 import '../utils/date_format.dart';
 import '../utils/habit_stats.dart';
@@ -121,6 +121,12 @@ class SkyExplorerView extends StatefulWidget {
 
 class _SkyExplorerViewState extends State<SkyExplorerView> {
   _SkyMode _mode = _SkyMode.supernovas;
+
+  /// Whether [_syncModeToTour] has already forced Supernovas out once.
+  ///
+  /// Guards it from doing so a second time — see its own doc comment for
+  /// why a single correction is all it should ever make.
+  bool _autoSwitchedModeForTour = false;
   final _queryController = TextEditingController();
   String _query = '';
   Set<StarKind> _kindFilter = {...kListableStarKinds};
@@ -301,10 +307,55 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
     });
   }
 
+  /// Switches out of Supernovas on its own once the `search-stars` tour
+  /// moves past its intro/toggle steps — every step after that (the search
+  /// field, the filter button, and the filter sheet's own three steps past
+  /// that) only exists in Stars/Constellations mode, and without this the
+  /// tour's own `stepTimeout` (see `main.dart`) can elapse and silently
+  /// skip the step before the user gets around to tapping the mode toggle
+  /// themselves.
+  ///
+  /// Can't key this off [TourScope.orderAt]: it only resolves orders that
+  /// have registered at least once, and the search field/filter button
+  /// never have while stuck in Supernovas — the very case this exists to
+  /// unstick. `index > 1` is safe instead because orders 1-2 (the intro
+  /// card, then the toggle) are the only targets this tour ever mounts in
+  /// Supernovas mode, and they are always step indices 0 and 1.
+  ///
+  /// [_autoSwitchedModeForTour] makes this a one-shot: the tour's own later
+  /// steps (5-7, in the filter sheet — see `area_filter_sheet.dart`) only
+  /// ever mount if the user actually opens that sheet, which nothing here
+  /// forces, so a tour that reaches this point without that happening sits
+  /// waiting out [stepTimeout] on each of them in turn — up to roughly half
+  /// a minute — every time this screen is left and reopened before that
+  /// finishes, `controller.index` is still `> 1` and `activeTour` is still
+  /// `'search-stars'`, and without this guard a user who had switched back
+  /// to Supernovas on their own would keep getting silently bounced back to
+  /// Stars on every single visit until that timeout finally runs out in the
+  /// background — confirmed live. One correction is enough to get the tour
+  /// itself moving again; a second, third, nth one is just the app fighting
+  /// a choice the user already made.
+  void _syncModeToTour(BuildContext context) {
+    final controller = Tour.of(context);
+    if (_autoSwitchedModeForTour ||
+        controller.activeTour != 'search-stars' ||
+        controller.index <= 1 ||
+        _mode != _SkyMode.supernovas) {
+      return;
+    }
+    _autoSwitchedModeForTour = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _mode != _SkyMode.supernovas) return;
+      setState(() => _mode = _SkyMode.stars);
+      widget.onModeLabelChanged(_labelFor(_mode, context.strings));
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final strings = context.strings;
+    _syncModeToTour(context);
     final allEntries = _mode == _SkyMode.stars ? _allEntries : const <_SkyEntry>[];
     final filteredEntries = _mode == _SkyMode.stars
         ? _filteredEntries
@@ -319,6 +370,12 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
           // Expanded list below stays full width so its own scrollbar
           // sits at the true page edge on wide viewports rather than
           // hugging a centered column (see ResponsiveContent's doc).
+          TourIntroTarget(
+            tour: 'search-stars',
+            order: 1,
+            title: strings.searchTourIntroTitle,
+            description: strings.searchTourIntroBody,
+          ),
           ResponsiveContent(
             child: Column(
               children: [
@@ -326,40 +383,34 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
                   child: HintTarget(
                     tour: 'search-stars',
-                    order: 1,
+                    order: 2,
                     showArrow: true,
-                    spotlightPadding: kTourGlowSpotlightPadding,
+                    spotlightPadding: const EdgeInsets.all(8),
                     contentBuilder: appTourStepCard,
                     title: strings.searchTourModeTitle,
                     description: strings.searchTourModeBody,
-                    child: TourGlow(
-                      tour: 'search-stars',
-                      order: 1,
-                      color: colors.gold,
-                      borderRadius: BorderRadius.circular(100),
-                      child: SegmentedButton<_SkyMode>(
-                        showSelectedIcon: false,
-                        segments: const [
-                          ButtonSegment(
-                            value: _SkyMode.supernovas,
-                            icon: Icon(Icons.flare, size: 20),
-                          ),
-                          ButtonSegment(
-                            value: _SkyMode.constellations,
-                            icon: Icon(Icons.auto_awesome, size: 20),
-                          ),
-                          ButtonSegment(
-                            value: _SkyMode.stars,
-                            icon: Icon(Icons.star, size: 20),
-                          ),
-                        ],
-                        selected: {_mode},
-                        onSelectionChanged: (selection) {
-                          final mode = selection.first;
-                          setState(() => _mode = mode);
-                          widget.onModeLabelChanged(_labelFor(mode, strings));
-                        },
-                      ),
+                    child: SegmentedButton<_SkyMode>(
+                      showSelectedIcon: false,
+                      segments: const [
+                        ButtonSegment(
+                          value: _SkyMode.supernovas,
+                          icon: Icon(Icons.flare, size: 20),
+                        ),
+                        ButtonSegment(
+                          value: _SkyMode.constellations,
+                          icon: Icon(Icons.auto_awesome, size: 20),
+                        ),
+                        ButtonSegment(
+                          value: _SkyMode.stars,
+                          icon: Icon(Icons.star, size: 20),
+                        ),
+                      ],
+                      selected: {_mode},
+                      onSelectionChanged: (selection) {
+                        final mode = selection.first;
+                        setState(() => _mode = mode);
+                        widget.onModeLabelChanged(_labelFor(mode, strings));
+                      },
                     ),
                   ),
                 ),
@@ -371,7 +422,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                         Expanded(
                           child: HintTarget(
                             tour: 'search-stars',
-                            order: 2,
+                            order: 3,
                             showArrow: true,
                             contentBuilder: appTourStepCard,
                             title: strings.searchTourFieldTitle,
@@ -392,7 +443,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                         const SizedBox(width: 10),
                         HintTarget(
                           tour: 'search-stars',
-                          order: 3,
+                          order: 4,
                           showArrow: true,
                           contentBuilder: appTourStepCard,
                           title: strings.searchTourFilterButtonTitle,

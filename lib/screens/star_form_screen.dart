@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -16,11 +17,11 @@ import '../models/star.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../tutorials/tour_intro_target.dart';
 import '../tutorials/tour_step_card.dart';
 import '../utils/date_format.dart';
 import '../utils/icon_for_slug.dart';
 import '../widgets/app_field.dart';
-import '../widgets/area_tag.dart';
 import '../widgets/intensity_bolts.dart';
 import '../widgets/photo_picker.dart';
 import '../widgets/pill_action_button.dart';
@@ -272,6 +273,14 @@ class _StarFormScreenState extends State<StarFormScreen> {
     return widget.initialKind;
   }
 
+  /// `_kind` as it was before [_primeKindDependentTourSteps] (or
+  /// [_syncKindToTour]) ever touched it for the sake of the tour — restored
+  /// once the tour ends (see [_handleTourChanged]), so walking through
+  /// every kind's own steps never leaves the form quietly switched to a
+  /// different kind than the one the user actually opened it for.
+  StarKind? _kindBeforeTour;
+  TourController? _tourBeingWatched;
+
   @override
   void initState() {
     super.initState();
@@ -281,14 +290,107 @@ class _StarFormScreenState extends State<StarFormScreen> {
     // tour is for, and `Tour.start` itself already no-ops once the user has
     // seen it (see `PrefsTourStorage`).
     if (!widget.isEditing) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) Tour.read(context).start('star-form');
-      });
+      WidgetsBinding.instance.addPostFrameCallback((_) => _maybeStartTour());
+    }
+  }
+
+  Future<void> _maybeStartTour() async {
+    if (!mounted) return;
+    final TourController tour = Tour.read(context);
+    // Mirrors the check `tour.start` itself makes — skip the priming dance
+    // below entirely when the tour won't actually run (already seen, or
+    // tutorials are switched off; see `PrefsTourStorage`), so returning
+    // users never see the brief kind flip this needs.
+    if (await tour.storage.isCompleted('star-form')) return;
+    if (!mounted) return;
+    await _primeKindDependentTourSteps();
+    if (!mounted) return;
+    _tourBeingWatched = tour..addListener(_handleTourChanged);
+    unawaited(tour.start('star-form'));
+  }
+
+  /// Briefly visits every kind (Pulsar, Unlit, then back to Lit) before the
+  /// tour's first step ever shows, so every kind-gated step's `HintTarget`
+  /// mounts — and registers its `order` with `hint_kit`'s `TourScope` — at
+  /// least once, landing on Lit specifically because that's where the tour
+  /// itself always starts (see [_syncKindToTour]'s order-2 case) regardless
+  /// of which kind the screen actually opened on.
+  ///
+  /// Without this, an order that has never registered doesn't just get
+  /// skipped: `TourScope.orderAt` resolves the tour's raw step counter
+  /// against however many orders happen to be registered *so far*, so a
+  /// step registering late (the user manually switching kind mid-tour, say)
+  /// retroactively changes which order every *later* index pointed at —
+  /// confirmed live, this is exactly what made Habit Frequency show up
+  /// scrolled to a wrong, half-broken position after switching kind by
+  /// hand. Priming once up front means the mapping is complete and stable
+  /// before the tour ever reads it, so nothing has to reshuffle later — see
+  /// [_syncKindToTour] for the other half, which then drives `_kind` itself
+  /// to whatever each step needs as the tour actually reaches it.
+  Future<void> _primeKindDependentTourSteps() async {
+    _kindBeforeTour = _kind;
+    for (final probe in [StarKind.pulsar, StarKind.unlit, StarKind.lit]) {
+      if (!mounted) return;
+      setState(() => _kind = probe);
+      await WidgetsBinding.instance.endOfFrame;
+    }
+  }
+
+  /// Auto-drives `_kind` to whatever the active `star-form` step actually
+  /// needs, so the tour walks through every field on its own instead of
+  /// waiting for the user to switch kind by hand — the same idea as
+  /// `SkyExplorerView`'s own `_syncModeToTour` for `search-stars`, but
+  /// across three kinds instead of two modes. The fixed order the tour
+  /// walks (see the `order:` on each `HintTarget` below): the kind switch
+  /// itself (forced to Lit, so every run starts from the same place
+  /// regardless of which kind the screen actually opened on), then every
+  /// Lit field including the photo, then Pulsar's own fields, then Unlit's
+  /// one exclusive field, then Save — which restores whatever kind the
+  /// screen actually started on (see [_handleTourChanged] for the same
+  /// restore when the tour ends some other way, e.g. skipped early).
+  ///
+  /// Safe to key off [TourScope.orderAt] here (unlike when it would be
+  /// resolving against an incomplete set) because
+  /// [_primeKindDependentTourSteps] already guarantees every order this
+  /// tour has is registered before the tour starts.
+  void _syncKindToTour(BuildContext context) {
+    final TourController controller = Tour.of(context);
+    if (controller.activeTour != 'star-form') return;
+    final int? order = TourScope.of(
+      context,
+    ).orderAt('star-form', controller.index);
+    final StarKind? needed = switch (order) {
+      2 || 8 || 9 || 10 => StarKind.lit,
+      11 || 12 => StarKind.pulsar,
+      13 => StarKind.unlit,
+      14 => _kindBeforeTour,
+      _ => null,
+    };
+    if (needed == null || needed == _kind) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _kind = needed);
+    });
+  }
+
+  /// Stops watching once the tour leaves `star-form` (finished or skipped)
+  /// and puts `_kind` back to what it was before the tour touched it —
+  /// otherwise finishing the tour could silently leave a "set a goal" flow
+  /// sitting on Lit or Pulsar instead of the Unlit the user actually opened
+  /// this screen for.
+  void _handleTourChanged() {
+    final TourController? controller = _tourBeingWatched;
+    if (controller == null || controller.activeTour == 'star-form') return;
+    controller.removeListener(_handleTourChanged);
+    _tourBeingWatched = null;
+    final StarKind? original = _kindBeforeTour;
+    if (original != null && original != _kind && mounted) {
+      setState(() => _kind = original);
     }
   }
 
   @override
   void dispose() {
+    _tourBeingWatched?.removeListener(_handleTourChanged);
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
@@ -696,6 +798,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _syncKindToTour(context);
     final colors = context.colors;
     final strings = context.strings;
     final kinds = _availableKinds;
@@ -725,16 +828,31 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     ),
                   ],
                 ),
+                TourIntroTarget(
+                  tour: 'star-form',
+                  order: 1,
+                  title: strings.starTourIntroTitle,
+                  description: strings.starTourIntroBody,
+                ),
                 const SizedBox(height: 16),
                 // The one control that decides which half of the form
                 // below shows. Omitted entirely when there's nothing to
                 // choose (editing a pulsar) — a one-option switch is just
                 // a label pretending to be a control.
                 if (kinds.length > 1)
-                  _StarKindSwitch(
-                    kinds: kinds,
-                    selected: _kind,
-                    onChanged: (kind) => setState(() => _kind = kind),
+                  HintTarget(
+                    key: const ValueKey('star-form-kind'),
+                    tour: 'star-form',
+                    order: 2,
+                    showArrow: true,
+                    contentBuilder: appTourStepCard,
+                    title: strings.starTourKindTitle,
+                    description: strings.starTourKindBody,
+                    child: _StarKindSwitch(
+                      kinds: kinds,
+                      selected: _kind,
+                      onChanged: (kind) => setState(() => _kind = kind),
+                    ),
                   )
                 else
                   Center(
@@ -758,14 +876,6 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     ),
                   ),
                 ),
-                if (_selectedProject != null) ...[
-                  const SizedBox(height: 14),
-                  AreaTag(
-                    area: _selectedProject!.area,
-                    iconSize: 22,
-                    fontSize: 20,
-                  ),
-                ],
                 const SizedBox(height: 24),
                 // Sits here rather than at the very top of the form so it
                 // reads as introducing the fields, not the question above
@@ -773,7 +883,18 @@ class _StarFormScreenState extends State<StarFormScreen> {
                 // whether that's Supernova (below) or, when
                 // [widget.lockedProject] hides both picker fields, Title
                 // further down.
-                const FieldRequirementLegend(),
+                HintTarget(
+                  // Keyed — see the Supernova field's own HintTarget below
+                  // for why.
+                  key: const ValueKey('star-form-legend'),
+                  tour: 'star-form',
+                  order: 3,
+                  showArrow: true,
+                  contentBuilder: appTourStepCard,
+                  title: strings.starTourLegendTitle,
+                  description: strings.starTourLegendBody,
+                  child: const FieldRequirementLegend(),
+                ),
                 const SizedBox(height: 16),
                 if (widget.lockedProject == null) ...[
                   HintTarget(
@@ -791,7 +912,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     // before every step in this file got its own key.
                     key: const ValueKey('star-form-supernova'),
                     tour: 'star-form',
-                    order: 2,
+                    order: 4,
                     showArrow: true,
                     contentBuilder: appTourStepCard,
                     title: strings.starTourSupernovaFieldTitle,
@@ -817,7 +938,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     // above for why.
                     key: const ValueKey('star-form-constellation'),
                     tour: 'star-form',
-                    order: 3,
+                    order: 5,
                     showArrow: true,
                     contentBuilder: appTourStepCard,
                     title: strings.starTourConstellationFieldTitle,
@@ -836,63 +957,74 @@ class _StarFormScreenState extends State<StarFormScreen> {
                   ),
                   const SizedBox(height: 20),
                 ],
-                AppFieldLabel(
-                  strings.titleFieldLabel,
-                  requirement: FieldRequirement.required,
-                ),
-                const SizedBox(height: 6),
                 HintTarget(
                   // Keyed — see the Supernova field's own HintTarget above
                   // for why.
                   key: const ValueKey('star-form-title'),
                   tour: 'star-form',
-                  order: 4,
+                  order: 6,
                   showArrow: true,
                   contentBuilder: appTourStepCard,
                   title: strings.starTourTitleFieldTitle,
                   description: strings.starTourTitleFieldBody,
-                  child: AppTextField(
-                    controller: _titleController,
-                    textInputAction: TextInputAction.next,
-                    hintText: _titleHint(strings),
-                    onChanged: (_) => setState(() {}),
+                  // The section label lives inside the target now (was a
+                  // sibling above it) — every field's own tour step
+                  // highlights its label along with its actual control, not
+                  // just the control alone.
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppFieldLabel(
+                        strings.titleFieldLabel,
+                        requirement: FieldRequirement.required,
+                      ),
+                      const SizedBox(height: 6),
+                      AppTextField(
+                        controller: _titleController,
+                        textInputAction: TextInputAction.next,
+                        hintText: _titleHint(strings),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 20),
-                AppFieldLabel(
-                  strings.detailsLabel,
-                  requirement: FieldRequirement.optional,
-                ),
-                const SizedBox(height: 6),
                 HintTarget(
                   // Keyed — see the Supernova field's own HintTarget above
                   // for why.
                   key: const ValueKey('star-form-details'),
                   tour: 'star-form',
-                  order: 5,
+                  order: 7,
                   showArrow: true,
                   contentBuilder: appTourStepCard,
                   title: strings.starTourDetailsFieldTitle,
                   description: strings.starTourDetailsFieldBody,
-                  child: AppTextField(
-                    controller: _descriptionController,
-                    minLines: 4,
-                    maxLines: 6,
-                    hintText: _detailsHint(strings),
-                    onChanged: (_) => setState(() {}),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppFieldLabel(
+                        strings.detailsLabel,
+                        requirement: FieldRequirement.optional,
+                      ),
+                      const SizedBox(height: 6),
+                      AppTextField(
+                        controller: _descriptionController,
+                        minLines: 4,
+                        maxLines: 6,
+                        hintText: _detailsHint(strings),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ],
                   ),
                 ),
                 if (_kind == StarKind.lit) ...[
                   const SizedBox(height: 20),
-                  // Same order as the Unlit branch's own target-date step
-                  // below — only one of the two is ever mounted for a given
-                  // `_kind`, so the tour always lands on whichever applies.
                   HintTarget(
                     // Keyed — see the Supernova field's own HintTarget
                     // above for why.
                     key: const ValueKey('star-form-date'),
                     tour: 'star-form',
-                    order: 6,
+                    order: 8,
                     showArrow: true,
                     contentBuilder: appTourStepCard,
                     title: strings.starTourDateFieldTitle,
@@ -941,7 +1073,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     // above for why.
                     key: const ValueKey('star-form-target-date'),
                     tour: 'star-form',
-                    order: 6,
+                    order: 13,
                     showArrow: true,
                     contentBuilder: appTourStepCard,
                     title: strings.starTourTargetDateFieldTitle,
@@ -964,81 +1096,98 @@ class _StarFormScreenState extends State<StarFormScreen> {
                 // gets one the moment it's lit.
                 if (_kind != StarKind.unlit) ...[
                   const SizedBox(height: 20),
-                  AppFieldLabel(
-                    strings.intensityLabel,
-                    requirement: FieldRequirement.required,
-                  ),
-                  // Same label-to-content gap every other field uses (6),
-                  // not this section's own one-off 10 — kept it from
-                  // reading as more loosely spaced than its neighbors.
-                  const SizedBox(height: 6),
-                  Center(
-                    child: IntensityBolts(
-                      intensity: _intensity,
-                      size: 26,
-                      spacing: 6,
-                      emphasizeLast: true,
-                      emphasizedScale: 1.6,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
                   HintTarget(
                     // Keyed — see the Supernova field's own HintTarget
                     // above for why.
                     key: const ValueKey('star-form-intensity'),
                     tour: 'star-form',
-                    order: 7,
+                    order: 9,
                     showArrow: true,
                     contentBuilder: appTourStepCard,
                     title: strings.starTourIntensityTitle,
                     description: strings.starTourIntensityBody,
-                    child: Center(
-                      child: FractionallySizedBox(
-                        widthFactor: 0.7,
-                        // A plain [Slider]'s own vertical padding defaults to
-                        // the height of its overlay shape (the halo around
-                        // the thumb) — invisible space that made the gap down
-                        // to whatever field comes next read as much bigger
-                        // than the standard 20 between every other pair of
-                        // fields, even with the same explicit `SizedBox` in
-                        // between. Zeroing it here makes this widget's own
-                        // bounding box actually match what's visible.
-                        child: SliderTheme(
-                          data: SliderTheme.of(
-                            context,
-                          ).copyWith(padding: EdgeInsets.zero),
-                          child: Slider(
-                            value: _intensity.toDouble(),
-                            min: 1,
-                            max: 5,
-                            divisions: 4,
-                            onChanged: (value) =>
-                                setState(() => _intensity = value.round()),
+                    // Label, bolts and slider all inside now — the whole
+                    // section highlights together, not just the slider.
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppFieldLabel(
+                          strings.intensityLabel,
+                          requirement: FieldRequirement.required,
+                        ),
+                        // Same label-to-content gap every other field uses
+                        // (6), not this section's own one-off 10 — kept it
+                        // from reading as more loosely spaced than its
+                        // neighbors.
+                        const SizedBox(height: 6),
+                        Center(
+                          child: IntensityBolts(
+                            intensity: _intensity,
+                            size: 26,
+                            spacing: 6,
+                            emphasizeLast: true,
+                            emphasizedScale: 1.6,
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 14),
+                        Center(
+                          child: FractionallySizedBox(
+                            widthFactor: 0.7,
+                            // A plain [Slider]'s own vertical padding
+                            // defaults to the height of its overlay shape
+                            // (the halo around the thumb) — invisible space
+                            // that made the gap down to whatever field comes
+                            // next read as much bigger than the standard 20
+                            // between every other pair of fields, even with
+                            // the same explicit `SizedBox` in between.
+                            // Zeroing it here makes this widget's own
+                            // bounding box actually match what's visible.
+                            child: SliderTheme(
+                              data: SliderTheme.of(
+                                context,
+                              ).copyWith(padding: EdgeInsets.zero),
+                              child: Slider(
+                                value: _intensity.toDouble(),
+                                min: 1,
+                                max: 5,
+                                divisions: 4,
+                                onChanged: (value) => setState(
+                                  () => _intensity = value.round(),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
                 if (_kind == StarKind.pulsar) ...[
                   const SizedBox(height: 20),
-                  AppFieldLabel(
-                    strings.habitFrequencyLabel,
-                    requirement: FieldRequirement.required,
-                  ),
-                  const SizedBox(height: 6),
                   HintTarget(
                     // Keyed — see the Supernova field's own HintTarget
                     // above for why.
                     key: const ValueKey('star-form-habit-frequency'),
                     tour: 'star-form',
-                    order: 8,
+                    order: 11,
                     showArrow: true,
+                    // Closer to the top of the viewport than the 0.5
+                    // default — this section (and Reminder/Photo below it)
+                    // sits low enough in a long form that centering left
+                    // its own step card fighting the system nav bar for
+                    // room underneath.
+                    scrollAlignment: 0.2,
                     contentBuilder: appTourStepCard,
                     title: strings.starTourHabitFrequencyTitle,
                     description: strings.starTourHabitFrequencyBody,
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        AppFieldLabel(
+                          strings.habitFrequencyLabel,
+                          requirement: FieldRequirement.required,
+                        ),
+                        const SizedBox(height: 6),
                         Row(
                           children: [
                             Expanded(
@@ -1139,8 +1288,10 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     // above for why.
                     key: const ValueKey('star-form-reminder'),
                     tour: 'star-form',
-                    order: 9,
+                    order: 12,
                     showArrow: true,
+                    // See the Habit Frequency step just above for why.
+                    scrollAlignment: 0.2,
                     contentBuilder: appTourStepCard,
                     title: strings.starTourReminderTitle,
                     description: strings.starTourReminderBody,
@@ -1193,11 +1344,6 @@ class _StarFormScreenState extends State<StarFormScreen> {
                 ],
                 if (_kind == StarKind.lit) ...[
                   const SizedBox(height: 20),
-                  AppFieldLabel(
-                    strings.photoLabel,
-                    requirement: FieldRequirement.optional,
-                  ),
-                  const SizedBox(height: 6),
                   HintTarget(
                     // Keyed — see the Supernova field's own HintTarget
                     // above for why.
@@ -1205,13 +1351,25 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     tour: 'star-form',
                     order: 10,
                     showArrow: true,
+                    // See the Habit Frequency step for why.
+                    scrollAlignment: 0.2,
                     contentBuilder: appTourStepCard,
                     title: strings.starTourPhotoTitle,
                     description: strings.starTourPhotoBody,
-                    child: PhotoPicker(
-                      photoPath: _photoPath,
-                      onPick: _pickPhoto,
-                      onRemove: _removePhoto,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppFieldLabel(
+                          strings.photoLabel,
+                          requirement: FieldRequirement.optional,
+                        ),
+                        const SizedBox(height: 6),
+                        PhotoPicker(
+                          photoPath: _photoPath,
+                          onPick: _pickPhoto,
+                          onRemove: _removePhoto,
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -1246,7 +1404,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                             // HintTarget above for why.
                             key: const ValueKey('star-form-save'),
                             tour: 'star-form',
-                            order: 11,
+                            order: 14,
                             showArrow: true,
                             contentBuilder: appTourStepCard,
                             title: strings.starTourSaveTitle,
@@ -1362,64 +1520,47 @@ class _StarKindSwitch extends StatelessWidget {
           for (var i = 0; i < kinds.length; i++) ...[
             if (i > 0) const SizedBox(width: 8),
             Expanded(
-              child: Builder(
-                builder: (context) {
-                  final tile = InkWell(
-                    onTap: () => onChanged(kinds[i]),
-                    borderRadius: BorderRadius.circular(kRadiusField),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: flatSelectableDecoration(
-                        colors,
-                        selected: kinds[i] == selected,
+              // The tour step for this whole switch now lives on the
+              // caller's side (see where `_StarKindSwitch` gets built) —
+              // wrapping the switch as a whole, not one specific tile,
+              // since the point of this step is showing that all three
+              // kinds exist.
+              child: InkWell(
+                onTap: () => onChanged(kinds[i]),
+                borderRadius: BorderRadius.circular(kRadiusField),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: flatSelectableDecoration(
+                    colors,
+                    selected: kinds[i] == selected,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      StarGlyph(kind: kinds[i], size: 22),
+                      const SizedBox(height: 4),
+                      Text(
+                        kinds[i].label(strings),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: kinds[i] == selected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: kinds[i] == selected
+                              ? colors.text
+                              : colors.muted,
+                        ),
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          StarGlyph(kind: kinds[i], size: 22),
-                          const SizedBox(height: 4),
-                          Text(
-                            kinds[i].label(strings),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: kinds[i] == selected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              color: kinds[i] == selected
-                                  ? colors.text
-                                  : colors.muted,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            kinds[i].meaning(strings),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: colors.muted,
-                            ),
-                          ),
-                        ],
+                      const SizedBox(height: 2),
+                      Text(
+                        kinds[i].meaning(strings),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 11, color: colors.muted),
                       ),
-                    ),
-                  );
-                  // The "star-form" tour's first step — see
-                  // `StarFormScreen`'s own doc comment on where it starts.
-                  // Only the Unlit tile carries it: that's the one this
-                  // tour is actually about, not the switch as a whole.
-                  if (kinds[i] != StarKind.unlit) return tile;
-                  return HintTarget(
-                    key: const ValueKey('star-form-kind'),
-                    tour: 'star-form',
-                    order: 1,
-                    showArrow: true,
-                    contentBuilder: appTourStepCard,
-                    title: strings.starTourKindTitle,
-                    description: strings.starTourKindBody,
-                    child: tile,
-                  );
-                },
+                    ],
+                  ),
+                ),
               ),
             ),
           ],

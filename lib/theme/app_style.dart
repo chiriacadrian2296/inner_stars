@@ -35,8 +35,19 @@ const double kRadiusPill = 999;
 
 /// Border weights. Active is heavier as well as gold — the weight alone
 /// carries the state for anyone who can't easily separate the two colors.
-const double kBorderWidth = 1;
-const double kBorderWidthActive = 1.5;
+///
+/// A hairline this thin is a logical-pixel width, not a physical one — on
+/// a high-DPI phone (confirmed: the test emulator runs at
+/// devicePixelRatio 2.625) a 1.0-wide border still resolves to a crisp
+/// ~2.6 real pixels, but on a typical desktop browser window
+/// (confirmed: devicePixelRatio 1.25) that same border resolves to barely
+/// more than one real pixel, thin enough that anti-aliasing washes it out
+/// to near-invisibility — not a rendering bug, just a width too thin to
+/// survive a low-DPI display. Bumped enough to stay solid at low DPI
+/// without reading as noticeably heavier on the high-DPI devices this was
+/// already tuned for.
+const double kBorderWidth = 1.5;
+const double kBorderWidthActive = 2;
 
 /// The one glow in the app: gold, soft, centered. Scaled by [strength]
 /// (0 = none, 1 = a resting lit control, >1 = something actively pressed or

@@ -461,27 +461,65 @@ class StringsRo implements AppStrings {
   @override
   String tourProgressLabel(int step, int length) => '$step din $length';
   @override
-  String get skyTourLookAroundTitle => 'Privește în jur';
+  String get skyTourTapSupernovaTitle => 'Atinge o supernovă';
   @override
-  String get skyTourLookAroundBody =>
-      'Trage pentru a te deplasa, ciupește pentru a mări, și atinge orice '
-      'stea, constelație sau supernovă pentru a zbura acolo.';
+  String get skyTourTapSupernovaBody =>
+      'Încearcă — atinge orice supernovă pentru a zbura acolo.';
+  @override
+  String get skyTourTapConstellationTitle => 'Atinge o constelație';
+  @override
+  String get skyTourTapConstellationBody =>
+      'Acum atinge o constelație din interiorul ei pentru a te apropia '
+      'și mai mult.';
+  @override
+  String get skyTourTapStarTitle => 'Atinge o stea';
+  @override
+  String get skyTourTapStarBody =>
+      'Atinge orice stea pentru a zbura chiar lângă ea.';
+  @override
+  String get skyTourDoubleTapTitle => 'Atinge de două ori pentru a micșora';
+  @override
+  String get skyTourDoubleTapBody =>
+      'Atinge de două ori orice punct gol de pe cer pentru a micșora '
+      'înapoi.';
+  @override
+  String get skyTourHoldTitle => 'Ține apăsat pentru a privi';
+  @override
+  String get skyTourHoldBody =>
+      'Ține apăsat pe o constelație pentru a o privi înainte de a decide '
+      'dacă zbori acolo.';
+  @override
+  String get skyTourTooltipTitle => 'Fiecare tip arată altceva';
+  @override
+  String get skyTourTooltipBody =>
+      'O supernova, o constelație, o stea — fiecare are propriul popup, '
+      'cu informații și opțiuni diferite. Închide-l — cu X, atingând '
+      'altundeva sau mutându-te — pentru a continua.';
   @override
   String get skyTourMenuTitle => 'Deschide meniul';
   @override
   String get skyTourMenuBody =>
       'Ține apăsată această stea pentru a crea ceva nou sau a te orienta.';
   @override
-  String get skyTourSoundLabTitle => 'Laborator audio';
+  String get starTourIntroTitle => 'Înregistrarea unei victorii';
   @override
-  String get skyTourSoundLabBody =>
-      'Alege aici sunetele și muzica cerului tău.';
+  String get starTourIntroBody =>
+      'Acest formular acoperă toate cele trei tipuri de stele — o '
+      'victorie deja obținută, un obiectiv spre care lucrezi, și un '
+      'obicei pe care îl construiești. Iată o privire rapidă asupra '
+      'fiecărui câmp.';
   @override
   String get starTourKindTitle => 'Obiectivele sunt stele încă neaprinse';
   @override
   String get starTourKindBody =>
       'Atinge aici pentru a stabili un obiectiv — te așteaptă pe cer, '
       'neaprins, până îl atingi.';
+  @override
+  String get starTourLegendTitle => 'Obligatoriu sau opțional';
+  @override
+  String get starTourLegendBody =>
+      'Un punct plin înseamnă că un câmp e obligatoriu; unul conturat '
+      'înseamnă opțional. Fiecare câmp de mai jos arată unul dintre ele.';
   @override
   String get starTourSupernovaFieldTitle => 'Ce zonă a vieții';
   @override
@@ -542,6 +580,12 @@ class StringsRo implements AppStrings {
       'Când ești gata, salvează-l — va aștepta acolo, neaprins, până îl '
       'atingi.';
   @override
+  String get searchTourIntroTitle => 'Găsește orice pe cerul tău';
+  @override
+  String get searchTourIntroBody =>
+      'Caută și filtrează supernovele, constelațiile și stelele tale de '
+      'aici.';
+  @override
   String get searchTourModeTitle => 'Trei moduri de a privi';
   @override
   String get searchTourModeBody =>
@@ -570,6 +614,12 @@ class StringsRo implements AppStrings {
   @override
   String get searchTourApplyBody => 'Salvează filtrul și vezi rezultatele.';
   @override
+  String get lightYourSkyTourIntroTitle => 'Trei moduri de a-ți aprinde cerul';
+  @override
+  String get lightYourSkyTourIntroBody =>
+      'Fiecare stea pornește de aici — alege-o pe cea care se potrivește '
+      'cu ce vrei să înregistrezi.';
+  @override
   String get lightYourSkyTourSupernovaTitle => 'Supernove';
   @override
   String get lightYourSkyTourSupernovaBody =>
@@ -584,6 +634,17 @@ class StringsRo implements AppStrings {
   @override
   String get lightYourSkyTourStarBody =>
       'Înregistrează un efort: o victorie, un obiectiv sau un obicei nou.';
+  @override
+  String get constellationTourIntroTitle => 'Pornirea unui proiect nou';
+  @override
+  String get constellationTourIntroBody =>
+      'O privire rapidă asupra fiecărui câmp înainte de a le completa.';
+  @override
+  String get constellationTourLegendTitle => 'Obligatoriu sau opțional';
+  @override
+  String get constellationTourLegendBody =>
+      'Un punct plin înseamnă că un câmp e obligatoriu; unul conturat '
+      'înseamnă opțional. Fiecare câmp de mai jos arată unul dintre ele.';
   @override
   String get constellationTourAreaTitle => 'Alege o arie';
   @override
@@ -604,15 +665,37 @@ class StringsRo implements AppStrings {
   String get constellationTourDescriptionBody =>
       'Opțional — spune mai multe despre rostul lui.';
   @override
-  String get constellationTourShapeTitle => 'Dă-i o formă';
+  String get constellationTourCanvasTitle => 'Dă-i o formă';
   @override
-  String get constellationTourShapeBody =>
-      'Desenează-ți propria formă sau alege una din bibliotecă — fiecare '
-      'proiect are nevoie de o formă pe care stelele lui o vor umple.';
+  String get constellationTourCanvasBody =>
+      'Fiecare proiect are nevoie de o formă pe care stelele lui o vor '
+      'umple — aceasta e ce ai ales până acum. Atinge-o oricând pentru a '
+      'o schimba.';
+  @override
+  String get constellationTourDrawButtonTitle => 'Desenează-ți propria formă';
+  @override
+  String get constellationTourDrawButtonBody =>
+      'Desenează o formă personalizată de la zero.';
+  @override
+  String get constellationTourLibraryButtonTitle => 'Alege din bibliotecă';
+  @override
+  String get constellationTourLibraryButtonBody =>
+      'Alege o formă deja gata în loc să desenezi una a ta.';
+  @override
+  String get constellationTourResetButtonTitle => 'Ia-o de la capăt';
+  @override
+  String get constellationTourResetButtonBody =>
+      'Șterge forma aleasă până acum.';
   @override
   String get constellationTourSaveTitle => 'Creează-l';
   @override
   String get constellationTourSaveBody => 'Salvează noua ta constelație.';
+  @override
+  String get supernovaTourIntroTitle => 'Reflectând asupra ariilor tale de viață';
+  @override
+  String get supernovaTourIntroBody =>
+      'Fiecare dintre cele opt arii ale tale își păstrează propriile '
+      'reflecții — iată cum ajungi la ele.';
   @override
   String get supernovaTourListTitle => 'Cele opt arii ale tale';
   @override
@@ -634,6 +717,15 @@ class StringsRo implements AppStrings {
   @override
   String get replayToursResult =>
       'Tutoriale resetate — redeschide fiecare ecran pentru a le revedea';
+  @override
+  String get tutorialsButtonTooltip => 'Tutoriale';
+  @override
+  String get tutorialsManagementTitle => 'Tutoriale';
+  @override
+  String get tutorialsEnabledLabel => 'Arată tutorialele';
+  @override
+  String get tutorialsEnabledDescription =>
+      'Indiciile ghidate apar prima dată când deschizi un ecran care are unul.';
   @override
   String get volumeSectionLabel => 'Volum';
   @override

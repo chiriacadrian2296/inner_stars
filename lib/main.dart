@@ -117,7 +117,9 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
       final audioSettingsRepository = await AudioSettingsRepository.create();
       final audioService = await AudioService.create(audioSettingsRepository);
       final onboardingPrefs = await OnboardingPrefs.create();
-      final tourStorage = await PrefsTourStorage.create();
+      final tourStorage = await PrefsTourStorage.create(
+        enabled: () => settings.tutorialsEnabled,
+      );
 
       // Debug builds only, and only for a genuinely empty install — the
       // same seeding "Settings > Seed sample data" already does by hand
@@ -313,12 +315,12 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
     return TourScope(
       storage: tourStorage,
       tourLengths: const {
-        'sky-navigation': 3,
-        'star-form': 11,
-        'search-stars': 6,
-        'light-your-sky': 3,
-        'constellation-form': 6,
-        'supernova-vision': 3,
+        'sky-navigation': 7,
+        'star-form': 14,
+        'search-stars': 7,
+        'light-your-sky': 4,
+        'constellation-form': 11,
+        'supernova-vision': 4,
       },
       labels: TourLabels(
         skip: strings.tourSkipAction,
@@ -333,17 +335,28 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
       // this is the safety valve: give up on it and move on rather than
       // stranding the tour.
       stepTimeout: const Duration(seconds: 8),
-      // The app's own gold-on-night palette, inverted for the card itself
-      // (solid gold fill, dark navy text/icons) rather than hint_kit's own
+      // The app's own navy-and-white card, rather than hint_kit's own
       // neutral default — reads as unmistakably *this app's* own chrome,
       // and stands out hard against the dimmed sky behind it. Static
       // `AppColors.dark` rather than `context.colors`: there is no light
       // mode to switch on (see `AppColors`'s own doc comment), and this
       // sits above the `MaterialApp`/`Theme` that would resolve it anyway.
+      // `pulseColor` is a local addition to this app's own hint_kit fork
+      // (see `packages/hint_kit`) — upstream always draws the pulse ring in
+      // the scrim's own dim colour, which never reads as an attention cue.
       theme: HintThemeData(
         scrimOpacity: 0.75,
-        backgroundColor: AppColors.dark.gold,
-        foregroundColor: AppColors.dark.night,
+        backgroundColor: AppColors.dark.nightPanel,
+        foregroundColor: AppColors.dark.text,
+        pulseColor: AppColors.dark.text,
+        // A thin white edge on the card itself — separate from the pulse
+        // ring on the target — and a few extra px between the card and
+        // whatever it's pointing at (upstream default is just
+        // `arrowSize.height + 4` = 11), so the card doesn't feel like it's
+        // touching the target it's describing.
+        borderColor: AppColors.dark.text,
+        borderWidth: 1.5,
+        gap: 18,
       ),
       child: MaterialApp(
         navigatorKey: _navigatorKey,

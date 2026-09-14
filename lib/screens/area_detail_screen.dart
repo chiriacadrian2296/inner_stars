@@ -206,7 +206,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                   const SizedBox(height: 16),
                   HintTarget(
                     tour: 'supernova-vision',
-                    order: 2,
+                    order: 3,
                     showArrow: true,
                     contentBuilder: appTourStepCard,
                     title: strings.supernovaTourEditTitle,
@@ -229,7 +229,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                   const SizedBox(height: 32),
                   HintTarget(
                     tour: 'supernova-vision',
-                    order: 3,
+                    order: 4,
                     showArrow: true,
                     contentBuilder: appTourStepCard,
                     title: strings.supernovaTourReflectionTitle,

@@ -102,7 +102,7 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
             const SizedBox(height: 10),
             HintTarget(
               tour: 'search-stars',
-              order: 4,
+              order: 5,
               showArrow: true,
               contentBuilder: appTourStepCard,
               title: strings.searchTourAllAreasTitle,
@@ -145,7 +145,7 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
               const SizedBox(height: 10),
               HintTarget(
                 tour: 'search-stars',
-                order: 5,
+                order: 6,
                 showArrow: true,
                 contentBuilder: appTourStepCard,
                 title: strings.searchTourAllKindsTitle,
@@ -191,7 +191,7 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
             const SizedBox(height: 16),
             HintTarget(
               tour: 'search-stars',
-              order: 6,
+              order: 7,
               showArrow: true,
               contentBuilder: appTourStepCard,
               title: strings.searchTourApplyTitle,

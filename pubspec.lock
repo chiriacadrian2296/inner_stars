@@ -336,10 +336,9 @@ packages:
   hint_kit:
     dependency: "direct main"
     description:
-      name: hint_kit
-      sha256: "8484e03b5cd711761b30a2399af321f921dc5b47573e705cc2b258d7ebad626b"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/hint_kit"
+      relative: true
+    source: path
     version: "1.3.0"
   hooks:
     dependency: transitive
@@ -837,10 +836,9 @@ packages:
   tooltip_card:
     dependency: "direct main"
     description:
-      name: tooltip_card
-      sha256: "5aab52e2004b1569aac58615c46c7bf67e4914e212e2bcd04f84e20be1ab487b"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/tooltip_card"
+      relative: true
+    source: path
     version: "2.9.0"
   typed_data:
     dependency: transitive

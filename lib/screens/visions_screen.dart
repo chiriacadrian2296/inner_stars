@@ -9,6 +9,7 @@ import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../tutorials/tour_intro_target.dart';
 import '../tutorials/tour_step_card.dart';
 import '../widgets/area_tag.dart';
 import '../widgets/responsive_content.dart';
@@ -120,11 +121,17 @@ class _VisionsScreenState extends State<VisionsScreen> {
                     ),
                   ),
                   const SizedBox(height: 22),
+                  TourIntroTarget(
+                    tour: 'supernova-vision',
+                    order: 1,
+                    title: strings.supernovaTourIntroTitle,
+                    description: strings.supernovaTourIntroBody,
+                  ),
                   for (var i = 0; i < LifeArea.values.length; i++) ...[
                     if (i == 0)
                       HintTarget(
                         tour: 'supernova-vision',
-                        order: 1,
+                        order: 2,
                         showArrow: true,
                         contentBuilder: appTourStepCard,
                         title: strings.supernovaTourListTitle,

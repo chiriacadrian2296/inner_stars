@@ -12,6 +12,7 @@ class SettingsRepository {
   static const _reminderHourKey = 'settings.reminderHour';
   static const _reminderMinuteKey = 'settings.reminderMinute';
   static const _showGridKey = 'settings.showGrid';
+  static const _tutorialsEnabledKey = 'settings.tutorialsEnabled';
 
   final SharedPreferences _prefs;
 
@@ -44,4 +45,13 @@ class SettingsRepository {
   bool get showGrid => _prefs.getBool(_showGridKey) ?? false;
 
   Future<void> setShowGrid(bool value) => _prefs.setBool(_showGridKey, value);
+
+  /// Whether any `hint_kit` guided tour is allowed to auto-start at all. On
+  /// by default; turning it off doesn't touch which tours are individually
+  /// marked seen (see `PrefsTourStorage`) — it just makes every one of them
+  /// behave as already-seen until this is switched back on.
+  bool get tutorialsEnabled => _prefs.getBool(_tutorialsEnabledKey) ?? true;
+
+  Future<void> setTutorialsEnabled(bool value) =>
+      _prefs.setBool(_tutorialsEnabledKey, value);
 }

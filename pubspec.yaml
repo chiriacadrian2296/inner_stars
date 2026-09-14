@@ -31,6 +31,32 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
 
+# Local fork of hint_kit 1.3.0 (packages/hint_kit) — its scrim painter uses
+# Path.combine(PathOperation.difference, ...) to cut the tour spotlight's
+# hole, which silently fails to produce a visible cutout on Flutter Web
+# (CanvasKit renderer) for a target inside a route pushed on top of the base
+# one (e.g. a HintTarget inside a `showDialog` popup) — confirmed live, the
+# computed hole rect itself was correct, only the paint step failed. The
+# fork swaps that one call for saveLayer + BlendMode.clear, which doesn't
+# rely on path boolean ops. Re-check pub.dev for a fix before dropping this.
+#
+# Local fork of tooltip_card 2.9.0 (packages/tooltip_card) —
+# TooltipCardOverlayController.refresh() (called unconditionally from
+# TooltipCard.didUpdateWidget whenever the tooltip is open, for *any* prop
+# change) calls OverlayEntry.markNeedsBuild() unconditionally, which throws
+# "setState() or markNeedsBuild() called during build" the moment that
+# didUpdateWidget itself runs mid-build — hit live via the Sky's own
+# tooltip, whose one-frame-later `updateData` nudge (see
+# `_openTooltipDuringFlight` in sky_screen.dart) schedules exactly that
+# rebuild. The fork defers the markNeedsBuild calls to a post-frame
+# callback whenever they'd otherwise land mid-build. Re-check pub.dev for a
+# fix before dropping this.
+dependency_overrides:
+  hint_kit:
+    path: packages/hint_kit
+  tooltip_card:
+    path: packages/tooltip_card
+
 flutter:
   uses-material-design: true
   assets:

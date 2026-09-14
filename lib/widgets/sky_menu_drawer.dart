@@ -5,6 +5,7 @@ import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
+import '../tutorials/tour_intro_target.dart';
 import '../tutorials/tour_step_card.dart';
 
 /// Parks the menu's "Metaphor" entry (the full-length explainer screen),
@@ -213,16 +214,14 @@ class SkyMenuContent extends StatelessWidget {
                 horizontal: 32,
                 vertical: 12,
               ),
-              // [mainAxisSize.min], not the Row default — the popup's own
-              // width comes from its widest child (see [Dialog] below,
-              // which shrink-wraps its [Column]), so a Row that instead
-              // stretches to fill whatever width it's *offered* would
-              // pull that width — and so the whole popup's background —
-              // out to nearly the full screen, with [mainAxisAlignment]
-              // then only centering the actual icon+label inside all
-              // that empty space rather than sizing to it.
+              // The Row default (fills whatever width it's given), not
+              // `mainAxisSize.min` — every row is now stretched to the
+              // width of the widest one by the `IntrinsicWidth` +
+              // `CrossAxisAlignment.stretch` wrapping all three below, so
+              // each row's own natural width no longer matters here; this
+              // just lets it actually fill that shared width instead of
+              // shrinking back to its own label's size inside it.
               child: Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(icon, color: colors.gold),
                   const SizedBox(width: 12),
@@ -272,43 +271,57 @@ class SkyMenuContent extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const SizedBox(height: 4),
-                // Left-aligned, not the Column default center — with each
-                // [choice] row sized to its own label (see its own
-                // `mainAxisSize.min`), centering left the shorter labels
-                // adrift under the widest one instead of all three
-                // lining up on the same left edge. Scoped to just these
-                // three (a nested Column) rather than the whole dialog,
-                // so Cancel below stays centered on its own — it isn't
-                // one of the icon+label choices this is about.
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    choice(
-                      icon: Icons.flare,
-                      label: strings.lightYourSkyChooserSupernovaOption,
-                      onTap: onVisions,
-                      tourOrder: 1,
-                      tourTitle: strings.lightYourSkyTourSupernovaTitle,
-                      tourBody: strings.lightYourSkyTourSupernovaBody,
-                    ),
-                    choice(
-                      icon: Icons.auto_awesome,
-                      label: strings.menuNewConstellation,
-                      onTap: onNewConstellation,
-                      tourOrder: 2,
-                      tourTitle: strings.lightYourSkyTourConstellationTitle,
-                      tourBody: strings.lightYourSkyTourConstellationBody,
-                    ),
-                    choice(
-                      icon: Icons.star,
-                      label: strings.menuLightAStar,
-                      onTap: onLightAStar,
-                      tourOrder: 3,
-                      tourTitle: strings.lightYourSkyTourStarTitle,
-                      tourBody: strings.lightYourSkyTourStarBody,
-                    ),
-                  ],
+                TourIntroTarget(
+                  tour: 'light-your-sky',
+                  order: 1,
+                  title: strings.lightYourSkyTourIntroTitle,
+                  description: strings.lightYourSkyTourIntroBody,
+                ),
+                // `IntrinsicWidth` measures the widest of the three rows,
+                // then `CrossAxisAlignment.stretch` makes every row that
+                // same width — different from just centering them, which
+                // would leave the shorter labels' *tap targets* narrower
+                // than the widest one even if the text looked aligned.
+                // Plain `CrossAxisAlignment.stretch` alone (no
+                // `IntrinsicWidth`) would instead stretch every row to
+                // whatever width the dialog's parent offers — up to
+                // nearly full-screen — which is exactly what [Dialog]'s
+                // own unbounded `constraints` below was chosen to avoid.
+                // Scoped to just these three (a nested widget) rather
+                // than the whole dialog, so Cancel below stays centered
+                // on its own — it isn't one of the icon+label choices
+                // this is about.
+                IntrinsicWidth(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      choice(
+                        icon: Icons.flare,
+                        label: strings.lightYourSkyChooserSupernovaOption,
+                        onTap: onVisions,
+                        tourOrder: 2,
+                        tourTitle: strings.lightYourSkyTourSupernovaTitle,
+                        tourBody: strings.lightYourSkyTourSupernovaBody,
+                      ),
+                      choice(
+                        icon: Icons.auto_awesome,
+                        label: strings.menuNewConstellation,
+                        onTap: onNewConstellation,
+                        tourOrder: 3,
+                        tourTitle: strings.lightYourSkyTourConstellationTitle,
+                        tourBody: strings.lightYourSkyTourConstellationBody,
+                      ),
+                      choice(
+                        icon: Icons.star,
+                        label: strings.menuLightAStar,
+                        onTap: onLightAStar,
+                        tourOrder: 4,
+                        tourTitle: strings.lightYourSkyTourStarTitle,
+                        tourBody: strings.lightYourSkyTourStarBody,
+                      ),
+                    ],
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.only(top: 8),

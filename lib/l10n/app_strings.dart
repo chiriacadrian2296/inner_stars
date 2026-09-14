@@ -232,20 +232,33 @@ abstract class AppStrings {
   String get tourDoneAction;
   String tourProgressLabel(int step, int length);
 
-  // "sky-navigation" tour — the Sky screen itself (`sky_screen.dart`):
-  // pan/zoom/tap, the menu, the Sound Lab. First tour a fresh install ever
-  // sees.
-  String get skyTourLookAroundTitle;
-  String get skyTourLookAroundBody;
+  // "sky-navigation" tour — the Sky screen itself (`sky_screen.dart`). First
+  // tour a fresh install ever sees. Every step but the last advances only
+  // on the real gesture it describes (see `TourGestureStep`), not on a
+  // Next tap.
+  String get skyTourTapSupernovaTitle;
+  String get skyTourTapSupernovaBody;
+  String get skyTourTapConstellationTitle;
+  String get skyTourTapConstellationBody;
+  String get skyTourTapStarTitle;
+  String get skyTourTapStarBody;
+  String get skyTourDoubleTapTitle;
+  String get skyTourDoubleTapBody;
+  String get skyTourHoldTitle;
+  String get skyTourHoldBody;
+  String get skyTourTooltipTitle;
+  String get skyTourTooltipBody;
   String get skyTourMenuTitle;
   String get skyTourMenuBody;
-  String get skyTourSoundLabTitle;
-  String get skyTourSoundLabBody;
 
   // "star-form" tour (`lib/tutorials/`) — the whole star form, every
   // creatable kind (lit victory, unlit goal, pulsar habit).
+  String get starTourIntroTitle;
+  String get starTourIntroBody;
   String get starTourKindTitle;
   String get starTourKindBody;
+  String get starTourLegendTitle;
+  String get starTourLegendBody;
   String get starTourSupernovaFieldTitle;
   String get starTourSupernovaFieldBody;
   String get starTourConstellationFieldTitle;
@@ -271,6 +284,8 @@ abstract class AppStrings {
 
   // "search-stars" tour — the Sky's search/filter popup
   // (`SkyExplorerView`/`area_filter_sheet.dart`).
+  String get searchTourIntroTitle;
+  String get searchTourIntroBody;
   String get searchTourModeTitle;
   String get searchTourModeBody;
   String get searchTourFieldTitle;
@@ -286,6 +301,8 @@ abstract class AppStrings {
 
   // "light-your-sky" tour — the Supernovas/Constellations/Stars chooser
   // popup opened from the Sky's own menu (`sky_menu_drawer.dart`).
+  String get lightYourSkyTourIntroTitle;
+  String get lightYourSkyTourIntroBody;
   String get lightYourSkyTourSupernovaTitle;
   String get lightYourSkyTourSupernovaBody;
   String get lightYourSkyTourConstellationTitle;
@@ -294,6 +311,10 @@ abstract class AppStrings {
   String get lightYourSkyTourStarBody;
 
   // "constellation-form" tour — `NewProjectScreen`.
+  String get constellationTourIntroTitle;
+  String get constellationTourIntroBody;
+  String get constellationTourLegendTitle;
+  String get constellationTourLegendBody;
   String get constellationTourAreaTitle;
   String get constellationTourAreaBody;
   String get constellationTourIconFieldTitle;
@@ -302,12 +323,20 @@ abstract class AppStrings {
   String get constellationTourNameBody;
   String get constellationTourDescriptionTitle;
   String get constellationTourDescriptionBody;
-  String get constellationTourShapeTitle;
-  String get constellationTourShapeBody;
+  String get constellationTourCanvasTitle;
+  String get constellationTourCanvasBody;
+  String get constellationTourDrawButtonTitle;
+  String get constellationTourDrawButtonBody;
+  String get constellationTourLibraryButtonTitle;
+  String get constellationTourLibraryButtonBody;
+  String get constellationTourResetButtonTitle;
+  String get constellationTourResetButtonBody;
   String get constellationTourSaveTitle;
   String get constellationTourSaveBody;
 
   // "supernova-vision" tour — `VisionsScreen` into `AreaDetailScreen`.
+  String get supernovaTourIntroTitle;
+  String get supernovaTourIntroBody;
   String get supernovaTourListTitle;
   String get supernovaTourListBody;
   String get supernovaTourEditTitle;
@@ -317,6 +346,10 @@ abstract class AppStrings {
 
   String get replayToursAction;
   String get replayToursResult;
+  String get tutorialsButtonTooltip;
+  String get tutorialsManagementTitle;
+  String get tutorialsEnabledLabel;
+  String get tutorialsEnabledDescription;
 
   // Sky + area projects
   String starsCount(int count);

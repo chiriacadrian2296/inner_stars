@@ -50,26 +50,22 @@ class _AppTourStepCard extends StatelessWidget {
                 info.labels.progress(info.step, info.length),
                 style: theme.messageStyle,
               ),
-            // Darkest, least prominent — the way out, not a real choice.
             if (!info.isLast)
               _AppTourButton(
                 label: info.labels.skip,
                 onPressed: info.controller.skip,
-                background: AppColors.dark.night,
               ),
-            // A shade up from Skip — still secondary, but a real step back.
             if (!info.isFirst)
               _AppTourButton(
                 label: info.labels.back,
                 onPressed: info.controller.previous,
-                background: AppColors.dark.nightPanel,
               ),
-            // Lightest/most prominent navy — this is the one action every
-            // step actually wants taken.
+            // The one action every step actually wants taken — bolder
+            // weight only, since the shared white/navy treatment no longer
+            // has a shade ladder to set it apart with.
             _AppTourButton(
               label: info.labels.advance(isLast: info.isLast),
               onPressed: info.controller.next,
-              background: AppColors.dark.nightBorder,
               emphasised: true,
             ),
           ],
@@ -79,20 +75,18 @@ class _AppTourStepCard extends StatelessWidget {
   }
 }
 
-/// One Skip/Back/Next control — a solid navy pill (shade set by [background])
-/// with gold text, rather than hint_kit's own default of a translucent fill
-/// only on the emphasised button and a bare outline on the rest.
+/// One Skip/Back/Next control — a solid white pill with dark navy text,
+/// rather than hint_kit's own default of a translucent fill only on the
+/// emphasised button and a bare outline on the rest.
 class _AppTourButton extends StatelessWidget {
   const _AppTourButton({
     required this.label,
     required this.onPressed,
-    required this.background,
     this.emphasised = false,
   });
 
   final String label;
   final VoidCallback onPressed;
-  final Color background;
   final bool emphasised;
 
   @override
@@ -104,13 +98,13 @@ class _AppTourButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: background,
+            color: AppColors.dark.text,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             label,
             style: TextStyle(
-              color: AppColors.dark.gold,
+              color: AppColors.dark.night,
               fontWeight: emphasised ? FontWeight.w700 : FontWeight.w600,
               fontSize: 13,
             ),

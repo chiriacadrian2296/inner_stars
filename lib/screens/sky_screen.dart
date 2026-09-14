@@ -33,8 +33,9 @@ import '../notifications/reminder_service.dart';
 import '../settings/settings_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
-import '../tutorials/tour_glow.dart';
+import '../tutorials/tour_gesture_step.dart';
 import '../tutorials/tour_step_card.dart';
+import '../tutorials/tutorial_management.dart';
 import '../utils/habit_stats.dart';
 import '../utils/haptics.dart';
 import '../utils/responsive.dart';
@@ -321,6 +322,40 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// doesn't ask for straightening explicitly resets this back to 0.
   double _flyRollCorrection = 0;
 
+  /// Whether the most recent [_flyToWorld] call actually moved the camera
+  /// (or would have, had it not short-circuited — see there) — read by
+  /// [_handleTapUp] right after [_resolveTapTarget] to decide whether the
+  /// tap sound/haptic play at all. Retapping whatever the camera is
+  /// already sitting on is a real, common gesture (re-opening a tooltip
+  /// just closed, say), and playing "you moved" feedback for a tap that
+  /// visibly did nothing read as the sky misreporting itself. Defaults to
+  /// `true` so any caller that reaches the camera some other way (not
+  /// through [_flyToWorld]) keeps today's behaviour rather than silently
+  /// losing its feedback.
+  bool _lastFlightMoved = true;
+
+  /// Below this angular separation (radians) between the camera's current
+  /// aim and a flight's target, or this many zoom *percent* apart (see
+  /// [zoomPercent]), a flight is close enough to "already there" that
+  /// animating it would show no visible movement — small enough that no
+  /// genuine tap ever lands inside it (every real target the sky can fly
+  /// to sits much farther than this from any other), large enough to
+  /// absorb ordinary floating-point residue from repeated flights to the
+  /// exact same spot.
+  static const _flyMovementAngleEpsilon = 0.0015;
+  static const _flyMovementZoomPercentEpsilon = 0.05;
+
+  /// The dot product of two sky-sphere direction vectors — see
+  /// [SkyCamera.forward] — used only to measure the angle between them
+  /// (`acos`, clamped) for [_flyToWorld]'s own "would this actually move
+  /// the camera" check. Kept local rather than reused from
+  /// `constellation_field.dart`'s own private `_dot`, which this file has
+  /// no access to.
+  static double _dotDirections(
+    (double, double, double) a,
+    (double, double, double) b,
+  ) => a.$1 * b.$1 + a.$2 * b.$2 + a.$3 * b.$3;
+
   @override
   void initState() {
     super.initState();
@@ -332,14 +367,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       vsync: this,
       duration: _holdDuration,
     );
-    // Every read of [_quickLookConstellation]/[_quickLookStar] below is a
-    // plain synchronous getter over this controller's own `data`, same as
-    // when they were separate `setState`-managed fields — this listener
-    // is what still makes that work now that they're not: `open`/`close`/
-    // `updateData` all notify it, same as any other state change would.
-    _skyTooltipController.addListener(() {
-      if (mounted) setState(() {});
-    });
+    _skyTooltipController.addListener(_onSkyTooltipChanged);
     _loadData();
     _loadFlareProgram();
     // Opens centered on "Love" rather than the world origin — with a
@@ -537,6 +565,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     ConstellationStar star, {
     required bool showTooltip,
   }) async {
+    // The "tap a star" tour step, not the hold/tooltip half — a plain tap
+    // on any star (nascent slot or a real one) satisfies it.
+    if (!showTooltip) _advanceGestureTourStep(3);
     // A nascent star isn't something to read — it's an empty slot on the
     // shape, and tapping it is how you give it a meaning.
     if (star.kind == StarKind.nascent) {
@@ -1029,6 +1060,12 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// being tried alongside the drawer, not a replacement for it — both
   /// stay live so the two can be compared.
   void _openMenuModal() {
+    // The tour's last step — see `TourGestureStep`'s own doc comment for
+    // why this is a direct call rather than `passthrough`'s usual "call
+    // next() from the target's own callback" pattern being any different
+    // here: it's the same pattern, just on a real `HintTarget` instead of
+    // an invisible full-screen one.
+    _advanceGestureTourStep(7);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -1203,12 +1240,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
           .forward;
     }
 
-    _stopInertia();
-    _playZoomTransitionSound(_zoom, targetZoom);
-    _flyStartCamera = _camera;
-    _flyTargetForward = targetForward;
-    _flyStartZoom = _zoom;
-    _flyTargetZoom = targetZoom;
     // Computed against the *fully-swept* (t=1) target camera, not the
     // current one — verified by hand (see the scratch test this was
     // checked with): [rotatedToAlignFraction] does NOT preserve the roll
@@ -1226,10 +1257,37 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // own "canonical" reference frame and the painter's don't agree on
     // which way is up; landing on the *opposite* pole of that reading is
     // what actually matches the shape editor's own orientation.
-    _flyRollCorrection = straightenRoll
+    final rollCorrection = straightenRoll
         ? math.pi -
               cameraRollAngle(_camera.rotatedToAlign(_camera.forward, targetForward))
-        : 0;
+        : 0.0;
+
+    // Nothing to actually fly — the camera is already aimed here (a retap
+    // on whatever's already focused, most commonly). See
+    // [_lastFlightMoved]'s own doc comment for why this matters to the
+    // caller: skip the flight *and* its tap sound/haptic, but still hand
+    // back an already-resolved future so a hold's tooltip opens at once
+    // rather than waiting on a flight that was never going to tick.
+    final angleToTarget = math.acos(
+      _dotDirections(_camera.forward, targetForward).clamp(-1.0, 1.0),
+    );
+    final movedEnough = angleToTarget > _flyMovementAngleEpsilon ||
+        (zoomPercent(targetZoom) - zoomPercent(_zoom)).abs() >
+            _flyMovementZoomPercentEpsilon ||
+        rollCorrection.abs() > _flyMovementAngleEpsilon;
+    if (!movedEnough) {
+      _lastFlightMoved = false;
+      return TickerFuture.complete();
+    }
+    _lastFlightMoved = true;
+
+    _stopInertia();
+    _playZoomTransitionSound(_zoom, targetZoom);
+    _flyStartCamera = _camera;
+    _flyTargetForward = targetForward;
+    _flyStartZoom = _zoom;
+    _flyTargetZoom = targetZoom;
+    _flyRollCorrection = rollCorrection;
     _flyController
       ..stop()
       ..reset();
@@ -1833,8 +1891,14 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       // A short buzz for "a movement in the sky just started" — the
       // hold's own long buzz (see [_startHoldHaptic]) means "a tooltip
       // just opened" instead, so this only ever fires from a plain tap.
-      if (isTouchOnlyMobile) _tapHaptic();
-      widget.audioService.playTapSound();
+      // Gated on [_lastFlightMoved] (see its own doc comment): a tap on
+      // whatever the camera is already sitting on triggers this same
+      // branch — a real, deliberate hit — but shouldn't buzz/whoosh for a
+      // "movement" that never actually happened.
+      if (_lastFlightMoved) {
+        if (isTouchOnlyMobile) _tapHaptic();
+        widget.audioService.playTapSound();
+      }
       _lastEmptyTapTime = null;
       return;
     }
@@ -1890,11 +1954,56 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     }
   }
 
+  /// Advances the "sky-navigation" tour past [order] once the matching
+  /// real gesture has actually happened — called from the tail of the
+  /// same handlers the gesture itself already runs through (`_flyToArea`,
+  /// `_openStar`, `_zoomOutOneLevel`, `_holdConstellation`, and
+  /// `_openMenuModal`'s own step further down), since these steps have no
+  /// widget for `HintTarget`'s own `passthrough` callback pattern to sit
+  /// on — see [TourGestureStep]'s own doc comment for the full mechanism.
+  /// A short pause first, so the camera flight/zoom the gesture just
+  /// triggered is visibly under way before the next step's card replaces
+  /// this one — jumping straight to the next instruction read as the app
+  /// not acknowledging what the user just did.
+  void _advanceGestureTourStep(int order) {
+    final controller = Tour.maybeOf(context);
+    if (controller == null || controller.activeTour != 'sky-navigation') {
+      return;
+    }
+    if (TourScope.of(context).orderAt('sky-navigation', controller.index) !=
+        order) {
+      return;
+    }
+    Future.delayed(const Duration(milliseconds: 900), () {
+      if (mounted) Tour.read(context).next();
+    });
+  }
+
+  /// Reacts to the sky's own tooltip opening, closing or changing data —
+  /// the `setState` nudge every part of [build] reading
+  /// [_quickLookConstellation]/[_quickLookStar]/[_skyTooltipController]
+  /// needs, plus advancing the "sky-navigation" tour's order-6 step
+  /// ([_holdConstellation]'s own order-5 step opens the tooltip this one
+  /// is about) once that tooltip actually closes.
+  ///
+  /// That step has no single real gesture to wait for the way every other
+  /// one does — the tooltip closes via its own X, a tap outside it, or
+  /// just moving the camera (see the several [TooltipCardController.close]
+  /// call sites above) — so rather than adding a call to
+  /// [_advanceGestureTourStep] at the tail of every one of those, this
+  /// hooks the controller directly and reuses [_advanceGestureTourStep]
+  /// only for its guard/pause, the same as they do.
+  void _onSkyTooltipChanged() {
+    if (mounted) setState(() {});
+    if (!_skyTooltipController.isOpen) _advanceGestureTourStep(6);
+  }
+
   /// The plain-tap half of a supernova hit — just the "take me there"
   /// flight every other target in the app gets, camera only, no tooltip.
   /// See [_holdArea] for the hold half, which adds the tooltip back in.
   void _flyToArea(LifeArea area) {
     _flyTo(SkyAreaTarget(area));
+    _advanceGestureTourStep(1);
   }
 
   /// The hold half of a supernova hit — same flight as [_flyToArea], plus
@@ -1911,6 +2020,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// constellations.
   void _flyToConstellation(PlacedConstellation constellation) {
     _flyTo(SkyProjectTarget(constellation.project));
+    _advanceGestureTourStep(2);
   }
 
   /// See [_holdArea]'s own note — same change, for constellations. Also
@@ -1923,6 +2033,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       _flyTo(SkyProjectTarget(constellation.project), straightenRoll: true),
       _ConstellationTooltip(constellation),
     );
+    _advanceGestureTourStep(5);
   }
 
   /// Steps back one rung of the [_areaZoomPercent]/
@@ -1953,6 +2064,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       if (rung < currentPercent - 0.5) target = rung;
     }
     _zoomTo(zoomFromPercent(target).clamp(minZoomWithoutRepeats, _maxZoom));
+    _advanceGestureTourStep(4);
   }
 
   /// Animates [_zoom] alone to [targetZoom], camera orientation
@@ -2098,26 +2210,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                       zoom: _zoom,
                       showGrid: widget.settings.showGrid,
                     ),
-                    // An inert, invisible full-screen anchor purely so the
-                    // "sky-navigation" tour's first step has *something* to
-                    // spotlight — the sky itself is one hand-drawn canvas,
-                    // not discrete per-star widgets, so there's no single
-                    // real widget for "here's how to look around" to point
-                    // at. IgnorePointer keeps it out of the gesture arena
-                    // entirely; it never affects a real tap/pan/pinch.
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: HintTarget(
-                          tour: 'sky-navigation',
-                          order: 1,
-                          showArrow: true,
-                          contentBuilder: appTourStepCard,
-                          title: context.strings.skyTourLookAroundTitle,
-                          description: context.strings.skyTourLookAroundBody,
-                          child: const SizedBox.expand(),
-                        ),
-                      ),
-                    ),
                     // A decorative sigil behind each supernova — see
                     // sky_area_sigils.dart. Painted before SkySupernova so that
                     // widget's own glow/icon sit on top of it, not the other
@@ -2143,6 +2235,67 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                       // that isn't.
                       palette: kSkyStarPalette,
                       revision: _revision,
+                    ),
+                    // Six gesture-driven steps — the sky itself is one
+                    // hand-drawn canvas, not discrete per-star widgets, so
+                    // there's nothing for a normal `HintTarget` to circle;
+                    // each of these registers its own order (see
+                    // [TourGestureStep]) and only actually advances from
+                    // the matching real gesture's own handler below
+                    // (`_flyToArea`, `_openStar`, etc. — order 6 is
+                    // different, see [_onSkyTooltipChanged]), not from a
+                    // Next tap. The seventh and last step, the menu FAB, is
+                    // a real widget with a real spotlight — see further
+                    // down. Placed after `SkySupernova`/
+                    // `AnimatedConstellationField`, not up with the rest of
+                    // the sky's own background layers, so a banner's own
+                    // solid card paints over a bright supernova/constellation
+                    // sitting right behind it instead of under its glow.
+                    TourGestureStep(tour: 'sky-navigation', order: 1),
+                    TourGestureStep(tour: 'sky-navigation', order: 2),
+                    TourGestureStep(tour: 'sky-navigation', order: 3),
+                    TourGestureStep(tour: 'sky-navigation', order: 4),
+                    TourGestureStep(tour: 'sky-navigation', order: 5),
+                    TourGestureStep(tour: 'sky-navigation', order: 6),
+                    TourGestureBanner(
+                      tour: 'sky-navigation',
+                      order: 1,
+                      title: context.strings.skyTourTapSupernovaTitle,
+                      description: context.strings.skyTourTapSupernovaBody,
+                    ),
+                    TourGestureBanner(
+                      tour: 'sky-navigation',
+                      order: 2,
+                      title: context.strings.skyTourTapConstellationTitle,
+                      description: context.strings.skyTourTapConstellationBody,
+                    ),
+                    TourGestureBanner(
+                      tour: 'sky-navigation',
+                      order: 3,
+                      title: context.strings.skyTourTapStarTitle,
+                      description: context.strings.skyTourTapStarBody,
+                    ),
+                    TourGestureBanner(
+                      tour: 'sky-navigation',
+                      order: 4,
+                      title: context.strings.skyTourDoubleTapTitle,
+                      description: context.strings.skyTourDoubleTapBody,
+                    ),
+                    TourGestureBanner(
+                      tour: 'sky-navigation',
+                      order: 5,
+                      title: context.strings.skyTourHoldTitle,
+                      description: context.strings.skyTourHoldBody,
+                    ),
+                    // Sits on top of the tooltip [_holdConstellation]'s own
+                    // hold just opened — no gesture of its own to wait for,
+                    // just the tooltip closing (see
+                    // [_onSkyTooltipChanged]), whichever way that happens.
+                    TourGestureBanner(
+                      tour: 'sky-navigation',
+                      order: 6,
+                      title: context.strings.skyTourTooltipTitle,
+                      description: context.strings.skyTourTooltipBody,
                     ),
                     // The way into everything that isn't the sky itself — same
                     // disc/navy/gold styling as every other overlay control.
@@ -2446,34 +2599,36 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                           child: Center(
                             child: HintTarget(
                               tour: 'sky-navigation',
-                              order: 2,
+                              order: 7,
                               showArrow: true,
-                              // The spotlight's own hole is sized to the
-                              // button's bounds plus this padding — the
-                              // default (8px) is far smaller than
-                              // [_TourGlow]'s blur/spread, so most of the
-                              // glow was being covered right back up by
-                              // the scrim surrounding that tight hole.
-                              // Confirmed live: the glow only became
-                              // genuinely visible once the hole was
-                              // widened enough to contain the whole
-                              // painted glow, not just the button itself.
-                              spotlightPadding: kTourGlowSpotlightPadding,
+                              // Real tap advances this one too (see
+                              // `_openMenuModal`) — it's the last step, so
+                              // `passthrough` has to let the actual press
+                              // through to `_MenuStarButton` underneath
+                              // instead of the scrim swallowing it.
+                              passthrough: true,
                               // A circle, not the default rounded rect —
                               // matches the button's own round shape
                               // instead of leaving dimmed corners inside
                               // a squared-off hole.
                               spotlight: SpotlightShape.circle,
+                              // Negative on purpose: `_MenuStarButton`'s own
+                              // measured size is its 110×110 tap target
+                              // (see `_tapTargetSize`), deliberately much
+                              // bigger than what it actually draws — the
+                              // visible mark is the app logo at `_logoSize`
+                              // (72px), not the underlying `_iconSize`
+                              // (58px) an earlier pass mistakenly used here,
+                              // which pulled the hole in too far and nearly
+                              // clipped the logo. -11 targets a hole of
+                              // 72 + 2*8 = 88px — the same ~8px gap Sound
+                              // Lab gets from the theme's plain default,
+                              // around the logo's own real size.
+                              spotlightPadding: const EdgeInsets.all(-11),
                               contentBuilder: appTourStepCard,
                               title: context.strings.skyTourMenuTitle,
                               description: context.strings.skyTourMenuBody,
-                              child: TourGlow(
-                                tour: 'sky-navigation',
-                                order: 2,
-                                shape: BoxShape.circle,
-                                color: context.colors.gold,
-                                child: _MenuStarButton(onTap: _openMenuModal),
-                              ),
+                              child: _MenuStarButton(onTap: _openMenuModal),
                             ),
                           ),
                         ),
@@ -2491,26 +2646,31 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                       child: SafeArea(
                         child: Padding(
                           padding: const EdgeInsets.all(12),
-                          child: HintTarget(
-                            tour: 'sky-navigation',
-                            order: 3,
-                            showArrow: true,
-                            // See the menu button's own HintTarget above.
-                            spotlightPadding: kTourGlowSpotlightPadding,
-                            spotlight: SpotlightShape.circle,
-                            contentBuilder: appTourStepCard,
-                            title: context.strings.skyTourSoundLabTitle,
-                            description: context.strings.skyTourSoundLabBody,
-                            child: TourGlow(
-                              tour: 'sky-navigation',
-                              order: 3,
-                              shape: BoxShape.circle,
-                              color: context.colors.gold,
-                              child: _SkyOverlayButton(
-                                icon: Icons.graphic_eq,
-                                tooltip: context.strings.soundLabButtonTooltip,
-                                onTap: _openSoundLab,
-                              ),
+                          child: _SkyOverlayButton(
+                            icon: Icons.graphic_eq,
+                            tooltip: context.strings.soundLabButtonTooltip,
+                            onTap: _openSoundLab,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Tutorial management (on/off switch + reset) — right
+                    // below the Sound Lab button, same corner, same style;
+                    // no `HintTarget` of its own since it isn't part of any
+                    // tour. See `showTutorialManagementDialog`'s own doc
+                    // comment for why this moved out of Settings.
+                    Positioned(
+                      top: 64,
+                      right: 0,
+                      child: SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: _SkyOverlayButton(
+                            icon: Icons.school_outlined,
+                            tooltip: context.strings.tutorialsButtonTooltip,
+                            onTap: () => showTutorialManagementDialog(
+                              context,
+                              settings: widget.settings,
                             ),
                           ),
                         ),
