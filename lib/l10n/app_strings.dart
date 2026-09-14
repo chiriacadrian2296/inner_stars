@@ -351,6 +351,19 @@ abstract class AppStrings {
   String get tutorialsEnabledLabel;
   String get tutorialsEnabledDescription;
 
+  // "Quick Settings" — one of the quick-access mini menu's five entries
+  // (see `_QuickAccessFan` in `sky_screen.dart`, opened by a plain tap on
+  // the Sky's menu button). The other four reuse existing labels/tooltips
+  // above (search, supernova/constellation/star creation); this backs its
+  // own lightweight page, which bundles the background music toggle+volume,
+  // the sky grid toggle and the tutorials toggle in one place — deeper
+  // audio tuning still lives in Sound Lab, linked from here.
+  String get quickSettingsButtonTooltip;
+  String get quickSettingsEyebrow;
+  String get quickSettingsTitle;
+  String get quickSettingsAudioSection;
+  String get quickSettingsOpenSoundLabAction;
+
   // Sky + area projects
   String starsCount(int count);
   String areaEmptyProjects(String areaName);

@@ -719,6 +719,16 @@ class StringsEn implements AppStrings {
   String get tutorialsEnabledDescription =>
       'Guided tips appear the first time you open a screen that has one.';
   @override
+  String get quickSettingsButtonTooltip => 'Quick Settings';
+  @override
+  String get quickSettingsEyebrow => 'QUICK SETTINGS';
+  @override
+  String get quickSettingsTitle => 'Quick Settings';
+  @override
+  String get quickSettingsAudioSection => 'Audio';
+  @override
+  String get quickSettingsOpenSoundLabAction => 'Open Sound Lab';
+  @override
   String get volumeSectionLabel => 'Volume';
   @override
   String get backgroundVolumeLabel => 'Background';

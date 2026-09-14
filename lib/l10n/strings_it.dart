@@ -725,6 +725,16 @@ class StringsIt implements AppStrings {
   String get tutorialsEnabledDescription =>
       'I suggerimenti guidati compaiono la prima volta che apri una schermata che li prevede.';
   @override
+  String get quickSettingsButtonTooltip => 'Impostazioni rapide';
+  @override
+  String get quickSettingsEyebrow => 'IMPOSTAZIONI RAPIDE';
+  @override
+  String get quickSettingsTitle => 'Impostazioni rapide';
+  @override
+  String get quickSettingsAudioSection => 'Audio';
+  @override
+  String get quickSettingsOpenSoundLabAction => 'Apri Sound Lab';
+  @override
   String get volumeSectionLabel => 'Volume';
   @override
   String get backgroundVolumeLabel => 'Sottofondo';

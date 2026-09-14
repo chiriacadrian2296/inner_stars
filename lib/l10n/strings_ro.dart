@@ -727,6 +727,16 @@ class StringsRo implements AppStrings {
   String get tutorialsEnabledDescription =>
       'Indiciile ghidate apar prima dată când deschizi un ecran care are unul.';
   @override
+  String get quickSettingsButtonTooltip => 'Setări rapide';
+  @override
+  String get quickSettingsEyebrow => 'SETĂRI RAPIDE';
+  @override
+  String get quickSettingsTitle => 'Setări rapide';
+  @override
+  String get quickSettingsAudioSection => 'Audio';
+  @override
+  String get quickSettingsOpenSoundLabAction => 'Deschide Sound Lab';
+  @override
   String get volumeSectionLabel => 'Volum';
   @override
   String get backgroundVolumeLabel => 'Fundal';

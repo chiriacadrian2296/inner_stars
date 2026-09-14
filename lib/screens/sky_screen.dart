@@ -65,6 +65,7 @@ import 'sky_search_screen.dart';
 import 'metaphor_screen.dart';
 import 'pulsar_reader_screen.dart';
 import 'new_project_screen.dart';
+import 'quick_settings_screen.dart';
 import 'settings_screen.dart';
 import 'sound_lab_screen.dart';
 import 'constellation_screen.dart';
@@ -296,6 +297,19 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   static const bool _showSearchButton = false;
   static const bool _showUiControlsButton = false;
   static const bool _showDrawerButton = false;
+  // Same pattern, for the Sound Lab/Tutorials buttons that used to sit
+  // top-right — [QuickSettingsScreen] (see the quick-access mini menu's
+  // Quick Settings entry) now covers both, so these are redundant rather
+  // than a second way in worth keeping visible.
+  static const bool _showSoundLabButton = false;
+  static const bool _showTutorialsButton = false;
+
+  /// Whether the quick-access mini menu (see [_QuickAccessFan]) is open —
+  /// toggled by a plain tap on [_MenuStarButton] (its `onQuickTap`), an
+  /// alternative to the same button's hold-to-open charge, which still
+  /// opens the full menu exactly as before (see [_openMenuModal]). Purely
+  /// exploratory alongside the full menu, not a replacement for it.
+  bool _quickAccessMenuOpen = false;
 
   /// Drives the "take me there" fly-to animation — a single controller
   /// reused across flights rather than rebuilt per tap, so a second tap
@@ -1054,12 +1068,50 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _refresh();
   }
 
+  /// Toggles [_quickAccessMenuOpen] — [_MenuStarButton]'s own quick-tap
+  /// callback, and also what the mini menu's full-screen dismiss barrier
+  /// and each of its five buttons close back down again (see
+  /// [_QuickAccessFan] in build()).
+  void _toggleQuickAccessMenu() {
+    setState(() => _quickAccessMenuOpen = !_quickAccessMenuOpen);
+  }
+
+  void _closeQuickAccessMenu() {
+    if (_quickAccessMenuOpen) setState(() => _quickAccessMenuOpen = false);
+  }
+
+  /// Closes the mini menu, then runs [action] — every one of
+  /// [_QuickAccessFan]'s five buttons routes through this rather than
+  /// calling its destination directly, so picking one always leaves the
+  /// mini menu closed behind it instead of still open once the pushed
+  /// screen is popped back to.
+  void _selectQuickAccess(VoidCallback action) {
+    _closeQuickAccessMenu();
+    action();
+  }
+
+  void _openQuickSettings() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => QuickSettingsScreen(
+          settings: widget.settings,
+          audioService: widget.audioService,
+        ),
+      ),
+    );
+  }
+
   /// The FAB's own way into the same menu the drawer opens — same content
   /// ([SkyMenuContent], same callbacks), just as a modal sheet from the
   /// bottom instead of a panel from the side. An alternative entry point
   /// being tried alongside the drawer, not a replacement for it — both
   /// stay live so the two can be compared.
   void _openMenuModal() {
+    // Closed first rather than left open underneath — a hold that
+    // completes while the quick-access menu happens to be open (both
+    // read off the same button) should still land on a clean full menu,
+    // not one with the mini menu's own buttons still floating on top.
+    _closeQuickAccessMenu();
     // The tour's last step — see `TourGestureStep`'s own doc comment for
     // why this is a direct call rather than `passthrough`'s usual "call
     // next() from the target's own callback" pattern being any different
@@ -2628,7 +2680,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                               contentBuilder: appTourStepCard,
                               title: context.strings.skyTourMenuTitle,
                               description: context.strings.skyTourMenuBody,
-                              child: _MenuStarButton(onTap: _openMenuModal),
+                              child: _MenuStarButton(
+                                onTap: _openMenuModal,
+                                onQuickTap: _toggleQuickAccessMenu,
+                              ),
                             ),
                           ),
                         ),
@@ -2640,42 +2695,48 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                     // a growing pool of candidate sounds to audition;
                     // nothing behind it is destructive, so it's fine to
                     // stay one tap away rather than buried in Settings.
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: SafeArea(
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: _SkyOverlayButton(
-                            icon: Icons.graphic_eq,
-                            tooltip: context.strings.soundLabButtonTooltip,
-                            onTap: _openSoundLab,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Tutorial management (on/off switch + reset) — right
-                    // below the Sound Lab button, same corner, same style;
-                    // no `HintTarget` of its own since it isn't part of any
-                    // tour. See `showTutorialManagementDialog`'s own doc
-                    // comment for why this moved out of Settings.
-                    Positioned(
-                      top: 64,
-                      right: 0,
-                      child: SafeArea(
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: _SkyOverlayButton(
-                            icon: Icons.school_outlined,
-                            tooltip: context.strings.tutorialsButtonTooltip,
-                            onTap: () => showTutorialManagementDialog(
-                              context,
-                              settings: widget.settings,
+                    // Parked behind [_showSoundLabButton] now that
+                    // [QuickSettingsScreen] covers this same shortcut.
+                    if (_showSoundLabButton)
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: SafeArea(
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: _SkyOverlayButton(
+                              icon: Icons.graphic_eq,
+                              tooltip: context.strings.soundLabButtonTooltip,
+                              onTap: _openSoundLab,
                             ),
                           ),
                         ),
                       ),
-                    ),
+                    // Tutorial management (on/off switch + reset) — right
+                    // below the Sound Lab button, same corner, same style;
+                    // no `HintTarget` of its own since it isn't part of any
+                    // tour. See `showTutorialManagementDialog`'s own doc
+                    // comment for why this moved out of Settings. Parked
+                    // behind [_showTutorialsButton] for the same reason as
+                    // [_showSoundLabButton] just above.
+                    if (_showTutorialsButton)
+                      Positioned(
+                        top: 64,
+                        right: 0,
+                        child: SafeArea(
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: _SkyOverlayButton(
+                              icon: Icons.school_outlined,
+                              tooltip: context.strings.tutorialsButtonTooltip,
+                              onTap: () => showTutorialManagementDialog(
+                                context,
+                                settings: widget.settings,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     // The hold-charging ring (see [_handleTapDown]/
                     // [_holdRingController]) — last so it paints above
                     // every star/constellation/control here, never under
@@ -2691,6 +2752,67 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                           painter: _HoldRingPainter(
                             center: _holdRingCenter,
                             progress: _holdRingController.value,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // A full-screen catch-all that closes the quick-access
+                    // menu on an outside tap — sits right under the fan
+                    // itself (next) so both paint/hit-test above every
+                    // other control here, last two in this Stack on
+                    // purpose. [IgnorePointer] while closed lets every
+                    // normal gesture on the sky pass straight through, the
+                    // same as if this widget weren't here at all.
+                    IgnorePointer(
+                      ignoring: !_quickAccessMenuOpen,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: _closeQuickAccessMenu,
+                        child: const SizedBox.expand(),
+                      ),
+                    ),
+                    // The quick-access mini menu itself (see
+                    // [_QuickAccessFan]) — same bottom-center anchor as
+                    // [_MenuStarButton] just above (same
+                    // [SafeArea]/[Padding]/[Center] wrapping), so its own
+                    // fan of buttons arcs out from that exact button's
+                    // center rather than an independently-tuned spot.
+                    // Always mounted (never conditionally built) so it can
+                    // fade/scale in and out instead of popping; only
+                    // interactive while open.
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Center(
+                            child: IgnorePointer(
+                              ignoring: !_quickAccessMenuOpen,
+                              child: AnimatedScale(
+                                scale: _quickAccessMenuOpen ? 1 : 0.85,
+                                duration: const Duration(milliseconds: 160),
+                                curve: Curves.easeOut,
+                                child: AnimatedOpacity(
+                                  opacity: _quickAccessMenuOpen ? 1 : 0,
+                                  duration: const Duration(milliseconds: 160),
+                                  child: _QuickAccessFan(
+                                    onQuickSettings: () =>
+                                        _selectQuickAccess(_openQuickSettings),
+                                    onSupernovas: () =>
+                                        _selectQuickAccess(_openVisions),
+                                    onConstellations: () => _selectQuickAccess(
+                                      _openNewConstellation,
+                                    ),
+                                    onStars: () =>
+                                        _selectQuickAccess(_openStarForm),
+                                    onSearch: () =>
+                                        _selectQuickAccess(_openSearch),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -3066,9 +3188,17 @@ class _SkyOverlayButton extends StatelessWidget {
 /// a disc with a star-shaped hole cut out rather than a separate glyph,
 /// so it's hidden now.
 class _MenuStarButton extends StatefulWidget {
-  const _MenuStarButton({required this.onTap});
+  const _MenuStarButton({required this.onTap, required this.onQuickTap});
 
   final VoidCallback onTap;
+
+  // A plain tap — released before the charge below reaches 1.0 — used to
+  // open the quick-access mini menu (see `_QuickAccessFan`) instead of
+  // doing nothing, which is what a released-early press did before. Only
+  // fires on a genuine release (`onTapUp`), not on `onTapCancel` (the
+  // gesture arena handing this touch to something else, e.g. a pan
+  // starting on top of this button) — see `_handleTapUp`/`_handleTapCancel`.
+  final VoidCallback onQuickTap;
 
   @override
   State<_MenuStarButton> createState() => _MenuStarButtonState();
@@ -3141,14 +3271,23 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   // in build() below (already rebuilding every frame off [_ticker]), is
   // what drives `supernovaGlow`'s own [chargeGlow].
   late final AnimationController _chargeController;
-  // Shown briefly whenever a press lets go before the charge completes
-  // — a plain tap reads as "nothing happened" otherwise, with no clue
-  // that holding is what this button actually wants. Visible for
+  // Used to show this briefly whenever a press let go before the charge
+  // completed and wasn't a real tap either (see [_handleTapCancel]) — a
+  // plain tap now opens the quick-access mini menu instead (see
+  // [_MenuStarButtonState.build]'s own [_showHoldHintFeature] doc comment
+  // for why that path is off for now), so this never actually fires at
+  // the moment, but stays wired up rather than deleted. Visible for
   // [_hintVisibleDuration], then faded out quickly (see the
   // AnimatedOpacity in build()) rather than lingering.
   bool _showHoldHint = false;
   Timer? _hintTimer;
   static const _hintVisibleDuration = Duration(milliseconds: 1100);
+  // See the doc comment on [_showHoldHint] just above — the only place
+  // left that could still trigger the hint (a real cancel, not a tap) is
+  // gated behind this now that a plain tap has its own job. Off rather
+  // than deleted, same pattern as [_showStarRingIcon]/[_showMenuLabel]
+  // below: flip back to true to restore it exactly as it was.
+  static const _showHoldHintFeature = false;
 
   // Same real, continuous motor vibration as the sky's own hold, including
   // the same [_hapticActive]-guarded cancel — see
@@ -3216,22 +3355,36 @@ class _MenuStarButtonState extends State<_MenuStarButton>
     if (isTouchOnlyMobile) _startHoldHaptic();
   }
 
-  // Shared by both onTapUp (a genuine release) and onTapCancel (the
-  // gesture arena handing this touch to something else, e.g. a pan
-  // starting on top of this button) — either way, letting go before
-  // reaching 1.0 backs the charge off rather than leaving it stuck
-  // wherever it was, and is also exactly when the hint below is worth
-  // showing — the press genuinely wasn't held long enough to open
-  // anything.
-  void _handlePressEnd() {
+  // A genuine release — the gesture stayed on this button the whole time,
+  // finger lifted here. Letting go before the charge reaches 1.0 backs it
+  // off rather than leaving it stuck wherever it was, same as
+  // [_handleTapCancel] below, but this is also a real tap on its own
+  // right: it's what now opens the quick-access mini menu (see
+  // [_MenuStarButton.onQuickTap]), taking over from the hold-hint label
+  // this used to show instead (see [_showHoldHint]'s own doc comment for
+  // why that's parked rather than deleted).
+  void _handleTapUp() {
     _stopHoldHaptic();
     if (_chargeController.status == AnimationStatus.forward) {
       _chargeController.reverse();
-      _hintTimer?.cancel();
-      setState(() => _showHoldHint = true);
-      _hintTimer = Timer(_hintVisibleDuration, () {
-        if (mounted) setState(() => _showHoldHint = false);
-      });
+      widget.onQuickTap();
+    }
+  }
+
+  // The gesture arena handing this touch to something else instead (e.g. a
+  // pan starting on top of this button) — unlike [_handleTapUp], not a
+  // real tap, so it only backs the charge off, nothing more.
+  void _handleTapCancel() {
+    _stopHoldHaptic();
+    if (_chargeController.status == AnimationStatus.forward) {
+      _chargeController.reverse();
+      if (_showHoldHintFeature) {
+        _hintTimer?.cancel();
+        setState(() => _showHoldHint = true);
+        _hintTimer = Timer(_hintVisibleDuration, () {
+          if (mounted) setState(() => _showHoldHint = false);
+        });
+      }
     }
   }
 
@@ -3388,8 +3541,8 @@ class _MenuStarButtonState extends State<_MenuStarButton>
                 // actually fire).
                 onTap: () {},
                 onTapDown: (_) => _handlePressStart(),
-                onTapUp: (_) => _handlePressEnd(),
-                onTapCancel: _handlePressEnd,
+                onTapUp: (_) => _handleTapUp(),
+                onTapCancel: _handleTapCancel,
                 // No ripple/highlight of its own — [supernovaGlow]'s own
                 // [chargeGlow] is the only feedback a press gets here;
                 // Android's default translucent disc underneath would just
@@ -3452,6 +3605,152 @@ class _MenuStarButtonState extends State<_MenuStarButton>
             ),
           ),
       ],
+    );
+  }
+}
+
+/// The quick-access mini menu's five buttons, fanned out in a dome above
+/// [_MenuStarButton] — flutter_expandable_fab's "center fan" arrangement,
+/// built by hand instead of the package itself: [_MenuStarButton] is
+/// already a bespoke shader-drawn control with its own hold-to-charge
+/// gesture, not a real [FloatingActionButton], so there's no host widget
+/// that package could actually expand. Left to right per the request this
+/// was built from: Quick Settings, Supernovas, Constellations, Stars,
+/// Search.
+class _QuickAccessFan extends StatelessWidget {
+  const _QuickAccessFan({
+    required this.onQuickSettings,
+    required this.onSupernovas,
+    required this.onConstellations,
+    required this.onStars,
+    required this.onSearch,
+  });
+
+  final VoidCallback onQuickSettings;
+  final VoidCallback onSupernovas;
+  final VoidCallback onConstellations;
+  final VoidCallback onStars;
+  final VoidCallback onSearch;
+
+  // An ellipse, not a circle: [_radiusX] alone decides how far Quick
+  // Settings/Search reach out to the sides (see [_angleDeg] — they sit at
+  // exactly 180°/0°, so only [_radiusX] ever affects their position, never
+  // [_radiusY]), while [_radiusY] alone decides how high
+  // Supernovas/Constellations/Stars dome up above the main button. Shrunk
+  // from an equal-on-both-axes 92 (itself already pulled in from an even
+  // wider 118) specifically to lower that dome per request, without also
+  // pulling the two side buttons in past where they need to be to clear
+  // the main button horizontally.
+  static const _radiusX = 100.0;
+  static const _radiusY = 85.0;
+  // [_MenuStarButtonState._tapTargetSize] halved — the main button's own
+  // visible box sits with its *bottom* edge, not its center, on this
+  // fan's own shared baseline (both are anchored the same way: see the
+  // matching [SafeArea]/[Padding]/[Center] wrapping at each call site in
+  // build()), so this is what actually lines this fan's hub up with that
+  // button's true center instead of its bottom edge.
+  static const _hubLift = 55.0;
+  // One angle per button, left to right, measured the way [math.cos]/
+  // [math.sin] expect (0° is straight right, 90° straight up). Quick
+  // Settings and Search sit at exactly 180°/0° — pure horizontal, so
+  // [_radiusY]'s own vertical contribution (`sin(180°)`/`sin(0°)`, both
+  // 0) drops out entirely and their center lands exactly [_hubLift] above
+  // the baseline, the same height as the main button's own true center,
+  // by construction rather than by tuning — "all three centers on one
+  // horizontal line", per request. Supernovas/Constellations/Stars stay
+  // in a tighter 30°-apart cluster around 90° (dead center, straight up),
+  // leaving a wide, visibly empty 60° gap on the arc between that middle
+  // cluster and each side button.
+  static const _angleDeg = [180.0, 120.0, 90.0, 60.0, 0.0];
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = context.strings;
+    final items = <(IconData, String, VoidCallback)>[
+      (Icons.tune, strings.quickSettingsButtonTooltip, onQuickSettings),
+      (Icons.flare, strings.lightYourSkyChooserSupernovaOption, onSupernovas),
+      (Icons.auto_awesome, strings.menuNewConstellation, onConstellations),
+      (Icons.star, strings.menuLightAStar, onStars),
+      (Icons.saved_search, strings.menuSearch, onSearch),
+    ];
+
+    return SizedBox(
+      width: 280,
+      height: 180,
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        clipBehavior: Clip.none,
+        children: [
+          for (var i = 0; i < items.length; i++)
+            _fanItem(angleDeg: _angleDeg[i], item: items[i]),
+        ],
+      ),
+    );
+  }
+
+  /// One fan button, translated out from the shared hub by [angleDeg] (see
+  /// the class doc comment for the angle convention) — split out from
+  /// [build] just to keep that `for` loop itself readable.
+  Widget _fanItem({
+    required double angleDeg,
+    required (IconData, String, VoidCallback) item,
+  }) {
+    final angleRad = angleDeg * math.pi / 180;
+    final offset = Offset(
+      _radiusX * math.cos(angleRad),
+      -(_radiusY * math.sin(angleRad) + _hubLift),
+    );
+    final (icon, tooltip, onTap) = item;
+    return Transform.translate(
+      offset: offset,
+      child: _QuickAccessButton(icon: icon, tooltip: tooltip, onTap: onTap),
+    );
+  }
+}
+
+/// One button on [_QuickAccessFan] — the app's "white on navy" look (see
+/// the hold-hint label and the tour's own Skip/Back/Next buttons for the
+/// same pairing elsewhere) rather than [skyControlDecoration]'s usual
+/// gold-on-translucent, so this reads as its own distinct control, not one
+/// more thing in the gold-ringed family [_SkyOverlayButton] belongs to.
+class _QuickAccessButton extends StatelessWidget {
+  const _QuickAccessButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  static const _size = 40.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: Ink(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: colors.nightPanel,
+          border: Border.all(color: Colors.white, width: 2),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          child: SizedBox(
+            width: _size,
+            height: _size,
+            child: Tooltip(
+              message: tooltip,
+              child: Center(child: Icon(icon, color: Colors.white, size: 24)),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
