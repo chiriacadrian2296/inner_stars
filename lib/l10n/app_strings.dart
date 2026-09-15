@@ -268,6 +268,7 @@ abstract class AppStrings {
   // step).
   String get skyTourMenuCloseTitle;
   String get skyTourMenuCloseBody;
+  String get skyTourMenuCloseTryAction;
   String get skyTourQuickMenuTapTitle;
   String get skyTourQuickMenuTapBody;
   String get skyTourQuickSettingsHintTitle;
@@ -708,6 +709,16 @@ abstract class AppStrings {
   String indexOfCount(int index, int total);
   String get shareStarLabel;
   String get shareStarError;
+
+  /// The hint pill over a lit star's photo in [StarReaderScreen] — shown
+  /// pinned in place across both its states, only its text/icon swapping:
+  /// [starReaderTapForPhotoHint] before the tap that hides every other
+  /// control to show the photo full-screen, [starReaderTapForDataHint]
+  /// after, to tap back. "Anywhere" spelled out because the pill itself
+  /// isn't the tap target — it's just a reminder floating over the real
+  /// one, which is the whole screen.
+  String get starReaderTapForPhotoHint;
+  String get starReaderTapForDataHint;
 
   // Sky tooltips (tapping a star or a constellation on the Sky itself)
   String get starQuickLookViewAction;

@@ -516,6 +516,8 @@ class StringsIt implements AppStrings {
       'Trascinalo verso il basso, tocca fuori da esso, oppure usa il '
       'tasto indietro — funzionano tutti e tre.';
   @override
+  String get skyTourMenuCloseTryAction => 'Prova';
+  @override
   String get skyTourQuickMenuTapTitle => 'Un accesso più rapido';
   @override
   String get skyTourQuickMenuTapBody =>
@@ -1262,6 +1264,10 @@ class StringsIt implements AppStrings {
   @override
   String get shareStarError =>
       'Non è stato possibile condividere questa stella. Riprova?';
+  @override
+  String get starReaderTapForPhotoHint => 'Tocca ovunque per vedere la foto';
+  @override
+  String get starReaderTapForDataHint => 'Tocca ovunque per vedere i dati';
 
   @override
   String get starQuickLookViewAction => 'Visualizza';

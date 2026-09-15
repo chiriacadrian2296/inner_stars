@@ -511,6 +511,8 @@ class StringsEn implements AppStrings {
       'Swipe it down, tap outside it, or use the back button — any of '
       'these closes it.';
   @override
+  String get skyTourMenuCloseTryAction => 'Try it';
+  @override
   String get skyTourQuickMenuTapTitle => 'A quicker way in';
   @override
   String get skyTourQuickMenuTapBody =>
@@ -1243,6 +1245,10 @@ class StringsEn implements AppStrings {
   String get shareStarLabel => 'Share this Star';
   @override
   String get shareStarError => "Couldn't share that star. Try again?";
+  @override
+  String get starReaderTapForPhotoHint => 'Tap anywhere to see the photo';
+  @override
+  String get starReaderTapForDataHint => 'Tap anywhere to see the details';
 
   @override
   String get starQuickLookViewAction => 'View';

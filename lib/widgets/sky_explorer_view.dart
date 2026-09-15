@@ -874,95 +874,115 @@ class _ProjectCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: borderRadius,
-        child: Ink(decoration: panelDecoration(colors),
+        child: Ink(
+          decoration: panelDecoration(colors),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: colors.gold.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
+            // So the trailing NavigateHereButton below can be centered
+            // against the row's full height (via the Column wrapping it)
+            // while the icon/text stay top-aligned next to the title line.
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: colors.gold.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      iconForSlug(project.iconSlug),
+                      color: colors.gold,
+                      size: 26,
+                    ),
                   ),
-                  child: Icon(
-                    iconForSlug(project.iconSlug),
-                    color: colors.gold,
-                    size: 26,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        project.name,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 18,
-                          color: colors.text,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      AreaTag(area: project.area, iconSize: 14, fontSize: 13),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 14,
-                        runSpacing: 6,
-                        children: [
-                          _StatChip(
-                            icon: Icons.auto_awesome_outlined,
-                            text: strings.createdOnLabel(
-                              formatDisplayDate(project.createdAt, strings),
-                            ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          project.name,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                            color: colors.text,
                           ),
-                          if (lastStarDate != null)
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        AreaTag(
+                          area: project.area,
+                          iconSize: 14,
+                          fontSize: 13,
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 14,
+                          runSpacing: 6,
+                          children: [
                             _StatChip(
-                              icon: Icons.schedule,
-                              text: strings.lastStarLabel(
-                                formatDisplayDate(lastStarDate!, strings),
+                              icon: Icons.auto_awesome_outlined,
+                              text: strings.createdOnLabel(
+                                formatDisplayDate(project.createdAt, strings),
                               ),
                             ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: [
-                          _MetricBadge(
-                            icon: Icons.star,
-                            text: strings.starsCount(starCount),
-                          ),
-                          _MetricBadge(
-                            icon: Icons.offline_bolt,
-                            text: strings.intensityCount(combinedIntensity),
-                          ),
-                          if (unlitStars > 0)
+                            if (lastStarDate != null)
+                              _StatChip(
+                                icon: Icons.schedule,
+                                text: strings.lastStarLabel(
+                                  formatDisplayDate(lastStarDate!, strings),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: [
                             _MetricBadge(
-                              icon: StarKind.unlit.icon,
-                              text: strings.unlitStarsBadge(unlitStars),
+                              icon: Icons.star,
+                              text: strings.starsCount(starCount),
                             ),
-                          if (activePulsars > 0)
                             _MetricBadge(
-                              icon: StarKind.pulsar.icon,
-                              text: strings.activePulsarsBadge(activePulsars),
+                              icon: Icons.offline_bolt,
+                              text: strings.intensityCount(
+                                combinedIntensity,
+                              ),
                             ),
-                        ],
+                            if (unlitStars > 0)
+                              _MetricBadge(
+                                icon: StarKind.unlit.icon,
+                                text: strings.unlitStarsBadge(unlitStars),
+                              ),
+                            if (activePulsars > 0)
+                              _MetricBadge(
+                                icon: StarKind.pulsar.icon,
+                                text: strings.activePulsarsBadge(
+                                  activePulsars,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      NavigateHereButton(
+                        onTap: onNavigateTo,
+                        tooltip: strings.takeMeThereAction,
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 8),
-                NavigateHereButton(
-                  onTap: onNavigateTo,
-                  tooltip: strings.takeMeThereAction,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

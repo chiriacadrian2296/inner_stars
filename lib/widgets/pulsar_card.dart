@@ -135,11 +135,14 @@ class PulsarCard extends StatelessWidget {
       children: [
         card,
         Positioned(
-          top: 6,
+          top: 0,
+          bottom: 0,
           right: 6,
-          child: NavigateHereButton(
-            onTap: onNavigateTo!,
-            tooltip: strings.takeMeThereAction,
+          child: Center(
+            child: NavigateHereButton(
+              onTap: onNavigateTo!,
+              tooltip: strings.takeMeThereAction,
+            ),
           ),
         ),
       ],

@@ -48,30 +48,28 @@ class _AppTourStepCard extends StatelessWidget {
         if (description != null) Text(description, style: theme.messageStyle),
         const SizedBox(height: 12),
         Wrap(
-          alignment: WrapAlignment.end,
+          alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
           spacing: 8,
           runSpacing: 8,
           children: [
-            if (info.length > 1)
-              Text(
-                info.labels.progress(info.step, info.length),
-                style: theme.messageStyle,
-              ),
+            // No step-count label ("13/15") here on purpose — a long tour
+            // (the sky-navigation one runs to 15) read as daunting shown
+            // as a countdown before the user had even started.
             if (showSkip && !info.isLast)
-              _AppTourButton(
+              AppTourButton(
                 label: info.labels.skip,
                 onPressed: info.controller.skip,
               ),
             if (!info.isFirst)
-              _AppTourButton(
+              AppTourButton(
                 label: info.labels.back,
                 onPressed: info.controller.previous,
               ),
             // The one action every step actually wants taken — bolder
             // weight only, since the shared white/navy treatment no longer
             // has a shade ladder to set it apart with.
-            _AppTourButton(
+            AppTourButton(
               label: info.labels.advance(isLast: info.isLast),
               onPressed: info.controller.next,
               emphasised: true,
@@ -166,8 +164,8 @@ class _AppTourWelcomeCard extends StatelessWidget {
         if (description != null) Text(description, style: theme.messageStyle),
         const SizedBox(height: 12),
         Align(
-          alignment: Alignment.centerRight,
-          child: _AppTourButton(
+          alignment: Alignment.center,
+          child: AppTourButton(
             label: context.strings.skyTourWelcomeStartAction,
             onPressed: info.controller.next,
             emphasised: true,
@@ -180,9 +178,13 @@ class _AppTourWelcomeCard extends StatelessWidget {
 
 /// One Skip/Back/Next control — a solid white pill with dark navy text,
 /// rather than hint_kit's own default of a translucent fill only on the
-/// emphasised button and a bare outline on the rest.
-class _AppTourButton extends StatelessWidget {
-  const _AppTourButton({
+/// emphasised button and a bare outline on the rest. Public (not the usual
+/// leading-underscore private class every other widget in this file is)
+/// so [TourGestureConfirmStep]'s own "Try" button can reuse the exact same
+/// look instead of duplicating it.
+class AppTourButton extends StatelessWidget {
+  const AppTourButton({
+    super.key,
     required this.label,
     required this.onPressed,
     this.emphasised = false,

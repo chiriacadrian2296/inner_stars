@@ -516,6 +516,8 @@ class StringsRo implements AppStrings {
       'Trage-l în jos, atinge în afara lui sau folosește butonul înapoi — '
       'oricare dintre acestea îl închide.';
   @override
+  String get skyTourMenuCloseTryAction => 'Încearcă';
+  @override
   String get skyTourQuickMenuTapTitle => 'O cale mai rapidă';
   @override
   String get skyTourQuickMenuTapBody =>
@@ -1260,6 +1262,11 @@ class StringsRo implements AppStrings {
   @override
   String get shareStarError =>
       'Nu am putut distribui această stea. Încerci din nou?';
+  @override
+  String get starReaderTapForPhotoHint =>
+      'Atinge oriunde pentru a vedea fotografia';
+  @override
+  String get starReaderTapForDataHint => 'Atinge oriunde pentru a vedea datele';
 
   @override
   String get starQuickLookViewAction => 'Vizualizează';

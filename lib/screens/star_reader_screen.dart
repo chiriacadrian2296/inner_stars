@@ -19,6 +19,7 @@ import '../theme/app_fonts.dart';
 import '../utils/date_format.dart';
 import '../widgets/area_tag.dart';
 import '../widgets/intensity_bolts.dart';
+import '../widgets/navigate_here_button.dart';
 import '../widgets/photo_image.dart';
 import '../widgets/photo_picker.dart';
 import '../widgets/project_tag.dart';
@@ -91,13 +92,25 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
   final _shareKey = GlobalKey();
   bool _sharing = false;
 
+  /// Tap-to-hide-everything-but-the-photo, on a lit star's own image. Reset
+  /// on prev/next so browsing to another star always lands back on its data.
+  bool _photoOnly = false;
+
   void _showPrevious() {
-    setState(() => _index = (_index - 1 + _stars.length) % _stars.length);
+    setState(() {
+      _index = (_index - 1 + _stars.length) % _stars.length;
+      _photoOnly = false;
+    });
   }
 
   void _showNext() {
-    setState(() => _index = (_index + 1) % _stars.length);
+    setState(() {
+      _index = (_index + 1) % _stars.length;
+      _photoOnly = false;
+    });
   }
+
+  void _togglePhotoOnly() => setState(() => _photoOnly = !_photoOnly);
 
   Future<void> _shareCurrent() async {
     if (_sharing) return;
@@ -266,152 +279,313 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                       fit: BoxFit.cover,
                       alignment: Alignment.center,
                     ),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: photoPath == null
-                          ? colors.crisisGradient
-                          : RadialGradient(
-                              center: const Alignment(0, -0.6),
-                              radius: 1.2,
-                              colors: [
-                                colors.crisisGradientCenter.withValues(
-                                  alpha: 0.55,
-                                ),
-                                colors.crisisGradientMid.withValues(
-                                  alpha: 0.75,
-                                ),
-                                colors.crisisGradientOuter.withValues(
-                                  alpha: 0.9,
-                                ),
-                              ],
-                              stops: const [0.0, 0.55, 1.0],
-                            ),
+                  AnimatedOpacity(
+                    // Only the photo's own darkening veil fades away in
+                    // photo-only mode — a star with no photo has nothing to
+                    // reveal underneath, so its plain [crisisGradient]
+                    // background never toggles.
+                    opacity: photoPath != null && _photoOnly ? 0 : 1,
+                    duration: const Duration(milliseconds: 220),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: photoPath == null
+                            ? colors.crisisGradient
+                            : RadialGradient(
+                                center: const Alignment(0, -0.6),
+                                radius: 1.2,
+                                colors: [
+                                  colors.crisisGradientCenter.withValues(
+                                    alpha: 0.55,
+                                  ),
+                                  colors.crisisGradientMid.withValues(
+                                    alpha: 0.75,
+                                  ),
+                                  colors.crisisGradientOuter.withValues(
+                                    alpha: 0.9,
+                                  ),
+                                ],
+                                stops: const [0.0, 0.55, 1.0],
+                              ),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 28),
-              child: Column(
-                children: [
-                  ResponsiveContent(
-                    child: Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: Icon(Icons.close, color: colors.crisisMuted),
-                        ),
-                        Expanded(
-                          child: Center(
-                            child: Text(
-                              strings.indexOfCount(_index + 1, _stars.length),
-                              style: TextStyle(
-                                fontSize: 12,
+          if (photoPath != null)
+            // Catches the tap that brings everything back once the chrome
+            // below is [IgnorePointer]d in photo-only mode — translucent so
+            // it never steals a tap from an actual button when the chrome
+            // is showing (see the [IgnorePointer] below for why those still
+            // win first).
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: _togglePhotoOnly,
+              ),
+            ),
+          IgnorePointer(
+            ignoring: photoPath != null && _photoOnly,
+            child: AnimatedOpacity(
+              opacity: photoPath != null && _photoOnly ? 0 : 1,
+              duration: const Duration(milliseconds: 220),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 28),
+                  child: Column(
+                    children: [
+                      ResponsiveContent(
+                        child: Row(
+                          children: [
+                            IconButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: Icon(
+                                Icons.close,
                                 color: colors.crisisMuted,
                               ),
                             ),
-                          ),
-                        ),
-                        if (widget.onNavigateTo != null && project != null)
-                          IconButton(
-                            tooltip: strings.takeMeThereAction,
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                              widget.onNavigateTo!(project);
-                            },
-                            icon: Icon(
-                              Icons.near_me,
-                              color: colors.crisisMuted,
-                            ),
-                          ),
-                        if (widget.allowEdit)
-                          IconButton(
-                            onPressed: _editOrResurrectCurrent,
-                            icon: Icon(
-                              star.dead
-                                  ? Icons.auto_fix_high
-                                  : Icons.edit_outlined,
-                              color: colors.crisisMuted,
-                            ),
-                          )
-                        else
-                          const SizedBox(width: 48),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onHorizontalDragEnd: (details) {
-                        final velocity = details.primaryVelocity ?? 0;
-                        if (velocity < -200) {
-                          _showNext();
-                        } else if (velocity > 200) {
-                          _showPrevious();
-                        }
-                      },
-                      child: Center(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: ResponsiveContent(
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 260),
-                              switchInCurve: Curves.easeOut,
-                              switchOutCurve: Curves.easeIn,
-                              transitionBuilder: (child, animation) {
-                                final scale = Tween<double>(
-                                  begin: 0.94,
-                                  end: 1.0,
-                                ).animate(animation);
-                                return FadeTransition(
-                                  opacity: animation,
-                                  child: ScaleTransition(
-                                    scale: scale,
-                                    child: child,
+                            Expanded(
+                              child: Center(
+                                child: Text(
+                                  strings.indexOfCount(
+                                    _index + 1,
+                                    _stars.length,
                                   ),
-                                );
-                              },
-                              child: _StarContent(
-                                key: ValueKey(_index),
-                                star: star,
-                                project: project,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: colors.crisisMuted,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (widget.allowEdit)
+                              IconButton(
+                                onPressed: _editOrResurrectCurrent,
+                                icon: Icon(
+                                  star.dead
+                                      ? Icons.auto_fix_high
+                                      : Icons.edit_outlined,
+                                  color: colors.crisisMuted,
+                                ),
+                              )
+                            else
+                              const SizedBox(width: 48),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: photoPath != null ? _togglePhotoOnly : null,
+                          onHorizontalDragEnd: (details) {
+                            final velocity = details.primaryVelocity ?? 0;
+                            if (velocity < -200) {
+                              _showNext();
+                            } else if (velocity > 200) {
+                              _showPrevious();
+                            }
+                          },
+                          child: Center(
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              child: ResponsiveContent(
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(
+                                    milliseconds: 260,
+                                  ),
+                                  switchInCurve: Curves.easeOut,
+                                  switchOutCurve: Curves.easeIn,
+                                  transitionBuilder: (child, animation) {
+                                    final scale = Tween<double>(
+                                      begin: 0.94,
+                                      end: 1.0,
+                                    ).animate(animation);
+                                    return FadeTransition(
+                                      opacity: animation,
+                                      child: ScaleTransition(
+                                        scale: scale,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                                  child: _StarContent(
+                                    key: ValueKey(_index),
+                                    star: star,
+                                    project: project,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
+                      ResponsiveContent(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _NavCircleButton(
+                              icon: Icons.chevron_left,
+                              onTap: _showPrevious,
+                            ),
+                            _MiddleAction(
+                              star: star,
+                              sharing: _sharing,
+                              onShare: _shareCurrent,
+                              onMarkAchieved: _markAchieved,
+                              onResurrect: _editOrResurrectCurrent,
+                            ),
+                            _NavCircleButton(
+                              icon: Icons.chevron_right,
+                              onTap: _showNext,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  ResponsiveContent(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _NavCircleButton(
-                          icon: Icons.chevron_left,
-                          onTap: _showPrevious,
-                        ),
-                        _MiddleAction(
-                          star: star,
-                          sharing: _sharing,
-                          onShare: _shareCurrent,
-                          onMarkAchieved: _markAchieved,
-                          onResurrect: _editOrResurrectCurrent,
-                        ),
-                        _NavCircleButton(
-                          icon: Icons.chevron_right,
-                          onTap: _showNext,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
+          if (widget.onNavigateTo != null && project != null)
+            _TakeMeThereButton(
+              tooltip: strings.takeMeThereAction,
+              hidden: photoPath != null && _photoOnly,
+              onTap: () {
+                Navigator.of(context).pop();
+                widget.onNavigateTo!(project);
+              },
+            ),
+          if (photoPath != null) _PhotoOnlyHint(photoOnly: _photoOnly),
         ],
+      ),
+    );
+  }
+}
+
+/// The "take me there" trigger, centered horizontally and pinned roughly
+/// midway between the bottom nav row's share button and [_StarContent]'s
+/// own intensity bolts just above it — an eyeballed offset (both endpoints
+/// move with content length, so there's no fixed midpoint to measure),
+/// same spirit as [_PhotoOnlyHint]'s own placement.
+class _TakeMeThereButton extends StatelessWidget {
+  const _TakeMeThereButton({
+    required this.onTap,
+    required this.tooltip,
+    required this.hidden,
+  });
+
+  final VoidCallback onTap;
+  final String tooltip;
+
+  /// Mirrors the chrome's own hidden state in photo-only mode — see
+  /// [_StarReaderScreenState._photoOnly].
+  final bool hidden;
+
+  @override
+  Widget build(BuildContext context) {
+    // [Positioned] must stay the outermost widget here: it's only
+    // meaningful as a direct child of the enclosing [Stack], so
+    // [IgnorePointer]/[AnimatedOpacity] nest *inside* it rather than
+    // wrapping it — the reverse order silently drops the positioning
+    // (Stack falls back to `fit: StackFit.expand`, blowing this up to
+    // fill the whole screen instead of sitting where [right]/[bottom] say).
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: IgnorePointer(
+        ignoring: hidden,
+        child: AnimatedOpacity(
+          opacity: hidden ? 0 : 1,
+          duration: const Duration(milliseconds: 220),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 130),
+              child: Center(
+                child: NavigateHereButton(
+                  onTap: onTap,
+                  tooltip: tooltip,
+                  size: 40,
+                  iconSize: 20,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The "tap to see the photo"/"tap to see the details" hint pinned over a
+/// lit star's own photo — the one thing that stays on screen through both
+/// of [_StarReaderScreenState]'s states (only its text/icon cross-fade),
+/// so there's always a visible cue for what tapping the photo does next.
+/// Purely informational — [IgnorePointer]d so the tap it describes still
+/// lands on whichever of [_StarReaderScreenState]'s own detectors is
+/// underneath it.
+class _PhotoOnlyHint extends StatelessWidget {
+  const _PhotoOnlyHint({required this.photoOnly});
+
+  final bool photoOnly;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final strings = context.strings;
+
+    return Positioned(
+      left: 0,
+      right: 0,
+      top: 0,
+      child: IgnorePointer(
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            // Roughly midway between the header row above and the star
+            // icon that normally opens [_StarContent] below — an eyeballed
+            // offset (the icon's own position isn't fixed, since the
+            // content column is vertically centered), not a measured one.
+            padding: const EdgeInsets.only(top: 132),
+            child: Center(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                child: Container(
+                  key: ValueKey(photoOnly),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.touch_app,
+                        size: 16,
+                        color: colors.crisisMuted,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        photoOnly
+                            ? strings.starReaderTapForDataHint
+                            : strings.starReaderTapForPhotoHint,
+                        style: TextStyle(fontSize: 13, color: colors.crisisMuted),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
