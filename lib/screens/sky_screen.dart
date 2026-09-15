@@ -7,7 +7,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hint_kit/hint_kit.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:tooltip_card/tooltip_card.dart';
@@ -1503,21 +1503,18 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
               physics: physics,
             ),
           ),
-          // The tour's order-9 step — same full-screen, invisible,
-          // passthrough anchor + top banner every gesture-driven step
-          // uses (see [TourGestureStep]'s own doc comment), just living
-          // here inside the modal's own route instead of the Sky
-          // screen's. `passthrough: true` matters even more than usual
-          // here: one of the three dismiss gestures this step is
-          // teaching is "tap outside", which has to reach
-          // [SkyMenuModalFrame]'s own barrier underneath, not get
-          // swallowed by this step's own (invisible) scrim.
-          TourGestureStep(tour: 'sky-navigation', order: 9),
-          TourGestureBanner(
+          // The tour's order-9 step — a real gate, not just a banner:
+          // full scrim + centered card + one "Try" button, blocking
+          // [SkyMenuModalFrame] entirely until pressed, only then letting
+          // the real dismiss gesture (swipe, tap outside, back button —
+          // any of the three) reach it. See
+          // [TourGestureConfirmStep]'s own doc comment.
+          TourGestureConfirmStep(
             tour: 'sky-navigation',
             order: 9,
             title: context.strings.skyTourMenuCloseTitle,
             description: context.strings.skyTourMenuCloseBody,
+            tryLabel: context.strings.skyTourMenuCloseTryAction,
           ),
         ],
       ),
@@ -1565,8 +1562,25 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     return null;
   }
 
+  /// [SkyAreaTarget] normally lands dead-center on the area's own
+  /// supernova (see [areaWorldPosition]) — fine everywhere, since a real
+  /// area has no single "point of interest" beyond its star. Mid-tour,
+  /// though, tapping [_tutorialArea]'s supernova (the tour's own step 2)
+  /// needs to land somewhere that keeps the placeholder constellation
+  /// on screen for step 3 right after, and [tutorialDemoWorldPosition] sits
+  /// far enough from the supernova (see its own doc comment) that dead
+  /// centering the supernova instead pushes the constellation mostly or
+  /// entirely off a narrow (phone-portrait) screen — [worldToScreen]
+  /// scales *both* screen axes by `screenSize.height`, so how much of that
+  /// offset actually fits on screen depends on the screen's aspect ratio,
+  /// not just its width. Centering the constellation itself here instead
+  /// works on every aspect ratio the same way, and still leaves the
+  /// supernova nearby (it was the thing just tapped, its job already
+  /// done).
   Offset? _worldFor(SkyNavigationTarget target) => switch (target) {
-    SkyAreaTarget(:final area) => areaWorldPosition(area),
+    SkyAreaTarget(:final area) => _tutorialDemoActive && area == _tutorialArea
+        ? tutorialDemoWorldPosition(area)
+        : areaWorldPosition(area),
     SkyProjectTarget(:final project) => _placedFor(project)?.worldPosition,
     SkyStarTarget(:final project) => _placedFor(project)?.worldPosition,
   };
@@ -2857,8 +2871,12 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                         },
                       ),
                     ],
-                    TourGestureStep(
-                      key: const ValueKey('sky-nav-step-5'),
+                    // A real spotlight hole over an empty patch of sky —
+                    // see [TourGestureEmptySpotHint]'s own doc comment for
+                    // why order 5 gets one instead of the fully invisible
+                    // scrim every other gesture step uses.
+                    const TourGestureEmptySpotHint(
+                      key: ValueKey('sky-nav-step-5'),
                       tour: 'sky-navigation',
                       order: 5,
                     ),
@@ -3794,17 +3812,26 @@ class _MenuStarButton extends StatefulWidget {
 
 class _MenuStarButtonState extends State<_MenuStarButton>
     with TickerProviderStateMixin {
-  // 2/3 of the previous (95) pass, rounded, nudged down slightly again.
-  // Still what the ring/glow/canvas below size themselves off of — see
-  // [_starGlyphSize] for the star glyph's own, now-separate size.
+  // Purely what [_scale]/[_glowCanvasSize] below size the shader's own
+  // glow off of — no longer tied to a drawn glyph size now that the
+  // button's actual icon is [_svgIconSize]/[app_star.svg] instead (see
+  // [_buildButtonAndLabel]).
   static const _iconSize = 58.0;
-  // The star glyph itself, slightly smaller again than [_iconSize] —
-  // split out from it on purpose: shrinking [_iconSize] directly would
-  // have pulled the ring in to match too (see [_scale] below, sized off
-  // [_iconSize]), when only the star itself was asked to shrink this
-  // time.
-  static const _starGlyphSize = _iconSize * 0.9;
+  // The invisible tap target — kept generous and bigger than the disc
+  // actually drawn on it (see [_visibleSize]) for a comfortable hit area,
+  // same as this had before the navy-disc look. [_QuickAccessFan._hubLift]
+  // depends on this exact value staying the main button's own touch
+  // footprint.
   static const _tapTargetSize = 110.0;
+  // The navy-disc-with-border button actually drawn on screen — matches
+  // [_QuickAccessButton]'s own look, just bigger since this is the main
+  // button, but nowhere near [_tapTargetSize]: sizing the visible disc to
+  // the tap target itself (tried first) drew a button far bigger than
+  // this one ever visually was.
+  static const _visibleSize = 72.0;
+  // Smaller than [_QuickAccessButton]'s own 24/40 icon-to-disc ratio —
+  // that ratio read as too big on this button's own bigger disc.
+  static const _svgIconSize = _visibleSize * 0.44;
   // Big enough that the shader's own glow/spikes fade out naturally well
   // before this canvas's own edge, rather than clipping hard against a
   // boundary that's part of the visible glow.
@@ -3815,27 +3842,8 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   // (not diameter) lands right at the icon's edge instead of sitting
   // just outside it.
   static const _scale = _iconSize / (2 * 0.09) * 0.85;
-  // The white ring + white star glyph [_MenuStarSupernovaPainter] used
-  // to draw on top of the shader's own glow are swapped out for the
-  // app's actual logo below, while a couple of looks are being compared
-  // — off rather than deleted, so flipping it back to true restores
-  // them exactly as they were.
-  static const _showStarRingIcon = false;
-  // The same disc already used at the top of the menu (see
-  // [SkyMenuContent._logoAsset]) at that exact same size, but with its
-  // gold ring/disc recolored to white — a plain asset swap (see
-  // assets/icon/app_icon_ring_centered_white.png) rather than a runtime
-  // tint. The header keeps the original gold version.
-  static const _logoAsset = 'assets/icon/app_icon_ring_centered_white.png';
-  static const _logoSize = 72.0;
-  // Drawn into the same canvas as the shader's own glow (see
-  // [_MenuStarSupernovaPainter.paint]) at this alpha, with plain normal
-  // (srcOver) blending — [BlendMode.overlay] was tried first (see the
-  // gallery in `MenuButtonGalleryScreen`) but read as too washed-out;
-  // normal blending at 100% keeps the logo solid white instead.
-  static const _logoOverlayOpacity = 1.0;
-  // The "MENU" caption under the button, off for now — not deleted, see
-  // [_showStarRingIcon] just above for the same pattern.
+  // The "MENU" caption under the button, off for now — not deleted, kept
+  // wired up so flipping it back to true restores it exactly as it was.
   static const _showMenuLabel = false;
   // See [kHoldGestureDuration] — shared with the sky's own hold-to-peek
   // so the two gestures feel like one consistent timing across the
@@ -3844,12 +3852,6 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   static const _chargeDuration = kHoldGestureDuration;
 
   ui.FragmentShader? _shader;
-  // Decoded once and kept around rather than reloaded every frame — drawn
-  // straight into [_MenuStarSupernovaPainter]'s own canvas (see
-  // [paintLogo]) rather than as an [Image] widget, so it can share that
-  // canvas's own blend-mode-against-the-glow treatment the same way the
-  // star glyph it replaced did.
-  ui.Image? _logoImage;
   late final Ticker _ticker;
   Duration _elapsed = Duration.zero;
   // A press doesn't open the menu itself — it charges this for as long
@@ -3919,7 +3921,6 @@ class _MenuStarButtonState extends State<_MenuStarButton>
             }
           });
     _loadShader();
-    _loadLogoImage();
   }
 
   Future<void> _loadShader() async {
@@ -3928,14 +3929,6 @@ class _MenuStarButtonState extends State<_MenuStarButton>
     );
     if (!mounted) return;
     setState(() => _shader = program.fragmentShader());
-  }
-
-  Future<void> _loadLogoImage() async {
-    final bytes = await rootBundle.load(_logoAsset);
-    final codec = await ui.instantiateImageCodec(bytes.buffer.asUint8List());
-    final frame = await codec.getNextFrame();
-    if (!mounted) return;
-    setState(() => _logoImage = frame.image);
   }
 
   void _handlePressStart() {
@@ -3986,7 +3979,6 @@ class _MenuStarButtonState extends State<_MenuStarButton>
     _hintTimer?.cancel();
     _stopHoldHaptic();
     _shader?.dispose();
-    _logoImage?.dispose();
     super.dispose();
   }
 
@@ -4093,22 +4085,50 @@ class _MenuStarButtonState extends State<_MenuStarButton>
                 height: _glowCanvasSize,
                 child: IgnorePointer(
                   child: CustomPaint(
-                    painter: _MenuStarSupernovaPainter(
+                    painter: _MenuStarGlowPainter(
                       shader: shader,
                       time:
                           _elapsed.inMicroseconds /
                           Duration.microsecondsPerSecond,
                       scale: _scale,
-                      starGlyphSize: _starGlyphSize,
                       charge: _chargeController.value,
-                      showStarAndRing: _showStarRingIcon,
-                      logoImage: _showStarRingIcon ? null : _logoImage,
-                      logoSize: _logoSize,
-                      logoOpacity: _logoOverlayOpacity,
                     ),
                   ),
                 ),
               ),
+            // The same "white icon on a navy disc with a white border"
+            // look every [_QuickAccessButton] uses, just at this button's
+            // own bigger [_visibleSize] — a real drawn circle now (unlike
+            // the borderless, purely-photographic-logo look this used to
+            // have), so it reads as one more button in that same family
+            // rather than a free-floating glowing icon. Wrapped in its own
+            // centered [SizedBox] rather than sized to fill the InkWell
+            // below directly, since that tap target is deliberately
+            // bigger than this disc (see [_tapTargetSize]).
+            IgnorePointer(
+              child: SizedBox(
+                width: _visibleSize,
+                height: _visibleSize,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: context.colors.nightPanel,
+                    border: Border.all(color: Colors.white, width: 3),
+                  ),
+                  child: Center(
+                    child: SvgPicture.asset(
+                      'assets/icon/app_star.svg',
+                      width: _svgIconSize,
+                      height: _svgIconSize,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
             Material(
               color: Colors.transparent,
               shape: const CircleBorder(),
@@ -4349,6 +4369,15 @@ class _QuickAccessFan extends StatelessWidget {
         tour: 'sky-navigation',
         order: order,
         spotlight: SpotlightShape.circle,
+        // Forced above every one of these five buttons rather than left
+        // to `HintDirection.auto`'s own default preference (bottom first)
+        // — these all sit near the bottom of the screen, where "below"
+        // reads as sitting right on top of Android's own gesture/nav
+        // bar, not as this app's own UI. `showArrow: true` draws the
+        // caret that comes with it, pointing down at the button each
+        // card belongs to.
+        direction: HintDirection.top,
+        showArrow: true,
         contentBuilder: appTourStepCardNoSkip,
         title: title,
         description: body,
@@ -4423,41 +4452,28 @@ class _QuickAccessButton extends StatelessWidget {
   }
 }
 
-class _MenuStarSupernovaPainter extends CustomPainter {
-  const _MenuStarSupernovaPainter({
+// Just the shader's own additive nebula behind the button (see
+// menu_star_button.frag's `supernovaGlow`) — the resting/idle glow plus the
+// growing `chargeGlow` while the button is held. The icon itself is a
+// plain [SvgPicture] drawn as a normal widget on top (see
+// `_MenuStarButtonState._buildButtonAndLabel`) now, not painted into this
+// same canvas — this used to also draw a raster logo here, with several
+// extra glow/bloom passes layered around it (one of them skipped on web
+// for a blur+blend bug there); all of that went with the logo, so this
+// canvas is nothing but the shader now, identical on every platform.
+class _MenuStarGlowPainter extends CustomPainter {
+  const _MenuStarGlowPainter({
     required this.shader,
     required this.time,
     required this.scale,
-    required this.starGlyphSize,
     required this.charge,
-    required this.showStarAndRing,
-    required this.logoImage,
-    required this.logoSize,
-    required this.logoOpacity,
   });
 
   final ui.FragmentShader shader;
   final double time;
   final double scale;
-  // The star glyph's own rendered size — deliberately not tied to
-  // [scale] (which the ring/glow canvas size off of instead), so the
-  // star can be resized on its own without dragging the ring along.
-  final double starGlyphSize;
   // 0..1 — see `_MenuStarButtonState._chargeController`.
   final double charge;
-  // See `_MenuStarButtonState._showStarRingIcon` — the shader's own
-  // additive glow (drawn above, before this flag is even checked) always
-  // stays; only the white ring + white star glyph below it are gated by
-  // this, in favor of the app's own logo drawn on top instead.
-  final bool showStarAndRing;
-  // Null while the asset is still decoding, or while [showStarAndRing]
-  // is true (the older ring+star look, with no logo to draw) — see
-  // `_MenuStarButtonState._loadLogoImage`.
-  final ui.Image? logoImage;
-  // Matches [SkyMenuContent]'s own header logo size.
-  final double logoSize;
-  // See `_MenuStarButtonState._logoOverlayOpacity`.
-  final double logoOpacity;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -4474,270 +4490,13 @@ class _MenuStarSupernovaPainter extends CustomPainter {
         ..shader = shader
         ..blendMode = BlendMode.plus,
     );
-
-    // Tried, disabled: the same "rotating decoration"
-    // [SkySupernova._paintOutlineIcon] draws behind each life area's own
-    // icon — a blurred gradient stroke of the glyph's own outline, spun
-    // around its center. That's exactly the problem here: it's a glow
-    // that traces the star's own contour, and on this much smaller
-    // button it just read as the star having its own outline glow
-    // rather than a separate decoration — see [paintRing] below and
-    // `supernovaGlow`'s own [nearGlow] for the shapeless central glow
-    // that replaced it instead.
-    //
-    // const glowGradientColors = [Color(0xFFFFEFA0), Color(0xFFF0C078)];
-    // void paintRotatingGlow() {
-    //   final text = String.fromCharCode(Icons.star.codePoint);
-    //   final center = Offset(size.width, size.height) / 2;
-    //   final glowAngle = time * 2.2;
-    //   final glowAxis =
-    //       Offset(math.cos(glowAngle), math.sin(glowAngle)) * (iconSize / 2);
-    //   final glowShader = ui.Gradient.linear(
-    //     center - glowAxis,
-    //     center + glowAxis,
-    //     glowGradientColors,
-    //   );
-    //   final glowPainter = TextPainter(textDirection: TextDirection.ltr)
-    //     ..text = TextSpan(
-    //       text: text,
-    //       style: TextStyle(
-    //         fontSize: iconSize,
-    //         fontFamily: Icons.star.fontFamily,
-    //         package: Icons.star.fontPackage,
-    //         foreground: Paint()
-    //           ..style = PaintingStyle.stroke
-    //           ..strokeWidth = iconSize * 0.08
-    //           ..shader = glowShader
-    //           ..maskFilter = MaskFilter.blur(BlurStyle.normal, iconSize * 0.04),
-    //       ),
-    //     )
-    //     ..layout();
-    //   final topLeft =
-    //       center - Offset(glowPainter.width, glowPainter.height) / 2;
-    //   glowPainter.paint(canvas, topLeft);
-    // }
-
-    // Tried dark navy here (and in [paintRing] below) for both, just to
-    // see it — back to white now. [BlendMode.overlay] only ever
-    // brightens what's under it, which is exactly why navy didn't read
-    // as dark there; white doesn't have that problem.
-    void paintIcon(IconData icon, double opacity) {
-      final text = String.fromCharCode(icon.codePoint);
-      final iconPainter = TextPainter(textDirection: TextDirection.ltr)
-        ..text = TextSpan(
-          text: text,
-          style: TextStyle(
-            fontSize: starGlyphSize,
-            fontFamily: icon.fontFamily,
-            package: icon.fontPackage,
-            foreground: Paint()
-              ..color = Colors.white.withValues(alpha: opacity)
-              ..blendMode = BlendMode.overlay,
-          ),
-        )
-        ..layout();
-      final topLeft =
-          Offset(size.width, size.height) / 2 -
-          Offset(iconPainter.width, iconPainter.height) / 2;
-      iconPainter.paint(canvas, topLeft);
-    }
-
-    // Used to be part of the shader's own additive glow (drawn first,
-    // via [shader] above) — but at 0.09 world units its radius sits
-    // well inside the icon's own, so drawn there it was the icon
-    // covering most of the ring rather than the ring sitting around
-    // the icon. Painted here instead, after the icon, so it's
-    // unambiguously the outermost thing — same idea as the real
-    // supernovas' own fixed outer ring (see
-    // `SkySupernova._paintOutlineIcon`'s [outlinePainter], also drawn
-    // on top of its icon), just a plain stroked circle rather than a
-    // glyph-shaped one since this ring was never meant to trace the
-    // star's own outline.
-    void paintRing() {
-      final center = Offset(size.width, size.height) / 2;
-      // [scale] is the exact same world-units-to-pixels factor passed
-      // to the shader as `uScale`; 0.09/0.016 match that shader's own
-      // former `ringRadius`/ring width.
-      final radius = 0.09 * scale;
-      final width = 0.016 * scale;
-      canvas.drawCircle(
-        center,
-        radius,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = width * 3
-          ..color = Colors.white.withValues(alpha: 0.35)
-          ..maskFilter = MaskFilter.blur(BlurStyle.normal, width * 2)
-          ..blendMode = BlendMode.plus,
-      );
-      canvas.drawCircle(
-        center,
-        radius,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = width
-          ..color = Colors.white.withValues(alpha: 0.8)
-          ..blendMode = BlendMode.plus,
-      );
-    }
-
-    // Drawn straight into this same canvas, after the glow.
-    void paintLogo() {
-      final image = logoImage;
-      if (image == null) return;
-      final center = Offset(size.width, size.height) / 2;
-      final rect = Rect.fromCenter(
-        center: center,
-        width: logoSize,
-        height: logoSize,
-      );
-      final src = Rect.fromLTWH(
-        0,
-        0,
-        image.width.toDouble(),
-        image.height.toDouble(),
-      );
-
-      canvas.save();
-      canvas.clipPath(Path()..addOval(rect));
-
-      // 1. A fully opaque base pass, plain normal compositing — this is
-      // what actually makes the button occlude whatever's behind it
-      // (a stray constellation, a real supernova sharing the same screen
-      // spot — see the Sky's own report of one crossing right through the
-      // disc). [BlendMode.softLight] alone (tried first, below) is a
-      // blend *formula*, not a solid paint, so it never fully replaces
-      // the destination even at full source alpha — it was letting
-      // background content show through the disc's own footprint no
-      // matter how opaque the source pixels were.
-      canvas.drawImageRect(
-        image,
-        src,
-        rect,
-        Paint()
-          ..color = Colors.white.withValues(alpha: logoOpacity)
-          ..blendMode = BlendMode.srcOver
-          ..filterQuality = FilterQuality.high,
-      );
-
-      // 2. The same image again, [BlendMode.softLight] this time, layered
-      // on top of the now-opaque base above purely for flavor — lets the
-      // glow drawn earlier on this same canvas modulate the logo's
-      // whites/darks a little rather than sitting perfectly flat, without
-      // reopening the occlusion hole pass 1 exists to close (a blend pass
-      // drawn *after* an opaque base can only combine with that base's
-      // own already-solid result, never reach back to whatever pass 1
-      // already painted over).
-      canvas.drawImageRect(
-        image,
-        src,
-        rect,
-        Paint()
-          ..color = Colors.white.withValues(alpha: logoOpacity * 0.6)
-          ..blendMode = BlendMode.softLight
-          ..filterQuality = FilterQuality.high,
-      );
-      canvas.restore();
-
-      // 3. A soft, blurred, additive bloom drawn *after* the crisp logo —
-      // it has to come last, or the crisp pass above (opaque, covering
-      // almost this entire canvas) just paints straight over it and hides
-      // it entirely. Deliberately unclipped, so the star's own light
-      // visibly spreads past the disc's own edge into the glow around it
-      // and eats into the dark disc immediately around it, rather than
-      // either blocking the glow outright (opaque) or just letting it
-      // passively show through (transparency) — "consumes what's around
-      // it" rather than "lets it pass through".
-      //
-      // Skipped on web: `ImageFilter.blur` on an unclipped `drawImageRect`
-      // with `BlendMode.plus` doesn't blur at all there — confirmed via
-      // headless-Chrome screenshots (both software SwiftShader and real
-      // D3D11 GPU rendering) that it instead paints a hard-edged, roughly
-      // logoSize²-ish solid square, which is the "square glow" bug the
-      // user reported. Isolated by bisection: disabling this one pass
-      // (leaving 1/2/4 untouched) removes the square with no other visual
-      // change. A native-only bug in this exact filter+blend+unclipped
-      // combination, not reproducible on mobile — nothing to fix there.
-      if (!kIsWeb) {
-        canvas.drawImageRect(
-          image,
-          src,
-          rect,
-          Paint()
-            ..color = Colors.white.withValues(alpha: 0.7)
-            ..blendMode = BlendMode.plus
-            ..imageFilter = ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8)
-            ..filterQuality = FilterQuality.high,
-        );
-      }
-
-      // 4. A small, tight white glow right on the star itself, on top of
-      // everything else — the same idea as the shader's own glow further
-      // behind (see [supernovaGlow]'s `glow`/`nearGlow`), just white
-      // instead of blue, with a much smaller idle reach, and now actually
-      // animated the same way that one is instead of sitting static:
-      // [pulse] mirrors `supernovaGlow`'s own breathing exactly (same
-      // formula, same period), and [charge] grows and brightens it right
-      // alongside `chargeGlow` as the button is held, rather than only the
-      // glow behind it reacting to a press.
-      final pulse = 0.955 + 0.045 * math.sin(time * 0.6);
-      // Shrunk again (0.16 -> 0.10) for the idle diameter.
-      final starGlowRadius = logoSize * 0.10 * (1 + charge * 1.8);
-      // A hot, near-full-white core (rather than fading from the very
-      // center) that holds through roughly a third of the radius before
-      // easing out — a softer, more gradual falloff than the old straight
-      // two-stop fade, while actually reading as *more* intense right at
-      // the center, not less.
-      final starGlowCoreAlpha = (1.0 * pulse + charge * 0.2).clamp(0.0, 1.0);
-      final starGlowPaint = Paint()
-        ..shader = ui.Gradient.radial(
-          center,
-          starGlowRadius,
-          [
-            Colors.white.withValues(alpha: starGlowCoreAlpha),
-            Colors.white.withValues(alpha: starGlowCoreAlpha * 0.55),
-            Colors.white.withValues(alpha: starGlowCoreAlpha * 0.22),
-            Colors.white.withValues(alpha: 0.0),
-          ],
-          [0.0, 0.35, 0.7, 1.0],
-        )
-        ..blendMode = BlendMode.softLight
-        // The actual fix for "reads as a hard-edged disc, not a glow" —
-        // a plain radial gradient still has a genuinely *geometric* edge
-        // right at [starGlowRadius] (alpha hits exactly 0 exactly there,
-        // however many gradient stops lead up to it), and doubling the
-        // draw (tried first, to read as more intense) only made that
-        // edge more visible, not less. A blur is what actually removes
-        // it — it softens the whole falloff into something with no sharp
-        // boundary left to see at all, rather than a smoother-but-still-
-        // sharply-bounded version of the same disc.
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, starGlowRadius * 0.5);
-      // Drawn twice for extra strength — safe to compound now that
-      // [maskFilter] is what's actually softening the edge (unlike the
-      // earlier attempt, before the blur existed, where doubling a
-      // hard-edged gradient was exactly what made it read as a solid
-      // disc): two soft-edged passes just make a brighter soft glow.
-      canvas.drawCircle(center, starGlowRadius, starGlowPaint);
-      canvas.drawCircle(center, starGlowRadius, starGlowPaint);
-    }
-
-    if (showStarAndRing) {
-      paintIcon(Icons.star, 0.8);
-      paintRing();
-    }
-    paintLogo();
   }
 
   @override
-  bool shouldRepaint(covariant _MenuStarSupernovaPainter oldDelegate) =>
+  bool shouldRepaint(covariant _MenuStarGlowPainter oldDelegate) =>
       oldDelegate.time != time ||
       oldDelegate.scale != scale ||
-      oldDelegate.starGlyphSize != starGlyphSize ||
-      oldDelegate.charge != charge ||
-      oldDelegate.showStarAndRing != showStarAndRing ||
-      oldDelegate.logoImage != logoImage ||
-      oldDelegate.logoSize != logoSize ||
-      oldDelegate.logoOpacity != logoOpacity;
+      oldDelegate.charge != charge;
 }
 
 /// A two-finger rotate gesture (see `_handleScaleUpdate`) is touch-only —
