@@ -9,6 +9,7 @@ import '../core/hint_side.dart';
 import '../core/rect_tracker.dart';
 import '../theme/hint_theme.dart';
 import '../tooltip/anchored_bubble.dart';
+import '../tooltip/hint_bubble.dart';
 import '../tooltip/hint_registry.dart';
 import 'spotlight.dart';
 import 'tour_controller.dart';
@@ -130,6 +131,8 @@ class HintTarget extends StatefulWidget {
     this.scrollAlignment = 0.5,
     this.beforeShow,
     this.enabled = true,
+    this.rectProvider,
+    this.pinnedCardAlignment,
     super.key,
   }) : assert(order >= 0, 'order must be non-negative.');
 
@@ -259,6 +262,37 @@ class HintTarget extends StatefulWidget {
   /// to prepare.
   final Future<void> Function()? beforeShow;
 
+  /// Overrides how the hole's rect is measured, in overlay coordinates.
+  ///
+  /// When set, [child] is never measured via `findRenderObject` — this is
+  /// the escape hatch for a step whose target is not a widget at all, such
+  /// as a point painted by a `CustomPainter` inside a transformed canvas
+  /// (see victory_stars' own `SkyHintTarget`, built on top of this). [child]
+  /// can then be a plain invisible placeholder; only its `BuildContext` is
+  /// still used, to find the enclosing `Overlay`.
+  final Rect? Function()? rectProvider;
+
+  /// Pins the card to a fixed spot on screen instead of anchoring it next
+  /// to the target via [AnchoredHintBubble] — `null` (the default) keeps
+  /// the normal anchored behavior.
+  ///
+  /// Two different reasons an app ends up wanting this:
+  /// - The target's rect is a moving, arbitrarily-placed point rather than
+  ///   a fixed-size widget (victory_stars' own `SkyHintTarget`, panning/
+  ///   zooming freely around a whole screen) — anchoring right next to it
+  ///   can push the card uncomfortably close to (or clean off) an edge, and
+  ///   "next to a point that keeps moving" is a worse reading position than
+  ///   a single stable one. `Alignment.topCenter` suits this case.
+  /// - The step has no real target at all — an opening "here's this
+  ///   screen" card (`TourIntroTarget`) anchored to a meaningless 1x1 point
+  ///   — where anchoring "next to" that point is arbitrary in the first
+  ///   place. `Alignment.center` suits this case.
+  ///
+  /// Either way the card is still painted in this [HintTarget]'s own
+  /// `Overlay` entry (same as the anchored card), so it stays correctly
+  /// layered above its own scrim.
+  final Alignment? pinnedCardAlignment;
+
   @override
   State<HintTarget> createState() => _HintTargetState();
 }
@@ -272,8 +306,9 @@ class _HintTargetState extends State<HintTarget>
   final LayerLink _link = LayerLink();
   // Tour steps track every frame: they are modal and short-lived, so the cost
   // is irrelevant and the spotlight stays glued through scroll animations.
-  final HintRectTracker _tracker = HintRectTracker(
+  late final HintRectTracker _tracker = HintRectTracker(
     mode: RectTrackingMode.perFrame,
+    rectProvider: widget.rectProvider,
   );
   late final AnimationController _animation = AnimationController(
     vsync: this,
@@ -544,18 +579,68 @@ class _HintTargetState extends State<HintTarget>
           ),
         ),
         if (target != null && widget.showCard)
-          AnchoredHintBubble(
-            targetRect: target,
-            overlaySize: _overlaySize(),
-            margin: _margin(theme),
-            direction: widget.direction,
-            theme: theme,
-            animation: _animation,
-            link: _link,
-            showArrow: widget.showArrow,
-            builder: (BuildContext context) => _buildCard(context, theme),
-          ),
+          if (widget.pinnedCardAlignment case final Alignment alignment)
+            _buildPinnedCard(theme, alignment)
+          else
+            AnchoredHintBubble(
+              // The padded/inflated hole, not the raw measured [target]: a
+              // card placed only [ResolvedHintTheme.gap] from the raw target
+              // would sit right on top of a target whose [spotlightPadding]
+              // grows the actual cut hole well past its own measured rect —
+              // exactly what victory_stars' own `SkyHintTarget` does,
+              // inflating a single point into a visibly-sized circle. Using
+              // [hole] keeps the card clear of the hole it can actually see,
+              // not the invisible point it was measured from. For a target
+              // whose padding is small/negative (most real widgets, e.g.
+              // this app's own FAB step) the difference from [target] is
+              // negligible.
+              targetRect: hole,
+              overlaySize: _overlaySize(),
+              margin: _margin(theme),
+              direction: widget.direction,
+              theme: theme,
+              animation: _animation,
+              link: _link,
+              showArrow: widget.showArrow,
+              builder: (BuildContext context) => _buildCard(context, theme),
+            ),
       ],
+    );
+  }
+
+  /// The [HintTarget.pinnedCardAlignment] card: same chrome
+  /// ([HintBubbleDecoration]) and content ([_buildCard]) as the anchored
+  /// one, just laid out at a fixed spot instead of being placed by
+  /// [AnchoredHintBubble] relative to the target — see
+  /// [HintTarget.pinnedCardAlignment]'s own doc comment for why.
+  Widget _buildPinnedCard(ResolvedHintTheme theme, Alignment alignment) {
+    final ResolvedHintTheme cardTheme = widget.showArrow
+        ? theme
+        : theme.withoutArrow();
+    return Positioned.fill(
+      child: SafeArea(
+        child: Align(
+          alignment: alignment,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+            child: FadeTransition(
+              opacity: _animation,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: theme.maxWidth),
+                child: HintBubbleDecoration(
+                  side: HintSide.bottom,
+                  arrowFraction: 0.5,
+                  theme: cardTheme,
+                  child: Builder(
+                    builder: (BuildContext context) =>
+                        _buildCard(context, theme),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 

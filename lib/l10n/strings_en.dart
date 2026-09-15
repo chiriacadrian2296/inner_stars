@@ -459,6 +459,15 @@ class StringsEn implements AppStrings {
   @override
   String tourProgressLabel(int step, int length) => '$step of $length';
   @override
+  String get skyTourWelcomeTitle => 'Welcome to your sky';
+  @override
+  String get skyTourWelcomeBody =>
+      'Every area of your life has its own supernova, every project its '
+      'own constellation, every win and goal its own star. This is where '
+      'it all lives — let\'s take a quick look around.';
+  @override
+  String get skyTourWelcomeStartAction => 'Start';
+  @override
   String get skyTourTapSupernovaTitle => 'Tap a supernova';
   @override
   String get skyTourTapSupernovaBody =>
@@ -495,6 +504,43 @@ class StringsEn implements AppStrings {
   @override
   String get skyTourMenuBody =>
       'Hold this star to create something new or find your way around.';
+  @override
+  String get skyTourMenuCloseTitle => 'Closing this menu';
+  @override
+  String get skyTourMenuCloseBody =>
+      'Swipe it down, tap outside it, or use the back button — any of '
+      'these closes it.';
+  @override
+  String get skyTourQuickMenuTapTitle => 'A quicker way in';
+  @override
+  String get skyTourQuickMenuTapBody =>
+      'A plain tap on this star — no holding — opens a faster shortcut '
+      'menu instead of the full one.';
+  @override
+  String get skyTourQuickSettingsHintTitle => 'Quick Settings';
+  @override
+  String get skyTourQuickSettingsHintBody =>
+      'Jumps straight to sound and display settings.';
+  @override
+  String get skyTourSupernovasHintTitle => 'Supernovas';
+  @override
+  String get skyTourSupernovasHintBody =>
+      'Takes you to any life area\'s own supernova.';
+  @override
+  String get skyTourConstellationsHintTitle => 'Constellations';
+  @override
+  String get skyTourConstellationsHintBody =>
+      'Starts a brand-new constellation from scratch.';
+  @override
+  String get skyTourStarsHintTitle => 'Stars';
+  @override
+  String get skyTourStarsHintBody =>
+      'Opens the form to record a win, a goal, or a habit.';
+  @override
+  String get skyTourSearchHintTitle => 'Search Stars';
+  @override
+  String get skyTourSearchHintBody =>
+      'Finds any supernova, constellation, or star by name.';
   @override
   String get starTourIntroTitle => 'Recording a victory';
   @override

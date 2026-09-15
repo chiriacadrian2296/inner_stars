@@ -461,6 +461,15 @@ class StringsRo implements AppStrings {
   @override
   String tourProgressLabel(int step, int length) => '$step din $length';
   @override
+  String get skyTourWelcomeTitle => 'Bine ai venit pe cerul tău';
+  @override
+  String get skyTourWelcomeBody =>
+      'Fiecare arie a vieții tale are propria supernovă, fiecare proiect '
+      'propria constelație, fiecare victorie și obiectiv propria stea. '
+      'Aici trăiește totul — hai să aruncăm o privire rapidă.';
+  @override
+  String get skyTourWelcomeStartAction => 'Începe';
+  @override
   String get skyTourTapSupernovaTitle => 'Atinge o supernovă';
   @override
   String get skyTourTapSupernovaBody =>
@@ -500,6 +509,44 @@ class StringsRo implements AppStrings {
   @override
   String get skyTourMenuBody =>
       'Ține apăsată această stea pentru a crea ceva nou sau a te orienta.';
+  @override
+  String get skyTourMenuCloseTitle => 'Închiderea acestui meniu';
+  @override
+  String get skyTourMenuCloseBody =>
+      'Trage-l în jos, atinge în afara lui sau folosește butonul înapoi — '
+      'oricare dintre acestea îl închide.';
+  @override
+  String get skyTourQuickMenuTapTitle => 'O cale mai rapidă';
+  @override
+  String get skyTourQuickMenuTapBody =>
+      'O simplă atingere pe această stea — fără să o ții apăsată — '
+      'deschide un meniu rapid în loc de cel complet.';
+  @override
+  String get skyTourQuickSettingsHintTitle => 'Setări rapide';
+  @override
+  String get skyTourQuickSettingsHintBody =>
+      'Te duce direct la setările de sunet și afișaj.';
+  @override
+  String get skyTourSupernovasHintTitle => 'Supernove';
+  @override
+  String get skyTourSupernovasHintBody =>
+      'Te duce la supernova oricărei arii de viață.';
+  @override
+  String get skyTourConstellationsHintTitle => 'Constelații';
+  @override
+  String get skyTourConstellationsHintBody =>
+      'Începe o constelație nouă de la zero.';
+  @override
+  String get skyTourStarsHintTitle => 'Stele';
+  @override
+  String get skyTourStarsHintBody =>
+      'Deschide formularul pentru a înregistra o victorie, un obiectiv '
+      'sau un obicei.';
+  @override
+  String get skyTourSearchHintTitle => 'Caută Stele';
+  @override
+  String get skyTourSearchHintBody =>
+      'Găsește orice supernovă, constelație sau stea după nume.';
   @override
   String get starTourIntroTitle => 'Înregistrarea unei victorii';
   @override

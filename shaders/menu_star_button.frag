@@ -202,15 +202,19 @@ void main() {
 
   // Blue here instead of the shared gold every other glow in the app uses
   // (sky_supernova.frag included) — same two-stop mid/outer structure,
-  // just a cooler hue. Built directly from the menu drawer's own
-  // background (colors.nightPanel, #161D30 — see app_theme.dart's
-  // drawerTheme) rather than a hue picked in isolation: outerColor *is*
-  // that background color, midColor is the same color lifted toward
-  // white for the glow's brighter center, so both the logo (see
-  // assets/icon/app_icon_ring_centered_white.png, recolored to this same
-  // nightPanel) and this glow read as made of the menu's own material.
-  vec3 midColor = vec3(0.589, 0.601, 0.635);
-  vec3 outerColor = vec3(0.086, 0.114, 0.188);
+  // just a cooler hue. midColor is outerColor lifted toward white (same
+  // ~0.55 mix in both) for the glow's brighter center, so the logo (see
+  // assets/icon/app_icon_ring_centered_white.png) and this glow read as
+  // made of the same material. outerColor itself was originally
+  // colors.nightPanel (#161D30) exactly, matching the quick-access menu
+  // buttons around this one — but [brightness] below fades the glow
+  // toward black well before the canvas edge (see its own comment), so
+  // the disc's actual visible tone always read darker than that nominal
+  // value, closer to colors.night (#0D1220) than colors.nightPanel.
+  // Nudged to #181D2F (measured against the quick-access buttons'
+  // rendered nightPanel fill, not the raw constant) to compensate.
+  vec3 midColor = vec3(0.592, 0.601, 0.633);
+  vec3 outerColor = vec3(0.094, 0.114, 0.184);
   // Canvas is square (uResolution.x == uResolution.y), in the same
   // world units as [uv] — the radius the glow must fade to 0 within.
   float maxRadius = uResolution.x * 0.5 / uScale;

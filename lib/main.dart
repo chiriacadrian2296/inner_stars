@@ -315,7 +315,7 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
     return TourScope(
       storage: tourStorage,
       tourLengths: const {
-        'sky-navigation': 7,
+        'sky-navigation': 15,
         'star-form': 14,
         'search-stars': 7,
         'light-your-sky': 4,

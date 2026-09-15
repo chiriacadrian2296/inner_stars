@@ -161,10 +161,6 @@ const double _kGoldenAngle = 2.399963229728653;
 /// regardless of where on the sphere it is.
 Offset constellationWorldPosition(LifeArea area, int indexInArea) {
   final center = areaWorldPosition(area);
-  final centerDir = _directionOn(center.dx, center.dy);
-  final azimuth = center.dx * _twoPi;
-  final canonicalRight = (-math.sin(azimuth), 0.0, math.cos(azimuth));
-  final canonicalUp = _cross(canonicalRight, centerDir);
 
   // Finds which ring [indexInArea] falls into by filling each ring's own
   // slots (as many as fit its circumference at [_kAreaConstellationSpacing]
@@ -187,26 +183,55 @@ Offset constellationWorldPosition(LifeArea area, int indexInArea) {
   }
   final angle = (remaining / slotsInRing) * _twoPi + ring * _kGoldenAngle;
 
+  return offsetWorldPosition(center, radius, angle);
+}
+
+/// A point [radiusRadians] from [center] (true angular distance along the
+/// sky sphere's own great circle), toward [angleRadians] — the same 3D
+/// geodesic step [constellationWorldPosition]'s own per-ring stagger uses,
+/// pulled out standalone so a caller that needs a single fixed offset (not
+/// a whole packed ring of them) doesn't have to duplicate the tangent-frame
+/// math. See [constellationWorldPosition] for why this is done in 3D
+/// rather than by offsetting azimuth/elevation directly.
+Offset offsetWorldPosition(Offset center, double radiusRadians, double angleRadians) {
+  final centerDir = _directionOn(center.dx, center.dy);
+  final azimuth = center.dx * _twoPi;
+  final canonicalRight = (-math.sin(azimuth), 0.0, math.cos(azimuth));
+  final canonicalUp = _cross(canonicalRight, centerDir);
+
   final offsetAxis = _normalized(
     _add(
-      _scaled(canonicalRight, math.cos(angle)),
-      _scaled(canonicalUp, math.sin(angle)),
+      _scaled(canonicalRight, math.cos(angleRadians)),
+      _scaled(canonicalUp, math.sin(angleRadians)),
     ),
   );
   // centerDir and offsetAxis are already perpendicular unit vectors, so
-  // this is exactly the point [radius] radians from centerDir along the
+  // this is exactly the point [radiusRadians] from centerDir along the
   // great circle toward offsetAxis — no explicit rotation axis/matrix
   // needed (see [SkyCamera.rolled] for the general Rodrigues version of
   // the same idea).
   final scattered = _add(
-    _scaled(centerDir, math.cos(radius)),
-    _scaled(offsetAxis, math.sin(radius)),
+    _scaled(centerDir, math.cos(radiusRadians)),
+    _scaled(offsetAxis, math.sin(radiusRadians)),
   );
 
   final elevationTurns = math.asin(scattered.$2.clamp(-1.0, 1.0)) / _twoPi;
   final azimuthTurns = math.atan2(scattered.$3, scattered.$1) / _twoPi;
   return Offset(azimuthTurns, elevationTurns);
 }
+
+/// A fixed point near [area]'s own supernova that no real constellation can
+/// ever land on: every real ring [constellationWorldPosition] packs sits at
+/// a radius that's a whole multiple of [_kAreaConstellationSpacing] from
+/// the center, and this sits deliberately between the first two rings.
+/// Used by the sky-navigation tutorial for its own placeholder "house"
+/// constellation, which never touches the project/star repositories and
+/// therefore has no real `indexInArea` of its own.
+Offset tutorialDemoWorldPosition(LifeArea area) => offsetWorldPosition(
+  areaWorldPosition(area),
+  _kAreaConstellationSpacing * 1.5,
+  0,
+);
 
 /// The true angular separation (radians, along the sky sphere's own great
 /// circle) between two world positions — what `NebulaScreen`'s "take me

@@ -236,6 +236,13 @@ abstract class AppStrings {
   // tour a fresh install ever sees. Every step but the last advances only
   // on the real gesture it describes (see `TourGestureStep`), not on a
   // Next tap.
+  //
+  // Order 1, the tour's own opening (see `appTourWelcomeCard`) — the one
+  // step with a real button (Start) rather than a gesture, and the only
+  // copy in this whole tour that isn't teaching a specific control.
+  String get skyTourWelcomeTitle;
+  String get skyTourWelcomeBody;
+  String get skyTourWelcomeStartAction;
   String get skyTourTapSupernovaTitle;
   String get skyTourTapSupernovaBody;
   String get skyTourTapConstellationTitle;
@@ -250,6 +257,29 @@ abstract class AppStrings {
   String get skyTourTooltipBody;
   String get skyTourMenuTitle;
   String get skyTourMenuBody;
+  // The tour's own continuation into the full menu (order 9) and the
+  // quick-access mini menu (orders 10-15) — see `_openMenuModal`/
+  // `_QuickAccessFan` in `sky_screen.dart`. Order 9 shows while the full
+  // menu modal from order 8 is open, and waits for it to actually close
+  // (any of the three ways) rather than a Next tap. Orders 11-15 are
+  // purely informational — the real buttons stay modal (not
+  // `passthrough`) until the tour finishes, so a Next tap is what moves
+  // each one along (never Skip — this tour never offers one, at any
+  // step).
+  String get skyTourMenuCloseTitle;
+  String get skyTourMenuCloseBody;
+  String get skyTourQuickMenuTapTitle;
+  String get skyTourQuickMenuTapBody;
+  String get skyTourQuickSettingsHintTitle;
+  String get skyTourQuickSettingsHintBody;
+  String get skyTourSupernovasHintTitle;
+  String get skyTourSupernovasHintBody;
+  String get skyTourConstellationsHintTitle;
+  String get skyTourConstellationsHintBody;
+  String get skyTourStarsHintTitle;
+  String get skyTourStarsHintBody;
+  String get skyTourSearchHintTitle;
+  String get skyTourSearchHintBody;
 
   // "star-form" tour (`lib/tutorials/`) — the whole star form, every
   // creatable kind (lit victory, unlit goal, pulsar habit).

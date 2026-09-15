@@ -57,10 +57,26 @@ class HintRectTracker extends ChangeNotifier
     with WidgetsBindingObserver
     implements ValueListenable<Rect?> {
   /// Creates a tracker that measures in [mode].
-  HintRectTracker({this.mode = RectTrackingMode.onDemand});
+  ///
+  /// [rectProvider], when given, replaces the normal
+  /// `findRenderObject`/`localToGlobal` measurement entirely — every
+  /// [measure] call returns whatever it returns instead. This is the escape
+  /// hatch for a target that has no `RenderBox` of its own to measure, such
+  /// as a point painted by a `CustomPainter` inside a transformed canvas
+  /// (victory_stars' own sky, which projects world positions through a
+  /// pan/zoom camera every frame — see the app's `SkyHintTarget`). The
+  /// provider is expected to already return overlay-local coordinates, the
+  /// same space the default measurement produces.
+  HintRectTracker({
+    this.mode = RectTrackingMode.onDemand,
+    Rect? Function()? rectProvider,
+  }) : _rectProvider = rectProvider;
 
   /// How often the target is re-measured. See [RectTrackingMode].
   final RectTrackingMode mode;
+
+  /// Overrides how the rect is computed; see the constructor.
+  final Rect? Function()? _rectProvider;
 
   /// Trackers currently in [RectTrackingMode.perFrame], ticked by a single
   /// shared persistent frame callback.
@@ -176,6 +192,10 @@ class HintRectTracker extends ChangeNotifier
     // an error, it just means there is nothing to point at right now.
     if (!target.mounted || !overlay.mounted) {
       return null;
+    }
+    final Rect? Function()? provider = _rectProvider;
+    if (provider != null) {
+      return provider();
     }
     final RenderObject? targetObject = target.findRenderObject();
     final RenderObject? overlayObject = overlay.findRenderObject();

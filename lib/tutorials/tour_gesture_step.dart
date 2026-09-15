@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hint_kit/hint_kit.dart';
 
-import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 
 /// A tour step that advances only when the user performs the real gesture
@@ -30,11 +29,12 @@ import '../theme/app_colors.dart';
 ///    algorithm landed it.
 /// 2. [TourGestureBanner], a plain reactive widget (no relation to
 ///    `HintTarget`'s own card/arrow/placement machinery) that shows this
-///    step's own title/description while it's active, with only a Skip
-///    control — there's no Next, because the *point* is that nothing but
-///    the real gesture moves the tour on. See `sky_screen.dart`'s own
-///    gesture handlers (`_flyToArea`, `_openStar`, etc.) for where each
-///    step actually gets advanced, via `Tour.read(context).next()`.
+///    step's own title/description while it's active — no controls at
+///    all, not even Skip: the sky-navigation tour deliberately gives every
+///    step no way through but the real gesture it describes. See
+///    `sky_screen.dart`'s own gesture handlers (`_flyToArea`, `_openStar`,
+///    etc.) for where each step actually gets advanced, via
+///    `Tour.read(context).next()`.
 ///
 /// Place both inside the same [Stack] as the real content, same as
 /// [TourIntroTarget].
@@ -63,7 +63,8 @@ class TourGestureStep extends StatelessWidget {
 /// The banner half of [TourGestureStep] — see its own doc comment. Shows
 /// [title]/[description] centered near the top of the screen (out of the
 /// way of whatever's being tapped lower down) exactly while [tour]'s
-/// active step is [order], with only a Skip control.
+/// active step is [order]. No controls — see [TourGestureStep]'s own doc
+/// comment for why.
 class TourGestureBanner extends StatelessWidget {
   const TourGestureBanner({
     super.key,
@@ -86,7 +87,6 @@ class TourGestureBanner extends StatelessWidget {
         TourScope.of(context).orderAt(tour, controller.index) == order;
     if (!isActive) return const SizedBox.shrink();
     final colors = context.colors;
-    final strings = context.strings;
     return Positioned(
       top: 0,
       left: 0,
@@ -98,42 +98,39 @@ class TourGestureBanner extends StatelessWidget {
             alignment: Alignment.topCenter,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: colors.nightPanel,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: colors.text, width: 1.5),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: colors.text,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: TextStyle(color: colors.text, fontSize: 14),
-                    ),
-                    const SizedBox(height: 10),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: controller.skip,
-                        child: Text(
-                          strings.tourSkipAction,
-                          style: TextStyle(color: colors.muted),
+              // Capped the same width as every other tour step's card
+              // (`HintThemeData.maxWidth`'s own default, 280) — without
+              // this, nothing here stops the card from stretching as wide
+              // as its longest line of text, which on a roomy screen (a
+              // desktop browser window, a tablet) is most of it.
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 280),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colors.nightPanel,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: colors.text, width: 1.5),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: colors.text,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        description,
+                        style: TextStyle(color: colors.text, fontSize: 14),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
