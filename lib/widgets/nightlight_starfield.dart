@@ -24,7 +24,9 @@ import 'constellation_painter.dart' show sparklePath;
 /// faded out, at the bottom of its cycle — and bigger and brighter than its
 /// base size at the top, rather than a fixed-size twinkle. Since every star's
 /// cycle is offset differently, at any moment some are lighting up while
-/// others are fading out.
+/// others are fading out. On top of that, each also gets an occasional
+/// quick extra flicker — the same fast, irregular pulse `sky_supernova.frag`
+/// gives its own supernovas, in random order across the field.
 class NightlightStarfield extends StatefulWidget {
   const NightlightStarfield({super.key, this.starCount = 80});
 
@@ -45,17 +47,42 @@ class _NightlightStarfieldState extends State<NightlightStarfield>
   // reshuffling every time the surrounding layout changes.
   late final List<_NightlightStar> _stars = _generateStars(widget.starCount);
 
+  /// A jittered grid rather than plain uniform-random positions — pure
+  /// random placement at this count reads as clumpy, with visible empty
+  /// gaps and crowded clusters. Splitting the area into roughly
+  /// `sqrt(count)` × `sqrt(count)` cells and placing one star at a random
+  /// offset within each spreads them evenly while [_jitterFactor] keeps the
+  /// grid itself from ever being visible.
+  static const _jitterFactor = 0.85;
+
   static List<_NightlightStar> _generateStars(int count) {
     final random = math.Random(7);
-    return List.generate(count, (_) {
+    final cols = math.sqrt(count).ceil();
+    final rows = (count / cols).ceil();
+    final cellWidth = 1.0 / cols;
+    final cellHeight = 1.0 / rows;
+
+    // Shuffled rather than taken in raster order — `rows * cols` can exceed
+    // `count`, and consuming cells in order would leave a visibly empty
+    // block at the end of the grid instead of scattering the shortfall.
+    final cells = [for (var i = 0; i < rows * cols; i++) i]..shuffle(random);
+
+    return List.generate(count, (i) {
+      final cell = cells[i];
+      final col = cell % cols;
+      final row = cell ~/ cols;
+      final jitterX = (random.nextDouble() - 0.5) * cellWidth * _jitterFactor;
+      final jitterY = (random.nextDouble() - 0.5) * cellHeight * _jitterFactor;
       return _NightlightStar(
-        position: Offset(random.nextDouble(), random.nextDouble()),
+        position: Offset(
+          (col + 0.5) * cellWidth + jitterX,
+          (row + 0.5) * cellHeight + jitterY,
+        ),
         radius: 1.1 + random.nextDouble() * 2.0,
         phase: random.nextDouble() * math.pi * 2,
-        // Slow — a full light-up-to-fade-out cycle takes roughly 20-50s —
-        // so this reads as individual stars gently living and dying rather
-        // than a fast twinkle.
-        speed: 0.13 + random.nextDouble() * 0.3,
+        // A full light-up-to-fade-out cycle takes roughly 6-18s — brisk
+        // enough to read as lively rather than a slow, barely-there drift.
+        speed: 0.35 + random.nextDouble() * 0.65,
       );
     });
   }
@@ -123,11 +150,28 @@ class _NightlightStarfieldPainter extends CustomPainter {
       // brightness alone.
       final cycle = 0.5 + 0.5 * math.sin(time * star.speed + star.phase);
 
+      // A quick, irregular extra sparkle on top of the star's own slow
+      // cycle — the same technique `sky_supernova.frag` uses for its
+      // supernovas' own fast flicker: three sines at frequencies with no
+      // common period, multiplied rather than added, so the product stays
+      // near zero almost all the time and only spikes when all three
+      // happen to crest together. Each star's own position/phase shift the
+      // three terms independently, so these spikes land in effectively
+      // random order across the field rather than in sync.
+      final flickerRaw =
+          math.sin(time * 2.7 + star.position.dx * 11.0) *
+          math.sin(time * 1.3 + star.position.dy * 7.0) *
+          math.sin(time * 0.41 + star.phase * 5.0);
+      final flicker = math.pow(flickerRaw.clamp(0.0, 1.0), 4.0).toDouble();
+
       // Shrunk to a sliver and all but transparent at the bottom of the
-      // cycle (reads as gone), noticeably bigger and fully lit at the top.
-      final radius = star.radius * (0.05 + 1.75 * cycle);
-      final glowAlpha = 0.5 * cycle;
-      final coreAlpha = cycle;
+      // slow cycle (reads as gone), noticeably bigger and fully lit at the
+      // top — [flicker] then briefly boosts both further still, on point
+      // rather than as a separate ring/circle shape.
+      final radius =
+          star.radius * (0.05 + 1.75 * cycle) * (1.0 + flicker * 0.6);
+      final glowAlpha = (0.5 * cycle + flicker * 0.5).clamp(0.0, 1.0);
+      final coreAlpha = (cycle + flicker * 0.4).clamp(0.0, 1.0);
 
       final glowPaint = Paint()
         ..color = Colors.white.withValues(alpha: glowAlpha)

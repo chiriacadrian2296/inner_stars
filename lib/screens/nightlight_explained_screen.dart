@@ -5,6 +5,7 @@ import '../data/project_repository.dart';
 import '../data/star_repository.dart';
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
+import '../theme/nightlight_style.dart';
 import '../widgets/nightlight_starfield.dart';
 import '../widgets/responsive_content.dart';
 import 'nightlight_breathing_screen.dart';
@@ -88,6 +89,7 @@ class NightlightExplainedScreen extends StatelessWidget {
                       child: SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
+                          style: nightlightButtonStyle(colors),
                           onPressed: () => Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) => NightlightBreathingScreen(

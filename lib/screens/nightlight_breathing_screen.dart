@@ -7,6 +7,7 @@ import '../l10n/app_strings.dart';
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
+import '../theme/nightlight_style.dart';
 import '../widgets/nightlight_star_glow.dart';
 import '../widgets/nightlight_starfield.dart';
 import '../widgets/responsive_content.dart';
@@ -152,20 +153,32 @@ class _NightlightBreathingScreenState extends State<NightlightBreathingScreen>
         decoration: BoxDecoration(gradient: colors.nightlightGradient),
         child: Stack(
           children: [
-            // A subtle color wash behind the starfield, tied to the same
-            // [_controller] driving the star glow — brightest at the peak
-            // of an inhale, darkest at the bottom of an exhale, so it reads
-            // as part of the same breath rather than a separate animation.
+            // A soft band of light sweeping top-to-bottom behind the
+            // starfield, tied to the same [_controller] driving the star
+            // glow — rising toward the top as you breathe in, sinking back
+            // toward the bottom as you breathe out, so it reads as one more
+            // part of the same breath rather than a separate animation.
+            // The nearest hand-rolled equivalent to the "gradient wave"
+            // `breathing_collection`'s `BreathingBackground` gave the
+            // screen before that package was dropped (see the fix for the
+            // broken web build) — a moving gradient rather than that
+            // widget's own flat color cross-fade.
             Positioned.fill(
               child: AnimatedBuilder(
                 animation: _controller,
                 builder: (context, _) {
+                  final bandStop = (1.0 - _controller.value).clamp(0.06, 0.94);
                   return DecoratedBox(
                     decoration: BoxDecoration(
-                      color: Color.lerp(
-                        colors.nightlightGradientMid,
-                        colors.nightlightGradientCenter,
-                        _controller.value,
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          colors.nightlightGradientOuter,
+                          colors.nightlightGradientCenter,
+                          colors.nightlightGradientOuter,
+                        ],
+                        stops: [0.0, bandStop, 1.0],
                       ),
                     ),
                   );
@@ -236,6 +249,7 @@ class _NightlightBreathingScreenState extends State<NightlightBreathingScreen>
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(28, 0, 28, 24),
                         child: TextButton(
+                          style: nightlightTextButtonStyle(colors),
                           onPressed: _advanceToAdmire,
                           child: Text(strings.nightlightBreathingSkip),
                         ),

@@ -8,6 +8,7 @@ import '../l10n/strings_scope.dart';
 import '../models/background_track.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
+import '../theme/nightlight_style.dart';
 import '../widgets/nightlight_starfield.dart';
 import '../widgets/responsive_content.dart';
 import 'admire_stars_screen.dart';
@@ -120,6 +121,18 @@ class _NightlightGateScreenState extends State<NightlightGateScreen> {
                                   fontFamily: kFontBranding,
                                   fontSize: 40,
                                   color: colors.text,
+                                  // Same layered soft-blur glow as
+                                  // [NightlightStarfield]'s own stars —
+                                  // white shadows rather than a painted
+                                  // blur pass, since this is a [Text]
+                                  // rather than a canvas shape.
+                                  shadows: const [
+                                    Shadow(color: Colors.white, blurRadius: 18),
+                                    Shadow(
+                                      color: Colors.white54,
+                                      blurRadius: 36,
+                                    ),
+                                  ],
                                 ),
                               ),
                               const SizedBox(height: 40),
@@ -137,6 +150,7 @@ class _NightlightGateScreenState extends State<NightlightGateScreen> {
                                 width: double.infinity,
                                 child: ElevatedButton(
                                   onPressed: _openOk,
+                                  style: nightlightButtonStyle(colors),
                                   child: Text(strings.nightlightGateOk),
                                 ),
                               ),
@@ -145,6 +159,7 @@ class _NightlightGateScreenState extends State<NightlightGateScreen> {
                                 width: double.infinity,
                                 child: OutlinedButton(
                                   onPressed: _openCrisis,
+                                  style: nightlightOutlinedButtonStyle(colors),
                                   child: Text(strings.nightlightGateCrisis),
                                 ),
                               ),
