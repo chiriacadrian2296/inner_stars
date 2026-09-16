@@ -90,7 +90,15 @@ class _NightlightGateScreenState extends State<NightlightGateScreen> {
         decoration: BoxDecoration(gradient: colors.nightlightGradient),
         child: Stack(
           children: [
-            const Positioned.fill(child: NightlightStarfield()),
+            // Kept clear of a band directly behind the title text itself
+            // — see [NightlightStarfield.exclusionZones] — narrow enough
+            // that stars still show up above it and to either side, just
+            // not drifting across the word itself.
+            Positioned.fill(
+              child: NightlightStarfield(
+                exclusionZones: [Rect.fromLTWH(0.2, 0.11, 0.6, 0.15)],
+              ),
+            ),
             SafeArea(
               child: Column(
                 children: [
@@ -99,12 +107,30 @@ class _NightlightGateScreenState extends State<NightlightGateScreen> {
                       children: [
                         IconButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          icon: Icon(
-                            Icons.close,
-                            color: colors.nightlightMuted,
-                          ),
+                          icon: const Icon(Icons.close, color: Colors.white),
                         ),
                       ],
+                    ),
+                  ),
+                  ResponsiveContent(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 36, bottom: 4),
+                      child: Text(
+                        'Nightlight',
+                        style: TextStyle(
+                          fontFamily: kFontBranding,
+                          fontSize: 56,
+                          color: colors.text,
+                          // Same layered soft-blur glow as
+                          // [NightlightStarfield]'s own stars — white
+                          // shadows rather than a painted blur pass, since
+                          // this is a [Text] rather than a canvas shape.
+                          shadows: const [
+                            Shadow(color: Colors.white, blurRadius: 22),
+                            Shadow(color: Colors.white54, blurRadius: 42),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                   Expanded(
@@ -115,52 +141,111 @@ class _NightlightGateScreenState extends State<NightlightGateScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                'Nightlight',
-                                style: TextStyle(
-                                  fontFamily: kFontBranding,
-                                  fontSize: 40,
-                                  color: colors.text,
-                                  // Same layered soft-blur glow as
-                                  // [NightlightStarfield]'s own stars —
-                                  // white shadows rather than a painted
-                                  // blur pass, since this is a [Text]
-                                  // rather than a canvas shape.
-                                  shadows: const [
-                                    Shadow(color: Colors.white, blurRadius: 18),
-                                    Shadow(
-                                      color: Colors.white54,
-                                      blurRadius: 36,
+                              // The question's own two keywords bold —
+                              // same words the two buttons below use — so
+                              // the question and its matching answer read
+                              // as connected at a glance.
+                              Text.rich(
+                                TextSpan(
+                                  style: TextStyle(
+                                    fontSize: 27,
+                                    height: 1.35,
+                                    color: colors.text,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text:
+                                          strings.nightlightGateQuestionPrefix,
+                                    ),
+                                    TextSpan(
+                                      text:
+                                          strings.nightlightGateQuestionOkWord,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text:
+                                          strings.nightlightGateQuestionMiddle,
+                                    ),
+                                    TextSpan(
+                                      text: strings
+                                          .nightlightGateQuestionCrisisWord,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text:
+                                          strings.nightlightGateQuestionSuffix,
                                     ),
                                   ],
                                 ),
-                              ),
-                              const SizedBox(height: 40),
-                              Text(
-                                strings.nightlightGateQuestion,
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  height: 1.4,
-                                  color: colors.text,
-                                ),
                               ),
-                              const SizedBox(height: 32),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: _openOk,
-                                  style: nightlightButtonStyle(colors),
-                                  child: Text(strings.nightlightGateOk),
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton(
-                                  onPressed: _openCrisis,
-                                  style: nightlightOutlinedButtonStyle(colors),
-                                  child: Text(strings.nightlightGateCrisis),
+                              const SizedBox(height: 98),
+                              // Both buttons stretched to match the wider
+                              // of the two labels ("I'm in crisis" needs
+                              // more room than "I'm okay") rather than each
+                              // sized to its own — and both sized to that
+                              // shared width rather than the full screen.
+                              IntrinsicWidth(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    ElevatedButton.icon(
+                                      onPressed: _openOk,
+                                      style: nightlightButtonStyle(colors),
+                                      icon: const Icon(
+                                        Icons.thumb_up_alt_outlined,
+                                      ),
+                                      label: Text.rich(
+                                        TextSpan(
+                                          children: [
+                                            TextSpan(
+                                              text: strings
+                                                  .nightlightGateOkPrefix,
+                                            ),
+                                            TextSpan(
+                                              text:
+                                                  strings.nightlightGateOkWord,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 14),
+                                    OutlinedButton.icon(
+                                      onPressed: _openCrisis,
+                                      style: nightlightOutlinedButtonStyle(
+                                        colors,
+                                      ),
+                                      icon: const Icon(
+                                        Icons.thumb_down_alt_outlined,
+                                      ),
+                                      label: Text.rich(
+                                        TextSpan(
+                                          children: [
+                                            TextSpan(
+                                              text: strings
+                                                  .nightlightGateCrisisPrefix,
+                                            ),
+                                            TextSpan(
+                                              text: strings
+                                                  .nightlightGateCrisisWord,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],

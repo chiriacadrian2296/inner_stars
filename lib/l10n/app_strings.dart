@@ -670,16 +670,58 @@ abstract class AppStrings {
   // Nightlight — the calm-check gate in front of [AdmireStarsScreen], plus
   // the explanation and breathing screens shown when the answer is "in
   // crisis" (see `nightlight_gate_screen.dart` and its two follow-ups).
-  String get nightlightGateQuestion;
-  String get nightlightGateOk;
-  String get nightlightGateCrisis;
-  String get nightlightExplainedBody;
+  // The gate question, split around its two keywords (rather than one
+  // plain sentence) so `nightlight_gate_screen.dart` can bold just those
+  // two words — the same ones the two buttons below use — to make the
+  // correlation between question and answer visible at a glance.
+  String get nightlightGateQuestionPrefix;
+  String get nightlightGateQuestionOkWord;
+  String get nightlightGateQuestionMiddle;
+  String get nightlightGateQuestionCrisisWord;
+  String get nightlightGateQuestionSuffix;
+
+  // The two buttons' own labels, split the same way — a plain prefix plus
+  // the one word that should be bold, rather than the whole label. The
+  // bold word doesn't need to match the question's own wording exactly
+  // (grammar differs; e.g. Italian's "a posto" vs. a button's "bene") —
+  // the shared bold *treatment* is what ties question to answer.
+  String get nightlightGateOkPrefix;
+  String get nightlightGateOkWord;
+  String get nightlightGateCrisisPrefix;
+  String get nightlightGateCrisisWord;
+  // The explanation screen: a title, a quick 3-step icon scheme
+  // (agitated -> breathe -> see clearly) above the text, then the
+  // explanation itself broken into short paragraphs rather than one dense
+  // block. Each paragraph carries its own `*word*`-marked bold spans
+  // inline (parsed by `nightlight_explained_screen.dart`'s
+  // `parseBoldMarkup`) rather than one single bold phrase per paragraph —
+  // lets a paragraph mark as many of its own words bold as it needs to,
+  // wherever they fall in its own sentence.
+  String get nightlightExplainedTitle;
+  String get nightlightExplainedSchemeAgitated;
+  String get nightlightExplainedSchemeBreathe;
+  String get nightlightExplainedSchemeClarity;
+  String get nightlightExplainedBodyPart1;
+  String get nightlightExplainedBodyPart2;
+  String get nightlightExplainedBodyPart3;
   String get nightlightExplainedContinue;
   String get nightlightBreathingGetReady;
   String get nightlightBreathingInhale;
   String get nightlightBreathingHold;
   String get nightlightBreathingExhale;
   String get nightlightBreathingSkip;
+
+  // Shown once cycles start: which one this is out of the fixed total, and
+  // a plain mm:ss clock counting down to the exercise's own end.
+  String nightlightBreathingCycleLabel(int current, int total);
+
+  // The check-in shown when the exercise finishes on its own (cycles ran
+  // out) rather than the user tapping "I'm ready" themselves — asks how
+  // they're feeling now rather than assuming the exercise alone was enough.
+  String get nightlightBreathingCheckInTitle;
+  String get nightlightBreathingCheckInBody;
+  String get nightlightBreathingCheckInRedo;
+  String get nightlightBreathingCheckInProceed;
 
   String get newConstellationOption;
 

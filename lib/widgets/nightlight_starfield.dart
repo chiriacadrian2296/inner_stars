@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 import 'constellation_painter.dart' show sparklePath;
+import 'responsive_content.dart' show kResponsiveContentMaxWidth;
 
 /// A field of small white twinkling sparkles scattered across whatever
 /// bounds it's given — the Nightlight section's own background (see
@@ -26,11 +27,30 @@ import 'constellation_painter.dart' show sparklePath;
 /// cycle is offset differently, at any moment some are lighting up while
 /// others are fading out. On top of that, each also gets an occasional
 /// quick extra flicker — the same fast, irregular pulse `sky_supernova.frag`
-/// gives its own supernovas, in random order across the field.
+/// gives its own supernovas, in random order across the field — which also
+/// briefly flashes a small bright point right at the star's own center.
 class NightlightStarfield extends StatefulWidget {
-  const NightlightStarfield({super.key, this.starCount = 80});
+  const NightlightStarfield({
+    super.key,
+    this.starCount = 80,
+    this.exclusionZones = const [],
+  });
 
   final int starCount;
+
+  /// Rects no star will ever be drawn in — e.g. the strip a big title sits
+  /// in, so an animated star never drifts in front of its own text.
+  ///
+  /// The vertical extent (`top`/`height`) is a fraction (0-1) of this
+  /// widget's own full height, same as before. The horizontal extent
+  /// (`left`/`width`) is instead a fraction of the *content column* —
+  /// `min(width, kResponsiveContentMaxWidth)`, centered — rather than of
+  /// this widget's own full width: on a wide web viewport,
+  /// [ResponsiveContent] caps the actual title/text at that same content
+  /// width, so a zone sized against the full (much wider) window would
+  /// leave an oversized, empty-looking gap of starless space on either
+  /// side of it instead of hugging just the content itself.
+  final List<Rect> exclusionZones;
 
   @override
   State<NightlightStarfield> createState() => _NightlightStarfieldState();
@@ -44,7 +64,11 @@ class _NightlightStarfieldState extends State<NightlightStarfield>
   // Generated once (fixed seed, so reproducible rather than genuinely
   // random) and kept in fractional (0-1) coordinates, so the same layout
   // just stretches to whatever size this widget is given, rather than
-  // reshuffling every time the surrounding layout changes.
+  // reshuffling every time the surrounding layout changes. Unfiltered by
+  // [widget.exclusionZones] — that's applied at paint time instead (see
+  // [_NightlightStarfieldPainter]), since only there is the widget's own
+  // actual pixel size known, which the zones' content-relative horizontal
+  // extent needs to convert correctly.
   late final List<_NightlightStar> _stars = _generateStars(widget.starCount);
 
   /// A jittered grid rather than plain uniform-random positions — pure
@@ -107,6 +131,7 @@ class _NightlightStarfieldState extends State<NightlightStarfield>
         size: Size.infinite,
         painter: _NightlightStarfieldPainter(
           stars: _stars,
+          exclusionZones: widget.exclusionZones,
           time: _elapsed.inMicroseconds / Duration.microsecondsPerSecond,
         ),
       ),
@@ -131,19 +156,43 @@ class _NightlightStar {
 }
 
 class _NightlightStarfieldPainter extends CustomPainter {
-  _NightlightStarfieldPainter({required this.stars, required this.time});
+  _NightlightStarfieldPainter({
+    required this.stars,
+    required this.exclusionZones,
+    required this.time,
+  });
 
   final List<_NightlightStar> stars;
+  final List<Rect> exclusionZones;
   final double time;
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
+
+    // The content column [exclusionZones]' horizontal extent is actually
+    // relative to — see [NightlightStarfield.exclusionZones]'s own doc
+    // comment. Converted to real pixel rects once per paint rather than
+    // per star, since neither `size` nor the zones change within a frame.
+    final contentWidth = math.min(size.width, kResponsiveContentMaxWidth);
+    final contentLeft = (size.width - contentWidth) / 2;
+    final pixelZones = [
+      for (final zone in exclusionZones)
+        Rect.fromLTWH(
+          contentLeft + zone.left * contentWidth,
+          zone.top * size.height,
+          zone.width * contentWidth,
+          zone.height * size.height,
+        ),
+    ];
+
     for (final star in stars) {
       final center = Offset(
         star.position.dx * size.width,
         star.position.dy * size.height,
       );
+      if (pixelZones.any((zone) => zone.contains(center))) continue;
+
       // 0 at the bottom of this star's own cycle, 1 at the top — same
       // sine-based shape `nebula_particles.frag`'s `starLayer` uses for its
       // twinkle, just driving size and brightness together here instead of
@@ -162,7 +211,8 @@ class _NightlightStarfieldPainter extends CustomPainter {
           math.sin(time * 2.7 + star.position.dx * 11.0) *
           math.sin(time * 1.3 + star.position.dy * 7.0) *
           math.sin(time * 0.41 + star.phase * 5.0);
-      final flicker = math.pow(flickerRaw.clamp(0.0, 1.0), 4.0).toDouble();
+      final flickerClamped = flickerRaw.clamp(0.0, 1.0);
+      final flicker = math.pow(flickerClamped, 4.0).toDouble();
 
       // Shrunk to a sliver and all but transparent at the bottom of the
       // slow cycle (reads as gone), noticeably bigger and fully lit at the
@@ -184,6 +234,28 @@ class _NightlightStarfieldPainter extends CustomPainter {
       canvas.translate(center.dx, center.dy);
       canvas.drawPath(sparklePath(radius), corePaint);
       canvas.restore();
+
+      // A short, sharp point-flash right at the star's center, drawn on
+      // top of the sparkle rather than folded into its size/brightness.
+      // Driven off [flickerClamped] directly rather than [flicker] (whose
+      // own ^4 power, stacked with another power here, suppressed this
+      // almost to the point of never actually being visible). Kept tight
+      // (a small radius bump, tight blur) with the alpha boosted well past
+      // [flash] itself, so it reads as a brief, intense point of light
+      // rather than a wide, soft wash.
+      final flash = math.pow(flickerClamped, 1.2).toDouble();
+      if (flash > 0.02) {
+        final flashAlpha = (flash * 2.2).clamp(0.0, 1.0);
+        final flareRadius = radius * (1.0 + flash * 0.35);
+        final flarePaint = Paint()
+          ..color = Colors.white.withValues(alpha: flashAlpha)
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, flareRadius * 0.7);
+        canvas.drawCircle(center, flareRadius, flarePaint);
+
+        final flashCorePaint = Paint()
+          ..color = Colors.white.withValues(alpha: flashAlpha);
+        canvas.drawCircle(center, radius * 0.45, flashCorePaint);
+      }
     }
   }
 

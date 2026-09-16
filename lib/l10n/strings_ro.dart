@@ -742,7 +742,8 @@ class StringsRo implements AppStrings {
   @override
   String get constellationTourSaveBody => 'Salvează noua ta constelație.';
   @override
-  String get supernovaTourIntroTitle => 'Reflectând asupra ariilor tale de viață';
+  String get supernovaTourIntroTitle =>
+      'Reflectând asupra ariilor tale de viață';
   @override
   String get supernovaTourIntroBody =>
       'Fiecare dintre cele opt arii ale tale își păstrează propriile '
@@ -1115,7 +1116,8 @@ class StringsRo implements AppStrings {
   @override
   String get starKindPulsarMeaning => 'Obicei — în curs';
   @override
-  String get starKindPulsarExample => 'Zece minute de stretching, în fiecare zi.';
+  String get starKindPulsarExample =>
+      'Zece minute de stretching, în fiecare zi.';
   @override
   String get starKindDeadName => 'Stea stinsă';
   @override
@@ -1156,21 +1158,45 @@ class StringsRo implements AppStrings {
   String get viewYourStars => 'Privește-ți stelele';
 
   @override
-  String get nightlightGateQuestion =>
-      'Înainte să începem, ești bine sau în criză?';
+  String get nightlightGateQuestionPrefix => 'Înainte să începem, ești ';
   @override
-  String get nightlightGateOk => 'Sunt bine';
+  String get nightlightGateQuestionOkWord => 'bine';
   @override
-  String get nightlightGateCrisis => 'Sunt în criză';
+  String get nightlightGateQuestionMiddle => ' sau în ';
   @override
-  String get nightlightExplainedBody =>
-      'Când ești agitat sau abătut, mintea tinde să se protejeze '
-      'raționalizând: va găsi motive care par logice ca să minimizeze '
-      'fiecare victorie pe care ți-o vom arăta, chiar și pe cele mai '
-      'adevărate. Nu pentru că nu contează, ci pentru că în starea aceea '
-      'e aproape imposibil să le privești cu ochi limpezi. De aceea facem '
-      'mai întâi un scurt exercițiu de respirație: ajută corpul, și odată '
-      'cu el mintea, să iasă din starea aceea.';
+  String get nightlightGateQuestionCrisisWord => 'criză';
+  @override
+  String get nightlightGateQuestionSuffix => '?';
+  @override
+  String get nightlightGateOkPrefix => 'Sunt ';
+  @override
+  String get nightlightGateOkWord => 'bine';
+  @override
+  String get nightlightGateCrisisPrefix => 'Sunt în ';
+  @override
+  String get nightlightGateCrisisWord => 'criză';
+  @override
+  String get nightlightExplainedTitle => 'Calm Down';
+  @override
+  String get nightlightExplainedSchemeAgitated => 'Agitat';
+  @override
+  String get nightlightExplainedSchemeBreathe => 'Respiră';
+  @override
+  String get nightlightExplainedSchemeClarity => 'Vezi Clar';
+  @override
+  String get nightlightExplainedBodyPart1 =>
+      'Când ești *agitat* sau abătut, *mintea* tinde să se *protejeze* '
+      '*raționalizând*: va găsi *motive* care par logice ca să '
+      '*minimizeze fiecare victorie* pe care ți-o vom arăta, *chiar și '
+      'pe cele mai adevărate*.';
+  @override
+  String get nightlightExplainedBodyPart2 =>
+      'Nu pentru că *nu contează*, ci pentru că în starea aceea e '
+      'aproape *imposibil* să *le privești cu ochi limpezi*.';
+  @override
+  String get nightlightExplainedBodyPart3 =>
+      'De aceea *respirăm* mai întâi împreună: *ajută* *corpul*, și '
+      'odată cu el *mintea*, să *iasă din starea aceea*.';
   @override
   String get nightlightExplainedContinue => 'Continuă';
   @override
@@ -1183,6 +1209,19 @@ class StringsRo implements AppStrings {
   String get nightlightBreathingExhale => 'Expiră';
   @override
   String get nightlightBreathingSkip => 'Sunt gata';
+  @override
+  String nightlightBreathingCycleLabel(int current, int total) =>
+      'Ciclul $current din $total';
+  @override
+  String get nightlightBreathingCheckInTitle => 'Cum te simți acum?';
+  @override
+  String get nightlightBreathingCheckInBody =>
+      'Sper că te simți mai bine acum. Dacă încă nu ești bine, poți '
+      'reface exercițiul. Dacă te simți bine, poți continua.';
+  @override
+  String get nightlightBreathingCheckInRedo => 'Reia';
+  @override
+  String get nightlightBreathingCheckInProceed => 'Continuă';
 
   @override
   String get newConstellationOption => 'Constelație nouă';

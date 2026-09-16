@@ -133,10 +133,7 @@ class _AdmireStarsScreenState extends State<AdmireStarsScreen> {
                       children: [
                         IconButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          icon: Icon(
-                            Icons.close,
-                            color: colors.nightlightMuted,
-                          ),
+                          icon: const Icon(Icons.close, color: Colors.white),
                         ),
                       ],
                     ),

@@ -1142,33 +1142,70 @@ class StringsEn implements AppStrings {
   String get viewYourStars => 'View your stars';
 
   @override
-  String get nightlightGateQuestion =>
-      'Before we start, are you okay or in crisis mode?';
+  String get nightlightGateQuestionPrefix => 'Before we start, are you ';
   @override
-  String get nightlightGateOk => "I'm okay";
+  String get nightlightGateQuestionOkWord => 'okay';
   @override
-  String get nightlightGateCrisis => "I'm in crisis";
+  String get nightlightGateQuestionMiddle => ' or in ';
   @override
-  String get nightlightExplainedBody =>
-      "When you're agitated or feeling low, the mind tends to protect "
-      'itself by rationalizing: it will find reasons that sound logical '
-      "to play down every victory we're about to show you, even the "
-      "truest ones. Not because they don't count, but because in that "
-      "state it's almost impossible to look at them with clear eyes. "
-      "That's why we do a short breathing exercise first: it helps the "
-      'body, and with it the mind, come out of that state.';
+  String get nightlightGateQuestionCrisisWord => 'crisis';
+  @override
+  String get nightlightGateQuestionSuffix => ' mode?';
+  @override
+  String get nightlightGateOkPrefix => "I'm ";
+  @override
+  String get nightlightGateOkWord => 'okay';
+  @override
+  String get nightlightGateCrisisPrefix => "I'm in ";
+  @override
+  String get nightlightGateCrisisWord => 'crisis';
+  @override
+  String get nightlightExplainedTitle => 'Calm Down';
+  @override
+  String get nightlightExplainedSchemeAgitated => 'Agitated';
+  @override
+  String get nightlightExplainedSchemeBreathe => 'Breathe';
+  @override
+  String get nightlightExplainedSchemeClarity => 'See Clearly';
+  @override
+  String get nightlightExplainedBodyPart1 =>
+      "When you're *agitated* or feeling low, the *mind* tends to "
+      "*protect* itself by *rationalizing*: it will find *reasons* that "
+      "sound logical to *play down every victory* you're about to see, "
+      "*even the truest* ones.";
+  @override
+  String get nightlightExplainedBodyPart2 =>
+      "Not because *they don't count*, but because in that state it's "
+      'almost *impossible* to *look at them with clear eyes*.';
+  @override
+  String get nightlightExplainedBodyPart3 =>
+      "That's why we *breathe* together first: it *helps* the *body*, "
+      'and with it, the *mind* comes *out of that state*.';
   @override
   String get nightlightExplainedContinue => 'Continue';
   @override
   String get nightlightBreathingGetReady => 'Get ready';
   @override
-  String get nightlightBreathingInhale => 'Breathe in';
+  String get nightlightBreathingInhale => 'Breathe In';
   @override
   String get nightlightBreathingHold => 'Hold';
   @override
-  String get nightlightBreathingExhale => 'Breathe out';
+  String get nightlightBreathingExhale => 'Breathe Out';
   @override
   String get nightlightBreathingSkip => "I'm ready";
+  @override
+  String nightlightBreathingCycleLabel(int current, int total) =>
+      'Cycle $current of $total';
+  @override
+  String get nightlightBreathingCheckInTitle => 'How do you feel now?';
+  @override
+  String get nightlightBreathingCheckInBody =>
+      "I hope you're feeling better now. If you're not okay yet, you can "
+      'redo the exercise. If you feel okay, you can move on.';
+  @override
+  String get nightlightBreathingCheckInRedo => 'Redo';
+  @override
+  String get nightlightBreathingCheckInProceed => 'Proceed';
 
   @override
   String get newConstellationOption => 'New constellation';
