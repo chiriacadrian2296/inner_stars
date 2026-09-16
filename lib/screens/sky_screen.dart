@@ -61,13 +61,13 @@ import '../widgets/sky_navigation_target.dart';
 import '../widgets/sky_pulsar_tooltip.dart';
 import '../widgets/sky_star_tooltip.dart';
 import '../widgets/sky_supernova.dart';
-import 'admire_stars_screen.dart';
 import 'area_detail_screen.dart';
 import 'friends_screen.dart';
 import 'sky_search_screen.dart';
 import 'metaphor_screen.dart';
-import 'pulsar_reader_screen.dart';
 import 'new_project_screen.dart';
+import 'nightlight_gate_screen.dart';
+import 'pulsar_reader_screen.dart';
 import 'quick_settings_screen.dart';
 import 'settings_screen.dart';
 import 'sound_lab_screen.dart';
@@ -1341,10 +1341,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _refresh();
   }
 
-  void _openAdmire() {
+  void _openNightlight() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => AdmireStarsScreen(
+        builder: (_) => NightlightGateScreen(
+          audioService: widget.audioService,
           starRepository: widget.starRepository,
           projectRepository: widget.projectRepository,
           starsShapeRepository: widget.starsShapeRepository,
@@ -1494,7 +1495,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
               onShootingStars: _openShootingStars,
               onSearch: _openSearch,
               onStatistics: _openStatistics,
-              onAdmire: _openAdmire,
+              onNightlight: _openNightlight,
               onFriends: _openFriends,
               onSettings: _openSettings,
               onMetaphor: _openMetaphor,
@@ -2679,7 +2680,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
           onShootingStars: _openShootingStars,
           onSearch: _openSearch,
           onStatistics: _openStatistics,
-          onAdmire: _openAdmire,
+          onNightlight: _openNightlight,
           onFriends: _openFriends,
           onSettings: _openSettings,
           onMetaphor: _openMetaphor,

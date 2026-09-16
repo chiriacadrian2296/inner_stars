@@ -65,7 +65,7 @@ abstract class AppStrings {
   String get menuDataSection;
   String get menuSearch;
   String get menuStatistics;
-  String get menuCrisisSection;
+  String get menuNightlightSection;
   String get menuFindYourLight;
   String get menuChallengesSection;
   String get socialSection;
@@ -193,6 +193,7 @@ abstract class AppStrings {
   String get backgroundTrackOutThere;
   String get backgroundTrackAmbientRelaxing;
   String get backgroundTrackBackgroundSpace;
+  String get backgroundTrackNightlight;
   String get skySoundPluckSoft;
   String get skySoundPluckBright;
   String get skySoundGlassLow;
@@ -665,6 +666,20 @@ abstract class AppStrings {
   String get pickAtLeastOneArea;
   String get noStarsInSelection;
   String get viewYourStars;
+
+  // Nightlight — the calm-check gate in front of [AdmireStarsScreen], plus
+  // the explanation and breathing screens shown when the answer is "in
+  // crisis" (see `nightlight_gate_screen.dart` and its two follow-ups).
+  String get nightlightGateQuestion;
+  String get nightlightGateOk;
+  String get nightlightGateCrisis;
+  String get nightlightExplainedBody;
+  String get nightlightExplainedContinue;
+  String get nightlightBreathingGetReady;
+  String get nightlightBreathingInhale;
+  String get nightlightBreathingHold;
+  String get nightlightBreathingExhale;
+  String get nightlightBreathingSkip;
 
   String get newConstellationOption;
 

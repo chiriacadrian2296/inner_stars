@@ -141,7 +141,7 @@ class StringsRo implements AppStrings {
   @override
   String get menuStatistics => 'Statistici';
   @override
-  String get menuCrisisSection => 'Criză';
+  String get menuNightlightSection => 'Nightlight';
   @override
   String get menuFindYourLight => 'Găsește-ți Lumina';
   @override
@@ -392,6 +392,8 @@ class StringsRo implements AppStrings {
   String get backgroundTrackAmbientRelaxing => 'Ambient relaxant';
   @override
   String get backgroundTrackBackgroundSpace => 'Meditație cosmică';
+  @override
+  String get backgroundTrackNightlight => 'Nightlight';
   @override
   String get skySoundPluckSoft => 'Pizzicato blând';
   @override
@@ -1152,6 +1154,32 @@ class StringsRo implements AppStrings {
       'Nicio stea aprinsă încă în supernovele alese.';
   @override
   String get viewYourStars => 'Privește-ți stelele';
+
+  @override
+  String get nightlightGateQuestion =>
+      'Înainte să începem, ești bine sau în criză?';
+  @override
+  String get nightlightGateOk => 'Sunt bine';
+  @override
+  String get nightlightGateCrisis => 'Sunt în criză';
+  @override
+  String get nightlightExplainedBody =>
+      'Înainte să-ți privești victoriile, oferă-ți un moment să te '
+      'calmezi. Când suntem agitați, mintea găsește scuze plauzibile ca '
+      'să nu creadă în binele pe care l-am făcut. Respiră cu noi câteva '
+      'clipe: după, privirea înapoi va avea alt sens.';
+  @override
+  String get nightlightExplainedContinue => 'Continuă';
+  @override
+  String get nightlightBreathingGetReady => 'Pregătește-te';
+  @override
+  String get nightlightBreathingInhale => 'Inspiră';
+  @override
+  String get nightlightBreathingHold => 'Ține';
+  @override
+  String get nightlightBreathingExhale => 'Expiră';
+  @override
+  String get nightlightBreathingSkip => 'Sunt gata';
 
   @override
   String get newConstellationOption => 'Constelație nouă';

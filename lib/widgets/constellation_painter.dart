@@ -403,7 +403,7 @@ class ConstellationPainter extends CustomPainter {
     bool outlineOnly = false,
   }) {
     if (group.isEmpty) return;
-    final sparkle = _sparklePath(radius);
+    final sparkle = sparklePath(radius);
     final paint = outlineOnly
         ? (Paint()
             ..color = color
@@ -431,8 +431,10 @@ class ConstellationPainter extends CustomPainter {
 
 /// A small four-pointed "twinkle" sparkle (like ✦), pinched to a narrow
 /// waist at the center — reads clearly at star size, unlike a filled
-/// diamond or a rounder shape which just blurs into a dot.
-Path _sparklePath(double radius) {
+/// diamond or a rounder shape which just blurs into a dot. Public because
+/// `nightlight_starfield.dart` and `nightlight_star_glow.dart` reuse the same
+/// shape for their own white, non-constellation stars.
+Path sparklePath(double radius) {
   final waist = radius * 0.28;
   return Path()
     ..moveTo(0, -radius)

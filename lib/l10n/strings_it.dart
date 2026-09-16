@@ -141,7 +141,7 @@ class StringsIt implements AppStrings {
   @override
   String get menuStatistics => 'Statistiche';
   @override
-  String get menuCrisisSection => 'Crisi';
+  String get menuNightlightSection => 'Nightlight';
   @override
   String get menuFindYourLight => 'Trova La Tua Luce';
   @override
@@ -392,6 +392,8 @@ class StringsIt implements AppStrings {
   String get backgroundTrackAmbientRelaxing => 'Ambiente rilassante';
   @override
   String get backgroundTrackBackgroundSpace => 'Meditazione cosmica';
+  @override
+  String get backgroundTrackNightlight => 'Nightlight';
   @override
   String get skySoundPluckSoft => 'Pizzicato lieve';
   @override
@@ -1153,6 +1155,32 @@ class StringsIt implements AppStrings {
       'Nessuna stella ancora accesa nelle supernove scelte.';
   @override
   String get viewYourStars => 'Guarda le tue stelle';
+
+  @override
+  String get nightlightGateQuestion =>
+      'Prima di cominciare, sei a posto o in modalità crisi?';
+  @override
+  String get nightlightGateOk => 'Sto bene';
+  @override
+  String get nightlightGateCrisis => 'Sono in crisi';
+  @override
+  String get nightlightExplainedBody =>
+      'Prima di guardare le tue vittorie, prenditi un momento per calmarti. '
+      'Quando siamo agitati, la mente trova scuse plausibili per non '
+      'credere a ciò che di buono abbiamo fatto. Respira con noi qualche '
+      'istante: dopo, guardare indietro avrà un senso diverso.';
+  @override
+  String get nightlightExplainedContinue => 'Continua';
+  @override
+  String get nightlightBreathingGetReady => 'Preparati';
+  @override
+  String get nightlightBreathingInhale => 'Inspira';
+  @override
+  String get nightlightBreathingHold => 'Trattieni';
+  @override
+  String get nightlightBreathingExhale => 'Espira';
+  @override
+  String get nightlightBreathingSkip => 'Sono pronto';
 
   @override
   String get newConstellationOption => 'Nuova costellazione';

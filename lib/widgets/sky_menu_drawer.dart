@@ -31,7 +31,7 @@ class SkyMenuDrawer extends StatelessWidget {
     required this.onNewConstellation,
     required this.onVisions,
     required this.onShootingStars,
-    required this.onAdmire,
+    required this.onNightlight,
     required this.onSearch,
     required this.onStatistics,
     required this.onFriends,
@@ -43,7 +43,7 @@ class SkyMenuDrawer extends StatelessWidget {
   final VoidCallback onNewConstellation;
   final VoidCallback onVisions;
   final VoidCallback onShootingStars;
-  final VoidCallback onAdmire;
+  final VoidCallback onNightlight;
   final VoidCallback onSearch;
   final VoidCallback onStatistics;
   final VoidCallback onFriends;
@@ -59,7 +59,7 @@ class SkyMenuDrawer extends StatelessWidget {
           onNewConstellation: onNewConstellation,
           onVisions: onVisions,
           onShootingStars: onShootingStars,
-          onAdmire: onAdmire,
+          onNightlight: onNightlight,
           onSearch: onSearch,
           onStatistics: onStatistics,
           onFriends: onFriends,
@@ -106,9 +106,10 @@ class SkyMenuDrawer extends StatelessWidget {
 ///   small chooser mirroring the sky's own three levels (Supernovas/
 ///   Constellations/Stars) rather than claiming three rows of their own,
 ///   and [onShootingStars] — sketched in ahead of the feature existing.
-/// - **Crisis** — [onAdmire] ("Find Your Light"), right under Activity: what
-///   it's *for* (a place to go when things are hard, reached in as few taps
-///   as making something) matters more here than it being its own category.
+/// - **Nightlight** — [onNightlight] ("Find Your Light"), right under
+///   Activity: what it's *for* (a place to go when things are hard, reached
+///   in as few taps as making something) matters more here than it being
+///   its own category.
 /// - **Data** — [onStatistics], a way of *looking back*.
 /// - **Social** — [onFriends], sketched in the same way as Shooting Stars.
 /// - **Info** — just the metaphor guide. Onboarding replay moved back to
@@ -124,7 +125,7 @@ class SkyMenuContent extends StatelessWidget {
     required this.onNewConstellation,
     required this.onVisions,
     required this.onShootingStars,
-    required this.onAdmire,
+    required this.onNightlight,
     required this.onSearch,
     required this.onStatistics,
     required this.onFriends,
@@ -139,7 +140,7 @@ class SkyMenuContent extends StatelessWidget {
   final VoidCallback onNewConstellation;
   final VoidCallback onVisions;
   final VoidCallback onShootingStars;
-  final VoidCallback onAdmire;
+  final VoidCallback onNightlight;
   final VoidCallback onSearch;
   final VoidCallback onStatistics;
   final VoidCallback onFriends;
@@ -500,13 +501,13 @@ class SkyMenuContent extends StatelessWidget {
         ),
 
         if (!detailed) Divider(color: colors.nightBorder, height: 1),
-        sectionHeader(strings.menuCrisisSection),
+        sectionHeader(strings.menuNightlightSection),
         if (!detailed) const SizedBox(height: 8),
         entry(
           icon: Icons.tips_and_updates,
           label: strings.menuFindYourLight,
           description: strings.menuFindYourLightDescription,
-          onTap: onAdmire,
+          onTap: onNightlight,
         ),
 
         if (!detailed) Divider(color: colors.nightBorder, height: 1),

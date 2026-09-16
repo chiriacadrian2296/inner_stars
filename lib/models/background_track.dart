@@ -10,6 +10,7 @@ enum BackgroundTrack {
   outThere,
   ambientRelaxing,
   backgroundSpace,
+  nightlight,
 }
 
 extension BackgroundTrackX on BackgroundTrack {
@@ -28,6 +29,10 @@ extension BackgroundTrackX on BackgroundTrack {
         return 'audio/bg/ambient_relaxing_loop.ogg';
       case BackgroundTrack.backgroundSpace:
         return 'audio/bg/background_space_track.ogg';
+      case BackgroundTrack.nightlight:
+        // TODO(nightlight-audio): no dedicated track recorded yet — reuses
+        // the existing calm loop as a placeholder until one is supplied.
+        return 'audio/bg/ambient_relaxing_loop.ogg';
     }
   }
 
@@ -43,6 +48,8 @@ extension BackgroundTrackX on BackgroundTrack {
         return s.backgroundTrackAmbientRelaxing;
       case BackgroundTrack.backgroundSpace:
         return s.backgroundTrackBackgroundSpace;
+      case BackgroundTrack.nightlight:
+        return s.backgroundTrackNightlight;
     }
   }
 }

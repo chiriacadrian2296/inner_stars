@@ -12,13 +12,13 @@ import '../models/star.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../widgets/app_toggle_chip.dart';
+import '../widgets/nightlight_starfield.dart';
 import '../widgets/responsive_content.dart';
 import 'star_reader_screen.dart';
 
-/// Entry point for reflecting on saved victories — reachable from every tab
-/// (see [RootScreen]'s persistent floating button), not tied to a "crisis"
-/// moment specifically. Asks which life areas to draw from every time
-/// (defaulting to all), then shows a shuffled, editable browse of every
+/// The last screen of the Nightlight flow (see `nightlight_gate_screen.dart`)
+/// — reflecting on saved victories. Asks which life areas to draw from every
+/// time (defaulting to all), then shows a shuffled, editable browse of every
 /// achieved star in that selection via [StarReaderScreen]. Goals and dead
 /// stars aren't part of this reflection pool — there's nothing to admire in
 /// something not yet reached or no longer standing.
@@ -121,146 +121,160 @@ class _AdmireStarsScreenState extends State<AdmireStarsScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(gradient: colors.crisisGradient),
-        child: SafeArea(
-          child: Column(
-            children: [
-              ResponsiveContent(
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: Icon(Icons.close, color: colors.crisisMuted),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 28),
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: constraints.maxHeight,
+        decoration: BoxDecoration(gradient: colors.nightlightGradient),
+        child: Stack(
+          children: [
+            const Positioned.fill(child: NightlightStarfield()),
+            SafeArea(
+              child: Column(
+                children: [
+                  ResponsiveContent(
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: Icon(
+                            Icons.close,
+                            color: colors.nightlightMuted,
+                          ),
                         ),
-                        child: IntrinsicHeight(
-                          child: ResponsiveContent(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: Text(
-                                    strings.admireYourStars,
-                                    style: TextStyle(
-                                      fontSize: 26,
-                                      fontStyle: FontStyle.italic,
-                                      fontWeight: FontWeight.w600,
-                                      color: colors.text,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: Text(
-                                    strings.admireTagline,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      height: 1.5,
-                                      color: colors.crisisMuted,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 32),
-                                AppToggleChip(
-                                  label: strings.allAreasLabel,
-                                  value: _allSelected,
-                                  onChanged: (_) => _toggleAll(),
-                                  // This screen sits on the crisis
-                                  // gradient, not the night panel — its
-                                  // own lighter body color reads there.
-                                  labelColor: colors.crisisMuted,
-                                ),
-                                const SizedBox(height: 28),
-                                Column(
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(horizontal: 28),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
+                            ),
+                            child: IntrinsicHeight(
+                              child: ResponsiveContent(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    for (
-                                      var row = 0;
-                                      row * 2 < LifeArea.values.length;
-                                      row++
-                                    ) ...[
-                                      if (row > 0) const SizedBox(height: 12),
-                                      Row(
-                                        children: [
-                                          for (var col = 0; col < 2; col++) ...[
-                                            if (col > 0)
-                                              const SizedBox(width: 12),
-                                            Expanded(
-                                              child: _areaChip(
-                                                context,
-                                                LifeArea.values[row * 2 + col],
-                                              ),
-                                            ),
-                                          ],
-                                        ],
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: Text(
+                                        strings.admireYourStars,
+                                        style: TextStyle(
+                                          fontSize: 26,
+                                          fontStyle: FontStyle.italic,
+                                          fontWeight: FontWeight.w600,
+                                          color: colors.text,
+                                        ),
                                       ),
-                                    ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: Text(
+                                        strings.admireTagline,
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          height: 1.5,
+                                          color: colors.nightlightMuted,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 32),
+                                    AppToggleChip(
+                                      label: strings.allAreasLabel,
+                                      value: _allSelected,
+                                      onChanged: (_) => _toggleAll(),
+                                      // This screen sits on the Nightlight
+                                      // gradient, not the night panel — its
+                                      // own lighter body color reads there.
+                                      labelColor: colors.nightlightMuted,
+                                    ),
+                                    const SizedBox(height: 28),
+                                    Column(
+                                      children: [
+                                        for (
+                                          var row = 0;
+                                          row * 2 < LifeArea.values.length;
+                                          row++
+                                        ) ...[
+                                          if (row > 0)
+                                            const SizedBox(height: 12),
+                                          Row(
+                                            children: [
+                                              for (
+                                                var col = 0;
+                                                col < 2;
+                                                col++
+                                              ) ...[
+                                                if (col > 0)
+                                                  const SizedBox(width: 12),
+                                                Expanded(
+                                                  child: _areaChip(
+                                                    context,
+                                                    LifeArea.values[row * 2 +
+                                                        col],
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                    Expanded(
+                                      child: Center(
+                                        child: _UpliftingQuoteCarousel(),
+                                      ),
+                                    ),
                                   ],
                                 ),
-                                Expanded(
-                                  child: Center(
-                                    child: _UpliftingQuoteCarousel(),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              ResponsiveContent(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(28, 12, 28, 24),
-                  child: Column(
-                    children: [
-                      Text(
-                        poolSize == 0
-                            ? strings.pickAtLeastOneArea
-                            : strings.starsCount(poolSize),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: colors.crisisMuted,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: poolSize == 0 ? null : _start,
-                          icon: const Icon(Icons.auto_awesome, size: 17),
-                          label: Text(strings.viewYourStars),
-                          // This screen sits on the crisis gradient rather
-                          // than the app's night panel, so its disabled
-                          // fill is the only one that overrides the theme.
-                          style: ElevatedButton.styleFrom(
-                            disabledBackgroundColor: colors.crisisMuted
-                                .withValues(alpha: 0.15),
-                            disabledForegroundColor: colors.crisisMuted,
-                          ),
-                        ),
-                      ),
-                    ],
+                        );
+                      },
+                    ),
                   ),
-                ),
+                  ResponsiveContent(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(28, 12, 28, 24),
+                      child: Column(
+                        children: [
+                          Text(
+                            poolSize == 0
+                                ? strings.pickAtLeastOneArea
+                                : strings.starsCount(poolSize),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colors.nightlightMuted,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: poolSize == 0 ? null : _start,
+                              icon: const Icon(Icons.auto_awesome, size: 17),
+                              label: Text(strings.viewYourStars),
+                              // This screen sits on the Nightlight gradient rather
+                              // than the app's night panel, so its disabled
+                              // fill is the only one that overrides the theme.
+                              style: ElevatedButton.styleFrom(
+                                disabledBackgroundColor: colors.nightlightMuted
+                                    .withValues(alpha: 0.15),
+                                disabledForegroundColor: colors.nightlightMuted,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -300,7 +314,7 @@ class _AreaChip extends StatelessWidget {
             Icon(
               selected ? Icons.check_circle : (icon ?? Icons.circle_outlined),
               size: 16,
-              color: selected ? colors.gold : colors.crisisMuted,
+              color: selected ? colors.gold : colors.nightlightMuted,
             ),
             const SizedBox(width: 7),
             Flexible(
@@ -309,7 +323,7 @@ class _AreaChip extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 14,
-                  color: colors.crisisMuted,
+                  color: colors.nightlightMuted,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),
@@ -377,7 +391,7 @@ class _UpliftingQuoteCarouselState extends State<_UpliftingQuoteCarousel> {
               fontStyle: FontStyle.italic,
               fontWeight: FontWeight.w500,
               height: 1.5,
-              color: colors.crisisMuted,
+              color: colors.nightlightMuted,
             ),
           ),
         ),

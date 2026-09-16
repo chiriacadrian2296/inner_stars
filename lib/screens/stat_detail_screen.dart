@@ -100,7 +100,7 @@ class TotalStarsDetailScreen extends StatelessWidget {
                   fontSize: 12,
                   letterSpacing: 1.2,
                   fontWeight: FontWeight.w600,
-                  color: colors.crisisMuted,
+                  color: colors.nightlightMuted,
                 ),
               ),
             ),
@@ -125,7 +125,7 @@ class TotalStarsDetailScreen extends StatelessWidget {
                           strings.starsCount(countByArea[areasByCount[i]]!),
                           style: TextStyle(
                             fontSize: 13,
-                            color: colors.crisisMuted,
+                            color: colors.nightlightMuted,
                           ),
                         ),
                       ],
@@ -274,14 +274,14 @@ class _StatDetailScaffold extends StatelessWidget {
     final colors = context.colors;
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(gradient: colors.crisisGradient),
+        decoration: BoxDecoration(gradient: colors.nightlightGradient),
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               IconButton(
                 onPressed: () => Navigator.of(context).pop(),
-                icon: Icon(Icons.arrow_back, color: colors.crisisMuted),
+                icon: Icon(Icons.arrow_back, color: colors.nightlightMuted),
               ),
               Expanded(
                 child: SingleChildScrollView(
@@ -359,7 +359,9 @@ class _DetailCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 18),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
-        border: Border.all(color: colors.crisisMuted.withValues(alpha: 0.15)),
+        border: Border.all(
+          color: colors.nightlightMuted.withValues(alpha: 0.15),
+        ),
         borderRadius: BorderRadius.circular(kRadiusCard),
       ),
       child: Column(
@@ -368,7 +370,7 @@ class _DetailCard extends StatelessWidget {
                 for (var i = 0; i < children.length; i++) ...[
                   if (i > 0)
                     Divider(
-                      color: colors.crisisMuted.withValues(alpha: 0.12),
+                      color: colors.nightlightMuted.withValues(alpha: 0.12),
                       height: 1,
                     ),
                   children[i],
@@ -401,7 +403,7 @@ class _DetailRow extends StatelessWidget {
           : BoxDecoration(
               border: Border(
                 bottom: BorderSide(
-                  color: colors.crisisMuted.withValues(alpha: 0.12),
+                  color: colors.nightlightMuted.withValues(alpha: 0.12),
                 ),
               ),
             ),
@@ -410,7 +412,7 @@ class _DetailRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(fontSize: 14, color: colors.crisisMuted),
+              style: TextStyle(fontSize: 14, color: colors.nightlightMuted),
             ),
           ),
           Text(
@@ -441,7 +443,7 @@ class _EmptyBody extends StatelessWidget {
       style: TextStyle(
         fontSize: 14,
         height: 1.5,
-        color: context.colors.crisisMuted,
+        color: context.colors.nightlightMuted,
       ),
     );
   }

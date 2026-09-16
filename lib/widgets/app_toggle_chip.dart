@@ -28,9 +28,9 @@ class AppToggleChip extends StatelessWidget {
   final ValueChanged<bool> onChanged;
 
   /// Overrides the label's color. The one caller that passes this is the
-  /// reflection screen, which sits on the crisis gradient rather than on
-  /// the app's night panel — see [AppColors.crisisMuted]. Everywhere else
-  /// leaves it null and gets the standard treatment.
+  /// reflection screen, which sits on the Nightlight gradient rather than
+  /// on the app's night panel — see [AppColors.nightlightMuted]. Everywhere
+  /// else leaves it null and gets the standard treatment.
   final Color? labelColor;
 
   // Big enough to always resolve to a stadium at this height.

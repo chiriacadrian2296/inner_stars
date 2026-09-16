@@ -141,7 +141,7 @@ class StringsEn implements AppStrings {
   @override
   String get menuStatistics => 'Statistics';
   @override
-  String get menuCrisisSection => 'Crisis';
+  String get menuNightlightSection => 'Nightlight';
   @override
   String get menuFindYourLight => 'Find Your Light';
   @override
@@ -390,6 +390,8 @@ class StringsEn implements AppStrings {
   String get backgroundTrackAmbientRelaxing => 'Relaxing Ambience';
   @override
   String get backgroundTrackBackgroundSpace => 'Cosmic Meditation';
+  @override
+  String get backgroundTrackNightlight => 'Nightlight';
   @override
   String get skySoundPluckSoft => 'Soft pluck';
   @override
@@ -1138,6 +1140,32 @@ class StringsEn implements AppStrings {
       "No stars lit yet in the supernovas you picked.";
   @override
   String get viewYourStars => 'View your stars';
+
+  @override
+  String get nightlightGateQuestion =>
+      'Before we start, are you okay or in crisis mode?';
+  @override
+  String get nightlightGateOk => "I'm okay";
+  @override
+  String get nightlightGateCrisis => "I'm in crisis";
+  @override
+  String get nightlightExplainedBody =>
+      'Before looking at your victories, take a moment to calm down. When '
+      "we're agitated, the mind finds plausible-sounding excuses not to "
+      'believe in the good we\'ve done. Breathe with us for a moment: '
+      'looking back will feel different afterward.';
+  @override
+  String get nightlightExplainedContinue => 'Continue';
+  @override
+  String get nightlightBreathingGetReady => 'Get ready';
+  @override
+  String get nightlightBreathingInhale => 'Breathe in';
+  @override
+  String get nightlightBreathingHold => 'Hold';
+  @override
+  String get nightlightBreathingExhale => 'Breathe out';
+  @override
+  String get nightlightBreathingSkip => "I'm ready";
 
   @override
   String get newConstellationOption => 'New constellation';

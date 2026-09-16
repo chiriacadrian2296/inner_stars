@@ -21,10 +21,10 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.starNascent,
     required this.starUnlit,
     required this.starDead,
-    required this.crisisGradientCenter,
-    required this.crisisGradientMid,
-    required this.crisisGradientOuter,
-    required this.crisisMuted,
+    required this.nightlightGradientCenter,
+    required this.nightlightGradientMid,
+    required this.nightlightGradientOuter,
+    required this.nightlightMuted,
   });
 
   final Color night;
@@ -72,19 +72,24 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color starUnlit;
   final Color starDead;
 
-  /// A deeper/lighter variant of [night] used for the reflection screens
-  /// (crisis intro + star reader) — "the same sky, at its most intimate".
-  final Color crisisGradientCenter;
-  final Color crisisGradientMid;
-  final Color crisisGradientOuter;
-  final Color crisisMuted;
+  /// A deeper/lighter variant of [night] used for the Nightlight section
+  /// (gate, breathing, and reflection screens) — "the same sky, at its most
+  /// intimate".
+  final Color nightlightGradientCenter;
+  final Color nightlightGradientMid;
+  final Color nightlightGradientOuter;
+  final Color nightlightMuted;
 
-  RadialGradient get crisisGradient => RadialGradient(
-        center: const Alignment(0, -0.6),
-        radius: 1.2,
-        colors: [crisisGradientCenter, crisisGradientMid, crisisGradientOuter],
-        stops: const [0.0, 0.55, 1.0],
-      );
+  RadialGradient get nightlightGradient => RadialGradient(
+    center: const Alignment(0, -0.6),
+    radius: 1.2,
+    colors: [
+      nightlightGradientCenter,
+      nightlightGradientMid,
+      nightlightGradientOuter,
+    ],
+    stops: const [0.0, 0.55, 1.0],
+  );
 
   static const dark = AppColors(
     night: Color(0xFF0D1220),
@@ -100,10 +105,10 @@ class AppColors extends ThemeExtension<AppColors> {
     starNascent: Color(0xFFE9EEFB),
     starUnlit: Color(0xFF6E8CD8),
     starDead: Color(0xFF44568A),
-    crisisGradientCenter: Color(0xFF1C2747),
-    crisisGradientMid: Color(0xFF10162B),
-    crisisGradientOuter: Color(0xFF05070D),
-    crisisMuted: Color(0xFFB7C2E0),
+    nightlightGradientCenter: Color(0xFF1C2747),
+    nightlightGradientMid: Color(0xFF10162B),
+    nightlightGradientOuter: Color(0xFF05070D),
+    nightlightMuted: Color(0xFFB7C2E0),
   );
 
   @override
@@ -121,10 +126,10 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? starNascent,
     Color? starUnlit,
     Color? starDead,
-    Color? crisisGradientCenter,
-    Color? crisisGradientMid,
-    Color? crisisGradientOuter,
-    Color? crisisMuted,
+    Color? nightlightGradientCenter,
+    Color? nightlightGradientMid,
+    Color? nightlightGradientOuter,
+    Color? nightlightMuted,
   }) {
     return AppColors(
       night: night ?? this.night,
@@ -140,10 +145,13 @@ class AppColors extends ThemeExtension<AppColors> {
       starNascent: starNascent ?? this.starNascent,
       starUnlit: starUnlit ?? this.starUnlit,
       starDead: starDead ?? this.starDead,
-      crisisGradientCenter: crisisGradientCenter ?? this.crisisGradientCenter,
-      crisisGradientMid: crisisGradientMid ?? this.crisisGradientMid,
-      crisisGradientOuter: crisisGradientOuter ?? this.crisisGradientOuter,
-      crisisMuted: crisisMuted ?? this.crisisMuted,
+      nightlightGradientCenter:
+          nightlightGradientCenter ?? this.nightlightGradientCenter,
+      nightlightGradientMid:
+          nightlightGradientMid ?? this.nightlightGradientMid,
+      nightlightGradientOuter:
+          nightlightGradientOuter ?? this.nightlightGradientOuter,
+      nightlightMuted: nightlightMuted ?? this.nightlightMuted,
     );
   }
 
@@ -160,14 +168,30 @@ class AppColors extends ThemeExtension<AppColors> {
       muted: Color.lerp(muted, other.muted, t)!,
       onGold: Color.lerp(onGold, other.onGold, t)!,
       danger: Color.lerp(danger, other.danger, t)!,
-      dangerBackground: Color.lerp(dangerBackground, other.dangerBackground, t)!,
+      dangerBackground: Color.lerp(
+        dangerBackground,
+        other.dangerBackground,
+        t,
+      )!,
       starNascent: Color.lerp(starNascent, other.starNascent, t)!,
       starUnlit: Color.lerp(starUnlit, other.starUnlit, t)!,
       starDead: Color.lerp(starDead, other.starDead, t)!,
-      crisisGradientCenter: Color.lerp(crisisGradientCenter, other.crisisGradientCenter, t)!,
-      crisisGradientMid: Color.lerp(crisisGradientMid, other.crisisGradientMid, t)!,
-      crisisGradientOuter: Color.lerp(crisisGradientOuter, other.crisisGradientOuter, t)!,
-      crisisMuted: Color.lerp(crisisMuted, other.crisisMuted, t)!,
+      nightlightGradientCenter: Color.lerp(
+        nightlightGradientCenter,
+        other.nightlightGradientCenter,
+        t,
+      )!,
+      nightlightGradientMid: Color.lerp(
+        nightlightGradientMid,
+        other.nightlightGradientMid,
+        t,
+      )!,
+      nightlightGradientOuter: Color.lerp(
+        nightlightGradientOuter,
+        other.nightlightGradientOuter,
+        t,
+      )!,
+      nightlightMuted: Color.lerp(nightlightMuted, other.nightlightMuted, t)!,
     );
   }
 }

@@ -32,7 +32,7 @@ import 'star_form_screen.dart';
 /// switching by whether the star is lit, still unlit, or dead.
 ///
 /// Used two ways:
-/// - From the crisis intro, browsing everything starting at the most
+/// - From the Nightlight flow, browsing everything starting at the most
 ///   recent star ([allowEdit] false — pure reflection, no editing).
 /// - From a tap on a specific card/star ([allowEdit] true — adds an edit
 ///   button that reuses [StarFormScreen], which requires
@@ -282,25 +282,25 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                   AnimatedOpacity(
                     // Only the photo's own darkening veil fades away in
                     // photo-only mode — a star with no photo has nothing to
-                    // reveal underneath, so its plain [crisisGradient]
+                    // reveal underneath, so its plain [nightlightGradient]
                     // background never toggles.
                     opacity: photoPath != null && _photoOnly ? 0 : 1,
                     duration: const Duration(milliseconds: 220),
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: photoPath == null
-                            ? colors.crisisGradient
+                            ? colors.nightlightGradient
                             : RadialGradient(
                                 center: const Alignment(0, -0.6),
                                 radius: 1.2,
                                 colors: [
-                                  colors.crisisGradientCenter.withValues(
+                                  colors.nightlightGradientCenter.withValues(
                                     alpha: 0.55,
                                   ),
-                                  colors.crisisGradientMid.withValues(
+                                  colors.nightlightGradientMid.withValues(
                                     alpha: 0.75,
                                   ),
-                                  colors.crisisGradientOuter.withValues(
+                                  colors.nightlightGradientOuter.withValues(
                                     alpha: 0.9,
                                   ),
                                 ],
@@ -342,7 +342,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                               onPressed: () => Navigator.of(context).pop(),
                               icon: Icon(
                                 Icons.close,
-                                color: colors.crisisMuted,
+                                color: colors.nightlightMuted,
                               ),
                             ),
                             Expanded(
@@ -354,7 +354,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                                   ),
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: colors.crisisMuted,
+                                    color: colors.nightlightMuted,
                                   ),
                                 ),
                               ),
@@ -366,7 +366,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                                   star.dead
                                       ? Icons.auto_fix_high
                                       : Icons.edit_outlined,
-                                  color: colors.crisisMuted,
+                                  color: colors.nightlightMuted,
                                 ),
                               )
                             else
@@ -393,9 +393,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                               ),
                               child: ResponsiveContent(
                                 child: AnimatedSwitcher(
-                                  duration: const Duration(
-                                    milliseconds: 260,
-                                  ),
+                                  duration: const Duration(milliseconds: 260),
                                   switchInCurve: Curves.easeOut,
                                   switchOutCurve: Curves.easeIn,
                                   transitionBuilder: (child, animation) {
@@ -570,14 +568,17 @@ class _PhotoOnlyHint extends StatelessWidget {
                       Icon(
                         Icons.touch_app,
                         size: 16,
-                        color: colors.crisisMuted,
+                        color: colors.nightlightMuted,
                       ),
                       const SizedBox(width: 8),
                       Text(
                         photoOnly
                             ? strings.starReaderTapForDataHint
                             : strings.starReaderTapForPhotoHint,
-                        style: TextStyle(fontSize: 13, color: colors.crisisMuted),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: colors.nightlightMuted,
+                        ),
                       ),
                     ],
                   ),
@@ -626,7 +627,7 @@ class _StarContent extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               height: 1.6,
-              color: colors.crisisMuted,
+              color: colors.nightlightMuted,
             ),
           ),
         ],
@@ -651,7 +652,7 @@ class _StarContent extends StatelessWidget {
                     : strings.goalTargetLabel(
                         formatDisplayDate(star.targetDate!, strings),
                       )),
-          style: TextStyle(fontSize: 15, color: colors.crisisMuted),
+          style: TextStyle(fontSize: 15, color: colors.nightlightMuted),
         ),
         if (project != null) ...[
           const SizedBox(height: 16),
@@ -659,7 +660,7 @@ class _StarContent extends StatelessWidget {
           const SizedBox(height: 8),
           ProjectTag(
             project: project!,
-            textColor: colors.crisisMuted,
+            textColor: colors.nightlightMuted,
             iconSize: 17,
             fontSize: 17,
           ),
@@ -685,7 +686,7 @@ class _StarContent extends StatelessWidget {
             style: TextStyle(
               fontSize: 18,
               height: 1.6,
-              color: colors.crisisMuted,
+              color: colors.nightlightMuted,
             ),
           ),
         ],
@@ -712,7 +713,7 @@ class _NavCircleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: context.colors.crisisMuted.withValues(alpha: 0.15),
+      color: context.colors.nightlightMuted.withValues(alpha: 0.15),
       shape: const CircleBorder(),
       child: InkWell(
         onTap: onTap,

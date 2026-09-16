@@ -41,14 +41,14 @@ class ShareableLitStarCard extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             gradient: photoPath == null
-                ? colors.crisisGradient
+                ? colors.nightlightGradient
                 : RadialGradient(
                     center: const Alignment(0, -0.6),
                     radius: 1.2,
                     colors: [
-                      colors.crisisGradientCenter.withValues(alpha: 0.55),
-                      colors.crisisGradientMid.withValues(alpha: 0.75),
-                      colors.crisisGradientOuter.withValues(alpha: 0.9),
+                      colors.nightlightGradientCenter.withValues(alpha: 0.55),
+                      colors.nightlightGradientMid.withValues(alpha: 0.75),
+                      colors.nightlightGradientOuter.withValues(alpha: 0.9),
                     ],
                     stops: const [0.0, 0.55, 1.0],
                   ),
@@ -68,7 +68,7 @@ class ShareableLitStarCard extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: kFontMono,
                       fontSize: 15,
-                      color: colors.crisisMuted,
+                      color: colors.nightlightMuted,
                     ),
                   ),
                   if (project != null) ...[
@@ -77,7 +77,7 @@ class ShareableLitStarCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     ProjectTag(
                       project: project!,
-                      textColor: colors.crisisMuted,
+                      textColor: colors.nightlightMuted,
                       iconSize: 17,
                       fontSize: 17,
                     ),
@@ -103,7 +103,7 @@ class ShareableLitStarCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         height: 1.6,
-                        color: colors.crisisMuted,
+                        color: colors.nightlightMuted,
                       ),
                     ),
                   ],

@@ -13,7 +13,7 @@ import 'star_glyph.dart';
 /// Opens the filter modal used by Sky's Constellations/Stars views. Always
 /// has an area section (the "All areas" toggle + area-chip grid, same
 /// interaction as [AdmireStarsScreen]'s picker, restyled to the app's normal
-/// night/gold palette instead of that screen's crisis gradient). When
+/// night/gold palette instead of that screen's Nightlight gradient). When
 /// [selectedKinds] is non-null (Stars mode), a second section of star-kind
 /// chips is shown below it; passing null (Constellations mode, where a kind
 /// filter doesn't apply) omits that section entirely.
@@ -298,4 +298,3 @@ class _SectionTitle extends StatelessWidget {
     );
   }
 }
-
