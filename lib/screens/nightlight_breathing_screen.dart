@@ -1,4 +1,3 @@
-import 'package:breathing_collection/breathing_collection.dart';
 import 'package:flutter/material.dart';
 
 import '../data/custom_constellation_repository.dart';
@@ -153,19 +152,24 @@ class _NightlightBreathingScreenState extends State<NightlightBreathingScreen>
         decoration: BoxDecoration(gradient: colors.nightlightGradient),
         child: Stack(
           children: [
-            // A subtle, slow color pulse behind the starfield — from
-            // `breathing_collection` (see the plan doc) rather than
-            // hand-rolled, since it's already exactly this: two colors
-            // easing back and forth over a duration. Not tightly
-            // synced to the actual breath phase, just a loose ambient
-            // echo of it.
+            // A subtle color wash behind the starfield, tied to the same
+            // [_controller] driving the star glow — brightest at the peak
+            // of an inhale, darkest at the bottom of an exhale, so it reads
+            // as part of the same breath rather than a separate animation.
             Positioned.fill(
-              child: BreathingBackground(
-                initialMainColor: colors.nightlightGradientMid,
-                transformedMainColor: colors.nightlightGradientCenter,
-                initialSecondaryColor: colors.nightlightGradientOuter,
-                transformedSecondaryColor: colors.nightlightGradientMid,
-                duration: _phaseDuration * 2,
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, _) {
+                  return DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Color.lerp(
+                        colors.nightlightGradientMid,
+                        colors.nightlightGradientCenter,
+                        _controller.value,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
             const Positioned.fill(child: NightlightStarfield()),
