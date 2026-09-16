@@ -1165,10 +1165,13 @@ class StringsIt implements AppStrings {
   String get nightlightGateCrisis => 'Sono in crisi';
   @override
   String get nightlightExplainedBody =>
-      'Prima di guardare le tue vittorie, prenditi un momento per calmarti. '
-      'Quando siamo agitati, la mente trova scuse plausibili per non '
-      'credere a ciò che di buono abbiamo fatto. Respira con noi qualche '
-      'istante: dopo, guardare indietro avrà un senso diverso.';
+      'Quando sei agitato o giù, la mente tende a proteggersi '
+      'razionalizzando: troverà motivi che sembrano logici per sminuire '
+      'ogni vittoria che ti mostreremo, anche quelle più vere. Non perché '
+      'non contino, ma perché in quello stato è quasi impossibile '
+      'guardarle con occhi giusti. Per questo facciamo prima un breve '
+      'esercizio di respirazione: aiuta il corpo, e con lui la mente, a '
+      'uscire da quello stato.';
   @override
   String get nightlightExplainedContinue => 'Continua';
   @override

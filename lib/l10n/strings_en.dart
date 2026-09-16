@@ -1150,10 +1150,13 @@ class StringsEn implements AppStrings {
   String get nightlightGateCrisis => "I'm in crisis";
   @override
   String get nightlightExplainedBody =>
-      'Before looking at your victories, take a moment to calm down. When '
-      "we're agitated, the mind finds plausible-sounding excuses not to "
-      'believe in the good we\'ve done. Breathe with us for a moment: '
-      'looking back will feel different afterward.';
+      "When you're agitated or feeling low, the mind tends to protect "
+      'itself by rationalizing: it will find reasons that sound logical '
+      "to play down every victory we're about to show you, even the "
+      "truest ones. Not because they don't count, but because in that "
+      "state it's almost impossible to look at them with clear eyes. "
+      "That's why we do a short breathing exercise first: it helps the "
+      'body, and with it the mind, come out of that state.';
   @override
   String get nightlightExplainedContinue => 'Continue';
   @override

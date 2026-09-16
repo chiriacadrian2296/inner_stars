@@ -1164,10 +1164,13 @@ class StringsRo implements AppStrings {
   String get nightlightGateCrisis => 'Sunt în criză';
   @override
   String get nightlightExplainedBody =>
-      'Înainte să-ți privești victoriile, oferă-ți un moment să te '
-      'calmezi. Când suntem agitați, mintea găsește scuze plauzibile ca '
-      'să nu creadă în binele pe care l-am făcut. Respiră cu noi câteva '
-      'clipe: după, privirea înapoi va avea alt sens.';
+      'Când ești agitat sau abătut, mintea tinde să se protejeze '
+      'raționalizând: va găsi motive care par logice ca să minimizeze '
+      'fiecare victorie pe care ți-o vom arăta, chiar și pe cele mai '
+      'adevărate. Nu pentru că nu contează, ci pentru că în starea aceea '
+      'e aproape imposibil să le privești cu ochi limpezi. De aceea facem '
+      'mai întâi un scurt exercițiu de respirație: ajută corpul, și odată '
+      'cu el mintea, să iasă din starea aceea.';
   @override
   String get nightlightExplainedContinue => 'Continuă';
   @override
