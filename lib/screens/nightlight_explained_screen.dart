@@ -8,6 +8,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../theme/nightlight_style.dart';
 import '../widgets/nightlight_starfield.dart';
+import '../widgets/nightlight_zone_measurer.dart';
 import '../widgets/responsive_content.dart';
 import 'nightlight_breathing_screen.dart';
 
@@ -64,7 +65,7 @@ List<InlineSpan> parseBoldMarkup(String text, TextStyle baseStyle) {
 /// see clearly) that makes the same point at a glance, for anyone too
 /// keyed-up right now to want to read three paragraphs before they can
 /// move on — the text underneath is still there for whoever does.
-class NightlightExplainedScreen extends StatelessWidget {
+class NightlightExplainedScreen extends StatefulWidget {
   const NightlightExplainedScreen({
     super.key,
     required this.starRepository,
@@ -77,35 +78,51 @@ class NightlightExplainedScreen extends StatelessWidget {
   final StarsShapeRepository starsShapeRepository;
 
   @override
+  State<NightlightExplainedScreen> createState() =>
+      _NightlightExplainedScreenState();
+}
+
+class _NightlightExplainedScreenState extends State<NightlightExplainedScreen>
+    with NightlightZoneMeasuring {
+  final _titleKey = GlobalKey();
+  final _schemeKey = GlobalKey();
+  final _paragraph1Key = GlobalKey();
+  final _paragraph2Key = GlobalKey();
+  final _paragraph3Key = GlobalKey();
+  final _continueButtonKey = GlobalKey();
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final strings = context.strings;
     final bodyStyle = TextStyle(fontSize: 17, height: 1.6, color: colors.text);
+    // Establishes a dependency on the current screen size, so a resize (a
+    // browser window, an orientation change) rebuilds this and, in turn,
+    // re-measures the zones below against the new layout.
+    MediaQuery.sizeOf(context);
+    scheduleZoneMeasurement([
+      _titleKey,
+      _schemeKey,
+      _paragraph1Key,
+      _paragraph2Key,
+      _paragraph3Key,
+      _continueButtonKey,
+    ]);
 
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(gradient: colors.nightlightGradient),
         child: Stack(
+          key: stackKey,
           children: [
-            // Kept clear of the title, the icon scheme, and each paragraph
-            // individually — see [NightlightStarfield.exclusionZones] —
-            // rather than one solid block over the whole text section:
-            // the gaps between paragraphs (and around the title/icons) are
-            // deliberately left open, so a star can still show up between
-            // lines of content, just never directly behind the content
-            // itself. Estimated against this screen's own compact,
-            // top-packed layout below (fixed gaps, not stretched to fill
-            // the screen) — recalibrate here if that layout changes.
+            // Kept clear of the title, the icon scheme, each paragraph, and
+            // the Continue button — see [NightlightZoneMeasuring] — measured
+            // off their own actual, current position rather than a fixed
+            // guess, so the gaps between them (and around the title/icons)
+            // stay open for a star to show up in regardless of screen size,
+            // while the content itself never does.
             Positioned.fill(
-              child: NightlightStarfield(
-                exclusionZones: [
-                  const Rect.fromLTWH(0.25, 0.10, 0.5, 0.06), // title
-                  const Rect.fromLTWH(0.15, 0.19, 0.7, 0.12), // icon scheme
-                  const Rect.fromLTWH(0.1, 0.35, 0.8, 0.07), // paragraph 1
-                  const Rect.fromLTWH(0.1, 0.44, 0.8, 0.08), // paragraph 2
-                  const Rect.fromLTWH(0.1, 0.54, 0.8, 0.07), // paragraph 3
-                ],
-              ),
+              child: NightlightStarfield(exclusionZones: nightlightZones),
             ),
             SafeArea(
               child: Column(
@@ -131,72 +148,100 @@ class NightlightExplainedScreen extends StatelessWidget {
                     ),
                   ),
                   Expanded(
-                    child: SingleChildScrollView(
-                      child: ResponsiveContent(
-                        // The screen's 3 sections — title, the quick
-                        // icon-scheme explanation, the fuller text
-                        // explanation — kept the same fixed distance apart
-                        // (32 each) and sized to their own natural content
-                        // height, rather than stretched to fill whatever
-                        // vertical space happens to be available: that
-                        // left visibly odd empty space around the short
-                        // title in particular, and forced scrolling that a
-                        // compact, top-packed layout doesn't need. The
-                        // [Expanded] above is still what pins the "Continue"
-                        // button below to the actual bottom of the screen
-                        // even when this content is short enough to leave
-                        // room to spare.
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 28,
-                            vertical: 32,
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                strings.nightlightExplainedTitle,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.bold,
-                                  color: colors.text,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return SingleChildScrollView(
+                          child: ConstrainedBox(
+                            // Forces the column below up to the full
+                            // available height (rather than just its own
+                            // content height) so `spaceEvenly` below has
+                            // actual free space to distribute — still
+                            // scrollable if the content itself ever grows
+                            // past that.
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
+                            ),
+                            child: IntrinsicHeight(
+                              child: ResponsiveContent(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 28,
+                                    vertical: 32,
+                                  ),
+                                  // The screen's 3 sections — title, the
+                                  // quick icon-scheme explanation, the
+                                  // fuller text explanation — spread across
+                                  // the available height rather than
+                                  // packed at the top with a fixed gap
+                                  // between them.
+                                  child: Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      Text(
+                                        strings.nightlightExplainedTitle,
+                                        key: _titleKey,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 26,
+                                          fontWeight: FontWeight.bold,
+                                          color: colors.text,
+                                        ),
+                                      ),
+                                      _ExplainedScheme(key: _schemeKey),
+                                      // The 3 paragraphs are one section —
+                                      // their own 18px gaps are between
+                                      // paragraphs *within* it, separate
+                                      // from the spacing the outer
+                                      // `spaceEvenly` puts between this
+                                      // whole block and its neighbors.
+                                      Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          _ExplainedParagraph(
+                                            key: _paragraph1Key,
+                                            text: strings
+                                                .nightlightExplainedBodyPart1,
+                                            style: bodyStyle,
+                                          ),
+                                          const SizedBox(height: 18),
+                                          _ExplainedParagraph(
+                                            key: _paragraph2Key,
+                                            text: strings
+                                                .nightlightExplainedBodyPart2,
+                                            style: bodyStyle,
+                                          ),
+                                          const SizedBox(height: 18),
+                                          _ExplainedParagraph(
+                                            key: _paragraph3Key,
+                                            text: strings
+                                                .nightlightExplainedBodyPart3,
+                                            style: bodyStyle,
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 32),
-                              const _ExplainedScheme(),
-                              const SizedBox(height: 32),
-                              _ExplainedParagraph(
-                                text: strings.nightlightExplainedBodyPart1,
-                                style: bodyStyle,
-                              ),
-                              const SizedBox(height: 18),
-                              _ExplainedParagraph(
-                                text: strings.nightlightExplainedBodyPart2,
-                                style: bodyStyle,
-                              ),
-                              const SizedBox(height: 18),
-                              _ExplainedParagraph(
-                                text: strings.nightlightExplainedBodyPart3,
-                                style: bodyStyle,
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     ),
                   ),
                   ResponsiveContent(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(28, 12, 28, 24),
                       child: ElevatedButton(
+                        key: _continueButtonKey,
                         style: nightlightButtonStyle(colors),
                         onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => NightlightBreathingScreen(
-                              starRepository: starRepository,
-                              projectRepository: projectRepository,
-                              starsShapeRepository: starsShapeRepository,
+                              starRepository: widget.starRepository,
+                              projectRepository: widget.projectRepository,
+                              starsShapeRepository: widget.starsShapeRepository,
                             ),
                           ),
                         ),
@@ -218,7 +263,11 @@ class NightlightExplainedScreen extends StatelessWidget {
 /// [parseBoldMarkup] — so each paragraph can put its emphasis wherever its
 /// own sentence needs it, rather than being limited to one fixed phrase.
 class _ExplainedParagraph extends StatelessWidget {
-  const _ExplainedParagraph({required this.text, required this.style});
+  const _ExplainedParagraph({
+    super.key,
+    required this.text,
+    required this.style,
+  });
 
   final String text;
   final TextStyle style;
@@ -236,12 +285,13 @@ class _ExplainedParagraph extends StatelessWidget {
 /// explanation text — three white-on-navy icon circles (the section's own
 /// look, see `nightlight_style.dart`) joined by plain arrows.
 class _ExplainedScheme extends StatelessWidget {
-  const _ExplainedScheme();
+  const _ExplainedScheme({super.key});
 
   @override
   Widget build(BuildContext context) {
     final strings = context.strings;
     return Row(
+      mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -230,8 +230,6 @@ class StringsEn implements AppStrings {
   String get homeSubtitle =>
       'Every star is a win, lit when you needed the light.';
   @override
-  String get admireYourStars => 'Admire Your Stars';
-  @override
   String get todayStarSectionLabel => "Today's star";
   @override
   String get litTodayTitle => "Congrats, you've lit a star today!";
@@ -1129,10 +1127,11 @@ class StringsEn implements AppStrings {
   String get noDeadDateLabel => 'No death date';
 
   @override
-  String get admireTagline =>
-      "For when you're in the dark and you need some light.";
+  String get chooseSupernovasToInclude => 'Choose which supernovas to include';
   @override
   String get allAreasLabel => 'All supernovas';
+  @override
+  String get admireAllAreasLabel => 'All';
   @override
   String get pickAtLeastOneArea => 'Pick at least one supernova to continue.';
   @override
@@ -1187,8 +1186,6 @@ class StringsEn implements AppStrings {
   String get nightlightBreathingGetReady => 'Get ready';
   @override
   String get nightlightBreathingInhale => 'Breathe In';
-  @override
-  String get nightlightBreathingHold => 'Hold';
   @override
   String get nightlightBreathingExhale => 'Breathe Out';
   @override

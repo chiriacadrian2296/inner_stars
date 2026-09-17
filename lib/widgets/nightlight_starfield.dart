@@ -1,10 +1,16 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 import 'constellation_painter.dart' show sparklePath;
-import 'responsive_content.dart' show kResponsiveContentMaxWidth;
+
+/// Flip this on to paint every [NightlightStarfield.exclusionZones] rect as
+/// translucent red — a throwaway visual aid for calibrating a screen's own
+/// zones against its actual layout, not something to ship on. Flip back off
+/// once done.
+const bool kDebugShowNightlightExclusionZones = false;
 
 /// A field of small white twinkling sparkles scattered across whatever
 /// bounds it's given — the Nightlight section's own background (see
@@ -41,15 +47,14 @@ class NightlightStarfield extends StatefulWidget {
   /// Rects no star will ever be drawn in — e.g. the strip a big title sits
   /// in, so an animated star never drifts in front of its own text.
   ///
-  /// The vertical extent (`top`/`height`) is a fraction (0-1) of this
-  /// widget's own full height, same as before. The horizontal extent
-  /// (`left`/`width`) is instead a fraction of the *content column* —
-  /// `min(width, kResponsiveContentMaxWidth)`, centered — rather than of
-  /// this widget's own full width: on a wide web viewport,
-  /// [ResponsiveContent] caps the actual title/text at that same content
-  /// width, so a zone sized against the full (much wider) window would
-  /// leave an oversized, empty-looking gap of starless space on either
-  /// side of it instead of hugging just the content itself.
+  /// In plain pixels, in this widget's own local coordinate space — not
+  /// fractions of it. Since this widget is always painted via
+  /// `Positioned.fill` inside a `Stack` that also holds the real content,
+  /// that's the same coordinate space that content's own `RenderBox`es
+  /// report through `localToGlobal(ancestor: ...)`, which is exactly how
+  /// [NightlightZoneMeasuring] builds these zones: measured straight off
+  /// the actual content on every layout change, rather than a fixed guess
+  /// that only fit one particular screen size.
   final List<Rect> exclusionZones;
 
   @override
@@ -170,28 +175,19 @@ class _NightlightStarfieldPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
 
-    // The content column [exclusionZones]' horizontal extent is actually
-    // relative to — see [NightlightStarfield.exclusionZones]'s own doc
-    // comment. Converted to real pixel rects once per paint rather than
-    // per star, since neither `size` nor the zones change within a frame.
-    final contentWidth = math.min(size.width, kResponsiveContentMaxWidth);
-    final contentLeft = (size.width - contentWidth) / 2;
-    final pixelZones = [
-      for (final zone in exclusionZones)
-        Rect.fromLTWH(
-          contentLeft + zone.left * contentWidth,
-          zone.top * size.height,
-          zone.width * contentWidth,
-          zone.height * size.height,
-        ),
-    ];
+    if (kDebugShowNightlightExclusionZones) {
+      final zonePaint = Paint()..color = Colors.red.withValues(alpha: 0.25);
+      for (final zone in exclusionZones) {
+        canvas.drawRect(zone, zonePaint);
+      }
+    }
 
     for (final star in stars) {
       final center = Offset(
         star.position.dx * size.width,
         star.position.dy * size.height,
       );
-      if (pixelZones.any((zone) => zone.contains(center))) continue;
+      if (exclusionZones.any((zone) => zone.contains(center))) continue;
 
       // 0 at the bottom of this star's own cycle, 1 at the top — same
       // sine-based shape `nebula_particles.frag`'s `starLayer` uses for its
@@ -261,5 +257,7 @@ class _NightlightStarfieldPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _NightlightStarfieldPainter oldDelegate) =>
-      oldDelegate.time != time || oldDelegate.stars != stars;
+      oldDelegate.time != time ||
+      oldDelegate.stars != stars ||
+      !listEquals(oldDelegate.exclusionZones, exclusionZones);
 }

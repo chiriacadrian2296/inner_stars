@@ -232,8 +232,6 @@ class StringsIt implements AppStrings {
   String get homeSubtitle =>
       'Ogni stella è una vittoria, accesa quando ne avevi bisogno.';
   @override
-  String get admireYourStars => 'Ammira le tue stelle';
-  @override
   String get todayStarSectionLabel => 'Stella di oggi';
   @override
   String get litTodayTitle => 'Complimenti, hai acceso una stella oggi!';
@@ -1143,10 +1141,11 @@ class StringsIt implements AppStrings {
   String get noDeadDateLabel => 'Nessuna data';
 
   @override
-  String get admireTagline =>
-      'Per quando sei nel buio e hai bisogno di un po\' di luce.';
+  String get chooseSupernovasToInclude => 'Scegli le supernove da includere';
   @override
   String get allAreasLabel => 'Tutte le supernove';
+  @override
+  String get admireAllAreasLabel => 'Tutte';
   @override
   String get pickAtLeastOneArea =>
       'Scegli almeno una supernova per continuare.';
@@ -1202,8 +1201,6 @@ class StringsIt implements AppStrings {
   String get nightlightBreathingGetReady => 'Preparati';
   @override
   String get nightlightBreathingInhale => 'Inspira';
-  @override
-  String get nightlightBreathingHold => 'Trattieni';
   @override
   String get nightlightBreathingExhale => 'Espira';
   @override

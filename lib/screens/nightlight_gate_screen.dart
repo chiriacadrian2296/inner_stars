@@ -10,6 +10,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../theme/nightlight_style.dart';
 import '../widgets/nightlight_starfield.dart';
+import '../widgets/nightlight_zone_measurer.dart';
 import '../widgets/responsive_content.dart';
 import 'admire_stars_screen.dart';
 import 'nightlight_explained_screen.dart';
@@ -40,9 +41,15 @@ class NightlightGateScreen extends StatefulWidget {
   State<NightlightGateScreen> createState() => _NightlightGateScreenState();
 }
 
-class _NightlightGateScreenState extends State<NightlightGateScreen> {
+class _NightlightGateScreenState extends State<NightlightGateScreen>
+    with NightlightZoneMeasuring {
   late final BackgroundTrack _previousTrack =
       widget.audioService.backgroundTrack;
+
+  final _titleKey = GlobalKey();
+  final _questionKey = GlobalKey();
+  final _okButtonKey = GlobalKey();
+  final _crisisButtonKey = GlobalKey();
 
   @override
   void initState() {
@@ -84,20 +91,30 @@ class _NightlightGateScreenState extends State<NightlightGateScreen> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final strings = context.strings;
+    // Establishes a dependency on the current screen size, so a resize (a
+    // browser window, an orientation change) rebuilds this and, in turn,
+    // re-measures the zones below against the new layout.
+    MediaQuery.sizeOf(context);
+    scheduleZoneMeasurement([
+      _titleKey,
+      _questionKey,
+      _okButtonKey,
+      _crisisButtonKey,
+    ]);
 
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(gradient: colors.nightlightGradient),
         child: Stack(
+          key: stackKey,
           children: [
-            // Kept clear of a band directly behind the title text itself
-            // — see [NightlightStarfield.exclusionZones] — narrow enough
-            // that stars still show up above it and to either side, just
-            // not drifting across the word itself.
+            // Kept clear of the title, the question, and both buttons —
+            // see [NightlightZoneMeasuring] — measured off their own
+            // actual, current position rather than a fixed guess, so this
+            // stays correct across screen sizes instead of only fitting
+            // whichever one it was tuned against.
             Positioned.fill(
-              child: NightlightStarfield(
-                exclusionZones: [Rect.fromLTWH(0.2, 0.11, 0.6, 0.15)],
-              ),
+              child: NightlightStarfield(exclusionZones: nightlightZones),
             ),
             SafeArea(
               child: Column(
@@ -107,30 +124,12 @@ class _NightlightGateScreenState extends State<NightlightGateScreen> {
                       children: [
                         IconButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.close, color: Colors.white),
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                          ),
                         ),
                       ],
-                    ),
-                  ),
-                  ResponsiveContent(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 36, bottom: 4),
-                      child: Text(
-                        'Nightlight',
-                        style: TextStyle(
-                          fontFamily: kFontBranding,
-                          fontSize: 56,
-                          color: colors.text,
-                          // Same layered soft-blur glow as
-                          // [NightlightStarfield]'s own stars — white
-                          // shadows rather than a painted blur pass, since
-                          // this is a [Text] rather than a canvas shape.
-                          shadows: const [
-                            Shadow(color: Colors.white, blurRadius: 22),
-                            Shadow(color: Colors.white54, blurRadius: 42),
-                          ],
-                        ),
-                      ),
                     ),
                   ),
                   Expanded(
@@ -138,14 +137,41 @@ class _NightlightGateScreenState extends State<NightlightGateScreen> {
                       child: ResponsiveContent(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 28),
+                          // Title, question, and buttons all in this one
+                          // centered column now — the same distance (98)
+                          // between each of the 3 — rather than the title
+                          // pinned near the top separately from the rest.
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              Text(
+                                'Nightlight',
+                                key: _titleKey,
+                                style: TextStyle(
+                                  fontFamily: kFontBranding,
+                                  fontSize: 56,
+                                  color: colors.text,
+                                  // Same layered soft-blur glow as
+                                  // [NightlightStarfield]'s own stars —
+                                  // white shadows rather than a painted
+                                  // blur pass, since this is a [Text]
+                                  // rather than a canvas shape.
+                                  shadows: const [
+                                    Shadow(color: Colors.white, blurRadius: 22),
+                                    Shadow(
+                                      color: Colors.white54,
+                                      blurRadius: 42,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 98),
                               // The question's own two keywords bold —
                               // same words the two buttons below use — so
                               // the question and its matching answer read
                               // as connected at a glance.
                               Text.rich(
+                                key: _questionKey,
                                 TextSpan(
                                   style: TextStyle(
                                     fontSize: 27,
@@ -195,6 +221,7 @@ class _NightlightGateScreenState extends State<NightlightGateScreen> {
                                       CrossAxisAlignment.stretch,
                                   children: [
                                     ElevatedButton.icon(
+                                      key: _okButtonKey,
                                       onPressed: _openOk,
                                       style: nightlightButtonStyle(colors),
                                       icon: const Icon(
@@ -220,6 +247,7 @@ class _NightlightGateScreenState extends State<NightlightGateScreen> {
                                     ),
                                     const SizedBox(height: 14),
                                     OutlinedButton.icon(
+                                      key: _crisisButtonKey,
                                       onPressed: _openCrisis,
                                       style: nightlightOutlinedButtonStyle(
                                         colors,

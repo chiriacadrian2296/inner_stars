@@ -114,7 +114,6 @@ abstract class AppStrings {
   String get homeEyebrow;
   String get homeTitle;
   String get homeSubtitle;
-  String get admireYourStars;
   String get todayStarSectionLabel;
   String get litTodayTitle;
   String get litTodayTitleHighlight;
@@ -661,8 +660,9 @@ abstract class AppStrings {
   String get noDeadDateLabel;
 
   // Admire Your Stars (random reflection, filterable by area)
-  String get admireTagline;
+  String get chooseSupernovasToInclude;
   String get allAreasLabel;
+  String get admireAllAreasLabel;
   String get pickAtLeastOneArea;
   String get noStarsInSelection;
   String get viewYourStars;
@@ -707,7 +707,6 @@ abstract class AppStrings {
   String get nightlightExplainedContinue;
   String get nightlightBreathingGetReady;
   String get nightlightBreathingInhale;
-  String get nightlightBreathingHold;
   String get nightlightBreathingExhale;
   String get nightlightBreathingSkip;
 

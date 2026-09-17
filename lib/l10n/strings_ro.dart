@@ -232,8 +232,6 @@ class StringsRo implements AppStrings {
   String get homeSubtitle =>
       'Fiecare stea e o victorie, aprinsă atunci când aveai nevoie de lumină.';
   @override
-  String get admireYourStars => 'Admiră-ți stelele';
-  @override
   String get todayStarSectionLabel => 'Steaua zilei';
   @override
   String get litTodayTitle => 'Felicitări, ai aprins o stea azi!';
@@ -1144,10 +1142,12 @@ class StringsRo implements AppStrings {
   String get noDeadDateLabel => 'Fără dată';
 
   @override
-  String get admireTagline =>
-      'Pentru când ești în întuneric și ai nevoie de puțină lumină.';
+  String get chooseSupernovasToInclude =>
+      'Alege supernovele pe care vrei să le incluzi';
   @override
   String get allAreasLabel => 'Toate supernovele';
+  @override
+  String get admireAllAreasLabel => 'Toate';
   @override
   String get pickAtLeastOneArea =>
       'Alege cel puțin o supernovă pentru a continua.';
@@ -1203,8 +1203,6 @@ class StringsRo implements AppStrings {
   String get nightlightBreathingGetReady => 'Pregătește-te';
   @override
   String get nightlightBreathingInhale => 'Inspiră';
-  @override
-  String get nightlightBreathingHold => 'Ține';
   @override
   String get nightlightBreathingExhale => 'Expiră';
   @override
