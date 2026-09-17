@@ -1343,8 +1343,23 @@ class StringsRo implements AppStrings {
   @override
   String get starQuickLookShareAction => 'Distribuie';
   @override
+  String get nascentStarQuickLookConfigureAction => 'Configurează';
+  @override
   String constellationTooltipLitCount(int lit, int total) =>
       '$lit/$total stele aprinse';
+  @override
+  String get creationSuccessEyebrow => 'Felicitări!';
+  @override
+  String get creationSuccessLitMessage => 'O stea s-a aprins pe cerul tău.';
+  @override
+  String get creationSuccessUnlitMessage =>
+      'Un obiectiv nou e fixat, te așteaptă pe cer.';
+  @override
+  String get creationSuccessPulsarMessage =>
+      'Un puls nou e viu, pulsează pe cerul tău.';
+  @override
+  String get creationSuccessConstellationMessage =>
+      'O constelație nouă a fost adăugată pe cerul tău.';
   @override
   String areaTooltipStarCount(int count) =>
       '$count ${count == 1 ? 'stea aprinsă' : 'stele aprinse'}';

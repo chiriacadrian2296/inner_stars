@@ -18,6 +18,7 @@ import '../data/audio_settings_repository.dart';
 import '../data/constellation_layout.dart';
 import '../data/constellation_presets.dart'
     show LocalizedNameX, presetById;
+import '../data/constellation_shape.dart';
 import '../data/custom_constellation_repository.dart';
 import '../data/habit_completion_repository.dart';
 import '../data/habit_repository.dart';
@@ -41,10 +42,12 @@ import '../tutorials/tour_step_card.dart';
 import '../tutorials/tutorial_management.dart';
 import '../utils/habit_stats.dart';
 import '../utils/haptics.dart';
+import '../utils/icon_for_slug.dart';
 import '../utils/responsive.dart';
 import '../utils/star_stats.dart';
 import '../widgets/constellation_field.dart';
 import '../widgets/constellation_painter.dart';
+import '../widgets/creation_success_dialog.dart';
 import '../widgets/nebula_background.dart';
 // import '../widgets/sky_decorations.dart'; — the spiral-galaxy take on this
 // slot, disabled first in favor of SkyWisps, then SkyBlackHole, then
@@ -52,11 +55,15 @@ import '../widgets/nebula_background.dart';
 // import '../widgets/sky_wisps.dart'; — the wispy-nebula take, disabled too.
 // import '../widgets/sky_black_hole.dart'; — the lensed-black-hole take,
 // disabled too.
+import '../widgets/shareable_constellation_card.dart';
+import '../widgets/shareable_goal_card.dart';
 import '../widgets/shareable_lit_star_card.dart';
+import '../widgets/shareable_pulsar_card.dart';
 import '../widgets/sky_area_sigils.dart';
 import '../widgets/sky_area_tooltip.dart';
 import '../widgets/sky_constellation_tooltip.dart';
 import '../widgets/sky_menu_drawer.dart';
+import '../widgets/sky_nascent_star_tooltip.dart';
 import '../widgets/sky_navigation_target.dart';
 import '../widgets/sky_pulsar_tooltip.dart';
 import '../widgets/sky_star_tooltip.dart';
@@ -98,6 +105,15 @@ const double _bottomPillRadius = 22.0;
 /// constants applies, so bumping this one number retunes all of it at
 /// once, everywhere, in lockstep.
 const kHoldGestureDuration = Duration(milliseconds: 600);
+
+/// DEBUG ONLY — paints the sky's real hit-test zones (supernova/
+/// constellation/star, see [DebugSkyHitZones]) as translucent green, plus
+/// the sky-navigation tour's own "empty sky" double-tap target circle in
+/// orange, so the two can be compared and tuned by eye instead of by
+/// guessing at an [Alignment] and reloading. Not a feature — flip back to
+/// `false` (or delete this flag and its two call sites in `build()`, and
+/// [DebugSkyHitZones] itself) once the double-tap spot is nailed down.
+const bool _kDebugShowSkyHitZones = false;
 
 /// The Sky: the app's one and only screen. Every constellation, scattered
 /// across a single pannable/zoomable sky over the animated nebula
@@ -180,6 +196,50 @@ class _ConstellationTooltip extends _SkyTooltip {
 class _AreaTooltip extends _SkyTooltip {
   const _AreaTooltip(this.area);
   final LifeArea area;
+}
+
+/// A nascent star's own tooltip — an empty slot, not a [Habit] the way
+/// [_PulsarTooltip] carries: [star] itself (not an index into
+/// [constellation.stars], which doesn't contain it at all — see
+/// [ConstellationStar.entityId]'s own doc comment) is enough to both draw
+/// it and, via [SkyScreen._configureQuickLookNascentStar], fill it.
+class _NascentStarTooltip extends _SkyTooltip {
+  const _NascentStarTooltip(this.constellation, this.star);
+  final PlacedConstellation constellation;
+  final ConstellationStar star;
+}
+
+/// What [_SkyScreenState._creationShareSubject] is currently rendering
+/// off-screen for [CreationSuccessDialog]'s own Share button to capture —
+/// one per kind of thing that popup ever follows a creation of. A star
+/// covers both lit and unlit alike (see [_StarShare]'s own doc comment for
+/// why, unlike [_SkyTooltip]'s split into two separate classes for those).
+sealed class _CreationShareSubject {
+  const _CreationShareSubject();
+}
+
+/// Covers both a lit star and a freshly set goal — unlike [_SkyTooltip]'s
+/// own [_StarTooltip], there's no index to keep valid across a rebuild
+/// here (this is captured once, right after creation, and never
+/// re-read), so nothing is lost by not splitting kind out into its own
+/// class; [_SkyScreenState._shareCreation] picks the right card by
+/// [Star.isLit] alone.
+class _StarShare extends _CreationShareSubject {
+  const _StarShare(this.star, this.project);
+  final Star star;
+  final Project? project;
+}
+
+class _PulsarShare extends _CreationShareSubject {
+  const _PulsarShare(this.habit, this.project);
+  final Habit habit;
+  final Project? project;
+}
+
+class _ConstellationShare extends _CreationShareSubject {
+  const _ConstellationShare(this.project, this.shape);
+  final Project project;
+  final ConstellationShape shape;
 }
 
 class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
@@ -366,6 +426,19 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   final _skyTooltipController = TooltipCardController<_SkyTooltip>();
   final _quickLookShareKey = GlobalKey();
   bool _sharingQuickLookStar = false;
+
+  /// What [CreationSuccessDialog]'s own Share button (see
+  /// `_announceStarCreated`/`_announcePulsarCreated`/
+  /// `_announceConstellationCreated`) captures via [_creationShareKey] —
+  /// same "build the real card off-screen, then screenshot it" trick
+  /// [_quickLookShareKey] already uses, kept independent of it since a
+  /// creation's own popup isn't the sky tooltip and can outlive it (the
+  /// tooltip a hold shows is free to close on its own the moment the
+  /// camera starts flying toward the new star, well before Share is ever
+  /// tapped).
+  _CreationShareSubject? _creationShareSubject;
+  final _creationShareKey = GlobalKey();
+  bool _sharingCreation = false;
 
   /// The `TooltipCard` widget itself (see [_buildSkyTooltipOverlay]),
   /// rebuilt only in [didChangeDependencies] rather than fresh on every
@@ -878,6 +951,47 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     return null;
   }
 
+  /// How far, from [PlacedConstellation.worldPosition] itself (the
+  /// shape's bounding-box center) toward [shapeVertexCentroid] (its own
+  /// vertex average), [_tutorialDemoSpotlightWorldPosition] actually
+  /// targets — `0` is the box center, `1` the full vertex average. Tared
+  /// by eye: the full `1.0` vertex average overshot on the "house" preset
+  /// (the demo constellation read as sitting too low in the hole once
+  /// the target moved all the way there), so this splits the difference
+  /// instead of using either extreme.
+  static const _tutorialDemoSpotlightBlend = 0.5;
+
+  /// Where the tour's own order-3/6 steps ("tap"/"hold a constellation")
+  /// spotlight the placeholder constellation — partway toward its shape's
+  /// own vertex average (see [_tutorialDemoSpotlightBlend]) rather than
+  /// dead-center on [PlacedConstellation.worldPosition] itself (that
+  /// anchors the shape's *bounding-box* center, per
+  /// `normalizeEditorPoints`, which for the "house" preset's own roof
+  /// peak/wide base doesn't sit where the drawn shape visually reads as
+  /// centered — see [shapeVertexCentroid]'s own doc comment). Only the
+  /// spotlight target moves; placement, the order-2 fly-to's own landing
+  /// spot, and hit-testing all still key off the real anchor, unaffected.
+  /// Falls back to that same anchor if the placeholder isn't built yet
+  /// (shouldn't happen while these steps are actually active, but this
+  /// runs every frame the widget is merely mounted, active step or not).
+  Offset? _tutorialDemoSpotlightWorldPosition(
+    SkyCamera camera,
+    double zoom,
+    Size screenSize,
+  ) {
+    final placed = _tutorialDemoPlacedOrNull();
+    final shape = placed?.shape;
+    if (placed == null || shape == null) {
+      return tutorialDemoWorldPosition(_tutorialArea);
+    }
+    final target = Offset.lerp(
+      const Offset(0.5, 0.5),
+      shapeVertexCentroid(shape),
+      _tutorialDemoSpotlightBlend,
+    )!;
+    return constellationLocalWorldPosition(placed, target, camera, zoom, screenSize);
+  }
+
   /// The specific star inside the placeholder constellation the tour's
   /// "tap a star" step (order 3) points at — its first slot, the first one
   /// built in [_buildTutorialDemoPlaced].
@@ -898,10 +1012,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// [showTooltip] tells the real-star and pulsar branches (the two with
   /// a tooltip at all) whether to open it as the camera flies there (see
   /// [_openTooltipDuringFlight]) — false for a plain tap (see
-  /// [_handleTapUp], which only ever flies the camera), true for a hold
-  /// (see [_handleHold]). The nascent branch never had a tooltip to begin
-  /// with (there's nothing yet to peek at) and still acts on a plain tap
-  /// exactly as before, tap or hold alike.
+  /// [_handleTapUp], true for a hold (see [_handleHold]). The nascent
+  /// branch now behaves exactly like every other kind too: a plain tap
+  /// only flies the camera there (see [_flyToStar]), a hold peeks at it
+  /// first via its own tooltip (see [_openNascentStarQuickLook]), whose
+  /// own Configure button is the only way left to reach the form.
   Future<void> _openStar(
     PlacedConstellation constellation,
     ConstellationStar star, {
@@ -909,17 +1024,22 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   }) async {
     // The "tap a star" tour step, not the hold/tooltip half — a plain tap
     // on any star (nascent slot or a real one) satisfies it. `endsFlight`
-    // is safe even though this specific call happens before the flight
-    // that follows a few lines down (rather than after, like the other
-    // three call sites) — the tour's own demo star is always a real, lit
-    // one (see `_buildTutorialDemoPlaced`), so the nascent branch right
-    // below, the only path here that *doesn't* end in a flight, is never
-    // actually reached while order 4 is the active step.
+    // is safe here (rather than after the flight below, like the other
+    // three call sites) because every path through this method — nascent
+    // slot included, now that it also just flies on a plain tap — ends in
+    // one.
     if (!showTooltip) _advanceGestureTourStep(4, endsFlight: true);
     // A nascent star isn't something to read — it's an empty slot on the
-    // shape, and tapping it is how you give it a meaning.
+    // shape. A hold peeks at it first via its own tooltip (see
+    // [_openNascentStarQuickLook]), whose own Configure button is what
+    // actually gives it a meaning now — a plain tap here only flies the
+    // camera there, same as every other kind.
     if (star.kind == StarKind.nascent) {
-      await _configureNascentStar(constellation, star);
+      if (showTooltip) {
+        _openNascentStarQuickLook(constellation, star);
+      } else {
+        _flyToStar(constellation, star);
+      }
       return;
     }
     // Sitting on a slot is what makes a star part of the shape; a pulsar
@@ -1029,6 +1149,37 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     );
   }
 
+  /// A nascent star's own hold half — same shape as [_openStarQuickLook]/
+  /// [_openPulsarQuickLook], just for an empty slot's own tooltip (see
+  /// [SkyNascentStarTooltip]) instead of a real entity's. Its own
+  /// "Configure" button (not a separate full reader page — there's
+  /// nothing yet to read) is [_configureQuickLookNascentStar].
+  void _openNascentStarQuickLook(
+    PlacedConstellation constellation,
+    ConstellationStar star,
+  ) {
+    final size = context.size;
+    if (size == null) return;
+    final world = starWorldPosition(constellation, star, _camera, _zoom, size);
+    if (world == null) return;
+    _openTooltipDuringFlight(
+      _flyToWorld(
+        world,
+        zoomFromPercent(_starZoomPercent).clamp(minZoomWithoutRepeats, _maxZoom),
+      ),
+      _NascentStarTooltip(constellation, star),
+    );
+  }
+
+  /// [SkyNascentStarTooltip]'s own "Configure" button — same form
+  /// [_openStar]'s plain-tap branch already opens, just reached from the
+  /// tooltip [_openNascentStarQuickLook] opened for a hold instead.
+  Future<void> _configureQuickLookNascentStar() async {
+    final data = _skyTooltipController.data;
+    if (data is! _NascentStarTooltip) return;
+    await _configureNascentStar(data.constellation, data.star);
+  }
+
   void _closeSkyTooltip() => _skyTooltipController.close();
 
   /// The actual [Star] the quick-look tooltip is showing — re-read from
@@ -1053,6 +1204,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _StarTooltip(:final constellation) => constellation,
     _PulsarTooltip(:final constellation) => constellation,
     _ConstellationTooltip(:final constellation) => constellation,
+    _NascentStarTooltip(:final constellation) => constellation,
     _AreaTooltip() || null => null,
   };
 
@@ -1245,6 +1397,179 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     }
   }
 
+  /// [CreationSuccessDialog]'s own Share button — same capture-and-share
+  /// shape as [_shareQuickLookStar], just reading [_creationShareSubject]/
+  /// [_creationShareKey] instead of the sky tooltip's own, and covering
+  /// every kind a creation can be (a lit star, a goal, a pulsar, a whole
+  /// new constellation) rather than just a lit star.
+  Future<void> _shareCreation() async {
+    final subject = _creationShareSubject;
+    if (subject == null || _sharingCreation) return;
+    setState(() => _sharingCreation = true);
+    try {
+      final boundary =
+          _creationShareKey.currentContext!.findRenderObject()
+              as RenderRepaintBoundary;
+      final image = await boundary.toImage(
+        pixelRatio: MediaQuery.of(context).devicePixelRatio,
+      );
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) throw StateError('toByteData returned null');
+      if (!mounted) return;
+      final shareFile = XFile.fromData(
+        byteData.buffer.asUint8List(),
+        name: 'creation_${DateTime.now().microsecondsSinceEpoch}.png',
+        mimeType: 'image/png',
+      );
+      final text = switch (subject) {
+        _StarShare(:final star) => star.title,
+        _PulsarShare(:final habit) => habit.title,
+        _ConstellationShare(:final project) => project.name,
+      };
+      await SharePlus.instance.share(
+        ShareParams(files: [shareFile], text: text),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.strings.shareStarError)));
+      }
+    } finally {
+      if (mounted) setState(() => _sharingCreation = false);
+    }
+  }
+
+  /// The [PlacedConstellation] a freshly created star with this id landed
+  /// in, re-derived from [_placed] (already refreshed by the time this is
+  /// called — see every caller, always right after `_refresh()`) rather
+  /// than threaded through as a parameter, the same "look it back up by
+  /// id" reasoning [PlacedConstellation.stars]'s own doc comment already
+  /// gives for keeping it alongside [PlacedConstellation.renderStars].
+  PlacedConstellation? _placedForStar(int starId) {
+    for (final placed in _placed) {
+      if (placed.stars.any((s) => s.id == starId)) return placed;
+    }
+    return null;
+  }
+
+  /// Same as [_placedForStar], for a pulsar's own [Habit] id.
+  PlacedConstellation? _placedForHabit(int habitId) {
+    for (final placed in _placed) {
+      if (placed.habits.any((h) => h.id == habitId)) return placed;
+    }
+    return null;
+  }
+
+  /// The full hold experience (see [_flyToWithHoldFeedback]'s own doc
+  /// comment) for one exact star within [constellation], by id — used
+  /// wherever a caller already knows precisely which star it means rather
+  /// than just its constellation: [CreationSuccessDialog]'s own "Take me
+  /// there" for a freshly created star, and a search result's own (via
+  /// [_flyToWithHoldFeedback]'s [SkyStarTarget] case, when it carries a
+  /// [SkyStarTarget.starId]).
+  void _flyToStarWithHoldFeedback(PlacedConstellation constellation, int starId) {
+    final index = constellation.stars.indexWhere((s) => s.id == starId);
+    if (index == -1) return;
+    ConstellationStar? renderStar;
+    for (final candidate in constellation.renderStars) {
+      if (candidate.entityId == starId && candidate.slotSequence != null) {
+        renderStar = candidate;
+        break;
+      }
+    }
+    if (renderStar == null) return;
+    _playHoldFeedback();
+    _openStarQuickLook(constellation, index, renderStar);
+  }
+
+  /// Same as [_flyToStarWithHoldFeedback], for a pulsar by its own
+  /// [Habit] id.
+  void _flyToPulsarWithHoldFeedback(
+    PlacedConstellation constellation,
+    int habitId,
+  ) {
+    Habit? habit;
+    for (final candidate in constellation.habits) {
+      if (candidate.id == habitId) {
+        habit = candidate;
+        break;
+      }
+    }
+    if (habit == null) return;
+    ConstellationStar? renderStar;
+    for (final candidate in constellation.renderStars) {
+      if (candidate.entityId == habitId && candidate.slotSequence == null) {
+        renderStar = candidate;
+        break;
+      }
+    }
+    if (renderStar == null) return;
+    _playHoldFeedback();
+    _openPulsarQuickLook(constellation, habit, renderStar);
+  }
+
+  /// Shows [CreationSuccessDialog] for a freshly created [star] — lit or
+  /// unlit alike, told apart only by [Star.isLit] (a pulsar goes through
+  /// [_announcePulsarCreated] instead, a constellation through
+  /// [_announceConstellationCreated]). Called after every place that
+  /// creates a real star: the menu's own form ([_openStarForm]) and
+  /// filling in a nascent slot ([_configureNascentStar]).
+  void _announceStarCreated(Star star) {
+    final placed = _placedForStar(star.id);
+    final strings = context.strings;
+    setState(() => _creationShareSubject = _StarShare(star, placed?.project));
+    CreationSuccessDialog.show(
+      context,
+      icon: star.isLit ? Icons.star : Icons.star_border,
+      message: star.isLit
+          ? strings.creationSuccessLitMessage
+          : strings.creationSuccessUnlitMessage,
+      onTakeMeThere: () {
+        if (placed != null) _flyToStarWithHoldFeedback(placed, star.id);
+      },
+      onShare: _shareCreation,
+    );
+  }
+
+  /// Same as [_announceStarCreated], for a freshly created pulsar — called
+  /// from [_openStarForm], the only place a pulsar is ever made.
+  void _announcePulsarCreated(Habit habit) {
+    final placed = _placedForHabit(habit.id);
+    setState(() => _creationShareSubject = _PulsarShare(habit, placed?.project));
+    CreationSuccessDialog.show(
+      context,
+      icon: StarKind.pulsar.icon,
+      message: context.strings.creationSuccessPulsarMessage,
+      onTakeMeThere: () {
+        if (placed != null) _flyToPulsarWithHoldFeedback(placed, habit.id);
+      },
+      onShare: _shareCreation,
+    );
+  }
+
+  /// Same as [_announceStarCreated], for a freshly created constellation —
+  /// called from [_openNewConstellation]. "Take me there" reuses
+  /// [_flyToWithHoldFeedback] directly (a [SkyProjectTarget], the same
+  /// coarseness a constellation's own hold already lands at) rather than a
+  /// dedicated lookup, since there's no single star within it this popup
+  /// means specifically the way there is for the other two kinds.
+  void _announceConstellationCreated(Project project) {
+    final placed = _placedFor(project);
+    setState(() {
+      _creationShareSubject = placed?.shape == null
+          ? null
+          : _ConstellationShare(project, placed!.shape!);
+    });
+    CreationSuccessDialog.show(
+      context,
+      icon: iconForSlug(project.iconSlug),
+      message: context.strings.creationSuccessConstellationMessage,
+      onTakeMeThere: () => _flyToWithHoldFeedback(SkyProjectTarget(project)),
+      onShare: _shareCreation,
+    );
+  }
+
   /// Opens the star form on one specific empty slot of [constellation]'s
   /// shape — the slot the tapped nascent star occupies — and creates the
   /// star exactly there, so the point of light the user aimed at is the one
@@ -1254,6 +1579,13 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     PlacedConstellation constellation,
     ConstellationStar star,
   ) async {
+    // Before the push, not after — see [_editQuickLookStar]'s own note for
+    // why (the tooltip lives in the root overlay, above routes, rather than
+    // being covered by them): left open here, whatever tooltip happened to
+    // already be showing — this slot's own from a hold, or an unrelated
+    // one from a stray tap — stayed floating on top of the form for as
+    // long as it stayed open.
+    _closeSkyTooltip();
     final result = await Navigator.of(context).push<Object>(
       MaterialPageRoute(
         builder: (_) => StarFormScreen(
@@ -1264,7 +1596,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       ),
     );
     if (result is! StarFormResult) return;
-    await widget.starRepository.add(
+    final created = await widget.starRepository.add(
       title: result.title,
       description: result.description,
       projectId: result.projectId,
@@ -1275,6 +1607,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       photoPath: result.photoPath,
     );
     _refresh();
+    _announceStarCreated(created);
   }
 
   /// The menu's own "light a star" entry: the same form, with every kind
@@ -1291,7 +1624,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     );
     if (result is! StarFormResult) return;
     if (result.kind == StarKind.pulsar) {
-      await widget.habitRepository.add(
+      final created = await widget.habitRepository.add(
         title: result.title,
         description: result.description,
         projectId: result.projectId,
@@ -1301,8 +1634,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         reminderHour: result.reminderHour,
         reminderMinute: result.reminderMinute,
       );
+      _refresh();
+      _announcePulsarCreated(created);
     } else {
-      await widget.starRepository.add(
+      final created = await widget.starRepository.add(
         title: result.title,
         description: result.description,
         projectId: result.projectId,
@@ -1311,12 +1646,13 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         intensity: result.intensity,
         photoPath: result.photoPath,
       );
+      _refresh();
+      _announceStarCreated(created);
     }
-    _refresh();
   }
 
   Future<void> _openNewConstellation() async {
-    await Navigator.of(context).push<Project>(
+    final project = await Navigator.of(context).push<Project>(
       MaterialPageRoute(
         builder: (_) => NewProjectScreen(
           projectRepository: widget.projectRepository,
@@ -1325,6 +1661,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       ),
     );
     _refresh();
+    if (project != null) _announceConstellationCreated(project);
   }
 
   Future<void> _openVisions() async {
@@ -1408,6 +1745,12 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// its five buttons close it back down through [_closeQuickAccessMenu]
   /// instead (see [_QuickAccessFan] in build()).
   void _toggleQuickAccessMenu() {
+    // Suppressed while some *other* locked step is active — e.g. a
+    // mistimed quick tap during order 8's "hold this" step, which would
+    // otherwise pop the fan open behind the tutorial's back. See
+    // [_tourWantsGesture]. Once order 10 itself is done (or no tour is
+    // running at all) this is unrestricted, same as ever.
+    if (!_tourWantsGesture(10)) return;
     setState(() => _quickAccessMenuOpen = !_quickAccessMenuOpen);
     // The tour's order-10 step — this is its only real gesture, opening or
     // closing either way (the guard inside only ever lets this through
@@ -1421,11 +1764,14 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     if (_quickAccessMenuOpen) setState(() => _quickAccessMenuOpen = false);
   }
 
-  /// Closes the mini menu, then runs [action] — every one of
-  /// [_QuickAccessFan]'s five buttons routes through this rather than
-  /// calling its destination directly, so picking one always leaves the
+  /// Closes the mini menu, then runs [action] — four of
+  /// [_QuickAccessFan]'s five buttons route through this rather than
+  /// calling their destination directly, so picking one always leaves the
   /// mini menu closed behind it instead of still open once the pushed
-  /// screen is popped back to.
+  /// screen is popped back to. Search is the exception (see its own call
+  /// site) — [_openSearch] now decides for itself whether the mini menu
+  /// should still be open once it's done, the same way it already does
+  /// for the drawer and the modal menu sheet.
   void _selectQuickAccess(VoidCallback action) {
     _closeQuickAccessMenu();
     action();
@@ -1448,6 +1794,12 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// being tried alongside the drawer, not a replacement for it — both
   /// stay live so the two can be compared.
   void _openMenuModal() {
+    // Suppressed while some *other* locked step is active — e.g. a hold
+    // that completes during order 10's own "quick tap this" step, which
+    // would otherwise pop the full menu open behind the tutorial's back.
+    // See [_tourWantsGesture]. Once order 8 itself is done (or no tour is
+    // running at all) this is unrestricted, same as ever.
+    if (!_tourWantsGesture(8)) return;
     // Closed first rather than left open underneath — a hold that
     // completes while the quick-access menu happens to be open (both
     // read off the same button) should still land on a clean full menu,
@@ -1527,9 +1879,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     ).then((_) => _advanceGestureTourStep(9));
   }
 
-  /// Opens the search/filter popup (three levels of the same sky, minus a
-  /// header — see [SkySearchScreen]) and, if a card's "take me there"
-  /// button closed it with a target, snaps the camera to it.
   Future<void> _openSoundLab() async {
     await Navigator.of(context).push(
       MaterialPageRoute(
@@ -1538,8 +1887,29 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     );
   }
 
-  Future<void> _openSearch() async {
-    final target = await Navigator.of(context).push<SkyNavigationTarget>(
+  /// Opens the search/filter popup (three levels of the same sky, minus a
+  /// header — see [SkySearchScreen]).
+  ///
+  /// A plain back out of the popup — the header's own arrow, or a system
+  /// back gesture — leaves whatever menu opened it open behind it instead:
+  /// most likely a peek that wasn't meant to go anywhere, so landing back
+  /// on the menu (rather than the bare Sky, with it silently gone) is what
+  /// actually resumes what the user was doing. Only a real pick — a
+  /// card's "take me there" (a [SkyNavigationTarget]) — or the popup's own
+  /// explicit close button (a [SkySearchClosed]) closes that menu, via
+  /// [_closeInvokingMenu]. [onCloseMenu] covers the one invoking menu that
+  /// isn't [Navigator]-backed — the quick-access fan (see
+  /// [_selectQuickAccess]'s own doc comment for why every one of its
+  /// *other* buttons goes through that instead of calling its destination
+  /// directly) — the drawer and the modal menu sheet are both routes, so
+  /// [_closeInvokingMenu] alone already handles those two.
+  ///
+  /// A "take me there" also gets the full feedback a real hold would (see
+  /// [_flyToWithHoldFeedback]) — haptic, sound, and a tooltip — rather
+  /// than just a bare camera flight, since picking a card here stands in
+  /// for holding that exact thing in the sky.
+  Future<void> _openSearch({VoidCallback? onCloseMenu}) async {
+    final result = await Navigator.of(context).push<Object>(
       MaterialPageRoute(
         builder: (_) => SkySearchScreen(
           projectRepository: widget.projectRepository,
@@ -1553,7 +1923,80 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       ),
     );
     _refresh();
-    if (target != null) _flyTo(target);
+    if (result is SkyNavigationTarget || result is SkySearchClosed) {
+      onCloseMenu?.call();
+      _closeInvokingMenu();
+    }
+    if (result is SkyNavigationTarget) _flyToWithHoldFeedback(result);
+  }
+
+  /// Closes whichever route-based menu — the drawer, or the modal menu
+  /// sheet (see [_openMenuModal]) — is still open beneath the search
+  /// route [_openSearch] just popped back from, if either is. Both add
+  /// themselves to this same [Navigator] the way search's own route did
+  /// (a real [Drawer] does it through a local history entry, same
+  /// mechanism the modal sheet's own route already uses), and neither was
+  /// closed before search opened on top of it (see [_openSearch]'s own
+  /// doc comment for why) — so by the time this runs, whichever of the
+  /// two actually opened search is the only thing left [Navigator.canPop]
+  /// would still find here. A no-op when neither did (every other caller
+  /// of [_openSearch]).
+  void _closeInvokingMenu() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) navigator.pop();
+  }
+
+  /// The haptic buzz + the hold's own sound (not the plain tap's) half of
+  /// a real hold's own feedback — split out so [_flyToWithHoldFeedback]
+  /// and [_flyToStarWithHoldFeedback]/[_flyToPulsarWithHoldFeedback] can
+  /// each fire it exactly once, whichever of them ends up actually
+  /// handling a given target, rather than every one of them firing its
+  /// own copy.
+  void _playHoldFeedback() {
+    if (isTouchOnlyMobile) _tapHaptic();
+    widget.audioService.playHoldSound();
+  }
+
+  /// The same feedback a real hold gets — [_playHoldFeedback] plus
+  /// [target]'s own tooltip opened once the camera lands — for anywhere
+  /// that resolves a [SkyNavigationTarget] without an actual hold gesture
+  /// behind it (right now, just [_openSearch]'s own "take me there").
+  ///
+  /// [SkyStarTarget] carries the project a star/pulsar/dead star sits in
+  /// unconditionally, and [SkyStarTarget.starId]/[SkyStarTarget.habitId]
+  /// only when the caller actually knew which one specifically — a search
+  /// result card does, so this lands on that exact star's own tooltip via
+  /// [_flyToStarWithHoldFeedback]/[_flyToPulsarWithHoldFeedback] (which
+  /// fire their own feedback, so this doesn't fire it twice); without
+  /// either id, this falls back to the constellation's own tooltip, same
+  /// as [SkyProjectTarget].
+  void _flyToWithHoldFeedback(SkyNavigationTarget target) {
+    switch (target) {
+      case SkyAreaTarget(:final area):
+        _playHoldFeedback();
+        _holdArea(area);
+      case SkyProjectTarget(:final project):
+        _playHoldFeedback();
+        final placed = _placedFor(project);
+        if (placed != null) {
+          _holdConstellation(placed);
+        } else {
+          _flyTo(target);
+        }
+      case SkyStarTarget(:final project, :final starId, :final habitId):
+        final placed = _placedFor(project);
+        if (placed == null) {
+          _playHoldFeedback();
+          _flyTo(target);
+        } else if (starId != null) {
+          _flyToStarWithHoldFeedback(placed, starId);
+        } else if (habitId != null) {
+          _flyToPulsarWithHoldFeedback(placed, habitId);
+        } else {
+          _playHoldFeedback();
+          _holdConstellation(placed);
+        }
+    }
   }
 
   PlacedConstellation? _placedFor(Project project) {
@@ -1840,10 +2283,19 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _ConstellationTooltip(:final constellation) => _ConstellationTooltip(
       constellation,
     ),
+    _NascentStarTooltip(:final constellation, :final star) =>
+      _NascentStarTooltip(constellation, star),
     _AreaTooltip(:final area) => _AreaTooltip(area),
   };
 
   void _handleScaleStart(ScaleStartDetails details) {
+    // A drag/pinch is never the gesture any `sky-navigation` step is
+    // actually teaching — see [_tourGestureLockActive] — so while one is
+    // active this refuses to even arm drag state, rather than letting a
+    // touch that starts on the step's own target (inside its scrim hole,
+    // so it still reaches this detector at all) turn into a pan once it
+    // moves, bypassing the tap/hold split entirely.
+    if (_tourGestureLockActive) return;
     _zoomAtGestureStart = _zoom;
     _stopInertia();
     _flyController.stop();
@@ -1873,6 +2325,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   static const _realZoomDelta = 0.01;
 
   void _handleScaleUpdate(ScaleUpdateDetails details) {
+    // See [_handleScaleStart]'s own guard — [_dragStartCamera] never got
+    // set while locked, so this would be a no-op anyway, but bailing
+    // early also skips closing an open tooltip below for a "pan" that
+    // was never really allowed to begin with.
+    if (_tourGestureLockActive) return;
     // A genuine pan/zoom — not just the jitter above — closes any open
     // tooltip: letting the camera move out from under one used to leave
     // it pinned in place, still pointing at wherever the target *used*
@@ -1937,6 +2394,12 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// scaling [_rotateCamera] uses, rather than reusing the live drag's own
   /// exact tracking.
   void _handleScaleEnd(ScaleEndDetails details) {
+    // Same guard as [_handleScaleStart]/[_handleScaleUpdate] — without
+    // it, a touch that ended while locked could still kick off an
+    // inertia glide from whatever velocity it happened to release at,
+    // moving the camera after the fact even though the drag itself never
+    // did anything while it was live.
+    if (_tourGestureLockActive) return;
     final size = context.size;
     if (size == null || size.height <= 0) return;
     _panVelocity =
@@ -2161,16 +2624,27 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// hold starting here would actually land on something *before* the
   /// hold fires, purely to decide whether the charging ring/haptic are
   /// worth starting at all (never on empty sky).
+  ///
+  /// Also gated by [_tourWantsGesture] — the same check [_resolveTapTarget]
+  /// uses before a hold's own real action runs — so the ring/haptic never
+  /// arm in the first place for a hold that's just going to be silently
+  /// suppressed anyway (a star, say, mid gesture-locked step: holding one
+  /// is never taught at all). Without this the charging ring still played
+  /// out to completion and the haptic still buzzed even though nothing
+  /// happened once it fired, which read as the hold having worked. A
+  /// plain tap on the same spot is unaffected either way — this only ever
+  /// decides whether the *hold* anticipation shows.
   bool _hasHoldTarget(Offset position, Size size) {
     final hit = zoomPercent(_zoom) >= _starTapMinZoomPercent
         ? hitTestField(position, _placed, _camera, _zoom, size)
         : null;
-    if (hit != null) return true;
+    if (hit != null) return _tourWantsGesture(_kNoTourOrder);
     if (hitTestSupernovas(position, _camera, _zoom, size) != null) {
-      return true;
+      return _tourWantsGesture(_kNoTourOrder);
     }
     return hitTestConstellations(position, _placed, _camera, _zoom, size) !=
-        null;
+            null &&
+        _tourWantsGesture(6);
   }
 
   void _handleTapDown(TapDownDetails details) {
@@ -2297,7 +2771,12 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         ? hitTestField(position, _placed, _camera, _zoom, size)
         : null;
     if (hit != null) {
-      _openStar(hit.$1, hit.$2, showTooltip: showTooltip);
+      // Only a plain tap is ever taught (order 4); holding a star has no
+      // step of its own, so it's suppressed the same as any other wrong
+      // gesture while a locked step is active — see [_tourWantsGesture].
+      if (_tourWantsGesture(showTooltip ? _kNoTourOrder : 4)) {
+        _openStar(hit.$1, hit.$2, showTooltip: showTooltip);
+      }
       return true;
     }
     // An invisible zone over each supernova's own icon — no visible change
@@ -2306,7 +2785,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // (see [hitTestSupernovas]).
     final area = hitTestSupernovas(position, _camera, _zoom, size);
     if (area != null) {
-      showTooltip ? _holdArea(area) : _flyToArea(area);
+      if (_tourWantsGesture(showTooltip ? _kNoTourOrder : 2)) {
+        showTooltip ? _holdArea(area) : _flyToArea(area);
+      }
       return true;
     }
     // Same idea one level down: a tap that lands within a constellation's
@@ -2320,7 +2801,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       size,
     );
     if (constellation != null) {
-      showTooltip ? _holdConstellation(constellation) : _flyToConstellation(constellation);
+      if (_tourWantsGesture(showTooltip ? 6 : 3)) {
+        showTooltip
+            ? _holdConstellation(constellation)
+            : _flyToConstellation(constellation);
+      }
       return true;
     }
     return false;
@@ -2400,9 +2885,14 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       // zoom-out this triggers is exactly that, just aimed at empty sky
       // instead of a target. No tap sound here though: this isn't a tap
       // on anything, it's a camera move, and [_zoomOutOneLevel] already
-      // plays its own whoosh via [_playZoomTransitionSound].
-      if (isTouchOnlyMobile) _tapHaptic();
-      _zoomOutOneLevel();
+      // plays its own whoosh via [_playZoomTransitionSound]. Gated the
+      // same as every other real gesture — see [_tourWantsGesture] — so a
+      // double-tap that lands during some other locked step doesn't
+      // zoom out from underneath it.
+      if (_tourWantsGesture(5)) {
+        if (isTouchOnlyMobile) _tapHaptic();
+        _zoomOutOneLevel();
+      }
       return;
     }
     _lastEmptyTapTime = now;
@@ -2472,6 +2962,101 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       Tour.read(context).next();
     });
   }
+
+  /// Every `sky-navigation` step whose card only ever offers Skip because
+  /// the real gesture it teaches is what advances it — see
+  /// [_advanceGestureTourStep]'s own doc comment for the handlers that
+  /// call it with each of these numbers.
+  static const _gestureLockedTourOrders = {2, 3, 4, 5, 6, 8, 10};
+
+  /// Stands in for the tour order of a gesture/target combination the
+  /// tour never teaches at all — holding a star, say, which has no
+  /// "order" of its own — so [_tourWantsGesture] still blocks it while a
+  /// locked step is active, the same as any other wrong gesture, rather
+  /// than needing a separate "is this even a real step" branch.
+  static const _kNoTourOrder = -1;
+
+  /// Whether [order]'s real gesture is the one `sky-navigation` is
+  /// actively waiting for right now — the general form of the same check
+  /// [_advanceGestureTourStep] already does before advancing, applied
+  /// *before the real action runs* rather than only before the tour
+  /// steps forward.
+  ///
+  /// Without this, a stray touch that lands on the right pixels but is
+  /// the wrong kind — a plain tap where a step is teaching a hold, or a
+  /// hold where one is teaching a tap, or *any* touch on a target no
+  /// step is about right now — still fired its everyday action (flying
+  /// the camera, opening the full menu, opening the quick-access fan)
+  /// even though it didn't satisfy the step. That's what let a tap aimed
+  /// a little too far during the order-5 "double-tap empty sky" step
+  /// land on the demo constellation instead and fly there, or a mistimed
+  /// tap on the menu button during its own "hold this" step pop the
+  /// quick-access fan open behind the tutorial's back.
+  ///
+  /// Every caller below is the sole call site for the action it guards
+  /// (confirmed by grepping each), so gating here never touches a normal,
+  /// non-tutorial use of the same gesture — this only ever says no while
+  /// `sky-navigation` is actually running and sitting on one of
+  /// [_gestureLockedTourOrders]; everywhere else (tour finished, skipped,
+  /// or on a different kind of step entirely) it always says yes.
+  ///
+  /// Also says no, regardless of [order], while [_hideTourDuringFlight] is
+  /// true — the ~900ms-plus window between a correct gesture firing and
+  /// the tour actually stepping forward (see [_advanceGestureTourStep]),
+  /// during which the camera is still flying from that same gesture. The
+  /// active [TourScope] order hasn't moved yet during that window, so
+  /// without this a second touch landing before it does could still
+  /// repeat the very same "correct" gesture and kick off a second,
+  /// overlapping flight out from under the first one.
+  bool _tourWantsGesture(int order) =>
+      !_tourGestureLockActive ||
+      (!_hideTourDuringFlight &&
+          TourScope.of(
+                context,
+              ).orderAt('sky-navigation', Tour.of(context).index) ==
+              order);
+
+  /// Whether `sky-navigation` is currently sitting on one of
+  /// [_gestureLockedTourOrders] — the shared condition [_tourWantsGesture]
+  /// refines further to "and it's *this* order", and the one every real
+  /// pan/zoom handler ([_handleScaleStart]/[_handleScaleUpdate]/
+  /// [_handleScaleEnd]) checks directly: unlike a tap or a hold, a
+  /// pan/zoom was never gated per-order in the first place (there's no
+  /// "the right pan" to allow through), so those three just refuse to
+  /// move the camera at all while this is true rather than picking
+  /// between a right and wrong gesture the way [_tourWantsGesture] does.
+  bool get _tourGestureLockActive {
+    final controller = Tour.maybeOf(context);
+    if (controller == null || controller.activeTour != 'sky-navigation') {
+      return false;
+    }
+    if (_hideTourDuringFlight) return true;
+    final activeOrder = TourScope.of(
+      context,
+    ).orderAt('sky-navigation', controller.index);
+    return _gestureLockedTourOrders.contains(activeOrder);
+  }
+
+  /// Where the order-5 "double-tap empty sky" step's target circle sits.
+  /// A plain fixed spot, same as [TourGestureEmptySpotHint]'s own default
+  /// — a computed one (projecting the tutorial's own demo constellation
+  /// via `worldToScreen`, the way this used to work) is one more thing
+  /// that can be subtly wrong on some screen shape nobody tried yet, and
+  /// the whole point of a fixed spot is not needing to get that right.
+  ///
+  /// Different on a real phone ([isTouchOnlyMobile]) than the default:
+  /// dead-center horizontally, and below mid-height with a small gap
+  /// above the FAB — went through `-0.6, 0` (too close to the demo
+  /// constellation on a phone's own narrower, taller aspect ratio, back
+  /// when the constellation's own tap zone was a much more generous box)
+  /// and `-0.6, 0.6` (further down/left, before [_nearConstellationShape]
+  /// replaced that box with a ribbon hugging the actual drawn lines,
+  /// which independently made stray hits far less likely) before landing
+  /// here once both could be tuned together. Desktop/web keep the
+  /// original spot, unreported and untouched.
+  Alignment get _emptySkySpotAlignment => isTouchOnlyMobile
+      ? const Alignment(0, 0.5)
+      : const Alignment(-0.6, 0);
 
   /// Reacts to the sky's own tooltip opening, closing or changing data —
   /// the `setState` nudge every part of [build] reading
@@ -2731,6 +3316,50 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                       palette: kSkyStarPalette,
                       revision: _revision,
                     ),
+                    // DEBUG ONLY — see [_kDebugShowSkyHitZones]'s own doc
+                    // comment. Real hit-test zones in green, the current
+                    // double-tap target circle in orange for comparison.
+                    if (_kDebugShowSkyHitZones) ...[
+                      DebugSkyHitZones(
+                        placed: _placed,
+                        camera: _camera,
+                        zoom: _zoom,
+                      ),
+                      IgnorePointer(
+                        child: Align(
+                          alignment: _emptySkySpotAlignment,
+                          // The 64x64 box here is what actually drives
+                          // Align's own placement math — matching
+                          // [TourGestureEmptySpotHint]'s real `spotSize`
+                          // exactly, not just the padded-out circle below,
+                          // since Align's result shifts with child size
+                          // for any non-center alignment. `OverflowBox`
+                          // then draws the true (padded) 96px hole
+                          // centered on that same point without changing
+                          // it.
+                          child: SizedBox(
+                            width: 64,
+                            height: 64,
+                            child: OverflowBox(
+                              maxWidth: 96,
+                              maxHeight: 96,
+                              child: Container(
+                                width: 96,
+                                height: 96,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: const Color(0x55FFA500),
+                                  border: Border.all(
+                                    color: const Color(0xFFFFA500),
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                     // Order 1, the tour's own opening — deliberately unlike
                     // every step after it: no hole (nothing to point at
                     // yet), no scrim at all (`scrimOpacity: 0`, so the sky
@@ -2844,8 +3473,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                         camera: () => _camera,
                         zoom: () => _zoom,
                         spotlightPadding: const EdgeInsets.all(48),
-                        worldPosition: (camera, zoom, screenSize) =>
-                            tutorialDemoWorldPosition(_tutorialArea),
+                        worldPosition: _tutorialDemoSpotlightWorldPosition,
                       ),
                       SkyHintTarget(
                         key: const ValueKey('sky-nav-step-4'),
@@ -2875,11 +3503,16 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                     // A real spotlight hole over an empty patch of sky —
                     // see [TourGestureEmptySpotHint]'s own doc comment for
                     // why order 5 gets one instead of the fully invisible
-                    // scrim every other gesture step uses.
-                    const TourGestureEmptySpotHint(
-                      key: ValueKey('sky-nav-step-5'),
+                    // scrim every other gesture step uses, and for why its
+                    // own card replaces the separate [TourGestureBanner]
+                    // every other whole-screen gesture step here uses.
+                    TourGestureEmptySpotHint(
+                      key: const ValueKey('sky-nav-step-5'),
                       tour: 'sky-navigation',
                       order: 5,
+                      title: context.strings.skyTourDoubleTapTitle,
+                      description: context.strings.skyTourDoubleTapBody,
+                      spotAlignment: _emptySkySpotAlignment,
                     ),
                     if (!_hideTourDuringFlight)
                       SkyHintTarget(
@@ -2892,19 +3525,12 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                         camera: () => _camera,
                         zoom: () => _zoom,
                         spotlightPadding: const EdgeInsets.all(48),
-                        worldPosition: (camera, zoom, screenSize) =>
-                            tutorialDemoWorldPosition(_tutorialArea),
+                        worldPosition: _tutorialDemoSpotlightWorldPosition,
                       ),
                     TourGestureStep(
                       key: const ValueKey('sky-nav-step-7'),
                       tour: 'sky-navigation',
                       order: 7,
-                    ),
-                    TourGestureBanner(
-                      tour: 'sky-navigation',
-                      order: 5,
-                      title: context.strings.skyTourDoubleTapTitle,
-                      description: context.strings.skyTourDoubleTapBody,
                     ),
                     // Sits on top of the tooltip [_holdConstellation]'s own
                     // hold just opened — no gesture of its own to wait for,
@@ -3403,8 +4029,15 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                                     ),
                                     onStars: () =>
                                         _selectQuickAccess(_openStarForm),
+                                    // Not routed through [_selectQuickAccess]
+                                    // like every other button here — this
+                                    // fan isn't [Navigator]-backed, so
+                                    // [_openSearch] needs it passed as its
+                                    // own [onCloseMenu] instead, closed only
+                                    // once it actually knows whether to
+                                    // (see that method's own doc comment).
                                     onSearch: () =>
-                                        _selectQuickAccess(_openSearch),
+                                        _openSearch(onCloseMenu: _closeQuickAccessMenu),
                                     onPressChanged: _setMenuControlPressed,
                                   ),
                                 ),
@@ -3437,6 +4070,28 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                     star: star,
                     project: _quickLookConstellation?.project,
                   ),
+                ),
+              ),
+            // [CreationSuccessDialog]'s own off-screen card — same trick,
+            // independent state (see [_creationShareSubject]'s own doc
+            // comment for why).
+            if (_creationShareSubject case final subject?)
+              Positioned(
+                left: -MediaQuery.sizeOf(context).width * 2,
+                top: 0,
+                width: MediaQuery.sizeOf(context).width,
+                height: MediaQuery.sizeOf(context).height,
+                child: RepaintBoundary(
+                  key: _creationShareKey,
+                  child: switch (subject) {
+                    _StarShare(:final star, :final project) => star.isLit
+                        ? ShareableLitStarCard(star: star, project: project)
+                        : ShareableGoalCard(star: star, project: project),
+                    _PulsarShare(:final habit, :final project) =>
+                      ShareablePulsarCard(habit: habit, project: project),
+                    _ConstellationShare(:final project, :final shape) =>
+                      ShareableConstellationCard(project: project, shape: shape),
+                  },
                 ),
               ),
             // The tap tooltip itself — see [_skyTooltipOverlay]'s own doc
@@ -3569,6 +4224,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         onClose: _closeSkyTooltip,
         onView: () => _viewArea(area),
       ),
+      _NascentStarTooltip(:final constellation) => SkyNascentStarTooltip(
+        project: constellation.project,
+        onClose: _closeSkyTooltip,
+        onConfigure: _configureQuickLookNascentStar,
+      ),
       null => const SizedBox.shrink(),
     };
   }
@@ -3589,7 +4249,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   Offset _tooltipAnchorOffset(_SkyTooltip? data) => switch (data) {
     _ConstellationTooltip() => const Offset(0, _constellationTooltipDrop),
     _AreaTooltip() => const Offset(0, _areaTooltipDrop),
-    _StarTooltip() || _PulsarTooltip() => const Offset(0, _starTooltipDrop),
+    _StarTooltip() || _PulsarTooltip() || _NascentStarTooltip() => const Offset(
+      0,
+      _starTooltipDrop,
+    ),
     null => Offset.zero,
   };
 
@@ -3832,7 +4495,7 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   static const _visibleSize = 72.0;
   // Smaller than [_QuickAccessButton]'s own 24/40 icon-to-disc ratio —
   // that ratio read as too big on this button's own bigger disc.
-  static const _svgIconSize = _visibleSize * 0.44;
+  static const _svgIconSize = _visibleSize * 0.52;
   // Big enough that the shader's own glow/spikes fade out naturally well
   // before this canvas's own edge, rather than clipping hard against a
   // boundary that's part of the visible glow.
@@ -4114,9 +4777,10 @@ class _MenuStarButtonState extends State<_MenuStarButton>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: context.colors.nightPanel,
-                    border: Border.all(color: Colors.white, width: 3),
+                    border: Border.all(color: Colors.white, width: 5),
                   ),
-                  child: Center(
+                  child: Align(
+                    alignment: const Alignment(0, -0.08),
                     child: SvgPicture.asset(
                       'assets/icon/app_star.svg',
                       width: _svgIconSize,

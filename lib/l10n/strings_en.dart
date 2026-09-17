@@ -1322,8 +1322,23 @@ class StringsEn implements AppStrings {
   @override
   String get starQuickLookShareAction => 'Share';
   @override
+  String get nascentStarQuickLookConfigureAction => 'Configure';
+  @override
   String constellationTooltipLitCount(int lit, int total) =>
       '$lit/$total stars lit';
+  @override
+  String get creationSuccessEyebrow => 'Congrats!';
+  @override
+  String get creationSuccessLitMessage => 'A star is lit in your sky.';
+  @override
+  String get creationSuccessUnlitMessage =>
+      'A new goal is set, waiting in your sky.';
+  @override
+  String get creationSuccessPulsarMessage =>
+      'A new pulsar is alive, pulsing in your sky.';
+  @override
+  String get creationSuccessConstellationMessage =>
+      'A new constellation is added to your sky.';
   @override
   String areaTooltipStarCount(int count) =>
       '$count star${count == 1 ? '' : 's'} lit';

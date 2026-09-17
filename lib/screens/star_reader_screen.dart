@@ -78,8 +78,10 @@ class StarReaderScreen extends StatefulWidget {
 
   /// Set only when opened from the Sky's search popup — shows a
   /// "take me there" button that closes both this reader and the popup,
-  /// handing the current star's project back to the sky camera to jump to.
-  final ValueChanged<Project>? onNavigateTo;
+  /// handing the current star's project *and* id back to the sky camera
+  /// to jump to — the id is what lets it land on that exact star's own
+  /// tooltip rather than just the constellation's (see `SkyStarTarget`).
+  final void Function(Project project, int starId)? onNavigateTo;
 
   @override
   State<StarReaderScreen> createState() => _StarReaderScreenState();
@@ -454,7 +456,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
               hidden: photoPath != null && _photoOnly,
               onTap: () {
                 Navigator.of(context).pop();
-                widget.onNavigateTo!(project);
+                widget.onNavigateTo!(project, star.id);
               },
             ),
           if (photoPath != null) _PhotoOnlyHint(photoOnly: _photoOnly),

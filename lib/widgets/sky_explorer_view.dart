@@ -270,7 +270,8 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
           projectRepository: widget.projectRepository,
           starsShapeRepository: widget.starsShapeRepository,
           refreshStars: _filteredStarsOnly,
-          onNavigateTo: (project) => widget.onNavigateTo(SkyStarTarget(project)),
+          onNavigateTo: (project, starId) =>
+              widget.onNavigateTo(SkyStarTarget(project, starId: starId)),
         ),
       ),
     );
@@ -779,10 +780,18 @@ class _FlatList extends StatelessWidget {
         final project =
             projectsById[entry.star?.projectId ?? entry.habit?.projectId];
         // No project resolved (stale data) means no world position to jump
-        // to either — the button is simply omitted for that card.
+        // to either — the button is simply omitted for that card. Exactly
+        // one of star/habit is ever set per entry, so passing both ids
+        // through unconditionally always names the right one.
         final navigateTo = project == null
             ? null
-            : () => onNavigateTo(SkyStarTarget(project));
+            : () => onNavigateTo(
+                SkyStarTarget(
+                  project,
+                  starId: entry.star?.id,
+                  habitId: entry.habit?.id,
+                ),
+              );
 
         final Widget card;
         switch (entry.kind) {

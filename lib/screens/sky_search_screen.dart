@@ -12,6 +12,17 @@ import '../theme/app_colors.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/sky_explorer_view.dart';
 
+/// Popped by [SkySearchScreen]'s own explicit close button — same
+/// "close whatever menu opened this" signal a real `SkyNavigationTarget`
+/// (a card's "take me there") already carries, just without any camera
+/// movement to go with it. A plain back (the header's arrow, or a system
+/// back gesture) pops with neither, which is exactly what tells
+/// `SkyScreen._openSearch` to leave that menu open behind it instead —
+/// most likely a peek that wasn't meant to go anywhere.
+class SkySearchClosed {
+  const SkySearchClosed();
+}
+
 /// A full-screen popup opened from the Sky's sky-search overlay
 /// button — search/filter/3-level browsing ([SkyExplorerView]), under the
 /// same back-arrow/eyebrow/title header every other standalone screen in
@@ -20,7 +31,9 @@ import '../widgets/sky_explorer_view.dart';
 /// this header's own title — see [_modeLabel] — rather than drawn inline
 /// in the body, freeing space below for the list itself. Every card's
 /// "take me there" button pops this page with a `SkyNavigationTarget` for
-/// `NebulaScreen` to fly its camera to.
+/// `SkyScreen` to fly its camera to; the header's own close button (see
+/// [SkySearchClosed]) pops with that instead, for a deliberate "I'm done
+/// here" that a plain back doesn't mean.
 class SkySearchScreen extends StatefulWidget {
   const SkySearchScreen({
     super.key,
@@ -85,6 +98,20 @@ class _SkySearchScreenState extends State<SkySearchScreen> {
                             fontWeight: FontWeight.w600,
                             color: colors.accentDim,
                           ),
+                        ),
+                        const Spacer(),
+                        // Deliberate "I'm done here" — closes whichever menu
+                        // opened this popup along with the popup itself (see
+                        // [SkySearchClosed]), unlike the plain back arrow
+                        // above, which leaves that menu open behind it.
+                        IconButton(
+                          onPressed: () => Navigator.of(
+                            context,
+                          ).pop<Object>(const SkySearchClosed()),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          tooltip: strings.closeAction,
+                          icon: Icon(Icons.close, color: colors.muted),
                         ),
                       ],
                     ),

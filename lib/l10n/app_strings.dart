@@ -785,8 +785,21 @@ abstract class AppStrings {
   /// compact action row — [shareStarLabel] is a full sentence-length label
   /// meant for a full-width button elsewhere, too long for this one.
   String get starQuickLookShareAction;
+
+  /// [SkyNascentStarTooltip]'s own single action — opens the star form on
+  /// that exact slot, same as tapping the nascent star directly would.
+  String get nascentStarQuickLookConfigureAction;
   String constellationTooltipLitCount(int lit, int total);
   String areaTooltipStarCount(int count);
+
+  // CreationSuccessDialog — shown right after creating any star or a new
+  // constellation. One shared eyebrow, one message per kind of thing just
+  // made.
+  String get creationSuccessEyebrow;
+  String get creationSuccessLitMessage;
+  String get creationSuccessUnlitMessage;
+  String get creationSuccessPulsarMessage;
+  String get creationSuccessConstellationMessage;
 
   // Settings
   String get settingsEyebrow;

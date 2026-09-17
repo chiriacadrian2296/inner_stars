@@ -375,13 +375,14 @@ class SkyMenuContent extends StatelessWidget {
       required String label,
       String? description,
       required VoidCallback onTap,
-      // Search is the one entry [detailed] mode's usual "stays open
-      // underneath" rule doesn't fit: its whole point is flying the
-      // camera to whatever gets picked, so landing back on the menu
-      // instead of the sky it just navigated to would defeat the
-      // action. Forces the same close-first behavior compact mode
-      // always gets, regardless of [detailed].
-      bool forceClose = false,
+      // Search is the one entry that skips this menu's own close-on-tap
+      // entirely, in *both* modes — [SkyScreen._openSearch] now decides
+      // for itself whether this menu should still be open once it's
+      // done, the same "peek and go back" reasoning [detailed] mode's
+      // usual "stays open underneath" rule already gives every other
+      // entry, extended to compact mode too (see that method's own doc
+      // comment).
+      bool closeOnTap = true,
     }) {
       final tile = ListTile(
         leading: Icon(icon, color: colors.gold),
@@ -403,15 +404,15 @@ class SkyMenuContent extends StatelessWidget {
               )
             : null,
         onTap: () {
-          // Compact mode (the Drawer) still closes first here, same as
-          // always — standard drawer UX, straight to the destination.
-          // Detailed mode (the modal) stays open instead: the page (or
-          // popup) this opens goes on *top* of it rather than replacing
-          // it, so coming back from that page — or closing that popup —
-          // lands right back on the modal, open where it was left,
-          // instead of dropping back onto the bare Sky underneath it.
-          // [forceClose] opts an entry out of that (see Search above).
-          if (!detailed || forceClose) Navigator.of(context).pop();
+          // Compact mode (the Drawer) closes first here, same as always —
+          // standard drawer UX, straight to the destination. Detailed mode
+          // (the modal) stays open instead: the page (or popup) this opens
+          // goes on *top* of it rather than replacing it, so coming back
+          // from that page — or closing that popup — lands right back on
+          // the modal, open where it was left, instead of dropping back
+          // onto the bare Sky underneath it. [closeOnTap] opts an entry
+          // out of the compact-mode half of that too (see Search above).
+          if (closeOnTap && !detailed) Navigator.of(context).pop();
           onTap();
         },
       );
@@ -475,7 +476,7 @@ class SkyMenuContent extends StatelessWidget {
           label: strings.menuSearch,
           description: strings.menuSearchDescription,
           onTap: onSearch,
-          forceClose: true,
+          closeOnTap: false,
         ),
 
         if (!detailed) Divider(color: colors.nightBorder, height: 1),

@@ -1341,8 +1341,23 @@ class StringsIt implements AppStrings {
   @override
   String get starQuickLookShareAction => 'Condividi';
   @override
+  String get nascentStarQuickLookConfigureAction => 'Configura';
+  @override
   String constellationTooltipLitCount(int lit, int total) =>
       '$lit/$total stelle accese';
+  @override
+  String get creationSuccessEyebrow => 'Complimenti!';
+  @override
+  String get creationSuccessLitMessage => 'Una stella si è accesa nel tuo cielo.';
+  @override
+  String get creationSuccessUnlitMessage =>
+      'Un nuovo obiettivo è fissato, ti aspetta nel cielo.';
+  @override
+  String get creationSuccessPulsarMessage =>
+      'Un nuovo pulsar è vivo, pulsa nel tuo cielo.';
+  @override
+  String get creationSuccessConstellationMessage =>
+      'Una nuova costellazione è stata aggiunta al tuo cielo.';
   @override
   String areaTooltipStarCount(int count) =>
       '$count stell${count == 1 ? 'a accesa' : 'e accese'}';

@@ -27,7 +27,17 @@ class SkyProjectTarget extends SkyNavigationTarget {
 /// A single star/goal/dead star/pulsar inside [project]'s constellation —
 /// zooms all the way in (see `NebulaScreen._zoomFor`), unlike
 /// [SkyProjectTarget]'s "fit the whole constellation" zoom.
+///
+/// [starId]/[habitId] name exactly which one, when the caller actually
+/// knows (a search result card does; [StarReaderScreen]'s own "take me
+/// there" does too, now that it forwards the star it's showing — see
+/// `SkyScreen._flyToWithHoldFeedback`, which opens that entity's own
+/// tooltip once it lands rather than just the constellation's). Both null
+/// falls back to that coarser, constellation-only landing — the only
+/// option before either caller threaded the id through.
 class SkyStarTarget extends SkyNavigationTarget {
-  const SkyStarTarget(this.project);
+  const SkyStarTarget(this.project, {this.starId, this.habitId});
   final Project project;
+  final int? starId;
+  final int? habitId;
 }
