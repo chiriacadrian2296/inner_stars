@@ -1,3 +1,4 @@
+import 'dart:math' as math show min;
 import 'dart:ui' as ui show ImageFilter;
 
 import 'package:flutter/rendering.dart';
@@ -264,10 +265,24 @@ class _ScrimPainter extends CustomPainter {
       // painter (every `HintTarget` in the app goes through it), not
       // something scoped to any one screen.
       final double grow = 1 + t * 0.3;
+      // A hole far wider (or taller) than its other side — a full-width
+      // button, say, whose *measured* target has to span the whole
+      // button for passthrough tap-through to work, even though the
+      // pulse itself shouldn't — otherwise grew a ring as oversized as
+      // the hole itself. Capping each side to a modest multiple of the
+      // *other* side keeps the ring proportioned the same as every other
+      // target's regardless of how stretched the hole is; an ordinary
+      // target (a chip, an icon, a button sized to its own content) is
+      // well under this cap already and draws exactly as before.
+      const double maxAspect = 3.0;
+      final double ringWidth =
+          math.min(holeRect.width, holeRect.height * maxAspect) * grow;
+      final double ringHeight =
+          math.min(holeRect.height, holeRect.width * maxAspect) * grow;
       final Rect ring = Rect.fromCenter(
         center: holeRect.center,
-        width: holeRect.width * grow,
-        height: holeRect.height * grow,
+        width: ringWidth,
+        height: ringHeight,
       );
       canvas.drawPath(
         shape.toPath(ring, borderRadius),

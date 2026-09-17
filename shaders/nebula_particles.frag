@@ -336,12 +336,11 @@ void main() {
     float parallelGlow = exp(-parallelDist * 260.0) * 0.75;
     float glow = clamp(meridianGlow + parallelGlow, 0.0, 1.0) * (1.0 - poleFade);
 
-    color = mix(color, kGold, glow * 0.65);
-    // Pushed close to fully opaque (was 0.75) — even at the line's own
-    // dead center, that left a quarter of the background still showing
-    // through, which is what read as an unwanted see-through wash rather
-    // than a clean, solid line.
-    color = mix(color, vec3(1.0, 0.98, 0.92), core * 0.95);
+    // Overall grid opacity, tried at 10% to read as a subtle overlay
+    // rather than a bright cage over the sky.
+    const float kGridOpacity = 0.3;
+    color = mix(color, kGold, glow * 0.65 * kGridOpacity);
+    color = mix(color, vec3(1.0, 0.98, 0.92), core * 0.95 * kGridOpacity);
   }
 
   fragColor = vec4(color, 1.0);

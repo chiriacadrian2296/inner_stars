@@ -755,23 +755,23 @@ _ConstellationTransform? _projectConstellationTransform(
   );
 }
 
-/// Where [screenPos] lands in [constellation]'s own local pixel space
-/// (see [_projectConstellationTransform]), or null if it falls outside
-/// that constellation's on-screen footprint — using [margin] (of a
-/// *half*-width around its nominal 0..1 shape) as the cutoff — or the
-/// constellation isn't visible at all right now. Shared by [hitTestField]
-/// (which goes on to check for a specific star there, so wants
-/// [_starFieldMargin]'s generous reach) and [hitTestConstellations] (which
-/// only needs to know the footprint itself was hit, so wants
-/// [_constellationFootprintMargin]'s tighter one instead — see both their
-/// own doc comments for why they're no longer the same number).
-(Offset localTap, double localSizePx)? _localFieldTap(
+/// Where [screenPos] lands in [constellation]'s own local unit space —
+/// [w]/[h], roughly -0.5..0.5 from center for an on-shape tap, the same
+/// convention [ConstellationStar.position] uses (offset by (0.5, 0.5)) —
+/// plus [localSizePx] (pixels per local unit, see [starWorldPosition]'s
+/// own use of the same [_ConstellationTransform]), or null if the
+/// constellation isn't on-screen at all right now (behind the camera, or
+/// its own transform can't be projected). Doesn't decide by itself
+/// whether that counts as a "hit" — every caller applies its own test on
+/// the returned `(w, h)`: [hitTestField]'s flat [_starFieldMargin] box,
+/// or [hitTestConstellations]'s [_nearConstellationShape] ribbon around
+/// the actual drawn lines.
+(double w, double h, double localSizePx)? _localFieldPosition(
   PlacedConstellation constellation,
   Offset screenPos,
   SkyCamera camera,
   double zoom,
   Size screenSize,
-  double margin,
 ) {
   final transform = _projectConstellationTransform(
     constellation.worldPosition,
@@ -795,10 +795,8 @@ _ConstellationTransform? _projectConstellationTransform(
   final w = (relative.dx * transform.up.dy - transform.up.dx * relative.dy) / det;
   final h = (transform.right.dx * relative.dy - relative.dx * transform.right.dy) / det;
 
-  if (w.abs() > margin || h.abs() > margin) return null;
-
   final localSizePx = (transform.right.distance + transform.up.distance) / 2;
-  return (Offset((w + 0.5) * localSizePx, (h + 0.5) * localSizePx), localSizePx);
+  return (w, h, localSizePx);
 }
 
 /// Where [star] itself currently sits on the sky sphere, in
@@ -806,7 +804,7 @@ _ConstellationTransform? _projectConstellationTransform(
 /// [PlacedConstellation.worldPosition] (the constellation's shared
 /// anchor, the same for every star in it), this is [star]'s own
 /// sub-position within the shape, via the same local transform
-/// [_localFieldTap] inverts for hit-testing. Needed so flying the camera
+/// [_localFieldPosition] inverts for hit-testing. Needed so flying the camera
 /// to a *specific tapped star* (see `SkyScreen._openStarQuickLook`)
 /// actually lands on that star rather than just "somewhere in its
 /// constellation" — which is all [SkyStarTarget] ever promised (see its
@@ -814,12 +812,39 @@ _ConstellationTransform? _projectConstellationTransform(
 /// star I just tapped, wherever it sits in the shape."
 ///
 /// Null if [constellation] isn't on-screen at all right now under
-/// [camera]/[zoom]/[screenSize] (matches [_localFieldTap]'s own null
+/// [camera]/[zoom]/[screenSize] (matches [_localFieldPosition]'s own null
 /// case) — shouldn't happen right after tapping a star in it, but there's
 /// no sensible position to hand back if it somehow does.
 Offset? starWorldPosition(
   PlacedConstellation constellation,
   ConstellationStar star,
+  SkyCamera camera,
+  double zoom,
+  Size screenSize,
+) => constellationLocalWorldPosition(
+  constellation,
+  star.position,
+  camera,
+  zoom,
+  screenSize,
+);
+
+/// Where local point [localPosition] currently sits on the sky sphere, in
+/// (azimuthTurns, elevationTurns) — [localPosition] is normalized 0..1
+/// with (0.5, 0.5) at [constellation]'s own center, the same convention
+/// [ConstellationStar.position]/[_localFieldPosition]'s own `w`/`h` use.
+/// The general form [starWorldPosition] itself is built from — pulled out
+/// standalone for a caller that wants some other point within the shape,
+/// not one specific star's (see the sky-navigation tour's own use, to
+/// spotlight a shape's actual visual middle rather than its bounding-box
+/// center — [PlacedConstellation.worldPosition] itself, see
+/// `shapeVertexCentroid`'s own doc comment for why those two can differ).
+///
+/// Null if [constellation] isn't on-screen at all right now under
+/// [camera]/[zoom]/[screenSize].
+Offset? constellationLocalWorldPosition(
+  PlacedConstellation constellation,
+  Offset localPosition,
   SkyCamera camera,
   double zoom,
   Size screenSize,
@@ -833,34 +858,124 @@ Offset? starWorldPosition(
   );
   if (transform == null) return null;
 
-  // [star.position] is normalized 0..1 with (0.5, 0.5) at the
-  // constellation's own center (see [_toCanvas]/[hitTestStar]) — the same
-  // convention [_localFieldTap] maps screen taps into, inverted here.
-  final localOffset = star.position - const Offset(0.5, 0.5);
-  final starScreen =
+  final localOffset = localPosition - const Offset(0.5, 0.5);
+  final pointScreen =
       transform.center +
       transform.right * localOffset.dx +
       transform.up * localOffset.dy;
 
-  final direction = screenToDirection(starScreen, camera, zoom, screenSize);
+  final direction = screenToDirection(pointScreen, camera, zoom, screenSize);
   final elevationTurns = math.asin(direction.$2.clamp(-1.0, 1.0)) / _twoPi;
   final azimuthTurns = math.atan2(direction.$3, direction.$1) / _twoPi;
   return Offset(azimuthTurns, elevationTurns);
 }
 
-/// [_localFieldTap]'s margin for [hitTestField] — wider than the shape's
+/// The plain average of [shape]'s own points, in the same local 0..1
+/// space [ConstellationStar.position]/[boundingBoxOf] use.
+///
+/// [PlacedConstellation.worldPosition] anchors a shape's *bounding-box*
+/// center instead (`normalizeEditorPoints`, at authoring time, centers a
+/// shape's bbox on local (0.5, 0.5) — see that function's own doc
+/// comment) — fine for placement and camera framing, but a shape whose
+/// points aren't evenly spread around that box (a roof peak pulling one
+/// end to a point, a wide base at the other, say) can read as visibly
+/// off-center once actually spotlighted there: the box's own center
+/// isn't the same point as where the drawn shape's own "weight" sits.
+/// Used by the sky-navigation tour to target its own demo "house"
+/// constellation's spotlight hole at somewhere that reads as the middle
+/// of the shape itself, not the middle of its box.
+Offset shapeVertexCentroid(ConstellationShape shape) {
+  if (shape.points.isEmpty) return const Offset(0.5, 0.5);
+  var sum = Offset.zero;
+  for (final point in shape.points) {
+    sum += point;
+  }
+  return sum / shape.points.length.toDouble();
+}
+
+/// [_localFieldPosition]'s margin for [hitTestField] — wider than the shape's
 /// own 0..1 footprint since overflow/habit stars can sit up to radius 1.0
 /// from center, and this margin has to reach them too or they'd never be
-/// tappable at all.
+/// tappable at all. Deliberately flat/global rather than shape-relative:
+/// pulsar/overflow stars scatter around a constellation on purpose,
+/// independent of its own shape's silhouette (see
+/// `seededPulsarPosition`/`seededOverflowPosition` in
+/// `constellation_layout.dart`), so there's no shape-derived quantity to
+/// tie this to.
 const double _starFieldMargin = 0.8;
 
-/// [_localFieldTap]'s margin for [hitTestConstellations] — its own,
-/// tighter number rather than reusing [_starFieldMargin]: that one has to
-/// reach all the way out to an off-center habit star, but a tap that far
-/// from a constellation's actual shape doesn't read as "on" it any more,
-/// which is exactly what made a tap noticeably beside a constellation
-/// still open it.
-const double _constellationFootprintMargin = 0.55;
+/// Half-width, in the same local unit space [_localFieldPosition]'s own
+/// `w`/`h` use, of the ribbon [_nearConstellationShape] hit-tests around
+/// each of a constellation's own drawn edges — tared by eye against
+/// [DebugSkyHitZones].
+///
+/// Tried a per-axis bounding-box margin here first (proportioned to
+/// [ConstellationShape.points]' own bbox) — an improvement over one flat
+/// number for every constellation, but still a *box*: a concave or
+/// branching shape (an "L", a "V", a shape with a gap in the middle)
+/// still got a hit zone spanning the gap, and it didn't visibly read as
+/// "hugging the shape" the way actually tracing the drawn lines does.
+/// This instead hit-tests distance to the nearest edge segment directly
+/// (with a fallback per-star circle for a shape with no edges yet — a
+/// freshly created single-star constellation), so the tap zone traces
+/// whatever silhouette is actually on screen, gap or branch included.
+const double _footprintRibbonHalfWidth = 0.125;
+
+/// Whether local point ([w], [h]) — same convention as
+/// [_localFieldPosition]'s own return, and as [ConstellationStar.position]
+/// offset by (0.5, 0.5) — falls within [_footprintRibbonHalfWidth] of any
+/// of [constellation]'s own drawn edges. [constellation.edges] index into
+/// its *shape-slot* stars specifically (real + nascent, ordered by
+/// [ConstellationStar.slotSequence]) — the exact same subset/ordering
+/// `ConstellationFieldPainter.paint` itself rebuilds to draw those same
+/// lines (see its own comment there) — never pulsar/overflow stars, which
+/// have no `slotSequence` and were never part of the drawn shape to begin
+/// with.
+///
+/// Falls back to a plain circle around each shape-slot star individually
+/// when there are no valid edges at all yet (a brand new single-star
+/// constellation) — nothing to trace a ribbon along, but that one star
+/// still needs *some* comfortable tap zone of its own.
+bool _nearConstellationShape(PlacedConstellation constellation, double w, double h) {
+  final shapeStars =
+      constellation.renderStars.where((s) => s.slotSequence != null).toList()
+        ..sort((a, b) => a.slotSequence!.compareTo(b.slotSequence!));
+  if (shapeStars.isEmpty) return false;
+
+  final point = Offset(w, h);
+  var sawEdge = false;
+  for (final (a, b) in constellation.edges) {
+    if (a >= shapeStars.length || b >= shapeStars.length) continue;
+    sawEdge = true;
+    final p1 = shapeStars[a].position - const Offset(0.5, 0.5);
+    final p2 = shapeStars[b].position - const Offset(0.5, 0.5);
+    if (_distanceToSegment(point, p1, p2) <= _footprintRibbonHalfWidth) {
+      return true;
+    }
+  }
+  if (sawEdge) return false;
+
+  for (final star in shapeStars) {
+    final p = star.position - const Offset(0.5, 0.5);
+    if ((point - p).distance <= _footprintRibbonHalfWidth) return true;
+  }
+  return false;
+}
+
+/// Shortest distance from [p] to the segment `[a, b]` — clamping the
+/// projection parameter to `[0, 1]` naturally rounds each segment's own
+/// ends into a capsule shape rather than an infinite line, which is
+/// exactly the "comfortable circle around each star, ribbon along each
+/// edge" look [_nearConstellationShape] wants.
+double _distanceToSegment(Offset p, Offset a, Offset b) {
+  final ab = b - a;
+  final abLengthSquared = ab.dx * ab.dx + ab.dy * ab.dy;
+  if (abLengthSquared < 1e-12) return (p - a).distance;
+  final ap = p - a;
+  final t = ((ap.dx * ab.dx + ap.dy * ab.dy) / abLengthSquared).clamp(0.0, 1.0);
+  final closest = a + ab * t;
+  return (p - closest).distance;
+}
 
 /// Finds whichever constellation (if any) has a star under [screenPos] —
 /// checks each constellation whose own on-screen footprint could plausibly
@@ -874,16 +989,17 @@ const double _constellationFootprintMargin = 0.55;
   Size screenSize,
 ) {
   for (final constellation in placed) {
-    final local = _localFieldTap(
+    final local = _localFieldPosition(
       constellation,
       screenPos,
       camera,
       zoom,
       screenSize,
-      _starFieldMargin,
     );
     if (local == null) continue;
-    final (localTap, localSizePx) = local;
+    final (w, h, localSizePx) = local;
+    if (w.abs() > _starFieldMargin || h.abs() > _starFieldMargin) continue;
+    final localTap = Offset((w + 0.5) * localSizePx, (h + 0.5) * localSizePx);
     final star = hitTestStar(
       localTap,
       Size.square(localSizePx),
@@ -900,7 +1016,8 @@ const double _constellationFootprintMargin = 0.55;
 /// a tap that lands on both a star and its constellation's own footprint
 /// still opens the star) — an invisible zone the same way
 /// [hitTestSupernovas] is, so tapping a constellation's shape opens its
-/// own `ConstellationScreen`.
+/// own `ConstellationScreen`. See [_nearConstellationShape] for what
+/// counts as "on" it.
 PlacedConstellation? hitTestConstellations(
   Offset screenPos,
   List<PlacedConstellation> placed,
@@ -909,17 +1026,16 @@ PlacedConstellation? hitTestConstellations(
   Size screenSize,
 ) {
   for (final constellation in placed) {
-    if (_localFieldTap(
-          constellation,
-          screenPos,
-          camera,
-          zoom,
-          screenSize,
-          _constellationFootprintMargin,
-        ) !=
-        null) {
-      return constellation;
-    }
+    final local = _localFieldPosition(
+      constellation,
+      screenPos,
+      camera,
+      zoom,
+      screenSize,
+    );
+    if (local == null) continue;
+    final (w, h, _) = local;
+    if (_nearConstellationShape(constellation, w, h)) return constellation;
   }
   return null;
 }
@@ -971,6 +1087,203 @@ LifeArea? hitTestSupernovas(
     }
   }
   return null;
+}
+
+// ---------------------------------------------------------------------
+// DEBUG ONLY — below this line is a temporary tool, not a feature. Paints
+// the exact hit-test zones [hitTestSupernovas], [hitTestConstellations]/
+// [hitTestField], and each star's own [hitTestStar] radius use, as
+// translucent green shapes built from the *same* private geometry those
+// functions themselves hit-test against — not a redrawn approximation,
+// so what's on screen is exactly where a tap does and doesn't land on
+// something. Added to help tune the sky-navigation tour's own "empty
+// sky" double-tap spot by eye; drop this whole block and its call site
+// in `sky_screen.dart` once that's settled.
+// ---------------------------------------------------------------------
+
+/// See the block comment above. Drop into the same `Stack` the sky's own
+/// content paints into (same coordinate space [hitTestSupernovas]/
+/// [hitTestConstellations]/[hitTestField] use) — `IgnorePointer`ed, so it
+/// never affects real hit-testing, only shows it.
+class DebugSkyHitZones extends StatelessWidget {
+  const DebugSkyHitZones({
+    super.key,
+    required this.placed,
+    required this.camera,
+    required this.zoom,
+  });
+
+  final List<PlacedConstellation> placed;
+  final SkyCamera camera;
+  final double zoom;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: CustomPaint(
+        painter: _DebugSkyHitZonesPainter(
+          placed: placed,
+          camera: camera,
+          zoom: zoom,
+        ),
+      ),
+    );
+  }
+}
+
+class _DebugSkyHitZonesPainter extends CustomPainter {
+  _DebugSkyHitZonesPainter({
+    required this.placed,
+    required this.camera,
+    required this.zoom,
+  });
+
+  final List<PlacedConstellation> placed;
+  final SkyCamera camera;
+  final double zoom;
+
+  // Two shades of the same green: the tighter, actually-opens-it
+  // [_nearConstellationShape] ribbon reads solid, the wider
+  // [_starFieldMargin] a tap has to be within just to be *checked*
+  // against individual stars reads much fainter — the two used to look
+  // identical, which was confusing on its own.
+  static final _supernovaFill = Paint()..color = const Color(0x5500FF66);
+  static final _footprintStroke = Paint()
+    ..color = const Color(0x5500FF66)
+    ..style = PaintingStyle.stroke
+    ..strokeCap = StrokeCap.round;
+  static final _footprintFallbackFill = Paint()..color = const Color(0x5500FF66);
+  static final _starFieldReachFill = Paint()..color = const Color(0x2200FF66);
+  static final _starFill = Paint()..color = const Color(0x9900FF66);
+  static final _outline = Paint()
+    ..color = const Color(0xCC00FF66)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.5;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final area in LifeArea.values) {
+      final projection = worldToScreen(
+        areaWorldPosition(area),
+        camera,
+        zoom,
+        size,
+      );
+      if (projection == null) continue;
+      final radius = math.max(
+        _minSupernovaHitRadius,
+        _supernovaHitWorldRadius *
+            zoom *
+            size.height *
+            projection.perspectiveScale,
+      );
+      canvas.drawCircle(projection.position, radius, _supernovaFill);
+      canvas.drawCircle(projection.position, radius, _outline);
+    }
+
+    for (final constellation in placed) {
+      final transform = _projectConstellationTransform(
+        constellation.worldPosition,
+        camera,
+        zoom,
+        size,
+        kSkyConstellationAngularSpan,
+      );
+      if (transform == null) continue;
+
+      _drawMarginParallelogram(
+        canvas,
+        transform,
+        _starFieldMargin,
+        _starFieldMargin,
+        _starFieldReachFill,
+        null,
+      );
+      _drawFootprintRibbon(canvas, transform, constellation);
+
+      // Same forward local-to-screen mapping [starWorldPosition] uses —
+      // [hitTestStar]'s own 24px `hitRadius` is in that same local pixel
+      // space, which [_localFieldPosition] sizes 1:1 with screen pixels
+      // (see its own `localSizePx`), so drawing it at face value here
+      // matches closely enough for tuning by eye.
+      for (final star in constellation.renderStars) {
+        final localOffset = star.position - const Offset(0.5, 0.5);
+        final starScreen =
+            transform.center +
+            transform.right * localOffset.dx +
+            transform.up * localOffset.dy;
+        canvas.drawCircle(starScreen, 24, _starFill);
+      }
+    }
+  }
+
+  /// Mirrors [_nearConstellationShape]'s own edge resolution exactly (same
+  /// shape-slot filter/sort, same edge list, same fallback-to-circles when
+  /// there are no valid edges yet) so this overlay never drifts from what
+  /// the real hit-test actually does — draws a thick round-capped line per
+  /// edge (a screen-space stroke, [_footprintRibbonHalfWidth] converted via
+  /// [_ConstellationTransform.localSizePx]'s own scale) instead of the
+  /// parallelogram [_drawMarginParallelogram] still draws for the flat
+  /// [_starFieldMargin] pass above.
+  void _drawFootprintRibbon(
+    Canvas canvas,
+    _ConstellationTransform transform,
+    PlacedConstellation constellation,
+  ) {
+    final shapeStars =
+        constellation.renderStars.where((s) => s.slotSequence != null).toList()
+          ..sort((a, b) => a.slotSequence!.compareTo(b.slotSequence!));
+    if (shapeStars.isEmpty) return;
+
+    final localSizePx = (transform.right.distance + transform.up.distance) / 2;
+    _footprintStroke.strokeWidth = _footprintRibbonHalfWidth * 2 * localSizePx;
+
+    Offset toScreen(Offset localPosition) {
+      final offset = localPosition - const Offset(0.5, 0.5);
+      return transform.center +
+          transform.right * offset.dx +
+          transform.up * offset.dy;
+    }
+
+    var sawEdge = false;
+    for (final (a, b) in constellation.edges) {
+      if (a >= shapeStars.length || b >= shapeStars.length) continue;
+      sawEdge = true;
+      canvas.drawLine(
+        toScreen(shapeStars[a].position),
+        toScreen(shapeStars[b].position),
+        _footprintStroke,
+      );
+    }
+    if (sawEdge) return;
+
+    final radius = _footprintRibbonHalfWidth * localSizePx;
+    for (final star in shapeStars) {
+      canvas.drawCircle(toScreen(star.position), radius, _footprintFallbackFill);
+    }
+  }
+
+  void _drawMarginParallelogram(
+    Canvas canvas,
+    _ConstellationTransform transform,
+    double marginW,
+    double marginH,
+    Paint fillPaint,
+    Paint? strokePaint,
+  ) {
+    final corners = [
+      transform.center + transform.right * marginW + transform.up * marginH,
+      transform.center + transform.right * marginW - transform.up * marginH,
+      transform.center - transform.right * marginW - transform.up * marginH,
+      transform.center - transform.right * marginW + transform.up * marginH,
+    ];
+    final path = Path()..addPolygon(corners, true);
+    canvas.drawPath(path, fillPaint);
+    if (strokePaint != null) canvas.drawPath(path, strokePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _DebugSkyHitZonesPainter old) => true;
 }
 
 double _smoothstep(double edge0, double edge1, double x) {

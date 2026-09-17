@@ -14,20 +14,27 @@ import 'tour_step_card.dart';
 /// Two things, layered:
 ///
 /// 1. An invisible, full-screen `HintTarget` with `passthrough: true`, a
-///    fully transparent scrim (`scrimOpacity: 0`) and `showCard: false` —
-///    not there to show anything itself, just to (a) register this `order`
-///    with `hint_kit`'s own step bookkeeping, the same registration every
-///    other tour step gets from its own `HintTarget`, and (b) make sure the
-///    scrim never blocks the real tap it's waiting for. Passthrough alone
-///    isn't enough for that: a passthrough scrim only lets taps through
-///    *inside its hole*, so the hole has to cover the entire screen — this
-///    is the "make the whole page the highlight" case, since there's no
-///    specific widget-sized thing to make a small one out of. `showCard:
-///    false` (a local `hint_kit` addition — see its own doc comment)
-///    matters for the same reason: without it, `HintTarget` still wraps its
-///    own card chrome around nothing, which against a whole-screen target
-///    read as a small, empty, stray bubble sitting wherever the placement
-///    algorithm landed it.
+///    fully transparent scrim (`scrimOpacity: 0`), `showCard: false`, and
+///    `pulse: false` — not there to show anything itself, just to (a)
+///    register this `order` with `hint_kit`'s own step bookkeeping, the
+///    same registration every other tour step gets from its own
+///    `HintTarget`, and (b) make sure the scrim never blocks the real tap
+///    it's waiting for. Passthrough alone isn't enough for that: a
+///    passthrough scrim only lets taps through *inside its hole*, so the
+///    hole has to cover the entire screen — this is the "make the whole
+///    page the highlight" case, since there's no specific widget-sized
+///    thing to make a small one out of. `showCard: false` (a local
+///    `hint_kit` addition — see its own doc comment) matters for the same
+///    reason: without it, `HintTarget` still wraps its own card chrome
+///    around nothing, which against a whole-screen target read as a
+///    small, empty, stray bubble sitting wherever the placement algorithm
+///    landed it. `pulse: false` for the same underlying reason again: the
+///    package's own pulse ring is sized off the *measured target rect*
+///    (see `spotlight.dart`'s own `_ScrimPainter`), and here that rect is
+///    the entire screen — `scrimOpacity: 0` hides the scrim's fill but
+///    not the ring, which otherwise still drew a huge, meaningless pulse
+///    around the screen's own edges with nothing it was actually
+///    highlighting.
 /// 2. [TourGestureBanner], a plain reactive widget (no relation to
 ///    `HintTarget`'s own card/arrow/placement machinery) that shows this
 ///    step's own title/description while it's active — no controls at
@@ -54,6 +61,7 @@ class TourGestureStep extends StatelessWidget {
         passthrough: true,
         showArrow: false,
         showCard: false,
+        pulse: false,
         theme: const HintThemeData(scrimOpacity: 0),
         child: const SizedBox.expand(),
       ),
@@ -149,32 +157,45 @@ class TourGestureBanner extends StatelessWidget {
   }
 }
 
-/// [TourGestureStep] plus a real spotlight hole — for a step whose target
-/// isn't any one widget or world position, just "empty sky, anywhere" (the
-/// sky-navigation tour's own order-5 double-tap-to-zoom-out step): rather
-/// than the fully invisible, unscrimmed passthrough every other gesture
-/// step uses, this cuts a normal hole over a fixed, deliberately-empty
-/// screen spot — [spotAlignment], well clear of every corner control
+/// A real spotlight hole over a deliberately-empty screen spot — for a
+/// step whose target isn't any one widget or world position, just "empty
+/// sky, anywhere" (the sky-navigation tour's own order-5
+/// double-tap-to-zoom-out step): rather than the fully invisible,
+/// unscrimmed passthrough every other gesture step uses, this cuts a
+/// normal hole around [spotAlignment], well clear of every corner control
 /// (drawer/Sound Lab/tutorials buttons), the FAB, and dead center (where
 /// the star the previous step flew to sits) — so the step reads the same
 /// "tap-here-in-the-lit-circle" way every other one does, even though any
 /// other empty patch of sky works exactly as well for the real gesture.
 ///
-/// Pinned to a fixed screen [Alignment] rather than projected from a world
-/// position via `worldToScreen` the way [SkyHintTarget] is: nothing about
-/// "an empty spot" needs to track the camera, and a fixed spot is
-/// guaranteed to stay clear of the real content on screen regardless of
-/// where the camera happens to be looking.
+/// [spotAlignment] is a plain screen [Alignment], not projected from a
+/// world position via `worldToScreen` the way [SkyHintTarget] is —
+/// nothing about "an empty spot" needs to track a live pan/zoom. It is
+/// **not**, though, guaranteed clear of the real content on its own:
+/// which corner/mid-edge reads as empty depends on where the tutorial's
+/// own demo constellation happens to project to, which shifts with
+/// screen aspect ratio. `sky_screen.dart`'s own default keeps this
+/// firmly in the lower-left quadrant on a real phone — clear of the
+/// demo constellation on every aspect ratio actually tested — rather
+/// than computing a side from a live projection, which is one more thing
+/// that can be subtly wrong on a screen shape nobody tried yet.
 ///
-/// Still `passthrough: true` and `showCard: false` — [TourGestureBanner]
-/// alongside this carries the actual instructions, and the real double
-/// tap only has to reach the sky underneath the hole, not open a card of
-/// its own.
+/// `passthrough: true` with a real card of its own (`appTourGestureStepCard`,
+/// same as [SkyHintTarget]'s) rather than [TourGestureBanner]'s separate,
+/// independently-painted one: that banner sits in `sky_screen.dart`'s own
+/// `Stack`, underneath the `Overlay` entry this scrim paints into — with
+/// a fully transparent scrim ([TourGestureStep]) that never mattered, but
+/// this step's scrim has real opacity, so the banner used to render
+/// visibly dimmed behind it. `HintTarget`'s own card is painted in that
+/// same `Overlay` entry as the scrim, so it can never end up looking like
+/// it's sitting under it.
 class TourGestureEmptySpotHint extends StatelessWidget {
   const TourGestureEmptySpotHint({
     super.key,
     required this.tour,
     required this.order,
+    required this.title,
+    required this.description,
     this.spotAlignment = const Alignment(-0.6, 0),
     this.spotSize = 64,
     this.spotlightPadding = const EdgeInsets.all(16),
@@ -182,6 +203,12 @@ class TourGestureEmptySpotHint extends StatelessWidget {
 
   final String tour;
   final int order;
+
+  /// Heading of the step card.
+  final String title;
+
+  /// Body text of the step card.
+  final String description;
 
   /// Where on screen the hole sits — left-of-center at mid-height by
   /// default, clear of every corner control and of dead center alike.
@@ -199,9 +226,12 @@ class TourGestureEmptySpotHint extends StatelessWidget {
       child: HintTarget(
         tour: tour,
         order: order,
+        title: title,
+        description: description,
+        contentBuilder: appTourGestureStepCard,
         passthrough: true,
         showArrow: false,
-        showCard: false,
+        pinnedCardAlignment: Alignment.topCenter,
         spotlight: SpotlightShape.circle,
         spotlightPadding: spotlightPadding,
         child: SizedBox(width: spotSize, height: spotSize),
