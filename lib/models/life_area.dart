@@ -62,6 +62,35 @@ extension LifeAreaX on LifeArea {
     }
   }
 
+  /// An example vision for this area — shown, muted, in place of the
+  /// user's own vision on its Supernova page until they write one (see
+  /// `area_detail_screen.dart`), the same "Es./E.g." example-text
+  /// convention the app's other hint strings already use, just displayed
+  /// as the field's own empty-state content rather than a `TextField`
+  /// hint. [AppStrings.areaVisionHint]'s own generic question is still
+  /// what actually greets them once they tap in to write their own — this
+  /// is only for the read-only view before that.
+  String visionPlaceholder(AppStrings s) {
+    switch (this) {
+      case LifeArea.physical:
+        return s.areaVisionPlaceholderPhysical;
+      case LifeArea.psychological:
+        return s.areaVisionPlaceholderPsychological;
+      case LifeArea.professional:
+        return s.areaVisionPlaceholderProfessional;
+      case LifeArea.financial:
+        return s.areaVisionPlaceholderFinancial;
+      case LifeArea.personal:
+        return s.areaVisionPlaceholderPersonal;
+      case LifeArea.social:
+        return s.areaVisionPlaceholderSocial;
+      case LifeArea.spiritual:
+        return s.areaVisionPlaceholderSpiritual;
+      case LifeArea.philanthropic:
+        return s.areaVisionPlaceholderPhilanthropic;
+    }
+  }
+
   /// The four prepared reflection prompts for this area, shown as an
   /// accordion on its Supernova page. Order is fixed and doubles as each
   /// question's id (see [ReflectionAnswer.questionId]) — never reorder this

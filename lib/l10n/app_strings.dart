@@ -420,6 +420,31 @@ abstract class AppStrings {
   String get areaVisionLabel;
   String get areaVisionHint;
   String get editVisionAction;
+
+  /// An example vision, one per [LifeArea], shown in place of the user's
+  /// own until they write one — see [LifeArea.visionPlaceholder]'s own doc
+  /// comment for how this differs from [areaVisionHint].
+  String get areaVisionPlaceholderPhysical;
+  String get areaVisionPlaceholderPsychological;
+  String get areaVisionPlaceholderProfessional;
+  String get areaVisionPlaceholderFinancial;
+  String get areaVisionPlaceholderPersonal;
+  String get areaVisionPlaceholderSocial;
+  String get areaVisionPlaceholderSpiritual;
+  String get areaVisionPlaceholderPhilanthropic;
+
+  /// The button on a Supernova's own "cover" — its hero art shown full and
+  /// unmodified, before the stats/vision/reflection content — that steps
+  /// forward into that content. Only areas with art of their own (currently
+  /// just Physical) get a cover at all; every other area opens straight on
+  /// the content this leads to.
+  String get areaCoverEnterAction;
+
+  /// The glowing heading above the vision text on that same cover — just
+  /// the one word, naming what's below it rather than repeating
+  /// [areaVisionLabel]'s own fuller "your vision for this area" phrasing,
+  /// which would read as too much next to art this size.
+  String get areaCoverVisionTitle;
   String get areaConstellationsStatLabel;
   String get areaStarsStatLabel;
   String get areaIntensityStatLabel;

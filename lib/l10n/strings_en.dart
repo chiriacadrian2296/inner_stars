@@ -323,6 +323,48 @@ class StringsEn implements AppStrings {
   @override
   String get editVisionAction => 'Edit vision';
   @override
+  String get areaVisionPlaceholderPhysical =>
+      'E.g. I move through my days with energy and strength, sleep well, '
+      'and take care of this body I only get once. I show up for it '
+      'consistently, not just when I feel like it.';
+  @override
+  String get areaVisionPlaceholderPsychological =>
+      'E.g. My mind is clear and steady. I know how to calm myself, and I '
+      "keep learning who I am. When things get hard, I don't run from what "
+      "I'm feeling.";
+  @override
+  String get areaVisionPlaceholderProfessional =>
+      'E.g. I do work that challenges me and matters, growing my skills '
+      'without losing myself in it. I want to look back and be proud of '
+      'how I got here, not just where I ended up.';
+  @override
+  String get areaVisionPlaceholderFinancial =>
+      "E.g. I'm building real security — saving with intention and "
+      'spending in ways that match what I actually value. Money stops '
+      'being something I worry about and becomes something I use well.';
+  @override
+  String get areaVisionPlaceholderPersonal =>
+      'E.g. I keep growing into who I want to be, one honest habit at a '
+      "time. I'd rather make slow, real progress than fake a shortcut.";
+  @override
+  String get areaVisionPlaceholderSocial =>
+      'E.g. I have people around me who know the real me, and I show up '
+      "for them too. I'd rather have a few real connections than a lot of "
+      'surface ones.';
+  @override
+  String get areaVisionPlaceholderSpiritual =>
+      'E.g. I feel connected to something larger than myself, and I make '
+      "space for stillness. I trust that not everything needs an answer "
+      'right away.';
+  @override
+  String get areaVisionPlaceholderPhilanthropic =>
+      'E.g. I give what I can — time, skill, attention — to lives beyond '
+      "my own. It doesn't have to be big to be real.";
+  @override
+  String get areaCoverEnterAction => 'Manage This Area';
+  @override
+  String get areaCoverVisionTitle => 'Vision';
+  @override
   String get areaConstellationsStatLabel => 'Constellations';
   @override
   String get areaStarsStatLabel => 'Stars';

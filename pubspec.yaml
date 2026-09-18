@@ -66,6 +66,8 @@ flutter:
     - assets/icon/app_star.svg
     - assets/audio/bg/
     - assets/audio/sfx/
+    - assets/images/1. Physical - CENTER CROP.jpg
+    - assets/images/1. Physical.png
   shaders:
     - shaders/nebula_particles.frag
     - shaders/constellation_flare.frag

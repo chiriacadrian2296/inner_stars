@@ -124,6 +124,16 @@ double _dot3(_Vec3 a, _Vec3 b) => a.$1 * b.$1 + a.$2 * b.$2 + a.$3 * b.$3;
   );
 }
 
+/// The per-area glyph [_SkySupernovaPainter._paintOutlineIcon] draws on top
+/// of each supernova's own glow — a plain white fill, gold gradient
+/// border, slowly-rotating glow — screen-aligned rather than rotated with
+/// the sky (it sits on top of everything and stays upright no matter how
+/// the camera rolls). Parked 2026-09-18 at the user's request; left in
+/// place, gated behind this flag rather than deleted, so turning it back
+/// on is a one-line flip. See the project's "TRB" (to-remember box)
+/// memory for the standing list of things parked this way.
+const bool _kShowSupernovaIcons = false;
+
 class _SkySupernovaPainter extends CustomPainter {
   const _SkySupernovaPainter({
     required this.shader,
@@ -179,18 +189,20 @@ class _SkySupernovaPainter extends CustomPainter {
     canvas.save();
     canvas.clipRect(Offset.zero & size);
 
-    final areas = LifeArea.values;
-    for (var i = 0; i < areas.length; i++) {
-      final projected = _projectDirection(
-        supernovaDirection(i, areas.length),
-        camera,
-        zoom,
-        size,
-      );
-      if (projected == null) continue;
-      final (center, scale) = projected;
-      final diameter = _iconWorldRadius * 2 * zoom * size.height * scale;
-      _paintOutlineIcon(canvas, center, diameter, areas[i].icon);
+    if (_kShowSupernovaIcons) {
+      final areas = LifeArea.values;
+      for (var i = 0; i < areas.length; i++) {
+        final projected = _projectDirection(
+          supernovaDirection(i, areas.length),
+          camera,
+          zoom,
+          size,
+        );
+        if (projected == null) continue;
+        final (center, scale) = projected;
+        final diameter = _iconWorldRadius * 2 * zoom * size.height * scale;
+        _paintOutlineIcon(canvas, center, diameter, areas[i].icon);
+      }
     }
     canvas.restore();
   }

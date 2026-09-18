@@ -325,6 +325,50 @@ class StringsIt implements AppStrings {
   @override
   String get editVisionAction => 'Modifica visione';
   @override
+  String get areaVisionPlaceholderPhysical =>
+      'Es. Mi muovo nei miei giorni con energia e forza, dormo bene e mi '
+      'prendo cura di questo corpo che ho a disposizione una volta sola. Ci '
+      'sono per lui con costanza, non solo quando ne ho voglia.';
+  @override
+  String get areaVisionPlaceholderPsychological =>
+      'Es. La mia mente è lucida e stabile. So calmarmi quando serve, e '
+      'continuo a scoprire chi sono. Quando le cose si fanno difficili, non '
+      'scappo da quello che provo.';
+  @override
+  String get areaVisionPlaceholderProfessional =>
+      'Es. Faccio un lavoro che mi mette alla prova e che conta, e cresco '
+      'senza perdermi in esso. Voglio guardare indietro con orgoglio per il '
+      'percorso fatto, non solo per il risultato.';
+  @override
+  String get areaVisionPlaceholderFinancial =>
+      'Es. Sto costruendo una sicurezza vera — risparmio con intenzione e '
+      'spendo in modo coerente con ciò che per me conta davvero. Il denaro '
+      'smette di essere un pensiero fisso e diventa uno strumento che uso '
+      'bene.';
+  @override
+  String get areaVisionPlaceholderPersonal =>
+      "Es. Continuo a diventare la persona che voglio essere, un'abitudine "
+      'onesta alla volta. Preferisco un progresso lento e vero a una '
+      'scorciatoia finta.';
+  @override
+  String get areaVisionPlaceholderSocial =>
+      'Es. Ho intorno a me persone che mi conoscono davvero, e ci sono '
+      'anche io per loro. Preferisco poche connessioni vere a tante '
+      'superficiali.';
+  @override
+  String get areaVisionPlaceholderSpiritual =>
+      'Es. Sento una connessione con qualcosa più grande di me, e lascio '
+      'spazio al silenzio. Non ho bisogno di avere subito una risposta a '
+      'tutto.';
+  @override
+  String get areaVisionPlaceholderPhilanthropic =>
+      'Es. Do quello che posso — tempo, competenze, attenzione — a vite '
+      'oltre la mia. Non deve essere grande per essere vero.';
+  @override
+  String get areaCoverEnterAction => 'Gestisci Questa Area';
+  @override
+  String get areaCoverVisionTitle => 'Visione';
+  @override
   String get areaConstellationsStatLabel => 'Costellazioni';
   @override
   String get areaStarsStatLabel => 'Stelle';

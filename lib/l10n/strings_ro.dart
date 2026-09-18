@@ -7,21 +7,21 @@ class StringsRo implements AppStrings {
   String get languageCode => 'ro';
 
   @override
-  String get areaPhysical => 'Fizic';
+  String get areaPhysical => 'Fizică';
   @override
-  String get areaPsychological => 'Psihologic';
+  String get areaPsychological => 'Psihologică';
   @override
-  String get areaProfessional => 'Profesional';
+  String get areaProfessional => 'Profesională';
   @override
-  String get areaFinancial => 'Financiar';
+  String get areaFinancial => 'Financiară';
   @override
-  String get areaPersonal => 'Personal';
+  String get areaPersonal => 'Personală';
   @override
-  String get areaSocial => 'Social';
+  String get areaSocial => 'Socială';
   @override
-  String get areaSpiritual => 'Spiritual';
+  String get areaSpiritual => 'Spirituală';
   @override
-  String get areaPhilanthropic => 'Filantropic';
+  String get areaPhilanthropic => 'Filantropică';
   @override
   String get areaPhysicalDescription =>
       'Corpul tău — mișcare, forță și sănătatea care susține totul.';
@@ -324,6 +324,47 @@ class StringsRo implements AppStrings {
       'Ce fel de realitate îți dorești aici? Spre ce vrei să lucrezi?';
   @override
   String get editVisionAction => 'Editează viziunea';
+  @override
+  String get areaVisionPlaceholderPhysical =>
+      'Ex. Mă mișc prin zilele mele cu energie și forță, dorm bine și am '
+      'grijă de acest corp pe care îl am o singură dată. Sunt constant, nu '
+      'doar atunci când am chef.';
+  @override
+  String get areaVisionPlaceholderPsychological =>
+      'Ex. Mintea mea este limpede și stabilă. Știu cum să mă liniștesc și '
+      'continui să aflu cine sunt. Când lucrurile devin grele, nu fug de ce '
+      'simt.';
+  @override
+  String get areaVisionPlaceholderProfessional =>
+      'Ex. Fac o muncă ce mă provoacă și contează, și cresc fără să mă '
+      'pierd în ea. Vreau să privesc înapoi cu mândrie pentru drumul '
+      'parcurs, nu doar pentru rezultat.';
+  @override
+  String get areaVisionPlaceholderFinancial =>
+      'Ex. Construiesc o siguranță reală — economisesc cu intenție și '
+      'cheltuiesc în acord cu ce contează cu adevărat pentru mine. Banii '
+      'încetează să mai fie o grijă și devin ceva ce folosesc bine.';
+  @override
+  String get areaVisionPlaceholderPersonal =>
+      'Ex. Continui să devin persoana care vreau să fiu, un obicei sincer '
+      'pe rând. Prefer un progres lent și real unei scurtături false.';
+  @override
+  String get areaVisionPlaceholderSocial =>
+      'Ex. Am în jurul meu oameni care mă cunosc cu adevărat, și le sunt '
+      'alături și eu. Prefer câteva legături adevărate în locul multora '
+      'superficiale.';
+  @override
+  String get areaVisionPlaceholderSpiritual =>
+      'Ex. Simt o legătură cu ceva mai mare decât mine și fac loc '
+      'liniștii. Nu am nevoie de un răspuns imediat la tot.';
+  @override
+  String get areaVisionPlaceholderPhilanthropic =>
+      'Ex. Ofer ce pot — timp, abilități, atenție — vieților dincolo de a '
+      'mea. Nu trebuie să fie mare ca să conteze.';
+  @override
+  String get areaCoverEnterAction => 'Gestionează Această Zonă';
+  @override
+  String get areaCoverVisionTitle => 'Viziune';
   @override
   String get areaConstellationsStatLabel => 'Constelații';
   @override
