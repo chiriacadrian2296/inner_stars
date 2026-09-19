@@ -40,6 +40,7 @@ import '../tutorials/sky_hint_target.dart';
 import '../tutorials/tour_gesture_step.dart';
 import '../tutorials/tour_step_card.dart';
 import '../tutorials/tutorial_management.dart';
+import '../utils/area_hero_art.dart';
 import '../utils/habit_stats.dart';
 import '../utils/haptics.dart';
 import '../utils/icon_for_slug.dart';
@@ -2071,7 +2072,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     SkyNavigationTarget target, {
     Offset anchorFraction = const Offset(0.5, 0.5),
     bool straightenRoll = false,
-    bool straightenPhysicalBackdrop = false,
+    LifeArea? straightenBackdropArea,
   }) {
     final size = context.size;
     if (size == null) return TickerFuture.complete();
@@ -2082,7 +2083,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       _zoomFor(target, size),
       anchorFraction: anchorFraction,
       straightenRoll: straightenRoll,
-      straightenPhysicalBackdrop: straightenPhysicalBackdrop,
+      straightenBackdropArea: straightenBackdropArea,
     );
   }
 
@@ -2100,13 +2101,14 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // the camera happened to be twisted from an earlier manual rotation.
     bool straightenRoll = false,
     // Same idea as [straightenRoll], targeting a different canonical
-    // reading — true only for a hold on Physical's own supernova, so its
-    // backdrop image (see sky_area_backdrop.dart) lands reading straight
-    // rather than however it currently happens to be rotated relative to
-    // the camera. Mutually exclusive with [straightenRoll] in practice —
-    // nothing holds both a constellation and a supernova at once — but
-    // both are read the same way below regardless.
-    bool straightenPhysicalBackdrop = false,
+    // reading — set only for a hold on a supernova whose own area has a
+    // sky backdrop (see kAreaHeroArt/sky_area_backdrop.dart), so that
+    // image lands reading straight rather than however it currently
+    // happens to be rotated relative to the camera. Mutually exclusive
+    // with [straightenRoll] in practice — nothing holds both a
+    // constellation and a supernova at once — but both are read the same
+    // way below regardless.
+    LifeArea? straightenBackdropArea,
   }) {
     final size = context.size;
     if (size == null) return TickerFuture.complete();
@@ -2150,11 +2152,13 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // own "canonical" reference frame and the painter's don't agree on
     // which way is up; landing on the *opposite* pole of that reading is
     // what actually matches the shape editor's own orientation.
+    final backdropArea = straightenBackdropArea;
     final rollCorrection = straightenRoll
         ? math.pi -
               cameraRollAngle(_camera.rotatedToAlign(_camera.forward, targetForward))
-        : straightenPhysicalBackdrop
-        ? -physicalBackdropRollReading(
+        : backdropArea != null
+        ? -areaBackdropRollReading(
+            backdropArea,
             _camera.rotatedToAlign(_camera.forward, targetForward),
           )
         : 0.0;
@@ -3107,16 +3111,16 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// [AreaDetailScreen] straight away, replaced first by just the camera
   /// movement and now by this tooltip's own [_viewArea] instead.
   ///
-  /// For [LifeArea.physical] specifically, also straightens the camera's
-  /// roll as it flies there — the same idea as [_holdConstellation]'s own
-  /// straighten, just targeting its own backdrop image (see
-  /// sky_area_backdrop.dart) landing upright instead of a constellation's
-  /// shape.
+  /// For an area with a sky backdrop of its own (see kAreaHeroArt), also
+  /// straightens the camera's roll as it flies there — the same idea as
+  /// [_holdConstellation]'s own straighten, just targeting that backdrop
+  /// image (see sky_area_backdrop.dart) landing upright instead of a
+  /// constellation's shape.
   void _holdArea(LifeArea area) {
     _openTooltipDuringFlight(
       _flyTo(
         SkyAreaTarget(area),
-        straightenPhysicalBackdrop: area == LifeArea.physical,
+        straightenBackdropArea: kAreaHeroArt.containsKey(area) ? area : null,
       ),
       _AreaTooltip(area),
     );
@@ -3312,16 +3316,24 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                   key: _skySurfaceKey,
                   fit: StackFit.expand,
                   children: [
+                    // A 2026-09-19 test: moved ahead of NebulaBackground
+                    // (was painted just after it) to see whether Physical's
+                    // own backdrop wash reads as more blended in behind the
+                    // sky's own stars/nebula, rather than sitting visibly
+                    // on top of them. Both this and NebulaBackground itself
+                    // (see that file's own updated comment) had to move to
+                    // an additive blend for this to actually show anything
+                    // — NebulaBackground's shader paints every pixel fully
+                    // opaque, which would otherwise have hidden this
+                    // completely. Revert by swapping the two back and
+                    // dropping NebulaBackground's blendMode if this doesn't
+                    // end up being kept.
+                    SkyAreaBackdrop(camera: _camera, zoom: _zoom),
                     NebulaBackground(
                       camera: _camera,
                       zoom: _zoom,
                       showGrid: widget.settings.showGrid,
                     ),
-                    // A huge, faint wash of Physical's own hero art behind
-                    // its supernova — see sky_area_backdrop.dart. Painted
-                    // first in this group so the sigil/glow/icon below all
-                    // sit on top of it.
-                    SkyAreaBackdrop(camera: _camera, zoom: _zoom),
                     // A decorative sigil behind each supernova — see
                     // sky_area_sigils.dart. Painted before SkySupernova so that
                     // widget's own glow/icon sit on top of it, not the other

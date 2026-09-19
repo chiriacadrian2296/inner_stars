@@ -2,20 +2,20 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-/// Nudges [LifeArea.physical]'s own hero art (see assets/images) a little
-/// toward the app's own navy/white palette — its native, highly-saturated
-/// blue reads as too vivid next to it. A small hue rotate (the art's own
-/// blue sits at ~216° on the hue wheel; the app's own navy
-/// (`AppColors.night`/`nightBorder`) sits at ~224°) plus a moderate
-/// desaturation — not the full colorize [kPhysicalHeroArtTint] in
-/// sky_area_backdrop.dart applies for the sky (which replaces hue outright
-/// for a much bigger jump, blue to gold). This is meant to still read as
-/// the same art, just toned down, so both adjustments are deliberately
-/// small.
-Widget tonedPhysicalArt({required Widget child}) {
+/// Nudges an area's own hero art (see [AreaHeroArt]/assets/images — every
+/// one so far is the same style) a little toward the app's own navy/white
+/// palette — its native, highly-saturated blue reads as too vivid next to
+/// it. A small hue rotate (the art's own blue sits at ~216° on the hue
+/// wheel; the app's own navy (`AppColors.night`/`nightBorder`) sits at
+/// ~224°) plus a moderate desaturation — not the full colorize
+/// [kAreaHeroArtTint] in area_hero_art_tint.dart applies for the sky
+/// (which replaces hue outright for a much bigger jump, blue to gold).
+/// This is meant to still read as the same art, just toned down, so both
+/// adjustments are deliberately small.
+Widget tonedAreaHeroArt({required Widget child}) {
   return ColorFiltered(
-    colorFilter: _physicalArtDesaturate,
-    child: ColorFiltered(colorFilter: _physicalArtHueNudge, child: child),
+    colorFilter: _areaArtDesaturate,
+    child: ColorFiltered(colorFilter: _areaArtHueNudge, child: child),
   );
 }
 
@@ -27,20 +27,16 @@ Widget tonedPhysicalArt({required Widget child}) {
 // produced: "too purple in spots", spots being those brighter highlights.
 // This still nudges the average toward the app's own ~224° navy, just
 // without the same risk of individual pixels overshooting past blue.
-const double _physicalArtHueNudgeDegrees = 6;
+const double _areaArtHueNudgeDegrees = 6;
 
 /// How much of the art's own saturation survives (0 = grayscale, 1 =
 /// unchanged) — picked by eye against the app's own muted navy, which
 /// itself sits around 0.5-0.6 saturation versus the art's brightest
 /// highlights up near 0.9-1.0.
-const double _physicalArtSaturation = 0.55;
+const double _areaArtSaturation = 0.55;
 
-final ColorFilter _physicalArtHueNudge = _hueRotateFilter(
-  _physicalArtHueNudgeDegrees,
-);
-final ColorFilter _physicalArtDesaturate = _saturateFilter(
-  _physicalArtSaturation,
-);
+final ColorFilter _areaArtHueNudge = _hueRotateFilter(_areaArtHueNudgeDegrees);
+final ColorFilter _areaArtDesaturate = _saturateFilter(_areaArtSaturation);
 
 /// A [ColorFilter] that rotates every pixel's hue by [degrees] on the
 /// standard 360° hue wheel, holding luminance/saturation constant — the SVG
@@ -48,9 +44,8 @@ final ColorFilter _physicalArtDesaturate = _saturateFilter(
 /// luma-preserving rotation around the gray axis: R/G/B luminance weights
 /// 0.213/0.715/0.072). Accurate for a small rotation like this one — the
 /// distortion that formula is prone to only shows up on a *large* rotation
-/// of a highly-saturated color (see [kPhysicalHeroArtTint]'s own doc
-/// comment in sky_area_backdrop.dart for where that bit), not a nudge this
-/// size.
+/// of a highly-saturated color (see [kAreaHeroArtTint]'s own doc comment in
+/// area_hero_art_tint.dart for where that bit), not a nudge this size.
 ColorFilter _hueRotateFilter(double degrees) {
   final radians = degrees * math.pi / 180;
   final cosA = math.cos(radians);

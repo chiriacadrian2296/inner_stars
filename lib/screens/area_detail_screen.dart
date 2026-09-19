@@ -14,7 +14,8 @@ import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
 import '../theme/nightlight_style.dart';
 import '../tutorials/tour_step_card.dart';
-import '../utils/physical_art_tone.dart';
+import '../utils/area_hero_art.dart';
+import '../utils/area_hero_art_tone.dart';
 import '../utils/responsive.dart';
 import '../utils/star_stats.dart';
 import '../widgets/area_tag.dart';
@@ -29,14 +30,14 @@ import '../widgets/responsive_content.dart';
 /// onward to from here, only back; constellations and stars live in that
 /// same popup's own Constellations/Stars views instead.
 ///
-/// For an area with hero art of its own (currently just Physical, see
-/// assets/images), this opens on a "cover" — [_AreaCoverPage] — showing
-/// that art full and pressing forward into the management content above;
-/// every other area has no cover and opens straight on that content. The
-/// two are a metaphor ("like a card with two faces"), not a literal
-/// page-flip visual — see [_showCover] and [build]'s own PopScope for how
-/// stepping between them also folds into this screen's own back
-/// navigation, rather than being a second pushed route.
+/// For an area with hero art of its own (see [kAreaHeroArt]), this opens
+/// on a "cover" — [_AreaCoverPage] — showing that art full and pressing
+/// forward into the management content above; every other area has no
+/// cover and opens straight on that content. The two are a metaphor ("like
+/// a card with two faces"), not a literal page-flip visual — see
+/// [_showCover] and [build]'s own PopScope for how stepping between them
+/// also folds into this screen's own back navigation, rather than being a
+/// second pushed route.
 class AreaDetailScreen extends StatefulWidget {
   const AreaDetailScreen({
     super.key,
@@ -97,14 +98,14 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
     super.dispose();
   }
 
-  // Only Physical has hero art of its own so far (see assets/images) — its
-  // own "cover" (see [_AreaCoverPage]) shows this full, lightly toned
-  // toward the app's own navy (see [tonedPhysicalArt]), before the
+  // Only areas in [kAreaHeroArt] have hero art of their own so far — that
+  // area's own "cover" (see [_AreaCoverPage]) shows this full, lightly
+  // toned toward the app's own navy (see [tonedAreaHeroArt]), before the
   // management content below. Every other area has no cover at all and
   // opens straight on that content.
-  static const _coverAsset = 'assets/images/1. Physical.png';
+  String get _coverAsset => kAreaHeroArt[widget.area]!.coverAsset;
 
-  bool get _hasCover => widget.area == LifeArea.physical;
+  bool get _hasCover => kAreaHeroArt.containsKey(widget.area);
 
   // Which of this screen's two "pages" (see the class doc comment) is
   // showing — not a separate route, just an internal step, so the system
@@ -290,8 +291,8 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                 ),
                 const SizedBox(height: 10),
                 // Image up top, vision right underneath it — only for a
-                // cover-having area (currently just Physical); every other
-                // area has no art and keeps its old order (description and
+                // cover-having area (see [kAreaHeroArt]); every other area
+                // has no art and keeps its old order (description and
                 // stats first, vision below that).
                 if (_hasCover) ...[
                   ClipRRect(
@@ -300,7 +301,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                       aspectRatio: isTouchOnlyMobile
                           ? _phoneBannerAspectRatio
                           : _wideBannerAspectRatio,
-                      child: tonedPhysicalArt(
+                      child: tonedAreaHeroArt(
                         child: Image.asset(_coverAsset, fit: BoxFit.cover),
                       ),
                     ),
@@ -338,7 +339,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
 
 /// The "front of the card" — a cover-having area's own hero art shown full,
 /// lightly toned toward the app's own navy/white (see
-/// [tonedPhysicalArt] — its raw color read as too saturated next to the
+/// [tonedAreaHeroArt] — its raw color read as too saturated next to the
 /// rest of the app; a full fade/vignette tint was tried and dropped for
 /// using the art as a background behind the management content instead,
 /// which read as too subdued for what's meant to be a striking full-bleed
@@ -467,7 +468,7 @@ class _AreaCoverPage extends StatelessWidget {
                               1.0,
                             ],
                           ).createShader(rect),
-                          child: tonedPhysicalArt(
+                          child: tonedAreaHeroArt(
                             child: Image.asset(asset, fit: BoxFit.contain),
                           ),
                         ),

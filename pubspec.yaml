@@ -68,6 +68,12 @@ flutter:
     - assets/audio/sfx/
     - assets/images/1. Physical - CENTER CROP.jpg
     - assets/images/1. Physical.png
+    - assets/images/2. Psychological - CENTER CROP.jpg
+    - assets/images/2. Psychological.png
+    - assets/images/3. Professional - CENTER CROP.jpg
+    - assets/images/3. Professional.png
+    - assets/images/4. Financial - CENTER CROP.jpg
+    - assets/images/4. Financial.png
   shaders:
     - shaders/nebula_particles.frag
     - shaders/constellation_flare.frag
