@@ -117,7 +117,7 @@ class HintTarget extends StatefulWidget {
     this.spotlightPadding,
     this.direction = HintDirection.auto,
     this.passthrough = false,
-    // Defaults to true in victory_stars' own fork (upstream defaults to
+    // Defaults to true in inner_stars' own fork (upstream defaults to
     // false) — every `HintTarget` in the app wants the pulse ring now that
     // `HintThemeData.pulseColor` (also a local addition) lets it be white
     // instead of the barely-visible scrim-colour ring upstream draws, and
@@ -201,7 +201,7 @@ class HintTarget extends StatefulWidget {
   /// padding) wrapped around effectively nothing, which reads as a small,
   /// stray, content-less card sitting wherever the placement algorithm
   /// happened to put it against a target it was never meant to be *at*
-  /// (victory_stars' own gesture-driven tour steps: the target is the whole
+  /// (inner_stars' own gesture-driven tour steps: the target is the whole
   /// screen, standing in for "no widget to point at" — see the app's own
   /// `TourGestureStep`).
   final bool showCard;
@@ -267,7 +267,7 @@ class HintTarget extends StatefulWidget {
   /// When set, [child] is never measured via `findRenderObject` — this is
   /// the escape hatch for a step whose target is not a widget at all, such
   /// as a point painted by a `CustomPainter` inside a transformed canvas
-  /// (see victory_stars' own `SkyHintTarget`, built on top of this). [child]
+  /// (see inner_stars' own `SkyHintTarget`, built on top of this). [child]
   /// can then be a plain invisible placeholder; only its `BuildContext` is
   /// still used, to find the enclosing `Overlay`.
   final Rect? Function()? rectProvider;
@@ -278,7 +278,7 @@ class HintTarget extends StatefulWidget {
   ///
   /// Two different reasons an app ends up wanting this:
   /// - The target's rect is a moving, arbitrarily-placed point rather than
-  ///   a fixed-size widget (victory_stars' own `SkyHintTarget`, panning/
+  ///   a fixed-size widget (inner_stars' own `SkyHintTarget`, panning/
   ///   zooming freely around a whole screen) — anchoring right next to it
   ///   can push the card uncomfortably close to (or clean off) an edge, and
   ///   "next to a point that keeps moving" is a worse reading position than
@@ -587,7 +587,7 @@ class _HintTargetState extends State<HintTarget>
               // card placed only [ResolvedHintTheme.gap] from the raw target
               // would sit right on top of a target whose [spotlightPadding]
               // grows the actual cut hole well past its own measured rect —
-              // exactly what victory_stars' own `SkyHintTarget` does,
+              // exactly what inner_stars' own `SkyHintTarget` does,
               // inflating a single point into a visibly-sized circle. Using
               // [hole] keeps the card clear of the hole it can actually see,
               // not the invisible point it was measured from. For a target

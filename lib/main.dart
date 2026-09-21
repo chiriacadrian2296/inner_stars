@@ -65,17 +65,17 @@ void main() {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-  runApp(const VictoryStarsApp());
+  runApp(const InnerStarsApp());
 }
 
-class VictoryStarsApp extends StatefulWidget {
-  const VictoryStarsApp({super.key});
+class InnerStarsApp extends StatefulWidget {
+  const InnerStarsApp({super.key});
 
   @override
-  State<VictoryStarsApp> createState() => _VictoryStarsAppState();
+  State<InnerStarsApp> createState() => _InnerStarsAppState();
 }
 
-class _VictoryStarsAppState extends State<VictoryStarsApp> {
+class _InnerStarsAppState extends State<InnerStarsApp> {
   final _navigatorKey = GlobalKey<NavigatorState>();
 
   SettingsController? _settings;

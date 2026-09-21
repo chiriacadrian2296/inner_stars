@@ -261,7 +261,7 @@ class HintThemeData extends ThemeExtension<HintThemeData> with Diagnosticable {
 
   /// Colour of a [HintTarget]'s pulsing ring, when `pulse: true`.
   ///
-  /// Defaults to [scrimColor] — victory_stars' own addition (not upstream
+  /// Defaults to [scrimColor] — inner_stars' own addition (not upstream
   /// hint_kit, which always draws the ring in the scrim's own colour, dim by
   /// definition and easy to lose against a scrim it's meant to stand out
   /// from). Set this separately when the ring needs to read as an actual

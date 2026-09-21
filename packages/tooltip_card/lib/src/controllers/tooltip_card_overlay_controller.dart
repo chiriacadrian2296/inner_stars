@@ -96,7 +96,7 @@ class TooltipCardOverlayController implements TooltipOverlayController {
   /// reaches here mid-build. `OverlayEntry.markNeedsBuild()` on an entry
   /// the build pass has already visited this frame is illegal outside that
   /// window (Flutter's own rule: only a still-to-be-visited *descendant*
-  /// may be dirtied mid-build), which is exactly what live victory_stars
+  /// may be dirtied mid-build), which is exactly what live inner_stars
   /// hit — updating a still-open sky tooltip's data from a post-frame
   /// callback schedules the very rebuild that then calls this from inside
   /// `didUpdateWidget`, and the entries hosting the tooltip sit earlier in

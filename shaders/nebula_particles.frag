@@ -21,7 +21,7 @@ uniform float uShowGrid;
 out vec4 fragColor;
 
 // The app's own deep-blue "crisis gradient" tones (AppColors.dark) plus its
-// gold accent — this shader is meant to feel like part of Victory Stars,
+// gold accent — this shader is meant to feel like part of Inner Stars,
 // not a generic copy of whatever reference wallpaper inspired it.
 const vec3 kDeepOuter = vec3(0.0196, 0.0275, 0.0510);  // #05070D
 const vec3 kDeepMid = vec3(0.0627, 0.0863, 0.1686);    // #10162B

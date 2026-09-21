@@ -63,7 +63,7 @@ class HintRectTracker extends ChangeNotifier
   /// [measure] call returns whatever it returns instead. This is the escape
   /// hatch for a target that has no `RenderBox` of its own to measure, such
   /// as a point painted by a `CustomPainter` inside a transformed canvas
-  /// (victory_stars' own sky, which projects world positions through a
+  /// (inner_stars' own sky, which projects world positions through a
   /// pan/zoom camera every frame — see the app's `SkyHintTarget`). The
   /// provider is expected to already return overlay-local coordinates, the
   /// same space the default measurement produces.

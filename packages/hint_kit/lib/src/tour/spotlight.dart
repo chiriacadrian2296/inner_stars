@@ -235,7 +235,7 @@ class _ScrimPainter extends CustomPainter {
     }
     final Path hole = shape.toPath(holeRect, borderRadius);
     // Cuts the hole via saveLayer + BlendMode.clear rather than
-    // Path.combine(PathOperation.difference, ...) — victory_stars' own fork,
+    // Path.combine(PathOperation.difference, ...) — inner_stars' own fork,
     // patched after confirming live (web build, CanvasKit renderer) that
     // Path.combine's boolean op silently fails to produce a visible cutout
     // for a target inside a route pushed on top of the base one (e.g. a
@@ -245,7 +245,7 @@ class _ScrimPainter extends CustomPainter {
     // saveLayer+clear never relies on path boolean ops, only alpha
     // compositing, and was confirmed to fix the popup case without
     // regressing the already-working full-screen case (the Sky's menu/Sound
-    // Lab buttons). See victory_stars' own project memory for the full
+    // Lab buttons). See inner_stars' own project memory for the full
     // investigation. Upstream hint_kit (pub.dev, as of 1.3.0) still uses
     // Path.combine — re-check if a newer release fixes this before
     // dropping this local fork.
@@ -258,7 +258,7 @@ class _ScrimPainter extends CustomPainter {
     if (pulseAnimation != null) {
       final double t = pulseAnimation.value;
       // One ring, expanding and fading: an attention cue, not a light show.
-      // victory_stars tuning (upstream was 0.35 growth / 0.6 peak opacity):
+      // inner_stars tuning (upstream was 0.35 growth / 0.6 peak opacity):
       // grows less before restarting and starts fully opaque, so it reads
       // as a solid pulse rather than a faint ripple — same cycle duration,
       // unchanged, just the shape/opacity of each cycle. This is a shared
