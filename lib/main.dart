@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -6,6 +7,7 @@ import 'package:hint_kit/hint_kit.dart';
 import 'package:marionette_flutter/marionette_flutter.dart';
 
 import 'audio/audio_service.dart';
+import 'data/apk_prompt_prefs.dart';
 import 'data/area_vision_repository.dart';
 import 'data/audio_settings_repository.dart';
 import 'data/custom_constellation_repository.dart';
@@ -27,6 +29,7 @@ import 'settings/settings_controller.dart';
 import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
 import 'tutorials/tour_storage.dart';
+import 'widgets/apk_download_prompt.dart';
 
 /// Parks the old first-launch onboarding and the Sky menu's "Metaphor"
 /// guide, both superseded by `hint_kit`-driven live tutorials pointing at
@@ -116,6 +119,7 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
       final audioSettingsRepository = await AudioSettingsRepository.create();
       final audioService = await AudioService.create(audioSettingsRepository);
       final onboardingPrefs = await OnboardingPrefs.create();
+      final apkPromptPrefs = await ApkPromptPrefs.create();
       final tourStorage = await PrefsTourStorage.create(
         enabled: () => settings.tutorialsEnabled,
       );
@@ -190,6 +194,20 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
         WidgetsBinding.instance.addPostFrameCallback(
           (_) => _showOnboarding(onboardingPrefs),
         );
+      }
+
+      // Android browsers only: the site isn't installable as a PWA anymore
+      // (see web/index.html), so this is where someone opening it on a
+      // phone is pointed at the real app instead. `defaultTargetPlatform`
+      // reads the browser's own OS on web, so desktop and iOS never see it.
+      if (kIsWeb &&
+          defaultTargetPlatform == TargetPlatform.android &&
+          !apkPromptPrefs.dismissed) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final navigatorContext = _navigatorKey.currentContext;
+          if (navigatorContext == null) return;
+          showApkDownloadPrompt(navigatorContext, apkPromptPrefs);
+        });
       }
     } catch (error) {
       setState(() => _loadError = error);

@@ -874,6 +874,8 @@ abstract class AppStrings {
   String get aboutTagline;
   String get downloadApkBannerBody;
   String get downloadApkAction;
+  String get downloadApkPromptTitle;
+  String get downloadApkPromptContinueAction;
 
   /// 12 short month abbreviations, January first, for [formatDisplayDate].
   List<String> get monthAbbreviations;

@@ -1486,6 +1486,10 @@ class StringsEn implements AppStrings {
       'notifications and everything else, download the APK.';
   @override
   String get downloadApkAction => 'Download the Android app';
+  @override
+  String get downloadApkPromptTitle => 'Want the real app?';
+  @override
+  String get downloadApkPromptContinueAction => 'Stay on the web';
 
   @override
   List<String> get monthAbbreviations => const [

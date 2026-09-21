@@ -1507,6 +1507,10 @@ class StringsRo implements AppStrings {
       'notificări și tot restul, descarcă fișierul APK.';
   @override
   String get downloadApkAction => 'Descarcă aplicația pentru Android';
+  @override
+  String get downloadApkPromptTitle => 'Vrei aplicația adevărată?';
+  @override
+  String get downloadApkPromptContinueAction => 'Rămâi pe web';
 
   @override
   List<String> get monthAbbreviations => const [

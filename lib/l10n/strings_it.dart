@@ -1510,6 +1510,10 @@ class StringsIt implements AppStrings {
       'notifiche e tutto il resto, scarica il file APK.';
   @override
   String get downloadApkAction => 'Scarica l\'app per Android';
+  @override
+  String get downloadApkPromptTitle => 'Vuoi l\'app vera?';
+  @override
+  String get downloadApkPromptContinueAction => 'Resta sul web';
 
   @override
   List<String> get monthAbbreviations => const [

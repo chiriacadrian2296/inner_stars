@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../data/area_vision_repository.dart';
 import '../data/audio_settings_repository.dart';
@@ -21,6 +20,7 @@ import '../settings/settings_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
+import '../widgets/apk_download_prompt.dart';
 import '../widgets/responsive_content.dart';
 import 'menu_button_gallery_screen.dart';
 import 'onboarding_screen.dart';
@@ -30,18 +30,6 @@ import 'onboarding_screen.dart';
 /// (`OnboardingScreen` and the `_push` call are both untouched), just not
 /// drawn.
 const _kShowOnboarding = false;
-
-/// Always resolves to whatever `.apk` asset the most recent GitHub Release
-/// was published with, under this exact file name — GitHub's own
-/// `/releases/latest/download/<name>` redirect, not a link to one specific
-/// release. Publishing a new version is then just "attach an asset named
-/// `inner-stars.apk` to a new release": this link, and the button below that
-/// uses it, never need to change. The repo path itself (`victory_stars`) is
-/// still the GitHub repo's actual name — renaming the repo to match the
-/// app's new "Inner Stars" branding is a separate, bigger call (it moves
-/// the Pages URL too) that hasn't been made yet.
-const _kApkDownloadUrl =
-    'https://github.com/chiriacadrian2296/victory_stars/releases/latest/download/inner-stars.apk';
 
 /// Settings, opened from the Sky's own side menu — the drawer carries only
 /// one entry for it, everything else here is a section of this one page.
@@ -517,10 +505,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                               const SizedBox(height: 12),
                               OutlinedButton.icon(
-                                onPressed: () => launchUrl(
-                                  Uri.parse(_kApkDownloadUrl),
-                                  mode: LaunchMode.externalApplication,
-                                ),
+                                onPressed: openApkDownload,
                                 icon: const Icon(Icons.download, size: 18),
                                 label: Text(strings.downloadApkAction),
                               ),
