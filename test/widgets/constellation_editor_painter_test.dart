@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:victory_stars/widgets/constellation_editor_painter.dart';
+import 'package:inner_stars/widgets/constellation_editor_painter.dart';
 
 void main() {
   group('normalizeEditorPoints', () {

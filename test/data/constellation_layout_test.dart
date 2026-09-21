@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:victory_stars/data/constellation_layout.dart';
-import 'package:victory_stars/data/constellation_shape.dart';
+import 'package:inner_stars/data/constellation_layout.dart';
+import 'package:inner_stars/data/constellation_shape.dart';
 
 void main() {
   group('buildConstellationLayout', () {

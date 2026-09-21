@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:victory_stars/data/audio_settings_repository.dart';
-import 'package:victory_stars/models/background_track.dart';
-import 'package:victory_stars/models/sky_sound_effect.dart';
-import 'package:victory_stars/models/sky_whoosh_effect.dart';
+import 'package:inner_stars/data/audio_settings_repository.dart';
+import 'package:inner_stars/models/background_track.dart';
+import 'package:inner_stars/models/sky_sound_effect.dart';
+import 'package:inner_stars/models/sky_whoosh_effect.dart';
 
 void main() {
   setUp(() {

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:victory_stars/data/constellation_editor_prefs.dart';
+import 'package:inner_stars/data/constellation_editor_prefs.dart';
 
 void main() {
   setUp(() {

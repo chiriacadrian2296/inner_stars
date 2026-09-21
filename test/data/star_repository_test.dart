@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:victory_stars/data/star_repository.dart';
+import 'package:inner_stars/data/star_repository.dart';
 
 void main() {
   setUp(() {

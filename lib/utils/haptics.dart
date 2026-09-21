@@ -14,7 +14,7 @@ import 'package:flutter/services.dart';
 /// on iOS/web/desktop, and none of those are this app's real target for a
 /// motor buzz anyway.
 class Haptics {
-  static const _channel = MethodChannel('victory_stars/haptics');
+  static const _channel = MethodChannel('inner_stars/haptics');
 
   static Future<void> vibrate({
     required Duration duration,

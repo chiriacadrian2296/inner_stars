@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:victory_stars/models/life_area.dart';
-import 'package:victory_stars/models/project.dart';
+import 'package:inner_stars/models/life_area.dart';
+import 'package:inner_stars/models/project.dart';
 
 void main() {
   test('fromJson() on data saved before starsShapeId existed yields null, not a crash', () {

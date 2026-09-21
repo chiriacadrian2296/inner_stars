@@ -17,7 +17,7 @@ surfaces plugin/resource bugs debug mode hides (see the `tools:keep` fix in
 `android/app/src/main/res/raw/keep.xml`, a real bug that only ever showed up in release builds), so
 don't skip a release check entirely before something like a store submission.
 
-Package name: `com.example.victory_stars`. Main activity exported name for a manual relaunch:
+Package name: `com.example.inner_stars`. Main activity exported name for a manual relaunch:
 `.MainActivity`.
 
 ## 1. Checks first
@@ -69,7 +69,7 @@ Run `adb devices -l`.
 - `adb -s <device-serial> install -r build/app/outputs/flutter-apk/app-<mode>.apk`
 - **Always launch it afterward, no matter which path (USB, wireless, or emulator) got you the
   device connected — this isn't optional, do it every time:**
-  `adb -s <device-serial> shell monkey -p com.example.victory_stars -c android.intent.category.LAUNCHER 1`
+  `adb -s <device-serial> shell monkey -p com.example.inner_stars -c android.intent.category.LAUNCHER 1`
 
 ## 5. Report
 

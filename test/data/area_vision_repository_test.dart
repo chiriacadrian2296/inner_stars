@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:victory_stars/data/area_vision_repository.dart';
-import 'package:victory_stars/models/life_area.dart';
+import 'package:inner_stars/data/area_vision_repository.dart';
+import 'package:inner_stars/models/life_area.dart';
 
 void main() {
   setUp(() {

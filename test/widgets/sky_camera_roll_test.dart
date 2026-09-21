@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:victory_stars/widgets/constellation_field.dart';
+import 'package:inner_stars/widgets/constellation_field.dart';
 
 void main() {
   group('SkyCamera roll', () {

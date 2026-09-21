@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:victory_stars/data/habit_completion_repository.dart';
-import 'package:victory_stars/data/habit_repository.dart';
-import 'package:victory_stars/models/habit.dart';
+import 'package:inner_stars/data/habit_completion_repository.dart';
+import 'package:inner_stars/data/habit_repository.dart';
+import 'package:inner_stars/models/habit.dart';
 
 void main() {
   setUp(() {

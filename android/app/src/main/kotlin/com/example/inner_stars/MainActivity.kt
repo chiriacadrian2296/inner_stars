@@ -1,4 +1,4 @@
-package com.example.victory_stars
+package com.example.inner_stars
 
 import android.content.Context
 import android.os.Build
@@ -28,7 +28,7 @@ import io.flutter.plugin.common.MethodChannel
 /// override in the first place (that's a behavior of the newer
 /// per-usage-intensity vibration system `VibrationAttributes` belongs to).
 class MainActivity : FlutterActivity() {
-    private val hapticsChannelName = "victory_stars/haptics"
+    private val hapticsChannelName = "inner_stars/haptics"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

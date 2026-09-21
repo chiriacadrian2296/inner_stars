@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:victory_stars/data/constellation_presets.dart';
-import 'package:victory_stars/models/life_area.dart';
-import 'package:victory_stars/utils/icon_for_slug.dart';
+import 'package:inner_stars/data/constellation_presets.dart';
+import 'package:inner_stars/models/life_area.dart';
+import 'package:inner_stars/utils/icon_for_slug.dart';
 
 /// Guards the two halves of the shape catalogue against drifting apart:
 /// `constellation_presets.dart` (100 shapes) and `icon_for_slug.dart` (100
