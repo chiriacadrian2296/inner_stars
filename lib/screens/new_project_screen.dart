@@ -66,8 +66,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   StarsShape? _selectedStarsShape;
   StarsShapePreset? _selectedPreset;
 
-  bool get _hasShape =>
-      _selectedStarsShape != null || _selectedPreset != null;
+  bool get _hasShape => _selectedStarsShape != null || _selectedPreset != null;
 
   ConstellationShape? get _selectedShape =>
       _selectedStarsShape?.shape ?? _selectedPreset?.shape;
@@ -309,8 +308,9 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
         _PresetChoice(:final preset) =>
           preset.name.of(language).toLowerCase().contains(query) ||
               preset.category.name.of(language).toLowerCase().contains(query),
-        _CustomChoice(:final custom) =>
-          custom.name.toLowerCase().contains(query),
+        _CustomChoice(:final custom) => custom.name.toLowerCase().contains(
+          query,
+        ),
       },
       initialSelection: currentSelection,
       bodyBuilder: (context, filtered, selected, onSelect) {
@@ -786,8 +786,8 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                                     order: 8,
                                     showArrow: true,
                                     contentBuilder: appTourStepCard,
-                                    title:
-                                        strings.constellationTourDrawButtonTitle,
+                                    title: strings
+                                        .constellationTourDrawButtonTitle,
                                     description:
                                         strings.constellationTourDrawButtonBody,
                                     child: _ShapeSideButton(
@@ -822,8 +822,8 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                                     order: 10,
                                     showArrow: true,
                                     contentBuilder: appTourStepCard,
-                                    title:
-                                        strings.constellationTourResetButtonTitle,
+                                    title: strings
+                                        .constellationTourResetButtonTitle,
                                     description: strings
                                         .constellationTourResetButtonBody,
                                     child: _ShapeSideButton(
@@ -935,17 +935,13 @@ class _AreaOption extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(kRadiusField),
       child: Container(
-        decoration: selectableDecoration(
-          colors,
-          selected: selected,
-          glowSize: 64,
-        ),
+        decoration: selectableDecoration(colors, selected: selected),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // A chosen area is literally a supernova, so it's drawn as
-            // one: a white glyph inside the gold ring and glow the
-            // decoration already provides, rather than a gold-on-gold icon.
+            // one: a white glyph inside the gold ring the decoration
+            // already provides, rather than a gold-on-gold icon.
             Icon(
               area.icon,
               size: 34,
@@ -1099,10 +1095,7 @@ class _ShapePickerTabsState extends State<_ShapePickerTabs> {
           children: [
             tabButton(_ShapePickerTab.library, strings.shapeLibraryTabLabel),
             const SizedBox(width: 8),
-            tabButton(
-              _ShapePickerTab.yourShapes,
-              strings.yourShapesTabLabel,
-            ),
+            tabButton(_ShapePickerTab.yourShapes, strings.yourShapesTabLabel),
           ],
         ),
         const SizedBox(height: 12),
@@ -1123,7 +1116,10 @@ class _ShapePickerTabsState extends State<_ShapePickerTabs> {
 /// background left alone. Local to this screen rather than a change to
 /// [selectableDecoration] itself, which plenty of other pickers
 /// (icons, areas, kinds) still want its fill/glow treatment for.
-BoxDecoration _shapePreviewDecoration(AppColors colors, {required bool selected}) {
+BoxDecoration _shapePreviewDecoration(
+  AppColors colors, {
+  required bool selected,
+}) {
   return BoxDecoration(
     color: colors.nightPanel,
     border: Border.all(
@@ -1243,9 +1239,7 @@ class _SelectedShapePreview extends StatelessWidget {
               // yet" was redundant once this whole tile visibly matched
               // the empty canvas it opens), bigger now that it's carrying
               // the empty state on its own.
-              Center(
-                child: Icon(Icons.insights, color: colors.muted, size: 44),
-              )
+              Center(child: Icon(Icons.insights, color: colors.muted, size: 44))
             else
               _ShapeThumbnail(shape: chosen, side: side),
             // The name, not a pencil badge — the whole tile already opens

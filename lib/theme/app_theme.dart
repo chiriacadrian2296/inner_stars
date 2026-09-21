@@ -47,10 +47,10 @@ ThemeData buildAppTheme() {
     // name (see app_fonts.dart) renders in this without having to say so.
     fontFamily: kFontBody,
     textTheme: ThemeData(brightness: brightness).textTheme.apply(
-          bodyColor: palette.text,
-          displayColor: palette.text,
-          fontFamily: kFontBody,
-        ),
+      bodyColor: palette.text,
+      displayColor: palette.text,
+      fontFamily: kFontBody,
+    ),
     // The empty/focused halves of the field rule (see [FieldState]); the
     // filled half needs to know whether there's text in the box, so it
     // lives in `AppTextField`, which is what screens actually use.
@@ -159,9 +159,7 @@ ThemeData buildAppTheme() {
       backgroundColor: palette.nightPanel,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(kRadiusCard),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(kRadiusCard)),
       ),
     ),
     sliderTheme: SliderThemeData(
@@ -188,46 +186,70 @@ ThemeData buildAppTheme() {
             : palette.night,
       ),
       hourMinuteTextColor: WidgetStateColor.resolveWith(
-        (states) => states.contains(WidgetState.selected) ? palette.gold : palette.text,
+        (states) =>
+            states.contains(WidgetState.selected) ? palette.gold : palette.text,
       ),
       dayPeriodColor: WidgetStateColor.resolveWith(
-        (states) => states.contains(WidgetState.selected) ? palette.gold : palette.nightPanel,
+        (states) => states.contains(WidgetState.selected)
+            ? palette.gold
+            : palette.nightPanel,
       ),
       dayPeriodTextColor: WidgetStateColor.resolveWith(
-        (states) => states.contains(WidgetState.selected) ? palette.onGold : palette.muted,
+        (states) => states.contains(WidgetState.selected)
+            ? palette.onGold
+            : palette.muted,
       ),
       dayPeriodBorderSide: BorderSide(color: palette.nightBorder),
       dialHandColor: palette.gold,
       dialBackgroundColor: palette.night,
       dialTextColor: WidgetStateColor.resolveWith(
-        (states) => states.contains(WidgetState.selected) ? palette.onGold : palette.text,
+        (states) => states.contains(WidgetState.selected)
+            ? palette.onGold
+            : palette.text,
       ),
       entryModeIconColor: palette.muted,
     ),
     // Same reasoning as timePickerTheme above: keep the date picker (used
-    // when backdating a star) on-brand instead of Material 3's default teal.
+    // when backdating a star, and for the search date-range filter) on-brand
+    // instead of Material 3's default teal.
     datePickerTheme: DatePickerThemeData(
       backgroundColor: palette.nightPanel,
       headerBackgroundColor: palette.gold,
       headerForegroundColor: palette.onGold,
+      // The connecting band `showDateRangePicker` paints behind an in-range
+      // day (confirmed live: without this it defaults to
+      // `colorScheme.secondaryContainer`, which `ColorScheme.dark()` leaves
+      // at Material's own hardcoded teal since this app never sets it) — a
+      // light wash of the same gold everything else here burns with.
+      rangeSelectionBackgroundColor: palette.gold.withValues(alpha: 0.22),
       // Selected wins over "is today" — otherwise the day number renders
       // gold-on-gold (invisible) when today happens to be the selected day,
       // since the circle fill already switches to gold once selected.
       todayForegroundColor: WidgetStateColor.resolveWith(
-        (states) => states.contains(WidgetState.selected) ? palette.onGold : palette.gold,
+        (states) => states.contains(WidgetState.selected)
+            ? palette.onGold
+            : palette.gold,
       ),
       todayBorder: BorderSide(color: palette.gold),
       dayForegroundColor: WidgetStateColor.resolveWith(
-        (states) => states.contains(WidgetState.selected) ? palette.onGold : palette.text,
+        (states) => states.contains(WidgetState.selected)
+            ? palette.onGold
+            : palette.text,
       ),
       dayBackgroundColor: WidgetStateColor.resolveWith(
-        (states) => states.contains(WidgetState.selected) ? palette.gold : Colors.transparent,
+        (states) => states.contains(WidgetState.selected)
+            ? palette.gold
+            : Colors.transparent,
       ),
       yearForegroundColor: WidgetStateColor.resolveWith(
-        (states) => states.contains(WidgetState.selected) ? palette.onGold : palette.text,
+        (states) => states.contains(WidgetState.selected)
+            ? palette.onGold
+            : palette.text,
       ),
       yearBackgroundColor: WidgetStateColor.resolveWith(
-        (states) => states.contains(WidgetState.selected) ? palette.gold : Colors.transparent,
+        (states) => states.contains(WidgetState.selected)
+            ? palette.gold
+            : Colors.transparent,
       ),
     ),
     extensions: [palette],

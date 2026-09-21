@@ -1,11 +1,11 @@
 {
-    "name": "Victory Stars",
-    "short_name": "Victory Stars",
+    "name": "Inner Stars",
+    "short_name": "Inner Stars",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0D1220",
     "theme_color": "#0D1220",
-    "description": "Victory Stars: a personal growth app for recording the moments you got through.",
+    "description": "Inner Stars: a personal growth app for recording the moments you got through.",
     "prefer_related_applications": false,
     "icons": [
         {

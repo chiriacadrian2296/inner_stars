@@ -145,6 +145,9 @@ abstract class AppStrings {
   // Area detail (constellations / list view switch)
   String get searchHint;
   String get noSearchResults;
+  String get noSearchResultsSupernovas;
+  String get noSearchResultsConstellations;
+  String get noSearchResultsStars;
   String get skyEmptyConstellations;
   String get skyEmptyStars;
 
@@ -325,8 +328,6 @@ abstract class AppStrings {
   String get searchTourFilterButtonBody;
   String get searchTourAllAreasTitle;
   String get searchTourAllAreasBody;
-  String get searchTourAllKindsTitle;
-  String get searchTourAllKindsBody;
   String get searchTourApplyTitle;
   String get searchTourApplyBody;
 
@@ -408,9 +409,32 @@ abstract class AppStrings {
   String get listModeLabel;
   String get skyModeSupernovas;
   String get filterAreasAction;
-  String get applyAreaFilterAction;
+  String get areaFilterDefaultLabel;
+  String activeAreasCount(int count);
+  String get filterKindAction;
   String get filterKindSectionTitle;
   String get allKindsLabel;
+  String get kindFilterDefaultLabel;
+  String activeKindsCount(int count);
+  String get applyFilterAction;
+  String get filterDateRangeAction;
+  String get dateRangeFilterSectionTitle;
+  String get dateRangeUnitWeek;
+  String get dateRangeUnitMonth;
+  String get dateRangeUnitYear;
+  String get dateRangeStepBackAction;
+  String get dateRangeStepForwardAction;
+  String get dateRangeFromLabel;
+  String get dateRangeToLabel;
+  String get clearFilterAction;
+  String get sortAction;
+  String get sortButtonDefaultLabel;
+  String get sortSheetTitle;
+  String get sortFieldDate;
+  String get sortFieldIntensity;
+  String get sortFieldName;
+  String get sortDirectionAscending;
+  String get sortDirectionDescending;
   String get searchButtonLabel;
   String get takeMeThereAction;
   String get searchScreenEyebrow;
@@ -848,6 +872,8 @@ abstract class AppStrings {
   String get aboutSection;
   String aboutVersion(String version);
   String get aboutTagline;
+  String get downloadApkBannerBody;
+  String get downloadApkAction;
 
   /// 12 short month abbreviations, January first, for [formatDisplayDate].
   List<String> get monthAbbreviations;

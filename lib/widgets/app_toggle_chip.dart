@@ -49,7 +49,6 @@ class AppToggleChip extends StatelessWidget {
             colors,
             selected: value,
             radius: _pillRadius,
-            glowSize: 32,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

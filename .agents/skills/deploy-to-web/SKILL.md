@@ -1,12 +1,12 @@
 ---
 name: deploy-to-web
-description: Build Victory Stars, run analyze/tests, and (re)launch it as a headless web server so the user can preview it inside VS Code's own Simple Browser panel — never in a separate, external Chrome window.
+description: Build Inner Stars, run analyze/tests, and (re)launch it as a headless web server so the user can preview it inside VS Code's own Simple Browser panel — never in a separate, external Chrome window.
 argument-hint: "[debug|release]"
 allowed-tools: Bash(flutter *) Bash(taskkill *) PowerShell(Get-Process *) PowerShell(Get-CimInstance *)
 disable-model-invocation: true
 ---
 
-# Deploy Victory Stars to the browser
+# Deploy Inner Stars to the browser
 
 Build mode: use the argument if given (`debug` or `release`), otherwise default to **debug** — the
 web target has no separate real-device install step the way the phone does, so debug's hot-reload

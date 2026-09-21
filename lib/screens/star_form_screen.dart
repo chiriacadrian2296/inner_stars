@@ -139,8 +139,7 @@ class StarFormScreen extends StatefulWidget {
        ),
        assert(
          lockedProject != null ||
-             (projectRepository != null &&
-                 starsShapeRepository != null),
+             (projectRepository != null && starsShapeRepository != null),
          'Provide lockedProject (pre-scoped, no picker) or both projectRepository and starsShapeRepository (picker, for add or edit).',
        );
 
@@ -223,8 +222,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
   late int _reminderMinute = widget.existingHabit?.reminderMinute ?? 0;
   late HabitFrequency _habitFrequency =
       widget.existingHabit?.frequency ?? HabitFrequency.daily;
-  late int _habitTargetPerPeriod =
-      widget.existingHabit?.targetPerPeriod ?? 1;
+  late int _habitTargetPerPeriod = widget.existingHabit?.targetPerPeriod ?? 1;
 
   // What the form above started out as — captured once, alongside it, so
   // _hasUnsavedChanges has something to compare against regardless of
@@ -356,9 +354,8 @@ class _StarFormScreenState extends State<StarFormScreen> {
   void _syncKindToTour(BuildContext context) {
     final TourController controller = Tour.of(context);
     if (controller.activeTour != 'star-form') return;
-    final int? order = TourScope.of(
-      context,
-    ).orderAt('star-form', controller.index);
+    final int? order = TourScope.of(context)
+        .orderAt('star-form', controller.index);
     final StarKind? needed = switch (order) {
       2 || 8 || 9 || 10 => StarKind.lit,
       11 || 12 => StarKind.pulsar,
@@ -414,8 +411,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
         _kind != _initialKind ||
         (_kind != StarKind.unlit && _intensity != _initialIntensity) ||
         (_kind == StarKind.lit &&
-            (_date != _initialDateValue ||
-                _photoPath != _initialPhotoPath)) ||
+            (_date != _initialDateValue || _photoPath != _initialPhotoPath)) ||
         (_kind == StarKind.unlit && _targetDate != _initialTargetDate) ||
         (_kind == StarKind.pulsar &&
             (_habitFrequency != _initialHabitFrequency ||
@@ -566,10 +562,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
             splashFactory: NoSplash.splashFactory,
             highlightColor: Colors.transparent,
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 32,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -648,9 +641,8 @@ class _StarFormScreenState extends State<StarFormScreen> {
       setState(() => _photoPath = savedPath);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(strings.photoPickError)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(strings.photoPickError)));
     }
   }
 
@@ -855,9 +847,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     ),
                   )
                 else
-                  Center(
-                    child: _StarKindMeaning(kind: _kind, showGlyph: true),
-                  ),
+                  Center(child: _StarKindMeaning(kind: _kind, showGlyph: true)),
                 const SizedBox(height: 18),
                 // A fixed minimum height, not just a Text — the three
                 // questions are different lengths and wrap differently, so
@@ -1143,17 +1133,15 @@ class _StarFormScreenState extends State<StarFormScreen> {
                             // Zeroing it here makes this widget's own
                             // bounding box actually match what's visible.
                             child: SliderTheme(
-                              data: SliderTheme.of(
-                                context,
-                              ).copyWith(padding: EdgeInsets.zero),
+                              data: SliderTheme.of(context)
+                                  .copyWith(padding: EdgeInsets.zero),
                               child: Slider(
                                 value: _intensity.toDouble(),
                                 min: 1,
                                 max: 5,
                                 divisions: 4,
-                                onChanged: (value) => setState(
-                                  () => _intensity = value.round(),
-                                ),
+                                onChanged: (value) =>
+                                    setState(() => _intensity = value.round()),
                               ),
                             ),
                           ),
@@ -1248,8 +1236,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                             IconButton(
                               onPressed:
                                   _habitTargetPerPeriod <
-                                      (_habitFrequency ==
-                                              HabitFrequency.weekly
+                                      (_habitFrequency == HabitFrequency.weekly
                                           ? 7
                                           : 50)
                                   ? () =>
@@ -1296,49 +1283,49 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     title: strings.starTourReminderTitle,
                     description: strings.starTourReminderBody,
                     child: Material(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(kRadiusCard),
-                    child: Container(
-                      decoration: panelDecoration(colors),
-                      child: Column(
-                        children: [
-                          SwitchListTile(
-                            value: _customReminder,
-                            onChanged: (value) =>
-                                setState(() => _customReminder = value),
-                            title: Text(
-                              strings.customReminderToggleLabel,
-                              style: TextStyle(
-                                color: colors.text,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          if (_customReminder)
-                            ListTile(
-                              onTap: _pickReminderTime,
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(kRadiusCard),
+                      child: Container(
+                        decoration: panelDecoration(colors),
+                        child: Column(
+                          children: [
+                            SwitchListTile(
+                              value: _customReminder,
+                              onChanged: (value) =>
+                                  setState(() => _customReminder = value),
                               title: Text(
-                                strings.reminderTimeLabel,
+                                strings.customReminderToggleLabel,
                                 style: TextStyle(
-                                  color: colors.muted,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              trailing: Text(
-                                TimeOfDay(
-                                  hour: _reminderHour,
-                                  minute: _reminderMinute,
-                                ).format(context),
-                                style: TextStyle(
-                                  color: colors.gold,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 15,
+                                  color: colors.text,
+                                  fontSize: 14,
                                 ),
                               ),
                             ),
-                        ],
+                            if (_customReminder)
+                              ListTile(
+                                onTap: _pickReminderTime,
+                                title: Text(
+                                  strings.reminderTimeLabel,
+                                  style: TextStyle(
+                                    color: colors.muted,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                trailing: Text(
+                                  TimeOfDay(
+                                    hour: _reminderHour,
+                                    minute: _reminderMinute,
+                                  ).format(context),
+                                  style: TextStyle(
+                                    color: colors.gold,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
                     ),
                   ),
                 ],
@@ -1445,9 +1432,9 @@ class _StarFormScreenState extends State<StarFormScreen> {
 }
 
 /// One of the two habit-frequency toggle chips ("Every day"/"Every week")
-/// in the pulsar-only frequency picker — same flat selectable look
-/// ([flatSelectableDecoration]) the star-kind switch below already uses,
-/// for one consistent "pick one of a few" control style across this form.
+/// in the pulsar-only frequency picker — same selectable look
+/// ([selectableDecoration]) the star-kind switch below already uses, for
+/// one consistent "pick one of a few" control style across this form.
 class _HabitFrequencyChip extends StatelessWidget {
   const _HabitFrequencyChip({
     required this.label,
@@ -1467,7 +1454,7 @@ class _HabitFrequencyChip extends StatelessWidget {
       borderRadius: BorderRadius.circular(kRadiusField),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: flatSelectableDecoration(colors, selected: selected),
+        decoration: selectableDecoration(colors, selected: selected),
         child: Text(
           label,
           textAlign: TextAlign.center,
@@ -1530,7 +1517,7 @@ class _StarKindSwitch extends StatelessWidget {
                 borderRadius: BorderRadius.circular(kRadiusField),
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: flatSelectableDecoration(
+                  decoration: selectableDecoration(
                     colors,
                     selected: kinds[i] == selected,
                   ),

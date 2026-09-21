@@ -178,8 +178,7 @@ class StringsIt implements AppStrings {
   String get menuFriendsDescription =>
       'Costellazioni condivise e vittorie festeggiate insieme — presto disponibile.';
   @override
-  String get menuMetaphorDescription =>
-      'Cosa significa ogni parola del cielo.';
+  String get menuMetaphorDescription => 'Cosa significa ogni parola del cielo.';
   @override
   String get menuSettingsDescription =>
       'Lingua, promemoria e tutto ciò che riguarda il tuo account.';
@@ -288,6 +287,14 @@ class StringsIt implements AppStrings {
   @override
   String get noSearchResults => 'Nessuna stella corrisponde alla ricerca.';
   @override
+  String get noSearchResultsSupernovas =>
+      'Nessuna supernova corrisponde alla ricerca.';
+  @override
+  String get noSearchResultsConstellations =>
+      'Nessuna costellazione corrisponde alla ricerca.';
+  @override
+  String get noSearchResultsStars => 'Nessuna stella corrisponde alla ricerca.';
+  @override
   String get skyEmptyConstellations => 'Ancora nessuna costellazione.';
   @override
   String get skyEmptyStars => 'Ancora nessuna stella.';
@@ -306,11 +313,58 @@ class StringsIt implements AppStrings {
   @override
   String get filterAreasAction => 'Filtra aree';
   @override
-  String get applyAreaFilterAction => 'Applica filtro';
+  String get areaFilterDefaultLabel => 'Aree';
+  @override
+  String activeAreasCount(int count) => count == 1 ? '1 area' : '$count aree';
+  @override
+  String get filterKindAction => 'Filtra tipi';
   @override
   String get filterKindSectionTitle => 'Tipo di stella';
   @override
   String get allKindsLabel => 'Tutti i tipi';
+  @override
+  String get kindFilterDefaultLabel => 'Tipi stella';
+  @override
+  String activeKindsCount(int count) =>
+      count == 1 ? '1 tipo stella' : '$count tipi stella';
+  @override
+  String get applyFilterAction => 'Applica filtro';
+  @override
+  String get filterDateRangeAction => 'Filtra per periodo';
+  @override
+  String get dateRangeFilterSectionTitle => 'Periodo';
+  @override
+  String get dateRangeUnitWeek => 'Settimana';
+  @override
+  String get dateRangeUnitMonth => 'Mese';
+  @override
+  String get dateRangeUnitYear => 'Anno';
+  @override
+  String get dateRangeStepBackAction => 'Periodo precedente';
+  @override
+  String get dateRangeStepForwardAction => 'Periodo successivo';
+  @override
+  String get dateRangeFromLabel => 'Da';
+  @override
+  String get dateRangeToLabel => 'A';
+  @override
+  String get clearFilterAction => 'Cancella';
+  @override
+  String get sortAction => 'Ordina risultati';
+  @override
+  String get sortButtonDefaultLabel => 'Ordina';
+  @override
+  String get sortSheetTitle => 'Ordina per';
+  @override
+  String get sortFieldDate => 'Data';
+  @override
+  String get sortFieldIntensity => 'Intensità';
+  @override
+  String get sortFieldName => 'Nome';
+  @override
+  String get sortDirectionAscending => 'Crescente';
+  @override
+  String get sortDirectionDescending => 'Decrescente';
   @override
   String get searchButtonLabel => 'Cerca';
   @override
@@ -694,12 +748,7 @@ class StringsIt implements AppStrings {
   String get searchTourAllAreasTitle => 'Tutte le aree';
   @override
   String get searchTourAllAreasBody =>
-      'Disattivalo per creare invece una tua selezione.';
-  @override
-  String get searchTourAllKindsTitle => 'Filtra per tipo';
-  @override
-  String get searchTourAllKindsBody =>
-      'Mostra solo stelle accese, obiettivi, pulsar o stelle spente.';
+      'Attivalo per includerle tutte, o seleziona solo quelle che ti interessano.';
   @override
   String get searchTourApplyTitle => 'Applica';
   @override
@@ -872,7 +921,8 @@ class StringsIt implements AppStrings {
   @override
   String get saveConstellationAction => 'Salva';
   @override
-  String get nameYourConstellationTitle => 'Dai Un Nome Alla Tua Forma Di Stelle';
+  String get nameYourConstellationTitle =>
+      'Dai Un Nome Alla Tua Forma Di Stelle';
   @override
   String get constellationNameHint => 'Es. Il mio percorso';
   @override
@@ -1004,7 +1054,8 @@ class StringsIt implements AppStrings {
   @override
   String get pulsarTitleHint => 'Es. Andare a correre';
   @override
-  String get litDetailsHint => 'Es. Le gambe mi facevano male, ma ce l\'ho fatta';
+  String get litDetailsHint =>
+      'Es. Le gambe mi facevano male, ma ce l\'ho fatta';
   @override
   String get unlitDetailsHint =>
       'Es. Iscriviti a una gara e allenati per affrontarla';
@@ -1118,9 +1169,8 @@ class StringsIt implements AppStrings {
       '$done/$target questa settimana';
 
   @override
-  String unlitStarsBadge(int count) => count == 1
-      ? '1 stella non accesa'
-      : '$count stelle non accese';
+  String unlitStarsBadge(int count) =>
+      count == 1 ? '1 stella non accesa' : '$count stelle non accese';
   @override
   String activePulsarsBadge(int count) =>
       count == 1 ? '1 pulsar attivo' : '$count pulsar attivi';
@@ -1158,7 +1208,8 @@ class StringsIt implements AppStrings {
   @override
   String get starKindPulsarMeaning => 'Abitudine — in corso';
   @override
-  String get starKindPulsarExample => 'Dieci minuti di stretching, ogni giorno.';
+  String get starKindPulsarExample =>
+      'Dieci minuti di stretching, ogni giorno.';
   @override
   String get starKindDeadName => 'Stella spenta';
   @override
@@ -1392,7 +1443,8 @@ class StringsIt implements AppStrings {
   @override
   String get creationSuccessEyebrow => 'Complimenti!';
   @override
-  String get creationSuccessLitMessage => 'Una stella si è accesa nel tuo cielo.';
+  String get creationSuccessLitMessage =>
+      'Una stella si è accesa nel tuo cielo.';
   @override
   String get creationSuccessUnlitMessage =>
       'Un nuovo obiettivo è fissato, ti aspetta nel cielo.';
@@ -1452,6 +1504,12 @@ class StringsIt implements AppStrings {
   @override
   String get aboutTagline =>
       'Un\'app di crescita personale per registrare i momenti che hai superato.';
+  @override
+  String get downloadApkBannerBody =>
+      'Stai usando la versione web. Per l\'app Android vera e propria, con '
+      'notifiche e tutto il resto, scarica il file APK.';
+  @override
+  String get downloadApkAction => 'Scarica l\'app per Android';
 
   @override
   List<String> get monthAbbreviations => const [
@@ -1488,7 +1546,7 @@ class StringsIt implements AppStrings {
   String get onboardingIntroTitle => 'Benvenuto nel tuo Cielo';
   @override
   String get onboardingIntroBody =>
-      'Victory Stars trasforma le cose che realizzi nel tuo cielo notturno '
+      'Inner Stars trasforma le cose che realizzi nel tuo cielo notturno '
       'personale — un posto dove guardare indietro a tutto ciò che hai '
       'attraversato.';
   @override

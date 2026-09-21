@@ -54,8 +54,10 @@ const double kBorderWidthActive = 2;
 /// pulsing) and by [size], which should be roughly the control's own extent
 /// so a small chip doesn't get a button-sized halo.
 ///
-/// This is the supernova's own outer glow, reused everywhere something is
-/// burning — a lit star, a primary button, a filled field, a chosen tile.
+/// This is the supernova's own outer glow, reused where something is
+/// actually burning — a lit star, a primary action disc/pill, a focused
+/// field. Deliberately *not* used by [selectableDecoration]: a merely
+/// chosen chip/button/toggle is lit, not burning, and stays flat.
 List<BoxShadow> goldGlow(
   AppColors colors, {
   double strength = 1,
@@ -73,10 +75,7 @@ List<BoxShadow> goldGlow(
 
 /// A plain surface: night panel, navy hairline border. The app's default
 /// container — cards, sheets, anything not currently being acted on.
-BoxDecoration panelDecoration(
-  AppColors colors, {
-  double radius = kRadiusCard,
-}) {
+BoxDecoration panelDecoration(AppColors colors, {double radius = kRadiusCard}) {
   return BoxDecoration(
     color: colors.nightPanel,
     border: Border.all(color: colors.nightBorder, width: kBorderWidth),
@@ -84,40 +83,15 @@ BoxDecoration panelDecoration(
   );
 }
 
-/// A surface that can be picked — a chip, an icon tile, a kind card.
+/// A surface that can be picked — a chip, a toggle pill, an icon tile, a
+/// filter button, a kind card.
 ///
-/// Unselected it's a plain panel. Selected it lights: a gold ring, a gold
-/// glow, and a fill that's brightest at the center and fades outward, which
-/// is the supernova's own radial falloff rather than a flat tint. That
-/// radial fill is the single biggest reason a selected control here reads
-/// as *burning* instead of merely *highlighted*.
+/// Unselected it's a plain panel. Selected it's the same panel with a gold
+/// ring instead of a navy hairline — flat, not a glow or a radial fill.
+/// There used to be a gold gradient-and-glow "burning" treatment here; it's
+/// gone for good (confirmed unwanted, more than once) — don't reintroduce it
+/// on a button, a switch/toggle pill, or a multi-choice chip.
 BoxDecoration selectableDecoration(
-  AppColors colors, {
-  required bool selected,
-  double radius = kRadiusField,
-  double glowSize = 40,
-}) {
-  if (!selected) return panelDecoration(colors, radius: radius);
-  return BoxDecoration(
-    gradient: RadialGradient(
-      colors: [
-        colors.gold.withValues(alpha: 0.26),
-        colors.gold.withValues(alpha: 0.10),
-      ],
-      radius: 0.9,
-    ),
-    border: Border.all(color: colors.gold, width: kBorderWidthActive),
-    borderRadius: BorderRadius.circular(radius),
-    boxShadow: goldGlow(colors, strength: 0.85, size: glowSize),
-  );
-}
-
-/// [selectableDecoration] without its gold radial fill/glow — just the flat
-/// panel with a gold border once selected. For a surface that already
-/// carries its own content/color (a shape's own stars, a kind's own glyph),
-/// where the glow read as a wash sitting *on top of* that content rather
-/// than as a halo around a plain chip.
-BoxDecoration flatSelectableDecoration(
   AppColors colors, {
   required bool selected,
   double radius = kRadiusField,

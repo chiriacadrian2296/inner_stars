@@ -178,8 +178,7 @@ class StringsRo implements AppStrings {
   String get menuFriendsDescription =>
       'Constelații comune și victorii sărbătorite împreună — în curând.';
   @override
-  String get menuMetaphorDescription =>
-      'Ce înseamnă fiecare cuvânt din cer.';
+  String get menuMetaphorDescription => 'Ce înseamnă fiecare cuvânt din cer.';
   @override
   String get menuSettingsDescription =>
       'Limbă, mementouri și tot ce ține de contul tău.';
@@ -288,6 +287,14 @@ class StringsRo implements AppStrings {
   @override
   String get noSearchResults => 'Nicio stea nu corespunde căutării.';
   @override
+  String get noSearchResultsSupernovas =>
+      'Nicio supernovă nu corespunde căutării.';
+  @override
+  String get noSearchResultsConstellations =>
+      'Nicio constelație nu corespunde căutării.';
+  @override
+  String get noSearchResultsStars => 'Nicio stea nu corespunde căutării.';
+  @override
   String get skyEmptyConstellations => 'Încă nicio constelație.';
   @override
   String get skyEmptyStars => 'Încă nicio stea.';
@@ -306,11 +313,58 @@ class StringsRo implements AppStrings {
   @override
   String get filterAreasAction => 'Filtrează zonele';
   @override
-  String get applyAreaFilterAction => 'Aplică filtrul';
+  String get areaFilterDefaultLabel => 'Zone';
+  @override
+  String activeAreasCount(int count) => count == 1 ? '1 zonă' : '$count zone';
+  @override
+  String get filterKindAction => 'Filtrează tipurile';
   @override
   String get filterKindSectionTitle => 'Tipul stelei';
   @override
   String get allKindsLabel => 'Toate tipurile';
+  @override
+  String get kindFilterDefaultLabel => 'Tipuri de stele';
+  @override
+  String activeKindsCount(int count) =>
+      count == 1 ? '1 tip de stea' : '$count tipuri de stele';
+  @override
+  String get applyFilterAction => 'Aplică filtrul';
+  @override
+  String get filterDateRangeAction => 'Filtrează după perioadă';
+  @override
+  String get dateRangeFilterSectionTitle => 'Perioadă';
+  @override
+  String get dateRangeUnitWeek => 'Săptămână';
+  @override
+  String get dateRangeUnitMonth => 'Lună';
+  @override
+  String get dateRangeUnitYear => 'An';
+  @override
+  String get dateRangeStepBackAction => 'Perioada anterioară';
+  @override
+  String get dateRangeStepForwardAction => 'Perioada următoare';
+  @override
+  String get dateRangeFromLabel => 'De la';
+  @override
+  String get dateRangeToLabel => 'Până la';
+  @override
+  String get clearFilterAction => 'Șterge';
+  @override
+  String get sortAction => 'Sortează rezultatele';
+  @override
+  String get sortButtonDefaultLabel => 'Sortează';
+  @override
+  String get sortSheetTitle => 'Sortează după';
+  @override
+  String get sortFieldDate => 'Dată';
+  @override
+  String get sortFieldIntensity => 'Intensitate';
+  @override
+  String get sortFieldName => 'Nume';
+  @override
+  String get sortDirectionAscending => 'Crescător';
+  @override
+  String get sortDirectionDescending => 'Descrescător';
   @override
   String get searchButtonLabel => 'Caută';
   @override
@@ -693,12 +747,8 @@ class StringsRo implements AppStrings {
   String get searchTourAllAreasTitle => 'Toate ariile';
   @override
   String get searchTourAllAreasBody =>
-      'Dezactivează pentru a-ți construi propria selecție.';
-  @override
-  String get searchTourAllKindsTitle => 'Filtrează după tip';
-  @override
-  String get searchTourAllKindsBody =>
-      'Arată doar stele aprinse, obiective, pulsari sau stele stinse.';
+      'Activează pentru a le include pe toate, sau selectează doar cele '
+      'care contează pentru tine.';
   @override
   String get searchTourApplyTitle => 'Aplică';
   @override
@@ -1451,6 +1501,12 @@ class StringsRo implements AppStrings {
   @override
   String get aboutTagline =>
       'O aplicație de dezvoltare personală pentru a nota momentele pe care le-ai depășit.';
+  @override
+  String get downloadApkBannerBody =>
+      'Folosești versiunea web. Pentru aplicația Android adevărată, cu '
+      'notificări și tot restul, descarcă fișierul APK.';
+  @override
+  String get downloadApkAction => 'Descarcă aplicația pentru Android';
 
   @override
   List<String> get monthAbbreviations => const [
@@ -1487,7 +1543,7 @@ class StringsRo implements AppStrings {
   String get onboardingIntroTitle => 'Bine ai venit pe cerul tău';
   @override
   String get onboardingIntroBody =>
-      'Victory Stars transformă lucrurile pe care le realizezi în propriul '
+      'Inner Stars transformă lucrurile pe care le realizezi în propriul '
       'tău cer nocturn — un loc unde să privești înapoi la tot ce ai '
       'trecut.';
   @override

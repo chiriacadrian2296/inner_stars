@@ -109,8 +109,7 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
       final habitRepository = await HabitRepository.create();
       final habitCompletionRepository =
           await HabitCompletionRepository.create();
-      final starsShapeRepository =
-          await StarsShapeRepository.create();
+      final starsShapeRepository = await StarsShapeRepository.create();
       final areaVisionRepository = await AreaVisionRepository.create();
       final reflectionAnswerRepository =
           await ReflectionAnswerRepository.create();
@@ -317,7 +316,7 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
       tourLengths: const {
         'sky-navigation': 15,
         'star-form': 14,
-        'search-stars': 7,
+        'search-stars': 6,
         'light-your-sky': 4,
         'constellation-form': 11,
         'supernova-vision': 4,
@@ -360,7 +359,7 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
       ),
       child: MaterialApp(
         navigatorKey: _navigatorKey,
-        title: 'Victory Stars',
+        title: 'Inner Stars',
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(),
         locale: Locale(settings.locale),
@@ -370,10 +369,8 @@ class _VictoryStarsAppState extends State<VictoryStarsApp> {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        builder: (context, child) => StringsScope(
-          strings: strings,
-          child: child!,
-        ),
+        builder: (context, child) =>
+            StringsScope(strings: strings, child: child!),
         home: AnnotatedRegion<SystemUiOverlayStyle>(
           // Android draws its own status/navigation bars over the app by
           // default with a plain white background regardless of the app's

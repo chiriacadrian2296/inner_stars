@@ -286,6 +286,13 @@ class StringsEn implements AppStrings {
   @override
   String get noSearchResults => 'No stars match your search.';
   @override
+  String get noSearchResultsSupernovas => 'No supernovas match your search.';
+  @override
+  String get noSearchResultsConstellations =>
+      'No constellations match your search.';
+  @override
+  String get noSearchResultsStars => 'No stars match your search.';
+  @override
   String get skyEmptyConstellations => 'No constellations yet.';
   @override
   String get skyEmptyStars => 'No stars yet.';
@@ -304,11 +311,58 @@ class StringsEn implements AppStrings {
   @override
   String get filterAreasAction => 'Filter areas';
   @override
-  String get applyAreaFilterAction => 'Apply filter';
+  String get areaFilterDefaultLabel => 'Areas';
+  @override
+  String activeAreasCount(int count) => count == 1 ? '1 area' : '$count areas';
+  @override
+  String get filterKindAction => 'Filter kinds';
   @override
   String get filterKindSectionTitle => 'Star kind';
   @override
   String get allKindsLabel => 'All kinds';
+  @override
+  String get kindFilterDefaultLabel => 'Star kinds';
+  @override
+  String activeKindsCount(int count) =>
+      count == 1 ? '1 star kind' : '$count star kinds';
+  @override
+  String get applyFilterAction => 'Apply filter';
+  @override
+  String get filterDateRangeAction => 'Filter by date';
+  @override
+  String get dateRangeFilterSectionTitle => 'Date range';
+  @override
+  String get dateRangeUnitWeek => 'Week';
+  @override
+  String get dateRangeUnitMonth => 'Month';
+  @override
+  String get dateRangeUnitYear => 'Year';
+  @override
+  String get dateRangeStepBackAction => 'Previous period';
+  @override
+  String get dateRangeStepForwardAction => 'Next period';
+  @override
+  String get dateRangeFromLabel => 'From';
+  @override
+  String get dateRangeToLabel => 'To';
+  @override
+  String get clearFilterAction => 'Clear';
+  @override
+  String get sortAction => 'Sort results';
+  @override
+  String get sortButtonDefaultLabel => 'Sort';
+  @override
+  String get sortSheetTitle => 'Sort by';
+  @override
+  String get sortFieldDate => 'Date';
+  @override
+  String get sortFieldIntensity => 'Intensity';
+  @override
+  String get sortFieldName => 'Name';
+  @override
+  String get sortDirectionAscending => 'Ascending';
+  @override
+  String get sortDirectionDescending => 'Descending';
   @override
   String get searchButtonLabel => 'Search';
   @override
@@ -686,12 +740,7 @@ class StringsEn implements AppStrings {
   String get searchTourAllAreasTitle => 'All areas';
   @override
   String get searchTourAllAreasBody =>
-      'Flip this off to build your own selection instead.';
-  @override
-  String get searchTourAllKindsTitle => 'Filter by kind';
-  @override
-  String get searchTourAllKindsBody =>
-      'Show just lit stars, goals, pulsars, or dead ones.';
+      'Flip this on to include them all, or pick just the ones you care about.';
   @override
   String get searchTourApplyTitle => 'Apply';
   @override
@@ -1431,6 +1480,12 @@ class StringsEn implements AppStrings {
   @override
   String get aboutTagline =>
       'A personal growth app for recording the moments you got through.';
+  @override
+  String get downloadApkBannerBody =>
+      "You're using the web version. For the real Android app, with "
+      'notifications and everything else, download the APK.';
+  @override
+  String get downloadApkAction => 'Download the Android app';
 
   @override
   List<String> get monthAbbreviations => const [
@@ -1467,7 +1522,7 @@ class StringsEn implements AppStrings {
   String get onboardingIntroTitle => 'Welcome to your Sky';
   @override
   String get onboardingIntroBody =>
-      'Victory Stars turns the things you accomplish into your own night '
+      'Inner Stars turns the things you accomplish into your own night '
       "sky — a place to look back on everything you've been through.";
   @override
   String get onboardingNascentTitle => 'A constellation is born whole';

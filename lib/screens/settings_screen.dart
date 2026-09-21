@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../data/area_vision_repository.dart';
 import '../data/audio_settings_repository.dart';
@@ -28,6 +30,18 @@ import 'onboarding_screen.dart';
 /// (`OnboardingScreen` and the `_push` call are both untouched), just not
 /// drawn.
 const _kShowOnboarding = false;
+
+/// Always resolves to whatever `.apk` asset the most recent GitHub Release
+/// was published with, under this exact file name — GitHub's own
+/// `/releases/latest/download/<name>` redirect, not a link to one specific
+/// release. Publishing a new version is then just "attach an asset named
+/// `inner-stars.apk` to a new release": this link, and the button below that
+/// uses it, never need to change. The repo path itself (`victory_stars`) is
+/// still the GitHub repo's actual name — renaming the repo to match the
+/// app's new "Inner Stars" branding is a separate, bigger call (it moves
+/// the Pages URL too) that hasn't been made yet.
+const _kApkDownloadUrl =
+    'https://github.com/chiriacadrian2296/victory_stars/releases/latest/download/inner-stars.apk';
 
 /// Settings, opened from the Sky's own side menu — the drawer carries only
 /// one entry for it, everything else here is a section of this one page.
@@ -440,7 +454,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Victory Stars',
+                              'Inner Stars',
                               style: TextStyle(
                                 color: colors.text,
                                 fontFamily: kFontBranding,
@@ -467,6 +481,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 height: 1.4,
                               ),
                             ),
+                            // Web only: this build IS the browser tab
+                            // someone's looking at, and the "Install"
+                            // prompt Chrome/Safari offer here installs
+                            // *this* (a PWA), not the real Android app —
+                            // easy to mistake for one another. Points at
+                            // the actual .apk instead of trying to
+                            // suppress that prompt, so both stay available
+                            // rather than this fix breaking PWA install
+                            // for whoever actually wants it.
+                            if (kIsWeb) ...[
+                              const SizedBox(height: 14),
+                              Divider(color: colors.nightBorder, height: 1),
+                              const SizedBox(height: 14),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.android,
+                                    color: colors.gold,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      strings.downloadApkBannerBody,
+                                      style: TextStyle(
+                                        color: colors.muted,
+                                        fontSize: 13,
+                                        height: 1.45,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              OutlinedButton.icon(
+                                onPressed: () => launchUrl(
+                                  Uri.parse(_kApkDownloadUrl),
+                                  mode: LaunchMode.externalApplication,
+                                ),
+                                icon: const Icon(Icons.download, size: 18),
+                                label: Text(strings.downloadApkAction),
+                              ),
+                            ],
                           ],
                         ),
                       );
@@ -534,8 +592,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: TextButton.icon(
-                          onPressed: () =>
-                              _push(const OnboardingScreen()),
+                          onPressed: () => _push(const OnboardingScreen()),
                           style: _debugButtonStyle(colors, colors.muted),
                           icon: Icon(
                             Icons.play_circle_outline,
@@ -557,8 +614,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: TextButton.icon(
-                        onPressed: () =>
-                            _push(const MenuButtonGalleryScreen()),
+                        onPressed: () => _push(const MenuButtonGalleryScreen()),
                         style: _debugButtonStyle(colors, colors.muted),
                         icon: Icon(
                           Icons.grid_view_outlined,
@@ -643,11 +699,7 @@ class _PlaceholderPanel extends StatelessWidget {
           Expanded(
             child: Text(
               body,
-              style: TextStyle(
-                color: colors.muted,
-                fontSize: 13,
-                height: 1.45,
-              ),
+              style: TextStyle(color: colors.muted, fontSize: 13, height: 1.45),
             ),
           ),
         ],

@@ -26,15 +26,19 @@ import '../tutorials/tour_step_card.dart';
 import '../utils/date_format.dart';
 import '../utils/habit_stats.dart';
 import '../utils/icon_for_slug.dart';
+import '../utils/responsive.dart';
 import 'app_field.dart';
 import 'area_filter_sheet.dart';
 import 'area_tag.dart';
+import 'date_range_filter_sheet.dart';
 import 'dead_star_card.dart';
+import 'kind_filter_sheet.dart';
 import 'lit_star_card.dart';
 import 'navigate_here_button.dart';
 import 'pulsar_card.dart';
 import 'responsive_content.dart';
 import 'sky_navigation_target.dart';
+import 'sort_filter_sheet.dart';
 import 'unlit_star_card.dart';
 
 enum _SkyMode { supernovas, constellations, stars }
@@ -65,15 +69,33 @@ class _SkyEntry {
 
   String get title => (star?.title ?? habit!.title);
   String? get description => star?.description ?? habit?.description;
+
+  /// What "sort by intensity" means for this entry — a lit star's own
+  /// 1-5 rating, or 0 for anything without one (unlit/dead/pulsar), same
+  /// "nothing yet" reading as an empty date range elsewhere in this file.
+  int get intensityValue => star?.intensity ?? 0;
 }
 
 /// A switch between three views of the same underlying data — Supernovas
 /// (the 8 fixed life areas, tap one for its own detail page), Constellations
 /// (every project across whichever areas are in the area filter, tap one to
 /// open its [ConstellationScreen]), and Stars (every star and pulsar across
-/// those same areas, flat, newest first, further narrowed by a kind-filter
-/// row). Constellations and Stars share one area filter (default: every
-/// area), opened from [showAreaFilterSheet].
+/// those same areas, flat, further narrowed by a kind filter and ordered by
+/// whatever [showSortFilterSheet] is set to (newest first by default). Every
+/// mode gets the same search field, but each has its own set of filter
+/// buttons beside it: none in Supernovas (search runs alone — see
+/// [_filteredSupernovaAreas]), area + date + sort in Constellations, area +
+/// kind + date + sort in Stars. Each filter is its own sheet/button — area
+/// ([showAreaFilterSheet], default: empty, meaning no restriction — see
+/// [_areaFilter]'s own doc), kind ([showKindFilterSheet], Stars only, same
+/// empty-means-unrestricted default), date range ([showDateRangeFilterSheet],
+/// default: no range), and sort ([showSortFilterSheet], the one exception:
+/// there's no "off" state, only a default) — rather than one combined sheet,
+/// so each button's own face can say exactly what it narrows or how it's
+/// ordering. In Constellations a project survives the date range if any one
+/// of its own stars/pulsars falls inside it (and sorts by whichever one of
+/// those is most recent/intense), since a project has no date or intensity
+/// of its own.
 ///
 /// Nascent stars appear in none of the three: they have no record behind
 /// them, only an empty slot on a shape (see [kListableStarKinds]).
@@ -129,13 +151,60 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
   bool _autoSwitchedModeForTour = false;
   final _queryController = TextEditingController();
   String _query = '';
-  Set<StarKind> _kindFilter = {...kListableStarKinds};
-  Set<LifeArea> _areaFilter = {...LifeArea.values};
+  // Empty means unfiltered (every area/kind shown) rather than "show
+  // nothing" — opening either filter sheet with nothing pre-checked is the
+  // point: picking a filter is choosing what to *add*, not what to remove
+  // from an already-full selection. See [_filteredAreaProjects] and
+  // [_filteredEntries] for the "empty ⟺ no restriction" read side, and
+  // [_isAreaFilterNarrowed]/[_isKindFilterNarrowed] for why an explicit full
+  // selection (still reachable via each sheet's own "All areas"/"All kinds"
+  // toggle) counts as just as unfiltered as empty does.
+  Set<StarKind> _kindFilter = {};
+  Set<LifeArea> _areaFilter = {};
+  DateTimeRange? _dateRangeFilter;
+
+  /// Which chip (if any) produced [_dateRangeFilter] — kept alongside it
+  /// purely so a reopened sheet can still show the right chip highlighted
+  /// instead of just "Custom". (The filter button itself always shows the
+  /// actual span — see [_dateRangeButtonLabel] — rather than the preset's
+  /// name, precisely so seeing it doesn't require opening the sheet.) See
+  /// [DateRangePreset]'s own doc for why this can't just be recomputed from
+  /// the range on demand.
+  DateRangePreset _dateRangePreset = DateRangePreset.allTime;
+
+  /// Unlike the three filters above, sorting has no "off" state to default
+  /// to empty — results are always in *some* order — so these two start at
+  /// whatever this file's lists always used to be sorted by (newest first)
+  /// rather than at a neutral placeholder.
+  SortField _sortField = SortField.date;
+  SortDirection _sortDirection = SortDirection.descending;
+
+  /// Applies [_sortDirection] to a raw ascending-sense comparison — the one
+  /// place that flip happens, so [_filteredProjects] and [_filteredEntries]
+  /// each only have to say what "ascending" means for their own items.
+  int _directed(int ascendingCompare) =>
+      _sortDirection == SortDirection.ascending
+      ? ascendingCompare
+      : -ascendingCompare;
 
   List<Project> get _filteredAreaProjects => widget.projectRepository
       .getAll()
-      .where((p) => _areaFilter.contains(p.area))
+      .where((p) => _areaFilter.isEmpty || _areaFilter.contains(p.area))
       .toList();
+
+  /// The 8 fixed areas, narrowed by [_query] against each one's own
+  /// localized display name — the same free-text search Constellations and
+  /// Stars already do against a title/description, just applied to a fixed
+  /// list instead of a repository (there's no area filter or kind filter
+  /// here — you're already looking at every area, and a kind doesn't apply
+  /// to one — so search is the only thing this mode's row offers).
+  List<LifeArea> _filteredSupernovaAreas(AppStrings strings) {
+    final query = _query.trim().toLowerCase();
+    if (query.isEmpty) return LifeArea.values;
+    return LifeArea.values
+        .where((a) => a.displayName(strings).toLowerCase().contains(query))
+        .toList();
+  }
 
   Map<int, Project> get _projectsById => {
     for (final project in _filteredAreaProjects) project.id: project,
@@ -158,11 +227,61 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
     );
   }
 
+  /// What "sort by date" means for a project — the most recent of its own
+  /// lit stars, or [Project.createdAt] itself when it has none yet (its own
+  /// birth is the only date it has to offer at that point).
+  DateTime _projectSortDate(Project project) {
+    final litDates = _starsForProject(project.id)
+        .where((s) => s.isLit)
+        .map((s) => s.achievedDate!);
+    return litDates.isEmpty
+        ? project.createdAt
+        : litDates.reduce((a, b) => a.isAfter(b) ? a : b);
+  }
+
+  /// What "sort by intensity" means for a project — the same combined
+  /// intensity across its lit stars that [_ProjectCard] shows as a badge.
+  int _projectIntensity(Project project) =>
+      _starsForProject(project.id)
+          .where((s) => s.isLit)
+          .fold<int>(0, (sum, s) => sum + s.intensity!);
+
+  int _compareProjects(Project a, Project b) {
+    final ascending = switch (_sortField) {
+      SortField.date => _projectSortDate(a).compareTo(_projectSortDate(b)),
+      SortField.intensity => _projectIntensity(
+        a,
+      ).compareTo(_projectIntensity(b)),
+      SortField.name => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    };
+    return _directed(ascending);
+  }
+
   List<Project> get _filteredProjects {
     final query = _query.trim().toLowerCase();
-    final projects = _filteredAreaProjects;
-    if (query.isEmpty) return projects;
-    return projects.where((p) => p.name.toLowerCase().contains(query)).toList();
+    final range = _dateRangeFilter;
+    var projects = _filteredAreaProjects;
+    // A project has no date of its own to compare — it's kept only if at
+    // least one of its stars/pulsars actually falls inside the range,
+    // same idea as the kind filter but resolved through [_allEntries]
+    // rather than a field on [Project] itself.
+    if (range != null) {
+      final projectIdsInRange = _allEntries
+          .where((e) => _isWithinRange(e.sortKey, range))
+          .map((e) => e.star?.projectId ?? e.habit?.projectId)
+          .whereType<int>()
+          .toSet();
+      projects = projects
+          .where((p) => projectIdsInRange.contains(p.id))
+          .toList();
+    }
+    if (query.isNotEmpty) {
+      projects = projects
+          .where((p) => p.name.toLowerCase().contains(query))
+          .toList();
+    }
+    projects = [...projects]..sort(_compareProjects);
+    return projects;
   }
 
   /// Every star and pulsar across the filtered areas' projects, of every
@@ -181,14 +300,29 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
     return entries;
   }
 
+  int _compareEntries(_SkyEntry a, _SkyEntry b) {
+    final ascending = switch (_sortField) {
+      SortField.date => a.sortKey.compareTo(b.sortKey),
+      SortField.intensity => a.intensityValue.compareTo(b.intensityValue),
+      SortField.name => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+    };
+    return _directed(ascending);
+  }
+
   List<_SkyEntry> get _filteredEntries {
     final query = _query.trim().toLowerCase();
-    return _allEntries.where((e) {
-      if (!_kindFilter.contains(e.kind)) return false;
+    final range = _dateRangeFilter;
+    final entries = _allEntries.where((e) {
+      if (_kindFilter.isNotEmpty && !_kindFilter.contains(e.kind)) {
+        return false;
+      }
+      if (range != null && !_isWithinRange(e.sortKey, range)) return false;
       if (query.isEmpty) return true;
       return e.title.toLowerCase().contains(query) ||
           (e.description?.toLowerCase().contains(query) ?? false);
     }).toList();
+    entries.sort(_compareEntries);
+    return entries;
   }
 
   /// The [Star]-backed subset of [_filteredEntries], in the same order —
@@ -298,14 +432,131 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
     final result = await showAreaFilterSheet(
       context,
       selectedAreas: _areaFilter,
-      selectedKinds: _mode == _SkyMode.stars ? _kindFilter : null,
+    );
+    if (result == null) return;
+    setState(() => _areaFilter = result);
+  }
+
+  Future<void> _openKindFilter() async {
+    final result = await showKindFilterSheet(
+      context,
+      selectedKinds: _kindFilter,
+    );
+    if (result == null) return;
+    setState(() => _kindFilter = result);
+  }
+
+  Future<void> _openDateRangeFilter() async {
+    final result = await showDateRangeFilterSheet(
+      context,
+      initialRange: _dateRangeFilter,
+      initialPreset: _dateRangePreset,
     );
     if (result == null) return;
     setState(() {
-      _areaFilter = result.areas;
-      final kinds = result.kinds;
-      if (kinds != null) _kindFilter = kinds;
+      _dateRangeFilter = result.range;
+      _dateRangePreset = result.preset;
     });
+  }
+
+  Future<void> _openSortFilter() async {
+    final result = await showSortFilterSheet(
+      context,
+      initialField: _sortField,
+      initialDirection: _sortDirection,
+    );
+    if (result == null) return;
+    setState(() {
+      _sortField = result.field;
+      _sortDirection = result.direction;
+    });
+  }
+
+  /// Whether the current sort differs from this file's own long-standing
+  /// default (newest first) — the button only lights up gold when it does,
+  /// same "neutral vs. narrowed" reading the other three filter buttons use
+  /// even though, unlike them, sorting itself is never actually "off".
+  bool get _isSortNonDefault =>
+      _sortField != SortField.date ||
+      _sortDirection != SortDirection.descending;
+
+  /// The sort button's own label — a neutral prompt at the default, otherwise
+  /// the field's name plus an arrow standing in for the direction (e.g.
+  /// "Intensità ↑"), so which way it's currently sorting is visible without
+  /// opening the sheet.
+  String _sortButtonLabel(AppStrings strings) {
+    if (!_isSortNonDefault) return strings.sortButtonDefaultLabel;
+    final field = switch (_sortField) {
+      SortField.date => strings.sortFieldDate,
+      SortField.intensity => strings.sortFieldIntensity,
+      SortField.name => strings.sortFieldName,
+    };
+    final arrow = _sortDirection == SortDirection.ascending ? '↑' : '↓';
+    return '$field $arrow';
+  }
+
+  /// Whether [_areaFilter] has actually narrowed anything from "everything".
+  /// Only a *partial* selection counts — empty (the default) and the full
+  /// set (still reachable via the sheet's own "All areas" toggle) both mean
+  /// "no restriction", so neither one should light the button up.
+  bool get _isAreaFilterNarrowed =>
+      _areaFilter.isNotEmpty && _areaFilter.length != LifeArea.values.length;
+
+  /// Same idea as [_isAreaFilterNarrowed], for [_kindFilter].
+  bool get _isKindFilterNarrowed =>
+      _kindFilter.isNotEmpty && _kindFilter.length != kListableStarKinds.length;
+
+  /// The area-filter button's own label — a neutral prompt while nothing's
+  /// narrowed, otherwise how many areas are currently picked (e.g. "2
+  /// areas") rather than naming which ones.
+  String _areaFilterButtonLabel(AppStrings strings) => _isAreaFilterNarrowed
+      ? strings.activeAreasCount(_areaFilter.length)
+      : strings.areaFilterDefaultLabel;
+
+  /// Same idea as [_areaFilterButtonLabel], for [_kindFilter] (e.g. "3 star
+  /// kinds").
+  String _kindFilterButtonLabel(AppStrings strings) => _isKindFilterNarrowed
+      ? strings.activeKindsCount(_kindFilter.length)
+      : strings.kindFilterDefaultLabel;
+
+  /// The date-filter button's own label — the section title while no range
+  /// is set, otherwise the picked span itself (e.g. "15/06 - 03/07"), even
+  /// when it came from one of the quick-preset chips: naming the preset
+  /// ("Last week") would mean opening the sheet just to see which days that
+  /// actually means, which is exactly what showing it here avoids. The year
+  /// only gets printed (e.g. "15/06/25 - 03/07/25") when at least one side
+  /// of the span falls outside the current year — otherwise it's implied
+  /// and just adds clutter.
+  String _dateRangeButtonLabel(AppStrings strings) {
+    final range = _dateRangeFilter;
+    if (range == null) return strings.dateRangeFilterSectionTitle;
+    final currentYear = DateTime.now().year;
+    final needsYear =
+        range.start.year != currentYear || range.end.year != currentYear;
+    final format = needsYear ? formatShortDateWithYear : formatShortDate;
+    return '${format(range.start)} - ${format(range.end)}';
+  }
+
+  /// Whether [date] falls on or between [range]'s two days — inclusive of
+  /// all of [DateTimeRange.end]'s own day, since the picker only ever hands
+  /// back midnight-anchored dates and a star logged at, say, 8pm on the end
+  /// day should still count as "within" it.
+  bool _isWithinRange(DateTime date, DateTimeRange range) {
+    final start = DateTime(
+      range.start.year,
+      range.start.month,
+      range.start.day,
+    );
+    final end = DateTime(
+      range.end.year,
+      range.end.month,
+      range.end.day,
+      23,
+      59,
+      59,
+      999,
+    );
+    return !date.isBefore(start) && !date.isAfter(end);
   }
 
   /// Switches out of Supernovas on its own once the `search-stars` tour
@@ -357,11 +608,16 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
     final colors = context.colors;
     final strings = context.strings;
     _syncModeToTour(context);
-    final allEntries = _mode == _SkyMode.stars ? _allEntries : const <_SkyEntry>[];
+    final allEntries = _mode == _SkyMode.stars
+        ? _allEntries
+        : const <_SkyEntry>[];
     final filteredEntries = _mode == _SkyMode.stars
         ? _filteredEntries
         : const <_SkyEntry>[];
-    final areaFilterActive = _areaFilter.length != LifeArea.values.length;
+    final areaFilterActive = _isAreaFilterNarrowed;
+    final kindFilterActive = _isKindFilterNarrowed;
+    final dateRangeFilterActive = _dateRangeFilter != null;
+    final sortNonDefault = _isSortNonDefault;
 
     return Container(
       color: colors.night,
@@ -415,33 +671,32 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                     ),
                   ),
                 ),
-                if (_mode != _SkyMode.supernovas) ...[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: HintTarget(
-                            tour: 'search-stars',
-                            order: 3,
-                            showArrow: true,
-                            contentBuilder: appTourStepCard,
-                            title: strings.searchTourFieldTitle,
-                            description: strings.searchTourFieldBody,
-                            child: AppTextField(
-                              controller: _queryController,
-                              hintText: strings.searchHint,
-                              onChanged: (value) =>
-                                  setState(() => _query = value),
-                              prefixIcon: Icon(
-                                Icons.search,
-                                color: colors.muted,
-                                size: 20,
-                              ),
-                            ),
-                          ),
+                Builder(
+                  builder: (context) {
+                    final searchField = HintTarget(
+                      tour: 'search-stars',
+                      order: 3,
+                      showArrow: true,
+                      contentBuilder: appTourStepCard,
+                      title: strings.searchTourFieldTitle,
+                      description: strings.searchTourFieldBody,
+                      child: AppTextField(
+                        controller: _queryController,
+                        hintText: strings.searchHint,
+                        onChanged: (value) => setState(() => _query = value),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: colors.muted,
+                          size: 20,
                         ),
-                        const SizedBox(width: 10),
+                      ),
+                    );
+
+                    // Empty in Supernovas — no filter applies to a fixed
+                    // grid of all 8 areas — otherwise area (+ kind, Stars
+                    // only) + date, in that order.
+                    final filterButtons = <Widget>[
+                      if (_mode != _SkyMode.supernovas) ...[
                         HintTarget(
                           tour: 'search-stars',
                           order: 4,
@@ -449,56 +704,156 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                           contentBuilder: appTourStepCard,
                           title: strings.searchTourFilterButtonTitle,
                           description: strings.searchTourFilterButtonBody,
-                          child: _AreaFilterButton(
+                          child: _FilterButton(
+                            icon: Icons.tune,
                             active: areaFilterActive,
+                            label: _areaFilterButtonLabel(strings),
                             tooltip: strings.filterAreasAction,
                             onTap: _openAreaFilter,
                           ),
                         ),
+                        if (_mode == _SkyMode.stars)
+                          _FilterButton(
+                            icon: Icons.category_outlined,
+                            active: kindFilterActive,
+                            label: _kindFilterButtonLabel(strings),
+                            tooltip: strings.filterKindAction,
+                            onTap: _openKindFilter,
+                          ),
+                        _FilterButton(
+                          icon: Icons.calendar_month,
+                          active: dateRangeFilterActive,
+                          label: _dateRangeButtonLabel(strings),
+                          tooltip: strings.filterDateRangeAction,
+                          onTap: _openDateRangeFilter,
+                        ),
+                        _FilterButton(
+                          icon: Icons.sort,
+                          active: sortNonDefault,
+                          label: _sortButtonLabel(strings),
+                          tooltip: strings.sortAction,
+                          onTap: _openSortFilter,
+                        ),
                       ],
-                    ),
-                  ),
-                ],
+                    ];
+
+                    // Wide layouts keep search and its filter buttons on
+                    // one row (search always exactly half; the buttons
+                    // split the other half evenly, so the field's own flex
+                    // matches their combined count). On a real phone width
+                    // that same row leaves each button too little space for
+                    // its own label (worst case: 3 buttons in Stars, each
+                    // barely a sixth of the row) — narrow layouts get the
+                    // buttons their own full-width row underneath instead,
+                    // splitting only among themselves.
+                    if (isWideLayout(context)) {
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: filterButtons.isEmpty
+                                  ? 1
+                                  : filterButtons.length,
+                              child: searchField,
+                            ),
+                            for (final button in filterButtons) ...[
+                              const SizedBox(width: 10),
+                              Expanded(child: button),
+                            ],
+                          ],
+                        ),
+                      );
+                    }
+                    return Column(
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            20,
+                            10,
+                            20,
+                            filterButtons.isEmpty ? 12 : 6,
+                          ),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: searchField,
+                          ),
+                        ),
+                        if (filterButtons.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                            child: Row(
+                              children: [
+                                for (
+                                  var i = 0;
+                                  i < filterButtons.length;
+                                  i++
+                                ) ...[
+                                  // 6, not the wide layout's 10 — matching
+                                  // the gap above this row (between it and
+                                  // the search field), which is also 6.
+                                  if (i > 0) const SizedBox(width: 6),
+                                  Expanded(child: filterButtons[i]),
+                                ],
+                              ],
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
               ],
             ),
           ),
           Expanded(
             child: switch (_mode) {
-              // All 8 cards are meant to read as one screen, no scrolling
-              // needed — LayoutBuilder + a min-height ConstrainedBox lets
-              // them center within the available space on any normal
-              // phone, while SingleChildScrollView is just a safety net
-              // for unusually short screens or large text scales, rather
-              // than the primary way this is meant to be viewed (same
-              // pattern as AdmireStarsScreen's area picker).
-              _SkyMode.supernovas => LayoutBuilder(
-                builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
-                      ),
-                      child: ResponsiveContent(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              for (var i = 0; i < LifeArea.values.length; i++) ...[
-                                if (i > 0) const SizedBox(height: 10),
-                                _AreaCard(
-                                  area: LifeArea.values[i],
-                                  onTap: () => _openArea(LifeArea.values[i]),
-                                  onNavigateTo: () => widget.onNavigateTo(
-                                    SkyAreaTarget(LifeArea.values[i]),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
+              // A plain top-flowing ListView, like Constellations/Stars
+              // below — deliberately not the old LayoutBuilder +
+              // full-height ConstrainedBox + Column approach, which forced
+              // this branch's box to at least fill the available height and
+              // then, on wide layouts, had `ResponsiveContent`'s own
+              // `Center` (there to cap width) center the whole card column
+              // *within* that stretched box — a Column's own
+              // `mainAxisAlignment` has no say over that, since the
+              // centering was happening one level up. A plain ListView
+              // sizes to its own content and never fights this: all 8
+              // unfiltered still read as one screen with no scrolling
+              // needed on any normal phone, and a search narrowed down to
+              // one or two cards now sits right under the search row
+              // instead of floating mid-screen.
+              _SkyMode.supernovas => Builder(
+                builder: (context) {
+                  final areas = _filteredSupernovaAreas(strings);
+                  if (areas.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Center(
+                        child: Text(
+                          strings.noSearchResultsSupernovas,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 14, color: colors.muted),
                         ),
                       ),
-                    ),
+                    );
+                  }
+                  return ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(0, 4, 0, 16),
+                    itemCount: areas.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final area = areas[index];
+                      return ResponsiveContent(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: _AreaCard(
+                            area: area,
+                            onTap: () => _openArea(area),
+                            onNavigateTo: () =>
+                                widget.onNavigateTo(SkyAreaTarget(area)),
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -579,18 +934,27 @@ class _AreaCard extends StatelessWidget {
   }
 }
 
-/// The filter trigger next to the search field on the Constellations/Stars
-/// views — opens [showAreaFilterSheet]. Gold-highlighted (with a small dot)
-/// whenever the current filter excludes at least one area, so it's obvious
-/// at a glance that the list isn't showing everything.
-class _AreaFilterButton extends StatelessWidget {
-  const _AreaFilterButton({
+/// A filter trigger next to the search field on the Constellations/Stars
+/// views — opens [showAreaFilterSheet], [showKindFilterSheet],
+/// [showDateRangeFilterSheet], or [showSortFilterSheet] depending on
+/// [icon]/[onTap]. [label] carries the current state right on the button's
+/// own face (a neutral prompt while nothing's narrowed, a summary like "2
+/// areas", the actual span "15/06 - 03/07", or "Intensity ↓" once something
+/// is), so there's no need to open the sheet just to
+/// see what's already set. Gold-highlighted whenever [active], same "lit vs
+/// dark" rule as everywhere else that state is shown this way.
+class _FilterButton extends StatelessWidget {
+  const _FilterButton({
+    required this.icon,
     required this.active,
+    required this.label,
     required this.tooltip,
     required this.onTap,
   });
 
+  final IconData icon;
   final bool active;
+  final String label;
   final String tooltip;
   final VoidCallback onTap;
 
@@ -606,30 +970,30 @@ class _AreaFilterButton extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(kRadiusField),
           child: Container(
-            width: 48,
             height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             decoration: selectableDecoration(colors, selected: active),
-            child: Stack(
-              alignment: Alignment.center,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  Icons.tune,
-                  size: 20,
+                  icon,
+                  size: 16,
                   color: active ? colors.gold : colors.muted,
                 ),
-                if (active)
-                  Positioned(
-                    top: 9,
-                    right: 9,
-                    child: Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: colors.gold,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                    color: active ? colors.text : colors.muted,
                   ),
+                ),
               ],
             ),
           ),
@@ -678,7 +1042,7 @@ class _ConstellationsList extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Center(
           child: Text(
-            strings.noSearchResults,
+            strings.noSearchResultsConstellations,
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: colors.muted),
           ),
@@ -687,7 +1051,11 @@ class _ConstellationsList extends StatelessWidget {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 100),
+      // Horizontal margin comes from each item's own Padding below, applied
+      // *inside* its ResponsiveContent instead of here — see that widget's
+      // comment for why: it's what keeps a card's left edge lined up with
+      // the search row above it on wide layouts.
+      padding: const EdgeInsets.fromLTRB(0, 4, 0, 100),
       itemCount: filteredProjects.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
@@ -697,22 +1065,25 @@ class _ConstellationsList extends StatelessWidget {
         final unlitStars = stars.where((s) => s.isUnlit).length;
         final activePulsars = activePulsarCountForProject(project.id);
         return ResponsiveContent(
-          child: _ProjectCard(
-            project: project,
-            starCount: litStars.length,
-            lastStarDate: litStars.isEmpty
-                ? null
-                : litStars
-                      .map((s) => s.achievedDate!)
-                      .reduce((a, b) => a.isAfter(b) ? a : b),
-            combinedIntensity: litStars.fold<int>(
-              0,
-              (sum, s) => sum + s.intensity!,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _ProjectCard(
+              project: project,
+              starCount: litStars.length,
+              lastStarDate: litStars.isEmpty
+                  ? null
+                  : litStars
+                        .map((s) => s.achievedDate!)
+                        .reduce((a, b) => a.isAfter(b) ? a : b),
+              combinedIntensity: litStars.fold<int>(
+                0,
+                (sum, s) => sum + s.intensity!,
+              ),
+              unlitStars: unlitStars,
+              activePulsars: activePulsars,
+              onTap: () => onTap(project),
+              onNavigateTo: () => onNavigateTo(SkyProjectTarget(project)),
             ),
-            unlitStars: unlitStars,
-            activePulsars: activePulsars,
-            onTap: () => onTap(project),
-            onNavigateTo: () => onNavigateTo(SkyProjectTarget(project)),
           ),
         );
       },
@@ -763,7 +1134,7 @@ class _FlatList extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Center(
           child: Text(
-            strings.noSearchResults,
+            strings.noSearchResultsStars,
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: colors.muted),
           ),
@@ -772,7 +1143,9 @@ class _FlatList extends StatelessWidget {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+      // Horizontal margin comes from each item's own Padding below — see
+      // the matching comment in [_ConstellationsList].
+      padding: const EdgeInsets.fromLTRB(0, 4, 0, 24),
       itemCount: entries.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
@@ -841,7 +1214,12 @@ class _FlatList extends StatelessWidget {
           case StarKind.nascent:
             return const SizedBox.shrink();
         }
-        return ResponsiveContent(child: card);
+        return ResponsiveContent(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: card,
+          ),
+        );
       },
     );
   }
@@ -922,11 +1300,7 @@ class _ProjectCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
-                        AreaTag(
-                          area: project.area,
-                          iconSize: 14,
-                          fontSize: 13,
-                        ),
+                        AreaTag(area: project.area, iconSize: 14, fontSize: 13),
                         const SizedBox(height: 10),
                         Wrap(
                           spacing: 14,
@@ -958,9 +1332,7 @@ class _ProjectCard extends StatelessWidget {
                             ),
                             _MetricBadge(
                               icon: Icons.offline_bolt,
-                              text: strings.intensityCount(
-                                combinedIntensity,
-                              ),
+                              text: strings.intensityCount(combinedIntensity),
                             ),
                             if (unlitStars > 0)
                               _MetricBadge(
@@ -970,9 +1342,7 @@ class _ProjectCard extends StatelessWidget {
                             if (activePulsars > 0)
                               _MetricBadge(
                                 icon: StarKind.pulsar.icon,
-                                text: strings.activePulsarsBadge(
-                                  activePulsars,
-                                ),
+                                text: strings.activePulsarsBadge(activePulsars),
                               ),
                           ],
                         ),
@@ -1054,4 +1424,3 @@ class _StatChip extends StatelessWidget {
     );
   }
 }
-

@@ -1,12 +1,12 @@
 ---
 name: deploy-to-all
-description: Deploy Victory Stars to both targets in one go — the phone (USB if plugged in, else wireless) and the browser — running the shared checks once, then both deploys, then a combined report.
+description: Deploy Inner Stars to both targets in one go — the phone (USB if plugged in, else wireless) and the browser — running the shared checks once, then both deploys, then a combined report.
 argument-hint: "[debug|release]"
 allowed-tools: Bash(flutter *) Bash(adb *) Bash(taskkill *) PowerShell(Get-Process *) PowerShell(Get-CimInstance *)
 disable-model-invocation: true
 ---
 
-# Deploy Victory Stars everywhere
+# Deploy Inner Stars everywhere
 
 Runs the **Deploy to Phone** and **Deploy to Web** skills back to back against the same build mode,
 sharing the analyze/test check between them instead of running it twice.

@@ -1,12 +1,12 @@
 ---
 name: deploy-to-phone
-description: Build Victory Stars, run analyze/tests, and install the APK on the user's real Android phone — over USB if it's plugged in, otherwise over wireless adb (falls back to a connected emulator if no phone is reachable at all) — then always launch the app.
+description: Build Inner Stars, run analyze/tests, and install the APK on the user's real Android phone — over USB if it's plugged in, otherwise over wireless adb (falls back to a connected emulator if no phone is reachable at all) — then always launch the app.
 argument-hint: "[debug|release]"
 allowed-tools: Bash(flutter *) Bash(adb *)
 disable-model-invocation: true
 ---
 
-# Deploy Victory Stars to the phone
+# Deploy Inner Stars to the phone
 
 Build mode: use the argument if given (`debug` or `release`), otherwise default to **debug** — the
 user's own standing preference while the app is under active development, so debug-only tooling

@@ -1,64 +1,62 @@
 import 'package:flutter/material.dart';
-import 'package:hint_kit/hint_kit.dart';
 
 import '../l10n/strings_scope.dart';
-import '../models/life_area.dart';
+import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
-import '../tutorials/tour_step_card.dart';
 import 'app_toggle_chip.dart';
+import 'star_glyph.dart';
 
-/// Opens the area filter used by Sky's Constellations/Stars views — a
-/// multi-select chip grid, one chip per [LifeArea]. Tapping a chip *adds* it
-/// to the filter; none checked (the default) means no restriction, i.e.
-/// every area, restyled to the app's normal night/gold palette instead of
-/// [AdmireStarsScreen]'s Nightlight gradient (same interaction as that
-/// screen's own area picker). Split out from what used to also carry a
-/// star-kind section — that's [showKindFilterSheet] now, its own separate
-/// button — so each filter button/sheet stands for exactly one thing.
+/// Opens the star-kind filter used by Sky's Stars view — a multi-select
+/// chip grid, one chip per [kListableStarKinds] entry, each in its own
+/// family's color so the filter reads the same way the sky does. Tapping a
+/// chip *adds* it to the filter; none checked (the default) means no
+/// restriction, i.e. every kind. Sibling to [showAreaFilterSheet] (split
+/// into its own button/sheet rather than a second section bolted onto that
+/// one, so each filter stands for exactly one thing) — same shape, same
+/// apply-or-keep contract, just for kinds instead of areas.
 ///
 /// Returns the new selection, or null if dismissed without tapping Apply
 /// (caller should keep its previous filter in that case). An empty result
-/// is a valid, meaningful answer — it's [SkyExplorerView]'s own default
-/// (see `_areaFilter`'s doc there) — this sheet has no opinion of its own on
-/// what "nothing checked" means, it just reports back whatever's checked.
-Future<Set<LifeArea>?> showAreaFilterSheet(
+/// is valid and meaningful — see [showAreaFilterSheet]'s own doc for why.
+Future<Set<StarKind>?> showKindFilterSheet(
   BuildContext context, {
-  required Set<LifeArea> selectedAreas,
+  required Set<StarKind> selectedKinds,
 }) {
-  return showModalBottomSheet<Set<LifeArea>>(
+  return showModalBottomSheet<Set<StarKind>>(
     context: context,
     isScrollControlled: true,
-    builder: (_) => _AreaFilterSheet(initialAreas: selectedAreas),
+    builder: (_) => _KindFilterSheet(initialKinds: selectedKinds),
   );
 }
 
-class _AreaFilterSheet extends StatefulWidget {
-  const _AreaFilterSheet({required this.initialAreas});
+class _KindFilterSheet extends StatefulWidget {
+  const _KindFilterSheet({required this.initialKinds});
 
-  final Set<LifeArea> initialAreas;
+  final Set<StarKind> initialKinds;
 
   @override
-  State<_AreaFilterSheet> createState() => _AreaFilterSheetState();
+  State<_KindFilterSheet> createState() => _KindFilterSheetState();
 }
 
-class _AreaFilterSheetState extends State<_AreaFilterSheet> {
-  late Set<LifeArea> _areas = {...widget.initialAreas};
+class _KindFilterSheetState extends State<_KindFilterSheet> {
+  late Set<StarKind> _kinds = {...widget.initialKinds};
 
-  bool get _allAreasSelected => _areas.length == LifeArea.values.length;
+  bool get _allKindsSelected => _kinds.length == kListableStarKinds.length;
 
-  void _toggleAllAreas() {
-    setState(() => _areas = _allAreasSelected ? {} : {...LifeArea.values});
+  void _toggleAllKinds() {
+    setState(() => _kinds = _allKindsSelected ? {} : {...kListableStarKinds});
   }
 
-  void _toggleArea(LifeArea area) {
+  void _toggleKind(StarKind kind) {
     setState(() {
-      if (!_areas.remove(area)) _areas.add(area);
+      if (!_kinds.remove(kind)) _kinds.add(kind);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final strings = context.strings;
 
     return SafeArea(
@@ -69,30 +67,25 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
           children: [
             Row(
               children: [
-                Expanded(child: _SectionTitle(strings.skyModeSupernovas)),
-                if (_areas.isNotEmpty)
+                Expanded(child: _SectionTitle(strings.filterKindSectionTitle)),
+                if (_kinds.isNotEmpty)
                   TextButton(
-                    onPressed: () => setState(() => _areas = {}),
+                    onPressed: () => setState(() => _kinds = {}),
                     child: Text(strings.clearFilterAction),
                   ),
               ],
             ),
             const SizedBox(height: 10),
-            HintTarget(
-              tour: 'search-stars',
-              order: 5,
-              showArrow: true,
-              contentBuilder: appTourStepCard,
-              title: strings.searchTourAllAreasTitle,
-              description: strings.searchTourAllAreasBody,
-              child: AppToggleChip(
-                label: strings.allAreasLabel,
-                value: _allAreasSelected,
-                onChanged: (_) => _toggleAllAreas(),
-              ),
+            AppToggleChip(
+              label: strings.allKindsLabel,
+              value: _allKindsSelected,
+              onChanged: (_) => _toggleAllKinds(),
             ),
             const SizedBox(height: 16),
-            for (var row = 0; row * 2 < LifeArea.values.length; row++) ...[
+            // Two per row, in [kListableStarKinds] order — one chip per
+            // kind, each in its own family's color, so the filter reads
+            // the same way the sky does.
+            for (var row = 0; row * 2 < kListableStarKinds.length; row++) ...[
               if (row > 0) const SizedBox(height: 10),
               Row(
                 children: [
@@ -100,15 +93,19 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
                     if (col > 0) const SizedBox(width: 10),
                     Expanded(
                       child: _FilterChip(
-                        icon: LifeArea.values[row * 2 + col].icon,
-                        label: LifeArea.values[row * 2 + col].displayName(
+                        icon: kListableStarKinds[row * 2 + col].icon,
+                        iconColor: starKindColor(
+                          kListableStarKinds[row * 2 + col],
+                          colors,
+                        ),
+                        label: kListableStarKinds[row * 2 + col].plural(
                           strings,
                         ),
-                        selected: _areas.contains(
-                          LifeArea.values[row * 2 + col],
+                        selected: _kinds.contains(
+                          kListableStarKinds[row * 2 + col],
                         ),
                         onTap: () =>
-                            _toggleArea(LifeArea.values[row * 2 + col]),
+                            _toggleKind(kListableStarKinds[row * 2 + col]),
                       ),
                     ),
                   ],
@@ -116,19 +113,11 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
               ),
             ],
             const SizedBox(height: 16),
-            HintTarget(
-              tour: 'search-stars',
-              order: 7,
-              showArrow: true,
-              contentBuilder: appTourStepCard,
-              title: strings.searchTourApplyTitle,
-              description: strings.searchTourApplyBody,
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(_areas),
-                  child: Text(strings.applyFilterAction),
-                ),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(_kinds),
+                child: Text(strings.applyFilterAction),
               ),
             ),
           ],
@@ -138,17 +127,19 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
   }
 }
 
-/// One toggleable chip in the area grid — icon, label, and a trailing check
-/// that fills in once selected.
+/// One toggleable chip in the kind grid — icon (tinted with that kind's own
+/// family color), label, and a trailing check that fills in once selected.
 class _FilterChip extends StatelessWidget {
   const _FilterChip({
     required this.icon,
+    required this.iconColor,
     required this.label,
     required this.selected,
     required this.onTap,
   });
 
   final IconData icon;
+  final Color iconColor;
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -164,7 +155,7 @@ class _FilterChip extends StatelessWidget {
         decoration: selectableDecoration(colors, selected: selected),
         child: Row(
           children: [
-            Icon(icon, size: 16, color: selected ? colors.gold : colors.muted),
+            Icon(icon, size: 16, color: iconColor),
             const SizedBox(width: 8),
             Expanded(
               child: Text(

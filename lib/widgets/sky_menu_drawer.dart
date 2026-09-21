@@ -446,7 +446,7 @@ class SkyMenuContent extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               Text(
-                'Victory Stars',
+                'Inner Stars',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: colors.text,
