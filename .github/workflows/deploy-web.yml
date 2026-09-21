@@ -31,10 +31,10 @@ jobs:
           channel: stable
       - run: flutter pub get
       # --base-href matches this repo's GitHub Pages URL
-      # (https://chiriacadrian2296.github.io/victory_stars/) — without it
+      # (https://chiriacadrian2296.github.io/inner_stars/) — without it
       # the built app's asset/script paths are absolute from the domain
       # root and 404 under a project-site subpath.
-      - run: flutter build web --release --base-href /victory_stars/
+      - run: flutter build web --release --base-href /inner_stars/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web

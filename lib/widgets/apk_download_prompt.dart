@@ -10,11 +10,10 @@ import '../theme/app_colors.dart';
 /// `/releases/latest/download/<name>` redirect, not a link to one specific
 /// release. Publishing a new version is then just "attach an asset named
 /// `inner-stars.apk` to a new release": this link, and every button that
-/// uses it, never need to change. The repo path itself (`victory_stars`) is
-/// still the GitHub repo's actual name — update it here if the repo is ever
-/// renamed.
+/// uses it, never need to change. The repo path in the URL is the GitHub
+/// repo's own name — update it here if the repo is ever renamed again.
 const kApkDownloadUrl =
-    'https://github.com/chiriacadrian2296/victory_stars/releases/latest/download/inner-stars.apk';
+    'https://github.com/chiriacadrian2296/inner_stars/releases/latest/download/inner-stars.apk';
 
 Future<void> openApkDownload() =>
     launchUrl(Uri.parse(kApkDownloadUrl), mode: LaunchMode.externalApplication);
