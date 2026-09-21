@@ -38,4 +38,20 @@ const Map<LifeArea, AreaHeroArt> kAreaHeroArt = {
     coverAsset: 'assets/images/4. Financial.png',
     skyAsset: 'assets/images/4. Financial - CENTER CROP.jpg',
   ),
+  LifeArea.personal: AreaHeroArt(
+    coverAsset: 'assets/images/5. Personal.png',
+    skyAsset: 'assets/images/5. Personal - CENTER CROP.jpg',
+  ),
+  LifeArea.social: AreaHeroArt(
+    coverAsset: 'assets/images/6. Social.png',
+    skyAsset: 'assets/images/6. Social - CENTER CROP.jpg',
+  ),
+  LifeArea.spiritual: AreaHeroArt(
+    coverAsset: 'assets/images/7. Spiritual.png',
+    skyAsset: 'assets/images/7. Spiritual - CENTER CROP.jpg',
+  ),
+  LifeArea.philanthropic: AreaHeroArt(
+    coverAsset: 'assets/images/8. Philanthropic.png',
+    skyAsset: 'assets/images/8. Philanthropic - CENTER CROP.jpg',
+  ),
 };

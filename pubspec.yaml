@@ -74,6 +74,14 @@ flutter:
     - assets/images/3. Professional.png
     - assets/images/4. Financial - CENTER CROP.jpg
     - assets/images/4. Financial.png
+    - assets/images/5. Personal - CENTER CROP.jpg
+    - assets/images/5. Personal.png
+    - assets/images/6. Social - CENTER CROP.jpg
+    - assets/images/6. Social.png
+    - assets/images/7. Spiritual - CENTER CROP.jpg
+    - assets/images/7. Spiritual.png
+    - assets/images/8. Philanthropic - CENTER CROP.jpg
+    - assets/images/8. Philanthropic.png
   shaders:
     - shaders/nebula_particles.frag
     - shaders/constellation_flare.frag
