@@ -1,6 +1,34 @@
 import 'app_strings.dart';
 
 class StringsEn implements AppStrings {
+  @override
+  String get visionUndo => 'Undo';
+  @override
+  String get viewAreaImageAction => 'View image';
+  @override
+  String get visionRedo => 'Redo';
+  @override
+  String get visionWrite => 'Write';
+  @override
+  String get visionPreview => 'Preview';
+  @override
+  String get visionHeading => 'Heading';
+  @override
+  String get visionSection => 'Section';
+  @override
+  String get visionBold => 'Bold';
+  @override
+  String get visionItalic => 'Italic';
+  @override
+  String get visionBulletList => 'Bullet list';
+  @override
+  String get visionNumberedList => 'Numbered list';
+  @override
+  String get visionEditorHint =>
+      'Give your vision room to grow. Use the toolbar to format text and a blank line to separate paragraphs.';
+  @override
+  String get visionSaveError =>
+      'Could not save. Your text is still here: try again.';
   const StringsEn();
 
   @override
@@ -377,43 +405,149 @@ class StringsEn implements AppStrings {
   @override
   String get editVisionAction => 'Edit vision';
   @override
-  String get areaVisionPlaceholderPhysical =>
-      'E.g. I move through my days with energy and strength, sleep well, '
-      'and take care of this body I only get once. I show up for it '
-      'consistently, not just when I feel like it.';
+  String get areaVisionPlaceholderPhysical => '''
+*Example vision — make it your own.*
+
+# Feeling at home in my body
+
+I want to feel at home in my body and have energy for what I love. I cultivate **strength, care and rest** through habits I can sustain in difficult weeks too.
+
+## In my everyday life
+
+- Move in ways I enjoy, at my own pace.
+- Make room for sleep and recovery.
+- Listen to my needs without judging myself.
+
+## I notice I am growing when…
+
+I notice sooner when I need a break and feel more present in my days.
+''';
   @override
-  String get areaVisionPlaceholderPsychological =>
-      'E.g. My mind is clear and steady. I know how to calm myself, and I '
-      "keep learning who I am. When things get hard, I don't run from what "
-      "I'm feeling.";
+  String get areaVisionPlaceholderPsychological => '''
+*Example vision — make it your own.*
+
+# Being on my own side
+
+I want to understand my feelings and treat myself with **respect and kindness**. I make room for emotions and learn to choose my response, even when I cannot change what happens.
+
+## In my everyday life
+
+- Pause to name what I am feeling.
+- Recognize my limits and ask for support.
+- Speak to myself as I would to someone I love.
+
+## I notice I am growing when…
+
+I can recover from a difficult day without turning it into a judgment of myself.
+''';
   @override
-  String get areaVisionPlaceholderProfessional =>
-      'E.g. I do work that challenges me and matters, growing my skills '
-      'without losing myself in it. I want to look back and be proud of '
-      'how I got here, not just where I ended up.';
+  String get areaVisionPlaceholderProfessional => '''
+*Example vision — make it your own.*
+
+# Work I can recognize myself in
+
+I want a path that brings together **skill, curiosity and usefulness**. I devote myself to projects whose value I understand and give work a sustainable place in my life.
+
+## In my everyday life
+
+- Develop the skills I want to use.
+- Seek feedback and share what I learn.
+- Protect time for life outside work.
+
+## I notice I am growing when…
+
+I can explain what I am learning and why my contribution matters, beyond the results.
+''';
   @override
-  String get areaVisionPlaceholderFinancial =>
-      "E.g. I'm building real security — saving with intention and "
-      'spending in ways that match what I actually value. Money stops '
-      'being something I worry about and becomes something I use well.';
+  String get areaVisionPlaceholderFinancial => '''
+*Example vision — make it your own.*
+
+# More peace, more possibilities
+
+I want a clear, thoughtful relationship with money. I build **security and freedom of choice**, making room for both present needs and future hopes.
+
+## In my everyday life
+
+- Understand my income and spending.
+- Prioritize what matters to me.
+- Set resources aside when I can.
+
+## I notice I am growing when…
+
+I approach financial decisions with more clarity and less avoidance.
+''';
   @override
-  String get areaVisionPlaceholderPersonal =>
-      'E.g. I keep growing into who I want to be, one honest habit at a '
-      "time. I'd rather make slow, real progress than fake a shortcut.";
+  String get areaVisionPlaceholderPersonal => '''
+*Example vision — make it your own.*
+
+# A life that feels like mine
+
+I want to make room for curiosity and become someone I can trust. I cultivate **creativity, independence and discovery** without turning every interest into a performance.
+
+## In my everyday life
+
+- Make time for an interest simply because I enjoy it.
+- Try something new and allow myself to be a beginner.
+- Keep small promises to myself.
+
+## I notice I am growing when…
+
+I can see choices in my week that feel truly my own.
+''';
   @override
-  String get areaVisionPlaceholderSocial =>
-      'E.g. I have people around me who know the real me, and I show up '
-      "for them too. I'd rather have a few real connections than a lot of "
-      'surface ones.';
+  String get areaVisionPlaceholderSocial => '''
+*Example vision — make it your own.*
+
+# Relationships with room to be ourselves
+
+I want connections where I can be myself and give others that same space. I choose **listening, reciprocity and honesty**, including the courage to express needs and boundaries.
+
+## In my everyday life
+
+- Give attention to the people I care about.
+- Listen without immediately preparing a reply.
+- Be clear about what I can offer and what I need.
+
+## I notice I am growing when…
+
+I feel free to ask for closeness and offer presence while staying connected to my own needs.
+''';
   @override
-  String get areaVisionPlaceholderSpiritual =>
-      'E.g. I feel connected to something larger than myself, and I make '
-      "space for stillness. I trust that not everything needs an answer "
-      'right away.';
+  String get areaVisionPlaceholderSpiritual => '''
+*Example vision — make it your own.*
+
+# Making room for what matters
+
+I want to feel connected to life and live according to my values. I seek **meaning, wonder and reflection** in a form that feels right to me, leaving room for unanswered questions.
+
+## In my everyday life
+
+- Make time for silence or contemplation.
+- Connect with nature, a practice or a community.
+- Ask whether my choices reflect what I believe.
+
+## I notice I am growing when…
+
+Even on ordinary days, I find something that invites me to pause and be present.
+''';
   @override
-  String get areaVisionPlaceholderPhilanthropic =>
-      'E.g. I give what I can — time, skill, attention — to lives beyond '
-      "my own. It doesn't have to be big to be real.";
+  String get areaVisionPlaceholderPhilanthropic => '''
+*Example vision — make it your own.*
+
+# Leaving something good behind
+
+I want to support people and places beyond my everyday life. I offer **time, attention and skills** in practical, sustainable ways, starting with the needs of those receiving help.
+
+## In my everyday life
+
+- Listen before deciding how to help.
+- Choose a cause I can support consistently.
+- Offer what I can while respecting my limits.
+
+## I notice I am growing when…
+
+My contribution meets a real need and is something I can sustain.
+''';
   @override
   String get areaCoverEnterAction => 'Manage This Area';
   @override

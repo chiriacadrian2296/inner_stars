@@ -1,6 +1,34 @@
 import 'app_strings.dart';
 
 class StringsRo implements AppStrings {
+  @override
+  String get visionUndo => 'Anulează modificarea';
+  @override
+  String get viewAreaImageAction => 'Vezi imaginea';
+  @override
+  String get visionRedo => 'Refă modificarea';
+  @override
+  String get visionWrite => 'Scrie';
+  @override
+  String get visionPreview => 'Previzualizare';
+  @override
+  String get visionHeading => 'Titlu';
+  @override
+  String get visionSection => 'Secțiune';
+  @override
+  String get visionBold => 'Aldin';
+  @override
+  String get visionItalic => 'Cursiv';
+  @override
+  String get visionBulletList => 'Listă cu marcatori';
+  @override
+  String get visionNumberedList => 'Listă numerotată';
+  @override
+  String get visionEditorHint =>
+      'Dă spațiu viziunii tale. Folosește bara pentru formatare și o linie goală pentru a separa paragrafele.';
+  @override
+  String get visionSaveError =>
+      'Salvarea a eșuat. Textul este încă aici: încearcă din nou.';
   const StringsRo();
 
   @override
@@ -379,42 +407,149 @@ class StringsRo implements AppStrings {
   @override
   String get editVisionAction => 'Editează viziunea';
   @override
-  String get areaVisionPlaceholderPhysical =>
-      'Ex. Mă mișc prin zilele mele cu energie și forță, dorm bine și am '
-      'grijă de acest corp pe care îl am o singură dată. Sunt constant, nu '
-      'doar atunci când am chef.';
+  String get areaVisionPlaceholderPhysical => '''
+*Exemplu de viziune — rescrie-l în cuvintele tale.*
+
+# Să mă simt acasă în corpul meu
+
+Vreau să mă simt bine în corpul meu și să am energie pentru ceea ce iubesc. Cultiv **forță, grijă și odihnă** prin obiceiuri pe care le pot păstra și în săptămânile dificile.
+
+## În viața de zi cu zi
+
+- Să mă mișc cu plăcere, în ritmul meu.
+- Să fac loc somnului și refacerii.
+- Să îmi ascult nevoile fără să mă judec.
+
+## Observ că evoluez atunci când…
+
+Observ mai devreme când am nevoie de o pauză și sunt mai prezent în viața mea.
+''';
   @override
-  String get areaVisionPlaceholderPsychological =>
-      'Ex. Mintea mea este limpede și stabilă. Știu cum să mă liniștesc și '
-      'continui să aflu cine sunt. Când lucrurile devin grele, nu fug de ce '
-      'simt.';
+  String get areaVisionPlaceholderPsychological => '''
+*Exemplu de viziune — rescrie-l în cuvintele tale.*
+
+# Să fiu de partea mea
+
+Vreau să îmi înțeleg emoțiile și să mă tratez cu **respect și blândețe**. Fac loc pentru ceea ce simt și învăț să aleg cum răspund, chiar când nu pot schimba ceea ce se întâmplă.
+
+## În viața de zi cu zi
+
+- Să mă opresc pentru a numi ceea ce simt.
+- Să îmi recunosc limitele și să cer sprijin.
+- Să îmi vorbesc cum i-aș vorbi unei persoane dragi.
+
+## Observ că evoluez atunci când…
+
+Pot să îmi revin după o zi grea fără să o transform într-o judecată despre mine.
+''';
   @override
-  String get areaVisionPlaceholderProfessional =>
-      'Ex. Fac o muncă ce mă provoacă și contează, și cresc fără să mă '
-      'pierd în ea. Vreau să privesc înapoi cu mândrie pentru drumul '
-      'parcurs, nu doar pentru rezultat.';
+  String get areaVisionPlaceholderProfessional => '''
+*Exemplu de viziune — rescrie-l în cuvintele tale.*
+
+# O muncă în care mă regăsesc
+
+Vreau un parcurs care îmbină **competența, curiozitatea și utilitatea**. Mă dedic proiectelor a căror valoare o înțeleg și ofer muncii un loc sustenabil în viața mea.
+
+## În viața de zi cu zi
+
+- Să dezvolt competențele pe care vreau să le folosesc.
+- Să cer feedback și să împărtășesc ceea ce învăț.
+- Să protejez timpul pentru viața din afara muncii.
+
+## Observ că evoluez atunci când…
+
+Pot spune ce învăț și de ce contribuția mea contează, dincolo de rezultate.
+''';
   @override
-  String get areaVisionPlaceholderFinancial =>
-      'Ex. Construiesc o siguranță reală — economisesc cu intenție și '
-      'cheltuiesc în acord cu ce contează cu adevărat pentru mine. Banii '
-      'încetează să mai fie o grijă și devin ceva ce folosesc bine.';
+  String get areaVisionPlaceholderFinancial => '''
+*Exemplu de viziune — rescrie-l în cuvintele tale.*
+
+# Mai multă liniște, mai multe posibilități
+
+Vreau o relație clară și conștientă cu banii. Construiesc **siguranță și libertate de alegere**, făcând loc atât nevoilor de azi, cât și dorințelor pentru viitor.
+
+## În viața de zi cu zi
+
+- Să îmi cunosc veniturile și cheltuielile.
+- Să dau prioritate lucrurilor importante pentru mine.
+- Să pun resurse deoparte atunci când pot.
+
+## Observ că evoluez atunci când…
+
+Abordez deciziile financiare cu mai multă claritate și mai puțină evitare.
+''';
   @override
-  String get areaVisionPlaceholderPersonal =>
-      'Ex. Continui să devin persoana care vreau să fiu, un obicei sincer '
-      'pe rând. Prefer un progres lent și real unei scurtături false.';
+  String get areaVisionPlaceholderPersonal => '''
+*Exemplu de viziune — rescrie-l în cuvintele tale.*
+
+# O viață care mă reprezintă
+
+Vreau să fac loc curiozității și să devin o persoană în care am încredere. Cultiv **creativitatea, autonomia și descoperirea**, fără să transform fiecare pasiune într-o performanță.
+
+## În viața de zi cu zi
+
+- Să dedic timp unei pasiuni doar pentru bucuria ei.
+- Să încerc ceva nou și să accept să fiu începător.
+- Să respect micile promisiuni făcute mie.
+
+## Observ că evoluez atunci când…
+
+În săptămânile mele recunosc alegeri pe care le simt cu adevărat ale mele.
+''';
   @override
-  String get areaVisionPlaceholderSocial =>
-      'Ex. Am în jurul meu oameni care mă cunosc cu adevărat, și le sunt '
-      'alături și eu. Prefer câteva legături adevărate în locul multora '
-      'superficiale.';
+  String get areaVisionPlaceholderSocial => '''
+*Exemplu de viziune — rescrie-l în cuvintele tale.*
+
+# Relații în care să fim noi înșine
+
+Vreau legături în care să pot fi eu însumi și să le ofer celorlalți același spațiu. Aleg **ascultarea, reciprocitatea și sinceritatea**, cu curajul de a exprima nevoi și limite.
+
+## În viața de zi cu zi
+
+- Să ofer atenție oamenilor la care țin.
+- Să ascult fără să pregătesc imediat un răspuns.
+- Să spun clar ce pot oferi și de ce am nevoie.
+
+## Observ că evoluez atunci când…
+
+Mă simt liber să cer apropiere și să fiu prezent fără să uit de mine.
+''';
   @override
-  String get areaVisionPlaceholderSpiritual =>
-      'Ex. Simt o legătură cu ceva mai mare decât mine și fac loc '
-      'liniștii. Nu am nevoie de un răspuns imediat la tot.';
+  String get areaVisionPlaceholderSpiritual => '''
+*Exemplu de viziune — rescrie-l în cuvintele tale.*
+
+# Să fac loc pentru ceea ce contează
+
+Vreau să mă simt conectat la viață și să trăiesc în acord cu valorile mele. Caut **sens, uimire și reculegere** într-o formă care mi se potrivește, lăsând loc întrebărilor deschise.
+
+## În viața de zi cu zi
+
+- Să fac loc momentelor de liniște sau contemplare.
+- Să mă reconectez cu natura, o practică sau o comunitate.
+- Să mă întreb dacă alegerile mele reflectă ceea ce cred.
+
+## Observ că evoluez atunci când…
+
+Chiar și în zilele obișnuite găsesc ceva care mă invită să mă opresc și să fiu prezent.
+''';
   @override
-  String get areaVisionPlaceholderPhilanthropic =>
-      'Ex. Ofer ce pot — timp, abilități, atenție — vieților dincolo de a '
-      'mea. Nu trebuie să fie mare ca să conteze.';
+  String get areaVisionPlaceholderPhilanthropic => '''
+*Exemplu de viziune — rescrie-l în cuvintele tale.*
+
+# Să las ceva bun în urma mea
+
+Vreau să contribui la binele oamenilor și al locurilor dincolo de viața mea cotidiană. Ofer **timp, atenție și competențe** în mod concret și sustenabil, pornind de la nevoile celor care primesc ajutor.
+
+## În viața de zi cu zi
+
+- Să ascult înainte să decid cum pot ajuta.
+- Să aleg o cauză pe care o pot susține constant.
+- Să ofer ceea ce pot, respectându-mi limitele.
+
+## Observ că evoluez atunci când…
+
+Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
+''';
   @override
   String get areaCoverEnterAction => 'Gestionează Această Zonă';
   @override

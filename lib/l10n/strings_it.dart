@@ -1,6 +1,34 @@
 import 'app_strings.dart';
 
 class StringsIt implements AppStrings {
+  @override
+  String get visionUndo => 'Annulla modifica';
+  @override
+  String get viewAreaImageAction => 'Visualizza immagine';
+  @override
+  String get visionRedo => 'Ripristina modifica';
+  @override
+  String get visionWrite => 'Scrivi';
+  @override
+  String get visionPreview => 'Anteprima';
+  @override
+  String get visionHeading => 'Titolo';
+  @override
+  String get visionSection => 'Sezione';
+  @override
+  String get visionBold => 'Grassetto';
+  @override
+  String get visionItalic => 'Corsivo';
+  @override
+  String get visionBulletList => 'Elenco puntato';
+  @override
+  String get visionNumberedList => 'Elenco numerato';
+  @override
+  String get visionEditorHint =>
+      'Dai spazio alla tua visione. Usa la barra per formattare il testo e una riga vuota per separare i paragrafi.';
+  @override
+  String get visionSaveError =>
+      'Salvataggio non riuscito. Il testo è ancora qui: riprova.';
   const StringsIt();
 
   @override
@@ -379,45 +407,149 @@ class StringsIt implements AppStrings {
   @override
   String get editVisionAction => 'Modifica visione';
   @override
-  String get areaVisionPlaceholderPhysical =>
-      'Es. Mi muovo nei miei giorni con energia e forza, dormo bene e mi '
-      'prendo cura di questo corpo che ho a disposizione una volta sola. Ci '
-      'sono per lui con costanza, non solo quando ne ho voglia.';
+  String get areaVisionPlaceholderPhysical => '''
+*Esempio di visione — da riscrivere con parole tue.*
+
+# Abitare bene il mio corpo
+
+Voglio sentirmi a casa nel mio corpo e avere energia per le cose che amo. Coltivo **forza, cura e riposo** con abitudini che posso mantenere anche nelle settimane difficili.
+
+## Nella mia quotidianità
+
+- Muovermi con piacere, rispettando i miei ritmi.
+- Dare spazio al sonno e al recupero.
+- Ascoltare i miei bisogni senza giudicarmi.
+
+## Mi accorgo che sto crescendo quando…
+
+Mi accorgo prima di quando ho bisogno di una pausa e vivo le mie giornate con più presenza.
+''';
   @override
-  String get areaVisionPlaceholderPsychological =>
-      'Es. La mia mente è lucida e stabile. So calmarmi quando serve, e '
-      'continuo a scoprire chi sono. Quando le cose si fanno difficili, non '
-      'scappo da quello che provo.';
+  String get areaVisionPlaceholderPsychological => '''
+*Esempio di visione — da riscrivere con parole tue.*
+
+# Essere dalla mia parte
+
+Voglio conoscere meglio quello che provo e trattarmi con **rispetto e gentilezza**. Lascio spazio alle emozioni e imparo a scegliere come rispondere, anche quando non posso cambiare ciò che succede.
+
+## Nella mia quotidianità
+
+- Fermarmi per dare un nome a ciò che sento.
+- Riconoscere i miei limiti e chiedere sostegno.
+- Parlarmi come parlerei a una persona cara.
+
+## Mi accorgo che sto crescendo quando…
+
+Riesco a riprendermi dopo una giornata difficile senza trasformarla in un giudizio su di me.
+''';
   @override
-  String get areaVisionPlaceholderProfessional =>
-      'Es. Faccio un lavoro che mi mette alla prova e che conta, e cresco '
-      'senza perdermi in esso. Voglio guardare indietro con orgoglio per il '
-      'percorso fatto, non solo per il risultato.';
+  String get areaVisionPlaceholderProfessional => '''
+*Esempio di visione — da riscrivere con parole tue.*
+
+# Un lavoro in cui riconoscermi
+
+Voglio costruire un percorso che unisca **competenza, curiosità e utilità**. Mi dedico a progetti di cui comprendo il valore e lascio al lavoro un posto sostenibile nella mia vita.
+
+## Nella mia quotidianità
+
+- Approfondire le competenze che desidero usare.
+- Cercare feedback e condividere ciò che imparo.
+- Proteggere il tempo per la vita fuori dal lavoro.
+
+## Mi accorgo che sto crescendo quando…
+
+So raccontare cosa sto imparando e perché il mio contributo conta, oltre ai risultati raggiunti.
+''';
   @override
-  String get areaVisionPlaceholderFinancial =>
-      'Es. Sto costruendo una sicurezza vera — risparmio con intenzione e '
-      'spendo in modo coerente con ciò che per me conta davvero. Il denaro '
-      'smette di essere un pensiero fisso e diventa uno strumento che uso '
-      'bene.';
+  String get areaVisionPlaceholderFinancial => '''
+*Esempio di visione — da riscrivere con parole tue.*
+
+# Più serenità, più possibilità
+
+Voglio avere un rapporto chiaro e consapevole con il denaro. Costruisco **sicurezza e libertà di scelta**, tenendo insieme i bisogni di oggi e ciò che desidero per il futuro.
+
+## Nella mia quotidianità
+
+- Conoscere le mie entrate e le mie spese.
+- Dare priorità a ciò che per me ha valore.
+- Mettere da parte risorse quando mi è possibile.
+
+## Mi accorgo che sto crescendo quando…
+
+Affronto le decisioni economiche con più chiarezza e meno evitamento.
+''';
   @override
-  String get areaVisionPlaceholderPersonal =>
-      "Es. Continuo a diventare la persona che voglio essere, un'abitudine "
-      'onesta alla volta. Preferisco un progresso lento e vero a una '
-      'scorciatoia finta.';
+  String get areaVisionPlaceholderPersonal => '''
+*Esempio di visione — da riscrivere con parole tue.*
+
+# Una vita che mi somiglia
+
+Voglio dare spazio a ciò che mi incuriosisce e diventare una persona di cui mi fido. Coltivo **creatività, autonomia e scoperta**, senza dover trasformare ogni interesse in una prestazione.
+
+## Nella mia quotidianità
+
+- Riservare tempo a un interesse solo per il piacere di farlo.
+- Provare qualcosa di nuovo, accettando di essere principiante.
+- Mantenere piccoli impegni presi con me.
+
+## Mi accorgo che sto crescendo quando…
+
+Nelle mie settimane riconosco scelte che sento davvero mie.
+''';
   @override
-  String get areaVisionPlaceholderSocial =>
-      'Es. Ho intorno a me persone che mi conoscono davvero, e ci sono '
-      'anche io per loro. Preferisco poche connessioni vere a tante '
-      'superficiali.';
+  String get areaVisionPlaceholderSocial => '''
+*Esempio di visione — da riscrivere con parole tue.*
+
+# Relazioni in cui esserci davvero
+
+Voglio costruire legami in cui poter essere me stesso e lasciare agli altri lo stesso spazio. Scelgo **ascolto, reciprocità e sincerità**, con il coraggio di esprimere anche bisogni e confini.
+
+## Nella mia quotidianità
+
+- Dedicare attenzione alle persone a cui tengo.
+- Ascoltare senza preparare subito una risposta.
+- Dire con chiarezza ciò che posso offrire e ciò di cui ho bisogno.
+
+## Mi accorgo che sto crescendo quando…
+
+Mi sento libero di chiedere vicinanza e di offrire presenza senza dimenticare me stesso.
+''';
   @override
-  String get areaVisionPlaceholderSpiritual =>
-      'Es. Sento una connessione con qualcosa più grande di me, e lascio '
-      'spazio al silenzio. Non ho bisogno di avere subito una risposta a '
-      'tutto.';
+  String get areaVisionPlaceholderSpiritual => '''
+*Esempio di visione — da riscrivere con parole tue.*
+
+# Fare spazio a ciò che conta
+
+Voglio sentirmi connesso alla vita e vivere in accordo con i miei valori. Cerco **significato, meraviglia e raccoglimento** nella forma che sento mia, lasciando aperte le domande.
+
+## Nella mia quotidianità
+
+- Ritagliare momenti di silenzio o contemplazione.
+- Ritrovare contatto con la natura, una pratica o una comunità.
+- Chiedermi se le mie scelte riflettono ciò in cui credo.
+
+## Mi accorgo che sto crescendo quando…
+
+Anche nei giorni ordinari trovo qualcosa che mi invita a fermarmi e a essere presente.
+''';
   @override
-  String get areaVisionPlaceholderPhilanthropic =>
-      'Es. Do quello che posso — tempo, competenze, attenzione — a vite '
-      'oltre la mia. Non deve essere grande per essere vero.';
+  String get areaVisionPlaceholderPhilanthropic => '''
+*Esempio di visione — da riscrivere con parole tue.*
+
+# Lasciare qualcosa di buono
+
+Voglio contribuire al benessere di persone e luoghi oltre la mia vita quotidiana. Offro **tempo, attenzione e competenze** in modo concreto e sostenibile, partendo dai bisogni di chi riceve.
+
+## Nella mia quotidianità
+
+- Ascoltare prima di decidere come aiutare.
+- Scegliere una causa a cui dedicare continuità.
+- Offrire ciò che posso, rispettando i miei limiti.
+
+## Mi accorgo che sto crescendo quando…
+
+Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
+''';
   @override
   String get areaCoverEnterAction => 'Gestisci Questa Area';
   @override

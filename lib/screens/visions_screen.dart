@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hint_kit/hint_kit.dart';
+import 'package:markdown/markdown.dart' as markdown;
 
 import '../data/area_vision_repository.dart';
 import '../data/project_repository.dart';
@@ -8,6 +9,7 @@ import '../data/star_repository.dart';
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
 import '../tutorials/tour_intro_target.dart';
 import '../tutorials/tour_step_card.dart';
@@ -208,10 +210,16 @@ class _VisionCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  trimmed.isEmpty ? strings.visionEmptyLabel : trimmed,
+                  trimmed.isEmpty
+                      ? strings.visionEmptyLabel
+                      : markdown.Document(encodeHtml: false)
+                            .parseLines(trimmed.split('\n'))
+                            .map((node) => node.textContent)
+                            .join('\n'),
                   maxLines: 4,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
+                    fontFamily: kFontStarTitle,
                     fontSize: 14,
                     height: 1.45,
                     fontStyle: trimmed.isEmpty

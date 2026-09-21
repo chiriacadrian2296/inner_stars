@@ -5,8 +5,8 @@
 /// - [kFontBranding] (Gloock) — the app's own name, wherever it's shown as
 ///   a wordmark rather than as running text (onboarding, the sky drawer's
 ///   header). Never body copy — it's a display face, not a reading one.
-/// - [kFontStarTitle] (Newsreader, italic-only — see pubspec.yaml, there is
-///   no upright face bundled) — a star's own title, the one piece of text
+/// - [kFontStarTitle] (Newsreader, upright and italic) — a star's own title
+///   and vision text. Star titles use italic, the one piece of text
 ///   that's the user's own words about their own effort. The italic slant
 ///   is what marks it as *theirs* rather than the app's interface chrome.
 /// - [kFontBody] (Instrument Sans) — everything else: labels, buttons,

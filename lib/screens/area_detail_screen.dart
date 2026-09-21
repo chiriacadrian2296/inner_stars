@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hint_kit/hint_kit.dart';
 
 import '../data/area_vision_repository.dart';
@@ -19,8 +22,12 @@ import '../utils/area_hero_art_tone.dart';
 import '../utils/responsive.dart';
 import '../utils/star_stats.dart';
 import '../widgets/area_tag.dart';
+import '../widgets/area_artwork_header.dart';
+import 'area_image_screen.dart';
 import '../widgets/intensity_bolts.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/vision_markdown.dart';
+import 'vision_editor_screen.dart';
 
 /// One Supernova's own page — reached by tapping it in the Sky's
 /// search popup (`SkyExplorerView`'s Supernovas view). Shows the area's
@@ -59,44 +66,19 @@ class AreaDetailScreen extends StatefulWidget {
 }
 
 class _AreaDetailScreenState extends State<AreaDetailScreen> {
-  late final _visionController = TextEditingController(
-    text: widget.areaVisionRepository.getVision(widget.area),
-  );
-  late final _visionFocusNode = FocusNode()..addListener(_handleFocusChange);
-  bool _editingVision = false;
-
-  void _handleFocusChange() {
-    if (!_visionFocusNode.hasFocus) {
-      _saveVision();
-      setState(() => _editingVision = false);
-    }
-  }
-
-  Future<void> _saveVision() {
-    return widget.areaVisionRepository.setVision(
-      widget.area,
-      _visionController.text,
+  Future<void> _startEditingVision() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => VisionEditorScreen(
+          area: widget.area,
+          repository: widget.areaVisionRepository,
+        ),
+      ),
     );
+    if (mounted) setState(() {});
   }
 
-  void _startEditingVision() {
-    setState(() => _editingVision = true);
-    _visionFocusNode.requestFocus();
-  }
-
-  Future<void> _confirmVision() async {
-    await _saveVision();
-    if (!mounted) return;
-    setState(() => _editingVision = false);
-  }
-
-  @override
-  void dispose() {
-    _visionFocusNode.removeListener(_handleFocusChange);
-    _visionFocusNode.dispose();
-    _visionController.dispose();
-    super.dispose();
-  }
+  String get _vision => widget.areaVisionRepository.getVision(widget.area);
 
   // Only areas in [kAreaHeroArt] have hero art of their own so far — that
   // area's own "cover" (see [_AreaCoverPage]) shows this full, lightly
@@ -127,20 +109,16 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
 
     return PopScope(
       canPop: !blockPopForCover,
-      // Autosave, not a "discard changes?" guard — there's nothing to
-      // discard, the field just saves whenever it loses focus or the
-      // screen closes (or, now, whenever a pop steps back to the cover).
       onPopInvokedWithResult: (didPop, result) {
-        _saveVision();
         if (!didPop) setState(() => _showCover = true);
       },
       child: _showCover
           ? _AreaCoverPage(
               asset: _coverAsset,
               visionTitle: strings.areaCoverVisionTitle,
-              visionText: _visionController.text.trim().isEmpty
+              visionText: _vision.trim().isEmpty
                   ? area.visionPlaceholder(strings)
-                  : _visionController.text,
+                  : _vision,
               actionLabel: strings.areaCoverEnterAction,
               onBack: () => Navigator.of(context).pop(),
               onEnter: () => setState(() => _showCover = false),
@@ -191,28 +169,12 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
         style: TextStyle(fontSize: 13, color: colors.muted),
       ),
       const SizedBox(height: 6),
-      if (_editingVision)
-        TextField(
-          controller: _visionController,
-          focusNode: _visionFocusNode,
-          minLines: 6,
-          maxLines: null,
-          style: TextStyle(color: colors.text, fontSize: 15, height: 1.5),
-          decoration: InputDecoration(hintText: strings.areaVisionHint),
-        )
-      else
-        Text(
-          _visionController.text.trim().isEmpty
-              ? area.visionPlaceholder(strings)
-              : _visionController.text,
-          style: TextStyle(
-            color: _visionController.text.trim().isEmpty
-                ? colors.muted
-                : colors.text,
-            fontSize: 15,
-            height: 1.5,
-          ),
-        ),
+      VisionMarkdown(
+        data: _vision.trim().isEmpty
+            ? area.visionPlaceholder(strings)
+            : _vision,
+        color: _vision.trim().isEmpty ? colors.muted : colors.text,
+      ),
       const SizedBox(height: 16),
       HintTarget(
         tour: 'supernova-vision',
@@ -224,11 +186,9 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
         child: SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: _editingVision ? _confirmVision : _startEditingVision,
-            icon: Icon(_editingVision ? Icons.check : Icons.edit),
-            label: Text(
-              _editingVision ? strings.saveChanges : strings.editVisionAction,
-            ),
+            onPressed: _startEditingVision,
+            icon: const Icon(Icons.edit),
+            label: Text(strings.editVisionAction),
           ),
         ),
       ),
@@ -337,24 +297,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
   }
 }
 
-/// The "front of the card" — a cover-having area's own hero art shown full,
-/// lightly toned toward the app's own navy/white (see
-/// [tonedAreaHeroArt] — its raw color read as too saturated next to the
-/// rest of the app; a full fade/vignette tint was tried and dropped for
-/// using the art as a background behind the management content instead,
-/// which read as too subdued for what's meant to be a striking full-bleed
-/// page in its own right; see git history), the area's own vision
-/// underneath it, and one button forward into the management content
-/// proper. Purely a navigation
-/// metaphor, not a literal page-flip/card visual — nothing here animates
-/// like one.
-///
-/// The vision and the action button both sit *below* the image, in normal
-/// document flow (`Column`), not floated on top of it — asked for
-/// explicitly, after a first pass overlaid the button on the art via a
-/// `Stack`. That costs the image some of its own height (the two claim
-/// real space rather than borrowing the image's own), which is the
-/// intended trade.
+/// The area's cover, with a bottom-anchored collapsing artwork header.
 class _AreaCoverPage extends StatelessWidget {
   const _AreaCoverPage({
     required this.asset,
@@ -366,175 +309,109 @@ class _AreaCoverPage extends StatelessWidget {
   });
 
   final String asset;
-
-  /// The glowing heading above [visionText] — see
-  /// [AppStrings.areaCoverVisionTitle]'s own doc comment.
   final String visionTitle;
-
-  /// The area's own vision, or [LifeArea.visionPlaceholder] when they
-  /// haven't written one yet.
   final String visionText;
-
   final String actionLabel;
   final VoidCallback onBack;
   final VoidCallback onEnter;
 
-  // How far in from each edge (as a fraction of the image's own width/
-  // height) the fade-to-transparent runs — see the nested ShaderMasks
-  // below. Much smaller than the sky backdrop's own vignette (which starts
-  // fading at 0.35 of its radius): only a thin sliver right at each edge
-  // fades here, asked for explicitly as "molto meno" than the sky's.
-  static const _edgeFadeExtent = 0.06;
-
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    // Back button, image, vision, button: one single page, one single
-    // `SingleChildScrollView`, the same shape every other screen in the
-    // app uses (see e.g. `_buildManagement`'s own
-    // `SafeArea > ResponsiveContent > SingleChildScrollView > Column`) —
-    // not the back button pinned outside the scroll region over a
-    // separately-sized image (tried first, twice: once with a
-    // hand-computed height budget, once with the image still its own
-    // Expanded sibling next to a scrolling one). Both read as the image
-    // sitting in a different, disconnected layer from the rest of the
-    // page rather than just being its first piece of content — asked for
-    // explicitly to undo, in favor of this ordinary single-page layout.
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: SingleChildScrollView(
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
+        systemStatusBarContrastEnforced: false,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          bottom: false,
           child: ResponsiveContent(
-            // Caps the whole column — back button, image, and all — at
-            // the app's usual central width on a wide/web viewport.
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 24),
-              child: Column(
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: IconButton(
-                      onPressed: onBack,
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: AspectRatio(
-                      aspectRatio: 1,
-                      // Two orthogonal fades stacked — each
-                      // ShaderMask multiplies its own alpha onto
-                      // what's already been masked below it, so the
-                      // pair together fade a square edge (all four
-                      // sides, corners included) rather than the
-                      // sky's own circular vignette (see
-                      // sky_area_backdrop.dart), and much more
-                      // subtly — only the outer [_edgeFadeExtent]
-                      // sliver on each side fades at all, the rest
-                      // of the image stays fully visible.
-                      child: ShaderMask(
-                        blendMode: BlendMode.dstIn,
-                        shaderCallback: (rect) => const LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          colors: [
-                            Colors.transparent,
-                            Colors.white,
-                            Colors.white,
-                            Colors.transparent,
-                          ],
-                          stops: [
-                            0.0,
-                            _edgeFadeExtent,
-                            1 - _edgeFadeExtent,
-                            1.0,
-                          ],
-                        ).createShader(rect),
-                        child: ShaderMask(
-                          blendMode: BlendMode.dstIn,
-                          shaderCallback: (rect) => const LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.white,
-                              Colors.white,
-                              Colors.transparent,
-                            ],
-                            stops: [
-                              0.0,
-                              _edgeFadeExtent,
-                              1 - _edgeFadeExtent,
-                              1.0,
-                            ],
-                          ).createShader(rect),
-                          child: tonedAreaHeroArt(
-                            child: Image.asset(asset, fit: BoxFit.contain),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final imageSize = math.min(
+                      constraints.maxWidth,
+                      constraints.maxHeight,
+                    );
+                    return CustomScrollView(
+                      slivers: [
+                        SliverPersistentHeader(
+                          pinned: true,
+                          delegate: AreaArtworkHeader(
+                            asset: asset,
+                            imageSize: imageSize,
+                            label: context.strings.viewAreaImageAction,
+                            onTap: () => Navigator.of(context).push<void>(
+                              MaterialPageRoute(
+                                builder: (_) => AreaImageScreen(asset: asset),
+                              ),
+                            ),
                           ),
                         ),
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              28,
+                              48,
+                              28,
+                              24 + bottomInset,
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  visionTitle,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontFamily: kFontBranding,
+                                    fontSize: 30,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                VisionMarkdown(
+                                  data: visionText,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(height: 64),
+                                ElevatedButton(
+                                  style: nightlightButtonStyle(colors),
+                                  onPressed: onEnter,
+                                  child: Text(actionLabel),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  child: SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: IconButton.filled(
+                        tooltip: MaterialLocalizations.of(context)
+                            .backButtonTooltip,
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.black54,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: onBack,
+                        icon: const Icon(Icons.arrow_back),
                       ),
                     ),
                   ),
-                  // Generous space above the vision section (title +
-                  // body), separating it clearly from the image above.
-                  const SizedBox(height: 48),
-                  // The heading asked for explicitly — "Visione",
-                  // centered and big. No glow (tried first; asked to
-                  // remove it from both this and the button below).
-                  Text(
-                    visionTitle,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontFamily: kFontBranding,
-                      fontSize: 30,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 28),
-                    child: Text(
-                      visionText,
-                      textAlign: TextAlign.center,
-                      // No line cap — the whole vision shows,
-                      // however long; this section scrolls rather
-                      // than the text truncating.
-                      style: const TextStyle(
-                        fontFamily: kFontStarTitle,
-                        fontStyle: FontStyle.italic,
-                        fontWeight: FontWeight.w600,
-                        // Brought down from an earlier 24 — at full,
-                        // uncapped length a long vision read better
-                        // a size smaller.
-                        fontSize: 19,
-                        height: 1.5,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  // Same generous space below the vision section,
-                  // before the button.
-                  const SizedBox(height: 48),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                    // White-on-navy, the same look the Nightlight
-                    // section's own primary buttons use (see
-                    // nightlight_style.dart) — reads better here
-                    // than the app's usual gold-on-navy, which
-                    // would clash with the art's own blue. No glow
-                    // (tried first, a blue BoxShadow behind this —
-                    // asked to remove it, along with the title's
-                    // own). Sized to its own label (no
-                    // `SizedBox(width: double.infinity)`) — a
-                    // full-width button here read as too heavy.
-                    child: ElevatedButton(
-                      style: nightlightButtonStyle(colors),
-                      onPressed: onEnter,
-                      child: Text(actionLabel),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

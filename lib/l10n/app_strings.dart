@@ -6,6 +6,19 @@
 /// string set is small enough that a plain Dart class is simpler to read,
 /// grep, and keep in sync than generated code.
 abstract class AppStrings {
+  String get viewAreaImageAction;
+  String get visionUndo;
+  String get visionRedo;
+  String get visionWrite;
+  String get visionPreview;
+  String get visionHeading;
+  String get visionSection;
+  String get visionBold;
+  String get visionItalic;
+  String get visionBulletList;
+  String get visionNumberedList;
+  String get visionEditorHint;
+  String get visionSaveError;
   String get languageCode;
 
   // Life areas

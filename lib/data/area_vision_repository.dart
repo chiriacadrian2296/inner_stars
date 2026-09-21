@@ -48,7 +48,8 @@ class AreaVisionRepository {
     } else {
       all[area.name] = trimmed;
     }
-    await _prefs.setString(_storageKey, jsonEncode(all));
+    final saved = await _prefs.setString(_storageKey, jsonEncode(all));
+    if (!saved) throw StateError('Could not persist the area vision');
   }
 
   /// Used by the "reset all data" action — there's no undo.

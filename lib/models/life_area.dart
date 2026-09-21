@@ -64,12 +64,10 @@ extension LifeAreaX on LifeArea {
 
   /// An example vision for this area — shown, muted, in place of the
   /// user's own vision on its Supernova page until they write one (see
-  /// `area_detail_screen.dart`), the same "Es./E.g." example-text
-  /// convention the app's other hint strings already use, just displayed
-  /// as the field's own empty-state content rather than a `TextField`
-  /// hint. [AppStrings.areaVisionHint]'s own generic question is still
-  /// what actually greets them once they tap in to write their own — this
-  /// is only for the read-only view before that.
+  /// `area_detail_screen.dart`). Markdown headings, paragraphs and lists
+  /// illustrate how a vision can be structured. Explicitly labelled as an
+  /// example, it is only displayed in the read-only view, never persisted
+  /// or inserted into the user's editor.
   String visionPlaceholder(AppStrings s) {
     switch (this) {
       case LifeArea.physical:
