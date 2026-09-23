@@ -139,7 +139,7 @@ class TooltipCardController<T> extends ChangeNotifier {
   bool hasData(Object? value) => _data == value;
 
   /// Checks if the current data is of a specific type
-  bool isDataType<T>() => _data is T;
+  bool isDataType<U>() => _data is U;
 }
 
 /// Global state manager for tracking open tooltips

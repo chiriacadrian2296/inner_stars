@@ -605,13 +605,13 @@ class _TooltipCardState extends State<TooltipCard>
       child: SizeChangedLayoutNotifier(
         child: TooltipCardTriggerView(
           targetKey: _targetKey,
-          child: widget.child,
           triggers: _triggers,
           isOpen: _controller.isOpen,
           onToggle: _toggleFromPressLike,
           onOpen: () => _controller.open(),
           onClose: _controller.close,
           onHoverChanged: _onTargetHoverChanged,
+          child: widget.child,
         ),
       ),
     );

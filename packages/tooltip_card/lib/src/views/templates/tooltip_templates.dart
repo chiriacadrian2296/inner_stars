@@ -63,8 +63,8 @@ class TooltipTemplate {
                                     child: Icon(
                                       Icons.close,
                                       size: 16,
-                                      color: colorScheme.onSurface.withOpacity(
-                                        0.5,
+                                      color: colorScheme.onSurface.withValues(
+                                        alpha: 0.5,
                                       ),
                                     ),
                                   ),
@@ -76,7 +76,9 @@ class TooltipTemplate {
                             content,
                             style: TextStyle(
                               fontSize: 13,
-                              color: colorScheme.onSurface.withOpacity(0.7),
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.7,
+                              ),
                               height: 1.4,
                             ),
                           ),
@@ -128,7 +130,7 @@ class TooltipTemplate {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: effectiveIconColor.withOpacity(0.1),
+                          color: effectiveIconColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(icon, color: effectiveIconColor, size: 20),
@@ -151,7 +153,9 @@ class TooltipTemplate {
                             content,
                             style: TextStyle(
                               fontSize: 13,
-                              color: colorScheme.onSurface.withOpacity(0.7),
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.7,
+                              ),
                             ),
                           ),
                         ],
@@ -162,7 +166,7 @@ class TooltipTemplate {
               ),
               const Divider(height: 1),
               Container(
-                color: colorScheme.surface.withOpacity(0.5),
+                color: colorScheme.surface.withValues(alpha: 0.5),
                 padding: const EdgeInsets.all(8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -224,7 +228,9 @@ class TooltipTemplate {
                               email,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: colorScheme.onSurface.withOpacity(0.6),
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
+                                ),
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -232,7 +238,7 @@ class TooltipTemplate {
                           ],
                         ),
                       ),
-                      if (action != null) action,
+                      ?action,
                     ],
                   ),
                 ),
@@ -312,7 +318,7 @@ class TooltipTemplate {
                       content,
                       style: TextStyle(
                         fontSize: 13,
-                        color: colorScheme.onSurface.withOpacity(0.7),
+                        color: colorScheme.onSurface.withValues(alpha: 0.7),
                         height: 1.4,
                       ),
                     ),
@@ -333,7 +339,7 @@ class TooltipTemplate {
                         secondaryAction,
                         const SizedBox(width: 8),
                       ],
-                      if (primaryAction != null) primaryAction,
+                      ?primaryAction,
                     ],
                   ),
                 ),
@@ -405,7 +411,9 @@ class TooltipTemplate {
                               'Skip',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: colorScheme.onSurface.withOpacity(0.5),
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.5,
+                                ),
                                 decoration: TextDecoration.underline,
                               ),
                             ),
@@ -425,7 +433,7 @@ class TooltipTemplate {
                       content,
                       style: TextStyle(
                         fontSize: 14,
-                        color: colorScheme.onSurface.withOpacity(0.8),
+                        color: colorScheme.onSurface.withValues(alpha: 0.8),
                         height: 1.5,
                       ),
                     ),

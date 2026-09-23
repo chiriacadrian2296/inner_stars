@@ -128,7 +128,7 @@ class TooltipCardContent extends StatelessWidget {
                 ],
                 Expanded(child: Text(title, style: effectiveTitleStyle)),
                 if (showCloseButton && onClose != null) ...[
-                  SizedBox(width: TooltipCardSpacing.sm),
+                  const SizedBox(width: TooltipCardSpacing.sm),
                   IconButton(
                     tooltip: 'Close',
                     onPressed: onClose,
@@ -152,7 +152,7 @@ class TooltipCardContent extends StatelessWidget {
               ],
             ),
             if (subtitle != null) ...[
-              SizedBox(height: TooltipCardSpacing.xs),
+              const SizedBox(height: TooltipCardSpacing.xs),
               Text(subtitle!, style: effectiveSubtitleStyle),
             ],
             if (content != null) ...[
@@ -165,7 +165,7 @@ class TooltipCardContent extends StatelessWidget {
             if (primaryAction != null ||
                 secondaryAction != null ||
                 tertiaryAction != null) ...[
-              SizedBox(height: TooltipCardSpacing.lg),
+              const SizedBox(height: TooltipCardSpacing.lg),
               _buildActions(effectiveActionSpacing),
             ],
           ],
