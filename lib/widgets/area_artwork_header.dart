@@ -38,8 +38,19 @@ class AreaArtworkHeader extends SliverPersistentHeaderDelegate {
         : (shrinkOffset / collapseRange).clamp(0.0, 1.0);
     final zoomProgress = ((progress - 0.7) / 0.3).clamp(0.0, 1.0);
     final scale = 1 + 0.25 * Curves.easeInOut.transform(zoomProgress);
-    return ColoredBox(
-      color: Colors.black,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black,
+        boxShadow: [
+          if (zoomProgress > 0)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: zoomProgress),
+              blurRadius: 42,
+              spreadRadius: 8,
+              offset: const Offset(0, 16),
+            ),
+        ],
+      ),
       child: Center(
         child: SizedBox(
           width: imageSize,

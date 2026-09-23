@@ -15,8 +15,7 @@ import 'app_style.dart';
 /// and dialogs a `backgroundColor` re-specified at each of nine sites.
 /// Anything a screen still overrides locally should be a real exception,
 /// not a default being restated.
-ThemeData buildAppTheme() {
-  final palette = AppColors.dark;
+ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
   const brightness = Brightness.dark;
 
   /// A filled gold button's glow, expressed the one way a [ButtonStyle]
