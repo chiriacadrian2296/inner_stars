@@ -10,11 +10,11 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  test('defaults to Observing the Star, playing, glass bell/warm ding', () async {
+  test('defaults to Observing the Star, paused, glass bell/warm ding', () async {
     final repo = await AudioSettingsRepository.create();
 
     expect(repo.backgroundTrack, BackgroundTrack.observingTheStar);
-    expect(repo.backgroundPaused, isFalse);
+    expect(repo.backgroundPaused, isTrue);
     expect(repo.tapSound, SkySoundEffect.glassBell);
     expect(repo.holdSound, SkySoundEffect.chimeWarm);
     expect(repo.whooshInSound, SkyWhooshEffect.whooshA);
@@ -55,9 +55,9 @@ void main() {
   test('setBackgroundPaused() persists and getter reads it back', () async {
     final repo = await AudioSettingsRepository.create();
 
-    await repo.setBackgroundPaused(true);
+    await repo.setBackgroundPaused(false);
 
-    expect(repo.backgroundPaused, isTrue);
+    expect(repo.backgroundPaused, isFalse);
   });
 
   test('setTapSound()/setHoldSound() persist independently', () async {
@@ -83,7 +83,7 @@ void main() {
   test('clear() resets every setting back to its default', () async {
     final repo = await AudioSettingsRepository.create();
     await repo.setBackgroundTrack(BackgroundTrack.heavenlyLoop);
-    await repo.setBackgroundPaused(true);
+    await repo.setBackgroundPaused(false);
     await repo.setTapSound(SkySoundEffect.confirmation);
     await repo.setHoldSound(SkySoundEffect.pluckBright);
     await repo.setWhooshInSound(SkyWhooshEffect.whooshC);
@@ -96,7 +96,7 @@ void main() {
     await repo.clear();
 
     expect(repo.backgroundTrack, BackgroundTrack.observingTheStar);
-    expect(repo.backgroundPaused, isFalse);
+    expect(repo.backgroundPaused, isTrue);
     expect(repo.tapSound, SkySoundEffect.glassBell);
     expect(repo.holdSound, SkySoundEffect.chimeWarm);
     expect(repo.whooshInSound, SkyWhooshEffect.whooshA);

@@ -46,11 +46,11 @@ class SettingsRepository {
 
   Future<void> setShowGrid(bool value) => _prefs.setBool(_showGridKey, value);
 
-  /// Whether any `hint_kit` guided tour is allowed to auto-start at all. On
+  /// Whether any `hint_kit` guided tour is allowed to auto-start at all. Off
   /// by default; turning it off doesn't touch which tours are individually
   /// marked seen (see `PrefsTourStorage`) — it just makes every one of them
   /// behave as already-seen until this is switched back on.
-  bool get tutorialsEnabled => _prefs.getBool(_tutorialsEnabledKey) ?? true;
+  bool get tutorialsEnabled => _prefs.getBool(_tutorialsEnabledKey) ?? false;
 
   Future<void> setTutorialsEnabled(bool value) =>
       _prefs.setBool(_tutorialsEnabledKey, value);

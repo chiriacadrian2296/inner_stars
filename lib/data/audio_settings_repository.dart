@@ -58,7 +58,7 @@ class AudioSettingsRepository {
 
   /// False (playing) by default — the ambient loop is meant to just be
   /// there unless the user turns it off themselves.
-  bool get backgroundPaused => _prefs.getBool(_pausedKey) ?? false;
+  bool get backgroundPaused => _prefs.getBool(_pausedKey) ?? true;
 
   Future<void> setBackgroundPaused(bool paused) {
     return _prefs.setBool(_pausedKey, paused);
