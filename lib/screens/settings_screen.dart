@@ -1,11 +1,15 @@
+import '../data/moodboard_repository.dart';
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../data/app_lock_repository.dart';
 import '../data/area_vision_repository.dart';
 import '../data/audio_settings_repository.dart';
+import '../data/biometric_auth_service.dart';
 import '../data/custom_constellation_repository.dart';
 import '../data/habit_completion_repository.dart';
 import '../data/habit_repository.dart';
@@ -22,8 +26,8 @@ import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
 import '../widgets/apk_download_prompt.dart';
 import '../widgets/responsive_content.dart';
-import 'menu_button_gallery_screen.dart';
 import 'onboarding_screen.dart';
+import 'pin_setup_screen.dart';
 
 /// Parks this screen's "Replay onboarding" debug button — see
 /// `main.dart`'s own `_kShowOnboarding` doc comment for why. Left wired up
@@ -47,6 +51,8 @@ class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
     required this.settings,
+    required this.appLockRepository,
+    required this.biometricAuthService,
     required this.starRepository,
     required this.projectRepository,
     required this.habitRepository,
@@ -59,6 +65,8 @@ class SettingsScreen extends StatefulWidget {
   });
 
   final SettingsController settings;
+  final AppLockRepository appLockRepository;
+  final BiometricAuthService biometricAuthService;
   final StarRepository starRepository;
   final ProjectRepository projectRepository;
   final HabitRepository habitRepository;
@@ -76,6 +84,85 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  bool _biometricAvailable = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.biometricAuthService.isAvailable().then((available) {
+      if (mounted) setState(() => _biometricAvailable = available);
+    });
+  }
+
+  Future<void> _setAppLockEnabled(bool enabled) async {
+    if (enabled) {
+      final created = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => PinSetupScreen(
+            appLockRepository: widget.appLockRepository,
+            biometricAuthService: widget.biometricAuthService,
+          ),
+        ),
+      );
+      if (created == true && mounted) setState(() {});
+      return;
+    }
+
+    // Turning it off needs the same proof of identity turning it on would
+    // have needed to change — otherwise anyone picking up an unlocked
+    // phone could switch it off in a few taps.
+    final verified = await _verifyIdentity();
+    if (!verified) return;
+    await widget.appLockRepository.disable();
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _setBiometricEnabled(bool value) async {
+    await widget.appLockRepository.setBiometricEnabled(value);
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _changePin() async {
+    final verified = await _verifyIdentity();
+    if (!verified || !mounted) return;
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => PinSetupScreen(
+          appLockRepository: widget.appLockRepository,
+          biometricAuthService: widget.biometricAuthService,
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
+  }
+
+  /// PIN (via [PinSetupScreen] in "verify current" mode), with a
+  /// biometric shortcut first when one's enabled — the same proof asked
+  /// for disabling the lock or changing its PIN.
+  Future<bool> _verifyIdentity() async {
+    if (widget.appLockRepository.biometricEnabled) {
+      final strings = context.strings;
+      final ok = await widget.biometricAuthService.authenticate(
+        reason: strings.appLockBiometricReason,
+        title: strings.appLockBiometricReason,
+        cancelLabel: strings.cancel,
+      );
+      if (ok) return true;
+    }
+    if (!mounted) return false;
+    final verified = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => PinSetupScreen(
+          appLockRepository: widget.appLockRepository,
+          biometricAuthService: widget.biometricAuthService,
+          requireCurrentPin: true,
+          verifyOnly: true,
+        ),
+      ),
+    );
+    return verified == true;
+  }
+
   Future<void> _setReminderEnabled(bool enabled) async {
     final strings = context.strings;
 
@@ -229,6 +316,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await widget.habitRepository.clear();
     await widget.habitCompletionRepository.clear();
     await widget.starsShapeRepository.clear();
+    await (await MoodboardRepository.create()).clear();
     await widget.areaVisionRepository.clear();
     await widget.reflectionAnswerRepository.clear();
     await widget.audioSettingsRepository.clear();
@@ -400,6 +488,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           strings.skyGridToggleLabel,
                           style: TextStyle(color: colors.text, fontSize: 14),
                         ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+
+                  _SectionLabel(strings.appLockSection),
+                  const SizedBox(height: 4),
+                  Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(kRadiusCard),
+                    child: Container(
+                      decoration: panelDecoration(colors),
+                      child: Column(
+                        children: [
+                          SwitchListTile(
+                            value: widget.appLockRepository.isEnabled,
+                            onChanged: _setAppLockEnabled,
+                            title: Text(
+                              strings.appLockToggleLabel,
+                              style: TextStyle(
+                                color: colors.text,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          if (widget.appLockRepository.isEnabled) ...[
+                            if (_biometricAvailable)
+                              SwitchListTile(
+                                value:
+                                    widget.appLockRepository.biometricEnabled,
+                                onChanged: _setBiometricEnabled,
+                                title: Text(
+                                  strings.appLockBiometricToggleLabel,
+                                  style: TextStyle(
+                                    color: colors.text,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ListTile(
+                              onTap: _changePin,
+                              title: Text(
+                                strings.appLockChangePinLabel,
+                                style: TextStyle(
+                                  color: colors.gold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              leading: Icon(
+                                Icons.password_outlined,
+                                color: colors.gold,
+                                size: 20,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ),
@@ -591,27 +735,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 8),
-                    // Side-by-side comparison of the Sky's menu FAB with
-                    // its logo drawn in different blend modes/opacities —
-                    // see [MenuButtonGalleryScreen]'s own doc comment.
-                    // Temporary, while that look is still being picked.
-                    SizedBox(
-                      width: double.infinity,
-                      child: TextButton.icon(
-                        onPressed: () => _push(const MenuButtonGalleryScreen()),
-                        style: _debugButtonStyle(colors, colors.muted),
-                        icon: Icon(
-                          Icons.grid_view_outlined,
-                          size: 16,
-                          color: colors.muted,
-                        ),
-                        label: Text(
-                          'Menu Button Gallery',
-                          style: TextStyle(color: colors.muted, fontSize: 12),
-                        ),
-                      ),
-                    ),
                   ],
                 ],
               ),

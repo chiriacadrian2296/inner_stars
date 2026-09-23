@@ -14,5 +14,17 @@
          This Theme is only used starting with V2 of Flutter's Android embedding. -->
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
+        <!-- Tints the buttons of any system dialog hosted by this Activity
+             with the app's own gold rather than the platform default blue
+             — in practice, the biometric prompt's Cancel button (see
+             BiometricAuthService.authenticate) is the one this is ever
+             actually seen on, since it's the only system dialog this app
+             triggers. Whether it actually takes effect depends on the
+             OEM's own BiometricPrompt implementation — some (Xiaomi/MIUI
+             in particular) draw a fixed-color sheet of their own that
+             ignores the calling app's theme regardless. -->
+        <item name="android:colorAccent">@color/app_gold_accent</item>
+        <item name="android:colorControlActivated">@color/app_gold_accent</item>
+        <item name="android:colorControlNormal">@color/app_gold_accent</item>
     </style>
 </resources>

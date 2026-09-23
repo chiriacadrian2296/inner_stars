@@ -5,7 +5,7 @@ import android.os.Build
 import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
@@ -27,7 +27,13 @@ import io.flutter.plugin.common.MethodChannel
 /// `VibrationEffect`, which was never observed going through the ALARM
 /// override in the first place (that's a behavior of the newer
 /// per-usage-intensity vibration system `VibrationAttributes` belongs to).
-class MainActivity : FlutterActivity() {
+// `local_auth`'s Android side needs a `FragmentActivity` to host the
+// system `BiometricPrompt` — a plain `FlutterActivity` makes it throw
+// (silently swallowed by `BiometricAuthService.authenticate`'s catch-all,
+// which is why the fingerprint button did nothing at all on tap before
+// this). `FlutterFragmentActivity` is Flutter's own drop-in replacement,
+// otherwise identical.
+class MainActivity : FlutterFragmentActivity() {
     private val hapticsChannelName = "inner_stars/haptics"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {

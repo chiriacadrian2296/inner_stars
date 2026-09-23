@@ -30,6 +30,8 @@
 	<string>Used so you can take a photo to attach to a star.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Used so you can choose a photo to attach to a star.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Used for the optional fingerprint/Face ID shortcut on the app lock.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

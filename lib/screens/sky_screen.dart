@@ -13,8 +13,10 @@ import 'package:share_plus/share_plus.dart';
 import 'package:tooltip_card/tooltip_card.dart';
 
 import '../audio/audio_service.dart';
+import '../data/app_lock_repository.dart';
 import '../data/area_vision_repository.dart';
 import '../data/audio_settings_repository.dart';
+import '../data/biometric_auth_service.dart';
 import '../data/constellation_layout.dart';
 import '../data/constellation_presets.dart'
     show LocalizedNameX, presetById;
@@ -136,6 +138,8 @@ class SkyScreen extends StatefulWidget {
   const SkyScreen({
     super.key,
     required this.settings,
+    required this.appLockRepository,
+    required this.biometricAuthService,
     required this.projectRepository,
     required this.starRepository,
     required this.habitRepository,
@@ -149,6 +153,8 @@ class SkyScreen extends StatefulWidget {
   });
 
   final SettingsController settings;
+  final AppLockRepository appLockRepository;
+  final BiometricAuthService biometricAuthService;
   final ProjectRepository projectRepository;
   final StarRepository starRepository;
   final HabitRepository habitRepository;
@@ -1727,6 +1733,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       MaterialPageRoute(
         builder: (_) => SettingsScreen(
           settings: widget.settings,
+          appLockRepository: widget.appLockRepository,
+          biometricAuthService: widget.biometricAuthService,
           starRepository: widget.starRepository,
           projectRepository: widget.projectRepository,
           habitRepository: widget.habitRepository,

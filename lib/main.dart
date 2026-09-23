@@ -8,8 +8,10 @@ import 'package:marionette_flutter/marionette_flutter.dart';
 
 import 'audio/audio_service.dart';
 import 'data/apk_prompt_prefs.dart';
+import 'data/app_lock_repository.dart';
 import 'data/area_vision_repository.dart';
 import 'data/audio_settings_repository.dart';
+import 'data/biometric_auth_service.dart';
 import 'data/custom_constellation_repository.dart';
 import 'data/habit_completion_repository.dart';
 import 'data/habit_repository.dart';
@@ -30,6 +32,7 @@ import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
 import 'tutorials/tour_storage.dart';
 import 'widgets/apk_download_prompt.dart';
+import 'widgets/app_lock_gate.dart';
 
 /// Parks the old first-launch onboarding and the Sky menu's "Metaphor"
 /// guide, both superseded by `hint_kit`-driven live tutorials pointing at
@@ -79,6 +82,8 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
   final _navigatorKey = GlobalKey<NavigatorState>();
 
   SettingsController? _settings;
+  AppLockRepository? _appLockRepository;
+  BiometricAuthService? _biometricAuthService;
   StarRepository? _starRepository;
   ProjectRepository? _projectRepository;
   HabitRepository? _habitRepository;
@@ -107,6 +112,8 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
     try {
       final settings = await SettingsController.create();
       settings.addListener(() => setState(() {}));
+      final appLockRepository = await AppLockRepository.create();
+      final biometricAuthService = BiometricAuthService();
       final starRepository = await StarRepository.create();
       final projectRepository = await ProjectRepository.create();
       final habitRepository = await HabitRepository.create();
@@ -173,6 +180,8 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
 
       setState(() {
         _settings = settings;
+        _appLockRepository = appLockRepository;
+        _biometricAuthService = biometricAuthService;
         _starRepository = starRepository;
         _projectRepository = projectRepository;
         _habitRepository = habitRepository;
@@ -269,6 +278,8 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
   @override
   Widget build(BuildContext context) {
     final settings = _settings;
+    final appLockRepository = _appLockRepository;
+    final biometricAuthService = _biometricAuthService;
     final starRepository = _starRepository;
     final projectRepository = _projectRepository;
     final habitRepository = _habitRepository;
@@ -301,6 +312,8 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
       );
     }
     if (settings == null ||
+        appLockRepository == null ||
+        biometricAuthService == null ||
         starRepository == null ||
         projectRepository == null ||
         habitRepository == null ||
@@ -410,18 +423,28 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
             systemNavigationBarDividerColor: Colors.transparent,
             systemNavigationBarContrastEnforced: false,
           ),
-          child: SkyScreen(
-            settings: settings,
-            starRepository: starRepository,
-            projectRepository: projectRepository,
-            habitRepository: habitRepository,
-            habitCompletionRepository: habitCompletionRepository,
-            starsShapeRepository: starsShapeRepository,
-            areaVisionRepository: areaVisionRepository,
-            reflectionAnswerRepository: reflectionAnswerRepository,
-            audioSettingsRepository: audioSettingsRepository,
-            audioService: audioService,
-            reminderService: reminderService,
+          // Gates everything behind an optional PIN/fingerprint lock —
+          // above SkyScreen so a locked launch never reveals a frame of
+          // real content first, and re-checked on every background/resume
+          // (see AppLockGate's own doc comment for the lifecycle rule).
+          child: AppLockGate(
+            appLockRepository: appLockRepository,
+            biometricAuthService: biometricAuthService,
+            child: SkyScreen(
+              settings: settings,
+              appLockRepository: appLockRepository,
+              biometricAuthService: biometricAuthService,
+              starRepository: starRepository,
+              projectRepository: projectRepository,
+              habitRepository: habitRepository,
+              habitCompletionRepository: habitCompletionRepository,
+              starsShapeRepository: starsShapeRepository,
+              areaVisionRepository: areaVisionRepository,
+              reflectionAnswerRepository: reflectionAnswerRepository,
+              audioSettingsRepository: audioSettingsRepository,
+              audioService: audioService,
+              reminderService: reminderService,
+            ),
           ),
         ),
       ),

@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#0D1220</color>
+    <!-- The app's own "gold" accent (see AppColors.dark.gold in Dart) —
+         set as the Activity theme's colorAccent below so system dialogs
+         hosted by it (namely the biometric prompt's Cancel button, see
+         styles.xml) pick up this app's color instead of the platform's
+         own default blue. -->
+    <color name="app_gold_accent">#F2B84B</color>
 </resources>
