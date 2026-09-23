@@ -15,6 +15,10 @@ dependencies:
   flutter_timezone: ^5.1.0
   package_info_plus: ^10.2.1
   shared_preferences: ^2.5.5
+  local_auth: ^2.3.0
+  local_auth_android: ^1.0.56
+  local_auth_darwin: ^1.6.1
+  crypto: ^3.0.7
   timezone: ^0.11.1
   image_picker: ^1.2.3
   path_provider: ^2.1.6
@@ -28,6 +32,9 @@ dependencies:
   url_launcher: ^6.3.2
   flutter_markdown_plus: ^1.0.12
   markdown: ^7.3.1
+  m3_carousel: 2.1.4
+  video_player: ^2.14.0
+  idb_shim: ^2.9.9
 
 dev_dependencies:
   flutter_test:
