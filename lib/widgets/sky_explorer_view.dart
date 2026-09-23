@@ -3,6 +3,7 @@ import 'package:hint_kit/hint_kit.dart';
 
 import '../data/area_vision_repository.dart';
 import '../data/custom_constellation_repository.dart';
+import '../data/constellation_shape.dart';
 import '../data/habit_completion_repository.dart';
 import '../data/habit_repository.dart';
 import '../data/project_repository.dart';
@@ -24,22 +25,18 @@ import '../theme/app_style.dart';
 import '../tutorials/tour_intro_target.dart';
 import '../tutorials/tour_step_card.dart';
 import '../utils/date_format.dart';
+import '../utils/area_hero_art.dart';
 import '../utils/habit_stats.dart';
-import '../utils/icon_for_slug.dart';
 import '../utils/responsive.dart';
 import 'app_field.dart';
 import 'area_filter_sheet.dart';
-import 'area_tag.dart';
 import 'date_range_filter_sheet.dart';
-import 'dead_star_card.dart';
 import 'kind_filter_sheet.dart';
-import 'lit_star_card.dart';
-import 'navigate_here_button.dart';
-import 'pulsar_card.dart';
 import 'responsive_content.dart';
+import 'search_result_card.dart';
 import 'sky_navigation_target.dart';
 import 'sort_filter_sheet.dart';
-import 'unlit_star_card.dart';
+import 'star_glyph.dart';
 
 enum _SkyMode { supernovas, constellations, stars }
 
@@ -100,12 +97,13 @@ class _SkyEntry {
 /// Nascent stars appear in none of the three: they have no record behind
 /// them, only an empty slot on a shape (see [kListableStarKinds]).
 ///
-/// The Sky's search popup (`SkySearchScreen`) is this widget's
-/// only caller — every card's "take me there" button calls [onNavigateTo]
-/// unconditionally, and [onModeLabelChanged] is how the popup's own AppBar
-/// title tracks whichever of the three views is currently selected, since
-/// that label used to be drawn inline here (freeing that vertical space was
-/// the point of moving it up into the popup's title bar).
+/// The Sky's search popup (`SkySearchScreen`) is this widget's only caller.
+/// Each result's quick menu offers the actions that are actually available:
+/// opening the result, and [onNavigateTo] when its position in the Sky can be
+/// resolved. [onModeLabelChanged] is how the popup's own AppBar title tracks
+/// whichever of the three views is currently selected, since that label used
+/// to be drawn inline here (freeing that vertical space was the point of
+/// moving it up into the popup's title bar).
 class SkyExplorerView extends StatefulWidget {
   const SkyExplorerView({
     super.key,
@@ -143,6 +141,7 @@ class SkyExplorerView extends StatefulWidget {
 
 class _SkyExplorerViewState extends State<SkyExplorerView> {
   _SkyMode _mode = _SkyMode.supernovas;
+  final _cardMenuController = SearchCardMenuController();
 
   /// Whether [_syncModeToTour] has already forced Supernovas out once.
   ///
@@ -212,14 +211,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
 
   List<Star> _starsForProject(int projectId) =>
       widget.starRepository.getAllForProject(projectId);
-
-  int _activePulsarCountForProject(int projectId) {
-    var count = 0;
-    for (final habit in widget.habitRepository.getActiveForProject(projectId)) {
-      if (isHabitLit(habit, _countsByDayFor(habit.id))) count++;
-    }
-    return count;
-  }
 
   Map<DateTime, int> _countsByDayFor(int habitId) {
     return habitCompletionCountsByDay(
@@ -345,6 +336,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
   @override
   void dispose() {
     _queryController.dispose();
+    _cardMenuController.dispose();
     super.dispose();
   }
 
@@ -665,6 +657,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                       selected: {_mode},
                       onSelectionChanged: (selection) {
                         final mode = selection.first;
+                        _cardMenuController.closeAll();
                         setState(() => _mode = mode);
                         widget.onModeLabelChanged(_labelFor(mode, strings));
                       },
@@ -683,7 +676,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                       child: AppTextField(
                         controller: _queryController,
                         hintText: strings.searchHint,
-                        onChanged: (value) => setState(() => _query = value),
+                        onChanged: (value) {
+                          _cardMenuController.closeAll();
+                          setState(() => _query = value);
+                        },
                         prefixIcon: Icon(
                           Icons.search,
                           color: colors.muted,
@@ -806,79 +802,112 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
             ),
           ),
           Expanded(
-            child: switch (_mode) {
-              // A plain top-flowing ListView, like Constellations/Stars
-              // below — deliberately not the old LayoutBuilder +
-              // full-height ConstrainedBox + Column approach, which forced
-              // this branch's box to at least fill the available height and
-              // then, on wide layouts, had `ResponsiveContent`'s own
-              // `Center` (there to cap width) center the whole card column
-              // *within* that stretched box — a Column's own
-              // `mainAxisAlignment` has no say over that, since the
-              // centering was happening one level up. A plain ListView
-              // sizes to its own content and never fights this: all 8
-              // unfiltered still read as one screen with no scrolling
-              // needed on any normal phone, and a search narrowed down to
-              // one or two cards now sits right under the search row
-              // instead of floating mid-screen.
-              _SkyMode.supernovas => Builder(
-                builder: (context) {
-                  final areas = _filteredSupernovaAreas(strings);
-                  if (areas.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                      child: Center(
-                        child: Text(
-                          strings.noSearchResultsSupernovas,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 14, color: colors.muted),
-                        ),
-                      ),
-                    );
-                  }
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(0, 4, 0, 16),
-                    itemCount: areas.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) {
-                      final area = areas[index];
-                      return ResponsiveContent(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: _AreaCard(
-                            area: area,
-                            onTap: () => _openArea(area),
-                            onNavigateTo: () =>
-                                widget.onNavigateTo(SkyAreaTarget(area)),
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (notification is ScrollStartNotification) {
+                  _cardMenuController.closeAll();
+                }
+                return false;
+              },
+              child: switch (_mode) {
+                // A plain top-flowing ListView, like Constellations/Stars
+                // below — deliberately not the old LayoutBuilder +
+                // full-height ConstrainedBox + Column approach, which forced
+                // this branch's box to at least fill the available height and
+                // then, on wide layouts, had `ResponsiveContent`'s own
+                // `Center` (there to cap width) center the whole card column
+                // *within* that stretched box — a Column's own
+                // `mainAxisAlignment` has no say over that, since the
+                // centering was happening one level up. A plain ListView
+                // sizes to its own content and never fights this: all 8
+                // unfiltered still read as one screen with no scrolling
+                // needed on any normal phone, and a search narrowed down to
+                // one or two cards now sits right under the search row
+                // instead of floating mid-screen.
+                _SkyMode.supernovas => Builder(
+                  builder: (context) {
+                    final areas = _filteredSupernovaAreas(strings);
+                    if (areas.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        child: Center(
+                          child: Text(
+                            strings.noSearchResultsSupernovas,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 14, color: colors.muted),
                           ),
                         ),
                       );
-                    },
-                  );
-                },
-              ),
-              _SkyMode.constellations => _ConstellationsList(
-                hasAnyProjects: _filteredAreaProjects.isNotEmpty,
-                filteredProjects: _filteredProjects,
-                starsForProject: _starsForProject,
-                activePulsarCountForProject: _activePulsarCountForProject,
-                onTap: _openProject,
-                onNavigateTo: widget.onNavigateTo,
-              ),
-              _SkyMode.stars => _FlatList(
-                hasAnyEntries: allEntries.isNotEmpty,
-                entries: filteredEntries,
-                projectsById: _projectsById,
-                countsByDayFor: _countsByDayFor,
-                onOpenStar: (entry) => _openStarReader(
-                  _filteredStarsOnly().indexWhere(
-                    (s) => s.id == entry.star!.id,
-                  ),
+                    }
+                    return ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(0, 4, 0, 16),
+                      itemCount: areas.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final area = areas[index];
+                        final projects = widget.projectRepository
+                            .getAll()
+                            .where((project) => project.area == area)
+                            .toList();
+                        final starCount = projects.fold<int>(
+                          0,
+                          (count, project) =>
+                              count +
+                              widget.starRepository
+                                  .getAllForProject(project.id)
+                                  .length +
+                              widget.habitRepository
+                                  .getAllForProject(project.id)
+                                  .length,
+                        );
+                        return ResponsiveContent(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: _AreaCard(
+                              area: area,
+                              constellationCount: projects.length,
+                              starCount: starCount,
+                              menuController: _cardMenuController,
+                              onTap: () => _openArea(area),
+                              onNavigateTo: () =>
+                                  widget.onNavigateTo(SkyAreaTarget(area)),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
-                onOpenHabit: (habit) => _openHabitReader(habit),
-                onNavigateTo: widget.onNavigateTo,
-              ),
-            },
+                _SkyMode.constellations => _ConstellationsList(
+                  hasAnyProjects: _filteredAreaProjects.isNotEmpty,
+                  filteredProjects: _filteredProjects,
+                  starsForProject: _starsForProject,
+                  shapeForProject: (project) => project.starsShapeId == null
+                      ? null
+                      : widget.starsShapeRepository
+                            .getById(project.starsShapeId!)
+                            ?.shape,
+                  menuController: _cardMenuController,
+                  onTap: _openProject,
+                  onNavigateTo: widget.onNavigateTo,
+                ),
+                _SkyMode.stars => _FlatList(
+                  hasAnyEntries: allEntries.isNotEmpty,
+                  entries: filteredEntries,
+                  projectsById: _projectsById,
+                  countsByDayFor: _countsByDayFor,
+                  query: _query,
+                  menuController: _cardMenuController,
+                  onOpenStar: (entry) => _openStarReader(
+                    _filteredStarsOnly().indexWhere(
+                      (s) => s.id == entry.star!.id,
+                    ),
+                  ),
+                  onOpenHabit: (habit) => _openHabitReader(habit),
+                  onNavigateTo: widget.onNavigateTo,
+                ),
+              },
+            ),
           ),
         ],
       ),
@@ -889,47 +918,49 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
 class _AreaCard extends StatelessWidget {
   const _AreaCard({
     required this.area,
+    required this.constellationCount,
+    required this.starCount,
+    required this.menuController,
     required this.onTap,
     required this.onNavigateTo,
   });
 
   final LifeArea area;
+  final int constellationCount;
+  final int starCount;
+  final SearchCardMenuController menuController;
   final VoidCallback onTap;
   final VoidCallback onNavigateTo;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     final strings = context.strings;
-
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(kRadiusCard),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(kRadiusCard),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          decoration: panelDecoration(colors),
-          child: Row(
-            children: [
-              // Mirrors the trailing button's own width so the tag stays
-              // visually centered rather than skewed toward the left edge.
-              const SizedBox(width: 34),
-              Expanded(
-                child: Center(
-                  child: AreaTag(area: area, iconSize: 20, fontSize: 16),
-                ),
-              ),
-              NavigateHereButton(
-                onTap: onNavigateTo,
-                tooltip: strings.takeMeThereAction,
-              ),
-            ],
-          ),
-        ),
+    return SearchResultCard(
+      menuId: 'area:${area.name}',
+      menuController: menuController,
+      onTap: onTap,
+      visual: SearchArtworkVisual(
+        asset: kAreaHeroArt[area]?.skyAsset,
+        fallbackIcon: Icons.flare,
       ),
+      content: SearchCardTextContent(
+        title: area.displayName(strings),
+        primary:
+            '${strings.areaConstellationsStatLabel}: $constellationCount · '
+            '${strings.areaStarsStatLabel}: $starCount',
+      ),
+      actions: [
+        SearchCardAction(
+          icon: Icons.open_in_new_rounded,
+          label: strings.searchCardOpenAction,
+          onTap: onTap,
+        ),
+        SearchCardAction(
+          icon: Icons.navigation_rounded,
+          label: strings.takeMeThereAction,
+          onTap: onNavigateTo,
+        ),
+      ],
     );
   }
 }
@@ -1008,7 +1039,8 @@ class _ConstellationsList extends StatelessWidget {
     required this.hasAnyProjects,
     required this.filteredProjects,
     required this.starsForProject,
-    required this.activePulsarCountForProject,
+    required this.shapeForProject,
+    required this.menuController,
     required this.onTap,
     required this.onNavigateTo,
   });
@@ -1016,7 +1048,8 @@ class _ConstellationsList extends StatelessWidget {
   final bool hasAnyProjects;
   final List<Project> filteredProjects;
   final List<Star> Function(int projectId) starsForProject;
-  final int Function(int projectId) activePulsarCountForProject;
+  final ConstellationShape? Function(Project project) shapeForProject;
+  final SearchCardMenuController menuController;
   final void Function(Project) onTap;
   final ValueChanged<SkyNavigationTarget> onNavigateTo;
 
@@ -1063,24 +1096,15 @@ class _ConstellationsList extends StatelessWidget {
         final stars = starsForProject(project.id);
         final litStars = stars.where((s) => s.isLit).toList();
         final unlitStars = stars.where((s) => s.isUnlit).length;
-        final activePulsars = activePulsarCountForProject(project.id);
         return ResponsiveContent(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: _ProjectCard(
               project: project,
               starCount: litStars.length,
-              lastStarDate: litStars.isEmpty
-                  ? null
-                  : litStars
-                        .map((s) => s.achievedDate!)
-                        .reduce((a, b) => a.isAfter(b) ? a : b),
-              combinedIntensity: litStars.fold<int>(
-                0,
-                (sum, s) => sum + s.intensity!,
-              ),
               unlitStars: unlitStars,
-              activePulsars: activePulsars,
+              shape: shapeForProject(project),
+              menuController: menuController,
               onTap: () => onTap(project),
               onNavigateTo: () => onNavigateTo(SkyProjectTarget(project)),
             ),
@@ -1092,13 +1116,15 @@ class _ConstellationsList extends StatelessWidget {
 }
 
 /// The "Stars" flat list — lit, unlit, dead and pulsar all mixed together,
-/// each rendered by the card suited to its kind.
+/// each rendered through the shared compact Search card.
 class _FlatList extends StatelessWidget {
   const _FlatList({
     required this.hasAnyEntries,
     required this.entries,
     required this.projectsById,
     required this.countsByDayFor,
+    required this.query,
+    required this.menuController,
     required this.onOpenStar,
     required this.onOpenHabit,
     required this.onNavigateTo,
@@ -1108,6 +1134,8 @@ class _FlatList extends StatelessWidget {
   final List<_SkyEntry> entries;
   final Map<int, Project> projectsById;
   final Map<DateTime, int> Function(int habitId) countsByDayFor;
+  final String query;
+  final SearchCardMenuController menuController;
   final void Function(_SkyEntry entry) onOpenStar;
   final void Function(Habit habit) onOpenHabit;
   final ValueChanged<SkyNavigationTarget> onNavigateTo;
@@ -1166,54 +1194,27 @@ class _FlatList extends StatelessWidget {
                 ),
               );
 
-        final Widget card;
-        switch (entry.kind) {
-          case StarKind.lit:
-            card = LitStarCard(
-              star: entry.star!,
-              project: project,
-              onTap: () => onOpenStar(entry),
-              onNavigateTo: navigateTo,
-            );
-          case StarKind.unlit:
-            card = UnlitStarCard(
-              star: entry.star!,
-              project: project,
-              onTap: () => onOpenStar(entry),
-              onNavigateTo: navigateTo,
-            );
-          // The one kind that can come from either repository — which is
-          // exactly what the card has to say, since a dead star only ever
-          // comes back as what it was.
-          case StarKind.dead:
-            card = entry.habit != null
-                ? DeadStarCard.fromHabit(
-                    habit: entry.habit!,
-                    project: project,
-                    onTap: () => onOpenHabit(entry.habit!),
-                    onNavigateTo: navigateTo,
-                  )
-                : DeadStarCard.fromStar(
-                    star: entry.star!,
-                    project: project,
-                    onTap: () => onOpenStar(entry),
-                    onNavigateTo: navigateTo,
-                  );
-          case StarKind.pulsar:
-            final habit = entry.habit!;
-            final countsByDay = countsByDayFor(habit.id);
-            card = PulsarCard(
-              habit: habit,
-              project: project,
-              currentStreak: habitCurrentStreak(habit, countsByDay),
-              isLit: isHabitLit(habit, countsByDay),
-              onTap: () => onOpenHabit(habit),
-              onNavigateTo: navigateTo,
-            );
-          // Never listed — see [kListableStarKinds].
-          case StarKind.nascent:
-            return const SizedBox.shrink();
-        }
+        if (entry.kind == StarKind.nascent) return const SizedBox.shrink();
+        final open = entry.habit == null
+            ? () => onOpenStar(entry)
+            : () => onOpenHabit(entry.habit!);
+        final habitCounts = entry.habit == null
+            ? const <DateTime, int>{}
+            : countsByDayFor(entry.habit!.id);
+        final card = _SearchStarCard(
+          entry: entry,
+          project: project,
+          query: query,
+          currentStreak: entry.habit == null
+              ? 0
+              : habitCurrentStreak(entry.habit!, habitCounts),
+          pulsarLit: entry.habit == null
+              ? true
+              : isHabitLit(entry.habit!, habitCounts),
+          menuController: menuController,
+          onTap: open,
+          onNavigateTo: navigateTo,
+        );
         return ResponsiveContent(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1221,6 +1222,91 @@ class _FlatList extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _SearchStarCard extends StatelessWidget {
+  const _SearchStarCard({
+    required this.entry,
+    required this.project,
+    required this.query,
+    required this.currentStreak,
+    required this.pulsarLit,
+    required this.menuController,
+    required this.onTap,
+    required this.onNavigateTo,
+  });
+
+  final _SkyEntry entry;
+  final Project? project;
+  final String query;
+  final int currentStreak;
+  final bool pulsarLit;
+  final SearchCardMenuController menuController;
+  final VoidCallback onTap;
+  final VoidCallback? onNavigateTo;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = context.strings;
+    final kind = entry.kind;
+    final description = entry.description;
+    final normalizedQuery = query.trim().toLowerCase();
+    final descriptionMatched =
+        normalizedQuery.isNotEmpty &&
+        (description?.toLowerCase().contains(normalizedQuery) ?? false);
+    final deadDate = entry.star?.deadDate ?? entry.habit?.deadDate;
+    final primary = switch (kind) {
+      StarKind.lit => strings.intensityCount(entry.star!.intensity ?? 0),
+      StarKind.unlit =>
+        entry.star!.targetDate == null
+            ? strings.noTargetDateLabel
+            : '${strings.targetDateBadgeLabel} '
+                  '${formatDisplayDate(entry.star!.targetDate!, strings)}',
+      StarKind.pulsar => '${strings.streakBadgeLabel} $currentStreak',
+      StarKind.dead =>
+        deadDate == null
+            ? strings.noDeadDateLabel
+            : '${strings.deadDateBadgeLabel} '
+                  '${formatDisplayDate(deadDate, strings)}',
+      StarKind.nascent => kind.label(strings),
+    };
+    final eyebrow = kind == StarKind.dead && entry.habit != null
+        ? '${kind.label(strings)} · ${strings.formerPulsarLabel}'
+        : kind.label(strings);
+    final actions = <SearchCardAction>[
+      SearchCardAction(
+        icon: Icons.open_in_new_rounded,
+        label: strings.searchCardOpenAction,
+        onTap: onTap,
+      ),
+      if (onNavigateTo != null)
+        SearchCardAction(
+          icon: Icons.navigation_rounded,
+          label: strings.takeMeThereAction,
+          onTap: onNavigateTo!,
+        ),
+    ];
+    return SearchResultCard(
+      menuId: entry.star == null
+          ? 'habit:${entry.habit!.id}'
+          : 'star:${entry.star!.id}',
+      menuController: menuController,
+      onTap: onTap,
+      visual: SearchStarVisual(kind: kind, pulsarLit: pulsarLit),
+      content: SearchCardTextContent(
+        eyebrow: eyebrow,
+        eyebrowColor: starKindColor(kind, context.colors, lit: pulsarLit),
+        title: entry.title,
+        breadcrumb: project == null
+            ? null
+            : '${project!.area.displayName(strings)} → ${project!.name}',
+        description: descriptionMatched ? description : null,
+        descriptionMatched: descriptionMatched,
+        primary: primary,
+      ),
+      actions: actions,
     );
   }
 }
@@ -1233,193 +1319,47 @@ class _ProjectCard extends StatelessWidget {
   const _ProjectCard({
     required this.project,
     required this.starCount,
-    required this.lastStarDate,
-    required this.combinedIntensity,
     required this.unlitStars,
-    required this.activePulsars,
+    required this.shape,
+    required this.menuController,
     required this.onTap,
     required this.onNavigateTo,
   });
 
   final Project project;
   final int starCount;
-  final DateTime? lastStarDate;
-  final int combinedIntensity;
   final int unlitStars;
-  final int activePulsars;
+  final ConstellationShape? shape;
+  final SearchCardMenuController menuController;
   final VoidCallback onTap;
   final VoidCallback onNavigateTo;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     final strings = context.strings;
-    final borderRadius = BorderRadius.circular(kRadiusCard);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: borderRadius,
-        child: Ink(
-          decoration: panelDecoration(colors),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-            // So the trailing NavigateHereButton below can be centered
-            // against the row's full height (via the Column wrapping it)
-            // while the icon/text stay top-aligned next to the title line.
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: colors.gold.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      iconForSlug(project.iconSlug),
-                      color: colors.gold,
-                      size: 26,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          project.name,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 18,
-                            color: colors.text,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        AreaTag(area: project.area, iconSize: 14, fontSize: 13),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 14,
-                          runSpacing: 6,
-                          children: [
-                            _StatChip(
-                              icon: Icons.auto_awesome_outlined,
-                              text: strings.createdOnLabel(
-                                formatDisplayDate(project.createdAt, strings),
-                              ),
-                            ),
-                            if (lastStarDate != null)
-                              _StatChip(
-                                icon: Icons.schedule,
-                                text: strings.lastStarLabel(
-                                  formatDisplayDate(lastStarDate!, strings),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 6,
-                          children: [
-                            _MetricBadge(
-                              icon: Icons.star,
-                              text: strings.starsCount(starCount),
-                            ),
-                            _MetricBadge(
-                              icon: Icons.offline_bolt,
-                              text: strings.intensityCount(combinedIntensity),
-                            ),
-                            if (unlitStars > 0)
-                              _MetricBadge(
-                                icon: StarKind.unlit.icon,
-                                text: strings.unlitStarsBadge(unlitStars),
-                              ),
-                            if (activePulsars > 0)
-                              _MetricBadge(
-                                icon: StarKind.pulsar.icon,
-                                text: strings.activePulsarsBadge(activePulsars),
-                              ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    mainAxisSize: MainAxisSize.max,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      NavigateHereButton(
-                        onTap: onNavigateTo,
-                        tooltip: strings.takeMeThereAction,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
+    return SearchResultCard(
+      menuId: 'project:${project.id}',
+      menuController: menuController,
+      onTap: onTap,
+      visual: SearchConstellationVisual(shape: shape),
+      content: SearchCardTextContent(
+        title: project.name,
+        breadcrumb: project.area.displayName(strings),
+        primary:
+            '${strings.starsCount(starCount)} · '
+            '${strings.unlitStarsBadge(unlitStars)}',
+      ),
+      actions: [
+        SearchCardAction(
+          icon: Icons.open_in_new_rounded,
+          label: strings.searchCardOpenAction,
+          onTap: onTap,
         ),
-      ),
-    );
-  }
-}
-
-class _MetricBadge extends StatelessWidget {
-  const _MetricBadge({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: colors.gold.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(kRadiusPill),
-        border: Border.all(color: colors.gold.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: colors.gold),
-          const SizedBox(width: 5),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: colors.gold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatChip extends StatelessWidget {
-  const _StatChip({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 13, color: colors.accentDim),
-        const SizedBox(width: 5),
-        Text(text, style: TextStyle(fontSize: 12.5, color: colors.muted)),
+        SearchCardAction(
+          icon: Icons.navigation_rounded,
+          label: strings.takeMeThereAction,
+          onTap: onNavigateTo,
+        ),
       ],
     );
   }
