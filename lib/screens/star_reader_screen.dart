@@ -17,6 +17,7 @@ import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../utils/date_format.dart';
+import '../utils/responsive.dart';
 import '../widgets/area_tag.dart';
 import '../widgets/intensity_bolts.dart';
 import '../widgets/navigate_here_button.dart';
@@ -113,6 +114,76 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
   }
 
   void _togglePhotoOnly() => setState(() => _photoOnly = !_photoOnly);
+
+  /// The current star's photo (or plain nightlight background), keyed by
+  /// [_index] so [AnimatedSwitcher] crossfades between stars.
+  ///
+  /// Every star photo is baked to a fixed 9:16 portrait crop (see
+  /// `photo_crop_screen.dart`) — covering a phone's own portrait screen
+  /// with it barely crops anything, but covering a wide PC/web window
+  /// would slice away almost all of its height. Past the wide-layout
+  /// breakpoint, show it at its own shape instead, centered, with the same
+  /// night gradient filling the margins so they read as more sky rather
+  /// than a seam.
+  Widget _buildPhotoLayer(
+    BuildContext context,
+    AppColors colors,
+    String? photoPath,
+  ) {
+    final photo = Stack(
+      fit: StackFit.expand,
+      children: [
+        if (photoPath != null)
+          PhotoImage(
+            photoPath: photoPath,
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+          ),
+        AnimatedOpacity(
+          // Only the photo's own darkening veil fades away in photo-only
+          // mode — a star with no photo has nothing to reveal underneath,
+          // so its plain [nightlightGradient] background never toggles.
+          opacity: photoPath != null && _photoOnly ? 0 : 1,
+          duration: const Duration(milliseconds: 220),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: photoPath == null
+                  ? colors.nightlightGradient
+                  : RadialGradient(
+                      center: const Alignment(0, -0.6),
+                      radius: 1.2,
+                      colors: [
+                        colors.nightlightGradientCenter.withValues(
+                          alpha: 0.55,
+                        ),
+                        colors.nightlightGradientMid.withValues(alpha: 0.75),
+                        colors.nightlightGradientOuter.withValues(alpha: 0.9),
+                      ],
+                      stops: const [0.0, 0.55, 1.0],
+                    ),
+            ),
+          ),
+        ),
+      ],
+    );
+    if (photoPath == null || !isWideLayout(context)) {
+      return Stack(
+        key: ValueKey(_index),
+        fit: StackFit.expand,
+        children: [photo],
+      );
+    }
+    return Stack(
+      key: ValueKey(_index),
+      fit: StackFit.expand,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(gradient: colors.nightlightGradient),
+        ),
+        Center(child: AspectRatio(aspectRatio: 9 / 16, child: photo)),
+      ],
+    );
+  }
 
   Future<void> _shareCurrent() async {
     if (_sharing) return;
@@ -271,48 +342,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                   child: ScaleTransition(scale: scale, child: child),
                 );
               },
-              child: Stack(
-                key: ValueKey(_index),
-                fit: StackFit.expand,
-                children: [
-                  if (photoPath != null)
-                    PhotoImage(
-                      photoPath: photoPath,
-                      fit: BoxFit.cover,
-                      alignment: Alignment.center,
-                    ),
-                  AnimatedOpacity(
-                    // Only the photo's own darkening veil fades away in
-                    // photo-only mode — a star with no photo has nothing to
-                    // reveal underneath, so its plain [nightlightGradient]
-                    // background never toggles.
-                    opacity: photoPath != null && _photoOnly ? 0 : 1,
-                    duration: const Duration(milliseconds: 220),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: photoPath == null
-                            ? colors.nightlightGradient
-                            : RadialGradient(
-                                center: const Alignment(0, -0.6),
-                                radius: 1.2,
-                                colors: [
-                                  colors.nightlightGradientCenter.withValues(
-                                    alpha: 0.55,
-                                  ),
-                                  colors.nightlightGradientMid.withValues(
-                                    alpha: 0.75,
-                                  ),
-                                  colors.nightlightGradientOuter.withValues(
-                                    alpha: 0.9,
-                                  ),
-                                ],
-                                stops: const [0.0, 0.55, 1.0],
-                              ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              child: _buildPhotoLayer(context, colors, photoPath),
             ),
           ),
           if (photoPath != null)

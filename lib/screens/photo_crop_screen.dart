@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
+import '../utils/responsive.dart';
 
 /// Camera photos are commonly stored with their sensor's native (often
 /// landscape) pixel layout plus an EXIF orientation tag saying how to
@@ -73,6 +74,17 @@ class _PhotoCropScreenState extends State<PhotoCropScreen> {
   // `PhotoStorage`), so it needs to be far more frugal than native's own
   // filesystem, which has no such shared cap.
   static const _outputWidth = kIsWeb ? 800.0 : 1600.0;
+  // On a phone the crop frame is meant to span the full (narrow) screen
+  // width. On a wide PC/web window, sizing it off the full window width
+  // would make the 9:16 frame far taller than the window itself — capped
+  // to a phone-like width instead, so the frame stays fully visible and
+  // still crops to the same shape the photo will actually be shown in.
+  static const _maxFrameWidthWide = 420.0;
+
+  double _frameWidth(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    return isWideLayout(context) ? math.min(width, _maxFrameWidthWide) : width;
+  }
 
   final _boundaryKey = GlobalKey();
   final _transformController = TransformationController();
@@ -108,7 +120,7 @@ class _PhotoCropScreenState extends State<PhotoCropScreen> {
     }
 
     final image = frame.image;
-    final width = MediaQuery.sizeOf(context).width;
+    final width = _frameWidth(context);
     final height = width / _aspectRatio;
     // The minimum zoom that still lets the image fully cover the crop
     // frame — also its starting scale, so the photo opens centered and
@@ -161,7 +173,7 @@ class _PhotoCropScreenState extends State<PhotoCropScreen> {
     final colors = context.colors;
     final strings = context.strings;
     final image = _image;
-    final width = MediaQuery.sizeOf(context).width;
+    final width = _frameWidth(context);
     final height = width / _aspectRatio;
 
     return Scaffold(
