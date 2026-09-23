@@ -2,6 +2,50 @@ import 'app_strings.dart';
 
 class StringsRo implements AppStrings {
   @override
+  String get visionUnderline => 'Subliniat';
+  @override
+  String get visionDivider => 'Linie separatoare';
+
+  @override
+  String get moodboardTitle => 'Moodboard';
+  @override
+  String get moodboardPageDescription =>
+      'Adună imagini, videoclipuri și cuvinte care fac vizibilă viața pe care ți-o dorești în această arie. Adaugă ceea ce te inspiră și revino aici pentru a-ți păstra direcția vie.';
+  @override
+  String get moodboardAddLabel => 'Add';
+  @override
+  String get moodboardEmpty =>
+      'Adună fotografii, videoclipuri și fraze care dau formă viziunii tale.';
+  @override
+  String get moodboardQuote => 'Citat';
+  @override
+  String get moodboardVideo => 'Video';
+  @override
+  String get moodboardEdit => 'Editează';
+  @override
+  String get moodboardRemove => 'Elimină';
+  @override
+  String get moodboardRemoveConfirm => 'Elimini acest element?';
+  @override
+  String get moodboardSaveError =>
+      'Salvarea a eșuat. Verifică spațiul disponibil și încearcă din nou.';
+  @override
+  String get moodboardMediaError =>
+      'Conținut indisponibil sau format incompatibil.';
+  @override
+  String get moodboardPlay => 'Redă';
+  @override
+  String get moodboardPause => 'Pauză';
+  @override
+  String get areaSectionOpen => 'Deschide și editează';
+  @override
+  String get areaReflectionsTitle => 'Reflecții';
+
+  @override
+  String get carouselOneAtATime => 'Una câte una';
+  @override
+  String get carouselFreeScroll => 'Derulare liberă';
+  @override
   String get visionUndo => 'Anulează modificarea';
   @override
   String get viewAreaImageAction => 'Vezi imaginea';
@@ -132,10 +176,13 @@ class StringsRo implements AppStrings {
     'Ce ai putea oferi — timp, abilități, energie — pe care nu-l oferi încă?',
   ];
   @override
-  String get reflectionQuestionsSectionLabel => 'Întrebări de reflecție';
+  String get reflectionQuestionsSectionLabel => 'Întrebări';
   @override
   String get reflectionQuestionsSubtitle =>
       'Răspunde când ceva te mișcă cu adevărat — poți lăsa unele necompletate.';
+  @override
+  String get reflectionsPageDescription =>
+      'Folosește aceste întrebări pentru a obține claritate în această arie a vieții tale. Deschide o întrebare, scrie ce apare și notează cât de greu a fost să găsești răspunsul.';
   @override
   String get reflectionAnswerHint => 'Scrie aici răspunsul tău...';
   @override
@@ -398,12 +445,25 @@ class StringsRo implements AppStrings {
   @override
   String get takeMeThereAction => 'Du-mă acolo';
   @override
+  String get searchCardMenuOpenAction => 'Deschide meniul cardului';
+  @override
+  String get searchCardMenuCloseAction => 'Închide meniul cardului';
+  @override
+  String get searchCardOpenAction => 'Deschide';
+  @override
+  String get formerPulsarLabel => 'fost pulsar';
+  @override
   String get searchScreenEyebrow => 'CAUTĂ';
   @override
   String get areaVisionLabel => 'Viziunea ta pentru această zonă';
   @override
   String get areaVisionHint =>
       'Ce fel de realitate îți dorești aici? Spre ce vrei să lucrezi?';
+  @override
+  String get visionPageTitle => 'Vision';
+  @override
+  String get visionPageDescription =>
+      'Definește realitatea pe care ți-o dorești în această arie a vieții tale. Scrie spre ce vrei să te îndrepți și descrie acest lucru în cuvinte care să-ți ghideze alegerile în timp.';
   @override
   String get editVisionAction => 'Editează viziunea';
   @override
@@ -1613,6 +1673,30 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get skyGridSection => 'Grila cerului';
   @override
   String get skyGridToggleLabel => 'Arată grila de coordonate pe cer';
+
+  @override
+  String get appLockSection => 'Blocare aplicație';
+  @override
+  String get appLockToggleLabel => 'Activează blocarea aplicației';
+  @override
+  String get appLockBiometricToggleLabel => 'Folosește amprenta';
+  @override
+  String get appLockChangePinLabel => 'Schimbă PIN-ul';
+  @override
+  String get appLockSetPinTitle => 'Setează un PIN';
+  @override
+  String get appLockConfirmPinTitle => 'Confirmă PIN-ul';
+  @override
+  String get appLockEnterCurrentPinTitle => 'Introdu PIN-ul actual';
+  @override
+  String get appLockPinMismatchError =>
+      'PIN-urile nu coincid. Încearcă din nou.';
+  @override
+  String get appLockWrongPinError => 'PIN greșit. Încearcă din nou.';
+  @override
+  String get appLockBiometricReason => 'Deblochează Inner Stars';
+  @override
+  String get appLockUnlockTitle => 'Introdu PIN-ul';
   @override
   String get notificationPermissionDenied =>
       'Notificările sunt dezactivate pentru această aplicație în setările telefonului.';

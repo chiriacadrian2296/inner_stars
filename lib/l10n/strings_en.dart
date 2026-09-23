@@ -2,6 +2,49 @@ import 'app_strings.dart';
 
 class StringsEn implements AppStrings {
   @override
+  String get visionUnderline => 'Underline';
+  @override
+  String get visionDivider => 'Divider';
+
+  @override
+  String get moodboardTitle => 'Moodboard';
+  @override
+  String get moodboardPageDescription =>
+      'Collect images, videos and words that make the life you want in this area visible. Add what inspires you and return here to keep your direction alive.';
+  @override
+  String get moodboardAddLabel => 'Add';
+  @override
+  String get moodboardEmpty =>
+      'Collect photos, videos and words that bring your vision to life.';
+  @override
+  String get moodboardQuote => 'Quote';
+  @override
+  String get moodboardVideo => 'Video';
+  @override
+  String get moodboardEdit => 'Edit';
+  @override
+  String get moodboardRemove => 'Remove';
+  @override
+  String get moodboardRemoveConfirm => 'Remove this item?';
+  @override
+  String get moodboardSaveError =>
+      'Could not save. Check available storage and try again.';
+  @override
+  String get moodboardMediaError => 'Media unavailable or format unsupported.';
+  @override
+  String get moodboardPlay => 'Play';
+  @override
+  String get moodboardPause => 'Pause';
+  @override
+  String get areaSectionOpen => 'Open & Edit';
+  @override
+  String get areaReflectionsTitle => 'Reflections';
+
+  @override
+  String get carouselOneAtATime => 'One at a time';
+  @override
+  String get carouselFreeScroll => 'Free scrolling';
+  @override
   String get visionUndo => 'Undo';
   @override
   String get viewAreaImageAction => 'View image';
@@ -132,10 +175,13 @@ class StringsEn implements AppStrings {
     "What could you give — time, skills, energy — that you're not giving yet?",
   ];
   @override
-  String get reflectionQuestionsSectionLabel => 'Reflection questions';
+  String get reflectionQuestionsSectionLabel => 'Questions';
   @override
   String get reflectionQuestionsSubtitle =>
       "Answer when something genuinely moves you — it's fine to leave some blank.";
+  @override
+  String get reflectionsPageDescription =>
+      'Use these questions to gain clarity about this area of your life. Open a question, write what comes up and note how difficult it was to find the answer.';
   @override
   String get reflectionAnswerHint => 'Write your answer here...';
   @override
@@ -396,12 +442,25 @@ class StringsEn implements AppStrings {
   @override
   String get takeMeThereAction => 'Take me there';
   @override
+  String get searchCardMenuOpenAction => 'Open card menu';
+  @override
+  String get searchCardMenuCloseAction => 'Close card menu';
+  @override
+  String get searchCardOpenAction => 'Open';
+  @override
+  String get formerPulsarLabel => 'former pulsar';
+  @override
   String get searchScreenEyebrow => 'SEARCH';
   @override
   String get areaVisionLabel => 'Your vision for this area';
   @override
   String get areaVisionHint =>
       "What kind of reality do you want here? What are you working toward?";
+  @override
+  String get visionPageTitle => 'Vision';
+  @override
+  String get visionPageDescription =>
+      'Define the reality you want in this area of your life. Write what you want to move toward and describe it in words that can guide your choices over time.';
   @override
   String get editVisionAction => 'Edit vision';
   @override
@@ -1591,6 +1650,29 @@ My contribution meets a real need and is something I can sustain.
   String get skyGridSection => 'Sky grid';
   @override
   String get skyGridToggleLabel => 'Show coordinate grid on the sky';
+
+  @override
+  String get appLockSection => 'App Lock';
+  @override
+  String get appLockToggleLabel => 'Enable App Lock';
+  @override
+  String get appLockBiometricToggleLabel => 'Use Fingerprint';
+  @override
+  String get appLockChangePinLabel => 'Change PIN';
+  @override
+  String get appLockSetPinTitle => 'Set a PIN';
+  @override
+  String get appLockConfirmPinTitle => 'Confirm Your PIN';
+  @override
+  String get appLockEnterCurrentPinTitle => 'Enter Your Current PIN';
+  @override
+  String get appLockPinMismatchError => "The PINs didn't match — try again.";
+  @override
+  String get appLockWrongPinError => 'Wrong PIN — try again.';
+  @override
+  String get appLockBiometricReason => 'Unlock Inner Stars';
+  @override
+  String get appLockUnlockTitle => 'Enter Your PIN';
   @override
   String get notificationPermissionDenied =>
       'Notifications are turned off for this app in your phone settings.';

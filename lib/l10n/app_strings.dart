@@ -14,6 +14,8 @@ abstract class AppStrings {
   String get visionHeading;
   String get visionSection;
   String get visionBold;
+  String get visionUnderline;
+  String get visionDivider;
   String get visionItalic;
   String get visionBulletList;
   String get visionNumberedList;
@@ -54,6 +56,7 @@ abstract class AppStrings {
   List<String> get reflectionQuestionsPhilanthropic;
   String get reflectionQuestionsSectionLabel;
   String get reflectionQuestionsSubtitle;
+  String get reflectionsPageDescription;
   String get reflectionAnswerHint;
   String get reflectionDifficultyLabel;
   String get reflectionAnsweredCountLabel;
@@ -450,12 +453,18 @@ abstract class AppStrings {
   String get sortDirectionDescending;
   String get searchButtonLabel;
   String get takeMeThereAction;
+  String get searchCardMenuOpenAction;
+  String get searchCardMenuCloseAction;
+  String get searchCardOpenAction;
+  String get formerPulsarLabel;
   String get searchScreenEyebrow;
 
   // Area detail (the vision text, description, and big stat numbers for a
   // single Supernova)
   String get areaVisionLabel;
   String get areaVisionHint;
+  String get visionPageTitle;
+  String get visionPageDescription;
   String get editVisionAction;
 
   /// An example vision, one per [LifeArea], shown in place of the user's
@@ -790,6 +799,23 @@ abstract class AppStrings {
   // can be re-read and revised in one place.
   String get visionsEyebrow;
   String get visionsTitle;
+  String get moodboardTitle;
+  String get moodboardPageDescription;
+  String get moodboardAddLabel;
+  String get moodboardEmpty;
+  String get moodboardQuote;
+  String get moodboardVideo;
+  String get moodboardEdit;
+  String get moodboardRemove;
+  String get moodboardRemoveConfirm;
+  String get moodboardSaveError;
+  String get moodboardMediaError;
+  String get moodboardPlay;
+  String get moodboardPause;
+  String get areaSectionOpen;
+  String get areaReflectionsTitle;
+  String get carouselOneAtATime;
+  String get carouselFreeScroll;
   String get visionsSubtitle;
   String get visionEmptyLabel;
 
@@ -875,6 +901,24 @@ abstract class AppStrings {
   String get reminderTimeLabel;
   String get skyGridSection;
   String get skyGridToggleLabel;
+
+  // Settings — App Lock section: an optional 4-digit PIN (with a
+  // fingerprint/biometric shortcut on top of it, where the device
+  // supports one) gating the whole app on launch and whenever it comes
+  // back from the background. Separate from [passkeySection] above,
+  // which is an unrelated, still-unbuilt passwordless *account*
+  // sign-in — this is a purely local, on-device lock.
+  String get appLockSection;
+  String get appLockToggleLabel;
+  String get appLockBiometricToggleLabel;
+  String get appLockChangePinLabel;
+  String get appLockSetPinTitle;
+  String get appLockConfirmPinTitle;
+  String get appLockEnterCurrentPinTitle;
+  String get appLockPinMismatchError;
+  String get appLockWrongPinError;
+  String get appLockBiometricReason;
+  String get appLockUnlockTitle;
   String get notificationPermissionDenied;
   String get testNotificationButton;
   String get reminderNotificationTitle;

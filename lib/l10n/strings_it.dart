@@ -2,6 +2,50 @@ import 'app_strings.dart';
 
 class StringsIt implements AppStrings {
   @override
+  String get visionUnderline => 'Sottolineato';
+  @override
+  String get visionDivider => 'Linea separatrice';
+
+  @override
+  String get moodboardTitle => 'Moodboard';
+  @override
+  String get moodboardPageDescription =>
+      'Raccogli immagini, video e frasi che rendono visibile la vita che desideri in quest’area. Aggiungi ciò che ti ispira e torna qui per mantenere viva la direzione.';
+  @override
+  String get moodboardAddLabel => 'Add';
+  @override
+  String get moodboardEmpty =>
+      'Raccogli foto, video e frasi che danno forma alla tua visione.';
+  @override
+  String get moodboardQuote => 'Frase';
+  @override
+  String get moodboardVideo => 'Video';
+  @override
+  String get moodboardEdit => 'Modifica';
+  @override
+  String get moodboardRemove => 'Rimuovi';
+  @override
+  String get moodboardRemoveConfirm => 'Rimuovere questo elemento?';
+  @override
+  String get moodboardSaveError =>
+      'Impossibile salvare. Verifica lo spazio disponibile e riprova.';
+  @override
+  String get moodboardMediaError =>
+      'Contenuto non disponibile o formato non supportato.';
+  @override
+  String get moodboardPlay => 'Riproduci';
+  @override
+  String get moodboardPause => 'Pausa';
+  @override
+  String get areaSectionOpen => 'Apri e modifica';
+  @override
+  String get areaReflectionsTitle => 'Riflessioni';
+
+  @override
+  String get carouselOneAtATime => 'Una alla volta';
+  @override
+  String get carouselFreeScroll => 'Scorrimento libero';
+  @override
   String get visionUndo => 'Annulla modifica';
   @override
   String get viewAreaImageAction => 'Visualizza immagine';
@@ -132,10 +176,13 @@ class StringsIt implements AppStrings {
     'Cosa potresti dare — tempo, competenze, energie — che non stai ancora dando?',
   ];
   @override
-  String get reflectionQuestionsSectionLabel => 'Domande di riflessione';
+  String get reflectionQuestionsSectionLabel => 'Domande';
   @override
   String get reflectionQuestionsSubtitle =>
       'Rispondi quando qualcosa ti smuove davvero — puoi lasciarne alcune in bianco.';
+  @override
+  String get reflectionsPageDescription =>
+      'Usa queste domande per fare chiarezza su quest’area della tua vita. Apri una domanda, scrivi ciò che emerge e indica quanto è stato difficile trovare la risposta.';
   @override
   String get reflectionAnswerHint => 'Scrivi qui la tua risposta...';
   @override
@@ -398,12 +445,25 @@ class StringsIt implements AppStrings {
   @override
   String get takeMeThereAction => 'Portami lì';
   @override
+  String get searchCardMenuOpenAction => 'Apri menu della card';
+  @override
+  String get searchCardMenuCloseAction => 'Chiudi menu della card';
+  @override
+  String get searchCardOpenAction => 'Apri';
+  @override
+  String get formerPulsarLabel => 'ex pulsar';
+  @override
   String get searchScreenEyebrow => 'CERCA';
   @override
   String get areaVisionLabel => 'La tua visione per quest\'area';
   @override
   String get areaVisionHint =>
       'Che tipo di realtà vuoi per quest\'area? Verso cosa vuoi lavorare?';
+  @override
+  String get visionPageTitle => 'Vision';
+  @override
+  String get visionPageDescription =>
+      'Definisci la realtà che desideri per quest’area della tua vita. Scrivi ciò verso cui vuoi muoverti e descrivilo con parole che possano guidare le tue scelte nel tempo.';
   @override
   String get editVisionAction => 'Modifica visione';
   @override
@@ -1613,6 +1673,29 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get skyGridSection => 'Griglia del cielo';
   @override
   String get skyGridToggleLabel => 'Mostra la griglia di coordinate sul cielo';
+
+  @override
+  String get appLockSection => 'Blocco app';
+  @override
+  String get appLockToggleLabel => 'Attiva il blocco app';
+  @override
+  String get appLockBiometricToggleLabel => "Usa l'impronta digitale";
+  @override
+  String get appLockChangePinLabel => 'Cambia PIN';
+  @override
+  String get appLockSetPinTitle => 'Imposta un PIN';
+  @override
+  String get appLockConfirmPinTitle => 'Conferma il PIN';
+  @override
+  String get appLockEnterCurrentPinTitle => 'Inserisci il PIN attuale';
+  @override
+  String get appLockPinMismatchError => 'I PIN non coincidono, riprova.';
+  @override
+  String get appLockWrongPinError => 'PIN errato, riprova.';
+  @override
+  String get appLockBiometricReason => 'Sblocca Inner Stars';
+  @override
+  String get appLockUnlockTitle => 'Inserisci il PIN';
   @override
   String get notificationPermissionDenied =>
       'Le notifiche sono disattivate per questa app nelle impostazioni del telefono.';
