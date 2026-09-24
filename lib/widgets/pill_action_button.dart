@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import 'press_scale.dart';
 
 /// A small gold pill for a secondary action — undo/redo, or a destructive
 /// one like delete. Originally local to the constellation shape editor
@@ -38,33 +39,36 @@ class PillActionButton extends StatelessWidget {
         ? colors.muted
         : (danger ? colors.danger : colors.onGold);
 
-    return Material(
-      color: enabled
-          ? (danger ? colors.dangerBackground : colors.gold)
-          : colors.nightBorder,
-      shape: const StadiumBorder(),
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const StadiumBorder(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: foreground, size: 18),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  label,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: foreground,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
+    return PressScale(
+      enabled: enabled,
+      child: Material(
+        color: enabled
+            ? (danger ? colors.dangerBackground : colors.gold)
+            : colors.nightBorder,
+        shape: const StadiumBorder(),
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const StadiumBorder(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: foreground, size: 18),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    label,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: foreground,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -109,28 +113,30 @@ class SaveActionButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(kRadiusPill),
         boxShadow: lit ? goldGlow(colors, strength: 1.1, size: 56) : null,
       ),
-      child: Material(
-        color: lit ? colors.gold : colors.nightBorder,
-        shape: const StadiumBorder(),
-        child: InkWell(
-          onTap: onPressed,
-          customBorder: const StadiumBorder(),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: foreground, size: 20),
-                const SizedBox(width: 10),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: foreground,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
+      child: PressScale(
+        child: Material(
+          color: lit ? colors.gold : colors.nightBorder,
+          shape: const StadiumBorder(),
+          child: InkWell(
+            onTap: onPressed,
+            customBorder: const StadiumBorder(),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, color: foreground, size: 20),
+                  const SizedBox(width: 10),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: foreground,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

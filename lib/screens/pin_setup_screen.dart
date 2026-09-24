@@ -6,6 +6,7 @@ import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../widgets/pin_keypad.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/staggered_entrance.dart';
 
 /// Creates/changes the app-lock PIN, or just verifies the existing one —
 /// pushed from Settings for three cases: the very first PIN
@@ -121,13 +122,19 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  _title(context),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: colors.text,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
+                StaggeredEntrance(
+                  index: 0,
+                  // The title swaps in place between steps (current -> new ->
+                  // confirm), so it plays its entrance again on each one.
+                  replayKey: _step,
+                  child: Text(
+                    _title(context),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: colors.text,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -135,14 +142,24 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
                   height: 20,
                   child: _error == null
                       ? null
-                      : Text(
-                          _error!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: colors.danger, fontSize: 13),
+                      : StaggeredEntrance(
+                          index: 0,
+                          child: Text(
+                            _error!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: colors.danger,
+                              fontSize: 13,
+                            ),
+                          ),
                         ),
                 ),
                 const SizedBox(height: 20),
-                PinKeypad(key: _keypadKey, onSubmit: _onSubmit),
+                PinKeypad(
+                  key: _keypadKey,
+                  onSubmit: _onSubmit,
+                  entranceStart: 1,
+                ),
               ],
             ),
           ),

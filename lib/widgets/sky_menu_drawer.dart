@@ -7,6 +7,8 @@ import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
 import '../tutorials/tour_intro_target.dart';
 import '../tutorials/tour_step_card.dart';
+import '../utils/app_modals.dart';
+import 'staggered_entrance.dart';
 
 /// Parks the menu's "Metaphor" entry (the full-length explainer screen),
 /// superseded by `hint_kit`-driven live tutorials — see the TRB entry for
@@ -182,18 +184,19 @@ class SkyMenuContent extends StatelessWidget {
     // what actually bridges the two rather than any ordering guarantee.
     Tour.read(context).start('light-your-sky');
 
-    showDialog<void>(
+    showAppDialog<void>(
       context: context,
       builder: (dialogContext) {
         Widget choice({
           required IconData icon,
           required String label,
           required VoidCallback onTap,
+          required int index,
           int? tourOrder,
           String? tourTitle,
           String? tourBody,
         }) {
-          final tile = InkWell(
+          final inkTile = InkWell(
             onTap: () {
               Navigator.of(dialogContext).pop();
               onTap();
@@ -237,6 +240,7 @@ class SkyMenuContent extends StatelessWidget {
               ),
             ),
           );
+          final tile = StaggeredEntrance(index: index, child: inkTile);
           if (tourOrder == null) return tile;
           return HintTarget(
             tour: 'light-your-sky',
@@ -301,6 +305,7 @@ class SkyMenuContent extends StatelessWidget {
                         icon: Icons.flare,
                         label: strings.lightYourSkyChooserSupernovaOption,
                         onTap: onVisions,
+                        index: 0,
                         tourOrder: 2,
                         tourTitle: strings.lightYourSkyTourSupernovaTitle,
                         tourBody: strings.lightYourSkyTourSupernovaBody,
@@ -309,6 +314,7 @@ class SkyMenuContent extends StatelessWidget {
                         icon: Icons.auto_awesome,
                         label: strings.menuNewConstellation,
                         onTap: onNewConstellation,
+                        index: 1,
                         tourOrder: 3,
                         tourTitle: strings.lightYourSkyTourConstellationTitle,
                         tourBody: strings.lightYourSkyTourConstellationBody,
@@ -317,6 +323,7 @@ class SkyMenuContent extends StatelessWidget {
                         icon: Icons.star,
                         label: strings.menuLightAStar,
                         onTap: onLightAStar,
+                        index: 2,
                         tourOrder: 4,
                         tourTitle: strings.lightYourSkyTourStarTitle,
                         tourBody: strings.lightYourSkyTourStarBody,
@@ -326,11 +333,14 @@ class SkyMenuContent extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(),
-                    child: Text(
-                      strings.cancel,
-                      style: TextStyle(color: colors.muted),
+                  child: StaggeredEntrance(
+                    index: 3,
+                    child: TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      child: Text(
+                        strings.cancel,
+                        style: TextStyle(color: colors.muted),
+                      ),
                     ),
                   ),
                 ),
@@ -349,18 +359,21 @@ class SkyMenuContent extends StatelessWidget {
 
     // A section title, centered under the header the same way the header
     // itself is — only rendered in [detailed] mode.
-    Widget sectionHeader(String label) {
+    Widget sectionHeader(String label, int index) {
       if (!detailed) return const SizedBox.shrink();
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 6),
-        child: Text(
-          label.toUpperCase(),
-          textAlign: TextAlign.left,
-          style: TextStyle(
-            color: colors.text,
-            fontSize: 12,
-            letterSpacing: 1.5,
-            fontWeight: FontWeight.w600,
+      return StaggeredEntrance(
+        index: index,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 6),
+          child: Text(
+            label.toUpperCase(),
+            textAlign: TextAlign.left,
+            style: TextStyle(
+              color: colors.text,
+              fontSize: 12,
+              letterSpacing: 1.5,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       );
@@ -375,6 +388,8 @@ class SkyMenuContent extends StatelessWidget {
       required String label,
       String? description,
       required VoidCallback onTap,
+      // Shared with the section title above it, so both arrive together.
+      required int index,
       // Search is the one entry that skips this menu's own close-on-tap
       // entirely, in *both* modes — [SkyScreen._openSearch] now decides
       // for itself whether this menu should still be open once it's
@@ -421,13 +436,16 @@ class SkyMenuContent extends StatelessWidget {
       // own pressable button rather than a plain line in a list — the
       // compact drawer skips this on purpose, it was never ambiguous
       // there.
-      if (!detailed) return tile;
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-        child: Container(
-          decoration: panelDecoration(colors),
-          clipBehavior: Clip.antiAlias,
-          child: tile,
+      if (!detailed) return StaggeredEntrance(index: index, child: tile);
+      return StaggeredEntrance(
+        index: index,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          child: Container(
+            decoration: panelDecoration(colors),
+            clipBehavior: Clip.antiAlias,
+            child: tile,
+          ),
         ),
       );
     }
@@ -437,41 +455,45 @@ class SkyMenuContent extends StatelessWidget {
       physics: physics,
       padding: EdgeInsets.zero,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-          child: Column(
-            children: [
-              ClipOval(
-                child: Image.asset(_logoAsset, width: 72, height: 72),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                'Inner Stars',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: colors.text,
-                  fontFamily: kFontBranding,
-                  fontSize: detailed ? 46 : 34,
-                  fontWeight: FontWeight.w400,
+        StaggeredEntrance(
+          index: 0,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+            child: Column(
+              children: [
+                ClipOval(
+                  child: Image.asset(_logoAsset, width: 72, height: 72),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                strings.aboutTagline,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: colors.muted,
-                  fontSize: detailed ? 18 : 14,
-                  height: 1.4,
+                const SizedBox(height: 14),
+                Text(
+                  'Inner Stars',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: colors.text,
+                    fontFamily: kFontBranding,
+                    fontSize: detailed ? 46 : 34,
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  strings.aboutTagline,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: colors.muted,
+                    fontSize: detailed ? 18 : 14,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         if (!detailed) Divider(color: colors.nightBorder, height: 1),
-        sectionHeader(strings.menuSearchSection),
+        sectionHeader(strings.menuSearchSection, 1),
         if (!detailed) const SizedBox(height: 8),
         entry(
+          index: 1,
           icon: Icons.saved_search,
           label: strings.menuSearch,
           description: strings.menuSearchDescription,
@@ -480,9 +502,10 @@ class SkyMenuContent extends StatelessWidget {
         ),
 
         if (!detailed) Divider(color: colors.nightBorder, height: 1),
-        sectionHeader(strings.menuActivitySection),
+        sectionHeader(strings.menuActivitySection, 2),
         if (!detailed) const SizedBox(height: 8),
         entry(
+          index: 2,
           icon: Icons.auto_awesome,
           label: strings.menuLightYourSky,
           description: strings.menuLightYourSkyDescription,
@@ -502,9 +525,10 @@ class SkyMenuContent extends StatelessWidget {
         ),
 
         if (!detailed) Divider(color: colors.nightBorder, height: 1),
-        sectionHeader(strings.menuNightlightSection),
+        sectionHeader(strings.menuNightlightSection, 3),
         if (!detailed) const SizedBox(height: 8),
         entry(
+          index: 3,
           icon: Icons.tips_and_updates,
           label: strings.menuFindYourLight,
           description: strings.menuFindYourLightDescription,
@@ -512,9 +536,10 @@ class SkyMenuContent extends StatelessWidget {
         ),
 
         if (!detailed) Divider(color: colors.nightBorder, height: 1),
-        sectionHeader(strings.menuChallengesSection),
+        sectionHeader(strings.menuChallengesSection, 4),
         if (!detailed) const SizedBox(height: 8),
         entry(
+          index: 4,
           icon: Icons.auto_fix_high,
           label: strings.menuShootingStars,
           description: strings.menuShootingStarsDescription,
@@ -522,9 +547,10 @@ class SkyMenuContent extends StatelessWidget {
         ),
 
         if (!detailed) Divider(color: colors.nightBorder, height: 1),
-        sectionHeader(strings.menuDataSection),
+        sectionHeader(strings.menuDataSection, 5),
         if (!detailed) const SizedBox(height: 8),
         entry(
+          index: 5,
           icon: Icons.bar_chart_outlined,
           label: strings.menuStatistics,
           description: strings.menuStatisticsDescription,
@@ -532,9 +558,10 @@ class SkyMenuContent extends StatelessWidget {
         ),
 
         if (!detailed) Divider(color: colors.nightBorder, height: 1),
-        sectionHeader(strings.socialSection),
+        sectionHeader(strings.socialSection, 6),
         if (!detailed) const SizedBox(height: 8),
         entry(
+          index: 6,
           icon: Icons.people,
           label: strings.menuFriends,
           description: strings.menuFriendsDescription,
@@ -543,9 +570,10 @@ class SkyMenuContent extends StatelessWidget {
 
         if (_kShowMetaphorMenuEntry) ...[
           if (!detailed) Divider(color: colors.nightBorder, height: 1),
-          sectionHeader(strings.menuInfoSection),
+          sectionHeader(strings.menuInfoSection, 7),
           if (!detailed) const SizedBox(height: 8),
           entry(
+            index: 7,
             icon: Icons.auto_stories_outlined,
             label: strings.menuMetaphor,
             description: strings.menuMetaphorDescription,
@@ -558,8 +586,9 @@ class SkyMenuContent extends StatelessWidget {
         // it only gets pulled out and pinned below in compact mode
         // (the drawer); see the non-detailed branch further down.
         if (detailed) ...[
-          sectionHeader(strings.menuSettings),
+          sectionHeader(strings.menuSettings, 7),
           entry(
+            index: 7,
             icon: Icons.settings_outlined,
             label: strings.menuSettings,
             description: strings.menuSettingsDescription,
@@ -596,6 +625,7 @@ class SkyMenuContent extends StatelessWidget {
             label: strings.menuSettings,
             description: strings.menuSettingsDescription,
             onTap: onSettings,
+            index: 7,
           ),
           const SizedBox(height: 8),
         ],

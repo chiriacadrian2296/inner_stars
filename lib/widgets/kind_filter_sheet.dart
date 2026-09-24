@@ -4,7 +4,9 @@ import '../l10n/strings_scope.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../utils/app_modals.dart';
 import 'app_toggle_chip.dart';
+import 'staggered_entrance.dart';
 import 'star_glyph.dart';
 
 /// Opens the star-kind filter used by Sky's Stars view — a multi-select
@@ -23,7 +25,7 @@ Future<Set<StarKind>?> showKindFilterSheet(
   BuildContext context, {
   required Set<StarKind> selectedKinds,
 }) {
-  return showModalBottomSheet<Set<StarKind>>(
+  return showAppSheet<Set<StarKind>>(
     context: context,
     isScrollControlled: true,
     builder: (_) => _KindFilterSheet(initialKinds: selectedKinds),
@@ -65,21 +67,33 @@ class _KindFilterSheetState extends State<_KindFilterSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                Expanded(child: _SectionTitle(strings.filterKindSectionTitle)),
-                if (_kinds.isNotEmpty)
-                  TextButton(
-                    onPressed: () => setState(() => _kinds = {}),
-                    child: Text(strings.clearFilterAction),
+            StaggeredEntrance(
+              index: 0,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _SectionTitle(strings.filterKindSectionTitle),
                   ),
-              ],
+                  if (_kinds.isNotEmpty)
+                    StaggeredEntrance(
+                      index: 0,
+                      axis: Axis.horizontal,
+                      child: TextButton(
+                        onPressed: () => setState(() => _kinds = {}),
+                        child: Text(strings.clearFilterAction),
+                      ),
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: 10),
-            AppToggleChip(
-              label: strings.allKindsLabel,
-              value: _allKindsSelected,
-              onChanged: (_) => _toggleAllKinds(),
+            StaggeredEntrance(
+              index: 1,
+              child: AppToggleChip(
+                label: strings.allKindsLabel,
+                value: _allKindsSelected,
+                onChanged: (_) => _toggleAllKinds(),
+              ),
             ),
             const SizedBox(height: 16),
             // Two per row, in [kListableStarKinds] order — one chip per
@@ -92,20 +106,26 @@ class _KindFilterSheetState extends State<_KindFilterSheet> {
                   for (var col = 0; col < 2; col++) ...[
                     if (col > 0) const SizedBox(width: 10),
                     Expanded(
-                      child: _FilterChip(
-                        icon: kListableStarKinds[row * 2 + col].icon,
-                        iconColor: starKindColor(
-                          kListableStarKinds[row * 2 + col],
-                          colors,
+                      // Left-to-right within a row, and each row a step
+                      // after the one above, so the grid fills in diagonally.
+                      child: StaggeredEntrance(
+                        index: 2 + row + col,
+                        axis: Axis.horizontal,
+                        child: _FilterChip(
+                          icon: kListableStarKinds[row * 2 + col].icon,
+                          iconColor: starKindColor(
+                            kListableStarKinds[row * 2 + col],
+                            colors,
+                          ),
+                          label: kListableStarKinds[row * 2 + col].plural(
+                            strings,
+                          ),
+                          selected: _kinds.contains(
+                            kListableStarKinds[row * 2 + col],
+                          ),
+                          onTap: () =>
+                              _toggleKind(kListableStarKinds[row * 2 + col]),
                         ),
-                        label: kListableStarKinds[row * 2 + col].plural(
-                          strings,
-                        ),
-                        selected: _kinds.contains(
-                          kListableStarKinds[row * 2 + col],
-                        ),
-                        onTap: () =>
-                            _toggleKind(kListableStarKinds[row * 2 + col]),
                       ),
                     ),
                   ],
@@ -113,11 +133,14 @@ class _KindFilterSheetState extends State<_KindFilterSheet> {
               ),
             ],
             const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(_kinds),
-                child: Text(strings.applyFilterAction),
+            StaggeredEntrance(
+              index: 2 + (kListableStarKinds.length + 1) ~/ 2 + 1,
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(_kinds),
+                  child: Text(strings.applyFilterAction),
+                ),
               ),
             ),
           ],

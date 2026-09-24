@@ -35,6 +35,8 @@ dependencies:
   m3_carousel: 2.1.4
   video_player: ^2.14.0
   idb_shim: ^2.9.9
+  animations: ^3.0.0
+  rive: 0.14.11
 
 dev_dependencies:
   flutter_test:
@@ -74,6 +76,7 @@ flutter:
     - assets/icon/app_icon_ring_centered.png
     - assets/icon/app_icon_ring_centered_white.png
     - assets/icon/app_star.svg
+    - assets/mascots/moon.svg
     - assets/audio/bg/
     - assets/audio/sfx/
     - assets/images/1. Physical - CENTER CROP.jpg

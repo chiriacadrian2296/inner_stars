@@ -10,6 +10,7 @@ import '../theme/nightlight_style.dart';
 import '../widgets/nightlight_starfield.dart';
 import '../widgets/nightlight_zone_measurer.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/staggered_entrance.dart';
 import 'nightlight_breathing_screen.dart';
 
 /// [_SchemeStep]'s icon circle diameter — icon (26) + its padding (14 each
@@ -130,19 +131,25 @@ class _NightlightExplainedScreenState extends State<NightlightExplainedScreen>
                   ResponsiveContent(
                     child: Row(
                       children: [
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(
-                            Icons.arrow_back,
-                            color: Colors.white,
+                        StaggeredEntrance(
+                          index: 0,
+                          child: IconButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: const Icon(
+                              Icons.arrow_back,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                         const Spacer(),
-                        IconButton(
-                          onPressed: () =>
-                              Navigator.of(context)
-                                  .popUntil((route) => route.isFirst),
-                          icon: const Icon(Icons.close, color: Colors.white),
+                        StaggeredEntrance(
+                          index: 0,
+                          child: IconButton(
+                            onPressed: () =>
+                                Navigator.of(context)
+                                    .popUntil((route) => route.isFirst),
+                            icon: const Icon(Icons.close, color: Colors.white),
+                          ),
                         ),
                       ],
                     ),
@@ -178,14 +185,17 @@ class _NightlightExplainedScreenState extends State<NightlightExplainedScreen>
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceEvenly,
                                     children: [
-                                      Text(
-                                        strings.nightlightExplainedTitle,
-                                        key: _titleKey,
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: 26,
-                                          fontWeight: FontWeight.bold,
-                                          color: colors.text,
+                                      StaggeredEntrance(
+                                        index: 1,
+                                        child: Text(
+                                          strings.nightlightExplainedTitle,
+                                          key: _titleKey,
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 26,
+                                            fontWeight: FontWeight.bold,
+                                            color: colors.text,
+                                          ),
                                         ),
                                       ),
                                       _ExplainedScheme(key: _schemeKey),
@@ -198,25 +208,34 @@ class _NightlightExplainedScreenState extends State<NightlightExplainedScreen>
                                       Column(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          _ExplainedParagraph(
-                                            key: _paragraph1Key,
-                                            text: strings
-                                                .nightlightExplainedBodyPart1,
-                                            style: bodyStyle,
+                                          StaggeredEntrance(
+                                            index: 7,
+                                            child: _ExplainedParagraph(
+                                              key: _paragraph1Key,
+                                              text: strings
+                                                  .nightlightExplainedBodyPart1,
+                                              style: bodyStyle,
+                                            ),
                                           ),
                                           const SizedBox(height: 18),
-                                          _ExplainedParagraph(
-                                            key: _paragraph2Key,
-                                            text: strings
-                                                .nightlightExplainedBodyPart2,
-                                            style: bodyStyle,
+                                          StaggeredEntrance(
+                                            index: 8,
+                                            child: _ExplainedParagraph(
+                                              key: _paragraph2Key,
+                                              text: strings
+                                                  .nightlightExplainedBodyPart2,
+                                              style: bodyStyle,
+                                            ),
                                           ),
                                           const SizedBox(height: 18),
-                                          _ExplainedParagraph(
-                                            key: _paragraph3Key,
-                                            text: strings
-                                                .nightlightExplainedBodyPart3,
-                                            style: bodyStyle,
+                                          StaggeredEntrance(
+                                            index: 9,
+                                            child: _ExplainedParagraph(
+                                              key: _paragraph3Key,
+                                              text: strings
+                                                  .nightlightExplainedBodyPart3,
+                                              style: bodyStyle,
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -233,19 +252,23 @@ class _NightlightExplainedScreenState extends State<NightlightExplainedScreen>
                   ResponsiveContent(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(28, 12, 28, 24),
-                      child: ElevatedButton(
-                        key: _continueButtonKey,
-                        style: nightlightButtonStyle(colors),
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => NightlightBreathingScreen(
-                              starRepository: widget.starRepository,
-                              projectRepository: widget.projectRepository,
-                              starsShapeRepository: widget.starsShapeRepository,
+                      child: StaggeredEntrance(
+                        index: 10,
+                        child: ElevatedButton(
+                          key: _continueButtonKey,
+                          style: nightlightButtonStyle(colors),
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => NightlightBreathingScreen(
+                                starRepository: widget.starRepository,
+                                projectRepository: widget.projectRepository,
+                                starsShapeRepository:
+                                    widget.starsShapeRepository,
+                              ),
                             ),
                           ),
+                          child: Text(strings.nightlightExplainedContinue),
                         ),
-                        child: Text(strings.nightlightExplainedContinue),
                       ),
                     ),
                   ),
@@ -295,19 +318,41 @@ class _ExplainedScheme extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SchemeStep(
-          icon: Icons.mood_bad,
-          label: strings.nightlightExplainedSchemeAgitated,
+        // Circles and arrows arrive left to right, one after another —
+        // the scheme reads as a sequence, so it builds as one.
+        StaggeredEntrance(
+          index: 2,
+          axis: Axis.horizontal,
+          child: _SchemeStep(
+            icon: Icons.mood_bad,
+            label: strings.nightlightExplainedSchemeAgitated,
+          ),
         ),
-        const _SchemeArrow(),
-        _SchemeStep(
-          icon: Icons.air,
-          label: strings.nightlightExplainedSchemeBreathe,
+        const StaggeredEntrance(
+          index: 3,
+          axis: Axis.horizontal,
+          child: _SchemeArrow(),
         ),
-        const _SchemeArrow(),
-        _SchemeStep(
-          icon: Icons.auto_awesome,
-          label: strings.nightlightExplainedSchemeClarity,
+        StaggeredEntrance(
+          index: 4,
+          axis: Axis.horizontal,
+          child: _SchemeStep(
+            icon: Icons.air,
+            label: strings.nightlightExplainedSchemeBreathe,
+          ),
+        ),
+        const StaggeredEntrance(
+          index: 5,
+          axis: Axis.horizontal,
+          child: _SchemeArrow(),
+        ),
+        StaggeredEntrance(
+          index: 6,
+          axis: Axis.horizontal,
+          child: _SchemeStep(
+            icon: Icons.auto_awesome,
+            label: strings.nightlightExplainedSchemeClarity,
+          ),
         ),
       ],
     );

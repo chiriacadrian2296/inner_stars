@@ -8,8 +8,10 @@ import '../models/project.dart';
 import '../screens/new_project_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../utils/app_modals.dart';
 import 'area_tag.dart';
 import 'project_tag.dart';
+import 'staggered_entrance.dart';
 
 class _CreateNewProject {
   const _CreateNewProject();
@@ -67,7 +69,7 @@ Future<LifeArea?> pickArea(BuildContext context) {
   final colors = context.colors;
   final strings = context.strings;
 
-  return showModalBottomSheet<LifeArea>(
+  return showAppSheet<LifeArea>(
     context: context,
     isScrollControlled: true,
     builder: (sheetContext) {
@@ -75,23 +77,34 @@ Future<LifeArea?> pickArea(BuildContext context) {
         child: ListView(
           shrinkWrap: true,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Text(
-                strings.areaLabel,
-                style: TextStyle(
-                  fontSize: 12,
-                  letterSpacing: 1.2,
-                  fontWeight: FontWeight.w600,
-                  color: colors.muted,
+            StaggeredEntrance(
+              index: 0,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                child: Text(
+                  strings.areaLabel,
+                  style: TextStyle(
+                    fontSize: 12,
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w600,
+                    color: colors.muted,
+                  ),
                 ),
               ),
             ),
-            for (final area in LifeArea.values)
-              ListTile(
-                title: AreaTag(area: area, iconSize: 20, fontSize: 16),
-                trailing: Icon(Icons.chevron_right, color: colors.muted),
-                onTap: () => Navigator.of(sheetContext).pop(area),
+            for (var i = 0; i < LifeArea.values.length; i++)
+              StaggeredEntrance(
+                index: i + 1,
+                child: ListTile(
+                  title: AreaTag(
+                    area: LifeArea.values[i],
+                    iconSize: 20,
+                    fontSize: 16,
+                  ),
+                  trailing: Icon(Icons.chevron_right, color: colors.muted),
+                  onTap: () =>
+                      Navigator.of(sheetContext).pop(LifeArea.values[i]),
+                ),
               ),
           ],
         ),
@@ -105,7 +118,7 @@ Future<Object?> _pickProjectInArea(
   ProjectRepository repository,
   LifeArea area,
 ) {
-  return showModalBottomSheet<Object>(
+  return showAppSheet<Object>(
     context: context,
     isScrollControlled: true,
     builder: (sheetContext) {
@@ -156,55 +169,74 @@ class _ProjectPickerSheetState extends State<_ProjectPickerSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AreaTag(area: widget.area, iconSize: 18, fontSize: 16),
+            StaggeredEntrance(
+              index: 0,
+              child: AreaTag(area: widget.area, iconSize: 18, fontSize: 16),
+            ),
             const SizedBox(height: 12),
-            TextField(
-              onChanged: (value) => setState(() => _query = value),
-              style: TextStyle(color: colors.text, fontSize: 15),
-              decoration: InputDecoration(
-                hintText: strings.searchHint,
-                prefixIcon: Icon(Icons.search, color: colors.muted, size: 20),
+            StaggeredEntrance(
+              index: 1,
+              child: TextField(
+                onChanged: (value) => setState(() => _query = value),
+                style: TextStyle(color: colors.text, fontSize: 15),
+                decoration: InputDecoration(
+                  hintText: strings.searchHint,
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: colors.muted,
+                    size: 20,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 14),
-            InkWell(
-              onTap: () => Navigator.of(context).pop(const _CreateNewProject()),
-              borderRadius: BorderRadius.circular(kRadiusField),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: selectableDecoration(colors, selected: true),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.add, color: colors.gold),
-                    const SizedBox(width: 8),
-                    Text(
-                      strings.newProject,
-                      style: TextStyle(
-                        color: colors.gold,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
+            StaggeredEntrance(
+              index: 2,
+              child: InkWell(
+                onTap: () => Navigator.of(context).pop(const _CreateNewProject()),
+                borderRadius: BorderRadius.circular(kRadiusField),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: selectableDecoration(colors, selected: true),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add, color: colors.gold),
+                      const SizedBox(width: 8),
+                      Text(
+                        strings.newProject,
+                        style: TextStyle(
+                          color: colors.gold,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 8),
             Flexible(
               child: filtered.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      child: Center(
-                        child: Text(
-                          _query.isEmpty
-                              ? strings.areaEmptyProjects(
-                                  widget.area.displayName(strings),
-                                )
-                              : strings.noSearchResults,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: colors.muted, fontSize: 14),
+                  ? StaggeredEntrance(
+                      index: 3,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
+                          child: Text(
+                            _query.isEmpty
+                                ? strings.areaEmptyProjects(
+                                    widget.area.displayName(strings),
+                                  )
+                                : strings.noSearchResults,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: colors.muted,
+                              fontSize: 14,
+                            ),
+                          ),
                         ),
                       ),
                     )
@@ -215,14 +247,17 @@ class _ProjectPickerSheetState extends State<_ProjectPickerSheet> {
                           Divider(color: colors.nightBorder, height: 1),
                       itemBuilder: (context, index) {
                         final project = filtered[index];
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: ProjectTag(
-                            project: project,
-                            fontSize: 15,
-                            textColor: colors.text,
+                        return StaggeredEntrance(
+                          index: index + 3,
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: ProjectTag(
+                              project: project,
+                              fontSize: 15,
+                              textColor: colors.text,
+                            ),
+                            onTap: () => Navigator.of(context).pop(project),
                           ),
-                          onTap: () => Navigator.of(context).pop(project),
                         );
                       },
                     ),
@@ -238,7 +273,7 @@ Future<Object?> _pickProjectFlat(
   BuildContext context,
   ProjectRepository repository,
 ) {
-  return showModalBottomSheet<Object>(
+  return showAppSheet<Object>(
     context: context,
     isScrollControlled: true,
     builder: (sheetContext) {
@@ -287,61 +322,80 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              strings.projectLabel,
-              style: TextStyle(
-                fontSize: 12,
-                letterSpacing: 1.2,
-                fontWeight: FontWeight.w600,
-                color: colors.muted,
+            StaggeredEntrance(
+              index: 0,
+              child: Text(
+                strings.projectLabel,
+                style: TextStyle(
+                  fontSize: 12,
+                  letterSpacing: 1.2,
+                  fontWeight: FontWeight.w600,
+                  color: colors.muted,
+                ),
               ),
             ),
             const SizedBox(height: 12),
-            TextField(
-              onChanged: (value) => setState(() => _query = value),
-              style: TextStyle(color: colors.text, fontSize: 15),
-              decoration: InputDecoration(
-                hintText: strings.searchHint,
-                prefixIcon: Icon(Icons.search, color: colors.muted, size: 20),
+            StaggeredEntrance(
+              index: 1,
+              child: TextField(
+                onChanged: (value) => setState(() => _query = value),
+                style: TextStyle(color: colors.text, fontSize: 15),
+                decoration: InputDecoration(
+                  hintText: strings.searchHint,
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: colors.muted,
+                    size: 20,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 14),
-            InkWell(
-              onTap: () => Navigator.of(context).pop(const _CreateNewProject()),
-              borderRadius: BorderRadius.circular(kRadiusField),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: selectableDecoration(colors, selected: true),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.add, color: colors.gold),
-                    const SizedBox(width: 8),
-                    Text(
-                      strings.newProject,
-                      style: TextStyle(
-                        color: colors.gold,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
+            StaggeredEntrance(
+              index: 2,
+              child: InkWell(
+                onTap: () => Navigator.of(context).pop(const _CreateNewProject()),
+                borderRadius: BorderRadius.circular(kRadiusField),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: selectableDecoration(colors, selected: true),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add, color: colors.gold),
+                      const SizedBox(width: 8),
+                      Text(
+                        strings.newProject,
+                        style: TextStyle(
+                          color: colors.gold,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 8),
             Flexible(
               child: filtered.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      child: Center(
-                        child: Text(
-                          _query.isEmpty
-                              ? strings.noProjectsYet
-                              : strings.noSearchResults,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: colors.muted, fontSize: 14),
+                  ? StaggeredEntrance(
+                      index: 3,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
+                          child: Text(
+                            _query.isEmpty
+                                ? strings.noProjectsYet
+                                : strings.noSearchResults,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: colors.muted,
+                              fontSize: 14,
+                            ),
+                          ),
                         ),
                       ),
                     )
@@ -352,28 +406,31 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
                           Divider(color: colors.nightBorder, height: 1),
                       itemBuilder: (context, index) {
                         final project = filtered[index];
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: ProjectTag(
-                            project: project,
-                            fontSize: 15,
-                            textColor: colors.text,
-                          ),
-                          // Small and muted, under the project's own name —
-                          // supporting context here rather than the
-                          // headline fact [_ProjectPickerSheet]'s header
-                          // makes it, since this list mixes every area.
-                          subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: AreaTag(
-                              area: project.area,
-                              iconSize: 12,
-                              fontSize: 12,
-                              textColor: colors.muted,
-                              iconColor: colors.muted,
+                        return StaggeredEntrance(
+                          index: index + 3,
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: ProjectTag(
+                              project: project,
+                              fontSize: 15,
+                              textColor: colors.text,
                             ),
+                            // Small and muted, under the project's own name —
+                            // supporting context here rather than the
+                            // headline fact [_ProjectPickerSheet]'s header
+                            // makes it, since this list mixes every area.
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: AreaTag(
+                                area: project.area,
+                                iconSize: 12,
+                                fontSize: 12,
+                                textColor: colors.muted,
+                                iconColor: colors.muted,
+                              ),
+                            ),
+                            onTap: () => Navigator.of(context).pop(project),
                           ),
-                          onTap: () => Navigator.of(context).pop(project),
                         );
                       },
                     ),

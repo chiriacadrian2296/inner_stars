@@ -383,6 +383,8 @@ class StringsEn implements AppStrings {
   @override
   String get skyModeSupernovas => 'Supernovas';
   @override
+  String get filtersAction => 'Filters';
+  @override
   String get filterAreasAction => 'Filter areas';
   @override
   String get areaFilterDefaultLabel => 'Areas';

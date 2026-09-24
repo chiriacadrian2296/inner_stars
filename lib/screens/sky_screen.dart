@@ -42,6 +42,7 @@ import '../tutorials/sky_hint_target.dart';
 import '../tutorials/tour_gesture_step.dart';
 import '../tutorials/tour_step_card.dart';
 import '../tutorials/tutorial_management.dart';
+import '../utils/app_modals.dart';
 import '../utils/area_hero_art.dart';
 import '../utils/habit_stats.dart';
 import '../utils/haptics.dart';
@@ -52,6 +53,7 @@ import '../widgets/constellation_field.dart';
 import '../widgets/constellation_painter.dart';
 import '../widgets/creation_success_dialog.dart';
 import '../widgets/nebula_background.dart';
+import '../widgets/press_scale.dart';
 // import '../widgets/sky_decorations.dart'; — the spiral-galaxy take on this
 // slot, disabled first in favor of SkyWisps, then SkyBlackHole, then
 // SkySupernova below; see the Stack in build().
@@ -72,6 +74,7 @@ import '../widgets/sky_navigation_target.dart';
 import '../widgets/sky_pulsar_tooltip.dart';
 import '../widgets/sky_star_tooltip.dart';
 import '../widgets/sky_supernova.dart';
+import '../widgets/staggered_entrance.dart';
 import 'area_detail_screen.dart';
 import 'friends_screen.dart';
 import 'sky_search_screen.dart';
@@ -1344,19 +1347,33 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // on why (the tooltip's root-overlay entry doesn't get covered by a
     // new one the way the old in-tree panel did).
     _closeSkyTooltip();
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(strings.deleteStarConfirmTitle),
-        content: Text(strings.deleteStarConfirmBody),
+        title: StaggeredEntrance(
+          index: 0,
+          child: Text(strings.deleteStarConfirmTitle),
+        ),
+        content: StaggeredEntrance(
+          index: 1,
+          child: Text(strings.deleteStarConfirmBody),
+        ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(strings.cancel),
+          StaggeredEntrance(
+            index: 2,
+            axis: Axis.horizontal,
+            child: TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(strings.cancel),
+            ),
           ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(strings.deleteStarAction),
+          StaggeredEntrance(
+            index: 3,
+            axis: Axis.horizontal,
+            child: TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(strings.deleteStarAction),
+            ),
           ),
         ],
       ),
@@ -1823,7 +1840,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // pattern, just on a real `HintTarget` instead of an invisible
     // full-screen one.
     _advanceGestureTourStep(8);
-    showModalBottomSheet<void>(
+    showAppSheet<void>(
       context: context,
       isScrollControlled: true,
       // Explicit, not just relying on the default (also true): a tap
@@ -3213,40 +3230,53 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   Future<void> _showUiControlsMenu(BuildContext context) async {
     final colors = context.colors;
     final strings = context.strings;
-    await showDialog<void>(
+    await showAppDialog<void>(
       context: context,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (dialogContext, setSheetState) {
-            Widget row(String label, bool value, ValueChanged<bool> onChanged) {
-              return SwitchListTile(
-                title: Text(label, style: TextStyle(color: colors.text)),
-                value: value,
-                onChanged: (newValue) {
-                  onChanged(newValue);
-                  setSheetState(() {});
-                },
+            Widget row(
+              int index,
+              String label,
+              bool value,
+              ValueChanged<bool> onChanged,
+            ) {
+              return StaggeredEntrance(
+                index: index,
+                child: SwitchListTile(
+                  title: Text(label, style: TextStyle(color: colors.text)),
+                  value: value,
+                  onChanged: (newValue) {
+                    onChanged(newValue);
+                    setSheetState(() {});
+                  },
+                ),
               );
             }
 
             return AlertDialog(
-              title: Text(
-                'Display',
-                style: TextStyle(
-                  color: colors.muted,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+              title: StaggeredEntrance(
+                index: 0,
+                child: Text(
+                  'Display',
+                  style: TextStyle(
+                    color: colors.muted,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   row(
+                    1,
                     'Grid',
                     _showGridControl,
                     (value) => setState(() => _showGridControl = value),
                   ),
                   row(
+                    2,
                     'Zoom',
                     _showZoomControl,
                     (value) => setState(() => _showZoomControl = value),
@@ -3255,6 +3285,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                   // nothing to toggle when the roll knob itself never shows.
                   if (!isTouchOnlyMobile)
                     row(
+                      3,
                       'Rotation',
                       _showRotationControl,
                       (value) => setState(() => _showRotationControl = value),
@@ -3262,9 +3293,13 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                 ],
               ),
               actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: Text(strings.closeAction),
+                StaggeredEntrance(
+                  index: 4,
+                  axis: Axis.horizontal,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    child: Text(strings.closeAction),
+                  ),
                 ),
               ],
             );
@@ -4467,19 +4502,21 @@ class _SkyOverlayButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return Material(
-      color: Colors.transparent,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: Ink(
-        decoration: skyControlDecoration(colors, circle: true),
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Tooltip(
-              message: tooltip,
-              child: Icon(icon, color: colors.gold, size: 20),
+    return PressScale(
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: Ink(
+          decoration: skyControlDecoration(colors, circle: true),
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Tooltip(
+                message: tooltip,
+                child: Icon(icon, color: colors.gold, size: 20),
+              ),
             ),
           ),
         ),
@@ -5138,29 +5175,31 @@ class _QuickAccessButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return Material(
-      color: Colors.transparent,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: Ink(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: colors.nightPanel,
-          border: Border.all(color: Colors.white, width: 2),
-        ),
-        child: InkWell(
-          onTapDown: (_) => onPressChanged?.call(true),
-          onTapCancel: () => onPressChanged?.call(false),
-          onTap: () {
-            onPressChanged?.call(false);
-            onTap();
-          },
-          child: SizedBox(
-            width: _size,
-            height: _size,
-            child: Tooltip(
-              message: tooltip,
-              child: Center(child: Icon(icon, color: Colors.white, size: 24)),
+    return PressScale(
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: Ink(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: colors.nightPanel,
+            border: Border.all(color: Colors.white, width: 2),
+          ),
+          child: InkWell(
+            onTapDown: (_) => onPressChanged?.call(true),
+            onTapCancel: () => onPressChanged?.call(false),
+            onTap: () {
+              onPressChanged?.call(false);
+              onTap();
+            },
+            child: SizedBox(
+              width: _size,
+              height: _size,
+              child: Tooltip(
+                message: tooltip,
+                child: Center(child: Icon(icon, color: Colors.white, size: 24)),
+              ),
             ),
           ),
         ),

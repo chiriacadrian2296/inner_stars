@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 import 'app_fonts.dart';
+import 'app_motion.dart';
 import 'app_style.dart';
 
 /// The app's one and only theme — night sky, gold stars. There's no light
@@ -34,6 +35,17 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
     useMaterial3: true,
     brightness: brightness,
     scaffoldBackgroundColor: palette.night,
+    // One shared-axis push/pop for every route; see [AppPageTransitionsBuilder].
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: AppPageTransitionsBuilder(),
+        TargetPlatform.iOS: AppPageTransitionsBuilder(),
+        TargetPlatform.fuchsia: AppPageTransitionsBuilder(),
+        TargetPlatform.linux: AppPageTransitionsBuilder(),
+        TargetPlatform.macOS: AppPageTransitionsBuilder(),
+        TargetPlatform.windows: AppPageTransitionsBuilder(),
+      },
+    ),
     colorScheme: ColorScheme.dark(
       primary: palette.gold,
       onPrimary: palette.onGold,

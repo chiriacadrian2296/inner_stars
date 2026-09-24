@@ -7,6 +7,7 @@ import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import 'intensity_bolts.dart';
+import 'staggered_entrance.dart';
 
 class ReflectionQuestionsSection extends StatefulWidget {
   const ReflectionQuestionsSection({
@@ -37,43 +38,52 @@ class ReflectionQuestionsSectionState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Text(
-                strings.reflectionQuestionsSectionLabel,
+        StaggeredEntrance(
+          index: 1,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Text(
+                  strings.reflectionQuestionsSectionLabel,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              Text(
+                '$answeredCount/${questions.length} '
+                '${strings.reflectionAnsweredCountLabel}',
                 style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
                   color: Colors.white,
                 ),
               ),
-            ),
-            Text(
-              '$answeredCount/${questions.length} '
-              '${strings.reflectionAnsweredCountLabel}',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 6),
-        Text(
-          strings.reflectionQuestionsSubtitle,
-          style: TextStyle(fontSize: 13, height: 1.4, color: colors.muted),
+        StaggeredEntrance(
+          index: 1,
+          child: Text(
+            strings.reflectionQuestionsSubtitle,
+            style: TextStyle(fontSize: 13, height: 1.4, color: colors.muted),
+          ),
         ),
         const SizedBox(height: 14),
         for (var i = 0; i < questions.length; i++) ...[
-          _ReflectionQuestionTile(
-            area: widget.area,
-            questionId: '$i',
-            questionText: questions[i],
-            repository: widget.repository,
-            onSaved: () => setState(() {}),
+          StaggeredEntrance(
+            index: 2 + i,
+            child: _ReflectionQuestionTile(
+              area: widget.area,
+              questionId: '$i',
+              questionText: questions[i],
+              repository: widget.repository,
+              onSaved: () => setState(() {}),
+            ),
           ),
           if (i != questions.length - 1) const SizedBox(height: 10),
         ],
@@ -174,10 +184,14 @@ class _ReflectionQuestionTileState extends State<_ReflectionQuestionTile> {
                   if (_hasAnswer)
                     Padding(
                       padding: const EdgeInsets.only(right: 10),
-                      child: Icon(
-                        Icons.offline_bolt,
-                        size: 16,
-                        color: Colors.white,
+                      child: StaggeredEntrance(
+                        index: 0,
+                        axis: Axis.horizontal,
+                        child: Icon(
+                          Icons.offline_bolt,
+                          size: 16,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   Expanded(
@@ -207,54 +221,68 @@ class _ReflectionQuestionTileState extends State<_ReflectionQuestionTile> {
             child: _expanded
                 ? Padding(
                     padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
+                    // Mounted only while open, so the parts cascade in each
+                    // time the tile is expanded.
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TextField(
-                          controller: _controller,
-                          onChanged: (_) => _save(),
-                          focusNode: _focusNode,
-                          minLines: 3,
-                          maxLines: null,
-                          style: TextStyle(
-                            color: colors.text,
-                            fontSize: 14,
-                            height: 1.45,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: strings.reflectionAnswerHint,
+                        StaggeredEntrance(
+                          index: 0,
+                          child: TextField(
+                            controller: _controller,
+                            onChanged: (_) => _save(),
+                            focusNode: _focusNode,
+                            minLines: 3,
+                            maxLines: null,
+                            style: TextStyle(
+                              color: colors.text,
+                              fontSize: 14,
+                              height: 1.45,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: strings.reflectionAnswerHint,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 14),
-                        Text(
-                          strings.reflectionDifficultyLabel,
-                          style: TextStyle(fontSize: 12, color: colors.muted),
-                        ),
-                        const SizedBox(height: 8),
-                        Center(
-                          child: IntensityBolts(
-                            intensity: _intensity,
-                            color: Colors.white,
-                            size: 22,
-                            spacing: 6,
-                            emphasizeLast: true,
+                        StaggeredEntrance(
+                          index: 1,
+                          child: Text(
+                            strings.reflectionDifficultyLabel,
+                            style: TextStyle(fontSize: 12, color: colors.muted),
                           ),
                         ),
-                        Center(
-                          child: FractionallySizedBox(
-                            widthFactor: 0.7,
-                            child: SliderTheme(
-                              data: SliderTheme.of(context)
-                                  .copyWith(padding: EdgeInsets.zero),
-                              child: Slider(
-                                value: _intensity.toDouble(),
-                                min: 1,
-                                max: 5,
-                                divisions: 4,
-                                onChanged: (value) {
-                                  setState(() => _intensity = value.round());
-                                  _save();
-                                },
+                        const SizedBox(height: 8),
+                        StaggeredEntrance(
+                          index: 1,
+                          child: Center(
+                            child: IntensityBolts(
+                              intensity: _intensity,
+                              color: Colors.white,
+                              size: 22,
+                              spacing: 6,
+                              emphasizeLast: true,
+                            ),
+                          ),
+                        ),
+                        StaggeredEntrance(
+                          index: 2,
+                          child: Center(
+                            child: FractionallySizedBox(
+                              widthFactor: 0.7,
+                              child: SliderTheme(
+                                data: SliderTheme.of(context)
+                                    .copyWith(padding: EdgeInsets.zero),
+                                child: Slider(
+                                  value: _intensity.toDouble(),
+                                  min: 1,
+                                  max: 5,
+                                  divisions: 4,
+                                  onChanged: (value) {
+                                    setState(() => _intensity = value.round());
+                                    _save();
+                                  },
+                                ),
                               ),
                             ),
                           ),

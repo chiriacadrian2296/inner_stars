@@ -11,10 +11,12 @@ import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
 import '../theme/nightlight_style.dart';
+import '../utils/app_modals.dart';
 import '../widgets/nightlight_star_glow.dart';
 import '../widgets/nightlight_starfield.dart';
 import '../widgets/nightlight_zone_measurer.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/staggered_entrance.dart';
 import 'admire_stars_screen.dart';
 
 enum _BreathPhase { inhale, holdFull, exhale, holdEmpty }
@@ -360,7 +362,7 @@ class _NightlightBreathingScreenState extends State<NightlightBreathingScreen>
     if (_done) return;
     final colors = context.colors;
     final strings = context.strings;
-    final action = await showDialog<_CheckInAction>(
+    final action = await showAppDialog<_CheckInAction>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
@@ -510,17 +512,23 @@ class _NightlightBreathingScreenState extends State<NightlightBreathingScreen>
                   ResponsiveContent(
                     child: Row(
                       children: [
-                        IconButton(
-                          onPressed: _goBack,
-                          icon: const Icon(
-                            Icons.arrow_back,
-                            color: Colors.white,
+                        StaggeredEntrance(
+                          index: 0,
+                          child: IconButton(
+                            onPressed: _goBack,
+                            icon: const Icon(
+                              Icons.arrow_back,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                         const Spacer(),
-                        IconButton(
-                          onPressed: _close,
-                          icon: const Icon(Icons.close, color: Colors.white),
+                        StaggeredEntrance(
+                          index: 0,
+                          child: IconButton(
+                            onPressed: _close,
+                            icon: const Icon(Icons.close, color: Colors.white),
+                          ),
                         ),
                       ],
                     ),
@@ -663,25 +671,28 @@ class _NightlightBreathingScreenState extends State<NightlightBreathingScreen>
                             // On top of the (fading-in) running content —
                             // see this widget's own doc comment above.
                             if (_countingDown)
-                              SizedBox(
-                                width: _countdownDigitWidth,
-                                child: Text(
-                                  '$_countdown',
-                                  textAlign: TextAlign.center,
-                                  softWrap: false,
-                                  style: _countdownStyle.copyWith(
-                                    color: colors.text,
-                                    // Same glow as the "Nightlight" title.
-                                    shadows: const [
-                                      Shadow(
-                                        color: Colors.white,
-                                        blurRadius: 22,
-                                      ),
-                                      Shadow(
-                                        color: Colors.white54,
-                                        blurRadius: 42,
-                                      ),
-                                    ],
+                              StaggeredEntrance(
+                                index: 1,
+                                child: SizedBox(
+                                  width: _countdownDigitWidth,
+                                  child: Text(
+                                    '$_countdown',
+                                    textAlign: TextAlign.center,
+                                    softWrap: false,
+                                    style: _countdownStyle.copyWith(
+                                      color: colors.text,
+                                      // Same glow as the "Nightlight" title.
+                                      shadows: const [
+                                        Shadow(
+                                          color: Colors.white,
+                                          blurRadius: 22,
+                                        ),
+                                        Shadow(
+                                          color: Colors.white54,
+                                          blurRadius: 42,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),

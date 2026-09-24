@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hint_kit/hint_kit.dart';
 import 'package:marionette_flutter/marionette_flutter.dart';
+import 'package:rive/rive.dart' as rive;
 
 import 'audio/audio_service.dart';
 import 'data/apk_prompt_prefs.dart';
@@ -42,7 +43,7 @@ import 'widgets/app_lock_gate.dart';
 /// exactly as it was.
 const _kShowOnboarding = false;
 
-void main() {
+Future<void> main() async {
   // Explicit opt-in to edge-to-edge (mandatory on Android 15+ regardless):
   // without it, the system nav/status bars are drawn as their own opaque
   // strip rather than transparent overlays on top of the app, so the
@@ -58,6 +59,7 @@ void main() {
   } else {
     WidgetsFlutterBinding.ensureInitialized();
   }
+  await rive.RiveNative.init();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   // Portrait-only: the Sky's own overlay controls are laid out for a tall
   // window, and a phone turned sideways has nowhere near the height they

@@ -13,11 +13,14 @@ import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../tutorials/tour_intro_target.dart';
 import '../tutorials/tour_step_card.dart';
+import '../utils/app_modals.dart';
+import '../utils/page_settled.dart';
 import '../widgets/app_field.dart';
 import '../utils/icon_for_slug.dart';
 import '../widgets/constellation_editor_painter.dart';
 import '../widgets/pill_action_button.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/staggered_entrance.dart';
 import 'constellation_editor_screen.dart';
 
 /// Creates a project: a name, a [LifeArea], a constellation shape, and an
@@ -66,6 +69,10 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   StarsShape? _selectedStarsShape;
   StarsShapePreset? _selectedPreset;
 
+  /// Bumped whenever the person changes the shape selection, so the preview
+  /// swaps its drawing (and name) in with the entrance rather than silently.
+  int _shapeEpoch = 0;
+
   bool get _hasShape => _selectedStarsShape != null || _selectedPreset != null;
 
   ConstellationShape? get _selectedShape =>
@@ -79,6 +86,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     setState(() {
       _selectedPreset = preset;
       _selectedStarsShape = null;
+      _shapeEpoch++;
       // Used to also fill in `_selectedIconSlug = preset.iconSlug` here —
       // switched off for now (still deciding how icon<->shape pairing
       // should actually work; see the memory note on this), but
@@ -91,6 +99,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     setState(() {
       _selectedStarsShape = custom;
       _selectedPreset = null;
+      _shapeEpoch++;
     });
   }
 
@@ -102,6 +111,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     setState(() {
       _selectedStarsShape = null;
       _selectedPreset = null;
+      _shapeEpoch++;
     });
   }
 
@@ -110,7 +120,10 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     super.initState();
     // The "constellation-form" tour — see its steps in [build] below.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) Tour.read(context).start('constellation-form');
+      if (!mounted) return;
+      whenPageSettled(context, () {
+        Tour.read(context).start('constellation-form');
+      });
     });
   }
 
@@ -144,7 +157,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     }
     final strings = context.strings;
     final colors = context.colors;
-    final discard = await showDialog<bool>(
+    final discard = await showAppDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(
@@ -331,15 +344,18 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                 if (filtered.any(
                   (c) => c is _PresetChoice && c.preset.category == category,
                 )) ...[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(2, 12, 2, 8),
-                    child: Text(
-                      category.name.of(language),
-                      style: TextStyle(
-                        fontSize: 12,
-                        letterSpacing: 1.2,
-                        fontWeight: FontWeight.w600,
-                        color: context.colors.gold,
+                  StaggeredEntrance(
+                    index: 1,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(2, 12, 2, 8),
+                      child: Text(
+                        category.name.of(language),
+                        style: TextStyle(
+                          fontSize: 12,
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w600,
+                          color: context.colors.gold,
+                        ),
                       ),
                     ),
                   ),
@@ -354,14 +370,17 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                         itemCount: categoryItems.length,
                         itemBuilder: (context, index, tileWidth) {
                           final preset = categoryItems[index].preset;
-                          return _ShapeTile(
-                            shape: preset.shape,
-                            label: preset.name.of(language),
-                            selected:
-                                selected is _PresetChoice &&
-                                selected.preset.id == preset.id,
-                            onTap: () => onSelect(_PresetChoice(preset)),
-                            side: tileWidth,
+                          return StaggeredEntrance(
+                            index: index + 2,
+                            child: _ShapeTile(
+                              shape: preset.shape,
+                              label: preset.name.of(language),
+                              selected:
+                                  selected is _PresetChoice &&
+                                  selected.preset.id == preset.id,
+                              onTap: () => onSelect(_PresetChoice(preset)),
+                              side: tileWidth,
+                            ),
                           );
                         },
                       );
@@ -373,13 +392,16 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
           yourShapesBuilder: (context) {
             final customItems = filtered.whereType<_CustomChoice>().toList();
             if (customItems.isEmpty) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                  child: Text(
-                    strings.noCustomShapesYetHint,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: context.colors.muted, fontSize: 14),
+              return StaggeredEntrance(
+                index: 1,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Text(
+                      strings.noCustomShapesYetHint,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: context.colors.muted, fontSize: 14),
+                    ),
                   ),
                 ),
               );
@@ -389,14 +411,17 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
               itemCount: customItems.length,
               itemBuilder: (context, index, tileWidth) {
                 final custom = customItems[index].custom;
-                return _ShapeTile(
-                  shape: custom.shape,
-                  label: custom.name,
-                  selected:
-                      selected is _CustomChoice &&
-                      selected.custom.id == custom.id,
-                  onTap: () => onSelect(_CustomChoice(custom)),
-                  side: tileWidth,
+                return StaggeredEntrance(
+                  index: index + 2,
+                  child: _ShapeTile(
+                    shape: custom.shape,
+                    label: custom.name,
+                    selected:
+                        selected is _CustomChoice &&
+                        selected.custom.id == custom.id,
+                    onTap: () => onSelect(_CustomChoice(custom)),
+                    side: tileWidth,
+                  ),
                 );
               },
             );
@@ -436,11 +461,14 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
           crossAxisSpacing: 8,
           childAspectRatio: 1.3,
           children: [
-            for (final area in filtered)
-              _AreaOption(
-                area: area,
-                selected: selected == area,
-                onTap: () => onSelect(area),
+            for (final (i, area) in filtered.indexed)
+              StaggeredEntrance(
+                index: i + 1,
+                child: _AreaOption(
+                  area: area,
+                  selected: selected == area,
+                  onTap: () => onSelect(area),
+                ),
               ),
           ],
         );
@@ -467,11 +495,14 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
           children: [
-            for (final slug in filtered)
-              _IconOption(
-                slug: slug,
-                selected: selected == slug,
-                onTap: () => onSelect(slug),
+            for (final (i, slug) in filtered.indexed)
+              StaggeredEntrance(
+                index: i + 1,
+                child: _IconOption(
+                  slug: slug,
+                  selected: selected == slug,
+                  onTap: () => onSelect(slug),
+                ),
               ),
           ],
         );
@@ -522,7 +553,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   void _showCannotSaveMessage() {
     final colors = context.colors;
     final strings = context.strings;
-    showDialog<void>(
+    showAppDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
@@ -553,30 +584,36 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: _handleBack,
-                      icon: Icon(Icons.arrow_back, color: colors.muted),
-                    ),
-                    Text(
-                      strings.newProjectEyebrow,
-                      style: TextStyle(
-                        fontSize: 12,
-                        letterSpacing: 1.4,
-                        fontWeight: FontWeight.w600,
-                        color: colors.gold,
+                StaggeredEntrance(
+                  index: 0,
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: _handleBack,
+                        icon: Icon(Icons.arrow_back, color: colors.muted),
                       ),
-                    ),
-                  ],
+                      Text(
+                        strings.newProjectEyebrow,
+                        style: TextStyle(
+                          fontSize: 12,
+                          letterSpacing: 1.4,
+                          fontWeight: FontWeight.w600,
+                          color: colors.gold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  strings.newProjectQuestion,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 24,
-                    color: colors.text,
+                StaggeredEntrance(
+                  index: 0,
+                  child: Text(
+                    strings.newProjectQuestion,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 24,
+                      color: colors.text,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -593,7 +630,10 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                   contentBuilder: appTourStepCard,
                   title: strings.constellationTourLegendTitle,
                   description: strings.constellationTourLegendBody,
-                  child: const FieldRequirementLegend(),
+                  child: StaggeredEntrance(
+                    index: 1,
+                    child: const FieldRequirementLegend(),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 if (widget.presetArea == null)
@@ -609,7 +649,11 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                           contentBuilder: appTourStepCard,
                           title: strings.constellationTourAreaTitle,
                           description: strings.constellationTourAreaBody,
-                          child: _buildAreaField(colors, strings),
+                          child: StaggeredEntrance(
+                            index: 2,
+                            axis: Axis.horizontal,
+                            child: _buildAreaField(colors, strings),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -626,7 +670,11 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                           contentBuilder: appTourStepCard,
                           title: strings.constellationTourIconFieldTitle,
                           description: strings.constellationTourIconFieldBody,
-                          child: _buildIconField(colors, strings),
+                          child: StaggeredEntrance(
+                            index: 3,
+                            axis: Axis.horizontal,
+                            child: _buildIconField(colors, strings),
+                          ),
                         ),
                       ),
                     ],
@@ -639,7 +687,10 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                     contentBuilder: appTourStepCard,
                     title: strings.constellationTourIconFieldTitle,
                     description: strings.constellationTourIconFieldBody,
-                    child: _buildIconField(colors, strings),
+                    child: StaggeredEntrance(
+                      index: 2,
+                      child: _buildIconField(colors, strings),
+                    ),
                   ),
                 const SizedBox(height: 20),
                 HintTarget(
@@ -649,20 +700,23 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                   contentBuilder: appTourStepCard,
                   title: strings.constellationTourNameTitle,
                   description: strings.constellationTourNameBody,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppFieldLabel(
-                        strings.nameLabel,
-                        requirement: FieldRequirement.required,
-                      ),
-                      const SizedBox(height: 6),
-                      AppTextField(
-                        controller: _nameController,
-                        autofocus: widget.presetArea != null,
-                        hintText: strings.newProjectNameHint,
-                      ),
-                    ],
+                  child: StaggeredEntrance(
+                    index: 4,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppFieldLabel(
+                          strings.nameLabel,
+                          requirement: FieldRequirement.required,
+                        ),
+                        const SizedBox(height: 6),
+                        AppTextField(
+                          controller: _nameController,
+                          autofocus: widget.presetArea != null,
+                          hintText: strings.newProjectNameHint,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -673,20 +727,23 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                   contentBuilder: appTourStepCard,
                   title: strings.constellationTourDescriptionTitle,
                   description: strings.constellationTourDescriptionBody,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppFieldLabel(
-                        strings.projectDescriptionLabel,
-                        requirement: FieldRequirement.optional,
-                      ),
-                      const SizedBox(height: 6),
-                      AppTextField(
-                        controller: _descriptionController,
-                        maxLines: 3,
-                        hintText: strings.projectDescriptionHint,
-                      ),
-                    ],
+                  child: StaggeredEntrance(
+                    index: 5,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppFieldLabel(
+                          strings.projectDescriptionLabel,
+                          requirement: FieldRequirement.optional,
+                        ),
+                        const SizedBox(height: 6),
+                        AppTextField(
+                          controller: _descriptionController,
+                          maxLines: 3,
+                          hintText: strings.projectDescriptionHint,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -720,21 +777,25 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                             contentBuilder: appTourStepCard,
                             title: strings.constellationTourCanvasTitle,
                             description: strings.constellationTourCanvasBody,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                AppFieldLabel(
-                                  strings.chooseShapeLabel,
-                                  requirement: FieldRequirement.required,
-                                ),
-                                const SizedBox(height: 8),
-                                _SelectedShapePreview(
-                                  shape: _selectedShape,
-                                  label: _selectedShapeName(strings),
-                                  onEdit: _editSelectedShape,
-                                  side: side,
-                                ),
-                              ],
+                            child: StaggeredEntrance(
+                              index: 6,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  AppFieldLabel(
+                                    strings.chooseShapeLabel,
+                                    requirement: FieldRequirement.required,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _SelectedShapePreview(
+                                    shape: _selectedShape,
+                                    label: _selectedShapeName(strings),
+                                    onEdit: _editSelectedShape,
+                                    side: side,
+                                    replayKey: _shapeEpoch,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                           const SizedBox(width: gap),
@@ -790,10 +851,13 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                                         .constellationTourDrawButtonTitle,
                                     description:
                                         strings.constellationTourDrawButtonBody,
-                                    child: _ShapeSideButton(
-                                      icon: Icons.edit_outlined,
-                                      label: strings.drawShapeShort,
-                                      onTap: _editSelectedShape,
+                                    child: StaggeredEntrance(
+                                      index: 6,
+                                      child: _ShapeSideButton(
+                                        icon: Icons.edit_outlined,
+                                        label: strings.drawShapeShort,
+                                        onTap: _editSelectedShape,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -808,10 +872,13 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                                         .constellationTourLibraryButtonTitle,
                                     description: strings
                                         .constellationTourLibraryButtonBody,
-                                    child: _ShapeSideButton(
-                                      icon: Icons.insights,
-                                      label: strings.pickFromLibraryShort,
-                                      onTap: _openLibrary,
+                                    child: StaggeredEntrance(
+                                      index: 7,
+                                      child: _ShapeSideButton(
+                                        icon: Icons.insights,
+                                        label: strings.pickFromLibraryShort,
+                                        onTap: _openLibrary,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -826,10 +893,13 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                                         .constellationTourResetButtonTitle,
                                     description: strings
                                         .constellationTourResetButtonBody,
-                                    child: _ShapeSideButton(
-                                      icon: Icons.refresh,
-                                      label: strings.resetShapeShort,
-                                      onTap: _hasShape ? _resetShape : null,
+                                    child: StaggeredEntrance(
+                                      index: 8,
+                                      child: _ShapeSideButton(
+                                        icon: Icons.refresh,
+                                        label: strings.resetShapeShort,
+                                        onTap: _hasShape ? _resetShape : null,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -842,29 +912,32 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                   },
                 ),
                 const SizedBox(height: 28),
-                Center(
-                  child: ValueListenableBuilder<TextEditingValue>(
-                    valueListenable: _nameController,
-                    builder: (context, value, child) {
-                      final canSave =
-                          value.text.trim().isNotEmpty &&
-                          _selectedArea != null &&
-                          _selectedIconSlug != null &&
-                          _hasShape;
-                      return HintTarget(
-                        tour: 'constellation-form',
-                        order: 11,
-                        showArrow: true,
-                        contentBuilder: appTourStepCard,
-                        title: strings.constellationTourSaveTitle,
-                        description: strings.constellationTourSaveBody,
-                        child: SaveActionButton(
-                          label: strings.createProject,
-                          lit: canSave,
-                          onPressed: canSave ? _save : _showCannotSaveMessage,
-                        ),
-                      );
-                    },
+                StaggeredEntrance(
+                  index: 8,
+                  child: Center(
+                    child: ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: _nameController,
+                      builder: (context, value, child) {
+                        final canSave =
+                            value.text.trim().isNotEmpty &&
+                            _selectedArea != null &&
+                            _selectedIconSlug != null &&
+                            _hasShape;
+                        return HintTarget(
+                          tour: 'constellation-form',
+                          order: 11,
+                          showArrow: true,
+                          contentBuilder: appTourStepCard,
+                          title: strings.constellationTourSaveTitle,
+                          description: strings.constellationTourSaveBody,
+                          child: SaveActionButton(
+                            label: strings.createProject,
+                            lit: canSave,
+                            onPressed: canSave ? _save : _showCannotSaveMessage,
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],
@@ -1062,24 +1135,28 @@ class _ShapePickerTabsState extends State<_ShapePickerTabs> {
     Widget tabButton(_ShapePickerTab tab, String label) {
       final active = _tab == tab;
       return Expanded(
-        child: Material(
-          color: active ? colors.gold : Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(kRadiusField),
-            side: BorderSide(color: colors.nightBorder),
-          ),
-          child: InkWell(
-            onTap: () => setState(() => _tab = tab),
-            borderRadius: BorderRadius.circular(kRadiusField),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: active ? colors.onGold : colors.muted,
-                  fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                  fontSize: 13,
+        child: StaggeredEntrance(
+          index: tab == _ShapePickerTab.library ? 2 : 3,
+          axis: Axis.horizontal,
+          child: Material(
+            color: active ? colors.gold : Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(kRadiusField),
+              side: BorderSide(color: colors.nightBorder),
+            ),
+            child: InkWell(
+              onTap: () => setState(() => _tab = tab),
+              borderRadius: BorderRadius.circular(kRadiusField),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: active ? colors.onGold : colors.muted,
+                    fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ),
@@ -1212,12 +1289,17 @@ class _SelectedShapePreview extends StatelessWidget {
     required this.label,
     required this.onEdit,
     this.side = _constellationPreviewSide,
+    this.replayKey,
   });
 
   final ConstellationShape? shape;
   final String? label;
   final VoidCallback onEdit;
   final double side;
+
+  /// Changes whenever the shape does, so the drawing and its name play their
+  /// entrance again instead of swapping in place.
+  final Object? replayKey;
 
   @override
   Widget build(BuildContext context) {
@@ -1239,9 +1321,19 @@ class _SelectedShapePreview extends StatelessWidget {
               // yet" was redundant once this whole tile visibly matched
               // the empty canvas it opens), bigger now that it's carrying
               // the empty state on its own.
-              Center(child: Icon(Icons.insights, color: colors.muted, size: 44))
+              StaggeredEntrance(
+                index: 0,
+                replayKey: replayKey,
+                child: Center(
+                  child: Icon(Icons.insights, color: colors.muted, size: 44),
+                ),
+              )
             else
-              _ShapeThumbnail(shape: chosen, side: side),
+              StaggeredEntrance(
+                index: 0,
+                replayKey: replayKey,
+                child: _ShapeThumbnail(shape: chosen, side: side),
+              ),
             // The name, not a pencil badge — the whole tile already opens
             // the editor on tap (see `onEdit` above), so a dedicated edit
             // affordance was redundant; this corner was better spent
@@ -1254,18 +1346,22 @@ class _SelectedShapePreview extends StatelessWidget {
                 left: 10,
                 top: 8,
                 right: 10,
-                child: Text(
-                  label!,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 14,
-                    height: 1.2,
-                    fontWeight: FontWeight.w700,
-                    color: colors.text,
-                    shadows: const [
-                      Shadow(color: Colors.black87, blurRadius: 6),
-                    ],
+                child: StaggeredEntrance(
+                  index: 1,
+                  replayKey: replayKey,
+                  child: Text(
+                    label!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      height: 1.2,
+                      fontWeight: FontWeight.w700,
+                      color: colors.text,
+                      shadows: const [
+                        Shadow(color: Colors.black87, blurRadius: 6),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1416,7 +1512,7 @@ Future<T?> _showSearchablePicker<T>({
   bool showSearch = true,
   String? searchHint,
 }) {
-  return showModalBottomSheet<T>(
+  return showAppSheet<T>(
     context: context,
     isScrollControlled: true,
     backgroundColor: context.colors.nightPanel,
@@ -1511,36 +1607,42 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      widget.title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                        color: colors.text,
+              StaggeredEntrance(
+                index: 0,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                          color: colors.text,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: colors.muted),
-                    tooltip: strings.closeAction,
-                  ),
-                ],
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: Icon(Icons.close, color: colors.muted),
+                      tooltip: strings.closeAction,
+                    ),
+                  ],
+                ),
               ),
               if (widget.showSearch) ...[
                 const SizedBox(height: 4),
-                TextField(
-                  onChanged: (value) => setState(() => _query = value),
-                  style: TextStyle(color: colors.text, fontSize: 15),
-                  decoration: InputDecoration(
-                    hintText: widget.searchHint ?? strings.searchHint,
-                    prefixIcon: Icon(
-                      Icons.search,
-                      color: colors.muted,
-                      size: 20,
+                StaggeredEntrance(
+                  index: 1,
+                  child: TextField(
+                    onChanged: (value) => setState(() => _query = value),
+                    style: TextStyle(color: colors.text, fontSize: 15),
+                    decoration: InputDecoration(
+                      hintText: widget.searchHint ?? strings.searchHint,
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: colors.muted,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ),
@@ -1548,15 +1650,18 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
               const SizedBox(height: 12),
               Expanded(
                 child: filtered.isEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 24),
-                        child: Center(
-                          child: Text(
-                            strings.noSearchResults,
-                            style: TextStyle(color: colors.muted, fontSize: 14),
+                    ? StaggeredEntrance(
+                      index: 0,
+                      child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          child: Center(
+                            child: Text(
+                              strings.noSearchResults,
+                              style: TextStyle(color: colors.muted, fontSize: 14),
+                            ),
                           ),
                         ),
-                      )
+                    )
                     : SingleChildScrollView(
                         child: widget.bodyBuilder(
                           context,
@@ -1569,11 +1674,14 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _selected == null
-                      ? null
-                      : () => Navigator.of(context).pop(_selected),
-                  child: Text(strings.pickerConfirmAction),
+                child: StaggeredEntrance(
+                  index: 4,
+                  child: ElevatedButton(
+                    onPressed: _selected == null
+                        ? null
+                        : () => Navigator.of(context).pop(_selected),
+                    child: Text(strings.pickerConfirmAction),
+                  ),
                 ),
               ),
             ],

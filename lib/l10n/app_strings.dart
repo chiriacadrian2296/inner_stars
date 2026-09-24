@@ -424,6 +424,11 @@ abstract class AppStrings {
   String get constellationsModeLabel;
   String get listModeLabel;
   String get skyModeSupernovas;
+  /// The mobile "Filtri" trigger's own tooltip/sheet title — collects
+  /// [filterAreasAction]/[filterKindAction]/[filterDateRangeAction]/
+  /// [sortAction] onto one sheet on narrow layouts (see
+  /// `SkyExplorerView`'s `_FiltersTriggerButton`/`_FiltersSheet`).
+  String get filtersAction;
   String get filterAreasAction;
   String get areaFilterDefaultLabel;
   String activeAreasCount(int count);

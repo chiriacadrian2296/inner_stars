@@ -7,6 +7,8 @@ import '../data/moodboard_repository.dart';
 import '../data/moodboard_storage.dart';
 import '../l10n/strings_scope.dart';
 import '../theme/app_fonts.dart';
+import 'press_scale.dart';
+import 'staggered_entrance.dart';
 
 class MoodboardGrid extends StatelessWidget {
   const MoodboardGrid({super.key, required this.items, this.onTap});
@@ -16,27 +18,39 @@ class MoodboardGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            context.strings.moodboardEmpty,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white70),
+      return StaggeredEntrance(
+        index: 0,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              context.strings.moodboardEmpty,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white70),
+            ),
           ),
         ),
       );
     }
-    Widget tile(int index) => ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: Material(
-        color: const Color(0xFF141D30),
-        child: InkWell(
-          onTap: onTap == null ? null : () => onTap!(items[index]),
-          child: SizedBox.expand(
-            child: MoodboardMedia(
-              key: ValueKey('${items[index].id}:${items[index].content}'),
-              item: items[index],
+    // A tile's wrapper is reused by position, so after an item is removed or
+    // edited the tiles that shift into a slot replay their entrance (keyed to
+    // what the slot now shows) instead of swapping their media silently.
+    Widget tile(int index) => StaggeredEntrance(
+      index: index,
+      replayKey: '${items[index].id}:${items[index].content}',
+      child: PressScale(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Material(
+            color: const Color(0xFF141D30),
+            child: InkWell(
+              onTap: onTap == null ? null : () => onTap!(items[index]),
+              child: SizedBox.expand(
+                child: MoodboardMedia(
+                  key: ValueKey('${items[index].id}:${items[index].content}'),
+                  item: items[index],
+                ),
+              ),
             ),
           ),
         ),

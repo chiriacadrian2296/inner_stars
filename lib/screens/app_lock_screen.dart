@@ -7,6 +7,7 @@ import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../widgets/pin_keypad.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/staggered_entrance.dart';
 
 /// The actual lock screen — shown by [AppLockGate] on cold start and every
 /// time the app comes back from the background, whenever
@@ -80,12 +81,18 @@ class _AppLockScreenState extends State<AppLockScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.lock_outline, color: colors.gold, size: 36),
+        StaggeredEntrance(
+          index: 0,
+          child: Icon(Icons.lock_outline, color: colors.gold, size: 36),
+        ),
         const SizedBox(height: 16),
-        Text(
-          strings.appLockUnlockTitle,
-          textAlign: TextAlign.center,
-          style: _sectionTitleStyle(colors),
+        StaggeredEntrance(
+          index: 1,
+          child: Text(
+            strings.appLockUnlockTitle,
+            textAlign: TextAlign.center,
+            style: _sectionTitleStyle(colors),
+          ),
         ),
         // Same 16px as the icon-to-title gap above, doubling as the
         // reserved slot for a wrong-PIN error so the keypad never jumps
@@ -94,10 +101,13 @@ class _AppLockScreenState extends State<AppLockScreen> {
           height: 16,
           child: _error == null
               ? null
-              : Text(
-                  _error!,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: colors.danger, fontSize: 11),
+              : StaggeredEntrance(
+                  index: 0,
+                  child: Text(
+                    _error!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: colors.danger, fontSize: 11),
+                  ),
                 ),
         ),
         PinKeypad(key: _keypadKey, onSubmit: _onPinSubmit),
@@ -118,32 +128,39 @@ class _AppLockScreenState extends State<AppLockScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Material(
-          color: colors.nightPanel,
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: _authenticatingBiometric ? null : _tryBiometric,
-            child: Container(
-              width: diameter,
-              height: diameter,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colors.nightPanel,
-                // Thicker than the app's usual "active" ring
-                // (kBorderWidthActive, 2) — the border alone is what
-                // gives this button its weight now that there's no glow.
-                border: Border.all(color: colors.gold, width: 3),
+        // Below the keypad, so it arrives after it.
+        StaggeredEntrance(
+          index: 10,
+          child: Material(
+            color: colors.nightPanel,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: _authenticatingBiometric ? null : _tryBiometric,
+              child: Container(
+                width: diameter,
+                height: diameter,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colors.nightPanel,
+                  // Thicker than the app's usual "active" ring
+                  // (kBorderWidthActive, 2) — the border alone is what
+                  // gives this button its weight now that there's no glow.
+                  border: Border.all(color: colors.gold, width: 3),
+                ),
+                child: Icon(Icons.fingerprint, color: colors.gold, size: 58),
               ),
-              child: Icon(Icons.fingerprint, color: colors.gold, size: 58),
             ),
           ),
         ),
         const SizedBox(height: 14),
-        Text(
-          strings.appLockBiometricToggleLabel,
-          style: _sectionTitleStyle(colors),
+        StaggeredEntrance(
+          index: 10,
+          child: Text(
+            strings.appLockBiometricToggleLabel,
+            style: _sectionTitleStyle(colors),
+          ),
         ),
       ],
     );

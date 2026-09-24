@@ -17,11 +17,13 @@ import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
+import '../utils/app_modals.dart';
 import '../utils/date_format.dart';
 import '../utils/star_stats.dart';
 import '../widgets/app_field.dart';
 import '../widgets/lit_star_card.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/staggered_entrance.dart';
 import '../widgets/star_heatmap.dart';
 import 'star_form_screen.dart';
 import 'star_reader_screen.dart';
@@ -168,7 +170,7 @@ class _StatsScreenState extends State<StatsScreen> {
     final dayStars = _achievedStarsOnDay(day);
     final sheetMaxHeight = MediaQuery.sizeOf(context).height * 0.85;
 
-    await showModalBottomSheet<void>(
+    await showAppSheet<void>(
       context: context,
       isScrollControlled: true,
       constraints: dayStars.isEmpty
@@ -247,116 +249,151 @@ class _StatsScreenState extends State<StatsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: Icon(Icons.arrow_back, color: colors.muted),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        strings.statsEyebrow,
-                        style: TextStyle(
-                          fontSize: 12,
-                          letterSpacing: 2,
-                          fontWeight: FontWeight.w600,
-                          color: colors.accentDim,
+                  StaggeredEntrance(
+                    index: 0,
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: Icon(Icons.arrow_back, color: colors.muted),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 12),
+                        Text(
+                          strings.statsEyebrow,
+                          style: TextStyle(
+                            fontSize: 12,
+                            letterSpacing: 2,
+                            fontWeight: FontWeight.w600,
+                            color: colors.accentDim,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    strings.statsTitle,
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w700,
-                      color: colors.text,
+                  StaggeredEntrance(
+                    index: 0,
+                    child: Text(
+                      strings.statsTitle,
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w700,
+                        color: colors.text,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Text(
-                    strings.todayStarSectionLabel,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: colors.muted,
+                  StaggeredEntrance(
+                    index: 1,
+                    child: Text(
+                      strings.todayStarSectionLabel,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: colors.muted,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
-                  _TodayStarHero(
-                    litToday: litToday,
-                    onTap: litToday
-                        ? () => _openDayDetail(today)
-                        : () => _openStarForm(),
+                  StaggeredEntrance(
+                    index: 1,
+                    child: _TodayStarHero(
+                      litToday: litToday,
+                      onTap: litToday
+                          ? () => _openDayDetail(today)
+                          : () => _openStarForm(),
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  Text(
-                    strings.activityLabel,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: colors.muted,
+                  StaggeredEntrance(
+                    index: 2,
+                    child: Text(
+                      strings.activityLabel,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: colors.muted,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    clipBehavior: Clip.antiAlias,
-                    decoration: panelDecoration(colors),
-                    child: StarHeatmap(
-                      month: _displayedMonth,
-                      countsByDay: dayCounts,
-                      intensityByDay: dayIntensities,
-                      onDayTap: _openDayDetail,
-                      onPreviousMonth: () => _changeDisplayedMonth(-1),
-                      onNextMonth: _isCurrentMonthDisplayed
-                          ? null
-                          : () => _changeDisplayedMonth(1),
+                  StaggeredEntrance(
+                    index: 2,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      clipBehavior: Clip.antiAlias,
+                      decoration: panelDecoration(colors),
+                      child: StarHeatmap(
+                        month: _displayedMonth,
+                        countsByDay: dayCounts,
+                        intensityByDay: dayIntensities,
+                        onDayTap: _openDayDetail,
+                        onPreviousMonth: () => _changeDisplayedMonth(-1),
+                        onNextMonth: _isCurrentMonthDisplayed
+                            ? null
+                            : () => _changeDisplayedMonth(1),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Text(
-                    strings.totalStarsLabel,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: colors.muted,
+                  StaggeredEntrance(
+                    index: 3,
+                    child: Text(
+                      strings.totalStarsLabel,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: colors.muted,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
-                  _TotalStarsBanner(
-                    value: achievedStars.length,
-                    onTap: _openTotalStarsDetail,
+                  StaggeredEntrance(
+                    index: 3,
+                    child: _TotalStarsBanner(
+                      value: achievedStars.length,
+                      onTap: _openTotalStarsDetail,
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  Text(
-                    strings.streaksSectionLabel,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: colors.muted,
+                  StaggeredEntrance(
+                    index: 4,
+                    child: Text(
+                      strings.streaksSectionLabel,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: colors.muted,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
                   Row(
                     children: [
                       Expanded(
-                        child: _StatCard(
-                          label: strings.currentStreakLabel,
-                          value: '${currentStreak(dayCounts)}',
-                          onTap: _openCurrentStreakDetail,
+                        child: StaggeredEntrance(
+                          index: 4,
+                          axis: Axis.horizontal,
+                          child: _StatCard(
+                            label: strings.currentStreakLabel,
+                            value: '${currentStreak(dayCounts)}',
+                            onTap: _openCurrentStreakDetail,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: _StatCard(
-                          label: strings.longestStreakLabel,
-                          value: '${longestStreak(dayCounts)}',
-                          onTap: _openLongestStreakDetail,
+                        child: StaggeredEntrance(
+                          index: 5,
+                          axis: Axis.horizontal,
+                          child: _StatCard(
+                            label: strings.longestStreakLabel,
+                            value: '${longestStreak(dayCounts)}',
+                            onTap: _openLongestStreakDetail,
+                          ),
                         ),
                       ),
                     ],
@@ -482,44 +519,53 @@ class _TodayStarHeroState extends State<_TodayStarHero>
 
     return Column(
       children: [
-        AnimatedBuilder(
-          animation: Listenable.merge([_glowController, _spinController]),
-          builder: (context, child) {
-            return Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: _glow(colors.gold, starSize),
-              ),
-              child: Transform.rotate(
-                angle: _spinController.value * 2 * pi,
-                child: child,
-              ),
-            );
-          },
-          child: Icon(Icons.star, size: starSize, color: colors.gold),
+        StaggeredEntrance(
+          index: 0,
+          child: AnimatedBuilder(
+            animation: Listenable.merge([_glowController, _spinController]),
+            builder: (context, child) {
+              return Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: _glow(colors.gold, starSize),
+                ),
+                child: Transform.rotate(
+                  angle: _spinController.value * 2 * pi,
+                  child: child,
+                ),
+              );
+            },
+            child: Icon(Icons.star, size: starSize, color: colors.gold),
+          ),
         ),
         const SizedBox(height: 22),
-        _highlightedText(
-          text: strings.litTodayTitle,
-          highlight: strings.litTodayTitleHighlight,
-          highlightColor: colors.gold,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: colors.text,
-            height: 1.25,
+        StaggeredEntrance(
+          index: 1,
+          child: _highlightedText(
+            text: strings.litTodayTitle,
+            highlight: strings.litTodayTitleHighlight,
+            highlightColor: colors.gold,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: colors.text,
+              height: 1.25,
+            ),
           ),
         ),
         const SizedBox(height: 6),
-        _highlightedText(
-          text: strings.litTodaySubtitle,
-          highlight: strings.litTodaySubtitleHighlight,
-          highlightColor: colors.gold,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: colors.text,
-            height: 1.35,
+        StaggeredEntrance(
+          index: 2,
+          child: _highlightedText(
+            text: strings.litTodaySubtitle,
+            highlight: strings.litTodaySubtitleHighlight,
+            highlightColor: colors.gold,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: colors.text,
+              height: 1.35,
+            ),
           ),
         ),
       ],
@@ -531,50 +577,59 @@ class _TodayStarHeroState extends State<_TodayStarHero>
 
     return Column(
       children: [
-        AnimatedBuilder(
-          animation: _shakeController,
-          builder: (context, child) {
-            final t = _shakeController.value;
-            final dx = sin(t * pi * 6) * (1 - t) * 8;
-            return Transform.translate(offset: Offset(dx, 0), child: child);
-          },
-          child: Icon(Icons.star, size: starSize, color: colors.muted),
+        StaggeredEntrance(
+          index: 0,
+          child: AnimatedBuilder(
+            animation: _shakeController,
+            builder: (context, child) {
+              final t = _shakeController.value;
+              final dx = sin(t * pi * 6) * (1 - t) * 8;
+              return Transform.translate(offset: Offset(dx, 0), child: child);
+            },
+            child: Icon(Icons.star, size: starSize, color: colors.muted),
+          ),
         ),
         const SizedBox(height: 20),
-        _highlightedText(
-          text: strings.notLitTodayLabel,
-          highlight: strings.notLitTodayHighlight,
-          highlightColor: colors.muted,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: colors.text,
+        StaggeredEntrance(
+          index: 1,
+          child: _highlightedText(
+            text: strings.notLitTodayLabel,
+            highlight: strings.notLitTodayHighlight,
+            highlightColor: colors.muted,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: colors.text,
+            ),
           ),
         ),
         const SizedBox(height: 18),
-        AnimatedBuilder(
-          animation: _glowController,
-          builder: (context, child) {
-            return Container(
-              decoration: BoxDecoration(
-                color: colors.gold,
-                borderRadius: BorderRadius.circular(kRadiusPill),
-                boxShadow: [
-                  ...goldGlow(colors, strength: 1.1, size: 56),
-                  ..._glow(colors.gold, 44),
-                ],
+        StaggeredEntrance(
+          index: 2,
+          child: AnimatedBuilder(
+            animation: _glowController,
+            builder: (context, child) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: colors.gold,
+                  borderRadius: BorderRadius.circular(kRadiusPill),
+                  boxShadow: [
+                    ...goldGlow(colors, strength: 1.1, size: 56),
+                    ..._glow(colors.gold, 44),
+                  ],
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                child: child,
+              );
+            },
+            child: Text(
+              strings.lightStarCta,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: colors.night,
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: child,
-            );
-          },
-          child: Text(
-            strings.lightStarCta,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: colors.night,
             ),
           ),
         ),
@@ -675,40 +730,59 @@ class _DayDetailSheetState extends State<_DayDetailSheet> {
           mainAxisSize: hasStarsForDay ? MainAxisSize.max : MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              formatDisplayDate(widget.day, strings),
-              style: TextStyle(
-                fontFamily: kFontMono,
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-                color: colors.text,
+            StaggeredEntrance(
+              index: 0,
+              child: Text(
+                formatDisplayDate(widget.day, strings),
+                style: TextStyle(
+                  fontFamily: kFontMono,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                  color: colors.text,
+                ),
               ),
             ),
             const SizedBox(height: 14),
-            AppTextField(
-              controller: _queryController,
-              hintText: strings.searchHint,
-              onChanged: (value) => setState(() => _query = value),
-              prefixIcon: Icon(Icons.search, color: colors.muted, size: 20),
+            StaggeredEntrance(
+              index: 1,
+              child: AppTextField(
+                controller: _queryController,
+                hintText: strings.searchHint,
+                onChanged: (value) => setState(() => _query = value),
+                prefixIcon: Icon(Icons.search, color: colors.muted, size: 20),
+              ),
             ),
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: widget.onAddForDay,
-                icon: const Icon(Icons.add),
-                label: Text(strings.addStarForDayLabel),
+            StaggeredEntrance(
+              index: 2,
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: widget.onAddForDay,
+                  icon: const Icon(Icons.add),
+                  label: Text(strings.addStarForDayLabel),
+                ),
               ),
             ),
             const SizedBox(height: 16),
             if (filtered.isEmpty)
               hasStarsForDay
                   ? Expanded(
-                      child: Center(child: _emptyStateText(strings, colors)),
+                      child: StaggeredEntrance(
+                        index: 3,
+                        child: Center(
+                          child: _emptyStateText(strings, colors),
+                        ),
+                      ),
                     )
-                  : Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      child: Center(child: _emptyStateText(strings, colors)),
+                  : StaggeredEntrance(
+                      index: 3,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
+                          child: _emptyStateText(strings, colors),
+                        ),
+                      ),
                     )
             else
               Expanded(
@@ -717,10 +791,14 @@ class _DayDetailSheetState extends State<_DayDetailSheet> {
                   separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final star = filtered[index];
-                    return LitStarCard(
-                      star: star,
-                      project: widget.projectsById[star.projectId],
-                      onTap: () => widget.onStarTap(filtered, index),
+                    // The header above takes indices 0-2; the list follows it.
+                    return StaggeredEntrance(
+                      index: index + 3,
+                      child: LitStarCard(
+                        star: star,
+                        project: widget.projectsById[star.projectId],
+                        onTap: () => widget.onStarTap(filtered, index),
+                      ),
                     );
                   },
                 ),
@@ -765,27 +843,36 @@ class _StatCard extends StatelessWidget {
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontFamily: kFontMono,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: colors.gold,
+                  StaggeredEntrance(
+                    index: 0,
+                    child: Text(
+                      value,
+                      style: TextStyle(
+                        fontFamily: kFontMono,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: colors.gold,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 11, color: colors.muted),
+                  StaggeredEntrance(
+                    index: 1,
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 11, color: colors.muted),
+                    ),
                   ),
                 ],
               ),
               Positioned(
                 top: -2,
                 right: -2,
-                child: Icon(Icons.info_outline, size: 14, color: colors.gold),
+                child: StaggeredEntrance(
+                  index: 1,
+                  child: Icon(Icons.info_outline, size: 14, color: colors.gold),
+                ),
               ),
             ],
           ),
@@ -836,16 +923,22 @@ class _TotalStarsBanner extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.star, size: 24, color: colors.gold),
+                    StaggeredEntrance(
+                      index: 0,
+                      child: Icon(Icons.star, size: 24, color: colors.gold),
+                    ),
                     const SizedBox(height: 6),
-                    Text(
-                      '$value',
-                      style: TextStyle(
-                        fontFamily: kFontMono,
-                        fontSize: 38,
-                        fontWeight: FontWeight.w800,
-                        color: colors.text,
-                        height: 1,
+                    StaggeredEntrance(
+                      index: 1,
+                      child: Text(
+                        '$value',
+                        style: TextStyle(
+                          fontFamily: kFontMono,
+                          fontSize: 38,
+                          fontWeight: FontWeight.w800,
+                          color: colors.text,
+                          height: 1,
+                        ),
                       ),
                     ),
                   ],
@@ -854,7 +947,10 @@ class _TotalStarsBanner extends StatelessWidget {
               Positioned(
                 top: -2,
                 right: -2,
-                child: Icon(Icons.info_outline, size: 16, color: colors.gold),
+                child: StaggeredEntrance(
+                  index: 2,
+                  child: Icon(Icons.info_outline, size: 16, color: colors.gold),
+                ),
               ),
             ],
           ),

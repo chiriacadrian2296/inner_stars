@@ -7,9 +7,11 @@ import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
+import '../utils/app_modals.dart';
 import '../widgets/area_section_header.dart';
 import '../widgets/live_markdown_controller.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/staggered_entrance.dart';
 
 class VisionEditorScreen extends StatefulWidget {
   const VisionEditorScreen({
@@ -54,7 +56,7 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
     if (_controller.text != _initial) {
       _asking = true;
       final strings = context.strings;
-      final discard = await showDialog<bool>(
+      final discard = await showAppDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
           title: Text(strings.discardChangesConfirmTitle),
@@ -304,11 +306,14 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                  child: AreaSectionHeader(
-                    title: strings.visionPageTitle,
-                    description: strings.visionPageDescription,
+                StaggeredEntrance(
+                  index: 0,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                    child: AreaSectionHeader(
+                      title: strings.visionPageTitle,
+                      description: strings.visionPageDescription,
+                    ),
                   ),
                 ),
                 Padding(
@@ -319,145 +324,193 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                        PopupMenuButton<int>(
-                          tooltip: strings.visionHeading,
-                          enabled: !_saving,
-                          color: Colors.white,
-                          surfaceTintColor: Colors.transparent,
-                          onSelected: (level) =>
-                              _format(
-                                '${'#' * level} ',
-                                block: true,
-                                toggle: true,
-                              ),
-                          itemBuilder: (context) => [
-                            for (var level = 1; level <= 3; level++)
-                              PopupMenuItem(
-                                value: level,
-                                child: Center(
-                                  child: Text(
-                                    '${strings.visionHeading} $level',
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      color: Colors.black,
+                        StaggeredEntrance(
+                          index: 1,
+                          axis: Axis.horizontal,
+                          child: PopupMenuButton<int>(
+                            tooltip: strings.visionHeading,
+                            enabled: !_saving,
+                            color: Colors.white,
+                            surfaceTintColor: Colors.transparent,
+                            onSelected: (level) =>
+                                _format(
+                                  '${'#' * level} ',
+                                  block: true,
+                                  toggle: true,
+                                ),
+                            itemBuilder: (context) => [
+                              for (var level = 1; level <= 3; level++)
+                                PopupMenuItem(
+                                  value: level,
+                                  child: Center(
+                                    child: Text(
+                                      '${strings.visionHeading} $level',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                          ],
-                          child: const SizedBox(
-                            width: 48,
-                            height: 48,
-                            child: Center(
-                              child: Text(
-                                'H',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w700,
+                            ],
+                            child: const SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: Center(
+                                child: Text(
+                                  'H',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(
-                          height: 24,
-                          child: VerticalDivider(
-                            width: 24,
-                            thickness: 0.75,
-                            color: Color(0x47FFFFFF),
+                        StaggeredEntrance(
+                          index: 1,
+                          axis: Axis.horizontal,
+                          child: const SizedBox(
+                            height: 24,
+                            child: VerticalDivider(
+                              width: 24,
+                              thickness: 0.75,
+                              color: Color(0x47FFFFFF),
+                            ),
                           ),
                         ),
-                        tool(
-                          Icons.format_bold,
-                          strings.visionBold,
-                          () => _format('**', toggle: true),
-                        ),
-                        tool(
-                          Icons.format_italic,
-                          strings.visionItalic,
-                          () => _format('*', toggle: true),
-                        ),
-                        tool(
-                          Icons.format_underlined,
-                          strings.visionUnderline,
-                          () => _format(
-                            '<u>',
-                            closing: '</u>',
-                            toggle: true,
+                        StaggeredEntrance(
+                          index: 2,
+                          axis: Axis.horizontal,
+                          child: tool(
+                            Icons.format_bold,
+                            strings.visionBold,
+                            () => _format('**', toggle: true),
                           ),
                         ),
-                        const SizedBox(
-                          height: 24,
-                          child: VerticalDivider(
-                            width: 24,
-                            thickness: 0.75,
-                            color: Color(0x47FFFFFF),
+                        StaggeredEntrance(
+                          index: 3,
+                          axis: Axis.horizontal,
+                          child: tool(
+                            Icons.format_italic,
+                            strings.visionItalic,
+                            () => _format('*', toggle: true),
                           ),
                         ),
-                        tool(
-                          Icons.format_list_bulleted,
-                          strings.visionBulletList,
-                          () => _format('• ', block: true, toggle: true),
-                        ),
-                        tool(
-                          Icons.format_list_numbered,
-                          strings.visionNumberedList,
-                          () => _format(
-                            '1. ',
-                            block: true,
-                            numbered: true,
-                            toggle: true,
+                        StaggeredEntrance(
+                          index: 4,
+                          axis: Axis.horizontal,
+                          child: tool(
+                            Icons.format_underlined,
+                            strings.visionUnderline,
+                            () => _format(
+                              '<u>',
+                              closing: '</u>',
+                              toggle: true,
+                            ),
                           ),
                         ),
-                        const SizedBox(
-                          height: 24,
-                          child: VerticalDivider(
-                            width: 24,
-                            thickness: 0.75,
-                            color: Color(0x47FFFFFF),
+                        StaggeredEntrance(
+                          index: 4,
+                          axis: Axis.horizontal,
+                          child: const SizedBox(
+                            height: 24,
+                            child: VerticalDivider(
+                              width: 24,
+                              thickness: 0.75,
+                              color: Color(0x47FFFFFF),
+                            ),
                           ),
                         ),
-                        tool(
-                          Icons.horizontal_rule,
-                          strings.visionDivider,
-                          _insertDivider,
-                        ),
-                        const SizedBox(
-                          height: 24,
-                          child: VerticalDivider(
-                            width: 24,
-                            thickness: 0.75,
-                            color: Color(0x47FFFFFF),
+                        StaggeredEntrance(
+                          index: 5,
+                          axis: Axis.horizontal,
+                          child: tool(
+                            Icons.format_list_bulleted,
+                            strings.visionBulletList,
+                            () => _format('• ', block: true, toggle: true),
                           ),
                         ),
-                        ValueListenableBuilder<UndoHistoryValue>(
-                          valueListenable: _undo,
-                          builder: (context, value, _) => Row(
-                            children: [
-                              IconButton(
-                                tooltip: strings.visionUndo,
-                                style: IconButton.styleFrom(
-                                  foregroundColor: Colors.white,
-                                  disabledForegroundColor: colors.muted,
+                        StaggeredEntrance(
+                          index: 6,
+                          axis: Axis.horizontal,
+                          child: tool(
+                            Icons.format_list_numbered,
+                            strings.visionNumberedList,
+                            () => _format(
+                              '1. ',
+                              block: true,
+                              numbered: true,
+                              toggle: true,
+                            ),
+                          ),
+                        ),
+                        StaggeredEntrance(
+                          index: 6,
+                          axis: Axis.horizontal,
+                          child: const SizedBox(
+                            height: 24,
+                            child: VerticalDivider(
+                              width: 24,
+                              thickness: 0.75,
+                              color: Color(0x47FFFFFF),
+                            ),
+                          ),
+                        ),
+                        StaggeredEntrance(
+                          index: 7,
+                          axis: Axis.horizontal,
+                          child: tool(
+                            Icons.horizontal_rule,
+                            strings.visionDivider,
+                            _insertDivider,
+                          ),
+                        ),
+                        StaggeredEntrance(
+                          index: 7,
+                          axis: Axis.horizontal,
+                          child: const SizedBox(
+                            height: 24,
+                            child: VerticalDivider(
+                              width: 24,
+                              thickness: 0.75,
+                              color: Color(0x47FFFFFF),
+                            ),
+                          ),
+                        ),
+                        StaggeredEntrance(
+                          index: 8,
+                          axis: Axis.horizontal,
+                          child: ValueListenableBuilder<UndoHistoryValue>(
+                            valueListenable: _undo,
+                            builder: (context, value, _) => Row(
+                              children: [
+                                IconButton(
+                                  tooltip: strings.visionUndo,
+                                  style: IconButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    disabledForegroundColor: colors.muted,
+                                  ),
+                                  icon: const Icon(Icons.undo),
+                                  onPressed: value.canUndo && !_saving
+                                      ? _undo.undo
+                                      : null,
                                 ),
-                                icon: const Icon(Icons.undo),
-                                onPressed: value.canUndo && !_saving
-                                    ? _undo.undo
-                                    : null,
-                              ),
-                              IconButton(
-                                tooltip: strings.visionRedo,
-                                style: IconButton.styleFrom(
-                                  foregroundColor: Colors.white,
-                                  disabledForegroundColor: colors.muted,
+                                IconButton(
+                                  tooltip: strings.visionRedo,
+                                  style: IconButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    disabledForegroundColor: colors.muted,
+                                  ),
+                                  icon: const Icon(Icons.redo),
+                                  onPressed: value.canRedo && !_saving
+                                      ? _undo.redo
+                                      : null,
                                 ),
-                                icon: const Icon(Icons.redo),
-                                onPressed: value.canRedo && !_saving
-                                    ? _undo.redo
-                                    : null,
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                         ],
@@ -465,12 +518,15 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                     ),
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20),
-                  child: Divider(
-                    height: 1,
-                    thickness: 0.75,
-                    color: Color(0x47FFFFFF),
+                StaggeredEntrance(
+                  index: 1,
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: Divider(
+                      height: 1,
+                      thickness: 0.75,
+                      color: Color(0x47FFFFFF),
+                    ),
                   ),
                 ),
                 Expanded(
@@ -479,32 +535,35 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                       horizontal: 20,
                       vertical: 12,
                     ),
-                    child: TextField(
-                      controller: _controller,
-                      focusNode: _focus,
-                      undoController: _undo,
-                      readOnly: _saving,
-                      expands: true,
-                      minLines: null,
-                      maxLines: null,
-                      textAlignVertical: TextAlignVertical.top,
-                      keyboardType: TextInputType.multiline,
-                      textCapitalization: TextCapitalization.sentences,
-                      style: TextStyle(
-                        fontFamily: kFontStarTitle,
-                        fontStyle: FontStyle.normal,
-                        color: colors.text,
-                        fontSize: 21,
-                        height: 1.6,
-                      ),
-                      decoration: InputDecoration(
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        filled: false,
-                        hintText: strings.visionEditorHint,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 20,
+                    child: StaggeredEntrance(
+                      index: 2,
+                      child: TextField(
+                        controller: _controller,
+                        focusNode: _focus,
+                        undoController: _undo,
+                        readOnly: _saving,
+                        expands: true,
+                        minLines: null,
+                        maxLines: null,
+                        textAlignVertical: TextAlignVertical.top,
+                        keyboardType: TextInputType.multiline,
+                        textCapitalization: TextCapitalization.sentences,
+                        style: TextStyle(
+                          fontFamily: kFontStarTitle,
+                          fontStyle: FontStyle.normal,
+                          color: colors.text,
+                          fontSize: 21,
+                          height: 1.6,
+                        ),
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: false,
+                          hintText: strings.visionEditorHint,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 20,
+                          ),
                         ),
                       ),
                     ),

@@ -10,9 +10,11 @@ import '../l10n/strings_scope.dart';
 import '../models/custom_constellation.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../utils/app_modals.dart';
 import '../widgets/constellation_editor_painter.dart';
 import '../widgets/pill_action_button.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/staggered_entrance.dart';
 
 /// Lets the user hand-draw their own constellation shape: tap empty space to
 /// place a star, tap two stars in turn to connect/disconnect them, drag a
@@ -264,7 +266,7 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
     final colors = context.colors;
     var hideNextTime = false;
 
-    await showDialog<void>(
+    await showAppDialog<void>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
@@ -277,57 +279,81 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _HelpBullet(
-                  text: strings.constellationEditorHelpAddPoint,
-                  illustration: _addPointDiagram,
+                StaggeredEntrance(
+                  index: 0,
+                  child: _HelpBullet(
+                    text: strings.constellationEditorHelpAddPoint,
+                    illustration: _addPointDiagram,
+                  ),
                 ),
-                _HelpBullet(
-                  text: strings.constellationEditorHelpConnectPoint,
-                  illustration: _connectDiagram,
+                StaggeredEntrance(
+                  index: 1,
+                  child: _HelpBullet(
+                    text: strings.constellationEditorHelpConnectPoint,
+                    illustration: _connectDiagram,
+                  ),
                 ),
-                _HelpBullet(
-                  text: strings.constellationEditorHelpDisarmPoint,
-                  illustration: _disarmDiagram,
+                StaggeredEntrance(
+                  index: 2,
+                  child: _HelpBullet(
+                    text: strings.constellationEditorHelpDisarmPoint,
+                    illustration: _disarmDiagram,
+                  ),
                 ),
-                _HelpBullet(
-                  text: strings.constellationEditorHelpMovePoint,
-                  illustration: _moveDiagram,
+                StaggeredEntrance(
+                  index: 3,
+                  child: _HelpBullet(
+                    text: strings.constellationEditorHelpMovePoint,
+                    illustration: _moveDiagram,
+                  ),
                 ),
-                _HelpBullet(
-                  text: strings.constellationEditorHelpDeletePoint,
-                  illustration: _deleteDiagram,
+                StaggeredEntrance(
+                  index: 4,
+                  child: _HelpBullet(
+                    text: strings.constellationEditorHelpDeletePoint,
+                    illustration: _deleteDiagram,
+                  ),
                 ),
-                _HelpBullet(
-                  text: strings.constellationEditorHelpMirrorToggle,
-                  illustration: _mirrorDiagram,
+                StaggeredEntrance(
+                  index: 5,
+                  child: _HelpBullet(
+                    text: strings.constellationEditorHelpMirrorToggle,
+                    illustration: _mirrorDiagram,
+                  ),
                 ),
-                _HelpBullet(
-                  text: strings.constellationEditorHelpMirrorAxis,
-                  illustration: const _MirrorAxisSwitchIllustration(),
+                StaggeredEntrance(
+                  index: 6,
+                  child: _HelpBullet(
+                    text: strings.constellationEditorHelpMirrorAxis,
+                    illustration: const _MirrorAxisSwitchIllustration(),
+                  ),
                 ),
                 const SizedBox(height: 4),
-                InkWell(
-                  onTap: () =>
-                      setDialogState(() => hideNextTime = !hideNextTime),
-                  borderRadius: BorderRadius.circular(kRadiusField),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        Checkbox(
-                          value: hideNextTime,
-                          activeColor: colors.gold,
-                          onChanged: (value) => setDialogState(
-                            () => hideNextTime = value ?? false,
+                StaggeredEntrance(
+                  index: 7,
+                  child: InkWell(
+                    onTap: () =>
+                        setDialogState(() => hideNextTime = !hideNextTime),
+                    borderRadius: BorderRadius.circular(kRadiusField),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Checkbox(
+                            value: hideNextTime,
+                            activeColor: colors.gold,
+                            onChanged: (value) => setDialogState(
+                              () => hideNextTime = value ?? false,
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            strings.constellationEditorHelpDontShowAgain,
-                            style: TextStyle(color: colors.muted, fontSize: 13),
+                          Expanded(
+                            child: Text(
+                              strings.constellationEditorHelpDontShowAgain,
+                              style: TextStyle(color: colors.muted, fontSize: 13),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -672,7 +698,7 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
   Future<bool> _confirmDiscard() async {
     final colors = context.colors;
     final strings = context.strings;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
           title: Text(
@@ -702,7 +728,7 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
   }
 
   Future<void> _save() async {
-    final name = await showDialog<String>(
+    final name = await showAppDialog<String>(
       context: context,
       builder: (dialogContext) =>
           _NameConstellationDialog(initialName: widget.existing?.name),
@@ -753,30 +779,33 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
         child: ResponsiveContent(
           child: Column(
             children: [
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: _handleBack,
-                    icon: Icon(Icons.arrow_back, color: colors.muted),
-                  ),
-                  Expanded(
-                    child: Text(
-                      widget.existing == null
-                          ? strings.constellationEditorTitle
-                          : strings.constellationEditorEditTitle,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: colors.text,
+              StaggeredEntrance(
+                index: 0,
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: _handleBack,
+                      icon: Icon(Icons.arrow_back, color: colors.muted),
+                    ),
+                    Expanded(
+                      child: Text(
+                        widget.existing == null
+                            ? strings.constellationEditorTitle
+                            : strings.constellationEditorEditTitle,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: colors.text,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: _showHelp,
-                    icon: Icon(Icons.help_outline, color: colors.muted),
-                    tooltip: strings.constellationEditorHelpAction,
-                  ),
-                ],
+                    IconButton(
+                      onPressed: _showHelp,
+                      icon: Icon(Icons.help_outline, color: colors.muted),
+                      tooltip: strings.constellationEditorHelpAction,
+                    ),
+                  ],
+                ),
               ),
               // The name of the shape being edited — an already-saved
               // one's own name, or a preset's (not yet owned, but already
@@ -798,7 +827,10 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                 maintainSize: true,
                 maintainAnimation: true,
                 maintainState: true,
-                child: _ShapeNameHeader(name: _shapeName ?? ''),
+                child: StaggeredEntrance(
+                  index: 1,
+                  child: _ShapeNameHeader(name: _shapeName ?? ''),
+                ),
               ),
               // The two pieces of at-a-glance status this screen has — how
               // many stars are placed (out of [_maxEditorPoints]) and how
@@ -812,29 +844,32 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
               // on screen even at zero now — always there at the same
               // spot rather than popping in only once it has something to
               // warn about.
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-                child: Text.rich(
-                  TextSpan(
-                    children: [
-                      ..._highlightFirstNumber(
-                        strings.constellationEditorStarCount(
-                          _points.length,
-                          _maxEditorPoints,
+              StaggeredEntrance(
+                index: 2,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        ..._highlightFirstNumber(
+                          strings.constellationEditorStarCount(
+                            _points.length,
+                            _maxEditorPoints,
+                          ),
+                          colors,
                         ),
-                        colors,
-                      ),
-                      TextSpan(text: '     ', style: TextStyle(color: colors.muted)),
-                      ..._highlightFirstNumber(
-                        strings.constellationEditorDisconnectedWarning(
-                          disconnected,
+                        TextSpan(text: '     ', style: TextStyle(color: colors.muted)),
+                        ..._highlightFirstNumber(
+                          strings.constellationEditorDisconnectedWarning(
+                            disconnected,
+                          ),
+                          colors,
                         ),
-                        colors,
-                      ),
-                    ],
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 15, color: colors.muted),
                   ),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 15, color: colors.muted),
                 ),
               ),
               // Grid/Mirror/Axis, the canvas, and undo/redo/delete as one
@@ -871,41 +906,53 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _EditorToggle(
-                              icon: Icons.grid_on,
-                              label: strings.constellationEditorGridToggleLabel,
-                              value: _gridEnabled,
-                              onChanged: (value) =>
-                                  setState(() => _gridEnabled = value),
+                            StaggeredEntrance(
+                              index: 3,
+                              axis: Axis.horizontal,
+                              child: _EditorToggle(
+                                icon: Icons.grid_on,
+                                label: strings.constellationEditorGridToggleLabel,
+                                value: _gridEnabled,
+                                onChanged: (value) =>
+                                    setState(() => _gridEnabled = value),
+                              ),
                             ),
                             const SizedBox(width: 20),
-                            _EditorToggle(
-                              icon: Icons.flip,
-                              label:
-                                  strings.constellationEditorMirrorToggleLabel,
-                              value: _mirrorEnabled,
-                              onChanged: (value) =>
-                                  setState(() => _mirrorEnabled = value),
+                            StaggeredEntrance(
+                              index: 4,
+                              axis: Axis.horizontal,
+                              child: _EditorToggle(
+                                icon: Icons.flip,
+                                label:
+                                    strings.constellationEditorMirrorToggleLabel,
+                                value: _mirrorEnabled,
+                                onChanged: (value) =>
+                                    setState(() => _mirrorEnabled = value),
+                              ),
                             ),
                             const SizedBox(width: 20),
-                            _EditorToggle(
-                              // The icon itself shows which axis is active —
-                              // horizontal arrows for a vertical (left/right)
-                              // axis, vertical arrows for a horizontal
-                              // (top/bottom) one — rather than a fixed icon
-                              // next to a switch whose two positions would
-                              // otherwise look identical at a glance.
-                              icon: _mirrorVertical
-                                  ? Icons.swap_horiz
-                                  : Icons.swap_vert,
-                              label: _mirrorVertical
-                                  ? strings
-                                        .constellationEditorMirrorAxisVerticalLabel
-                                  : strings
-                                        .constellationEditorMirrorAxisHorizontalLabel,
-                              value: _mirrorVertical,
-                              onChanged: (value) =>
-                                  setState(() => _mirrorVertical = value),
+                            StaggeredEntrance(
+                              index: 5,
+                              axis: Axis.horizontal,
+                              child: _EditorToggle(
+                                // The icon itself shows which axis is active —
+                                // horizontal arrows for a vertical (left/right)
+                                // axis, vertical arrows for a horizontal
+                                // (top/bottom) one — rather than a fixed icon
+                                // next to a switch whose two positions would
+                                // otherwise look identical at a glance.
+                                icon: _mirrorVertical
+                                    ? Icons.swap_horiz
+                                    : Icons.swap_vert,
+                                label: _mirrorVertical
+                                    ? strings
+                                          .constellationEditorMirrorAxisVerticalLabel
+                                    : strings
+                                          .constellationEditorMirrorAxisHorizontalLabel,
+                                value: _mirrorVertical,
+                                onChanged: (value) =>
+                                    setState(() => _mirrorVertical = value),
+                              ),
                             ),
                           ],
                         ),
@@ -973,88 +1020,91 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                                         onPointerDown: _handlePointerDown,
                                         onPointerMove: _handlePointerMove,
                                         onPointerUp: _handlePointerUp,
-                                        child: Container(
-                                          clipBehavior: Clip.antiAlias,
-                                          decoration: BoxDecoration(
-                                            color: colors.nightPanel,
-                                            border: Border.all(
-                                              color: colors.nightBorder,
-                                            ),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
-                                          child: Stack(
-                                            children: [
-                                              if (_gridEnabled)
-                                                Positioned.fill(
-                                                  child: CustomPaint(
-                                                    painter: _GridPainter(
-                                                      divisions:
-                                                          _gridDivisions,
-                                                      color:
-                                                          colors.nightBorder,
-                                                      // Just a touch
-                                                      // brighter than the
-                                                      // regular grid lines —
-                                                      // a small blend
-                                                      // toward `muted`
-                                                      // rather than jumping
-                                                      // straight to it, so
-                                                      // the center reads as
-                                                      // "the same grid,
-                                                      // slightly lifted"
-                                                      // rather than a
-                                                      // visually distinct
-                                                      // line.
-                                                      centerColor: Color.lerp(
-                                                        colors.nightBorder,
-                                                        colors.muted,
-                                                        0.3,
-                                                      )!,
-                                                    ),
-                                                  ),
-                                                ),
-                                              if (_mirrorEnabled)
-                                                Positioned.fill(
-                                                  child: CustomPaint(
-                                                    painter: _MirrorAxisPainter(
-                                                      vertical: _mirrorVertical,
-                                                      color: Colors.white
-                                                          .withValues(
-                                                            alpha: 0.5,
-                                                          ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              // No empty-canvas hint any
-                                              // more — the grid plus the
-                                              // help action already say
-                                              // enough, and an always-on
-                                              // canvas (no swap between a
-                                              // hint and the painter) is
-                                              // one less thing to jump the
-                                              // moment the first star
-                                              // lands.
-                                              CustomPaint(
-                                                size:
-                                                    canvasConstraints.biggest,
-                                                painter:
-                                                    ConstellationEditorPainter(
-                                                      points: _pixelPoints,
-                                                      edges: _edges,
-                                                      highlightedIndex:
-                                                          _armedIndex ??
-                                                          _draggingIndex,
-                                                      pointColor: colors.text,
-                                                      highlightColor:
-                                                          colors.gold,
-                                                      lineColor: Colors.white
-                                                          .withValues(
-                                                            alpha: 0.5,
-                                                          ),
-                                                    ),
+                                        child: StaggeredEntrance(
+                                          index: 4,
+                                          child: Container(
+                                            clipBehavior: Clip.antiAlias,
+                                            decoration: BoxDecoration(
+                                              color: colors.nightPanel,
+                                              border: Border.all(
+                                                color: colors.nightBorder,
                                               ),
-                                            ],
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: Stack(
+                                              children: [
+                                                if (_gridEnabled)
+                                                  Positioned.fill(
+                                                    child: CustomPaint(
+                                                      painter: _GridPainter(
+                                                        divisions:
+                                                            _gridDivisions,
+                                                        color:
+                                                            colors.nightBorder,
+                                                        // Just a touch
+                                                        // brighter than the
+                                                        // regular grid lines —
+                                                        // a small blend
+                                                        // toward `muted`
+                                                        // rather than jumping
+                                                        // straight to it, so
+                                                        // the center reads as
+                                                        // "the same grid,
+                                                        // slightly lifted"
+                                                        // rather than a
+                                                        // visually distinct
+                                                        // line.
+                                                        centerColor: Color.lerp(
+                                                          colors.nightBorder,
+                                                          colors.muted,
+                                                          0.3,
+                                                        )!,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                if (_mirrorEnabled)
+                                                  Positioned.fill(
+                                                    child: CustomPaint(
+                                                      painter: _MirrorAxisPainter(
+                                                        vertical: _mirrorVertical,
+                                                        color: Colors.white
+                                                            .withValues(
+                                                              alpha: 0.5,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                // No empty-canvas hint any
+                                                // more — the grid plus the
+                                                // help action already say
+                                                // enough, and an always-on
+                                                // canvas (no swap between a
+                                                // hint and the painter) is
+                                                // one less thing to jump the
+                                                // moment the first star
+                                                // lands.
+                                                CustomPaint(
+                                                  size:
+                                                      canvasConstraints.biggest,
+                                                  painter:
+                                                      ConstellationEditorPainter(
+                                                        points: _pixelPoints,
+                                                        edges: _edges,
+                                                        highlightedIndex:
+                                                            _armedIndex ??
+                                                            _draggingIndex,
+                                                        pointColor: colors.text,
+                                                        highlightColor:
+                                                            colors.gold,
+                                                        lineColor: Colors.white
+                                                            .withValues(
+                                                              alpha: 0.5,
+                                                            ),
+                                                      ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       );
@@ -1077,29 +1127,41 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Flexible(
-                              child: PillActionButton(
-                                icon: Icons.undo,
-                                label: strings.undoAction,
-                                onTap: _undoStack.isEmpty ? null : _undo,
+                              child: StaggeredEntrance(
+                                index: 5,
+                                axis: Axis.horizontal,
+                                child: PillActionButton(
+                                  icon: Icons.undo,
+                                  label: strings.undoAction,
+                                  onTap: _undoStack.isEmpty ? null : _undo,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 12),
                             Flexible(
-                              child: PillActionButton(
-                                icon: Icons.redo,
-                                label: strings.redoAction,
-                                onTap: _redoStack.isEmpty ? null : _redo,
+                              child: StaggeredEntrance(
+                                index: 6,
+                                axis: Axis.horizontal,
+                                child: PillActionButton(
+                                  icon: Icons.redo,
+                                  label: strings.redoAction,
+                                  onTap: _redoStack.isEmpty ? null : _redo,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 12),
                             Flexible(
-                              child: PillActionButton(
-                                icon: Icons.delete_outline,
-                                label: strings.deletePointAction,
-                                onTap: _armedIndex == null
-                                    ? null
-                                    : _deleteArmedPoint,
-                                danger: true,
+                              child: StaggeredEntrance(
+                                index: 7,
+                                axis: Axis.horizontal,
+                                child: PillActionButton(
+                                  icon: Icons.delete_outline,
+                                  label: strings.deletePointAction,
+                                  onTap: _armedIndex == null
+                                      ? null
+                                      : _deleteArmedPoint,
+                                  danger: true,
+                                ),
                               ),
                             ),
                           ],
@@ -1109,18 +1171,21 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                   ),
                 ),
               ),
-              Padding(
-                // Top is small on purpose — the group above already ends
-                // in its own [vertical: 12] padding (see the Expanded
-                // wrapping the switches/canvas/action-row block), so this
-                // is only the little bit more needed to read as a clear
-                // gap before Save rather than double-padding the same gap.
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-                child: Center(
-                  child: SaveActionButton(
-                    label: strings.saveConstellationAction,
-                    lit: canSave,
-                    onPressed: canSave ? _save : null,
+              StaggeredEntrance(
+                index: 8,
+                child: Padding(
+                  // Top is small on purpose — the group above already ends
+                  // in its own [vertical: 12] padding (see the Expanded
+                  // wrapping the switches/canvas/action-row block), so this
+                  // is only the little bit more needed to read as a clear
+                  // gap before Save rather than double-padding the same gap.
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                  child: Center(
+                    child: SaveActionButton(
+                      label: strings.saveConstellationAction,
+                      lit: canSave,
+                      onPressed: canSave ? _save : null,
+                    ),
                   ),
                 ),
               ),
@@ -1740,12 +1805,15 @@ class _NameConstellationDialogState extends State<_NameConstellationDialog> {
         strings.nameYourConstellationTitle,
         style: TextStyle(color: colors.text),
       ),
-      content: TextField(
-        controller: _controller,
-        autofocus: true,
-        textCapitalization: TextCapitalization.sentences,
-        style: TextStyle(color: colors.text),
-        decoration: InputDecoration(hintText: strings.constellationNameHint),
+      content: StaggeredEntrance(
+        index: 0,
+        child: TextField(
+          controller: _controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.sentences,
+          style: TextStyle(color: colors.text),
+          decoration: InputDecoration(hintText: strings.constellationNameHint),
+        ),
       ),
       actions: [
         TextButton(

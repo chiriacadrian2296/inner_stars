@@ -4,8 +4,10 @@ import '../data/constellation_shape.dart';
 import '../l10n/strings_scope.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_motion.dart';
 import '../theme/app_style.dart';
 import 'constellation_editor_painter.dart';
+import 'press_scale.dart';
 import 'star_glyph.dart';
 
 class SearchCardMenuController extends ChangeNotifier {
@@ -68,6 +70,7 @@ class SearchResultCard extends StatelessWidget {
         ? _bodyHeight
         : _bodyHeight + (textScale - 1) * 58;
     const drawerReveal = _drawerHeight - _drawerUnderlap;
+    double ease(double t) => Curves.easeOutCubic.transform(t);
 
     return AnimatedBuilder(
       animation: menuController,
@@ -75,11 +78,12 @@ class SearchResultCard extends StatelessWidget {
         final isMenuOpen = menuController.isOpen(menuId);
         return TweenAnimationBuilder<double>(
           tween: Tween(end: isMenuOpen ? 1 : 0),
-          duration: const Duration(milliseconds: 260),
-          curve: Curves.easeOutCubic,
+          duration: motionDuration(context, const Duration(milliseconds: 300)),
+          // [progress] stays linear: the drawer eases itself out below, while
+          // the quick-choice buttons cascade across the raw value.
           builder: (context, progress, _) => SizedBox(
             key: const Key('search-result-card-surface'),
-            height: bodyHeight + drawerReveal * progress,
+            height: bodyHeight + drawerReveal * ease(progress),
             child: Stack(
               clipBehavior: Clip.hardEdge,
               children: [
@@ -89,12 +93,13 @@ class SearchResultCard extends StatelessWidget {
                   top: bodyHeight - _drawerUnderlap,
                   height: _drawerHeight,
                   child: Transform.translate(
-                    offset: Offset(0, -drawerReveal * (1 - progress)),
+                    offset: Offset(0, -drawerReveal * (1 - ease(progress))),
                     child: Opacity(
-                      opacity: progress,
+                      opacity: ease(progress),
                       child: _SearchQuickMenu(
                         actions: actions,
                         onActionSelected: menuController.closeAll,
+                        progress: progress,
                       ),
                     ),
                   ),
@@ -449,19 +454,27 @@ class _SearchQuickMenuToggle extends StatelessWidget {
           key: const Key('search-card-quick-menu-toggle'),
           behavior: HitTestBehavior.opaque,
           onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            width: 20,
-            height: 48,
-            decoration: BoxDecoration(
-              color: isOpen ? Colors.white : colors.night,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.white, width: kBorderWidth),
-            ),
-            child: Icon(
-              Icons.more_vert_rounded,
-              size: 18,
-              color: isOpen ? colors.night : Colors.white,
+          child: PressScale(
+            child: AnimatedContainer(
+              duration: motionDuration(context, kMotionBase),
+              curve: kMotionEnter,
+              width: 20,
+              height: 48,
+              decoration: BoxDecoration(
+                color: isOpen ? Colors.white : colors.night,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white, width: kBorderWidth),
+              ),
+              child: AnimatedRotation(
+                turns: isOpen ? 0.5 : 0,
+                duration: motionDuration(context, kMotionBase),
+                curve: kMotionEnter,
+                child: Icon(
+                  Icons.more_vert_rounded,
+                  size: 18,
+                  color: isOpen ? colors.night : Colors.white,
+                ),
+              ),
             ),
           ),
         ),
@@ -474,10 +487,17 @@ class _SearchQuickMenu extends StatelessWidget {
   const _SearchQuickMenu({
     required this.actions,
     required this.onActionSelected,
+    required this.progress,
   });
 
   final List<SearchCardAction> actions;
   final VoidCallback onActionSelected;
+
+  /// How far the drawer is open, 0 to 1 and linear (closing runs it back
+  /// down). The menu stays mounted while closed, so its buttons are driven by
+  /// this instead of a one-shot entrance: they cascade across, one after
+  /// another, every time it opens.
+  final double progress;
 
   @override
   Widget build(BuildContext context) {
@@ -501,15 +521,40 @@ class _SearchQuickMenu extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(8, 20, 8, 5),
         child: Row(
           children: [
-            for (final action in actions)
+            for (var i = 0; i < actions.length; i++)
               Expanded(
-                child: _SearchQuickMenuAction(
-                  action: action,
-                  onActionSelected: onActionSelected,
+                child: _cascadeIn(
+                  context,
+                  index: i,
+                  child: _SearchQuickMenuAction(
+                    action: actions[i],
+                    onActionSelected: onActionSelected,
+                  ),
                 ),
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Fades and slides the [index]-th button in from the reading-direction
+  /// end, starting a little after the one before it.
+  Widget _cascadeIn(
+    BuildContext context, {
+    required int index,
+    required Widget child,
+  }) {
+    const stagger = 0.2;
+    final span = (1 - (actions.length - 1) * stagger).clamp(0.4, 1.0);
+    final t = ((progress - index * stagger) / span).clamp(0.0, 1.0);
+    final eased = Curves.easeOutCubic.transform(t);
+    final dir = Directionality.of(context) == TextDirection.rtl ? -1.0 : 1.0;
+    return Opacity(
+      opacity: eased,
+      child: FractionalTranslation(
+        translation: Offset(dir * 0.12 * (1 - eased), 0),
+        child: child,
       ),
     );
   }
@@ -530,28 +575,30 @@ class _SearchQuickMenuAction extends StatelessWidget {
     return Semantics(
       button: true,
       label: action.label,
-      child: InkWell(
-        onTap: () {
-          onActionSelected();
-          action.onTap();
-        },
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(action.icon, size: 17, color: foreground),
-            const SizedBox(height: 2),
-            Text(
-              action.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: foreground,
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
+      child: PressScale(
+        child: InkWell(
+          onTap: () {
+            onActionSelected();
+            action.onTap();
+          },
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(action.icon, size: 17, color: foreground),
+              const SizedBox(height: 2),
+              Text(
+                action.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: foreground,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

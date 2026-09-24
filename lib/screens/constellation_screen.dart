@@ -19,6 +19,7 @@ import '../models/star.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../widgets/constellation_painter.dart';
+import '../widgets/staggered_entrance.dart';
 import 'pulsar_reader_screen.dart';
 import 'star_form_screen.dart';
 import 'star_reader_screen.dart';
@@ -258,46 +259,60 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
           children: [
             Row(
               children: [
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: Icon(Icons.arrow_back, color: colors.muted),
+                StaggeredEntrance(
+                  index: 0,
+                  axis: Axis.horizontal,
+                  child: IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(Icons.arrow_back, color: colors.muted),
+                  ),
                 ),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        widget.project.name,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                          color: colors.text,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (widget.project.description case final description?
-                          when description.isNotEmpty)
+                  child: StaggeredEntrance(
+                    index: 1,
+                    axis: Axis.horizontal,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
                         Text(
-                          description,
-                          style: TextStyle(fontSize: 12, color: colors.muted),
-                          maxLines: 1,
+                          widget.project.name,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            color: colors.text,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
-                    ],
+                        if (widget.project.description case final description?
+                            when description.isNotEmpty)
+                          Text(
+                            description,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colors.muted,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
             Expanded(
               child: shape == null
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(
-                          strings.constellationShapeMissing,
-                          style: TextStyle(color: colors.muted),
-                          textAlign: TextAlign.center,
+                  ? StaggeredEntrance(
+                      index: 2,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            strings.constellationShapeMissing,
+                            style: TextStyle(color: colors.muted),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ),
                     )

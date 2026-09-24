@@ -6,7 +6,9 @@ import '../models/life_area.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../tutorials/tour_step_card.dart';
+import '../utils/app_modals.dart';
 import 'app_toggle_chip.dart';
+import 'staggered_entrance.dart';
 
 /// Opens the area filter used by Sky's Constellations/Stars views — a
 /// multi-select chip grid, one chip per [LifeArea]. Tapping a chip *adds* it
@@ -26,7 +28,7 @@ Future<Set<LifeArea>?> showAreaFilterSheet(
   BuildContext context, {
   required Set<LifeArea> selectedAreas,
 }) {
-  return showModalBottomSheet<Set<LifeArea>>(
+  return showAppSheet<Set<LifeArea>>(
     context: context,
     isScrollControlled: true,
     builder: (_) => _AreaFilterSheet(initialAreas: selectedAreas),
@@ -67,15 +69,22 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                Expanded(child: _SectionTitle(strings.skyModeSupernovas)),
-                if (_areas.isNotEmpty)
-                  TextButton(
-                    onPressed: () => setState(() => _areas = {}),
-                    child: Text(strings.clearFilterAction),
-                  ),
-              ],
+            StaggeredEntrance(
+              index: 0,
+              child: Row(
+                children: [
+                  Expanded(child: _SectionTitle(strings.skyModeSupernovas)),
+                  if (_areas.isNotEmpty)
+                    StaggeredEntrance(
+                      index: 0,
+                      axis: Axis.horizontal,
+                      child: TextButton(
+                        onPressed: () => setState(() => _areas = {}),
+                        child: Text(strings.clearFilterAction),
+                      ),
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: 10),
             HintTarget(
@@ -85,10 +94,13 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
               contentBuilder: appTourStepCard,
               title: strings.searchTourAllAreasTitle,
               description: strings.searchTourAllAreasBody,
-              child: AppToggleChip(
-                label: strings.allAreasLabel,
-                value: _allAreasSelected,
-                onChanged: (_) => _toggleAllAreas(),
+              child: StaggeredEntrance(
+                index: 1,
+                child: AppToggleChip(
+                  label: strings.allAreasLabel,
+                  value: _allAreasSelected,
+                  onChanged: (_) => _toggleAllAreas(),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -99,16 +111,22 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
                   for (var col = 0; col < 2; col++) ...[
                     if (col > 0) const SizedBox(width: 10),
                     Expanded(
-                      child: _FilterChip(
-                        icon: LifeArea.values[row * 2 + col].icon,
-                        label: LifeArea.values[row * 2 + col].displayName(
-                          strings,
+                      // Left-to-right within a row, and each row a step
+                      // after the one above, so the grid fills in diagonally.
+                      child: StaggeredEntrance(
+                        index: 2 + row + col,
+                        axis: Axis.horizontal,
+                        child: _FilterChip(
+                          icon: LifeArea.values[row * 2 + col].icon,
+                          label: LifeArea.values[row * 2 + col].displayName(
+                            strings,
+                          ),
+                          selected: _areas.contains(
+                            LifeArea.values[row * 2 + col],
+                          ),
+                          onTap: () =>
+                              _toggleArea(LifeArea.values[row * 2 + col]),
                         ),
-                        selected: _areas.contains(
-                          LifeArea.values[row * 2 + col],
-                        ),
-                        onTap: () =>
-                            _toggleArea(LifeArea.values[row * 2 + col]),
                       ),
                     ),
                   ],
@@ -123,11 +141,14 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
               contentBuilder: appTourStepCard,
               title: strings.searchTourApplyTitle,
               description: strings.searchTourApplyBody,
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(_areas),
-                  child: Text(strings.applyFilterAction),
+              child: StaggeredEntrance(
+                index: 2 + (LifeArea.values.length + 1) ~/ 2 + 1,
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(_areas),
+                    child: Text(strings.applyFilterAction),
+                  ),
                 ),
               ),
             ),

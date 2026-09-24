@@ -386,6 +386,8 @@ class StringsRo implements AppStrings {
   @override
   String get skyModeSupernovas => 'Supernove';
   @override
+  String get filtersAction => 'Filtre';
+  @override
   String get filterAreasAction => 'Filtrează zonele';
   @override
   String get areaFilterDefaultLabel => 'Zone';

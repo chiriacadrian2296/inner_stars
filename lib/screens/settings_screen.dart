@@ -24,8 +24,10 @@ import '../settings/settings_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
+import '../utils/app_modals.dart';
 import '../widgets/apk_download_prompt.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/staggered_entrance.dart';
 import 'onboarding_screen.dart';
 import 'pin_setup_screen.dart';
 
@@ -290,7 +292,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final colors = context.colors;
     final strings = context.strings;
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(strings.resetAllDataConfirmTitle),
@@ -347,317 +349,422 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: Icon(Icons.arrow_back, color: colors.muted),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        strings.settingsEyebrow,
-                        style: TextStyle(
-                          fontSize: 12,
-                          letterSpacing: 2,
-                          fontWeight: FontWeight.w600,
-                          color: colors.accentDim,
+                  StaggeredEntrance(
+                    index: 0,
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: Icon(Icons.arrow_back, color: colors.muted),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 12),
+                        Text(
+                          strings.settingsEyebrow,
+                          style: TextStyle(
+                            fontSize: 12,
+                            letterSpacing: 2,
+                            fontWeight: FontWeight.w600,
+                            color: colors.accentDim,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    strings.settingsTitle,
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w700,
-                      color: colors.text,
+                  StaggeredEntrance(
+                    index: 0,
+                    child: Text(
+                      strings.settingsTitle,
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w700,
+                        color: colors.text,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 28),
 
-                  _SectionLabel(strings.profileSection),
+                  StaggeredEntrance(
+                    index: 1,
+                    child: _SectionLabel(strings.profileSection),
+                  ),
                   const SizedBox(height: 10),
-                  _PlaceholderPanel(
-                    icon: Icons.person_outline,
-                    body: strings.profilePlaceholderBody,
+                  StaggeredEntrance(
+                    index: 1,
+                    child: _PlaceholderPanel(
+                      icon: Icons.person_outline,
+                      body: strings.profilePlaceholderBody,
+                    ),
                   ),
                   const SizedBox(height: 28),
 
-                  _SectionLabel(strings.languageSection),
-                  const SizedBox(height: 10),
-                  SegmentedButton<String>(
-                    segments: [
-                      ButtonSegment(
-                        value: 'en',
-                        label: Text(strings.languageEnglish),
-                      ),
-                      ButtonSegment(
-                        value: 'it',
-                        label: Text(strings.languageItalian),
-                      ),
-                      ButtonSegment(
-                        value: 'ro',
-                        label: Text(strings.languageRomanian),
-                      ),
-                    ],
-                    selected: {widget.settings.locale},
-                    onSelectionChanged: (selection) => setState(() {
-                      widget.settings.setLocale(selection.first);
-                    }),
+                  StaggeredEntrance(
+                    index: 2,
+                    child: _SectionLabel(strings.languageSection),
                   ),
-                  const SizedBox(height: 28),
-
-                  _SectionLabel(strings.reminderSection),
-                  const SizedBox(height: 4),
-                  Material(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(kRadiusCard),
-                    child: Container(
-                      decoration: panelDecoration(colors),
-                      child: Column(
-                        children: [
-                          SwitchListTile(
-                            value: widget.settings.reminderEnabled,
-                            onChanged: _setReminderEnabled,
-                            title: Text(
-                              strings.reminderToggleLabel,
-                              style: TextStyle(
-                                color: colors.text,
-                                fontSize: 14,
-                              ),
-                            ),
+                  const SizedBox(height: 10),
+                  StaggeredEntrance(
+                    index: 2,
+                    child: SegmentedButton<String>(
+                      segments: [
+                        ButtonSegment(
+                          value: 'en',
+                          label: StaggeredEntrance(
+                            index: 0,
+                            axis: Axis.horizontal,
+                            child: Text(strings.languageEnglish),
                           ),
-                          if (widget.settings.reminderEnabled) ...[
-                            ListTile(
-                              onTap: _pickReminderTime,
-                              title: Text(
-                                strings.reminderTimeLabel,
-                                style: TextStyle(
-                                  color: colors.muted,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              trailing: Text(
-                                TimeOfDay(
-                                  hour: widget.settings.reminderHour,
-                                  minute: widget.settings.reminderMinute,
-                                ).format(context),
-                                style: TextStyle(
-                                  color: colors.gold,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            ),
-                            ListTile(
-                              onTap: _sendTestNotification,
-                              title: Text(
-                                strings.testNotificationButton,
-                                style: TextStyle(
-                                  color: colors.gold,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              leading: Icon(
-                                Icons.notifications_active_outlined,
-                                color: colors.gold,
-                                size: 20,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-
-                  _SectionLabel(strings.skyGridSection),
-                  const SizedBox(height: 4),
-                  Material(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(kRadiusCard),
-                    child: Container(
-                      decoration: panelDecoration(colors),
-                      child: SwitchListTile(
-                        value: widget.settings.showGrid,
-                        onChanged: _setShowGrid,
-                        title: Text(
-                          strings.skyGridToggleLabel,
-                          style: TextStyle(color: colors.text, fontSize: 14),
                         ),
-                      ),
+                        ButtonSegment(
+                          value: 'it',
+                          label: StaggeredEntrance(
+                            index: 1,
+                            axis: Axis.horizontal,
+                            child: Text(strings.languageItalian),
+                          ),
+                        ),
+                        ButtonSegment(
+                          value: 'ro',
+                          label: StaggeredEntrance(
+                            index: 2,
+                            axis: Axis.horizontal,
+                            child: Text(strings.languageRomanian),
+                          ),
+                        ),
+                      ],
+                      selected: {widget.settings.locale},
+                      onSelectionChanged: (selection) => setState(() {
+                        widget.settings.setLocale(selection.first);
+                      }),
                     ),
                   ),
                   const SizedBox(height: 28),
 
-                  _SectionLabel(strings.appLockSection),
+                  StaggeredEntrance(
+                    index: 3,
+                    child: _SectionLabel(strings.reminderSection),
+                  ),
                   const SizedBox(height: 4),
-                  Material(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(kRadiusCard),
-                    child: Container(
-                      decoration: panelDecoration(colors),
-                      child: Column(
-                        children: [
-                          SwitchListTile(
-                            value: widget.appLockRepository.isEnabled,
-                            onChanged: _setAppLockEnabled,
-                            title: Text(
-                              strings.appLockToggleLabel,
-                              style: TextStyle(
-                                color: colors.text,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          if (widget.appLockRepository.isEnabled) ...[
-                            if (_biometricAvailable)
-                              SwitchListTile(
-                                value:
-                                    widget.appLockRepository.biometricEnabled,
-                                onChanged: _setBiometricEnabled,
+                  StaggeredEntrance(
+                    index: 3,
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(kRadiusCard),
+                      child: Container(
+                        decoration: panelDecoration(colors),
+                        child: Column(
+                          children: [
+                            StaggeredEntrance(
+                              index: 0,
+                              child: SwitchListTile(
+                                value: widget.settings.reminderEnabled,
+                                onChanged: _setReminderEnabled,
                                 title: Text(
-                                  strings.appLockBiometricToggleLabel,
+                                  strings.reminderToggleLabel,
                                   style: TextStyle(
                                     color: colors.text,
                                     fontSize: 14,
                                   ),
                                 ),
                               ),
-                            ListTile(
-                              onTap: _changePin,
-                              title: Text(
-                                strings.appLockChangePinLabel,
-                                style: TextStyle(
-                                  color: colors.gold,
-                                  fontSize: 13,
+                            ),
+                            if (widget.settings.reminderEnabled) ...[
+                              StaggeredEntrance(
+                                index: 1,
+                                child: ListTile(
+                                  onTap: _pickReminderTime,
+                                  title: Text(
+                                    strings.reminderTimeLabel,
+                                    style: TextStyle(
+                                      color: colors.muted,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  trailing: Text(
+                                    TimeOfDay(
+                                      hour: widget.settings.reminderHour,
+                                      minute: widget.settings.reminderMinute,
+                                    ).format(context),
+                                    style: TextStyle(
+                                      color: colors.gold,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15,
+                                    ),
+                                  ),
                                 ),
                               ),
-                              leading: Icon(
-                                Icons.password_outlined,
-                                color: colors.gold,
-                                size: 20,
+                              StaggeredEntrance(
+                                index: 2,
+                                child: ListTile(
+                                  onTap: _sendTestNotification,
+                                  title: Text(
+                                    strings.testNotificationButton,
+                                    style: TextStyle(
+                                      color: colors.gold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  leading: Icon(
+                                    Icons.notifications_active_outlined,
+                                    color: colors.gold,
+                                    size: 20,
+                                  ),
+                                ),
                               ),
-                            ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 28),
 
-                  _SectionLabel(strings.customizationSection),
-                  const SizedBox(height: 10),
-                  _PlaceholderPanel(
-                    icon: Icons.palette_outlined,
-                    body: strings.customizationPlaceholderBody,
+                  StaggeredEntrance(
+                    index: 4,
+                    child: _SectionLabel(strings.skyGridSection),
+                  ),
+                  const SizedBox(height: 4),
+                  StaggeredEntrance(
+                    index: 4,
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(kRadiusCard),
+                      child: Container(
+                        decoration: panelDecoration(colors),
+                        child: SwitchListTile(
+                          value: widget.settings.showGrid,
+                          onChanged: _setShowGrid,
+                          title: Text(
+                            strings.skyGridToggleLabel,
+                            style: TextStyle(color: colors.text, fontSize: 14),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 28),
 
-                  _SectionLabel(strings.passkeySection),
-                  const SizedBox(height: 10),
-                  _PlaceholderPanel(
-                    icon: Icons.key_outlined,
-                    body: strings.passkeyPlaceholderBody,
+                  StaggeredEntrance(
+                    index: 5,
+                    child: _SectionLabel(strings.appLockSection),
                   ),
-                  const SizedBox(height: 28),
-
-                  _SectionLabel(strings.socialSection),
-                  const SizedBox(height: 10),
-                  _PlaceholderPanel(
-                    icon: Icons.groups_outlined,
-                    body: strings.socialPlaceholderBody,
-                  ),
-                  const SizedBox(height: 28),
-
-                  _SectionLabel(strings.aboutSection),
-                  const SizedBox(height: 10),
-                  FutureBuilder<PackageInfo>(
-                    future: PackageInfo.fromPlatform(),
-                    builder: (context, snapshot) {
-                      final version = snapshot.data?.version;
-                      return Container(
-                        padding: const EdgeInsets.all(16),
+                  const SizedBox(height: 4),
+                  StaggeredEntrance(
+                    index: 5,
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(kRadiusCard),
+                      child: Container(
                         decoration: panelDecoration(colors),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Inner Stars',
-                              style: TextStyle(
-                                color: colors.text,
-                                fontFamily: kFontBranding,
-                                fontWeight: FontWeight.w400,
-                                fontSize: 18,
-                              ),
-                            ),
-                            if (version != null) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                strings.aboutVersion(version),
-                                style: TextStyle(
-                                  color: colors.muted,
-                                  fontSize: 13,
+                            StaggeredEntrance(
+                              index: 0,
+                              child: SwitchListTile(
+                                value: widget.appLockRepository.isEnabled,
+                                onChanged: _setAppLockEnabled,
+                                title: Text(
+                                  strings.appLockToggleLabel,
+                                  style: TextStyle(
+                                    color: colors.text,
+                                    fontSize: 14,
+                                  ),
                                 ),
                               ),
-                            ],
-                            const SizedBox(height: 8),
-                            Text(
-                              strings.aboutTagline,
-                              style: TextStyle(
-                                color: colors.muted,
-                                fontSize: 13,
-                                height: 1.4,
-                              ),
                             ),
-                            // Web only: this build IS the browser tab
-                            // someone's looking at, and the "Install"
-                            // prompt Chrome/Safari offer here installs
-                            // *this* (a PWA), not the real Android app —
-                            // easy to mistake for one another. Points at
-                            // the actual .apk instead of trying to
-                            // suppress that prompt, so both stay available
-                            // rather than this fix breaking PWA install
-                            // for whoever actually wants it.
-                            if (kIsWeb) ...[
-                              const SizedBox(height: 14),
-                              Divider(color: colors.nightBorder, height: 1),
-                              const SizedBox(height: 14),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(
-                                    Icons.android,
-                                    color: colors.gold,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      strings.downloadApkBannerBody,
+                            if (widget.appLockRepository.isEnabled) ...[
+                              if (_biometricAvailable)
+                                StaggeredEntrance(
+                                index: 1,
+                                child: SwitchListTile(
+                                    value:
+                                        widget.appLockRepository.biometricEnabled,
+                                    onChanged: _setBiometricEnabled,
+                                    title: Text(
+                                      strings.appLockBiometricToggleLabel,
                                       style: TextStyle(
-                                        color: colors.muted,
-                                        fontSize: 13,
-                                        height: 1.45,
+                                        color: colors.text,
+                                        fontSize: 14,
                                       ),
                                     ),
                                   ),
-                                ],
                               ),
-                              const SizedBox(height: 12),
-                              OutlinedButton.icon(
-                                onPressed: openApkDownload,
-                                icon: const Icon(Icons.download, size: 18),
-                                label: Text(strings.downloadApkAction),
+                              StaggeredEntrance(
+                                index: 2,
+                                child: ListTile(
+                                  onTap: _changePin,
+                                  title: Text(
+                                    strings.appLockChangePinLabel,
+                                    style: TextStyle(
+                                      color: colors.gold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  leading: Icon(
+                                    Icons.password_outlined,
+                                    color: colors.gold,
+                                    size: 20,
+                                  ),
+                                ),
                               ),
                             ],
                           ],
                         ),
-                      );
-                    },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+
+                  StaggeredEntrance(
+                    index: 6,
+                    child: _SectionLabel(strings.customizationSection),
+                  ),
+                  const SizedBox(height: 10),
+                  StaggeredEntrance(
+                    index: 6,
+                    child: _PlaceholderPanel(
+                      icon: Icons.palette_outlined,
+                      body: strings.customizationPlaceholderBody,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+
+                  StaggeredEntrance(
+                    index: 7,
+                    child: _SectionLabel(strings.passkeySection),
+                  ),
+                  const SizedBox(height: 10),
+                  StaggeredEntrance(
+                    index: 7,
+                    child: _PlaceholderPanel(
+                      icon: Icons.key_outlined,
+                      body: strings.passkeyPlaceholderBody,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+
+                  StaggeredEntrance(
+                    index: 8,
+                    child: _SectionLabel(strings.socialSection),
+                  ),
+                  const SizedBox(height: 10),
+                  StaggeredEntrance(
+                    index: 8,
+                    child: _PlaceholderPanel(
+                      icon: Icons.groups_outlined,
+                      body: strings.socialPlaceholderBody,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+
+                  StaggeredEntrance(
+                    index: 9,
+                    child: _SectionLabel(strings.aboutSection),
+                  ),
+                  const SizedBox(height: 10),
+                  StaggeredEntrance(
+                    index: 9,
+                    child: FutureBuilder<PackageInfo>(
+                      future: PackageInfo.fromPlatform(),
+                      builder: (context, snapshot) {
+                        final version = snapshot.data?.version;
+                        return Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: panelDecoration(colors),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              StaggeredEntrance(
+                                index: 0,
+                                child: Text(
+                                  'Inner Stars',
+                                  style: TextStyle(
+                                    color: colors.text,
+                                    fontFamily: kFontBranding,
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ),
+                              if (version != null) ...[
+                                const SizedBox(height: 4),
+                                StaggeredEntrance(
+                                  index: 1,
+                                  child: Text(
+                                    strings.aboutVersion(version),
+                                    style: TextStyle(
+                                      color: colors.muted,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 8),
+                              StaggeredEntrance(
+                                index: 2,
+                                child: Text(
+                                  strings.aboutTagline,
+                                  style: TextStyle(
+                                    color: colors.muted,
+                                    fontSize: 13,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                              // Web only: this build IS the browser tab
+                              // someone's looking at, and the "Install"
+                              // prompt Chrome/Safari offer here installs
+                              // *this* (a PWA), not the real Android app —
+                              // easy to mistake for one another. Points at
+                              // the actual .apk instead of trying to
+                              // suppress that prompt, so both stay available
+                              // rather than this fix breaking PWA install
+                              // for whoever actually wants it.
+                              if (kIsWeb) ...[
+                                const SizedBox(height: 14),
+                                Divider(color: colors.nightBorder, height: 1),
+                                const SizedBox(height: 14),
+                                StaggeredEntrance(
+                                  index: 3,
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Icon(
+                                        Icons.android,
+                                        color: colors.gold,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          strings.downloadApkBannerBody,
+                                          style: TextStyle(
+                                            color: colors.muted,
+                                            fontSize: 13,
+                                            height: 1.45,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                StaggeredEntrance(
+                                  index: 4,
+                                  child: OutlinedButton.icon(
+                                    onPressed: openApkDownload,
+                                    icon: const Icon(Icons.download, size: 18),
+                                    label: Text(strings.downloadApkAction),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   ),
                   // Dev tooling (seed/reset data) — shown in every build,
                   // debug and release alike, so it stays available for
@@ -669,43 +776,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   // instead of leaving empty space beside them.
                   ...[
                     const SizedBox(height: 28),
-                    _SectionLabel(strings.dataSection),
+                    StaggeredEntrance(
+                      index: 10,
+                      child: _SectionLabel(strings.dataSection),
+                    ),
                     const SizedBox(height: 10),
                     Row(
                       children: [
                         Expanded(
-                          child: TextButton.icon(
-                            onPressed: _seedSampleData,
-                            style: _debugButtonStyle(colors, colors.muted),
-                            icon: Icon(
-                              Icons.science_outlined,
-                              size: 16,
-                              color: colors.muted,
-                            ),
-                            label: Text(
-                              strings.seedSampleData,
-                              style: TextStyle(
+                          child: StaggeredEntrance(
+                            index: 10,
+                            axis: Axis.horizontal,
+                            child: TextButton.icon(
+                              onPressed: _seedSampleData,
+                              style: _debugButtonStyle(colors, colors.muted),
+                              icon: Icon(
+                                Icons.science_outlined,
+                                size: 16,
                                 color: colors.muted,
-                                fontSize: 12,
+                              ),
+                              label: Text(
+                                strings.seedSampleData,
+                                style: TextStyle(
+                                  color: colors.muted,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: TextButton.icon(
-                            onPressed: _resetAllData,
-                            style: _debugButtonStyle(colors, colors.danger),
-                            icon: Icon(
-                              Icons.delete_outline,
-                              size: 16,
-                              color: colors.danger,
-                            ),
-                            label: Text(
-                              strings.resetAllData,
-                              style: TextStyle(
+                          child: StaggeredEntrance(
+                            index: 11,
+                            axis: Axis.horizontal,
+                            child: TextButton.icon(
+                              onPressed: _resetAllData,
+                              style: _debugButtonStyle(colors, colors.danger),
+                              icon: Icon(
+                                Icons.delete_outline,
+                                size: 16,
                                 color: colors.danger,
-                                fontSize: 12,
+                              ),
+                              label: Text(
+                                strings.resetAllData,
+                                style: TextStyle(
+                                  color: colors.danger,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                           ),
@@ -718,19 +836,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       // section briefly; moved back here — a dev/QA aid for
                       // checking the flow still works, not something a
                       // regular user goes looking for on purpose.
-                      SizedBox(
-                        width: double.infinity,
-                        child: TextButton.icon(
-                          onPressed: () => _push(const OnboardingScreen()),
-                          style: _debugButtonStyle(colors, colors.muted),
-                          icon: Icon(
-                            Icons.play_circle_outline,
-                            size: 16,
-                            color: colors.muted,
-                          ),
-                          label: Text(
-                            strings.menuOnboarding,
-                            style: TextStyle(color: colors.muted, fontSize: 12),
+                      StaggeredEntrance(
+                        index: 11,
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: TextButton.icon(
+                            onPressed: () => _push(const OnboardingScreen()),
+                            style: _debugButtonStyle(colors, colors.muted),
+                            icon: Icon(
+                              Icons.play_circle_outline,
+                              size: 16,
+                              color: colors.muted,
+                            ),
+                            label: Text(
+                              strings.menuOnboarding,
+                              style: TextStyle(
+                                color: colors.muted,
+                                fontSize: 12,
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -802,12 +926,20 @@ class _PlaceholderPanel extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: colors.muted, size: 20),
+          StaggeredEntrance(
+            index: 0,
+            axis: Axis.horizontal,
+            child: Icon(icon, color: colors.muted, size: 20),
+          ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              body,
-              style: TextStyle(color: colors.muted, fontSize: 13, height: 1.45),
+            child: StaggeredEntrance(
+              index: 1,
+              axis: Axis.horizontal,
+              child: Text(
+                body,
+                style: TextStyle(color: colors.muted, fontSize: 13, height: 1.45),
+              ),
             ),
           ),
         ],

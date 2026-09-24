@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../utils/app_modals.dart';
+import 'staggered_entrance.dart';
 
 /// What Sky's Constellations/Stars lists can be ordered by — the same three
 /// options in both, each mapped onto whatever that mode's own data means by
@@ -27,7 +29,7 @@ Future<({SortField field, SortDirection direction})?> showSortFilterSheet(
   required SortField initialField,
   required SortDirection initialDirection,
 }) {
-  return showModalBottomSheet<({SortField field, SortDirection direction})>(
+  return showAppSheet<({SortField field, SortDirection direction})>(
     context: context,
     isScrollControlled: true,
     builder: (_) => _SortFilterSheet(
@@ -74,12 +76,15 @@ class _SortFilterSheetState extends State<_SortFilterSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              strings.sortSheetTitle,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: colors.muted,
+            StaggeredEntrance(
+              index: 0,
+              child: Text(
+                strings.sortSheetTitle,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: colors.muted,
+                ),
               ),
             ),
             const SizedBox(height: 10),
@@ -89,46 +94,65 @@ class _SortFilterSheetState extends State<_SortFilterSheet> {
             Row(
               children: [
                 Expanded(
-                  child: _SortFieldChip(
-                    label: strings.sortFieldDate,
-                    selected: _field == SortField.date,
-                    onTap: () => setState(() => _field = SortField.date),
+                  child: StaggeredEntrance(
+                    index: 0,
+                    axis: Axis.horizontal,
+                    child: _SortFieldChip(
+                      label: strings.sortFieldDate,
+                      selected: _field == SortField.date,
+                      onTap: () => setState(() => _field = SortField.date),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: _SortFieldChip(
-                    label: strings.sortFieldIntensity,
-                    selected: _field == SortField.intensity,
-                    onTap: () => setState(() => _field = SortField.intensity),
+                  child: StaggeredEntrance(
+                    index: 1,
+                    axis: Axis.horizontal,
+                    child: _SortFieldChip(
+                      label: strings.sortFieldIntensity,
+                      selected: _field == SortField.intensity,
+                      onTap: () => setState(() => _field = SortField.intensity),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: _SortFieldChip(
-                    label: strings.sortFieldName,
-                    selected: _field == SortField.name,
-                    onTap: () => setState(() => _field = SortField.name),
+                  child: StaggeredEntrance(
+                    index: 2,
+                    axis: Axis.horizontal,
+                    child: _SortFieldChip(
+                      label: strings.sortFieldName,
+                      selected: _field == SortField.name,
+                      onTap: () => setState(() => _field = SortField.name),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
-                _DirectionButton(
-                  ascending: _direction == SortDirection.ascending,
-                  onTap: _toggleDirection,
-                  tooltip: _direction == SortDirection.ascending
-                      ? strings.sortDirectionAscending
-                      : strings.sortDirectionDescending,
+                StaggeredEntrance(
+                  index: 3,
+                  axis: Axis.horizontal,
+                  child: _DirectionButton(
+                    ascending: _direction == SortDirection.ascending,
+                    onTap: _toggleDirection,
+                    tooltip: _direction == SortDirection.ascending
+                        ? strings.sortDirectionAscending
+                        : strings.sortDirectionDescending,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () =>
-                    Navigator.of(context)
-                        .pop((field: _field, direction: _direction)),
-                child: Text(strings.applyFilterAction),
+            StaggeredEntrance(
+              index: 4,
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () =>
+                      Navigator.of(context)
+                          .pop((field: _field, direction: _direction)),
+                  child: Text(strings.applyFilterAction),
+                ),
               ),
             ),
           ],

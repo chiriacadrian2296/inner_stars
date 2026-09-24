@@ -16,6 +16,7 @@ import '../theme/nightlight_style.dart';
 import '../widgets/nightlight_starfield.dart';
 import '../widgets/nightlight_zone_measurer.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/staggered_entrance.dart';
 import 'star_reader_screen.dart';
 
 /// The last screen of the Nightlight flow (see `nightlight_gate_screen.dart`)
@@ -161,9 +162,12 @@ class _AdmireStarsScreenState extends State<AdmireStarsScreen>
                   ResponsiveContent(
                     child: Row(
                       children: [
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.close, color: Colors.white),
+                        StaggeredEntrance(
+                          index: 0,
+                          child: IconButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: const Icon(Icons.close, color: Colors.white),
+                          ),
                         ),
                       ],
                     ),
@@ -191,22 +195,28 @@ class _AdmireStarsScreenState extends State<AdmireStarsScreen>
                                     // that same full width. The [Column]'s own
                                     // `crossAxisAlignment.center` above already
                                     // centers it either way.
-                                    Text(
-                                      strings.chooseSupernovasToInclude,
-                                      key: _headerKey,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w600,
-                                        color: colors.text,
+                                    StaggeredEntrance(
+                                      index: 1,
+                                      child: Text(
+                                        strings.chooseSupernovasToInclude,
+                                        key: _headerKey,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w600,
+                                          color: colors.text,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(height: 24),
-                                    _AllToggleChip(
-                                      contentKey: _allToggleKey,
-                                      label: strings.admireAllAreasLabel,
-                                      value: _allSelected,
-                                      onChanged: (_) => _toggleAll(),
+                                    StaggeredEntrance(
+                                      index: 2,
+                                      child: _AllToggleChip(
+                                        contentKey: _allToggleKey,
+                                        label: strings.admireAllAreasLabel,
+                                        value: _allSelected,
+                                        onChanged: (_) => _toggleAll(),
+                                      ),
                                     ),
                                     const SizedBox(height: 28),
                                     Column(
@@ -228,11 +238,18 @@ class _AdmireStarsScreenState extends State<AdmireStarsScreen>
                                               ) ...[
                                                 if (col > 0)
                                                   const SizedBox(width: 12),
+                                                // Rows cascade down, and the
+                                                // two chips of a row slide in
+                                                // left to right.
                                                 Expanded(
-                                                  child: _areaChip(
-                                                    context,
-                                                    LifeArea.values[row * 2 +
-                                                        col],
+                                                  child: StaggeredEntrance(
+                                                    index: 3 + row + col,
+                                                    axis: Axis.horizontal,
+                                                    child: _areaChip(
+                                                      context,
+                                                      LifeArea.values[row * 2 +
+                                                          col],
+                                                    ),
                                                   ),
                                                 ),
                                               ],
@@ -242,8 +259,11 @@ class _AdmireStarsScreenState extends State<AdmireStarsScreen>
                                       ],
                                     ),
                                     const SizedBox(height: 32),
-                                    _UpliftingQuoteCarousel(
-                                      contentKey: _quoteKey,
+                                    StaggeredEntrance(
+                                      index: 8,
+                                      child: _UpliftingQuoteCarousel(
+                                        contentKey: _quoteKey,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -259,49 +279,55 @@ class _AdmireStarsScreenState extends State<AdmireStarsScreen>
                       padding: const EdgeInsets.fromLTRB(28, 12, 28, 24),
                       child: Column(
                         children: [
-                          Text(
-                            poolSize == 0
-                                ? strings.pickAtLeastOneArea
-                                : strings.starsCount(poolSize),
-                            key: _poolSizeKey,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: colors.nightlightMuted,
+                          StaggeredEntrance(
+                            index: 9,
+                            child: Text(
+                              poolSize == 0
+                                  ? strings.pickAtLeastOneArea
+                                  : strings.starsCount(poolSize),
+                              key: _poolSizeKey,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: colors.nightlightMuted,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),
                           // No forced `width: double.infinity` — sized to
                           // its own label/icon instead, like every other
                           // button in this section.
-                          ElevatedButton.icon(
-                            key: _actionButtonKey,
-                            onPressed: poolSize == 0 ? null : _start,
-                            icon: const Icon(Icons.auto_awesome, size: 17),
-                            label: Text(strings.viewYourStars),
-                            // Same white-on-navy look as the rest of the
-                            // Nightlight flow, with its own disabled fill
-                            // layered on top since [nightlightButtonStyle]
-                            // doesn't define one.
-                            style: nightlightButtonStyle(colors).copyWith(
-                              backgroundColor: WidgetStateProperty.resolveWith((
-                                states,
-                              ) {
-                                if (states.contains(WidgetState.disabled)) {
-                                  return colors.nightlightMuted.withValues(
-                                    alpha: 0.15,
-                                  );
-                                }
-                                return colors.nightBorder;
-                              }),
-                              foregroundColor: WidgetStateProperty.resolveWith((
-                                states,
-                              ) {
-                                if (states.contains(WidgetState.disabled)) {
-                                  return colors.nightlightMuted;
-                                }
-                                return Colors.white;
-                              }),
+                          StaggeredEntrance(
+                            index: 10,
+                            child: ElevatedButton.icon(
+                              key: _actionButtonKey,
+                              onPressed: poolSize == 0 ? null : _start,
+                              icon: const Icon(Icons.auto_awesome, size: 17),
+                              label: Text(strings.viewYourStars),
+                              // Same white-on-navy look as the rest of the
+                              // Nightlight flow, with its own disabled fill
+                              // layered on top since [nightlightButtonStyle]
+                              // doesn't define one.
+                              style: nightlightButtonStyle(colors).copyWith(
+                                backgroundColor: WidgetStateProperty.resolveWith((
+                                  states,
+                                ) {
+                                  if (states.contains(WidgetState.disabled)) {
+                                    return colors.nightlightMuted.withValues(
+                                      alpha: 0.15,
+                                    );
+                                  }
+                                  return colors.nightBorder;
+                                }),
+                                foregroundColor: WidgetStateProperty.resolveWith((
+                                  states,
+                                ) {
+                                  if (states.contains(WidgetState.disabled)) {
+                                    return colors.nightlightMuted;
+                                  }
+                                  return Colors.white;
+                                }),
+                              ),
                             ),
                           ),
                         ],

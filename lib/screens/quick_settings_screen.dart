@@ -10,6 +10,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../tutorials/tutorial_management.dart' show kAllTourNames;
 import '../widgets/responsive_content.dart';
+import '../widgets/staggered_entrance.dart';
 import 'sound_lab_screen.dart';
 
 /// A fast, one-page settings panel reached from the Sky's quick-access mini
@@ -98,138 +99,183 @@ class _QuickSettingsScreenState extends State<QuickSettingsScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
               children: [
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: Icon(Icons.arrow_back, color: colors.muted),
-                    ),
-                    Text(
-                      strings.quickSettingsEyebrow,
-                      style: TextStyle(
-                        fontSize: 12,
-                        letterSpacing: 1.4,
-                        fontWeight: FontWeight.w600,
-                        color: colors.gold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  strings.quickSettingsTitle,
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w700,
-                    color: colors.text,
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                _SectionLabel(strings.quickSettingsAudioSection),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: panelDecoration(colors),
+                StaggeredEntrance(
+                  index: 0,
                   child: Row(
                     children: [
                       IconButton(
-                        onPressed: _toggleBackgroundPlayback,
-                        tooltip: paused
-                            ? strings.playBackgroundTrackAction
-                            : strings.pauseBackgroundTrackAction,
-                        icon: Icon(
-                          paused ? Icons.play_arrow : Icons.pause,
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: Icon(Icons.arrow_back, color: colors.muted),
+                      ),
+                      Text(
+                        strings.quickSettingsEyebrow,
+                        style: TextStyle(
+                          fontSize: 12,
+                          letterSpacing: 1.4,
+                          fontWeight: FontWeight.w600,
                           color: colors.gold,
-                        ),
-                      ),
-                      Expanded(
-                        child: SliderTheme(
-                          data: SliderTheme.of(context).copyWith(
-                            padding: EdgeInsets.zero,
-                            trackHeight: 4,
-                          ),
-                          child: Slider(
-                            value: widget.audioService.backgroundVolume,
-                            onChanged: _setBackgroundVolume,
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 40,
-                        child: Text(
-                          '${(widget.audioService.backgroundVolume * 100).round()}%',
-                          textAlign: TextAlign.end,
-                          style: TextStyle(fontSize: 12, color: colors.muted),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: _openSoundLab,
-                    icon: Icon(Icons.graphic_eq, size: 18, color: colors.gold),
-                    label: Text(
-                      strings.quickSettingsOpenSoundLabAction,
-                      style: TextStyle(color: colors.gold),
+                const SizedBox(height: 10),
+                StaggeredEntrance(
+                  index: 0,
+                  child: Text(
+                    strings.quickSettingsTitle,
+                    style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w700,
+                      color: colors.text,
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
 
-                _SectionLabel(strings.skyGridSection),
+                StaggeredEntrance(
+                  index: 1,
+                  child: _SectionLabel(strings.quickSettingsAudioSection),
+                ),
                 const SizedBox(height: 10),
-                Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(kRadiusCard),
+                StaggeredEntrance(
+                  index: 1,
                   child: Container(
+                    padding: const EdgeInsets.all(10),
                     decoration: panelDecoration(colors),
-                    child: SwitchListTile(
-                      value: widget.settings.showGrid,
-                      onChanged: _setShowGrid,
-                      title: Text(
-                        strings.skyGridToggleLabel,
-                        style: TextStyle(color: colors.text, fontSize: 14),
+                    child: Row(
+                      children: [
+                        StaggeredEntrance(
+                          index: 0,
+                          axis: Axis.horizontal,
+                          child: IconButton(
+                            onPressed: _toggleBackgroundPlayback,
+                            tooltip: paused
+                                ? strings.playBackgroundTrackAction
+                                : strings.pauseBackgroundTrackAction,
+                            icon: Icon(
+                              paused ? Icons.play_arrow : Icons.pause,
+                              color: colors.gold,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: StaggeredEntrance(
+                            index: 1,
+                            axis: Axis.horizontal,
+                            child: SliderTheme(
+                              data: SliderTheme.of(context).copyWith(
+                                padding: EdgeInsets.zero,
+                                trackHeight: 4,
+                              ),
+                              child: Slider(
+                                value: widget.audioService.backgroundVolume,
+                                onChanged: _setBackgroundVolume,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 40,
+                          child: StaggeredEntrance(
+                            index: 2,
+                            axis: Axis.horizontal,
+                            child: Text(
+                              '${(widget.audioService.backgroundVolume * 100).round()}%',
+                              textAlign: TextAlign.end,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colors.muted,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                StaggeredEntrance(
+                  index: 1,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: _openSoundLab,
+                      icon: Icon(Icons.graphic_eq, size: 18, color: colors.gold),
+                      label: Text(
+                        strings.quickSettingsOpenSoundLabAction,
+                        style: TextStyle(color: colors.gold),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
 
-                _SectionLabel(strings.tutorialsManagementTitle),
+                StaggeredEntrance(
+                  index: 2,
+                  child: _SectionLabel(strings.skyGridSection),
+                ),
                 const SizedBox(height: 10),
-                Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(kRadiusCard),
-                  child: Container(
-                    decoration: panelDecoration(colors),
-                    child: SwitchListTile(
-                      value: widget.settings.tutorialsEnabled,
-                      onChanged: (value) =>
-                          widget.settings.setTutorialsEnabled(value),
-                      title: Text(
-                        strings.tutorialsEnabledLabel,
-                        style: TextStyle(color: colors.text, fontSize: 14),
+                StaggeredEntrance(
+                  index: 2,
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(kRadiusCard),
+                    child: Container(
+                      decoration: panelDecoration(colors),
+                      child: SwitchListTile(
+                        value: widget.settings.showGrid,
+                        onChanged: _setShowGrid,
+                        title: Text(
+                          strings.skyGridToggleLabel,
+                          style: TextStyle(color: colors.text, fontSize: 14),
+                        ),
                       ),
-                      subtitle: Text(
-                        strings.tutorialsEnabledDescription,
-                        style: TextStyle(color: colors.muted, fontSize: 12.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                StaggeredEntrance(
+                  index: 3,
+                  child: _SectionLabel(strings.tutorialsManagementTitle),
+                ),
+                const SizedBox(height: 10),
+                StaggeredEntrance(
+                  index: 3,
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(kRadiusCard),
+                    child: Container(
+                      decoration: panelDecoration(colors),
+                      child: SwitchListTile(
+                        value: widget.settings.tutorialsEnabled,
+                        onChanged: (value) =>
+                            widget.settings.setTutorialsEnabled(value),
+                        title: Text(
+                          strings.tutorialsEnabledLabel,
+                          style: TextStyle(color: colors.text, fontSize: 14),
+                        ),
+                        subtitle: Text(
+                          strings.tutorialsEnabledDescription,
+                          style: TextStyle(color: colors.muted, fontSize: 12.5),
+                        ),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: () => _replayAllTours(context),
-                    icon: Icon(Icons.refresh, size: 18, color: colors.gold),
-                    label: Text(
-                      strings.replayToursAction,
-                      style: TextStyle(color: colors.gold),
+                StaggeredEntrance(
+                  index: 3,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => _replayAllTours(context),
+                      icon: Icon(Icons.refresh, size: 18, color: colors.gold),
+                      label: Text(
+                        strings.replayToursAction,
+                        style: TextStyle(color: colors.gold),
+                      ),
                     ),
                   ),
                 ),

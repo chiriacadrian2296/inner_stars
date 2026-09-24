@@ -12,6 +12,7 @@ import '../theme/nightlight_style.dart';
 import '../widgets/nightlight_starfield.dart';
 import '../widgets/nightlight_zone_measurer.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/staggered_entrance.dart';
 import 'admire_stars_screen.dart';
 import 'nightlight_explained_screen.dart';
 
@@ -122,11 +123,14 @@ class _NightlightGateScreenState extends State<NightlightGateScreen>
                   ResponsiveContent(
                     child: Row(
                       children: [
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(
-                            Icons.arrow_back,
-                            color: Colors.white,
+                        StaggeredEntrance(
+                          index: 0,
+                          child: IconButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: const Icon(
+                              Icons.arrow_back,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ],
@@ -144,25 +148,28 @@ class _NightlightGateScreenState extends State<NightlightGateScreen>
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                'Nightlight',
-                                key: _titleKey,
-                                style: TextStyle(
-                                  fontFamily: kFontBranding,
-                                  fontSize: 56,
-                                  color: colors.text,
-                                  // Same layered soft-blur glow as
-                                  // [NightlightStarfield]'s own stars —
-                                  // white shadows rather than a painted
-                                  // blur pass, since this is a [Text]
-                                  // rather than a canvas shape.
-                                  shadows: const [
-                                    Shadow(color: Colors.white, blurRadius: 22),
-                                    Shadow(
-                                      color: Colors.white54,
-                                      blurRadius: 42,
-                                    ),
-                                  ],
+                              StaggeredEntrance(
+                                index: 1,
+                                child: Text(
+                                  'Nightlight',
+                                  key: _titleKey,
+                                  style: TextStyle(
+                                    fontFamily: kFontBranding,
+                                    fontSize: 56,
+                                    color: colors.text,
+                                    // Same layered soft-blur glow as
+                                    // [NightlightStarfield]'s own stars —
+                                    // white shadows rather than a painted
+                                    // blur pass, since this is a [Text]
+                                    // rather than a canvas shape.
+                                    shadows: const [
+                                      Shadow(color: Colors.white, blurRadius: 22),
+                                      Shadow(
+                                        color: Colors.white54,
+                                        blurRadius: 42,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 98),
@@ -170,44 +177,47 @@ class _NightlightGateScreenState extends State<NightlightGateScreen>
                               // same words the two buttons below use — so
                               // the question and its matching answer read
                               // as connected at a glance.
-                              Text.rich(
-                                key: _questionKey,
-                                TextSpan(
-                                  style: TextStyle(
-                                    fontSize: 27,
-                                    height: 1.35,
-                                    color: colors.text,
+                              StaggeredEntrance(
+                                index: 2,
+                                child: Text.rich(
+                                  key: _questionKey,
+                                  TextSpan(
+                                    style: TextStyle(
+                                      fontSize: 27,
+                                      height: 1.35,
+                                      color: colors.text,
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text:
+                                            strings.nightlightGateQuestionPrefix,
+                                      ),
+                                      TextSpan(
+                                        text:
+                                            strings.nightlightGateQuestionOkWord,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      TextSpan(
+                                        text:
+                                            strings.nightlightGateQuestionMiddle,
+                                      ),
+                                      TextSpan(
+                                        text: strings
+                                            .nightlightGateQuestionCrisisWord,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      TextSpan(
+                                        text:
+                                            strings.nightlightGateQuestionSuffix,
+                                      ),
+                                    ],
                                   ),
-                                  children: [
-                                    TextSpan(
-                                      text:
-                                          strings.nightlightGateQuestionPrefix,
-                                    ),
-                                    TextSpan(
-                                      text:
-                                          strings.nightlightGateQuestionOkWord,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text:
-                                          strings.nightlightGateQuestionMiddle,
-                                    ),
-                                    TextSpan(
-                                      text: strings
-                                          .nightlightGateQuestionCrisisWord,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text:
-                                          strings.nightlightGateQuestionSuffix,
-                                    ),
-                                  ],
+                                  textAlign: TextAlign.center,
                                 ),
-                                textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 98),
                               // Both buttons stretched to match the wider
@@ -220,56 +230,62 @@ class _NightlightGateScreenState extends State<NightlightGateScreen>
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
                                   children: [
-                                    ElevatedButton.icon(
-                                      key: _okButtonKey,
-                                      onPressed: _openOk,
-                                      style: nightlightButtonStyle(colors),
-                                      icon: const Icon(
-                                        Icons.thumb_up_alt_outlined,
-                                      ),
-                                      label: Text.rich(
-                                        TextSpan(
-                                          children: [
-                                            TextSpan(
-                                              text: strings
-                                                  .nightlightGateOkPrefix,
-                                            ),
-                                            TextSpan(
-                                              text:
-                                                  strings.nightlightGateOkWord,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
+                                    StaggeredEntrance(
+                                      index: 3,
+                                      child: ElevatedButton.icon(
+                                        key: _okButtonKey,
+                                        onPressed: _openOk,
+                                        style: nightlightButtonStyle(colors),
+                                        icon: const Icon(
+                                          Icons.thumb_up_alt_outlined,
+                                        ),
+                                        label: Text.rich(
+                                          TextSpan(
+                                            children: [
+                                              TextSpan(
+                                                text: strings
+                                                    .nightlightGateOkPrefix,
                                               ),
-                                            ),
-                                          ],
+                                              TextSpan(
+                                                text:
+                                                    strings.nightlightGateOkWord,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
                                     const SizedBox(height: 14),
-                                    OutlinedButton.icon(
-                                      key: _crisisButtonKey,
-                                      onPressed: _openCrisis,
-                                      style: nightlightOutlinedButtonStyle(
-                                        colors,
-                                      ),
-                                      icon: const Icon(
-                                        Icons.thumb_down_alt_outlined,
-                                      ),
-                                      label: Text.rich(
-                                        TextSpan(
-                                          children: [
-                                            TextSpan(
-                                              text: strings
-                                                  .nightlightGateCrisisPrefix,
-                                            ),
-                                            TextSpan(
-                                              text: strings
-                                                  .nightlightGateCrisisWord,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
+                                    StaggeredEntrance(
+                                      index: 4,
+                                      child: OutlinedButton.icon(
+                                        key: _crisisButtonKey,
+                                        onPressed: _openCrisis,
+                                        style: nightlightOutlinedButtonStyle(
+                                          colors,
+                                        ),
+                                        icon: const Icon(
+                                          Icons.thumb_down_alt_outlined,
+                                        ),
+                                        label: Text.rich(
+                                          TextSpan(
+                                            children: [
+                                              TextSpan(
+                                                text: strings
+                                                    .nightlightGateCrisisPrefix,
                                               ),
-                                            ),
-                                          ],
+                                              TextSpan(
+                                                text: strings
+                                                    .nightlightGateCrisisWord,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),

@@ -4,6 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../data/apk_prompt_prefs.dart';
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
+import '../utils/app_modals.dart';
+import 'staggered_entrance.dart';
 
 /// Always resolves to whatever `.apk` asset the most recent GitHub Release
 /// was published with, under this exact file name — GitHub's own
@@ -28,27 +30,44 @@ Future<void> showApkDownloadPrompt(
   BuildContext context,
   ApkPromptPrefs prefs,
 ) async {
-  await showDialog<void>(
+  await showAppDialog<void>(
     context: context,
     builder: (dialogContext) {
       final strings = dialogContext.strings;
       final colors = dialogContext.colors;
       return AlertDialog(
-        icon: Icon(Icons.android, color: colors.gold, size: 32),
-        title: Text(strings.downloadApkPromptTitle),
-        content: Text(strings.downloadApkBannerBody),
+        icon: StaggeredEntrance(
+          index: 0,
+          child: Icon(Icons.android, color: colors.gold, size: 32),
+        ),
+        title: StaggeredEntrance(
+          index: 1,
+          child: Text(strings.downloadApkPromptTitle),
+        ),
+        content: StaggeredEntrance(
+          index: 2,
+          child: Text(strings.downloadApkBannerBody),
+        ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(strings.downloadApkPromptContinueAction),
+          StaggeredEntrance(
+            index: 3,
+            axis: Axis.horizontal,
+            child: TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(strings.downloadApkPromptContinueAction),
+            ),
           ),
-          OutlinedButton.icon(
-            onPressed: () {
-              openApkDownload();
-              Navigator.of(dialogContext).pop();
-            },
-            icon: const Icon(Icons.download, size: 18),
-            label: Text(strings.downloadApkAction),
+          StaggeredEntrance(
+            index: 4,
+            axis: Axis.horizontal,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                openApkDownload();
+                Navigator.of(dialogContext).pop();
+              },
+              icon: const Icon(Icons.download, size: 18),
+              label: Text(strings.downloadApkAction),
+            ),
           ),
         ],
       );

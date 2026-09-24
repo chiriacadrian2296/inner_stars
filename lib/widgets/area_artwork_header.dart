@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../utils/area_hero_art_tone.dart';
+import 'staggered_entrance.dart';
 
 /// Keeps the bottom 23% of the square artwork, including its tagline,
 /// pinned as the image scrolls out of view, gently enlarging its tagline
@@ -51,33 +52,36 @@ class AreaArtworkHeader extends SliverPersistentHeaderDelegate {
             ),
         ],
       ),
-      child: Center(
-        child: SizedBox(
-          width: imageSize,
-          child: Semantics(
-            button: true,
-            label: label,
-            child: Tooltip(
-              message: label,
-              child: InkWell(
-                onTap: onTap,
-                child: ClipRect(
-                  child: OverflowBox(
-                    alignment: Alignment.bottomCenter,
-                    minHeight: imageSize,
-                    maxHeight: imageSize,
-                    child: Transform.scale(
-                      scale: scale,
-                      // Taglines sit around 86% of the artwork's height.
-                      // Anchor there so zooming does not push them out of view.
-                      alignment: const Alignment(0, 0.72),
-                      child: tonedAreaHeroArt(
-                        child: Image.asset(
-                          asset,
-                          width: imageSize,
-                          height: imageSize,
-                          fit: BoxFit.contain,
-                          excludeFromSemantics: true,
+      child: StaggeredEntrance(
+        index: 0,
+        child: Center(
+          child: SizedBox(
+            width: imageSize,
+            child: Semantics(
+              button: true,
+              label: label,
+              child: Tooltip(
+                message: label,
+                child: InkWell(
+                  onTap: onTap,
+                  child: ClipRect(
+                    child: OverflowBox(
+                      alignment: Alignment.bottomCenter,
+                      minHeight: imageSize,
+                      maxHeight: imageSize,
+                      child: Transform.scale(
+                        scale: scale,
+                        // Taglines sit around 86% of the artwork's height.
+                        // Anchor there so zooming does not push them out of view.
+                        alignment: const Alignment(0, 0.72),
+                        child: tonedAreaHeroArt(
+                          child: Image.asset(
+                            asset,
+                            width: imageSize,
+                            height: imageSize,
+                            fit: BoxFit.contain,
+                            excludeFromSemantics: true,
+                          ),
                         ),
                       ),
                     ),

@@ -3,6 +3,7 @@ import 'package:hint_kit/hint_kit.dart';
 
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
+import '../widgets/press_scale.dart';
 
 /// Replaces every tour step's default [TourStepCard] — same layout (title,
 /// description, progress label, Skip/Back/Next), but with the app's own
@@ -200,18 +201,20 @@ class AppTourButton extends StatelessWidget {
       button: true,
       child: GestureDetector(
         onTap: onPressed,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.dark.text,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: AppColors.dark.night,
-              fontWeight: emphasised ? FontWeight.w700 : FontWeight.w600,
-              fontSize: 13,
+        child: PressScale(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.dark.text,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: AppColors.dark.night,
+                fontWeight: emphasised ? FontWeight.w700 : FontWeight.w600,
+                fontSize: 13,
+              ),
             ),
           ),
         ),

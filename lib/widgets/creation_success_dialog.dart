@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../utils/app_modals.dart';
 import 'sky_tooltip_header.dart';
+import 'staggered_entrance.dart';
 
 /// Shown right after creating any star (lit, unlit, or a pulsar) or a
 /// whole new constellation — a small, deliberate "that worked" moment
@@ -40,7 +42,7 @@ class CreationSuccessDialog extends StatelessWidget {
     required VoidCallback onTakeMeThere,
     required VoidCallback onShare,
   }) {
-    return showDialog<void>(
+    return showAppDialog<void>(
       context: context,
       builder: (_) => CreationSuccessDialog(
         icon: icon,
@@ -67,20 +69,30 @@ class CreationSuccessDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SkyTooltipHeader(
-              icon: icon,
-              iconColor: colors.gold,
-              iconSize: 22,
-              title: strings.creationSuccessEyebrow,
-              titleColor: colors.text,
-              titleFontSize: 17,
-              onClose: () => Navigator.of(context).pop(),
+            StaggeredEntrance(
+              index: 0,
+              child: SkyTooltipHeader(
+                icon: icon,
+                iconColor: colors.gold,
+                iconSize: 22,
+                title: strings.creationSuccessEyebrow,
+                titleColor: colors.text,
+                titleFontSize: 17,
+                onClose: () => Navigator.of(context).pop(),
+              ),
             ),
             const SizedBox(height: 14),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: colors.muted, fontSize: 15, height: 1.5),
+            StaggeredEntrance(
+              index: 1,
+              child: Text(
+                message,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: colors.muted,
+                  fontSize: 15,
+                  height: 1.5,
+                ),
+              ),
             ),
             const SizedBox(height: 22),
             SizedBox(
@@ -88,26 +100,34 @@ class CreationSuccessDialog extends StatelessWidget {
               child: Row(
                 children: [
                   Expanded(
-                    child: _CreationSuccessAction(
-                      icon: Icons.navigation,
-                      label: strings.takeMeThereAction,
-                      color: colors.gold,
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        onTakeMeThere();
-                      },
+                    child: StaggeredEntrance(
+                      index: 2,
+                      axis: Axis.horizontal,
+                      child: _CreationSuccessAction(
+                        icon: Icons.navigation,
+                        label: strings.takeMeThereAction,
+                        color: colors.gold,
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          onTakeMeThere();
+                        },
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: _CreationSuccessAction(
-                      icon: Icons.share_outlined,
-                      label: strings.starQuickLookShareAction,
-                      color: colors.muted,
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        onShare();
-                      },
+                    child: StaggeredEntrance(
+                      index: 3,
+                      axis: Axis.horizontal,
+                      child: _CreationSuccessAction(
+                        icon: Icons.share_outlined,
+                        label: strings.starQuickLookShareAction,
+                        color: colors.muted,
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          onShare();
+                        },
+                      ),
                     ),
                   ),
                 ],

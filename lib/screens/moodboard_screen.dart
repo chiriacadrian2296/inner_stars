@@ -5,10 +5,12 @@ import '../data/moodboard_repository.dart';
 import '../data/moodboard_storage.dart';
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
+import '../utils/app_modals.dart';
 import '../utils/responsive.dart';
 import '../widgets/area_section_header.dart';
 import '../widgets/moodboard_grid.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/staggered_entrance.dart';
 
 class MoodboardScreen extends StatefulWidget {
   const MoodboardScreen({
@@ -71,7 +73,7 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
 
   Future<void> _quote([MoodboardItem? existing]) async {
     final controller = TextEditingController(text: existing?.content ?? '');
-    final result = await showDialog<String>(
+    final result = await showAppDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(context.strings.moodboardQuote),
@@ -140,7 +142,7 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                 IconButton(
                   tooltip: context.strings.moodboardRemove,
                   onPressed: () async {
-                    final confirmed = await showDialog<bool>(
+                    final confirmed = await showAppDialog<bool>(
                       context: context,
                       builder: (dialogContext) => AlertDialog(
                         title: Text(
@@ -168,11 +170,14 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
               ],
             ),
             body: SafeArea(
-              child: item.kind == MoodboardKind.quote
-                  ? SingleChildScrollView(
-                      child: MoodboardMedia(item: item, expanded: true),
-                    )
-                  : MoodboardMedia(item: item, expanded: true),
+              child: StaggeredEntrance(
+                index: 0,
+                child: item.kind == MoodboardKind.quote
+                    ? SingleChildScrollView(
+                        child: MoodboardMedia(item: item, expanded: true),
+                      )
+                    : MoodboardMedia(item: item, expanded: true),
+              ),
             ),
           ),
         ),
@@ -219,6 +224,12 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
         label: Text(strings.moodboardQuote),
       ),
     ];
+    // Side by side, so they slide in from the side rather than rising.
+    final sideBySideActions = StaggeredEntrance.all(
+      addActions,
+      start: 2,
+      axis: Axis.horizontal,
+    );
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -238,17 +249,23 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AreaSectionHeader(
-                        title: strings.moodboardTitle,
-                        description: strings.moodboardPageDescription,
+                      StaggeredEntrance(
+                        index: 0,
+                        child: AreaSectionHeader(
+                          title: strings.moodboardTitle,
+                          description: strings.moodboardPageDescription,
+                        ),
                       ),
                       const SizedBox(height: 24),
-                      Center(
-                        child: Text(
-                          strings.moodboardAddLabel,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
+                      StaggeredEntrance(
+                        index: 1,
+                        child: Center(
+                          child: Text(
+                            strings.moodboardAddLabel,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ),
@@ -258,7 +275,7 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                           width: double.infinity,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: addActions,
+                            children: sideBySideActions,
                           ),
                         )
                       else
@@ -267,14 +284,12 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                             spacing: 8,
                             runSpacing: 8,
                             alignment: WrapAlignment.center,
-                            children: addActions,
+                            children: sideBySideActions,
                           ),
                         ),
                       const SizedBox(height: 20),
-                      MoodboardGrid(
-                        items: _items,
-                        onTap: _busy ? null : _open,
-                      ),
+                      // The grid staggers its own tiles (see MoodboardGrid).
+                      MoodboardGrid(items: _items, onTap: _busy ? null : _open),
                     ],
                   ),
                 ),

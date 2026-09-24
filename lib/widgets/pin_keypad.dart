@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import 'staggered_entrance.dart';
 
 /// A numeric 0-9 + backspace keypad for entering a 4-digit PIN, shared by
 /// [PinSetupScreen] (creating/changing a PIN) and [AppLockScreen] (unlocking
@@ -11,10 +12,17 @@ import '../theme/app_style.dart';
 /// calls [onSubmit] once there are 4 of them — the caller decides what that
 /// means (verify, confirm, save) and calls [PinKeypadState.reset]/
 /// [PinKeypadState.shake] in response.
+///
+/// Its dots and keys fade in one after another when it first appears,
+/// numbered from [entranceStart] so the caller's own header (icon, title)
+/// can occupy the indexes before it.
 class PinKeypad extends StatefulWidget {
-  const PinKeypad({super.key, required this.onSubmit});
+  const PinKeypad({super.key, required this.onSubmit, this.entranceStart = 2});
 
   final ValueChanged<String> onSubmit;
+
+  /// [StaggeredEntrance] index of the first PIN dot; the keys follow.
+  final int entranceStart;
 
   @override
   State<PinKeypad> createState() => PinKeypadState();
@@ -92,17 +100,23 @@ class PinKeypadState extends State<PinKeypad>
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(_pinLength, (i) {
               final filled = i < _digits.length;
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: filled ? colors.gold : Colors.transparent,
-                    border: Border.all(
-                      color: filled ? colors.gold : colors.nightBorder,
-                      width: kBorderWidthActive,
+              // The dots arrive left to right, one after another. The shake
+              // above only moves this whole row, so it is unaffected.
+              return StaggeredEntrance(
+                index: widget.entranceStart + i,
+                axis: Axis.horizontal,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: filled ? colors.gold : Colors.transparent,
+                      border: Border.all(
+                        color: filled ? colors.gold : colors.nightBorder,
+                        width: kBorderWidthActive,
+                      ),
                     ),
                   ),
                 ),
@@ -111,17 +125,30 @@ class PinKeypadState extends State<PinKeypad>
           ),
         ),
         const SizedBox(height: 18),
-        _KeypadGrid(onDigit: _onDigit, onBackspace: _onBackspace),
+        _KeypadGrid(
+          onDigit: _onDigit,
+          onBackspace: _onBackspace,
+          entranceStart: widget.entranceStart + 2,
+        ),
       ],
     );
   }
 }
 
 class _KeypadGrid extends StatelessWidget {
-  const _KeypadGrid({required this.onDigit, required this.onBackspace});
+  const _KeypadGrid({
+    required this.onDigit,
+    required this.onBackspace,
+    required this.entranceStart,
+  });
 
   final ValueChanged<String> onDigit;
   final VoidCallback onBackspace;
+
+  /// [StaggeredEntrance] index of the top-left key. Each row starts one
+  /// step after the row above it and each key one step after its left
+  /// neighbour, so the pad fills in as a diagonal wave, top to bottom.
+  final int entranceStart;
 
   static const _rows = [
     ['1', '2', '3'],
@@ -134,13 +161,18 @@ class _KeypadGrid extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (final row in _rows)
+        for (var r = 0; r < _rows.length; r++)
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                for (final digit in row) _KeypadButton.digit(digit, onDigit),
+                for (var c = 0; c < _rows[r].length; c++)
+                  StaggeredEntrance(
+                    index: entranceStart + r + c,
+                    axis: Axis.horizontal,
+                    child: _KeypadButton.digit(_rows[r][c], onDigit),
+                  ),
               ],
             ),
           ),
@@ -154,8 +186,16 @@ class _KeypadGrid extends StatelessWidget {
             // would then visibly shift "0"/backspace left of the columns
             // they sit under.
             const SizedBox(width: 96, height: 72),
-            _KeypadButton.digit('0', onDigit),
-            _KeypadButton.backspace(onBackspace),
+            StaggeredEntrance(
+              index: entranceStart + _rows.length + 1,
+              axis: Axis.horizontal,
+              child: _KeypadButton.digit('0', onDigit),
+            ),
+            StaggeredEntrance(
+              index: entranceStart + _rows.length + 2,
+              axis: Axis.horizontal,
+              child: _KeypadButton.backspace(onBackspace),
+            ),
           ],
         ),
       ],

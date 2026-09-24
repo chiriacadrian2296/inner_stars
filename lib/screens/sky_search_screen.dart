@@ -11,6 +11,7 @@ import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/sky_explorer_view.dart';
+import '../widgets/staggered_entrance.dart';
 
 /// Popped by [SkySearchScreen]'s own explicit close button — same
 /// "close whatever menu opened this" signal a real `SkyNavigationTarget`
@@ -24,16 +25,13 @@ class SkySearchClosed {
 }
 
 /// A full-screen popup opened from the Sky's sky-search overlay
-/// button — search/filter/3-level browsing ([SkyExplorerView]), under the
-/// same back-arrow/eyebrow/title header every other standalone screen in
-/// the app uses ([SettingsScreen], [StatsScreen], [PlaceholderScreen]),
-/// with the selected level's name (Supernovas/Constellations/Stars) as
-/// this header's own title — see [_modeLabel] — rather than drawn inline
-/// in the body, freeing space below for the list itself. Every card's
-/// "take me there" button pops this page with a `SkyNavigationTarget` for
-/// `SkyScreen` to fly its camera to; the header's own close button (see
-/// [SkySearchClosed]) pops with that instead, for a deliberate "I'm done
-/// here" that a plain back doesn't mean.
+/// button — search/filter/3-level browsing ([SkyExplorerView]), under a
+/// slim back-arrow/eyebrow header (the selected level is already shown by
+/// [SkyExplorerView]'s own mode switch, so it isn't repeated up here).
+/// Every card's "take me there" button pops this page with a
+/// `SkyNavigationTarget` for `SkyScreen` to fly its camera to; the header's
+/// own close button (see [SkySearchClosed]) pops with that instead, for a
+/// deliberate "I'm done here" that a plain back doesn't mean.
 class SkySearchScreen extends StatefulWidget {
   const SkySearchScreen({
     super.key,
@@ -59,12 +57,6 @@ class SkySearchScreen extends StatefulWidget {
 }
 
 class _SkySearchScreenState extends State<SkySearchScreen> {
-  /// Null only for the first frame or two, before [SkyExplorerView] reports
-  /// its own starting mode via `onModeLabelChanged` — [build] falls back to
-  /// the same "Supernovas" label it starts on regardless, so there's no
-  /// visible flash of an empty title.
-  String? _modeLabel;
-
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -75,56 +67,45 @@ class _SkySearchScreenState extends State<SkySearchScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ResponsiveContent(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          icon: Icon(Icons.arrow_back, color: colors.muted),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          strings.searchScreenEyebrow,
-                          style: TextStyle(
-                            fontSize: 12,
-                            letterSpacing: 2,
-                            fontWeight: FontWeight.w600,
-                            color: colors.accentDim,
-                          ),
-                        ),
-                        const Spacer(),
-                        // Deliberate "I'm done here" — closes whichever menu
-                        // opened this popup along with the popup itself (see
-                        // [SkySearchClosed]), unlike the plain back arrow
-                        // above, which leaves that menu open behind it.
-                        IconButton(
-                          onPressed: () => Navigator.of(
-                            context,
-                          ).pop<Object>(const SkySearchClosed()),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          tooltip: strings.closeAction,
-                          icon: Icon(Icons.close, color: colors.muted),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      _modeLabel ?? strings.skyModeSupernovas,
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w700,
-                        color: colors.text,
+            StaggeredEntrance(
+              index: 0,
+              child: ResponsiveContent(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: Icon(Icons.arrow_back, color: colors.muted),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 12),
+                      Text(
+                        strings.searchScreenEyebrow,
+                        style: TextStyle(
+                          fontSize: 12,
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.w600,
+                          color: colors.accentDim,
+                        ),
+                      ),
+                      const Spacer(),
+                      // Deliberate "I'm done here" — closes whichever menu
+                      // opened this popup along with the popup itself (see
+                      // [SkySearchClosed]), unlike the plain back arrow
+                      // above, which leaves that menu open behind it.
+                      IconButton(
+                        onPressed: () => Navigator.of(
+                          context,
+                        ).pop<Object>(const SkySearchClosed()),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        tooltip: strings.closeAction,
+                        icon: Icon(Icons.close, color: colors.muted),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -138,8 +119,6 @@ class _SkySearchScreenState extends State<SkySearchScreen> {
                 areaVisionRepository: widget.areaVisionRepository,
                 reflectionAnswerRepository: widget.reflectionAnswerRepository,
                 onNavigateTo: (target) => Navigator.of(context).pop(target),
-                onModeLabelChanged: (label) =>
-                    setState(() => _modeLabel = label),
               ),
             ),
           ],

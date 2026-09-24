@@ -80,7 +80,6 @@ void main() {
                 areaVisionRepository: repositories.visions,
                 reflectionAnswerRepository: repositories.reflections,
                 onNavigateTo: (_) {},
-                onModeLabelChanged: (_) {},
               ),
             ),
           ),

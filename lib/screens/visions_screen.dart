@@ -9,6 +9,7 @@ import '../data/star_repository.dart';
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
 import '../theme/app_colors.dart';
+import '../utils/page_settled.dart';
 import '../theme/app_fonts.dart';
 import '../utils/area_hero_art.dart';
 import '../utils/area_hero_art_tone.dart';
@@ -17,6 +18,7 @@ import '../tutorials/tour_step_card.dart';
 
 import '../widgets/responsive_content.dart';
 import '../widgets/looping_hero_carousel.dart';
+import '../widgets/staggered_entrance.dart';
 import '../widgets/vision_markdown.dart';
 import 'area_detail_screen.dart';
 
@@ -55,7 +57,10 @@ class _VisionsScreenState extends State<VisionsScreen> {
     // The "supernova-vision" tour — continues into [AreaDetailScreen]'s
     // own edit-vision button once the user taps through.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) Tour.read(context).start('supernova-vision');
+      if (!mounted) return;
+      whenPageSettled(context, () {
+        Tour.read(context).start('supernova-vision');
+      });
     });
   }
 
@@ -96,40 +101,49 @@ class _VisionsScreenState extends State<VisionsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: Icon(Icons.arrow_back, color: colors.muted),
-                        ),
-                        Text(
-                          strings.visionsEyebrow,
-                          style: TextStyle(
-                            fontSize: 12,
-                            letterSpacing: 1.4,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                    StaggeredEntrance(
+                      index: 0,
+                      child: Row(
+                        children: [
+                          IconButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: Icon(Icons.arrow_back, color: colors.muted),
                           ),
-                        ),
-                      ],
+                          Text(
+                            strings.visionsEyebrow,
+                            style: TextStyle(
+                              fontSize: 12,
+                              letterSpacing: 1.4,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 10),
-                    Text(
-                      strings.visionsTitle,
-                      style: TextStyle(
-                        fontFamily: kFontStarTitle,
-                        fontSize: 30,
-                        fontWeight: FontWeight.w700,
-                        color: colors.text,
+                    StaggeredEntrance(
+                      index: 0,
+                      child: Text(
+                        strings.visionsTitle,
+                        style: TextStyle(
+                          fontFamily: kFontStarTitle,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w700,
+                          color: colors.text,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      strings.visionsSubtitle,
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.45,
-                        color: colors.muted,
+                    StaggeredEntrance(
+                      index: 0,
+                      child: Text(
+                        strings.visionsSubtitle,
+                        style: TextStyle(
+                          fontSize: 14,
+                          height: 1.45,
+                          color: colors.muted,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 22),
@@ -150,26 +164,29 @@ class _VisionsScreenState extends State<VisionsScreen> {
               contentBuilder: appTourStepCard,
               title: strings.supernovaTourListTitle,
               description: strings.supernovaTourListBody,
-              child: LayoutBuilder(
-                builder: (context, constraints) => SizedBox(
-                  height: (constraints.maxWidth * 1.15).clamp(340.0, 560.0),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      LoopingHeroCarousel(
-                        freeScroll: _freeScroll,
-                        onTap: (index) => _openArea(LifeArea.values[index]),
-                        children: [
-                          for (final area in LifeArea.values)
-                            _VisionCard(
-                              area: area,
-                              vision: widget.areaVisionRepository.getVision(
-                                area,
+              child: StaggeredEntrance(
+                index: 1,
+                child: LayoutBuilder(
+                  builder: (context, constraints) => SizedBox(
+                    height: (constraints.maxWidth * 1.15).clamp(340.0, 560.0),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        LoopingHeroCarousel(
+                          freeScroll: _freeScroll,
+                          onTap: (index) => _openArea(LifeArea.values[index]),
+                          children: [
+                            for (final area in LifeArea.values)
+                              _VisionCard(
+                                area: area,
+                                vision: widget.areaVisionRepository.getVision(
+                                  area,
+                                ),
                               ),
-                            ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -180,34 +197,40 @@ class _VisionsScreenState extends State<VisionsScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   children: [
-                    Semantics(
-                      label: strings.carouselFreeScroll,
-                      child: Switch(
-                        value: _freeScroll,
-                        onChanged: (value) =>
-                            setState(() => _freeScroll = value),
-                        thumbColor: WidgetStateProperty.resolveWith(
-                          (states) => states.contains(WidgetState.selected)
-                              ? const Color(0xFF0D1220)
-                              : Colors.white,
-                        ),
-                        trackColor: WidgetStateProperty.resolveWith(
-                          (states) => states.contains(WidgetState.selected)
-                              ? Colors.white
-                              : const Color(0xFF0D1220),
-                        ),
-                        trackOutlineColor: const WidgetStatePropertyAll(
-                          Colors.white54,
+                    StaggeredEntrance(
+                      index: 2,
+                      child: Semantics(
+                        label: strings.carouselFreeScroll,
+                        child: Switch(
+                          value: _freeScroll,
+                          onChanged: (value) =>
+                              setState(() => _freeScroll = value),
+                          thumbColor: WidgetStateProperty.resolveWith(
+                            (states) => states.contains(WidgetState.selected)
+                                ? const Color(0xFF0D1220)
+                                : Colors.white,
+                          ),
+                          trackColor: WidgetStateProperty.resolveWith(
+                            (states) => states.contains(WidgetState.selected)
+                                ? Colors.white
+                                : const Color(0xFF0D1220),
+                          ),
+                          trackOutlineColor: const WidgetStatePropertyAll(
+                            Colors.white54,
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      _freeScroll
-                          ? strings.carouselFreeScroll
-                          : strings.carouselOneAtATime,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: colors.text),
+                    StaggeredEntrance(
+                      index: 2,
+                      child: Text(
+                        _freeScroll
+                            ? strings.carouselFreeScroll
+                            : strings.carouselOneAtATime,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: colors.text),
+                      ),
                     ),
                   ],
                 ),

@@ -7,6 +7,8 @@ import '../l10n/strings_scope.dart';
 import '../settings/settings_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../utils/app_modals.dart';
+import '../widgets/staggered_entrance.dart';
 
 /// Every `hint_kit` tour name currently built — see `lib/tutorials/`. Kept
 /// in one place so [_replayAllTours] has a single list to update whenever a
@@ -38,7 +40,7 @@ Future<void> showTutorialManagementDialog(
   BuildContext context, {
   required SettingsController settings,
 }) {
-  return showDialog<void>(
+  return showAppDialog<void>(
     context: context,
     builder: (dialogContext) => _TutorialManagementDialog(settings: settings),
   );
@@ -82,54 +84,66 @@ class _TutorialManagementDialog extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                strings.tutorialsManagementTitle,
-                style: TextStyle(
-                  color: colors.text,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
+              StaggeredEntrance(
+                index: 0,
+                child: Text(
+                  strings.tutorialsManagementTitle,
+                  style: TextStyle(
+                    color: colors.text,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
-              Material(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(kRadiusCard),
-                child: Container(
-                  decoration: panelDecoration(colors),
-                  child: SwitchListTile(
-                    value: settings.tutorialsEnabled,
-                    onChanged: (value) => settings.setTutorialsEnabled(value),
-                    title: Text(
-                      strings.tutorialsEnabledLabel,
-                      style: TextStyle(color: colors.text, fontSize: 14),
-                    ),
-                    subtitle: Text(
-                      strings.tutorialsEnabledDescription,
-                      style: TextStyle(color: colors.muted, fontSize: 12.5),
+              StaggeredEntrance(
+                index: 1,
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(kRadiusCard),
+                  child: Container(
+                    decoration: panelDecoration(colors),
+                    child: SwitchListTile(
+                      value: settings.tutorialsEnabled,
+                      onChanged: (value) => settings.setTutorialsEnabled(value),
+                      title: Text(
+                        strings.tutorialsEnabledLabel,
+                        style: TextStyle(color: colors.text, fontSize: 14),
+                      ),
+                      subtitle: Text(
+                        strings.tutorialsEnabledDescription,
+                        style: TextStyle(color: colors.muted, fontSize: 12.5),
+                      ),
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: TextButton.icon(
-                  onPressed: () => _replayAllTours(context),
-                  icon: Icon(Icons.refresh, size: 18, color: colors.gold),
-                  label: Text(
-                    strings.replayToursAction,
-                    style: TextStyle(color: colors.gold),
+              StaggeredEntrance(
+                index: 2,
+                child: SizedBox(
+                  width: double.infinity,
+                  child: TextButton.icon(
+                    onPressed: () => _replayAllTours(context),
+                    icon: Icon(Icons.refresh, size: 18, color: colors.gold),
+                    label: Text(
+                      strings.replayToursAction,
+                      style: TextStyle(color: colors.gold),
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 4),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(
-                    strings.gotIt,
-                    style: TextStyle(color: colors.muted),
+              StaggeredEntrance(
+                index: 3,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(
+                      strings.gotIt,
+                      style: TextStyle(color: colors.muted),
+                    ),
                   ),
                 ),
               ),

@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../utils/responsive.dart';
+import '../widgets/staggered_entrance.dart';
 
 /// Camera photos are commonly stored with their sensor's native (often
 /// landscape) pixel layout plus an EXIF orientation tag saying how to
@@ -207,33 +208,36 @@ class _PhotoCropScreenState extends State<PhotoCropScreen> {
                 children: [
                   Expanded(
                     child: Center(
-                      child: RepaintBoundary(
-                        key: _boundaryKey,
-                        child: ClipRect(
-                          child: SizedBox(
-                            width: width,
-                            height: height,
-                            // boundaryMargin: zero plus minScale set to the
-                            // exact "cover" scale keeps the image edges from
-                            // ever panning past the frame, so the frame is
-                            // always fully covered no matter how the user
-                            // drags or pinches. constrained: false is what
-                            // lets the child actually lay out at its own
-                            // (much larger) natural size instead of being
-                            // squashed down to this frame's — without it,
-                            // InteractiveViewer applies our zoom on top of
-                            // an already-shrunk child, leaving the photo a
-                            // tiny fragment stuck in one corner.
-                            child: InteractiveViewer(
-                              transformationController: _transformController,
-                              constrained: false,
-                              minScale: _minScale,
-                              maxScale: _minScale * 4,
-                              boundaryMargin: EdgeInsets.zero,
-                              child: SizedBox(
-                                width: image.width.toDouble(),
-                                height: image.height.toDouble(),
-                                child: RawImage(image: image, fit: BoxFit.fill),
+                      child: StaggeredEntrance(
+                        index: 0,
+                        child: RepaintBoundary(
+                          key: _boundaryKey,
+                          child: ClipRect(
+                            child: SizedBox(
+                              width: width,
+                              height: height,
+                              // boundaryMargin: zero plus minScale set to the
+                              // exact "cover" scale keeps the image edges from
+                              // ever panning past the frame, so the frame is
+                              // always fully covered no matter how the user
+                              // drags or pinches. constrained: false is what
+                              // lets the child actually lay out at its own
+                              // (much larger) natural size instead of being
+                              // squashed down to this frame's — without it,
+                              // InteractiveViewer applies our zoom on top of
+                              // an already-shrunk child, leaving the photo a
+                              // tiny fragment stuck in one corner.
+                              child: InteractiveViewer(
+                                transformationController: _transformController,
+                                constrained: false,
+                                minScale: _minScale,
+                                maxScale: _minScale * 4,
+                                boundaryMargin: EdgeInsets.zero,
+                                child: SizedBox(
+                                  width: image.width.toDouble(),
+                                  height: image.height.toDouble(),
+                                  child: RawImage(image: image, fit: BoxFit.fill),
+                                ),
                               ),
                             ),
                           ),
@@ -241,12 +245,15 @@ class _PhotoCropScreenState extends State<PhotoCropScreen> {
                       ),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Text(
-                      strings.cropPhotoHint,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: colors.muted, fontSize: 13),
+                  StaggeredEntrance(
+                    index: 1,
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Text(
+                        strings.cropPhotoHint,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: colors.muted, fontSize: 13),
+                      ),
                     ),
                   ),
                 ],

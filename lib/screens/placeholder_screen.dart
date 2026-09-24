@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/staggered_entrance.dart';
 
 /// A feature sketched into the menu ahead of the real thing existing yet —
 /// [ShootingStarsScreen] and [FriendsScreen] are both just this with their
@@ -38,63 +39,75 @@ class PlaceholderScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: Icon(Icons.arrow_back, color: colors.muted),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        strings.comingSoonBadge,
-                        style: TextStyle(
-                          fontSize: 12,
-                          letterSpacing: 2,
-                          fontWeight: FontWeight.w600,
-                          color: colors.accentDim,
+                  StaggeredEntrance(
+                    index: 0,
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: Icon(Icons.arrow_back, color: colors.muted),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 12),
+                        Text(
+                          strings.comingSoonBadge,
+                          style: TextStyle(
+                            fontSize: 12,
+                            letterSpacing: 2,
+                            fontWeight: FontWeight.w600,
+                            color: colors.accentDim,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w700,
-                      color: colors.text,
+                  StaggeredEntrance(
+                    index: 0,
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w700,
+                        color: colors.text,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 48),
-                  Center(
-                    child: Container(
-                      width: 84,
-                      height: 84,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: colors.gold.withValues(alpha: 0.12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.gold.withValues(alpha: 0.4),
-                            blurRadius: 28,
-                          ),
-                        ],
+                  StaggeredEntrance(
+                    index: 1,
+                    child: Center(
+                      child: Container(
+                        width: 84,
+                        height: 84,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: colors.gold.withValues(alpha: 0.12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.gold.withValues(alpha: 0.4),
+                              blurRadius: 28,
+                            ),
+                          ],
+                        ),
+                        child: Icon(icon, size: 38, color: colors.gold),
                       ),
-                      child: Icon(icon, size: 38, color: colors.gold),
                     ),
                   ),
                   const SizedBox(height: 28),
-                  SizedBox(
-                    width: double.infinity,
-                    child: Text(
-                      body,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 15,
-                        height: 1.5,
-                        color: colors.muted,
+                  StaggeredEntrance(
+                    index: 2,
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Text(
+                        body,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 15,
+                          height: 1.5,
+                          color: colors.muted,
+                        ),
                       ),
                     ),
                   ),

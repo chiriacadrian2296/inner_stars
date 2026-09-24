@@ -11,6 +11,7 @@ import '../theme/app_style.dart';
 import '../utils/date_format.dart';
 import 'area_tag.dart';
 import 'navigate_here_button.dart';
+import 'press_scale.dart';
 import 'project_tag.dart';
 import 'star_created_at.dart';
 import 'star_extra_badge.dart';
@@ -94,75 +95,77 @@ class DeadStarCard extends StatelessWidget {
     final strings = context.strings;
     final borderRadius = BorderRadius.circular(kRadiusCard);
 
-    final card = Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: borderRadius,
-        child: Ink(
-          decoration: panelDecoration(colors),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const StarKindLabel(kind: StarKind.dead),
-                if (wasPulsar) ...[
-                  const SizedBox(height: 4),
-                  Center(
-                    child: Text(
-                      StarKind.pulsar.label(strings),
-                      style: TextStyle(fontSize: 12, color: colors.muted),
+    final card = PressScale(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: borderRadius,
+          child: Ink(
+            decoration: panelDecoration(colors),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const StarKindLabel(kind: StarKind.dead),
+                  if (wasPulsar) ...[
+                    const SizedBox(height: 4),
+                    Center(
+                      child: Text(
+                        StarKind.pulsar.label(strings),
+                        style: TextStyle(fontSize: 12, color: colors.muted),
+                      ),
+                    ),
+                  ],
+                  if (project != null) ...[
+                    const SizedBox(height: 10),
+                    Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AreaTag(
+                            area: project!.area,
+                            iconSize: 18,
+                            fontSize: 15,
+                          ),
+                          const SizedBox(width: 14),
+                          ProjectTag(
+                            project: project!,
+                            iconSize: 15,
+                            fontSize: 14,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: kFontStarTitle,
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 25,
+                      color: colors.muted,
                     ),
                   ),
-                ],
-                if (project != null) ...[
-                  const SizedBox(height: 10),
-                  Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AreaTag(
-                          area: project!.area,
-                          iconSize: 18,
-                          fontSize: 15,
-                        ),
-                        const SizedBox(width: 14),
-                        ProjectTag(
-                          project: project!,
-                          iconSize: 15,
-                          fontSize: 14,
-                        ),
-                      ],
-                    ),
+                  const SizedBox(height: 12),
+                  StarExtraBadge(
+                    icon: Icons.church,
+                    label: deadDate == null
+                        ? strings.noDeadDateLabel
+                        : strings.deadDateBadgeLabel,
+                    value: deadDate == null
+                        ? null
+                        : formatDisplayDate(deadDate!, strings),
+                    dimmed: deadDate == null,
                   ),
+                  const SizedBox(height: 18),
+                  StarCreatedAt(createdAt: createdAt),
                 ],
-                const SizedBox(height: 12),
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: kFontStarTitle,
-                    fontStyle: FontStyle.italic,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 25,
-                    color: colors.muted,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                StarExtraBadge(
-                  icon: Icons.church,
-                  label: deadDate == null
-                      ? strings.noDeadDateLabel
-                      : strings.deadDateBadgeLabel,
-                  value: deadDate == null
-                      ? null
-                      : formatDisplayDate(deadDate!, strings),
-                  dimmed: deadDate == null,
-                ),
-                const SizedBox(height: 18),
-                StarCreatedAt(createdAt: createdAt),
-              ],
+              ),
             ),
           ),
         ),

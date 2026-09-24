@@ -11,6 +11,7 @@ import '../theme/app_style.dart';
 import '../widgets/constellation_field.dart' show kSkyStarPalette;
 import '../widgets/constellation_painter.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/staggered_entrance.dart';
 import '../widgets/star_glyph.dart';
 
 /// The metaphor, written down in one place: what a supernova, a
@@ -64,95 +65,128 @@ class _MetaphorScreenState extends State<MetaphorScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: Icon(Icons.arrow_back, color: colors.muted),
-                      ),
-                      Text(
-                        strings.guideEyebrow,
-                        style: TextStyle(
-                          fontSize: 12,
-                          letterSpacing: 1.4,
-                          fontWeight: FontWeight.w600,
-                          color: colors.gold,
+                  StaggeredEntrance(
+                    index: 0,
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: Icon(Icons.arrow_back, color: colors.muted),
                         ),
-                      ),
-                    ],
+                        Text(
+                          strings.guideEyebrow,
+                          style: TextStyle(
+                            fontSize: 12,
+                            letterSpacing: 1.4,
+                            fontWeight: FontWeight.w600,
+                            color: colors.gold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 10),
-                  Text(
-                    strings.guideTitle,
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w700,
-                      color: colors.text,
+                  StaggeredEntrance(
+                    index: 0,
+                    child: Text(
+                      strings.guideTitle,
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w700,
+                        color: colors.text,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    strings.guideIntroBody,
-                    style: TextStyle(
-                      fontSize: 14,
-                      height: 1.5,
-                      color: colors.muted,
+                  StaggeredEntrance(
+                    index: 0,
+                    child: Text(
+                      strings.guideIntroBody,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.5,
+                        color: colors.muted,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
                   // Biggest to smallest, in the order the sky itself nests
                   // — a star sits in a constellation, which sits in a
                   // supernova. Reading top to bottom is reading inward.
-                  _LevelSection(
-                    title: strings.guideAreaTitle,
-                    meaning: strings.guideAreaMeaning,
-                    body: strings.guideAreaBody,
-                    examples: strings.guideAreaExamples,
-                    picture: const _SupernovaPicture(),
-                  ),
-                  const SizedBox(height: 20),
-                  _LevelSection(
-                    title: strings.guideConstellationTitle,
-                    meaning: strings.guideConstellationMeaning,
-                    body: strings.guideConstellationBody,
-                    examples: strings.guideConstellationExamples,
-                    picture: _ConstellationPicture(
-                      flareProgram: _flareProgram,
+                  StaggeredEntrance(
+                    index: 1,
+                    child: _LevelSection(
+                      title: strings.guideAreaTitle,
+                      meaning: strings.guideAreaMeaning,
+                      body: strings.guideAreaBody,
+                      examples: strings.guideAreaExamples,
+                      picture: const _SupernovaPicture(),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  _LevelSection(
-                    title: strings.guideStarTitle,
-                    meaning: strings.guideStarMeaning,
-                    body: strings.guideStarBody,
-                    examples: strings.guideStarExamples,
-                    picture: const _StarKindsRow(),
+                  StaggeredEntrance(
+                    index: 2,
+                    child: _LevelSection(
+                      title: strings.guideConstellationTitle,
+                      meaning: strings.guideConstellationMeaning,
+                      body: strings.guideConstellationBody,
+                      examples: strings.guideConstellationExamples,
+                      picture: _ConstellationPicture(
+                        flareProgram: _flareProgram,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  StaggeredEntrance(
+                    index: 3,
+                    child: _LevelSection(
+                      title: strings.guideStarTitle,
+                      meaning: strings.guideStarMeaning,
+                      body: strings.guideStarBody,
+                      examples: strings.guideStarExamples,
+                      picture: const _StarKindsRow(),
+                    ),
                   ),
                   const SizedBox(height: 28),
-                  _SectionHeading(strings.guideKindsTitle),
+                  StaggeredEntrance(
+                    index: 4,
+                    child: _SectionHeading(strings.guideKindsTitle),
+                  ),
                   const SizedBox(height: 6),
-                  Text(
-                    strings.guideKindsBody,
-                    style: TextStyle(
-                      fontSize: 14,
-                      height: 1.5,
-                      color: colors.muted,
+                  StaggeredEntrance(
+                    index: 4,
+                    child: Text(
+                      strings.guideKindsBody,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.5,
+                        color: colors.muted,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 14),
                   for (final kind in StarKind.values) ...[
-                    _KindCard(kind: kind),
+                    StaggeredEntrance(
+                      index: 5 + kind.index,
+                      child: _KindCard(kind: kind),
+                    ),
                     const SizedBox(height: 10),
                   ],
                   const SizedBox(height: 18),
-                  _SectionHeading(strings.guideIntensityTitle),
+                  StaggeredEntrance(
+                    index: 4,
+                    child: _SectionHeading(strings.guideIntensityTitle),
+                  ),
                   const SizedBox(height: 6),
-                  Text(
-                    strings.guideIntensityBody,
-                    style: TextStyle(
-                      fontSize: 14,
-                      height: 1.5,
-                      color: colors.muted,
+                  StaggeredEntrance(
+                    index: 4,
+                    child: Text(
+                      strings.guideIntensityBody,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.5,
+                        color: colors.muted,
+                      ),
                     ),
                   ),
                 ],
@@ -195,48 +229,66 @@ class _LevelSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(child: picture),
+          StaggeredEntrance(
+            index: 0,
+            child: Center(child: picture),
+          ),
           const SizedBox(height: 16),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: colors.gold,
+          StaggeredEntrance(
+            index: 1,
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: colors.gold,
+              ),
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            meaning,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: colors.text,
+          StaggeredEntrance(
+            index: 2,
+            child: Text(
+              meaning,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: colors.text,
+              ),
             ),
           ),
           const SizedBox(height: 10),
-          Text(
-            body,
-            style: TextStyle(fontSize: 14, height: 1.5, color: colors.muted),
+          StaggeredEntrance(
+            index: 3,
+            child: Text(
+              body,
+              style: TextStyle(fontSize: 14, height: 1.5, color: colors.muted),
+            ),
           ),
           const SizedBox(height: 12),
-          Text(
-            strings.examplesLabel,
-            style: TextStyle(
-              fontSize: 11,
-              letterSpacing: 1.2,
-              fontWeight: FontWeight.w600,
-              color: colors.accentDim,
+          StaggeredEntrance(
+            index: 4,
+            child: Text(
+              strings.examplesLabel,
+              style: TextStyle(
+                fontSize: 11,
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.w600,
+                color: colors.accentDim,
+              ),
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            examples,
-            style: TextStyle(
-              fontSize: 13,
-              height: 1.5,
-              fontStyle: FontStyle.italic,
-              color: colors.muted,
+          StaggeredEntrance(
+            index: 4,
+            child: Text(
+              examples,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.5,
+                fontStyle: FontStyle.italic,
+                color: colors.muted,
+              ),
             ),
           ),
         ],
@@ -281,40 +333,48 @@ class _KindCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          StarGlyph(kind: kind, size: 26),
+          StaggeredEntrance(
+            index: 0,
+            axis: Axis.horizontal,
+            child: StarGlyph(kind: kind, size: 26),
+          ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  kind.label(strings),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: starKindColor(kind, colors),
+            child: StaggeredEntrance(
+              index: 1,
+              axis: Axis.horizontal,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    kind.label(strings),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: starKindColor(kind, colors),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  kind.meaning(strings),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: colors.text,
+                  const SizedBox(height: 2),
+                  Text(
+                    kind.meaning(strings),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: colors.text,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  kind.example(strings),
-                  style: TextStyle(
-                    fontSize: 13,
-                    height: 1.45,
-                    fontStyle: FontStyle.italic,
-                    color: colors.muted,
+                  const SizedBox(height: 6),
+                  Text(
+                    kind.example(strings),
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.45,
+                      fontStyle: FontStyle.italic,
+                      color: colors.muted,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -454,7 +514,12 @@ class _StarKindsRow extends StatelessWidget {
       spacing: 4,
       runSpacing: 8,
       children: [
-        for (final kind in StarKind.values) StarGlyph(kind: kind, size: 26),
+        for (final kind in StarKind.values)
+          StaggeredEntrance(
+            index: kind.index,
+            axis: Axis.horizontal,
+            child: StarGlyph(kind: kind, size: 26),
+          ),
       ],
     );
   }

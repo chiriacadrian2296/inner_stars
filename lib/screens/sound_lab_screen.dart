@@ -8,6 +8,7 @@ import '../models/sky_whoosh_effect.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/staggered_entrance.dart';
 
 /// Every sound experiment in one place: the Sky's background loop
 /// (pick a track, play/pause), its tap/hold sounds, and its two zoom
@@ -140,182 +141,235 @@ class _SoundLabScreenState extends State<SoundLabScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
             children: [
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.arrow_back, color: colors.muted),
-                  ),
-                  Text(
-                    strings.soundLabEyebrow,
-                    style: TextStyle(
-                      fontSize: 12,
-                      letterSpacing: 1.4,
-                      fontWeight: FontWeight.w600,
-                      color: colors.gold,
+              StaggeredEntrance(
+                index: 0,
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: Icon(Icons.arrow_back, color: colors.muted),
                     ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: _resetToDefaults,
-                    tooltip: strings.soundLabResetAction,
-                    icon: Icon(Icons.restore, color: colors.muted),
-                  ),
-                ],
+                    Text(
+                      strings.soundLabEyebrow,
+                      style: TextStyle(
+                        fontSize: 12,
+                        letterSpacing: 1.4,
+                        fontWeight: FontWeight.w600,
+                        color: colors.gold,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: _resetToDefaults,
+                      tooltip: strings.soundLabResetAction,
+                      icon: Icon(Icons.restore, color: colors.muted),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 10),
-              Text(
-                strings.soundLabTitle,
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w700,
-                  color: colors.text,
+              StaggeredEntrance(
+                index: 0,
+                child: Text(
+                  strings.soundLabTitle,
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w700,
+                    color: colors.text,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                strings.soundLabSubtitle,
-                style: TextStyle(fontSize: 14, height: 1.45, color: colors.muted),
+              StaggeredEntrance(
+                index: 0,
+                child: Text(
+                  strings.soundLabSubtitle,
+                  style: TextStyle(fontSize: 14, height: 1.45, color: colors.muted),
+                ),
               ),
               const SizedBox(height: 22),
 
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: panelDecoration(colors),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      strings.backgroundTrackLabel,
-                      style: TextStyle(fontSize: 13, color: colors.muted),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: _SoundDropdown<BackgroundTrack>(
-                            value: widget.audioService.backgroundTrack,
-                            items: [
-                              for (final track in BackgroundTrack.values)
-                                DropdownMenuItem(
-                                  value: track,
-                                  child: Text(track.displayName(strings)),
-                                ),
-                            ],
-                            onChanged: _selectTrack,
-                          ),
+              StaggeredEntrance(
+                index: 1,
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: panelDecoration(colors),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      StaggeredEntrance(
+                        index: 0,
+                        child: Text(
+                          strings.backgroundTrackLabel,
+                          style: TextStyle(fontSize: 13, color: colors.muted),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          flex: 1,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerRight,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                _StepArrowButton(
-                                  icon: Icons.chevron_left,
-                                  onTap: () => _stepTrack(-1),
-                                ),
-                                _StepArrowButton(
-                                  icon: Icons.chevron_right,
-                                  onTap: () => _stepTrack(1),
-                                ),
-                                const SizedBox(width: 6),
-                                _PlayPauseButton(
-                                  paused: paused,
-                                  onTap: _toggleBackgroundPlayback,
-                                  playTooltip: strings.playBackgroundTrackAction,
-                                  pauseTooltip: strings.pauseBackgroundTrackAction,
-                                ),
-                              ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: StaggeredEntrance(
+                              index: 1,
+                              axis: Axis.horizontal,
+                              child: _SoundDropdown<BackgroundTrack>(
+                                value: widget.audioService.backgroundTrack,
+                                items: [
+                                  for (final track in BackgroundTrack.values)
+                                    DropdownMenuItem(
+                                      value: track,
+                                      child: Text(track.displayName(strings)),
+                                    ),
+                                ],
+                                onChanged: _selectTrack,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: 10),
+                          Expanded(
+                            flex: 1,
+                            child: StaggeredEntrance(
+                              index: 2,
+                              axis: Axis.horizontal,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerRight,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _StepArrowButton(
+                                      icon: Icons.chevron_left,
+                                      onTap: () => _stepTrack(-1),
+                                    ),
+                                    _StepArrowButton(
+                                      icon: Icons.chevron_right,
+                                      onTap: () => _stepTrack(1),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    _PlayPauseButton(
+                                      paused: paused,
+                                      onTap: _toggleBackgroundPlayback,
+                                      playTooltip: strings.playBackgroundTrackAction,
+                                      pauseTooltip: strings.pauseBackgroundTrackAction,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
 
-              _SoundEffectPanel<SkySoundEffect>(
-                label: strings.tapSoundLabel,
-                value: widget.audioService.tapSound,
-                allValues: SkySoundEffect.values,
-                displayName: (sound) => sound.displayName(strings),
-                onChanged: _selectTapSound,
+              StaggeredEntrance(
+                index: 2,
+                child: _SoundEffectPanel<SkySoundEffect>(
+                  label: strings.tapSoundLabel,
+                  value: widget.audioService.tapSound,
+                  allValues: SkySoundEffect.values,
+                  displayName: (sound) => sound.displayName(strings),
+                  onChanged: _selectTapSound,
+                ),
               ),
               const SizedBox(height: 12),
 
-              _SoundEffectPanel<SkySoundEffect>(
-                label: strings.holdSoundLabel,
-                value: widget.audioService.holdSound,
-                allValues: SkySoundEffect.values,
-                displayName: (sound) => sound.displayName(strings),
-                onChanged: _selectHoldSound,
+              StaggeredEntrance(
+                index: 3,
+                child: _SoundEffectPanel<SkySoundEffect>(
+                  label: strings.holdSoundLabel,
+                  value: widget.audioService.holdSound,
+                  allValues: SkySoundEffect.values,
+                  displayName: (sound) => sound.displayName(strings),
+                  onChanged: _selectHoldSound,
+                ),
               ),
               const SizedBox(height: 12),
 
-              _SoundEffectPanel<SkyWhooshEffect>(
-                label: strings.whooshInLabel,
-                value: widget.audioService.whooshInSound,
-                allValues: SkyWhooshEffect.values,
-                displayName: (sound) => sound.displayName(strings),
-                onChanged: _selectWhooshInSound,
+              StaggeredEntrance(
+                index: 4,
+                child: _SoundEffectPanel<SkyWhooshEffect>(
+                  label: strings.whooshInLabel,
+                  value: widget.audioService.whooshInSound,
+                  allValues: SkyWhooshEffect.values,
+                  displayName: (sound) => sound.displayName(strings),
+                  onChanged: _selectWhooshInSound,
+                ),
               ),
               const SizedBox(height: 12),
 
-              _SoundEffectPanel<SkyWhooshEffect>(
-                label: strings.whooshOutLabel,
-                value: widget.audioService.whooshOutSound,
-                allValues: SkyWhooshEffect.values,
-                displayName: (sound) => sound.displayName(strings),
-                onChanged: _selectWhooshOutSound,
+              StaggeredEntrance(
+                index: 5,
+                child: _SoundEffectPanel<SkyWhooshEffect>(
+                  label: strings.whooshOutLabel,
+                  value: widget.audioService.whooshOutSound,
+                  allValues: SkyWhooshEffect.values,
+                  displayName: (sound) => sound.displayName(strings),
+                  onChanged: _selectWhooshOutSound,
+                ),
               ),
               const SizedBox(height: 12),
 
-              Container(
-                padding: const EdgeInsets.fromLTRB(16, 16, 18, 8),
-                decoration: panelDecoration(colors),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      strings.volumeSectionLabel,
-                      style: TextStyle(fontSize: 13, color: colors.muted),
-                    ),
-                    const SizedBox(height: 14),
-                    _VolumeSliderRow(
-                      label: strings.backgroundVolumeLabel,
-                      value: widget.audioService.backgroundVolume,
-                      onChanged: _setBackgroundVolume,
-                    ),
-                    const SizedBox(height: 10),
-                    _VolumeSliderRow(
-                      label: strings.tapVolumeLabel,
-                      value: widget.audioService.tapVolume,
-                      onChanged: _setTapVolume,
-                      onChangeEnd: _previewTapVolume,
-                    ),
-                    const SizedBox(height: 10),
-                    _VolumeSliderRow(
-                      label: strings.holdVolumeLabel,
-                      value: widget.audioService.holdVolume,
-                      onChanged: _setHoldVolume,
-                      onChangeEnd: _previewHoldVolume,
-                    ),
-                    const SizedBox(height: 10),
-                    _VolumeSliderRow(
-                      label: strings.whooshVolumeLabel,
-                      value: widget.audioService.whooshVolume,
-                      onChanged: _setWhooshVolume,
-                      onChangeEnd: _previewWhooshVolume,
-                    ),
-                    const SizedBox(height: 6),
-                  ],
+              StaggeredEntrance(
+                index: 6,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 18, 8),
+                  decoration: panelDecoration(colors),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      StaggeredEntrance(
+                        index: 0,
+                        child: Text(
+                          strings.volumeSectionLabel,
+                          style: TextStyle(fontSize: 13, color: colors.muted),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      StaggeredEntrance(
+                        index: 1,
+                        child: _VolumeSliderRow(
+                          label: strings.backgroundVolumeLabel,
+                          value: widget.audioService.backgroundVolume,
+                          onChanged: _setBackgroundVolume,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      StaggeredEntrance(
+                        index: 2,
+                        child: _VolumeSliderRow(
+                          label: strings.tapVolumeLabel,
+                          value: widget.audioService.tapVolume,
+                          onChanged: _setTapVolume,
+                          onChangeEnd: _previewTapVolume,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      StaggeredEntrance(
+                        index: 3,
+                        child: _VolumeSliderRow(
+                          label: strings.holdVolumeLabel,
+                          value: widget.audioService.holdVolume,
+                          onChanged: _setHoldVolume,
+                          onChangeEnd: _previewHoldVolume,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      StaggeredEntrance(
+                        index: 4,
+                        child: _VolumeSliderRow(
+                          label: strings.whooshVolumeLabel,
+                          value: widget.audioService.whooshVolume,
+                          onChanged: _setWhooshVolume,
+                          onChangeEnd: _previewWhooshVolume,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -358,42 +412,56 @@ class _SoundEffectPanel<T> extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(fontSize: 13, color: colors.muted)),
+          StaggeredEntrance(
+            index: 0,
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 13, color: colors.muted),
+            ),
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
                 flex: 2,
-                child: _SoundDropdown<T>(
-                  value: value,
-                  items: [
-                    for (final item in allValues)
-                      DropdownMenuItem(
-                        value: item,
-                        child: Text(displayName(item)),
-                      ),
-                  ],
-                  onChanged: onChanged,
+                child: StaggeredEntrance(
+                  index: 1,
+                  axis: Axis.horizontal,
+                  child: _SoundDropdown<T>(
+                    value: value,
+                    items: [
+                      for (final item in allValues)
+                        DropdownMenuItem(
+                          value: item,
+                          child: Text(displayName(item)),
+                        ),
+                    ],
+                    onChanged: onChanged,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 flex: 1,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerRight,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _StepArrowButton(
-                        icon: Icons.chevron_left,
-                        onTap: () => _step(-1),
-                      ),
-                      _StepArrowButton(
-                        icon: Icons.chevron_right,
-                        onTap: () => _step(1),
-                      ),
-                    ],
+                child: StaggeredEntrance(
+                  index: 2,
+                  axis: Axis.horizontal,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _StepArrowButton(
+                          icon: Icons.chevron_left,
+                          onTap: () => _step(-1),
+                        ),
+                        _StepArrowButton(
+                          icon: Icons.chevron_right,
+                          onTap: () => _step(1),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -536,33 +604,45 @@ class _VolumeSliderRow extends StatelessWidget {
       children: [
         SizedBox(
           width: 92,
-          child: Text(
-            label,
-            style: TextStyle(fontSize: 13, color: colors.muted),
-            overflow: TextOverflow.ellipsis,
+          child: StaggeredEntrance(
+            index: 0,
+            axis: Axis.horizontal,
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 13, color: colors.muted),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              padding: EdgeInsets.zero,
-              trackHeight: 4,
-            ),
-            child: Slider(
-              value: value,
-              onChanged: onChanged,
-              onChangeEnd: onChangeEnd,
+          child: StaggeredEntrance(
+            index: 1,
+            axis: Axis.horizontal,
+            child: SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                padding: EdgeInsets.zero,
+                trackHeight: 4,
+              ),
+              child: Slider(
+                value: value,
+                onChanged: onChanged,
+                onChangeEnd: onChangeEnd,
+              ),
             ),
           ),
         ),
         const SizedBox(width: 10),
         SizedBox(
           width: 40,
-          child: Text(
-            '${(value * 100).round()}%',
-            textAlign: TextAlign.end,
-            style: TextStyle(fontSize: 12, color: colors.muted),
+          child: StaggeredEntrance(
+            index: 2,
+            axis: Axis.horizontal,
+            child: Text(
+              '${(value * 100).round()}%',
+              textAlign: TextAlign.end,
+              style: TextStyle(fontSize: 12, color: colors.muted),
+            ),
           ),
         ),
       ],

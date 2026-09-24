@@ -5,6 +5,7 @@ import '../l10n/strings_scope.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/staggered_entrance.dart';
 import '../widgets/star_glyph.dart';
 
 /// One page's fixed content — its picture, title, and body. Built fresh in
@@ -139,14 +140,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   children: [
                     for (var i = 0; i < pages.length; i++) ...[
                       if (i > 0) const SizedBox(width: 6),
+                      // The page indicator segments slide in left to right.
                       Expanded(
-                        child: Container(
-                          height: 3,
-                          decoration: BoxDecoration(
-                            color: i <= _index
-                                ? colors.gold
-                                : colors.nightBorder,
-                            borderRadius: BorderRadius.circular(2),
+                        child: StaggeredEntrance(
+                          index: i,
+                          axis: Axis.horizontal,
+                          child: Container(
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: i <= _index
+                                  ? colors.gold
+                                  : colors.nightBorder,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
                           ),
                         ),
                       ),
@@ -157,10 +163,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    tooltip: strings.onboardingSkipTooltip,
-                    icon: Icon(Icons.close, color: colors.muted),
+                  StaggeredEntrance(
+                    index: 1,
+                    child: IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      tooltip: strings.onboardingSkipTooltip,
+                      icon: Icon(Icons.close, color: colors.muted),
+                    ),
                   ),
                 ],
               ),
@@ -188,12 +197,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                 child: SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => _next(pages.length),
-                    child: Text(
-                      _index == pages.length - 1
-                          ? strings.onboardingGetStartedAction
-                          : strings.onboardingNextAction,
+                  child: StaggeredEntrance(
+                    index: 3,
+                    child: ElevatedButton(
+                      onPressed: () => _next(pages.length),
+                      child: Text(
+                        _index == pages.length - 1
+                            ? strings.onboardingGetStartedAction
+                            : strings.onboardingNextAction,
+                      ),
                     ),
                   ),
                 ),
@@ -221,36 +233,45 @@ class _OnboardingPageBody extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 96,
-              height: 96,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: colors.gold.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
+            StaggeredEntrance(
+              index: 0,
+              child: Container(
+                width: 96,
+                height: 96,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: colors.gold.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: page.kind != null
+                    ? StarGlyph(kind: page.kind!, size: 44)
+                    : Icon(page.icon, color: colors.gold, size: 44),
               ),
-              child: page.kind != null
-                  ? StarGlyph(kind: page.kind!, size: 44)
-                  : Icon(page.icon, color: colors.gold, size: 44),
             ),
             const SizedBox(height: 28),
-            Text(
-              page.title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: colors.text,
+            StaggeredEntrance(
+              index: 1,
+              child: Text(
+                page.title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: colors.text,
+                ),
               ),
             ),
             const SizedBox(height: 14),
-            Text(
-              page.body,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                height: 1.5,
-                color: colors.muted,
+            StaggeredEntrance(
+              index: 2,
+              child: Text(
+                page.body,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  height: 1.5,
+                  color: colors.muted,
+                ),
               ),
             ),
           ],

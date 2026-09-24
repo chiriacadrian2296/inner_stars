@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../utils/app_modals.dart';
 import '../utils/date_format.dart';
 import '../utils/responsive.dart';
 import 'responsive_content.dart';
+import 'staggered_entrance.dart';
 
 /// Opens the date-range filter sheet for Sky's Stars view — narrows the flat
 /// list to whatever was logged within a window, either a common preset
@@ -32,7 +34,7 @@ showDateRangeFilterSheet(
   required DateTimeRange? initialRange,
   required DateRangePreset initialPreset,
 }) {
-  return showModalBottomSheet<({DateTimeRange? range, DateRangePreset preset})>(
+  return showAppSheet<({DateTimeRange? range, DateRangePreset preset})>(
     context: context,
     isScrollControlled: true,
     builder: (_) => _DateRangeFilterSheet(
@@ -234,24 +236,31 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        strings.dateRangeFilterSectionTitle,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: colors.muted,
+                StaggeredEntrance(
+                  index: 0,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          strings.dateRangeFilterSectionTitle,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: colors.muted,
+                          ),
                         ),
                       ),
-                    ),
-                    if (_range != null)
-                      TextButton(
-                        onPressed: _clear,
-                        child: Text(strings.clearFilterAction),
-                      ),
-                  ],
+                      if (_range != null)
+                        StaggeredEntrance(
+                          index: 0,
+                          axis: Axis.horizontal,
+                          child: TextButton(
+                            onPressed: _clear,
+                            child: Text(strings.clearFilterAction),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 10),
                 // The duration on one side (which chip is lit is also what
@@ -261,41 +270,61 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
                 Row(
                   children: [
                     Expanded(
-                      child: _PresetChip(
-                        label: strings.dateRangeUnitWeek,
-                        selected: _preset == DateRangePreset.week,
-                        onTap: () => _selectUnit(DateRangePreset.week),
+                      child: StaggeredEntrance(
+                        index: 0,
+                        axis: Axis.horizontal,
+                        child: _PresetChip(
+                          label: strings.dateRangeUnitWeek,
+                          selected: _preset == DateRangePreset.week,
+                          onTap: () => _selectUnit(DateRangePreset.week),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: _PresetChip(
-                        label: strings.dateRangeUnitMonth,
-                        selected: _preset == DateRangePreset.month,
-                        onTap: () => _selectUnit(DateRangePreset.month),
+                      child: StaggeredEntrance(
+                        index: 1,
+                        axis: Axis.horizontal,
+                        child: _PresetChip(
+                          label: strings.dateRangeUnitMonth,
+                          selected: _preset == DateRangePreset.month,
+                          onTap: () => _selectUnit(DateRangePreset.month),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: _PresetChip(
-                        label: strings.dateRangeUnitYear,
-                        selected: _preset == DateRangePreset.year,
-                        onTap: () => _selectUnit(DateRangePreset.year),
+                      child: StaggeredEntrance(
+                        index: 2,
+                        axis: Axis.horizontal,
+                        child: _PresetChip(
+                          label: strings.dateRangeUnitYear,
+                          selected: _preset == DateRangePreset.year,
+                          onTap: () => _selectUnit(DateRangePreset.year),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 10),
-                    _StepButton(
-                      icon: Icons.chevron_left,
-                      enabled: _hasUnit,
-                      tooltip: strings.dateRangeStepBackAction,
-                      onTap: _stepBackward,
+                    StaggeredEntrance(
+                      index: 3,
+                      axis: Axis.horizontal,
+                      child: _StepButton(
+                        icon: Icons.chevron_left,
+                        enabled: _hasUnit,
+                        tooltip: strings.dateRangeStepBackAction,
+                        onTap: _stepBackward,
+                      ),
                     ),
                     const SizedBox(width: 6),
-                    _StepButton(
-                      icon: Icons.chevron_right,
-                      enabled: _canStepForward,
-                      tooltip: strings.dateRangeStepForwardAction,
-                      onTap: _stepForward,
+                    StaggeredEntrance(
+                      index: 4,
+                      axis: Axis.horizontal,
+                      child: _StepButton(
+                        icon: Icons.chevron_right,
+                        enabled: _canStepForward,
+                        tooltip: strings.dateRangeStepForwardAction,
+                        onTap: _stepForward,
+                      ),
                     ),
                   ],
                 ),
@@ -309,13 +338,16 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
                   onTap: _pickCustom,
                 ),
                 const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () =>
-                        Navigator.of(context)
-                            .pop((range: _range, preset: _preset)),
-                    child: Text(strings.applyFilterAction),
+                StaggeredEntrance(
+                  index: 7,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () =>
+                          Navigator.of(context)
+                              .pop((range: _range, preset: _preset)),
+                      child: Text(strings.applyFilterAction),
+                    ),
                   ),
                 ),
               ],
@@ -436,18 +468,30 @@ class _DateRangeTicket extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _TicketBox(
-            label: strings.dateRangeFromLabel,
-            date: from,
-            onTap: onTap,
+          child: StaggeredEntrance(
+            index: 5,
+            axis: Axis.horizontal,
+            child: _TicketBox(
+              label: strings.dateRangeFromLabel,
+              date: from,
+              onTap: onTap,
+            ),
           ),
         ),
-        _TicketConnector(active: active),
+        StaggeredEntrance(
+          index: 6,
+          axis: Axis.horizontal,
+          child: _TicketConnector(active: active),
+        ),
         Expanded(
-          child: _TicketBox(
-            label: strings.dateRangeToLabel,
-            date: to,
-            onTap: onTap,
+          child: StaggeredEntrance(
+            index: 6,
+            axis: Axis.horizontal,
+            child: _TicketBox(
+              label: strings.dateRangeToLabel,
+              date: to,
+              onTap: onTap,
+            ),
           ),
         ),
       ],

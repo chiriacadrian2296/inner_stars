@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import 'press_scale.dart';
 
 /// A labelled on/off pill — "All supernovas", "All kinds".
 ///
@@ -40,35 +41,37 @@ class AppToggleChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Center(
-      child: InkWell(
-        onTap: () => onChanged(!value),
-        borderRadius: BorderRadius.circular(_pillRadius),
-        child: Container(
-          padding: const EdgeInsets.only(left: 16, right: 6),
-          decoration: selectableDecoration(
-            colors,
-            selected: value,
-            radius: _pillRadius,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: labelColor ?? colors.text,
-                  fontWeight: value ? FontWeight.w600 : FontWeight.w400,
+      child: PressScale(
+        child: InkWell(
+          onTap: () => onChanged(!value),
+          borderRadius: BorderRadius.circular(_pillRadius),
+          child: Container(
+            padding: const EdgeInsets.only(left: 16, right: 6),
+            decoration: selectableDecoration(
+              colors,
+              selected: value,
+              radius: _pillRadius,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: labelColor ?? colors.text,
+                    fontWeight: value ? FontWeight.w600 : FontWeight.w400,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              // Shrunk to sit comfortably inside a pill rather than
-              // dominating it; the colors are the theme's, untouched.
-              Transform.scale(
-                scale: 0.8,
-                child: Switch(value: value, onChanged: onChanged),
-              ),
-            ],
+                const SizedBox(width: 6),
+                // Shrunk to sit comfortably inside a pill rather than
+                // dominating it; the colors are the theme's, untouched.
+                Transform.scale(
+                  scale: 0.8,
+                  child: Switch(value: value, onChanged: onChanged),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -16,6 +16,7 @@ import '../models/star.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
+import '../utils/app_modals.dart';
 import '../utils/date_format.dart';
 import '../utils/responsive.dart';
 import '../widgets/area_tag.dart';
@@ -26,8 +27,17 @@ import '../widgets/photo_picker.dart';
 import '../widgets/project_tag.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/shareable_lit_star_card.dart';
+import '../widgets/staggered_entrance.dart';
 import 'photo_crop_screen.dart';
 import 'star_form_screen.dart';
+
+/// Moving to another star is a fade-through: the one leaving fades out
+/// completely first, then the next one's blocks fade in. [_kContentSwapDuration]
+/// is the fade-out; [_kContentEntranceLead] is how many cascade steps
+/// (40 ms each) the arrival waits, sized to start right as the fade-out ends
+/// so the empty beat between them stays as short as it can be.
+const _kContentSwapDuration = Duration(milliseconds: 200);
+const _kContentEntranceLead = 5;
 
 /// Shows one star at a time, with looping prev/next navigation, its content
 /// switching by whether the star is lit, still unlit, or dead.
@@ -99,10 +109,25 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
   /// on prev/next so browsing to another star always lands back on its data.
   bool _photoOnly = false;
 
+  /// Whether [_StarContent] plays its staggered entrance. Off only for a
+  /// refresh after an edit, where it's the same star and nothing should
+  /// replay.
+  bool _animateContent = true;
+
+  /// How the next star's blocks arrive: rising from below the first time the
+  /// reader opens, then sliding in from the side the person moved toward
+  /// (next from the end edge, previous from the start edge) so the motion
+  /// follows their swipe.
+  Axis _contentAxis = Axis.vertical;
+  bool _contentReverse = false;
+
   void _showPrevious() {
     setState(() {
       _index = (_index - 1 + _stars.length) % _stars.length;
       _photoOnly = false;
+      _animateContent = true;
+      _contentAxis = Axis.horizontal;
+      _contentReverse = true;
     });
   }
 
@@ -110,6 +135,9 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
     setState(() {
       _index = (_index + 1) % _stars.length;
       _photoOnly = false;
+      _animateContent = true;
+      _contentAxis = Axis.horizontal;
+      _contentReverse = false;
     });
   }
 
@@ -228,6 +256,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
       _index = refreshedIndex == -1
           ? _index.clamp(0, refreshed.length - 1)
           : refreshedIndex;
+      _animateContent = false;
     });
   }
 
@@ -295,7 +324,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
 
   Future<void> _markAchieved() async {
     final current = _stars[_index];
-    final result = await showModalBottomSheet<_MarkAchievedResult>(
+    final result = await showAppSheet<_MarkAchievedResult>(
       context: context,
       isScrollControlled: true,
       builder: (_) => const _MarkAchievedSheet(),
@@ -327,12 +356,31 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
               key: _shareKey,
               child: ShareableLitStarCard(star: star, project: project),
             ),
+          // Opaque floor over the share card above: that card holds every
+          // detail of the star and must never show through the background.
+          //
+          // Every child of this Stack is keyed. Which of them exist varies
+          // from star to star (the share card only when lit, the tap layer
+          // only with a photo), and unkeyed children are matched by position:
+          // one appearing or vanishing above would shift the rest, and
+          // Flutter would rebuild the whole chrome from scratch — losing the
+          // switchers' state, so nothing could animate out.
           Positioned.fill(
+            key: const ValueKey('reader-floor'),
+            child: ColoredBox(color: colors.night),
+          ),
+          Positioned.fill(
+            key: const ValueKey('reader-photo'),
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 260),
               switchInCurve: Curves.easeOut,
-              switchOutCurve: Curves.easeIn,
               transitionBuilder: (child, animation) {
+                // Only the background arriving fades in. The one leaving
+                // stays fully opaque under it until it's gone: fading both
+                // would dip the pair to partly see-through mid-swap, and the
+                // share card's data (hidden behind the background) would
+                // show through.
+                if (child.key != ValueKey(_index)) return child;
                 final scale = Tween<double>(
                   begin: 0.94,
                   end: 1.0,
@@ -352,12 +400,14 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
             // is showing (see the [IgnorePointer] below for why those still
             // win first).
             Positioned.fill(
+              key: const ValueKey('reader-photo-tap'),
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 onTap: _togglePhotoOnly,
               ),
             ),
           IgnorePointer(
+            key: const ValueKey('reader-chrome'),
             ignoring: photoPath != null && _photoOnly,
             child: AnimatedOpacity(
               opacity: photoPath != null && _photoOnly ? 0 : 1,
@@ -370,35 +420,47 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                       ResponsiveContent(
                         child: Row(
                           children: [
-                            IconButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              icon: Icon(
-                                Icons.close,
-                                color: colors.nightlightMuted,
+                            StaggeredEntrance(
+                              index: 0,
+                              axis: Axis.horizontal,
+                              child: IconButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                icon: Icon(
+                                  Icons.close,
+                                  color: colors.nightlightMuted,
+                                ),
                               ),
                             ),
                             Expanded(
                               child: Center(
-                                child: Text(
-                                  strings.indexOfCount(
-                                    _index + 1,
-                                    _stars.length,
-                                  ),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: colors.nightlightMuted,
+                                child: StaggeredEntrance(
+                                  index: 1,
+                                  axis: Axis.horizontal,
+                                  child: Text(
+                                    strings.indexOfCount(
+                                      _index + 1,
+                                      _stars.length,
+                                    ),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: colors.nightlightMuted,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                             if (widget.allowEdit)
-                              IconButton(
-                                onPressed: _editOrResurrectCurrent,
-                                icon: Icon(
-                                  star.dead
-                                      ? Icons.auto_fix_high
-                                      : Icons.edit_outlined,
-                                  color: colors.nightlightMuted,
+                              StaggeredEntrance(
+                                index: 2,
+                                axis: Axis.horizontal,
+                                child: IconButton(
+                                  onPressed: _editOrResurrectCurrent,
+                                  icon: Icon(
+                                    star.dead
+                                        ? Icons.auto_fix_high
+                                        : Icons.edit_outlined,
+                                    color: colors.nightlightMuted,
+                                  ),
                                 ),
                               )
                             else
@@ -424,19 +486,34 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                                 horizontal: 12,
                               ),
                               child: ResponsiveContent(
+                                // Fade-through: the star leaving fades out
+                                // and slips away toward the swipe; only then
+                                // does the next one's cascade begin (see
+                                // `_kContentEntranceLead`). The arriving one
+                                // is drawn as-is here — its own blocks do the
+                                // fading in.
                                 child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 260),
-                                  switchInCurve: Curves.easeOut,
-                                  switchOutCurve: Curves.easeIn,
+                                  duration: _kContentSwapDuration,
+                                  switchOutCurve: Curves.linear,
                                   transitionBuilder: (child, animation) {
-                                    final scale = Tween<double>(
-                                      begin: 0.94,
-                                      end: 1.0,
-                                    ).animate(animation);
+                                    if (child.key == ValueKey(_index)) {
+                                      return child;
+                                    }
+                                    final rtl =
+                                        Directionality.of(context) ==
+                                        TextDirection.rtl;
+                                    // Next leaves toward the start edge,
+                                    // previous toward the end edge.
+                                    final away =
+                                        (_contentReverse ? 1.0 : -1.0) *
+                                        (rtl ? -1.0 : 1.0);
                                     return FadeTransition(
                                       opacity: animation,
-                                      child: ScaleTransition(
-                                        scale: scale,
+                                      child: SlideTransition(
+                                        position: Tween<Offset>(
+                                          begin: Offset(0.12 * away, 0),
+                                          end: Offset.zero,
+                                        ).animate(animation),
                                         child: child,
                                       ),
                                     );
@@ -445,6 +522,9 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                                     key: ValueKey(_index),
                                     star: star,
                                     project: project,
+                                    animateEntrance: _animateContent,
+                                    entranceAxis: _contentAxis,
+                                    entranceReverse: _contentReverse,
                                   ),
                                 ),
                               ),
@@ -456,20 +536,32 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _NavCircleButton(
-                              icon: Icons.chevron_left,
-                              onTap: _showPrevious,
+                            StaggeredEntrance(
+                              index: 6,
+                              axis: Axis.horizontal,
+                              child: _NavCircleButton(
+                                icon: Icons.chevron_left,
+                                onTap: _showPrevious,
+                              ),
                             ),
-                            _MiddleAction(
-                              star: star,
-                              sharing: _sharing,
-                              onShare: _shareCurrent,
-                              onMarkAchieved: _markAchieved,
-                              onResurrect: _editOrResurrectCurrent,
+                            StaggeredEntrance(
+                              index: 7,
+                              axis: Axis.horizontal,
+                              child: _MiddleAction(
+                                star: star,
+                                sharing: _sharing,
+                                onShare: _shareCurrent,
+                                onMarkAchieved: _markAchieved,
+                                onResurrect: _editOrResurrectCurrent,
+                              ),
                             ),
-                            _NavCircleButton(
-                              icon: Icons.chevron_right,
-                              onTap: _showNext,
+                            StaggeredEntrance(
+                              index: 8,
+                              axis: Axis.horizontal,
+                              child: _NavCircleButton(
+                                icon: Icons.chevron_right,
+                                onTap: _showNext,
+                              ),
                             ),
                           ],
                         ),
@@ -536,11 +628,14 @@ class _TakeMeThereButton extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.only(bottom: 130),
               child: Center(
-                child: NavigateHereButton(
-                  onTap: onTap,
-                  tooltip: tooltip,
-                  size: 40,
-                  iconSize: 20,
+                child: StaggeredEntrance(
+                  index: 5,
+                  child: NavigateHereButton(
+                    onTap: onTap,
+                    tooltip: tooltip,
+                    size: 40,
+                    iconSize: 20,
+                  ),
                 ),
               ),
             ),
@@ -582,37 +677,40 @@ class _PhotoOnlyHint extends StatelessWidget {
             // content column is vertically centered), not a measured one.
             padding: const EdgeInsets.only(top: 132),
             child: Center(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 220),
-                child: Container(
-                  key: ValueKey(photoOnly),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.touch_app,
-                        size: 16,
-                        color: colors.nightlightMuted,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        photoOnly
-                            ? strings.starReaderTapForDataHint
-                            : strings.starReaderTapForPhotoHint,
-                        style: TextStyle(
-                          fontSize: 13,
+              child: StaggeredEntrance(
+                index: 3,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  child: Container(
+                    key: ValueKey(photoOnly),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.touch_app,
+                          size: 16,
                           color: colors.nightlightMuted,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        Text(
+                          photoOnly
+                              ? strings.starReaderTapForDataHint
+                              : strings.starReaderTapForPhotoHint,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: colors.nightlightMuted,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -627,39 +725,78 @@ class _PhotoOnlyHint extends StatelessWidget {
 /// The star's icon/date/tags/title/description/bolts block, shaped by
 /// whether it's a victory, a still-unlit goal, or a dead star.
 class _StarContent extends StatelessWidget {
-  const _StarContent({super.key, required this.star, required this.project});
+  const _StarContent({
+    super.key,
+    required this.star,
+    required this.project,
+    required this.animateEntrance,
+    required this.entranceAxis,
+    required this.entranceReverse,
+  });
 
   final Star star;
   final Project? project;
+
+  /// Whether the blocks cascade in. On for every star shown by opening,
+  /// prev/next or a swipe (this widget is keyed by the star's index, so each
+  /// one mounts fresh); off only for a refresh after an edit, where nothing
+  /// should replay. [entranceAxis]/[entranceReverse] set where they come from.
+  final bool animateEntrance;
+  final Axis entranceAxis;
+  final bool entranceReverse;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final strings = context.strings;
 
+    // Reader-relative order: the top row above is 0-2, this block follows.
+    // Swiping between stars: half as spread out, and held back until the
+    // star leaving has faded away. Opening the reader uses the wide cascade.
+    int at(int order) => entranceAxis == Axis.horizontal
+        ? order ~/ 2 + _kContentEntranceLead
+        : order;
     if (star.dead) {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(StarKind.dead.icon, size: 44, color: colors.starDead),
+          StaggeredEntrance(
+            index: at(1),
+            enabled: animateEntrance,
+            axis: entranceAxis,
+            reverse: entranceReverse,
+            child: Icon(StarKind.dead.icon, size: 44, color: colors.starDead),
+          ),
           const SizedBox(height: 24),
-          Text(
-            StarKind.dead.label(strings),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w600,
-              color: colors.text,
+          StaggeredEntrance(
+            index: at(2),
+            enabled: animateEntrance,
+            axis: entranceAxis,
+            reverse: entranceReverse,
+            child: Text(
+              StarKind.dead.label(strings),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w600,
+                color: colors.text,
+              ),
             ),
           ),
           const SizedBox(height: 16),
-          Text(
-            strings.deadStarBody,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              height: 1.6,
-              color: colors.nightlightMuted,
+          StaggeredEntrance(
+            index: at(3),
+            enabled: animateEntrance,
+            axis: entranceAxis,
+            reverse: entranceReverse,
+            child: Text(
+              strings.deadStarBody,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                height: 1.6,
+                color: colors.nightlightMuted,
+              ),
             ),
           ),
         ],
@@ -670,65 +807,107 @@ class _StarContent extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          star.kind.icon,
-          size: 44,
-          color: lit ? colors.gold : colors.starUnlit,
+        StaggeredEntrance(
+          index: at(1),
+          enabled: animateEntrance,
+          axis: entranceAxis,
+          reverse: entranceReverse,
+          child: Icon(
+            star.kind.icon,
+            size: 44,
+            color: lit ? colors.gold : colors.starUnlit,
+          ),
         ),
         const SizedBox(height: 28),
-        Text(
-          lit
-              ? formatDisplayDateTime(star.achievedDate!, strings)
-              : (star.targetDate == null
-                    ? StarKind.unlit.label(strings)
-                    : strings.goalTargetLabel(
-                        formatDisplayDate(star.targetDate!, strings),
-                      )),
-          style: TextStyle(fontSize: 15, color: colors.nightlightMuted),
+        StaggeredEntrance(
+          index: at(2),
+          enabled: animateEntrance,
+          axis: entranceAxis,
+          reverse: entranceReverse,
+          child: Text(
+            lit
+                ? formatDisplayDateTime(star.achievedDate!, strings)
+                : (star.targetDate == null
+                      ? StarKind.unlit.label(strings)
+                      : strings.goalTargetLabel(
+                          formatDisplayDate(star.targetDate!, strings),
+                        )),
+            style: TextStyle(fontSize: 15, color: colors.nightlightMuted),
+          ),
         ),
         if (project != null) ...[
           const SizedBox(height: 16),
-          AreaTag(area: project!.area, iconSize: 24, fontSize: 21),
+          StaggeredEntrance(
+            index: at(3),
+            enabled: animateEntrance,
+            axis: entranceAxis,
+            reverse: entranceReverse,
+            child: AreaTag(area: project!.area, iconSize: 24, fontSize: 21),
+          ),
           const SizedBox(height: 8),
-          ProjectTag(
-            project: project!,
-            textColor: colors.nightlightMuted,
-            iconSize: 17,
-            fontSize: 17,
+          StaggeredEntrance(
+            index: at(3),
+            enabled: animateEntrance,
+            axis: entranceAxis,
+            reverse: entranceReverse,
+            child: ProjectTag(
+              project: project!,
+              textColor: colors.nightlightMuted,
+              iconSize: 17,
+              fontSize: 17,
+            ),
           ),
         ],
         const SizedBox(height: 24),
-        Text(
-          star.title,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontFamily: kFontStarTitle,
-            fontStyle: FontStyle.italic,
-            fontSize: 34,
-            fontWeight: FontWeight.w600,
-            height: 1.35,
-            color: colors.text,
+        StaggeredEntrance(
+          index: at(4),
+          enabled: animateEntrance,
+          axis: entranceAxis,
+          reverse: entranceReverse,
+          child: Text(
+            star.title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: kFontStarTitle,
+              fontStyle: FontStyle.italic,
+              fontSize: 34,
+              fontWeight: FontWeight.w600,
+              height: 1.35,
+              color: colors.text,
+            ),
           ),
         ),
         if (star.description != null) ...[
           const SizedBox(height: 22),
-          Text(
-            star.description!,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 18,
-              height: 1.6,
-              color: colors.nightlightMuted,
+          StaggeredEntrance(
+            index: at(5),
+            enabled: animateEntrance,
+            axis: entranceAxis,
+            reverse: entranceReverse,
+            child: Text(
+              star.description!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 18,
+                height: 1.6,
+                color: colors.nightlightMuted,
+              ),
             ),
           ),
         ],
         if (lit) ...[
           const SizedBox(height: 28),
-          IntensityBolts(
-            intensity: star.intensity!,
-            size: 30,
-            spacing: 6,
-            emphasizeLast: true,
+          StaggeredEntrance(
+            index: at(6),
+            enabled: animateEntrance,
+            axis: entranceAxis,
+            reverse: entranceReverse,
+            child: IntensityBolts(
+              intensity: star.intensity!,
+              size: 30,
+              spacing: 6,
+              emphasizeLast: true,
+            ),
           ),
         ],
       ],
@@ -897,29 +1076,42 @@ class _MarkAchievedSheetState extends State<_MarkAchievedSheet> {
     final colors = context.colors;
     final strings = context.strings;
 
-    final source = await showModalBottomSheet<ImageSource>(
+    final source = await showAppSheet<ImageSource>(
       context: context,
       builder: (sheetContext) {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                leading: Icon(Icons.photo_camera_outlined, color: colors.gold),
-                title: Text(
-                  strings.takePhotoOption,
-                  style: TextStyle(color: colors.text),
+              StaggeredEntrance(
+                index: 0,
+                child: ListTile(
+                  leading: Icon(
+                    Icons.photo_camera_outlined,
+                    color: colors.gold,
+                  ),
+                  title: Text(
+                    strings.takePhotoOption,
+                    style: TextStyle(color: colors.text),
+                  ),
+                  onTap: () =>
+                      Navigator.of(sheetContext).pop(ImageSource.camera),
                 ),
-                onTap: () => Navigator.of(sheetContext).pop(ImageSource.camera),
               ),
-              ListTile(
-                leading: Icon(Icons.photo_library_outlined, color: colors.gold),
-                title: Text(
-                  strings.choosePhotoOption,
-                  style: TextStyle(color: colors.text),
+              StaggeredEntrance(
+                index: 1,
+                child: ListTile(
+                  leading: Icon(
+                    Icons.photo_library_outlined,
+                    color: colors.gold,
+                  ),
+                  title: Text(
+                    strings.choosePhotoOption,
+                    style: TextStyle(color: colors.text),
+                  ),
+                  onTap: () =>
+                      Navigator.of(sheetContext).pop(ImageSource.gallery),
                 ),
-                onTap: () =>
-                    Navigator.of(sheetContext).pop(ImageSource.gallery),
               ),
             ],
           ),
@@ -964,55 +1156,73 @@ class _MarkAchievedSheetState extends State<_MarkAchievedSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              strings.markAchievedSheetTitle,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: colors.text,
-                fontWeight: FontWeight.w700,
-                fontSize: 17,
+            StaggeredEntrance(
+              index: 0,
+              child: Text(
+                strings.markAchievedSheetTitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: colors.text,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 17,
+                ),
               ),
             ),
             const SizedBox(height: 18),
-            IntensityBolts(
-              intensity: _intensity,
-              size: 26,
-              spacing: 6,
-              emphasizeLast: true,
-              emphasizedScale: 1.6,
+            StaggeredEntrance(
+              index: 1,
+              child: IntensityBolts(
+                intensity: _intensity,
+                size: 26,
+                spacing: 6,
+                emphasizeLast: true,
+                emphasizedScale: 1.6,
+              ),
             ),
-            Slider(
-              value: _intensity.toDouble(),
-              min: 1,
-              max: 5,
-              divisions: 4,
-              onChanged: (v) => setState(() => _intensity = v.round()),
-            ),
-            const SizedBox(height: 6),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                strings.photoLabel,
-                style: TextStyle(fontSize: 13, color: colors.muted),
+            StaggeredEntrance(
+              index: 1,
+              child: Slider(
+                value: _intensity.toDouble(),
+                min: 1,
+                max: 5,
+                divisions: 4,
+                onChanged: (v) => setState(() => _intensity = v.round()),
               ),
             ),
             const SizedBox(height: 6),
-            PhotoPicker(
-              photoPath: _photoPath,
-              onPick: _pickPhoto,
-              onRemove: _removePhoto,
+            StaggeredEntrance(
+              index: 2,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  strings.photoLabel,
+                  style: TextStyle(fontSize: 13, color: colors.muted),
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            StaggeredEntrance(
+              index: 2,
+              child: PhotoPicker(
+                photoPath: _photoPath,
+                onPick: _pickPhoto,
+                onRemove: _removePhoto,
+              ),
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(
-                  _MarkAchievedResult(
-                    intensity: _intensity,
-                    photoPath: _photoPath,
+            StaggeredEntrance(
+              index: 3,
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(
+                    _MarkAchievedResult(
+                      intensity: _intensity,
+                      photoPath: _photoPath,
+                    ),
                   ),
+                  child: Text(strings.markAchievedConfirm),
                 ),
-                child: Text(strings.markAchievedConfirm),
               ),
             ),
           ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_motion.dart';
 
 /// A calendar for the current month — one star per day (the app's own take
 /// on a GitHub-style contribution graph). Weekday headers on top, up to 6
@@ -88,44 +89,56 @@ class StarHeatmap extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            for (final label in strings.weekdayAbbreviations)
-              Expanded(
-                child: Center(
-                  child: Text(
-                    label,
-                    style: TextStyle(fontSize: 11, color: colors.muted),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        for (var row = 0; row < rows; row++)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Row(
-              children: [
-                for (var col = 0; col < 7; col++)
-                  Expanded(
-                    child: Center(
-                      child: _DayCell(
-                        dayNumber: row * 7 + col - leadingBlanks + 1,
-                        daysInMonth: daysInMonth,
-                        month: shownMonth,
-                        today: todayDate,
-                        countsByDay: countsByDay,
-                        intensityByDay: intensityByDay,
-                        minIntensity: minIntensity,
-                        maxIntensity: maxIntensity,
-                        onTap: onDayTap,
+        // Paging to another month swaps the grid in place, so it cross-fades
+        // instead of jumping. Every month draws the same 6 rows, so the two
+        // grids overlap exactly during the fade.
+        AnimatedSwitcher(
+          duration: motionDuration(context, kMotionBase),
+          child: Column(
+            key: ValueKey(shownMonth.year * 12 + shownMonth.month),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  for (final label in strings.weekdayAbbreviations)
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          label,
+                          style: TextStyle(fontSize: 11, color: colors.muted),
+                        ),
                       ),
                     ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              for (var row = 0; row < rows; row++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    children: [
+                      for (var col = 0; col < 7; col++)
+                        Expanded(
+                          child: Center(
+                            child: _DayCell(
+                              dayNumber: row * 7 + col - leadingBlanks + 1,
+                              daysInMonth: daysInMonth,
+                              month: shownMonth,
+                              today: todayDate,
+                              countsByDay: countsByDay,
+                              intensityByDay: intensityByDay,
+                              minIntensity: minIntensity,
+                              maxIntensity: maxIntensity,
+                              onTap: onDayTap,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
+        ),
       ],
     );
   }

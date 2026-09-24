@@ -386,6 +386,8 @@ class StringsIt implements AppStrings {
   @override
   String get skyModeSupernovas => 'Supernove';
   @override
+  String get filtersAction => 'Filtri';
+  @override
   String get filterAreasAction => 'Filtra aree';
   @override
   String get areaFilterDefaultLabel => 'Aree';

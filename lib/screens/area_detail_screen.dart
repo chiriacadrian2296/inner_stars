@@ -20,6 +20,7 @@ import '../widgets/area_section_header.dart';
 import '../widgets/moodboard_grid.dart';
 import '../widgets/reflection_questions_section.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/staggered_entrance.dart';
 import '../widgets/vision_markdown.dart';
 import 'area_image_screen.dart';
 import 'vision_editor_screen.dart';
@@ -122,6 +123,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               _AreaSection(
+                                index: 0,
                                 title: strings.areaCoverVisionTitle,
                                 preview: VisionMarkdown(
                                   data: vision.trim().isEmpty
@@ -137,6 +139,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                   title: strings.supernovaTourEditTitle,
                                   description: strings.supernovaTourEditBody,
                                   child: _SectionButton(
+                                    index: 2,
                                     label: strings.areaSectionOpen,
                                     onPressed: () => _open(
                                       VisionEditorScreen(
@@ -148,6 +151,8 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                 ),
                               ),
                               _AreaSection(
+                                index: 2,
+                                staggerPreview: false,
                                 title: strings.moodboardTitle,
                                 preview: FutureBuilder<MoodboardRepository>(
                                   future: _moodboard,
@@ -171,11 +176,13 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                   },
                                 ),
                                 action: _SectionButton(
+                                  index: 4,
                                   label: strings.areaSectionOpen,
                                   onPressed: _openMoodboard,
                                 ),
                               ),
                               _AreaSection(
+                                index: 4,
                                 title: strings.areaReflectionsTitle,
                                 preview: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,6 +232,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                   description:
                                       strings.supernovaTourReflectionBody,
                                   child: _SectionButton(
+                                    index: 6,
                                     label: strings.areaSectionOpen,
                                     onPressed: () => _open(
                                       Scaffold(
@@ -248,11 +256,14 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.start,
                                                   children: [
-                                                    AreaSectionHeader(
-                                                      title: strings
-                                                          .areaReflectionsTitle,
-                                                      description: strings
-                                                          .reflectionsPageDescription,
+                                                    StaggeredEntrance(
+                                                      index: 0,
+                                                      child: AreaSectionHeader(
+                                                        title: strings
+                                                            .areaReflectionsTitle,
+                                                        description: strings
+                                                            .reflectionsPageDescription,
+                                                      ),
                                                     ),
                                                     const SizedBox(height: 26),
                                                     ReflectionQuestionsSection(
@@ -281,15 +292,19 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                 Positioned(
                   top: 8,
                   left: 8,
-                  child: IconButton.filled(
-                    tooltip: MaterialLocalizations.of(context)
-                        .backButtonTooltip,
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.black54,
-                      foregroundColor: Colors.white,
+                  child: StaggeredEntrance(
+                    index: 0,
+                    axis: Axis.horizontal,
+                    child: IconButton.filled(
+                      tooltip: MaterialLocalizations.of(context)
+                          .backButtonTooltip,
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.black54,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.arrow_back),
                     ),
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.arrow_back),
                   ),
                 ),
               ],
@@ -303,10 +318,20 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
 
 class _AreaSection extends StatelessWidget {
   const _AreaSection({
+    required this.index,
     required this.title,
     required this.preview,
     required this.action,
+    this.staggerPreview = true,
   });
+
+  /// Entrance index of the title; the preview follows one step later. The
+  /// [action] animates itself (it may be a tour target, which is never
+  /// wrapped from outside).
+  final int index;
+
+  /// False when [preview] already staggers its own contents.
+  final bool staggerPreview;
   final String title;
   final Widget preview;
   final Widget action;
@@ -316,65 +341,83 @@ class _AreaSection extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontFamily: kFontBranding,
-            fontSize: 30,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(height: 18),
-        SizedBox(
-          height: 300,
-          child: ClipRect(
-            clipBehavior: Clip.antiAliasWithSaveLayer,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                ExcludeSemantics(
-                  child: IgnorePointer(
-                    child: SingleChildScrollView(
-                      physics: const NeverScrollableScrollPhysics(),
-                      child: preview,
-                    ),
-                  ),
-                ),
-                const IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.transparent, Colors.black],
-                        stops: [0.78, 1],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+        StaggeredEntrance(
+          index: index,
+          child: Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: kFontBranding,
+              fontSize: 30,
+              color: Colors.white,
             ),
           ),
         ),
+        const SizedBox(height: 18),
+        _previewBox(),
         const SizedBox(height: 18),
         action,
       ],
     ),
   );
+
+  Widget _previewBox() {
+    final box = SizedBox(
+      height: 300,
+      child: ClipRect(
+        clipBehavior: Clip.antiAliasWithSaveLayer,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ExcludeSemantics(
+              child: IgnorePointer(
+                child: SingleChildScrollView(
+                  physics: const NeverScrollableScrollPhysics(),
+                  child: preview,
+                ),
+              ),
+            ),
+            const IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.black],
+                    stops: [0.78, 1],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    return staggerPreview
+        ? StaggeredEntrance(index: index + 1, child: box)
+        : box;
+  }
 }
 
 class _SectionButton extends StatelessWidget {
-  const _SectionButton({required this.label, required this.onPressed});
+  const _SectionButton({
+    required this.index,
+    required this.label,
+    required this.onPressed,
+  });
+  final int index;
   final String label;
   final VoidCallback onPressed;
   @override
-  Widget build(BuildContext context) => Center(
-    child: ElevatedButton.icon(
-      style: buildLifeAreaTheme().elevatedButtonTheme.style,
-      onPressed: onPressed,
-      icon: const Icon(Icons.edit_outlined, size: 18),
-      label: Text(label),
+  Widget build(BuildContext context) => StaggeredEntrance(
+    index: index,
+    child: Center(
+      child: ElevatedButton.icon(
+        style: buildLifeAreaTheme().elevatedButtonTheme.style,
+        onPressed: onPressed,
+        icon: const Icon(Icons.edit_outlined, size: 18),
+        label: Text(label),
+      ),
     ),
   );
 }
