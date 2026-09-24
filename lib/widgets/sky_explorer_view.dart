@@ -1297,7 +1297,7 @@ class _ConstellationsList extends StatelessWidget {
       // *inside* its ResponsiveContent instead of here — see that widget's
       // comment for why: it's what keeps a card's left edge lined up with
       // the search row above it on wide layouts.
-      padding: const EdgeInsets.fromLTRB(0, 4, 0, 100),
+      padding: const EdgeInsets.fromLTRB(0, 4, 0, 24),
       itemCount: filteredProjects.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {

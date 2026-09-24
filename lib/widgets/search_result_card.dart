@@ -54,6 +54,7 @@ class SearchResultCard extends StatelessWidget {
   static const _bodyHeight = 88.0;
   static const _drawerHeight = 68.0;
   static const _drawerUnderlap = 18.0;
+  static const _toggleZoneWidth = 44.0;
 
   final Object menuId;
   final SearchCardMenuController menuController;
@@ -171,12 +172,23 @@ class SearchResultCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                // The toggle is small by design, so its tap zone is the whole
+                // right-hand strip of the card, full body height.
                 Positioned(
-                  right: 12,
-                  top: (bodyHeight - 48) / 2,
-                  child: _SearchQuickMenuToggle(
-                    isOpen: isMenuOpen,
+                  right: 0,
+                  top: 0,
+                  width: _toggleZoneWidth,
+                  height: bodyHeight,
+                  child: GestureDetector(
+                    key: const Key('search-card-quick-menu-toggle-zone'),
+                    behavior: HitTestBehavior.opaque,
                     onTap: () => menuController.toggle(menuId),
+                    child: Center(
+                      child: _SearchQuickMenuToggle(
+                        isOpen: isMenuOpen,
+                        onTap: () => menuController.toggle(menuId),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -461,9 +473,12 @@ class _SearchQuickMenuToggle extends StatelessWidget {
               width: 20,
               height: 48,
               decoration: BoxDecoration(
-                color: isOpen ? Colors.white : colors.night,
+                color: isOpen ? AppColors.dark.gold : colors.night,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white, width: kBorderWidth),
+                border: Border.all(
+                  color: AppColors.dark.gold,
+                  width: 1,
+                ),
               ),
               child: AnimatedRotation(
                 turns: isOpen ? 0.5 : 0,
@@ -472,7 +487,7 @@ class _SearchQuickMenuToggle extends StatelessWidget {
                 child: Icon(
                   Icons.more_vert_rounded,
                   size: 18,
-                  color: isOpen ? colors.night : Colors.white,
+                  color: isOpen ? colors.night : AppColors.dark.gold,
                 ),
               ),
             ),
@@ -504,7 +519,7 @@ class _SearchQuickMenu extends StatelessWidget {
     return DecoratedBox(
       key: const Key('search-card-quick-menu'),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.dark.gold,
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(14),
           bottomRight: Radius.circular(14),
@@ -538,8 +553,8 @@ class _SearchQuickMenu extends StatelessWidget {
     );
   }
 
-  /// Fades and slides the [index]-th button in from the reading-direction
-  /// end, starting a little after the one before it.
+  /// Fades and slides the [index]-th button in from above, starting a little
+  /// after the one before it.
   Widget _cascadeIn(
     BuildContext context, {
     required int index,
@@ -549,11 +564,10 @@ class _SearchQuickMenu extends StatelessWidget {
     final span = (1 - (actions.length - 1) * stagger).clamp(0.4, 1.0);
     final t = ((progress - index * stagger) / span).clamp(0.0, 1.0);
     final eased = Curves.easeOutCubic.transform(t);
-    final dir = Directionality.of(context) == TextDirection.rtl ? -1.0 : 1.0;
     return Opacity(
       opacity: eased,
       child: FractionalTranslation(
-        translation: Offset(dir * 0.12 * (1 - eased), 0),
+        translation: Offset(0, -0.4 * (1 - eased)),
         child: child,
       ),
     );

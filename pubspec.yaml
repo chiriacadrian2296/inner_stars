@@ -76,7 +76,6 @@ flutter:
     - assets/icon/app_icon_ring_centered.png
     - assets/icon/app_icon_ring_centered_white.png
     - assets/icon/app_star.svg
-    - assets/mascots/moon.svg
     - assets/audio/bg/
     - assets/audio/sfx/
     - assets/images/1. Physical - CENTER CROP.jpg
