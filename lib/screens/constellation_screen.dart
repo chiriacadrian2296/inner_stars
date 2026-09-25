@@ -10,6 +10,7 @@ import '../data/custom_constellation_repository.dart';
 import '../data/habit_completion_repository.dart';
 import '../data/habit_repository.dart';
 import '../data/project_repository.dart';
+import '../data/reader_entries.dart';
 import '../data/star_repository.dart';
 import '../l10n/strings_scope.dart';
 import '../models/habit.dart';
@@ -172,76 +173,43 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
     });
   }
 
+  /// Opens the star reader on the tapped star — whatever kind it is, an
+  /// empty slot and a pulsar included — with every other member of the
+  /// constellation one swipe away.
   Future<void> _openStar(ConstellationStar star) async {
-    // An empty slot on the shape: tapping it is how it gets a meaning.
-    if (star.kind == StarKind.nascent) {
-      await _configureNascentStar(star);
-      return;
-    }
     // Sitting on a slot is what makes a star part of the shape — a pulsar
     // (alive or dead) scatters around it instead and has none, which is the
     // reliable test for which repository this star came from.
-    if (star.slotSequence == null) {
-      final habit = _habits.firstWhere((h) => h.id == star.entityId);
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => PulsarReaderScreen(
-            habit: habit,
-            project: widget.project,
-            habitRepository: widget.habitRepository,
-            habitCompletionRepository: widget.habitCompletionRepository,
-            projectRepository: widget.projectRepository,
-            starsShapeRepository: widget.starsShapeRepository,
-          ),
-        ),
-      );
-      _refresh();
-      return;
-    }
-
-    final index = _stars.indexWhere((s) => s.id == star.entityId);
+    final anchorKey = switch (star.slotSequence) {
+      null => 'p${star.entityId}',
+      final slot when star.kind == StarKind.nascent =>
+        NascentEntry(projectId: widget.project.id, slot: slot).key,
+      _ => 's${star.entityId}',
+    };
+    List<ReaderEntry> load() => projectReaderEntries(
+      project: widget.project,
+      starRepository: widget.starRepository,
+      habitRepository: widget.habitRepository,
+      starsShapeRepository: widget.starsShapeRepository,
+    );
+    final entries = load();
+    final index = entries.indexWhere((e) => e.key == anchorKey);
     if (index == -1) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => StarReaderScreen(
           repository: widget.starRepository,
-          initialStars: _stars,
+          initialEntries: entries,
           startIndex: index,
           allowEdit: true,
           projectsById: {widget.project.id: widget.project},
           projectRepository: widget.projectRepository,
           starsShapeRepository: widget.starsShapeRepository,
-          refreshStars: () =>
-              widget.starRepository.getAllForProject(widget.project.id),
+          refreshEntries: load,
+          habitRepository: widget.habitRepository,
+          habitCompletionRepository: widget.habitCompletionRepository,
         ),
       ),
-    );
-    _refresh();
-  }
-
-  /// Fills the exact slot the tapped nascent star occupies. The pulsar
-  /// option is off — this slot belongs to the shape, and a pulsar never
-  /// sits on the shape.
-  Future<void> _configureNascentStar(ConstellationStar star) async {
-    final result = await Navigator.of(context).push<Object>(
-      MaterialPageRoute(
-        builder: (_) => StarFormScreen(
-          lockedProject: widget.project,
-          slotSequence: star.slotSequence,
-          allowPulsar: false,
-        ),
-      ),
-    );
-    if (result is! StarFormResult) return;
-    await widget.starRepository.add(
-      title: result.title,
-      description: result.description,
-      projectId: result.projectId,
-      slotSequence: result.slotSequence,
-      targetDate: result.targetDate,
-      achievedDate: result.achievedDate,
-      intensity: result.intensity,
-      photoPath: result.photoPath,
     );
     _refresh();
   }

@@ -30,13 +30,26 @@ class MoodboardStorage {
     return path;
   }
 
+  /// The file [path] points to, falling back to the same file name inside
+  /// the current moodboard directory when the saved absolute path no longer
+  /// exists (the app's documents directory can move, e.g. after a reinstall
+  /// or restore).
+  static Future<File> _resolve(String path) async {
+    final direct = File(path);
+    if (await direct.exists()) return direct;
+    final name = path.split('/').last;
+    final docs = await getApplicationDocumentsDirectory();
+    final moved = File('${docs.path}/moodboard/$name');
+    return await moved.exists() ? moved : direct;
+  }
+
   static Future<Uint8List> read(String path) async {
-    if (!kIsWeb) return File(path).readAsBytes();
+    if (!kIsWeb) return (await _resolve(path)).readAsBytes();
     return web.readMedia(path);
   }
 
   static Future<VideoPlayerController> video(String path) async {
-    if (!kIsWeb) return VideoPlayerController.file(File(path));
+    if (!kIsWeb) return VideoPlayerController.file(await _resolve(path));
     final extension = path.split('.').last.toLowerCase();
     final mime = extension == 'webm'
         ? 'video/webm'
@@ -52,7 +65,7 @@ class MoodboardStorage {
     if (kIsWeb) {
       await web.deleteMedia(path);
     } else {
-      final file = File(path);
+      final file = await _resolve(path);
       if (await file.exists()) await file.delete();
     }
   }

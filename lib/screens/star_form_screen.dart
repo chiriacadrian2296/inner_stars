@@ -29,6 +29,7 @@ import '../widgets/photo_picker.dart';
 import '../widgets/pill_action_button.dart';
 import '../widgets/project_picker.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/search_result_card.dart' show SearchStarVisual;
 import '../widgets/staggered_entrance.dart';
 import '../widgets/star_glyph.dart';
 import 'photo_crop_screen.dart';
@@ -984,7 +985,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                         requirement: FieldRequirement.required,
                         hint: strings.selectAProject,
                         icon: _selectedProject == null
-                            ? Icons.auto_awesome_outlined
+                            ? Icons.insights
                             : iconForSlug(_selectedProject!.iconSlug),
                         text: _selectedProject?.name,
                         onTap: _openProjectPicker,
@@ -1395,11 +1396,12 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     child: StaggeredEntrance(
                       index: 11,
                       replayKey: _kindEpoch,
-                      child: Material(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(kRadiusCard),
-                        child: Container(
-                          decoration: panelDecoration(colors),
+                      child: Container(
+                        decoration: panelDecoration(colors),
+                        child: Material(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(kRadiusCard),
+                          clipBehavior: Clip.antiAlias,
                           child: Column(
                             children: [
                               StaggeredEntrance(
@@ -1665,7 +1667,9 @@ class _StarKindSwitch extends StatelessWidget {
                   onTap: () => onChanged(kinds[i]),
                   borderRadius: BorderRadius.circular(kRadiusField),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    // The visual runs to the tile's edges, so it's clipped to
+                    // the same rounded corners as the border around it.
+                    clipBehavior: Clip.antiAlias,
                     decoration: selectableDecoration(
                       colors,
                       selected: kinds[i] == selected,
@@ -1673,26 +1677,39 @@ class _StarKindSwitch extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        StarGlyph(kind: kinds[i], size: 22),
-                        const SizedBox(height: 4),
-                        Text(
-                          kinds[i].label(strings),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: kinds[i] == selected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: kinds[i] == selected
-                                ? colors.text
-                                : colors.muted,
+                        // The same picture the Search cards show for this kind
+                        // of star, in place of the lines of text that used to
+                        // explain it (the full meaning is still in the
+                        // metaphor guide).
+                        SizedBox(
+                          // Full width of the tile, not just as wide as the
+                          // picture inside it — otherwise the glow was cut
+                          // off at the picture's own narrow edges.
+                          width: double.infinity,
+                          height: 76,
+                          child: Opacity(
+                            opacity: kinds[i] == selected ? 1 : 0.55,
+                            child: SearchStarVisual(
+                              kind: kinds[i],
+                              pulsarBothStates: true,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          kinds[i].meaning(strings),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 11, color: colors.muted),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            kinds[i].label(strings),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: kinds[i] == selected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: kinds[i] == selected
+                                  ? colors.text
+                                  : colors.muted,
+                            ),
+                          ),
                         ),
                       ],
                     ),

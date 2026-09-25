@@ -19,12 +19,14 @@ import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import '../utils/date_format.dart';
+import '../utils/habit_stats.dart';
 import '../utils/star_stats.dart';
 import '../widgets/app_field.dart';
 import '../widgets/lit_star_card.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
 import '../widgets/star_heatmap.dart';
+import 'pulsar_reader_screen.dart';
 import 'star_form_screen.dart';
 import 'star_reader_screen.dart';
 import 'stat_detail_screen.dart';
@@ -80,6 +82,25 @@ class _StatsScreenState extends State<StatsScreen> {
     setState(() {
       _displayedMonth = next.isAfter(currentMonth) ? currentMonth : next;
     });
+  }
+
+  /// A pulsar's own dashboard — its streak, the history calendar and the
+  /// "mark today" action — the page a pulsar card used to open before
+  /// pulsars got a page in the star reader.
+  Future<void> _openPulsarDashboard(Habit habit) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PulsarReaderScreen(
+          habit: habit,
+          project: _projectsById()[habit.projectId],
+          habitRepository: widget.habitRepository,
+          habitCompletionRepository: widget.habitCompletionRepository,
+          projectRepository: widget.projectRepository,
+          starsShapeRepository: widget.starsShapeRepository,
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
   }
 
   Map<int, Project> _projectsById() {
@@ -398,10 +419,113 @@ class _StatsScreenState extends State<StatsScreen> {
                       ),
                     ],
                   ),
+                  ..._pulsarSection(context),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// One tile per living pulsar, each opening its dashboard.
+  List<Widget> _pulsarSection(BuildContext context) {
+    final colors = context.colors;
+    final strings = context.strings;
+    final habits = widget.habitRepository
+        .getAll()
+        .where((h) => h.isActive)
+        .toList();
+    if (habits.isEmpty) return const [];
+    return [
+      const SizedBox(height: 24),
+      StaggeredEntrance(
+        index: 6,
+        child: Text(
+          StarKind.pulsar.plural(strings),
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: colors.muted,
+          ),
+        ),
+      ),
+      const SizedBox(height: 10),
+      for (final habit in habits) ...[
+        StaggeredEntrance(
+          index: 6,
+          child: _PulsarTile(
+            habit: habit,
+            streak: habitCurrentStreak(
+              habit,
+              habitCompletionCountsByDay(
+                widget.habitCompletionRepository.getAllForHabit(habit.id),
+              ),
+            ),
+            onTap: () => _openPulsarDashboard(habit),
+          ),
+        ),
+        const SizedBox(height: 10),
+      ],
+    ];
+  }
+}
+
+/// One pulsar in the stats list: its icon, title and current streak.
+class _PulsarTile extends StatelessWidget {
+  const _PulsarTile({
+    required this.habit,
+    required this.streak,
+    required this.onTap,
+  });
+
+  final Habit habit;
+  final int streak;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Container(
+      decoration: panelDecoration(colors),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Icon(StarKind.pulsar.icon, color: colors.gold, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    habit.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: colors.text,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '$streak',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: colors.gold,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(Icons.chevron_right, color: colors.muted),
+              ],
+            ),
+          ),
         ),
       ),
     );

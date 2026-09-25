@@ -1,4 +1,3 @@
-import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 
 /// The app's shared motion vocabulary — one set of durations and curves for
@@ -19,9 +18,16 @@ Duration motionDuration(BuildContext context, Duration base) {
   return MediaQuery.disableAnimationsOf(context) ? Duration.zero : base;
 }
 
-/// The shared-axis push/pop every route in the app uses (see
-/// `pageTransitionsTheme` in `buildAppTheme`). Skips the animation entirely
-/// under reduced motion, since a route's transition doesn't shorten itself.
+/// The push/pop every route in the app uses (see `pageTransitionsTheme` in
+/// `buildAppTheme`): the new page fades in while sliding a short way in from
+/// the side, over the previous page, which stays put; going back it just fades
+/// out in place. Skips the animation
+/// entirely under reduced motion, since a route's transition doesn't shorten
+/// itself.
+///
+/// Deliberately not a shared-axis / fade-through: that fades the outgoing page
+/// to nothing before the new one appears, and whatever sits behind (the
+/// scaffold color) shows as a dark flash between the two.
 class AppPageTransitionsBuilder extends PageTransitionsBuilder {
   const AppPageTransitionsBuilder();
 
@@ -29,7 +35,7 @@ class AppPageTransitionsBuilder extends PageTransitionsBuilder {
   Duration get transitionDuration => kMotionSlow;
 
   @override
-  Duration get reverseTransitionDuration => kMotionSlow;
+  Duration get reverseTransitionDuration => const Duration(milliseconds: 160);
 
   @override
   Widget buildTransitions<T>(
@@ -40,11 +46,22 @@ class AppPageTransitionsBuilder extends PageTransitionsBuilder {
     Widget child,
   ) {
     if (MediaQuery.disableAnimationsOf(context)) return child;
-    // The night backdrop fills the gap behind the sliding pages; the
-    // default canvas color would flash a grey between them.
-    return SharedAxisPageTransitionsBuilder(
-      transitionType: SharedAxisTransitionType.horizontal,
-      fillColor: Theme.of(context).scaffoldBackgroundColor,
-    ).buildTransitions<T>(route, context, animation, secondaryAnimation, child);
+    // No reverseCurve: leaving replays the fade exactly backwards, rather
+    // than easing out on a different curve.
+    final curved = CurvedAnimation(parent: animation, curve: kMotionEnter);
+    return FadeTransition(
+      opacity: curved,
+      child: AnimatedBuilder(
+        animation: curved,
+        child: child,
+        // Only the entrance slides; leaving fades out in place.
+        builder: (context, child) => FractionalTranslation(
+          translation: animation.status == AnimationStatus.reverse
+              ? Offset.zero
+              : Offset(0.06 * (1 - curved.value), 0),
+          child: child,
+        ),
+      ),
+    );
   }
 }

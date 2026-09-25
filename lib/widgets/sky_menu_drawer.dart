@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hint_kit/hint_kit.dart';
 
 import '../l10n/strings_scope.dart';
@@ -167,7 +168,6 @@ class SkyMenuContent extends StatelessWidget {
 
   // The same disc icon already used as the phone's app icon (the ring +
   // star mark, pre-composited over the app's night background).
-  static const _logoAsset = 'assets/icon/app_icon_ring_centered.png';
 
   /// "Light Your Sky" covers both of the app's two creation flows, so
   /// tapping it offers the choice rather than picking one — a small sheet
@@ -311,7 +311,7 @@ class SkyMenuContent extends StatelessWidget {
                         tourBody: strings.lightYourSkyTourSupernovaBody,
                       ),
                       choice(
-                        icon: Icons.auto_awesome,
+                        icon: Icons.insights,
                         label: strings.menuNewConstellation,
                         onTap: onNewConstellation,
                         index: 1,
@@ -444,7 +444,9 @@ class SkyMenuContent extends StatelessWidget {
           child: Container(
             decoration: panelDecoration(colors),
             clipBehavior: Clip.antiAlias,
-            child: tile,
+            // Its own Material, so the tile paints on it instead of on one
+            // above the panel's colored background (which would hide it).
+            child: Material(type: MaterialType.transparency, child: tile),
           ),
         ),
       );
@@ -461,9 +463,7 @@ class SkyMenuContent extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
             child: Column(
               children: [
-                ClipOval(
-                  child: Image.asset(_logoAsset, width: 72, height: 72),
-                ),
+                _LogoMark(colors: colors),
                 const SizedBox(height: 14),
                 Text(
                   'Inner Stars',
@@ -529,7 +529,7 @@ class SkyMenuContent extends StatelessWidget {
         if (!detailed) const SizedBox(height: 8),
         entry(
           index: 3,
-          icon: Icons.tips_and_updates,
+          icon: Icons.nights_stay,
           label: strings.menuFindYourLight,
           description: strings.menuFindYourLightDescription,
           onTap: onNightlight,
@@ -862,6 +862,41 @@ class _SkyMenuModalFrameState extends State<SkyMenuModalFrame>
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The menu's header logo: just the gold disc with the `Logo.svg` glyph
+/// cut out of it in the night color — no outer ring or background, so it
+/// sits straight on the panel. Sizes are constants so they can be tuned.
+class _LogoMark extends StatelessWidget {
+  const _LogoMark({required this.colors});
+
+  final AppColors colors;
+
+  static const _discSize = 64.0;
+  // Bigger than the disc on purpose: Logo.svg has a wide margin around its
+  // shapes (they span ~45% x 64% of its box), so the box overflows the disc
+  // while the shapes themselves stay well inside it.
+  static const _glyphSize = 68.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: _discSize,
+      height: _discSize,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: colors.gold),
+      alignment: Alignment.center,
+      child: OverflowBox(
+        maxWidth: _glyphSize,
+        maxHeight: _glyphSize,
+        child: SvgPicture.asset(
+          'assets/icon/Logo.svg',
+          width: _glyphSize,
+          height: _glyphSize,
+          colorFilter: ColorFilter.mode(colors.night, BlendMode.srcIn),
         ),
       ),
     );

@@ -10,7 +10,6 @@ import '../theme/app_style.dart';
 import '../utils/date_format.dart';
 import 'area_tag.dart';
 import 'navigate_here_button.dart';
-import 'press_scale.dart';
 import 'project_tag.dart';
 import 'star_created_at.dart';
 import 'star_extra_badge.dart';
@@ -42,80 +41,78 @@ class UnlitStarCard extends StatelessWidget {
     final strings = context.strings;
     final borderRadius = BorderRadius.circular(kRadiusCard);
 
-    final card = PressScale(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: borderRadius,
-          child: Ink(
-            decoration: panelDecoration(colors),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const StarKindLabel(kind: StarKind.unlit),
-                  if (project != null) ...[
-                    const SizedBox(height: 10),
-                    Center(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AreaTag(
-                            area: project!.area,
-                            iconSize: 18,
-                            fontSize: 15,
-                          ),
-                          const SizedBox(width: 14),
-                          ProjectTag(
-                            project: project!,
-                            iconSize: 15,
-                            fontSize: 14,
-                          ),
-                        ],
-                      ),
+    final card = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: borderRadius,
+        child: Ink(
+          decoration: panelDecoration(colors),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const StarKindLabel(kind: StarKind.unlit),
+                if (project != null) ...[
+                  const SizedBox(height: 10),
+                  Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AreaTag(
+                          area: project!.area,
+                          iconSize: 18,
+                          fontSize: 15,
+                        ),
+                        const SizedBox(width: 14),
+                        ProjectTag(
+                          project: project!,
+                          iconSize: 15,
+                          fontSize: 14,
+                        ),
+                      ],
                     ),
-                  ],
-                  const SizedBox(height: 12),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Text(
+                  star.title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: kFontStarTitle,
+                    fontStyle: FontStyle.italic,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 25,
+                    color: colors.text,
+                  ),
+                ),
+                if (star.description != null) ...[
+                  const SizedBox(height: 6),
                   Text(
-                    star.title,
+                    star.description!,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: kFontStarTitle,
-                      fontStyle: FontStyle.italic,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 25,
-                      color: colors.text,
+                      fontSize: 14,
+                      color: colors.muted,
+                      height: 1.4,
                     ),
                   ),
-                  if (star.description != null) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      star.description!,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: colors.muted,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                  StarExtraBadge(
-                    icon: Icons.event_outlined,
-                    label: star.targetDate == null
-                        ? strings.noTargetDateLabel
-                        : strings.targetDateBadgeLabel,
-                    value: star.targetDate == null
-                        ? null
-                        : formatDisplayDate(star.targetDate!, strings),
-                    dimmed: star.targetDate == null,
-                  ),
-                  const SizedBox(height: 18),
-                  StarCreatedAt(createdAt: star.createdAt),
                 ],
-              ),
+                const SizedBox(height: 12),
+                StarExtraBadge(
+                  icon: Icons.event_outlined,
+                  label: star.targetDate == null
+                      ? strings.noTargetDateLabel
+                      : strings.targetDateBadgeLabel,
+                  value: star.targetDate == null
+                      ? null
+                      : formatDisplayDate(star.targetDate!, strings),
+                  dimmed: star.targetDate == null,
+                ),
+                const SizedBox(height: 18),
+                StarCreatedAt(createdAt: star.createdAt),
+              ],
             ),
           ),
         ),

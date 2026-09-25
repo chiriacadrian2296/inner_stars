@@ -447,75 +447,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: _SectionLabel(strings.reminderSection),
                   ),
                   const SizedBox(height: 4),
-                  StaggeredEntrance(
-                    index: 3,
+                  Container(
+                    decoration: panelDecoration(colors),
                     child: Material(
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(kRadiusCard),
-                      child: Container(
-                        decoration: panelDecoration(colors),
-                        child: Column(
-                          children: [
-                            StaggeredEntrance(
-                              index: 0,
-                              child: SwitchListTile(
-                                value: widget.settings.reminderEnabled,
-                                onChanged: _setReminderEnabled,
-                                title: Text(
-                                  strings.reminderToggleLabel,
-                                  style: TextStyle(
-                                    color: colors.text,
-                                    fontSize: 14,
-                                  ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        children: [
+                          SwitchListTile(
+                            value: widget.settings.reminderEnabled,
+                            onChanged: _setReminderEnabled,
+                            title: Text(
+                              strings.reminderToggleLabel,
+                              style: TextStyle(
+                                color: colors.text,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          if (widget.settings.reminderEnabled) ...[
+                            ListTile(
+                              onTap: _pickReminderTime,
+                              title: Text(
+                                strings.reminderTimeLabel,
+                                style: TextStyle(
+                                  color: colors.muted,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              trailing: Text(
+                                TimeOfDay(
+                                  hour: widget.settings.reminderHour,
+                                  minute: widget.settings.reminderMinute,
+                                ).format(context),
+                                style: TextStyle(
+                                  color: colors.gold,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
                                 ),
                               ),
                             ),
-                            if (widget.settings.reminderEnabled) ...[
-                              StaggeredEntrance(
-                                index: 1,
-                                child: ListTile(
-                                  onTap: _pickReminderTime,
-                                  title: Text(
-                                    strings.reminderTimeLabel,
-                                    style: TextStyle(
-                                      color: colors.muted,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                  trailing: Text(
-                                    TimeOfDay(
-                                      hour: widget.settings.reminderHour,
-                                      minute: widget.settings.reminderMinute,
-                                    ).format(context),
-                                    style: TextStyle(
-                                      color: colors.gold,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 15,
-                                    ),
-                                  ),
+                            ListTile(
+                              onTap: _sendTestNotification,
+                              title: Text(
+                                strings.testNotificationButton,
+                                style: TextStyle(
+                                  color: colors.gold,
+                                  fontSize: 13,
                                 ),
                               ),
-                              StaggeredEntrance(
-                                index: 2,
-                                child: ListTile(
-                                  onTap: _sendTestNotification,
-                                  title: Text(
-                                    strings.testNotificationButton,
-                                    style: TextStyle(
-                                      color: colors.gold,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                  leading: Icon(
-                                    Icons.notifications_active_outlined,
-                                    color: colors.gold,
-                                    size: 20,
-                                  ),
-                                ),
+                              leading: Icon(
+                                Icons.notifications_active_outlined,
+                                color: colors.gold,
+                                size: 20,
                               ),
-                            ],
+                            ),
                           ],
-                        ),
+                        ],
                       ),
                     ),
                   ),
@@ -526,20 +515,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: _SectionLabel(strings.skyGridSection),
                   ),
                   const SizedBox(height: 4),
-                  StaggeredEntrance(
-                    index: 4,
+                  Container(
+                    decoration: panelDecoration(colors),
                     child: Material(
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(kRadiusCard),
-                      child: Container(
-                        decoration: panelDecoration(colors),
-                        child: SwitchListTile(
-                          value: widget.settings.showGrid,
-                          onChanged: _setShowGrid,
-                          title: Text(
-                            strings.skyGridToggleLabel,
-                            style: TextStyle(color: colors.text, fontSize: 14),
-                          ),
+                      clipBehavior: Clip.antiAlias,
+                      child: SwitchListTile(
+                        value: widget.settings.showGrid,
+                        onChanged: _setShowGrid,
+                        title: Text(
+                          strings.skyGridToggleLabel,
+                          style: TextStyle(color: colors.text, fontSize: 14),
                         ),
                       ),
                     ),
@@ -551,67 +538,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: _SectionLabel(strings.appLockSection),
                   ),
                   const SizedBox(height: 4),
-                  StaggeredEntrance(
-                    index: 5,
+                  Container(
+                    decoration: panelDecoration(colors),
                     child: Material(
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(kRadiusCard),
-                      child: Container(
-                        decoration: panelDecoration(colors),
-                        child: Column(
-                          children: [
-                            StaggeredEntrance(
-                              index: 0,
-                              child: SwitchListTile(
-                                value: widget.appLockRepository.isEnabled,
-                                onChanged: _setAppLockEnabled,
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        children: [
+                          SwitchListTile(
+                            value: widget.appLockRepository.isEnabled,
+                            onChanged: _setAppLockEnabled,
+                            title: Text(
+                              strings.appLockToggleLabel,
+                              style: TextStyle(
+                                color: colors.text,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          if (widget.appLockRepository.isEnabled) ...[
+                            if (_biometricAvailable)
+                              SwitchListTile(
+                                value:
+                                    widget.appLockRepository.biometricEnabled,
+                                onChanged: _setBiometricEnabled,
                                 title: Text(
-                                  strings.appLockToggleLabel,
+                                  strings.appLockBiometricToggleLabel,
                                   style: TextStyle(
                                     color: colors.text,
                                     fontSize: 14,
                                   ),
                                 ),
                               ),
-                            ),
-                            if (widget.appLockRepository.isEnabled) ...[
-                              if (_biometricAvailable)
-                                StaggeredEntrance(
-                                index: 1,
-                                child: SwitchListTile(
-                                    value:
-                                        widget.appLockRepository.biometricEnabled,
-                                    onChanged: _setBiometricEnabled,
-                                    title: Text(
-                                      strings.appLockBiometricToggleLabel,
-                                      style: TextStyle(
-                                        color: colors.text,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
-                              ),
-                              StaggeredEntrance(
-                                index: 2,
-                                child: ListTile(
-                                  onTap: _changePin,
-                                  title: Text(
-                                    strings.appLockChangePinLabel,
-                                    style: TextStyle(
-                                      color: colors.gold,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                  leading: Icon(
-                                    Icons.password_outlined,
-                                    color: colors.gold,
-                                    size: 20,
-                                  ),
+                            ListTile(
+                              onTap: _changePin,
+                              title: Text(
+                                strings.appLockChangePinLabel,
+                                style: TextStyle(
+                                  color: colors.gold,
+                                  fontSize: 13,
                                 ),
                               ),
-                            ],
+                              leading: Icon(
+                                Icons.password_outlined,
+                                color: colors.gold,
+                                size: 20,
+                              ),
+                            ),
                           ],
-                        ),
+                        ],
                       ),
                     ),
                   ),

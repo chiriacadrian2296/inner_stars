@@ -10,7 +10,6 @@ import '../theme/app_style.dart';
 import 'area_tag.dart';
 import 'intensity_bolts.dart';
 import 'navigate_here_button.dart';
-import 'press_scale.dart';
 import 'project_tag.dart';
 import 'star_created_at.dart';
 import 'star_extra_badge.dart';
@@ -49,84 +48,82 @@ class PulsarCard extends StatelessWidget {
     final strings = context.strings;
     final borderRadius = BorderRadius.circular(kRadiusCard);
 
-    final card = PressScale(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: borderRadius,
-          child: Ink(
-            decoration: panelDecoration(colors),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  StarKindLabel(kind: StarKind.pulsar, lit: isLit),
-                  if (project != null) ...[
-                    const SizedBox(height: 10),
-                    Center(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AreaTag(
-                            area: project!.area,
-                            iconSize: 18,
-                            fontSize: 15,
-                          ),
-                          const SizedBox(width: 14),
-                          ProjectTag(
-                            project: project!,
-                            iconSize: 15,
-                            fontSize: 14,
-                          ),
-                        ],
-                      ),
+    final card = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: borderRadius,
+        child: Ink(
+          decoration: panelDecoration(colors),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                StarKindLabel(kind: StarKind.pulsar, lit: isLit),
+                if (project != null) ...[
+                  const SizedBox(height: 10),
+                  Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AreaTag(
+                          area: project!.area,
+                          iconSize: 18,
+                          fontSize: 15,
+                        ),
+                        const SizedBox(width: 14),
+                        ProjectTag(
+                          project: project!,
+                          iconSize: 15,
+                          fontSize: 14,
+                        ),
+                      ],
                     ),
-                  ],
-                  const SizedBox(height: 12),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Text(
+                  habit.title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: kFontStarTitle,
+                    fontStyle: FontStyle.italic,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 25,
+                    color: isLit ? colors.text : colors.muted,
+                  ),
+                ),
+                if (habit.description != null) ...[
+                  const SizedBox(height: 6),
                   Text(
-                    habit.title,
+                    habit.description!,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: kFontStarTitle,
-                      fontStyle: FontStyle.italic,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 25,
-                      color: isLit ? colors.text : colors.muted,
+                      fontSize: 14,
+                      color: colors.muted,
+                      height: 1.4,
                     ),
                   ),
-                  if (habit.description != null) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      habit.description!,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: colors.muted,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                  StarExtraBadge(
-                    icon: Icons.local_fire_department,
-                    label: strings.streakBadgeLabel,
-                    value: '$currentStreak',
-                  ),
-                  const SizedBox(height: 14),
-                  Center(
-                    child: IntensityBolts(
-                      intensity: habit.intensity,
-                      size: 20,
-                      spacing: 4,
-                      emphasizeLast: true,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  StarCreatedAt(createdAt: habit.createdAt),
                 ],
-              ),
+                const SizedBox(height: 12),
+                StarExtraBadge(
+                  icon: Icons.local_fire_department,
+                  label: strings.streakBadgeLabel,
+                  value: '$currentStreak',
+                ),
+                const SizedBox(height: 14),
+                Center(
+                  child: IntensityBolts(
+                    intensity: habit.intensity,
+                    size: 20,
+                    spacing: 4,
+                    emphasizeLast: true,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                StarCreatedAt(createdAt: habit.createdAt),
+              ],
             ),
           ),
         ),

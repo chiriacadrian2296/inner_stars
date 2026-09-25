@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hint_kit/hint_kit.dart';
 import 'package:marionette_flutter/marionette_flutter.dart';
-import 'package:rive/rive.dart' as rive;
 
 import 'audio/audio_service.dart';
 import 'data/apk_prompt_prefs.dart';
@@ -59,7 +58,6 @@ Future<void> main() async {
   } else {
     WidgetsFlutterBinding.ensureInitialized();
   }
-  await rive.RiveNative.init();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   // Portrait-only: the Sky's own overlay controls are laid out for a tall
   // window, and a phone turned sideways has nowhere near the height they
@@ -353,6 +351,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
         'light-your-sky': 4,
         'constellation-form': 11,
         'supernova-vision': 4,
+        'star-reader': 5,
       },
       labels: TourLabels(
         skip: strings.tourSkipAction,

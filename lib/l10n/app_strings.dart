@@ -461,6 +461,16 @@ abstract class AppStrings {
   String get searchCardMenuOpenAction;
   String get searchCardMenuCloseAction;
   String get searchCardOpenAction;
+
+  /// The short button names the star reader's bottom bar and the Search
+  /// cards' quick menu share: one word each.
+  String get actionFly;
+  String get actionLight;
+  String get actionTurnOff;
+  String get actionReignite;
+
+  /// A goal with no target date, on the reader page.
+  String get noDateShortLabel;
   String get formerPulsarLabel;
   String get searchScreenEyebrow;
 
@@ -650,6 +660,14 @@ abstract class AppStrings {
 
   // Star reader — unlit/dead states
   String goalTargetLabel(String date);
+
+  /// Which star of its constellation this is — its slot on the shape,
+  /// counted from 1.
+  String starSlotLabel(int slot);
+
+  /// Which pulsar of its constellation this is, counted from 1 in order of
+  /// creation.
+  String pulsarNumberLabel(int number);
   String get markAchievedAction;
   String get markAchievedSheetTitle;
   String get markAchievedConfirm;
@@ -859,15 +877,20 @@ abstract class AppStrings {
   String get shareStarLabel;
   String get shareStarError;
 
-  /// The hint pill over a lit star's photo in [StarReaderScreen] — shown
-  /// pinned in place across both its states, only its text/icon swapping:
-  /// [starReaderTapForPhotoHint] before the tap that hides every other
-  /// control to show the photo full-screen, [starReaderTapForDataHint]
-  /// after, to tap back. "Anywhere" spelled out because the pill itself
-  /// isn't the tap target — it's just a reminder floating over the real
-  /// one, which is the whole screen.
-  String get starReaderTapForPhotoHint;
-  String get starReaderTapForDataHint;
+  // "star-reader" tour — `StarReaderScreen`. The `...Arrow...` bodies are the
+  // wide-layout variants (arrows instead of tap strips).
+  String get starReaderTourIntroTitle;
+  String get starReaderTourIntroBody;
+  String get starReaderTourPrevTitle;
+  String get starReaderTourPrevBody;
+  String get starReaderTourPrevArrowBody;
+  String get starReaderTourNextTitle;
+  String get starReaderTourNextBody;
+  String get starReaderTourNextArrowBody;
+  String get starReaderTourCenterTitle;
+  String get starReaderTourCenterBody;
+  String get starReaderTourDockTitle;
+  String get starReaderTourDockBody;
 
   // Sky tooltips (tapping a star or a constellation on the Sky itself)
   String get starQuickLookViewAction;

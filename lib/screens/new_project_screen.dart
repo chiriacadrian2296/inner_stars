@@ -1201,7 +1201,7 @@ BoxDecoration _shapePreviewDecoration(
     color: colors.nightPanel,
     border: Border.all(
       color: selected ? colors.gold : colors.nightBorder,
-      width: selected ? kBorderWidthActive : kBorderWidth,
+      width: kBorderWidth,
     ),
     borderRadius: BorderRadius.circular(kRadiusField),
   );

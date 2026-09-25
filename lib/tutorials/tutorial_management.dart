@@ -20,6 +20,7 @@ const List<String> kAllTourNames = [
   'light-your-sky',
   'constellation-form',
   'supernova-vision',
+  'star-reader',
 ];
 
 /// The Sky's "Tutorials" popup — an on/off switch for every guided tour in
@@ -98,11 +99,12 @@ class _TutorialManagementDialog extends StatelessWidget {
               const SizedBox(height: 12),
               StaggeredEntrance(
                 index: 1,
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(kRadiusCard),
-                  child: Container(
-                    decoration: panelDecoration(colors),
+                child: Container(
+                  decoration: panelDecoration(colors),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(kRadiusCard),
+                    clipBehavior: Clip.antiAlias,
                     child: SwitchListTile(
                       value: settings.tutorialsEnabled,
                       onChanged: (value) => settings.setTutorialsEnabled(value),

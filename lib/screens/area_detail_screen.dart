@@ -168,6 +168,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                       );
                                     }
                                     return MoodboardGrid(
+                                      placeholders: true,
                                       items: snapshot.data!
                                           .getItems(area)
                                           .take(6)
@@ -343,6 +344,9 @@ class _AreaSection extends StatelessWidget {
       children: [
         StaggeredEntrance(
           index: index,
+          // A one-line title is short, so the default 6% rise is a couple of
+          // pixels; this makes it actually visible.
+          drift: 0.5,
           child: Text(
             title,
             textAlign: TextAlign.center,

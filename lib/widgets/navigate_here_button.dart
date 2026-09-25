@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
-import 'press_scale.dart';
 
 /// A small "take me there" trigger shown wherever the caller can jump the
 /// Sky's sky camera to something (the search popup opened from
@@ -31,18 +30,16 @@ class NavigateHereButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final button = PressScale(
-      child: Material(
-        color: colors.nightPanel,
-        shape: CircleBorder(side: BorderSide(color: Colors.white, width: 1.5)),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
-          child: SizedBox(
-            width: size,
-            height: size,
-            child: Icon(Icons.navigation, size: iconSize, color: Colors.white),
-          ),
+    final button = Material(
+      color: colors.nightPanel,
+      shape: CircleBorder(side: BorderSide(color: Colors.white, width: 1.5)),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: Icon(Icons.navigation, size: iconSize, color: Colors.white),
         ),
       ),
     );

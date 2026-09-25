@@ -26,6 +26,7 @@ dependencies:
   share_plus: ^13.3.0
   tooltip_card: ^2.9.0
   audioplayers: ^6.5.1
+  audioplayers_platform_interface: ^7.2.0
   marionette_flutter: ^0.6.0
   hint_kit: ^1.3.0
   flutter_svg: ^2.3.0
@@ -76,6 +77,8 @@ flutter:
     - assets/icon/app_icon_ring_centered.png
     - assets/icon/app_icon_ring_centered_white.png
     - assets/icon/app_star.svg
+    - assets/icon/Logo.svg
+    - assets/icon/Star.svg
     - assets/audio/bg/
     - assets/audio/sfx/
     - assets/images/1. Physical - CENTER CROP.jpg

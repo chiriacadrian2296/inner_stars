@@ -7,16 +7,26 @@ import '../data/moodboard_repository.dart';
 import '../data/moodboard_storage.dart';
 import '../l10n/strings_scope.dart';
 import '../theme/app_fonts.dart';
-import 'press_scale.dart';
 import 'staggered_entrance.dart';
 
 class MoodboardGrid extends StatelessWidget {
-  const MoodboardGrid({super.key, required this.items, this.onTap});
+  const MoodboardGrid({
+    super.key,
+    required this.items,
+    this.onTap,
+    this.placeholders = false,
+  });
   final List<MoodboardItem> items;
   final ValueChanged<MoodboardItem>? onTap;
 
+  /// When [items] is empty, shows a block of plain grey squares holding the
+  /// place of future content instead of the explanatory text — for the small
+  /// preview on an area's page.
+  final bool placeholders;
+
   @override
   Widget build(BuildContext context) {
+    if (items.isEmpty && placeholders) return const _MoodboardPlaceholders();
     if (items.isEmpty) {
       return StaggeredEntrance(
         index: 0,
@@ -38,18 +48,16 @@ class MoodboardGrid extends StatelessWidget {
     Widget tile(int index) => StaggeredEntrance(
       index: index,
       replayKey: '${items[index].id}:${items[index].content}',
-      child: PressScale(
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: Material(
-            color: const Color(0xFF141D30),
-            child: InkWell(
-              onTap: onTap == null ? null : () => onTap!(items[index]),
-              child: SizedBox.expand(
-                child: MoodboardMedia(
-                  key: ValueKey('${items[index].id}:${items[index].content}'),
-                  item: items[index],
-                ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: Material(
+          color: const Color(0xFF141D30),
+          child: InkWell(
+            onTap: onTap == null ? null : () => onTap!(items[index]),
+            child: SizedBox.expand(
+              child: MoodboardMedia(
+                key: ValueKey('${items[index].id}:${items[index].content}'),
+                item: items[index],
               ),
             ),
           ),
@@ -89,6 +97,82 @@ class MoodboardGrid extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// Three rows of plain grey blocks, standing in for a moodboard with nothing
+/// in it yet. Some are wider than the squares, since real photos and videos
+/// make the mosaic uneven too.
+class _MoodboardPlaceholders extends StatelessWidget {
+  const _MoodboardPlaceholders();
+
+  static const _gap = 10.0;
+
+  /// Each row's blocks, as relative widths.
+  static const _rows = [
+    [2, 1],
+    [1, 1, 1],
+    [1, 2],
+  ];
+
+  /// A slightly different grey per block, in reading order, so they read as
+  /// different photos rather than one repeated tile.
+  static const _greys = [
+    Color(0xFF2B2B2B),
+    Color(0xFF3A3A3A),
+    Color(0xFF333333),
+    Color(0xFF262626),
+    Color(0xFF3F3F3F),
+    Color(0xFF303030),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // The height of a square when three sit side by side; every row
+        // shares it so the rows stay even.
+        final rowHeight = (constraints.maxWidth - 2 * _gap) / 3;
+        // Blocks are numbered in reading order, for both the grey and the
+        // entrance delay.
+        var next = 0;
+        Widget block(int flex) {
+          final index = next++;
+          return Expanded(
+            flex: flex,
+            child: StaggeredEntrance(
+              index: index,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: _greys[index % _greys.length],
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const SizedBox.expand(),
+              ),
+            ),
+          );
+        }
+
+        return Column(
+          children: [
+            for (var r = 0; r < _rows.length; r++) ...[
+              if (r > 0) const SizedBox(height: _gap),
+              SizedBox(
+                height: rowHeight,
+                child: Row(
+                  children: [
+                    for (var c = 0; c < _rows[r].length; c++) ...[
+                      if (c > 0) const SizedBox(width: _gap),
+                      block(_rows[r][c]),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 }

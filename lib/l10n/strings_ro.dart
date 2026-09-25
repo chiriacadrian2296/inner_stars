@@ -453,7 +453,17 @@ class StringsRo implements AppStrings {
   @override
   String get searchCardOpenAction => 'Deschide';
   @override
-  String get formerPulsarLabel => 'fost pulsar';
+  String get actionFly => 'Zboară';
+  @override
+  String get actionLight => 'Aprinde';
+  @override
+  String get actionTurnOff => 'Stinge';
+  @override
+  String get actionReignite => 'Reaprinde';
+  @override
+  String get noDateShortLabel => 'Fără dată';
+  @override
+  String get formerPulsarLabel => 'fost obicei';
   @override
   String get searchScreenEyebrow => 'CAUTĂ';
   @override
@@ -1292,12 +1302,13 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get deleteStarConfirmTitle => 'Ștergi această stea?';
   @override
   String get deleteStarConfirmBody =>
-      'Steaua va deveni o stea stinsă: dispare de aici, dar rămâne la locul ei pe cer și o poți reaprinde mai târziu.';
+      'Steaua va deveni un eșec: dispare de aici, dar rămâne la locul ei pe cer și o poți reaprinde mai târziu.';
   @override
-  String get deletePulsarConfirmTitle => 'Ștergi acest pulsar?';
+  String get deletePulsarConfirmTitle =>
+      'Ștergi acest obicei?';
   @override
   String get deletePulsarConfirmBody =>
-      'Pulsarul devine o stea stinsă: nu mai pulsează, dar rămâne la locul lui pe cer și îl poți reaprinde mai târziu, tot ca pulsar.';
+      'Obiceiul devine un eșec: nu mai pulsează, dar rămâne la locul lui pe cer și îl poți reaprinde mai târziu, tot ca obicei.';
   @override
   String get deleteStarAction => 'Șterge';
   @override
@@ -1315,6 +1326,13 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
 
   @override
   String goalTargetLabel(String date) => 'Obiectiv pentru $date';
+
+  @override
+  String starSlotLabel(int slot) => 'Steaua nr. $slot';
+
+  @override
+  String pulsarNumberLabel(int number) =>
+      'Obicei nr. $number';
   @override
   String get markAchievedAction => 'Marchează ca atins';
   @override
@@ -1328,7 +1346,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
       'Această stea a fost ștearsă. O poți reaprinde ca o stea complet nouă, în același loc pe cer.';
   @override
   String get deadPulsarBody =>
-      'Acest pulsar a fost șters. Îl poți reaprinde ca un pulsar complet nou, în același loc pe cer — vechea serie rămâne în urmă.';
+      'Acest obicei a fost șters. Îl poți reaprinde ca un obicei complet nou, în același loc pe cer — vechea serie rămâne în urmă.';
   @override
   String get reigniteAction => 'Reaprinde această stea';
 
@@ -1364,50 +1382,51 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
 
   @override
   String unlitStarsBadge(int count) =>
-      count == 1 ? '1 stea neaprinsă' : '$count stele neaprinse';
+      count == 1 ? '1 obiectiv' : '$count obiective';
   @override
   String activePulsarsBadge(int count) =>
-      count == 1 ? '1 pulsar activ' : '$count pulsari activi';
+      count == 1 ? '1 obicei activ' : '$count obiceiuri active';
 
   @override
-  String get starKindNascentName => 'Stea nouă';
+  String get starKindNascentName => 'Oportunitate';
   @override
-  String get starKindNascentPlural => 'Stele noi';
+  String get starKindNascentPlural => 'Oportunități';
   @override
   String get starKindNascentMeaning => 'Încă neconfigurată';
+
   @override
   String get starKindNascentExample =>
       'Un punct dintr-o constelație abia creată: desenat, dar încă nehotărât.';
   @override
-  String get starKindLitName => 'Stea aprinsă';
+  String get starKindLitName => 'Victorie';
   @override
-  String get starKindLitPlural => 'Stele aprinse';
+  String get starKindLitPlural => 'Victorii';
   @override
-  String get starKindLitMeaning => 'Victorie — făcută';
+  String get starKindLitMeaning => 'Făcută';
   @override
   String get starKindLitExample =>
       'Am dus interviul până la capăt, deși eram îngrozit.';
   @override
-  String get starKindUnlitName => 'Stea neaprinsă';
+  String get starKindUnlitName => 'Obiectiv';
   @override
-  String get starKindUnlitPlural => 'Stele neaprinse';
+  String get starKindUnlitPlural => 'Obiective';
   @override
-  String get starKindUnlitMeaning => 'Obiectiv — de făcut';
+  String get starKindUnlitMeaning => 'De făcut';
   @override
   String get starKindUnlitExample => 'Să alerg primii mei 10 km.';
   @override
-  String get starKindPulsarName => 'Pulsar';
+  String get starKindPulsarName => 'Obicei';
   @override
-  String get starKindPulsarPlural => 'Pulsari';
+  String get starKindPulsarPlural => 'Obiceiuri';
   @override
-  String get starKindPulsarMeaning => 'Obicei — în curs';
+  String get starKindPulsarMeaning => 'În curs';
   @override
   String get starKindPulsarExample =>
       'Zece minute de stretching, în fiecare zi.';
   @override
-  String get starKindDeadName => 'Stea stinsă';
+  String get starKindDeadName => 'Eșec';
   @override
-  String get starKindDeadPlural => 'Stele stinse';
+  String get starKindDeadPlural => 'Eșecuri';
   @override
   String get starKindDeadMeaning => 'Ștearsă — poate fi reaprinsă';
   @override
@@ -1619,10 +1638,41 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get shareStarError =>
       'Nu am putut distribui această stea. Încerci din nou?';
   @override
-  String get starReaderTapForPhotoHint =>
-      'Atinge oriunde pentru a vedea fotografia';
+  String get starReaderTourIntroTitle =>
+      'Răsfoiește stelele tale';
   @override
-  String get starReaderTapForDataHint => 'Atinge oriunde pentru a vedea datele';
+  String get starReaderTourIntroBody =>
+      'Toate stelele acestei constelații sunt aici, una după alta: victorii, obiective, obiceiuri și chiar oportunitățile.';
+  @override
+  String get starReaderTourPrevTitle =>
+      'Steaua anterioară';
+  @override
+  String get starReaderTourPrevBody =>
+      'Atinge marginea din stânga a ecranului ca să te întorci. Merge și glisarea spre dreapta.';
+  @override
+  String get starReaderTourPrevArrowBody =>
+      'Folosește această săgeată ca să te întorci.';
+  @override
+  String get starReaderTourNextTitle =>
+      'Steaua următoare';
+  @override
+  String get starReaderTourNextBody =>
+      'Atinge marginea din dreapta ca să mergi mai departe. Merge și glisarea spre stânga.';
+  @override
+  String get starReaderTourNextArrowBody =>
+      'Folosește această săgeată ca să mergi mai departe.';
+  @override
+  String get starReaderTourCenterTitle =>
+      'Mijlocul paginii';
+  @override
+  String get starReaderTourCenterBody =>
+      'La o stea cu poză, atinge mijlocul ca să ascunzi tot și să vezi doar poza. Atinge din nou ca să revii la detalii.';
+  @override
+  String get starReaderTourDockTitle =>
+      'Tot ce poți face';
+  @override
+  String get starReaderTourDockBody =>
+      'Aceste butoane se schimbă în funcție de stea: aprinde-o, distribuie-o, editeaz-o, șterge-o sau readu-o la viață.';
 
   @override
   String get starQuickLookViewAction => 'Vizualizează';
@@ -1634,7 +1684,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get nascentStarQuickLookConfigureAction => 'Configurează';
   @override
   String constellationTooltipLitCount(int lit, int total) =>
-      '$lit/$total stele aprinse';
+      '$lit/$total victorii';
   @override
   String get creationSuccessEyebrow => 'Felicitări!';
   @override
@@ -1644,7 +1694,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
       'Un obiectiv nou e fixat, te așteaptă pe cer.';
   @override
   String get creationSuccessPulsarMessage =>
-      'Un puls nou e viu, pulsează pe cerul tău.';
+      'Un obicei nou e viu, pulsează pe cerul tău.';
   @override
   String get creationSuccessConstellationMessage =>
       'O constelație nouă a fost adăugată pe cerul tău.';

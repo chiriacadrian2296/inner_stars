@@ -453,7 +453,17 @@ class StringsIt implements AppStrings {
   @override
   String get searchCardOpenAction => 'Apri';
   @override
-  String get formerPulsarLabel => 'ex pulsar';
+  String get actionFly => 'Vola';
+  @override
+  String get actionLight => 'Accendi';
+  @override
+  String get actionTurnOff => 'Spegni';
+  @override
+  String get actionReignite => 'Riaccendi';
+  @override
+  String get noDateShortLabel => 'Nessuna data';
+  @override
+  String get formerPulsarLabel => 'ex abitudine';
   @override
   String get searchScreenEyebrow => 'CERCA';
   @override
@@ -1292,12 +1302,13 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get deleteStarConfirmTitle => 'Eliminare questa stella?';
   @override
   String get deleteStarConfirmBody =>
-      'La stella diventerà una stella spenta: uscirà da qui, ma resterà al suo posto nel cielo e potrai riaccenderla in seguito.';
+      'La stella diventerà un fallimento: uscirà da qui, ma resterà al suo posto nel cielo e potrai riaccenderla in seguito.';
   @override
-  String get deletePulsarConfirmTitle => 'Eliminare questo pulsar?';
+  String get deletePulsarConfirmTitle =>
+      'Eliminare questa abitudine?';
   @override
   String get deletePulsarConfirmBody =>
-      'Il pulsar diventerà una stella spenta: smette di pulsare, ma resta al suo posto nel cielo e potrai riaccenderlo come pulsar in seguito.';
+      'L\'abitudine diventerà un fallimento: smette di pulsare, ma resta al suo posto nel cielo e potrai riaccenderla come abitudine in seguito.';
   @override
   String get deleteStarAction => 'Elimina';
   @override
@@ -1315,6 +1326,13 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
 
   @override
   String goalTargetLabel(String date) => 'Obbiettivo per il $date';
+
+  @override
+  String starSlotLabel(int slot) => 'Stella n. $slot';
+
+  @override
+  String pulsarNumberLabel(int number) =>
+      'Abitudine n. $number';
   @override
   String get markAchievedAction => 'Segna come raggiunta';
   @override
@@ -1328,7 +1346,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
       'Questa stella è stata cancellata. Puoi riaccenderla come una stella nuova, nello stesso punto del cielo.';
   @override
   String get deadPulsarBody =>
-      'Questo pulsar è stato eliminato. Puoi riaccenderlo come un pulsar nuovo, nello stesso punto del cielo — la vecchia serie resta indietro.';
+      'Questa abitudine è stata eliminata. Puoi riaccenderla come una nuova abitudine, nello stesso punto del cielo — la vecchia serie resta indietro.';
   @override
   String get reigniteAction => 'Riaccendi questa stella';
 
@@ -1364,50 +1382,51 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
 
   @override
   String unlitStarsBadge(int count) =>
-      count == 1 ? '1 stella non accesa' : '$count stelle non accese';
+      count == 1 ? '1 obiettivo' : '$count obiettivi';
   @override
   String activePulsarsBadge(int count) =>
-      count == 1 ? '1 pulsar attivo' : '$count pulsar attivi';
+      count == 1 ? '1 abitudine attiva' : '$count abitudini attive';
 
   @override
-  String get starKindNascentName => 'Stella nascente';
+  String get starKindNascentName => 'Opportunità';
   @override
-  String get starKindNascentPlural => 'Stelle nascenti';
+  String get starKindNascentPlural => 'Opportunità';
   @override
   String get starKindNascentMeaning => 'Non ancora configurata';
+
   @override
   String get starKindNascentExample =>
       'Un punto di una costellazione appena creata: disegnato, ma non ancora deciso.';
   @override
-  String get starKindLitName => 'Stella accesa';
+  String get starKindLitName => 'Vittoria';
   @override
-  String get starKindLitPlural => 'Stelle accese';
+  String get starKindLitPlural => 'Vittorie';
   @override
-  String get starKindLitMeaning => 'Vittoria — fatta';
+  String get starKindLitMeaning => 'Fatta';
   @override
   String get starKindLitExample =>
       'Ho retto il colloquio anche se ero terrorizzato.';
   @override
-  String get starKindUnlitName => 'Stella non accesa';
+  String get starKindUnlitName => 'Obiettivo';
   @override
-  String get starKindUnlitPlural => 'Stelle non accese';
+  String get starKindUnlitPlural => 'Obiettivi';
   @override
-  String get starKindUnlitMeaning => 'Obiettivo — da fare';
+  String get starKindUnlitMeaning => 'Da fare';
   @override
   String get starKindUnlitExample => 'Correre i miei primi 10 km.';
   @override
-  String get starKindPulsarName => 'Pulsar';
+  String get starKindPulsarName => 'Abitudine';
   @override
-  String get starKindPulsarPlural => 'Pulsar';
+  String get starKindPulsarPlural => 'Abitudini';
   @override
-  String get starKindPulsarMeaning => 'Abitudine — in corso';
+  String get starKindPulsarMeaning => 'In corso';
   @override
   String get starKindPulsarExample =>
       'Dieci minuti di stretching, ogni giorno.';
   @override
-  String get starKindDeadName => 'Stella spenta';
+  String get starKindDeadName => 'Fallimento';
   @override
-  String get starKindDeadPlural => 'Stelle spente';
+  String get starKindDeadPlural => 'Fallimenti';
   @override
   String get starKindDeadMeaning => 'Eliminata — si può riaccendere';
   @override
@@ -1619,9 +1638,41 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get shareStarError =>
       'Non è stato possibile condividere questa stella. Riprova?';
   @override
-  String get starReaderTapForPhotoHint => 'Tocca ovunque per vedere la foto';
+  String get starReaderTourIntroTitle =>
+      'Sfoglia le tue stelle';
   @override
-  String get starReaderTapForDataHint => 'Tocca ovunque per vedere i dati';
+  String get starReaderTourIntroBody =>
+      'Tutte le stelle di questa costellazione sono qui, una dopo l\'altra: vittorie, obiettivi, abitudini e persino le opportunità.';
+  @override
+  String get starReaderTourPrevTitle =>
+      'Stella precedente';
+  @override
+  String get starReaderTourPrevBody =>
+      'Tocca il bordo sinistro dello schermo per tornare indietro. Funziona anche lo swipe verso destra.';
+  @override
+  String get starReaderTourPrevArrowBody =>
+      'Usa questa freccia per tornare indietro.';
+  @override
+  String get starReaderTourNextTitle =>
+      'Stella successiva';
+  @override
+  String get starReaderTourNextBody =>
+      'Tocca il bordo destro per andare avanti. Funziona anche lo swipe verso sinistra.';
+  @override
+  String get starReaderTourNextArrowBody =>
+      'Usa questa freccia per andare avanti.';
+  @override
+  String get starReaderTourCenterTitle =>
+      'Il centro della pagina';
+  @override
+  String get starReaderTourCenterBody =>
+      'Su una stella con foto, tocca il centro per nascondere tutto e vedere solo la foto. Tocca di nuovo per riavere i dati.';
+  @override
+  String get starReaderTourDockTitle =>
+      'Tutto quello che puoi fare';
+  @override
+  String get starReaderTourDockBody =>
+      'Questi pulsanti cambiano con la stella: accenderla, condividerla, modificarla, eliminarla o riportarla in vita.';
 
   @override
   String get starQuickLookViewAction => 'Visualizza';
@@ -1633,7 +1684,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get nascentStarQuickLookConfigureAction => 'Configura';
   @override
   String constellationTooltipLitCount(int lit, int total) =>
-      '$lit/$total stelle accese';
+      '$lit/$total vittorie';
   @override
   String get creationSuccessEyebrow => 'Complimenti!';
   @override
@@ -1644,7 +1695,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
       'Un nuovo obiettivo è fissato, ti aspetta nel cielo.';
   @override
   String get creationSuccessPulsarMessage =>
-      'Un nuovo pulsar è vivo, pulsa nel tuo cielo.';
+      'Una nuova abitudine è viva, pulsa nel tuo cielo.';
   @override
   String get creationSuccessConstellationMessage =>
       'Una nuova costellazione è stata aggiunta al tuo cielo.';

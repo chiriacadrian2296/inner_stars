@@ -87,7 +87,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: strings.onboardingUnlitBody,
     ),
     _OnboardingPage(
-      icon: Icons.auto_awesome,
+      icon: Icons.insights,
       title: strings.onboardingConstellationsTitle,
       body: strings.onboardingConstellationsBody,
     ),

@@ -17,19 +17,23 @@ import 'sky_tooltip_header.dart';
 /// so this is the plainest of the bunch: what it is, whose shape it's on,
 /// and the one thing you can actually do with it.
 ///
-/// Reached only from a hold (see `SkyScreen._openNascentStarQuickLook`) —
-/// a plain tap still jumps straight to [onConfigure]'s own form, same as
-/// every nascent star has always done.
+/// Reached only from a hold (see `SkyScreen._openNascentStarQuickLook`).
+/// [onView] opens the slot's own page, [onConfigure] goes straight to the
+/// form.
 class SkyNascentStarTooltip extends StatelessWidget {
   const SkyNascentStarTooltip({
     super.key,
     required this.project,
     required this.onClose,
+    required this.onView,
     required this.onConfigure,
   });
 
   final Project project;
   final VoidCallback onClose;
+
+  /// Opens the slot's own page (see `NascentStarReaderScreen`).
+  final VoidCallback onView;
   final VoidCallback onConfigure;
 
   @override
@@ -71,39 +75,60 @@ class SkyNascentStarTooltip extends StatelessWidget {
           style: TextStyle(color: colors.muted, fontSize: 14, height: 1.4),
         ),
         const SizedBox(height: 14),
-        SizedBox(
-          width: double.infinity,
-          child: Material(
-            color: colors.night,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(kRadiusField),
-              side: BorderSide(color: colors.nightBorder),
-            ),
-            child: InkWell(
-              onTap: onConfigure,
-              borderRadius: BorderRadius.circular(kRadiusField),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.auto_awesome, color: colors.gold, size: 16),
-                    const SizedBox(width: 6),
-                    Text(
-                      strings.nascentStarQuickLookConfigureAction,
-                      style: TextStyle(
-                        color: colors.gold,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+        _action(
+          colors,
+          icon: Icons.visibility_outlined,
+          label: strings.starQuickLookViewAction,
+          onTap: onView,
+        ),
+        const SizedBox(height: 8),
+        _action(
+          colors,
+          icon: Icons.auto_awesome,
+          label: strings.nascentStarQuickLookConfigureAction,
+          onTap: onConfigure,
+        ),
+      ],
+    );
+  }
+
+  Widget _action(
+    AppColors colors, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      child: Material(
+        color: colors.night,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kRadiusField),
+          side: BorderSide(color: colors.nightBorder),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(kRadiusField),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: colors.gold, size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: colors.gold,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 }

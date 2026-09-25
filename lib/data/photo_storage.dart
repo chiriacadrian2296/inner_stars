@@ -42,6 +42,19 @@ class PhotoStorage {
     return dir;
   }
 
+  /// The file [id] points to. [saveBytes] hands back just a file name, and
+  /// older photos were saved as a full path that may no longer be valid (the
+  /// app's documents directory can move) — so anything that isn't an existing
+  /// absolute path is looked up by its file name in [_photosDir]. Reading a
+  /// bare name as a path relative to the working directory is what made
+  /// photos vanish after a restart, once the in-memory [_cache] was gone.
+  static Future<File> _resolve(String id) async {
+    final direct = File(id);
+    if (direct.isAbsolute && await direct.exists()) return direct;
+    final name = id.split('/').last;
+    return File('${(await _photosDir()).path}/$name');
+  }
+
   /// Copies [picked] into storage and returns its new, permanent id.
   static Future<String> save(XFile picked) async {
     final bytes = await picked.readAsBytes();
@@ -83,7 +96,7 @@ class PhotoStorage {
       final encoded = prefs.getString('$_webKeyPrefix$id');
       bytes = encoded == null ? null : base64Decode(encoded);
     } else {
-      final file = File(id);
+      final file = await _resolve(id);
       bytes = await file.exists() ? await file.readAsBytes() : null;
     }
     if (bytes != null) _cache[id] = bytes;
@@ -100,7 +113,7 @@ class PhotoStorage {
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove('$_webKeyPrefix$id');
       } else {
-        final file = File(id);
+        final file = await _resolve(id);
         if (await file.exists()) await file.delete();
       }
     } catch (_) {

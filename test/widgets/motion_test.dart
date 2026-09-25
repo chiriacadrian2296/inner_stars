@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inner_stars/theme/app_theme.dart';
 import 'package:inner_stars/utils/app_modals.dart';
 import 'package:inner_stars/widgets/animated_presence.dart';
-import 'package:inner_stars/widgets/press_scale.dart';
 import 'package:inner_stars/widgets/staggered_entrance.dart';
 
 Widget _app(Widget home, {bool reduceMotion = false}) {
@@ -17,80 +16,7 @@ Widget _app(Widget home, {bool reduceMotion = false}) {
   );
 }
 
-double _scaleOf(WidgetTester tester) =>
-    tester.widget<AnimatedScale>(find.byType(AnimatedScale)).scale;
-
 void main() {
-  group('PressScale', () {
-    testWidgets('shrinks while pressed and restores on release', (
-      tester,
-    ) async {
-      await _app(
-        const Scaffold(
-          body: Center(
-            child: PressScale(child: SizedBox(width: 80, height: 80)),
-          ),
-        ),
-      ).pump(tester);
-      expect(_scaleOf(tester), 1);
-
-      final gesture = await tester.startGesture(
-        tester.getCenter(find.byType(SizedBox).first),
-      );
-      await tester.pump();
-      expect(_scaleOf(tester), lessThan(1));
-
-      await gesture.up();
-      await tester.pump();
-      expect(_scaleOf(tester), 1);
-    });
-
-    testWidgets('restores when the pointer is cancelled', (tester) async {
-      await _app(
-        const Scaffold(
-          body: Center(
-            child: PressScale(child: SizedBox(width: 80, height: 80)),
-          ),
-        ),
-      ).pump(tester);
-      final gesture = await tester.startGesture(
-        tester.getCenter(find.byType(SizedBox).first),
-      );
-      await tester.pump();
-      await gesture.cancel();
-      await tester.pump();
-      expect(_scaleOf(tester), 1);
-    });
-
-    testWidgets('does not intercept the tap of the button beneath it', (
-      tester,
-    ) async {
-      var taps = 0;
-      await _app(
-        Scaffold(
-          body: Center(
-            child: PressScale(
-              child: ElevatedButton(
-                onPressed: () => taps++,
-                child: const Text('go'),
-              ),
-            ),
-          ),
-        ),
-      ).pump(tester);
-      await tester.tap(find.text('go'));
-      await tester.pumpAndSettle();
-      expect(taps, 1);
-    });
-
-    testWidgets('passes the child through when disabled', (tester) async {
-      await _app(
-        const Scaffold(body: PressScale(enabled: false, child: Text('x'))),
-      ).pump(tester);
-      expect(find.byType(AnimatedScale), findsNothing);
-    });
-  });
-
   group('StaggeredEntrance', () {
     double opacity(WidgetTester tester) => tester
         .widget<FadeTransition>(

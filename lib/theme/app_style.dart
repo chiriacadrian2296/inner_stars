@@ -100,7 +100,9 @@ BoxDecoration selectableDecoration(
     color: colors.nightPanel,
     border: Border.all(
       color: selected ? colors.gold : colors.nightBorder,
-      width: selected ? kBorderWidthActive : kBorderWidth,
+      // Never wider when selected: a border takes up room, so a thicker one
+      // made the whole control grow. Only its color says it's chosen.
+      width: kBorderWidth,
     ),
     borderRadius: BorderRadius.circular(radius),
   );
@@ -135,9 +137,10 @@ Color fieldBorderColor(AppColors colors, FieldState state) {
   return state == FieldState.empty ? colors.nightBorder : colors.gold;
 }
 
-double fieldBorderWidth(FieldState state) {
-  return state == FieldState.empty ? kBorderWidth : kBorderWidthActive;
-}
+/// The same in every state: a field's border takes up room, so a thicker one
+/// for filled/focused made the field grow. The color (and the glow, which
+/// takes up none) say what state it's in.
+double fieldBorderWidth(FieldState state) => kBorderWidth;
 
 /// The shared look of every field in the app — typed or tapped, they're the
 /// same object to a user, so they get the same decoration from the same

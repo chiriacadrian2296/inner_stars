@@ -218,11 +218,12 @@ class _QuickSettingsScreenState extends State<QuickSettingsScreen> {
                 const SizedBox(height: 10),
                 StaggeredEntrance(
                   index: 2,
-                  child: Material(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(kRadiusCard),
-                    child: Container(
-                      decoration: panelDecoration(colors),
+                  child: Container(
+                    decoration: panelDecoration(colors),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(kRadiusCard),
+                      clipBehavior: Clip.antiAlias,
                       child: SwitchListTile(
                         value: widget.settings.showGrid,
                         onChanged: _setShowGrid,
@@ -243,11 +244,12 @@ class _QuickSettingsScreenState extends State<QuickSettingsScreen> {
                 const SizedBox(height: 10),
                 StaggeredEntrance(
                   index: 3,
-                  child: Material(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(kRadiusCard),
-                    child: Container(
-                      decoration: panelDecoration(colors),
+                  child: Container(
+                    decoration: panelDecoration(colors),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(kRadiusCard),
+                      clipBehavior: Clip.antiAlias,
                       child: SwitchListTile(
                         value: widget.settings.tutorialsEnabled,
                         onChanged: (value) =>

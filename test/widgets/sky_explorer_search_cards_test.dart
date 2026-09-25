@@ -148,7 +148,7 @@ void main() {
 
     expect(find.byType(SearchResultCard), findsWidgets);
 
-    await tester.tap(find.byIcon(Icons.auto_awesome));
+    await tester.tap(find.byIcon(Icons.insights));
     await tester.pumpAndSettle();
     expect(find.text('Costellazione test'), findsOneWidget);
     expect(

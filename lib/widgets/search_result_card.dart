@@ -7,7 +7,6 @@ import '../theme/app_colors.dart';
 import '../theme/app_motion.dart';
 import '../theme/app_style.dart';
 import 'constellation_editor_painter.dart';
-import 'press_scale.dart';
 import 'star_glyph.dart';
 
 class SearchCardMenuController extends ChangeNotifier {
@@ -342,7 +341,7 @@ class SearchConstellationVisual extends StatelessWidget {
     final colors = context.colors;
     final shape = this.shape;
     if (shape == null || shape.points.isEmpty) {
-      return const SearchMissingVisual(icon: Icons.hub_outlined);
+      return const SearchMissingVisual(icon: Icons.insights);
     }
     return ColoredBox(
       color: colors.night.withValues(alpha: 0.48),
@@ -372,33 +371,67 @@ class SearchStarVisual extends StatelessWidget {
     super.key,
     required this.kind,
     this.pulsarLit = true,
+    this.pulsarBothStates = false,
   });
 
   final StarKind kind;
   final bool pulsarLit;
 
+  /// For a pulsar shown as a *kind* rather than as one particular habit
+  /// (the star form's tile): a pulsar can be burning or dark, so it's drawn
+  /// half gold and half blue — icon and glow alike — instead of committing
+  /// to one. Ignored for every other kind.
+  final bool pulsarBothStates;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final color = starKindColor(kind, colors, lit: pulsarLit);
+    final both = pulsarBothStates && kind == StarKind.pulsar;
+    final burning = starKindColor(StarKind.pulsar, colors);
+    final dark = starKindColor(StarKind.pulsar, colors, lit: false);
+    // The glow fades all the way to nothing by the time it reaches the
+    // nearest edge of the box (a radius of half the shorter side), so the box
+    // never cuts it off: it used to stop at a faint flat tint that showed as
+    // a hard-edged rectangle around it.
+    RadialGradient glow(Color c, {Alignment center = Alignment.center}) =>
+        RadialGradient(
+          center: center,
+          colors: [c.withValues(alpha: 0.28), c.withValues(alpha: 0)],
+        );
     return DecoratedBox(
       decoration: BoxDecoration(
-        gradient: RadialGradient(
-          colors: [
-            color.withValues(alpha: 0.24),
-            color.withValues(alpha: 0.03),
-          ],
-        ),
+        gradient: both ? null : glow(color),
       ),
       child: Stack(
         alignment: Alignment.center,
         children: [
+          if (both) ...[
+            // Two half-strength glows side by side, gold on the left and
+            // blue on the right.
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: glow(burning, center: const Alignment(-0.25, 0)),
+                ),
+              ),
+            ),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: glow(dark, center: const Alignment(0.25, 0)),
+                ),
+              ),
+            ),
+          ],
           Container(
             width: 64,
             height: 64,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: color.withValues(alpha: 0.16)),
+              border: Border.all(
+                color: (both ? colors.text : color).withValues(alpha: 0.16),
+              ),
             ),
           ),
           Container(
@@ -409,12 +442,23 @@ class SearchStarVisual extends StatelessWidget {
               color: colors.night.withValues(alpha: 0.34),
             ),
           ),
-          if (kind == StarKind.pulsar)
-            Icon(Icons.restart_alt, size: 36, color: color)
+          if (both)
+            // Left half gold, right half blue, with a hard edge down the
+            // middle.
+            ShaderMask(
+              blendMode: BlendMode.srcIn,
+              shaderCallback: (bounds) => LinearGradient(
+                colors: [burning, burning, dark, dark],
+                stops: const [0, 0.5, 0.5, 1],
+              ).createShader(bounds),
+              child: Icon(kind.icon, size: 36, color: Colors.white),
+            )
+          else if (kind == StarKind.pulsar)
+            Icon(kind.icon, size: 36, color: color)
           else if (kind == StarKind.dead)
-            Icon(Icons.hide_source, size: 34, color: color)
+            Icon(kind.icon, size: 34, color: color)
           else if (kind == StarKind.nascent)
-            Icon(Icons.circle_outlined, size: 30, color: color)
+            Icon(kind.icon, size: 30, color: color)
           else
             StarGlyph(kind: kind, size: 34),
         ],
@@ -466,29 +510,27 @@ class _SearchQuickMenuToggle extends StatelessWidget {
           key: const Key('search-card-quick-menu-toggle'),
           behavior: HitTestBehavior.opaque,
           onTap: onTap,
-          child: PressScale(
-            child: AnimatedContainer(
+          child: AnimatedContainer(
+            duration: motionDuration(context, kMotionBase),
+            curve: kMotionEnter,
+            width: 20,
+            height: 48,
+            decoration: BoxDecoration(
+              color: isOpen ? AppColors.dark.gold : colors.night,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: AppColors.dark.gold,
+                width: 1,
+              ),
+            ),
+            child: AnimatedRotation(
+              turns: isOpen ? 0.5 : 0,
               duration: motionDuration(context, kMotionBase),
               curve: kMotionEnter,
-              width: 20,
-              height: 48,
-              decoration: BoxDecoration(
-                color: isOpen ? AppColors.dark.gold : colors.night,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: AppColors.dark.gold,
-                  width: 1,
-                ),
-              ),
-              child: AnimatedRotation(
-                turns: isOpen ? 0.5 : 0,
-                duration: motionDuration(context, kMotionBase),
-                curve: kMotionEnter,
-                child: Icon(
-                  Icons.more_vert_rounded,
-                  size: 18,
-                  color: isOpen ? colors.night : AppColors.dark.gold,
-                ),
+              child: Icon(
+                Icons.more_vert_rounded,
+                size: 18,
+                color: isOpen ? colors.night : AppColors.dark.gold,
               ),
             ),
           ),
@@ -589,30 +631,28 @@ class _SearchQuickMenuAction extends StatelessWidget {
     return Semantics(
       button: true,
       label: action.label,
-      child: PressScale(
-        child: InkWell(
-          onTap: () {
-            onActionSelected();
-            action.onTap();
-          },
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(action.icon, size: 17, color: foreground),
-              const SizedBox(height: 2),
-              Text(
-                action.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: foreground,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                ),
+      child: InkWell(
+        onTap: () {
+          onActionSelected();
+          action.onTap();
+        },
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(action.icon, size: 17, color: foreground),
+            const SizedBox(height: 2),
+            Text(
+              action.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: foreground,
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

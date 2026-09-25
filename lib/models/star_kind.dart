@@ -45,11 +45,11 @@ extension StarKindX on StarKind {
   /// (cards, filter chips, the form's switch, the metaphor guide) — one
   /// distinct glyph per kind, never shared.
   IconData get icon => switch (this) {
-    StarKind.nascent => Icons.blur_on,
+    StarKind.nascent => Icons.circle_outlined,
     StarKind.lit => Icons.star,
     StarKind.unlit => Icons.star_border,
-    StarKind.pulsar => Icons.wifi_tethering,
-    StarKind.dead => Icons.circle_outlined,
+    StarKind.pulsar => Icons.restart_alt,
+    StarKind.dead => Icons.hide_source,
   };
 
   /// Singular name ("Lit star"), for one card's own kind label. Not called

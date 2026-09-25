@@ -25,6 +25,7 @@ import '../data/custom_constellation_repository.dart';
 import '../data/habit_completion_repository.dart';
 import '../data/habit_repository.dart';
 import '../data/project_repository.dart';
+import '../data/reader_entries.dart';
 import '../data/reflection_answer_repository.dart';
 import '../data/star_repository.dart';
 import '../l10n/strings_scope.dart';
@@ -53,7 +54,6 @@ import '../widgets/constellation_field.dart';
 import '../widgets/constellation_painter.dart';
 import '../widgets/creation_success_dialog.dart';
 import '../widgets/nebula_background.dart';
-import '../widgets/press_scale.dart';
 // import '../widgets/sky_decorations.dart'; — the spiral-galaxy take on this
 // slot, disabled first in favor of SkyWisps, then SkyBlackHole, then
 // SkySupernova below; see the Stack in build().
@@ -1191,6 +1191,55 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     await _configureNascentStar(data.constellation, data.star);
   }
 
+  /// Opens the star reader on one member of [project]'s constellation —
+  /// [anchorKey] is a [ReaderEntry.key] — with every other member (stars,
+  /// pulsars and empty slots alike) one swipe away.
+  Future<void> _openConstellationReader(
+    Project project,
+    String anchorKey,
+  ) async {
+    List<ReaderEntry> load() => projectReaderEntries(
+      project: project,
+      starRepository: widget.starRepository,
+      habitRepository: widget.habitRepository,
+      starsShapeRepository: widget.starsShapeRepository,
+    );
+    final entries = load();
+    final index = entries.indexWhere((e) => e.key == anchorKey);
+    if (index == -1) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => StarReaderScreen(
+          repository: widget.starRepository,
+          initialEntries: entries,
+          startIndex: index,
+          allowEdit: true,
+          projectsById: {project.id: project},
+          projectRepository: widget.projectRepository,
+          starsShapeRepository: widget.starsShapeRepository,
+          refreshEntries: load,
+          habitRepository: widget.habitRepository,
+          habitCompletionRepository: widget.habitCompletionRepository,
+        ),
+      ),
+    );
+    _refresh();
+  }
+
+  /// [SkyNascentStarTooltip]'s own "View" button — the slot's own page.
+  Future<void> _viewQuickLookNascentStar() async {
+    final data = _skyTooltipController.data;
+    if (data is! _NascentStarTooltip) return;
+    final project = data.constellation.project;
+    final slot = data.star.slotSequence;
+    if (slot == null) return;
+    _closeSkyTooltip();
+    await _openConstellationReader(
+      project,
+      NascentEntry(projectId: project.id, slot: slot).key,
+    );
+  }
+
   void _closeSkyTooltip() => _skyTooltipController.close();
 
   /// The actual [Star] the quick-look tooltip is showing — re-read from
@@ -1223,24 +1272,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     final data = _skyTooltipController.data;
     if (data is! _StarTooltip) return;
     final constellation = data.constellation;
-    final index = data.starIndex;
+    final star = constellation.stars[data.starIndex];
     _closeSkyTooltip();
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => StarReaderScreen(
-          repository: widget.starRepository,
-          initialStars: constellation.stars,
-          startIndex: index,
-          allowEdit: true,
-          projectsById: {constellation.project.id: constellation.project},
-          projectRepository: widget.projectRepository,
-          starsShapeRepository: widget.starsShapeRepository,
-          refreshStars: () =>
-              widget.starRepository.getAllForProject(constellation.project.id),
-        ),
-      ),
-    );
-    _refresh();
+    await _openConstellationReader(constellation.project, StarEntry(star).key);
   }
 
   /// Same shape as [_viewQuickLookStar], for a pulsar — the tooltip's own
@@ -1248,22 +1282,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   Future<void> _viewQuickLookPulsar() async {
     final data = _skyTooltipController.data;
     if (data is! _PulsarTooltip) return;
-    final constellation = data.constellation;
+    final project = data.constellation.project;
     final habit = data.habit;
     _closeSkyTooltip();
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PulsarReaderScreen(
-          habit: habit,
-          project: constellation.project,
-          habitRepository: widget.habitRepository,
-          habitCompletionRepository: widget.habitCompletionRepository,
-          projectRepository: widget.projectRepository,
-          starsShapeRepository: widget.starsShapeRepository,
-        ),
-      ),
-    );
-    _refresh();
+    await _openConstellationReader(project, PulsarEntry(habit).key);
   }
 
   /// Mirrors `StarReaderScreen._editOrResurrectCurrent` exactly (same two
@@ -1778,6 +1800,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // [_tourWantsGesture]. Once order 10 itself is done (or no tour is
     // running at all) this is unrestricted, same as ever.
     if (!_tourWantsGesture(10)) return;
+    // Same short buzz + tap sound a tap on something in the sky gets —
+    // this button is just as much a "tap" as any of those.
+    if (isTouchOnlyMobile) _tapHaptic();
+    widget.audioService.playTapSound();
     setState(() => _quickAccessMenuOpen = !_quickAccessMenuOpen);
     // The tour's order-10 step — this is its only real gesture, opening or
     // closing either way (the guard inside only ever lets this through
@@ -1827,6 +1853,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // See [_tourWantsGesture]. Once order 8 itself is done (or no tour is
     // running at all) this is unrestricted, same as ever.
     if (!_tourWantsGesture(8)) return;
+    // The hold's own sound, same as a hold on something in the sky — the
+    // button's own continuous buzz (see `_MenuStarButtonState`) already
+    // covers the haptic half.
+    widget.audioService.playHoldSound();
     // Closed first rather than left open underneath — a hold that
     // completes while the quick-access menu happens to be open (both
     // read off the same button) should still land on a clean full menu,
@@ -4069,15 +4099,22 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                     // menu on an outside tap — sits right under the fan
                     // itself (next) so both paint/hit-test above every
                     // other control here, last two in this Stack on
-                    // purpose. [IgnorePointer] while closed lets every
+                    // purpose. [_HoleBarrier] leaves the main button itself
+                    // touchable through it, so a press (tap to close, or a
+                    // hold for the full menu) works with this open too.
+                    // [IgnorePointer] while closed lets every
                     // normal gesture on the sky pass straight through, the
                     // same as if this widget weren't here at all.
                     IgnorePointer(
                       ignoring: !_quickAccessMenuOpen,
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: _closeQuickAccessMenu,
-                        child: const SizedBox.expand(),
+                      child: _HoleBarrier(
+                        holeKey: _menuStarButtonKey,
+                        holeRadius: _MenuStarButtonState._tapTargetSize / 2,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: _closeQuickAccessMenu,
+                          child: const SizedBox.expand(),
+                        ),
                       ),
                     ),
                     // The quick-access mini menu itself (see
@@ -4314,6 +4351,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       _NascentStarTooltip(:final constellation) => SkyNascentStarTooltip(
         project: constellation.project,
         onClose: _closeSkyTooltip,
+        onView: _viewQuickLookNascentStar,
         onConfigure: _configureQuickLookNascentStar,
       ),
       null => const SizedBox.shrink(),
@@ -4502,21 +4540,19 @@ class _SkyOverlayButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return PressScale(
-      child: Material(
-        color: Colors.transparent,
-        shape: const CircleBorder(),
-        clipBehavior: Clip.antiAlias,
-        child: Ink(
-          decoration: skyControlDecoration(colors, circle: true),
-          child: InkWell(
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Tooltip(
-                message: tooltip,
-                child: Icon(icon, color: colors.gold, size: 20),
-              ),
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: Ink(
+        decoration: skyControlDecoration(colors, circle: true),
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Tooltip(
+              message: tooltip,
+              child: Icon(icon, color: colors.gold, size: 20),
             ),
           ),
         ),
@@ -4585,6 +4621,10 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   // Smaller than [_QuickAccessButton]'s own 24/40 icon-to-disc ratio —
   // that ratio read as too big on this button's own bigger disc.
   static const _svgIconSize = _visibleSize * 0.52;
+  // Star.svg fills its whole viewBox (the old app_star.svg had padding
+  // around its shape), so it's scaled down to land at about the old
+  // glyph's on-screen size.
+  static const _starGlyphScale = 1.4;
   // Big enough that the shader's own glow/spikes fade out naturally well
   // before this canvas's own edge, rather than clipping hard against a
   // boundary that's part of the visible glow.
@@ -4866,14 +4906,16 @@ class _MenuStarButtonState extends State<_MenuStarButton>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: context.colors.nightPanel,
-                    border: Border.all(color: Colors.white, width: 5),
+                    border: Border.all(color: Colors.white, width: 4),
                   ),
                   child: Align(
-                    alignment: const Alignment(0, -0.08),
+                    // Star.svg is symmetric, so unlike the old 5-point
+                    // star it needs no optical lift.
+                    alignment: Alignment.center,
                     child: SvgPicture.asset(
-                      'assets/icon/app_star.svg',
-                      width: _svgIconSize,
-                      height: _svgIconSize,
+                      'assets/icon/Star.svg',
+                      width: _svgIconSize * _starGlyphScale,
+                      height: _svgIconSize * _starGlyphScale,
                       colorFilter: const ColorFilter.mode(
                         Colors.white,
                         BlendMode.srcIn,
@@ -5067,7 +5109,7 @@ class _QuickAccessFan extends StatelessWidget {
             strings.skyTourSupernovasHintBody,
           ),
           (
-            Icons.auto_awesome,
+            Icons.insights,
             strings.menuNewConstellation,
             onConstellations,
             strings.skyTourConstellationsHintTitle,
@@ -5175,31 +5217,29 @@ class _QuickAccessButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return PressScale(
-      child: Material(
-        color: Colors.transparent,
-        shape: const CircleBorder(),
-        clipBehavior: Clip.antiAlias,
-        child: Ink(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: colors.nightPanel,
-            border: Border.all(color: Colors.white, width: 2),
-          ),
-          child: InkWell(
-            onTapDown: (_) => onPressChanged?.call(true),
-            onTapCancel: () => onPressChanged?.call(false),
-            onTap: () {
-              onPressChanged?.call(false);
-              onTap();
-            },
-            child: SizedBox(
-              width: _size,
-              height: _size,
-              child: Tooltip(
-                message: tooltip,
-                child: Center(child: Icon(icon, color: Colors.white, size: 24)),
-              ),
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: Ink(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: colors.nightPanel,
+          border: Border.all(color: Colors.white, width: 2),
+        ),
+        child: InkWell(
+          onTapDown: (_) => onPressChanged?.call(true),
+          onTapCancel: () => onPressChanged?.call(false),
+          onTap: () {
+            onPressChanged?.call(false);
+            onTap();
+          },
+          child: SizedBox(
+            width: _size,
+            height: _size,
+            child: Tooltip(
+              message: tooltip,
+              child: Center(child: Icon(icon, color: Colors.white, size: 24)),
             ),
           ),
         ),
@@ -5492,5 +5532,53 @@ class _ZoomSlider extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Wraps a full-screen [child] (the quick-access menu's dismiss barrier)
+/// but lets touches within [holeRadius] of [holeKey]'s own center fall
+/// through to whatever sits beneath it — the main [_MenuStarButton] — as if
+/// the barrier weren't there.
+class _HoleBarrier extends SingleChildRenderObjectWidget {
+  const _HoleBarrier({
+    required this.holeKey,
+    required this.holeRadius,
+    super.child,
+  });
+
+  final GlobalKey holeKey;
+  final double holeRadius;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderHoleBarrier(holeKey, holeRadius);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderHoleBarrier renderObject,
+  ) {
+    renderObject
+      ..holeKey = holeKey
+      ..holeRadius = holeRadius;
+  }
+}
+
+class _RenderHoleBarrier extends RenderProxyBox {
+  _RenderHoleBarrier(this.holeKey, this.holeRadius);
+
+  GlobalKey holeKey;
+  double holeRadius;
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    final holeBox = holeKey.currentContext?.findRenderObject();
+    if (holeBox is RenderBox && holeBox.attached && holeBox.hasSize) {
+      final center = globalToLocal(
+        holeBox.localToGlobal(holeBox.size.center(Offset.zero)),
+      );
+      if ((position - center).distance <= holeRadius) return false;
+    }
+    return super.hitTest(result, position: position);
   }
 }

@@ -32,6 +32,7 @@ class StaggeredEntrance extends StatefulWidget {
     this.replayKey,
     this.enabled = true,
     this.reverse = false,
+    this.drift = 0.06,
   });
 
   final int index;
@@ -49,6 +50,10 @@ class StaggeredEntrance extends StatefulWidget {
   /// instead of the end — for content that arrives from the side the person
   /// just navigated toward, like the previous star in a swipe.
   final bool reverse;
+
+  /// How far a vertical entrance rises from, as a fraction of the child's own
+  /// height. Small text blocks need a larger value than cards to read at all.
+  final double drift;
 
   /// Delay between consecutive items.
   static const step = Duration(milliseconds: 40);
@@ -165,7 +170,7 @@ class _StaggeredEntranceState extends State<StaggeredEntrance>
     final fromEnd =
         (Directionality.of(context) == TextDirection.rtl) == widget.reverse;
     final begin = widget.axis == Axis.vertical
-        ? const Offset(0, 0.06)
+        ? Offset(0, widget.drift)
         : Offset(fromEnd ? 0.12 : -0.12, 0);
     return FadeTransition(
       opacity: _progress,

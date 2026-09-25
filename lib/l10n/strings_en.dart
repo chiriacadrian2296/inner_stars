@@ -450,7 +450,17 @@ class StringsEn implements AppStrings {
   @override
   String get searchCardOpenAction => 'Open';
   @override
-  String get formerPulsarLabel => 'former pulsar';
+  String get actionFly => 'Fly';
+  @override
+  String get actionLight => 'Light';
+  @override
+  String get actionTurnOff => 'Turn off';
+  @override
+  String get actionReignite => 'Reignite';
+  @override
+  String get noDateShortLabel => 'No date';
+  @override
+  String get formerPulsarLabel => 'former habit';
   @override
   String get searchScreenEyebrow => 'SEARCH';
   @override
@@ -1276,12 +1286,13 @@ My contribution meets a real need and is something I can sustain.
   String get deleteStarConfirmTitle => 'Delete this star?';
   @override
   String get deleteStarConfirmBody =>
-      "This turns the star into a dead one — it leaves here, but stays in its spot in the sky, and you can reignite it later.";
+      "This turns the star into a failure — it leaves here, but stays in its spot in the sky, and you can reignite it later.";
   @override
-  String get deletePulsarConfirmTitle => 'Delete this pulsar?';
+  String get deletePulsarConfirmTitle =>
+      'Delete this habit?';
   @override
   String get deletePulsarConfirmBody =>
-      'The pulsar becomes a dead star — it stops beating, but stays in its spot in the sky, and you can reignite it later as a pulsar again.';
+      'The habit becomes a failure — it stops beating, but stays in its spot in the sky, and you can reignite it later as a habit again.';
   @override
   String get deleteStarAction => 'Delete';
   @override
@@ -1299,6 +1310,13 @@ My contribution meets a real need and is something I can sustain.
 
   @override
   String goalTargetLabel(String date) => 'Goal for $date';
+
+  @override
+  String starSlotLabel(int slot) => 'Star #$slot';
+
+  @override
+  String pulsarNumberLabel(int number) =>
+      'Habit #$number';
   @override
   String get markAchievedAction => 'Mark as achieved';
   @override
@@ -1312,7 +1330,7 @@ My contribution meets a real need and is something I can sustain.
       'This star was deleted. You can reignite it as a brand new star, in the same spot in the sky.';
   @override
   String get deadPulsarBody =>
-      'This pulsar was deleted. You can reignite it as a brand new pulsar, in the same spot in the sky — its old streak stays behind.';
+      'This habit was deleted. You can reignite it as a brand new habit, in the same spot in the sky — its old streak stays behind.';
   @override
   String get reigniteAction => 'Reignite this star';
 
@@ -1348,49 +1366,50 @@ My contribution meets a real need and is something I can sustain.
 
   @override
   String unlitStarsBadge(int count) =>
-      count == 1 ? '1 unlit star' : '$count unlit stars';
+      count == 1 ? '1 goal' : '$count goals';
   @override
   String activePulsarsBadge(int count) =>
-      count == 1 ? '1 active pulsar' : '$count active pulsars';
+      count == 1 ? '1 active habit' : '$count active habits';
 
   @override
-  String get starKindNascentName => 'Nascent star';
+  String get starKindNascentName => 'Opportunity';
   @override
-  String get starKindNascentPlural => 'Nascent stars';
+  String get starKindNascentPlural => 'Opportunities';
   @override
   String get starKindNascentMeaning => 'Not configured yet';
+
   @override
   String get starKindNascentExample =>
       'A point on a brand new constellation — drawn, but not decided yet.';
   @override
-  String get starKindLitName => 'Lit star';
+  String get starKindLitName => 'Victory';
   @override
-  String get starKindLitPlural => 'Lit stars';
+  String get starKindLitPlural => 'Victories';
   @override
-  String get starKindLitMeaning => 'Victory — done';
+  String get starKindLitMeaning => 'Done';
   @override
   String get starKindLitExample =>
       'I got through the interview even though I was terrified.';
   @override
-  String get starKindUnlitName => 'Unlit star';
+  String get starKindUnlitName => 'Goal';
   @override
-  String get starKindUnlitPlural => 'Unlit stars';
+  String get starKindUnlitPlural => 'Goals';
   @override
-  String get starKindUnlitMeaning => 'Goal — to do';
+  String get starKindUnlitMeaning => 'To do';
   @override
   String get starKindUnlitExample => 'Run my first 10 km.';
   @override
-  String get starKindPulsarName => 'Pulsar';
+  String get starKindPulsarName => 'Habit';
   @override
-  String get starKindPulsarPlural => 'Pulsars';
+  String get starKindPulsarPlural => 'Habits';
   @override
-  String get starKindPulsarMeaning => 'Habit — doing';
+  String get starKindPulsarMeaning => 'Ongoing';
   @override
   String get starKindPulsarExample => 'Ten minutes of stretching, every day.';
   @override
-  String get starKindDeadName => 'Dead star';
+  String get starKindDeadName => 'Failure';
   @override
-  String get starKindDeadPlural => 'Dead stars';
+  String get starKindDeadPlural => 'Failures';
   @override
   String get starKindDeadMeaning => 'Deleted — can be reignited';
   @override
@@ -1597,9 +1616,41 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get shareStarError => "Couldn't share that star. Try again?";
   @override
-  String get starReaderTapForPhotoHint => 'Tap anywhere to see the photo';
+  String get starReaderTourIntroTitle =>
+      'Browse your stars';
   @override
-  String get starReaderTapForDataHint => 'Tap anywhere to see the details';
+  String get starReaderTourIntroBody =>
+      'Every star of this constellation lives here, one after another: victories, goals, habits, even the opportunities.';
+  @override
+  String get starReaderTourPrevTitle =>
+      'Previous star';
+  @override
+  String get starReaderTourPrevBody =>
+      'Tap the left edge of the screen to go back. Swiping right works too.';
+  @override
+  String get starReaderTourPrevArrowBody =>
+      'Use this arrow to go back.';
+  @override
+  String get starReaderTourNextTitle =>
+      'Next star';
+  @override
+  String get starReaderTourNextBody =>
+      'Tap the right edge to move on. Swiping left works too.';
+  @override
+  String get starReaderTourNextArrowBody =>
+      'Use this arrow to move on.';
+  @override
+  String get starReaderTourCenterTitle =>
+      'The middle of the page';
+  @override
+  String get starReaderTourCenterBody =>
+      'On a star with a photo, tap the middle to hide everything and see just the photo. Tap again to bring the details back.';
+  @override
+  String get starReaderTourDockTitle =>
+      'Everything you can do';
+  @override
+  String get starReaderTourDockBody =>
+      'These buttons change with the star: light it, share it, edit it, delete it, or bring it back.';
 
   @override
   String get starQuickLookViewAction => 'View';
@@ -1611,7 +1662,7 @@ My contribution meets a real need and is something I can sustain.
   String get nascentStarQuickLookConfigureAction => 'Configure';
   @override
   String constellationTooltipLitCount(int lit, int total) =>
-      '$lit/$total stars lit';
+      '$lit/$total victories';
   @override
   String get creationSuccessEyebrow => 'Congrats!';
   @override
@@ -1621,7 +1672,7 @@ My contribution meets a real need and is something I can sustain.
       'A new goal is set, waiting in your sky.';
   @override
   String get creationSuccessPulsarMessage =>
-      'A new pulsar is alive, pulsing in your sky.';
+      'A new habit is alive, pulsing in your sky.';
   @override
   String get creationSuccessConstellationMessage =>
       'A new constellation is added to your sky.';

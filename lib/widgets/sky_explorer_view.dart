@@ -1,12 +1,18 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:hint_kit/hint_kit.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../data/area_vision_repository.dart';
 import '../data/custom_constellation_repository.dart';
 import '../data/constellation_shape.dart';
 import '../data/habit_completion_repository.dart';
 import '../data/habit_repository.dart';
+import '../data/photo_storage.dart';
 import '../data/project_repository.dart';
+import '../data/reader_entries.dart';
 import '../data/reflection_answer_repository.dart';
 import '../data/star_repository.dart';
 import '../l10n/app_strings.dart';
@@ -18,7 +24,7 @@ import '../models/star.dart';
 import '../models/star_kind.dart';
 import '../screens/area_detail_screen.dart';
 import '../screens/constellation_screen.dart';
-import '../screens/pulsar_reader_screen.dart';
+import '../screens/star_form_screen.dart';
 import '../screens/star_reader_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
@@ -37,6 +43,7 @@ import 'date_range_filter_sheet.dart';
 import 'kind_filter_sheet.dart';
 import 'responsive_content.dart';
 import 'search_result_card.dart';
+import 'shareable_lit_star_card.dart';
 import 'sky_navigation_target.dart';
 import 'sort_filter_sheet.dart';
 import 'staggered_entrance.dart';
@@ -321,15 +328,15 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
     return entries;
   }
 
-  /// The [Star]-backed subset of [_filteredEntries], in the same order —
-  /// what [StarReaderScreen]'s prev/next actually browses, since pulsars
-  /// aren't part of that reader. Keyed on which entity is behind the row,
-  /// not on its kind: a dead row can be either.
-  List<Star> _filteredStarsOnly() {
-    return _filteredEntries
-        .where((e) => e.star != null)
-        .map((e) => e.star!)
-        .toList();
+  /// [_filteredEntries] as the star reader's pages, in the same order —
+  /// stars and pulsars alike, so prev/next walks exactly what the list shows.
+  /// Keyed on which entity is behind the row, not on its kind: a dead row
+  /// can be either.
+  List<ReaderEntry> _filteredReaderEntries() {
+    return [
+      for (final e in _filteredEntries)
+        if (e.star != null) StarEntry(e.star!) else PulsarEntry(e.habit!),
+    ];
   }
 
   @override
@@ -381,19 +388,23 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
     setState(() {});
   }
 
-  Future<void> _openStarReader(int index) async {
-    final stars = _filteredStarsOnly();
+  Future<void> _openStarReader(String anchorKey) async {
+    final entries = _filteredReaderEntries();
+    final index = entries.indexWhere((e) => e.key == anchorKey);
+    if (index == -1) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => StarReaderScreen(
           repository: widget.starRepository,
-          initialStars: stars,
+          initialEntries: entries,
           startIndex: index,
           allowEdit: true,
           projectsById: _projectsById,
           projectRepository: widget.projectRepository,
           starsShapeRepository: widget.starsShapeRepository,
-          refreshStars: _filteredStarsOnly,
+          refreshEntries: _filteredReaderEntries,
+          habitRepository: widget.habitRepository,
+          habitCompletionRepository: widget.habitCompletionRepository,
           onNavigateTo: (project, starId) =>
               widget.onNavigateTo(SkyStarTarget(project, starId: starId)),
         ),
@@ -402,20 +413,307 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
     setState(() {});
   }
 
-  Future<void> _openHabitReader(Habit habit) async {
-    await Navigator.of(context).push(
+  /// Same two branches and repository calls as
+  /// `StarReaderScreen._editOrResurrectCurrent` (a dead star is resurrected
+  /// instead of updated, and can't be deleted from its form) — reached from
+  /// a card's quick menu rather than from the reader.
+  Future<void> _editStar(Star star) async {
+    final project = _projectsById[star.projectId];
+    if (star.dead) {
+      final result = await Navigator.of(context).push<Object>(
+        MaterialPageRoute(
+          builder: (_) => StarFormScreen(
+            existingStar: star,
+            contextProject: project,
+            projectRepository: widget.projectRepository,
+            starsShapeRepository: widget.starsShapeRepository,
+            hideDelete: true,
+          ),
+        ),
+      );
+      if (result is! StarFormResult) return;
+      await widget.starRepository.resurrect(
+        star.id,
+        title: result.title,
+        description: result.description,
+        projectId: result.projectId,
+        targetDate: result.targetDate,
+        achievedDate: result.achievedDate,
+        intensity: result.intensity,
+        photoPath: result.photoPath,
+      );
+      if (mounted) setState(() {});
+      return;
+    }
+
+    final result = await Navigator.of(context).push<Object>(
       MaterialPageRoute(
-        builder: (_) => PulsarReaderScreen(
-          habit: habit,
-          project: _projectsById[habit.projectId],
-          habitRepository: widget.habitRepository,
-          habitCompletionRepository: widget.habitCompletionRepository,
+        builder: (_) => StarFormScreen(
+          existingStar: star,
+          contextProject: project,
           projectRepository: widget.projectRepository,
           starsShapeRepository: widget.starsShapeRepository,
         ),
       ),
     );
-    setState(() {});
+    if (result == null) return;
+
+    if (result is StarFormDeleteRequested) {
+      await widget.starRepository.delete(star.id);
+      if (mounted) setState(() {});
+      return;
+    }
+
+    final edited = result as StarFormResult;
+    await widget.starRepository.update(
+      id: star.id,
+      title: edited.title,
+      description: edited.description,
+      projectId: edited.projectId,
+      targetDate: edited.targetDate,
+      achievedDate: edited.achievedDate,
+      intensity: edited.intensity,
+      photoPath: edited.photoPath,
+    );
+    if (mounted) setState(() {});
+  }
+
+  /// Lights a goal from its card: the same sheet the reader uses.
+  Future<void> _lightStar(Star star) async {
+    final result = await showMarkAchievedSheet(context);
+    if (result == null) return;
+    await widget.starRepository.markAchieved(
+      star.id,
+      intensity: result.intensity,
+      photoPath: result.photoPath,
+    );
+    if (mounted) setState(() {});
+  }
+
+  /// A pulsar's "done today" from its card: marks today (or takes it back
+  /// off); a daily habit with a target above 1 logs one more instance instead.
+  Future<void> _habitTodayAction(Habit habit) async {
+    final completions = widget.habitCompletionRepository;
+    final counts = _countsByDayFor(habit.id);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final isStepper =
+        habit.frequency == HabitFrequency.daily && habit.targetPerPeriod > 1;
+    if (isStepper) {
+      await completions.logInstance(habit.id);
+    } else if (counts.containsKey(today)) {
+      await completions.unmarkDone(habit.id, today);
+    } else {
+      await completions.markDone(habit.id);
+    }
+    if (mounted) setState(() {});
+  }
+
+  /// Edit, or for a dead pulsar bring it back — the same two branches as the
+  /// star reader's pulsar page.
+  Future<void> _editHabit(Habit habit) async {
+    final project = _projectsById[habit.projectId];
+    if (habit.dead) {
+      final result = await Navigator.of(context).push<Object>(
+        MaterialPageRoute(
+          builder: (_) => StarFormScreen(
+            existingHabit: habit,
+            contextProject: project,
+            projectRepository: widget.projectRepository,
+            starsShapeRepository: widget.starsShapeRepository,
+            hideDelete: true,
+          ),
+        ),
+      );
+      if (result is! StarFormResult) return;
+      await widget.habitRepository.resurrect(
+        habit.id,
+        title: result.title,
+        description: result.description,
+        projectId: result.projectId,
+        intensity: result.intensity ?? habit.intensity,
+        frequency: result.habitFrequency ?? habit.frequency,
+        targetPerPeriod: result.habitTargetPerPeriod ?? habit.targetPerPeriod,
+        reminderHour: result.reminderHour,
+        reminderMinute: result.reminderMinute,
+        completionRepository: widget.habitCompletionRepository,
+      );
+      if (mounted) setState(() {});
+      return;
+    }
+
+    final result = await Navigator.of(context).push<Object>(
+      MaterialPageRoute(
+        builder: (_) => StarFormScreen(
+          existingHabit: habit,
+          contextProject: project,
+          projectRepository: widget.projectRepository,
+          starsShapeRepository: widget.starsShapeRepository,
+        ),
+      ),
+    );
+    if (result == null) return;
+    if (result is StarFormDeleteRequested) {
+      await widget.habitRepository.delete(habit.id);
+      if (mounted) setState(() {});
+      return;
+    }
+    final edited = result as StarFormResult;
+    await widget.habitRepository.update(
+      id: habit.id,
+      title: edited.title,
+      description: edited.description,
+      projectId: edited.projectId,
+      intensity: edited.intensity ?? habit.intensity,
+      frequency: edited.habitFrequency ?? habit.frequency,
+      targetPerPeriod: edited.habitTargetPerPeriod ?? habit.targetPerPeriod,
+      reminderHour: edited.reminderHour,
+      reminderMinute: edited.reminderMinute,
+    );
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _deleteHabit(Habit habit) async {
+    final strings = context.strings;
+    final confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: StaggeredEntrance(
+          index: 0,
+          child: Text(strings.deletePulsarConfirmTitle),
+        ),
+        content: StaggeredEntrance(
+          index: 1,
+          child: Text(strings.deletePulsarConfirmBody),
+        ),
+        actions: [
+          StaggeredEntrance(
+            index: 2,
+            axis: Axis.horizontal,
+            child: TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(strings.cancel),
+            ),
+          ),
+          StaggeredEntrance(
+            index: 3,
+            axis: Axis.horizontal,
+            child: TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(strings.deleteStarAction),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await widget.habitRepository.delete(habit.id);
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _deleteStar(Star star) async {
+    final strings = context.strings;
+    final confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: StaggeredEntrance(
+          index: 0,
+          child: Text(strings.deleteStarConfirmTitle),
+        ),
+        content: StaggeredEntrance(
+          index: 1,
+          child: Text(strings.deleteStarConfirmBody),
+        ),
+        actions: [
+          StaggeredEntrance(
+            index: 2,
+            axis: Axis.horizontal,
+            child: TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(strings.cancel),
+            ),
+          ),
+          StaggeredEntrance(
+            index: 3,
+            axis: Axis.horizontal,
+            child: TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(strings.deleteStarAction),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await widget.starRepository.delete(star.id);
+    if (mounted) setState(() {});
+  }
+
+  bool _sharingStar = false;
+
+  /// Same capture-and-share as `StarReaderScreen._shareCurrent`, for a lit
+  /// star that isn't on screen: its [ShareableLitStarCard] is built in a
+  /// throwaway overlay entry far off to the side (never visible, but laid
+  /// out and painted, which [RenderRepaintBoundary.toImage] needs), captured,
+  /// and removed again.
+  Future<void> _shareStar(Star star) async {
+    if (!star.isLit || _sharingStar) return;
+    _sharingStar = true;
+    final size = MediaQuery.sizeOf(context);
+    final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+    final overlay = Overlay.of(context, rootOverlay: true);
+    final messenger = ScaffoldMessenger.of(context);
+    final errorText = context.strings.shareStarError;
+    final project = _projectsById[star.projectId];
+    final key = GlobalKey();
+    OverlayEntry? entry;
+    try {
+      // The photo loads and decodes asynchronously; without this the capture
+      // could land before it shows.
+      final photoPath = star.photoPath;
+      if (photoPath != null) {
+        final bytes = await PhotoStorage.readBytes(photoPath);
+        if (bytes != null && mounted) {
+          await precacheImage(MemoryImage(bytes), context);
+        }
+      }
+      if (!mounted) return;
+      entry = OverlayEntry(
+        builder: (_) => Positioned(
+          left: -size.width * 2,
+          top: 0,
+          width: size.width,
+          height: size.height,
+          child: Material(
+            type: MaterialType.transparency,
+            child: RepaintBoundary(
+              key: key,
+              child: ShareableLitStarCard(star: star, project: project),
+            ),
+          ),
+        ),
+      );
+      overlay.insert(entry);
+      await WidgetsBinding.instance.endOfFrame;
+      final boundary =
+          key.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      final image = await boundary.toImage(pixelRatio: pixelRatio);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) throw StateError('toByteData returned null');
+      final shareFile = XFile.fromData(
+        byteData.buffer.asUint8List(),
+        name: 'star_${DateTime.now().microsecondsSinceEpoch}.png',
+        mimeType: 'image/png',
+      );
+      await SharePlus.instance.share(
+        ShareParams(files: [shareFile], text: star.title),
+      );
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(errorText)));
+    } finally {
+      entry?.remove();
+      _sharingStar = false;
+    }
   }
 
   Future<void> _openAreaFilter() async {
@@ -635,7 +933,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
       ),
       if (_mode == _SkyMode.stars)
         _FilterButton(
-          icon: Icons.category_outlined,
+          icon: Icons.auto_awesome,
           active: _isKindFilterNarrowed,
           label: _kindFilterButtonLabel(strings),
           tooltip: strings.filterKindAction,
@@ -731,7 +1029,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                           ),
                           ButtonSegment(
                             value: _SkyMode.constellations,
-                            icon: Icon(Icons.auto_awesome, size: 20),
+                            icon: Icon(Icons.insights, size: 20),
                           ),
                           ButtonSegment(
                             value: _SkyMode.stars,
@@ -990,13 +1288,18 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                   countsByDayFor: _countsByDayFor,
                   query: _query,
                   menuController: _cardMenuController,
-                  onOpenStar: (entry) => _openStarReader(
-                    _filteredStarsOnly().indexWhere(
-                      (s) => s.id == entry.star!.id,
-                    ),
-                  ),
-                  onOpenHabit: (habit) => _openHabitReader(habit),
+                  onOpenStar: (entry) =>
+                      _openStarReader(StarEntry(entry.star!).key),
+                  onOpenHabit: (habit) =>
+                      _openStarReader(PulsarEntry(habit).key),
                   onNavigateTo: widget.onNavigateTo,
+                  onShareStar: _shareStar,
+                  onEditStar: _editStar,
+                  onDeleteStar: _deleteStar,
+                  onLightStar: _lightStar,
+                  onHabitToday: _habitTodayAction,
+                  onEditHabit: _editHabit,
+                  onDeleteHabit: _deleteHabit,
                 ),
               },
             ),
@@ -1340,6 +1643,13 @@ class _FlatList extends StatelessWidget {
     required this.onOpenStar,
     required this.onOpenHabit,
     required this.onNavigateTo,
+    required this.onShareStar,
+    required this.onEditStar,
+    required this.onDeleteStar,
+    required this.onLightStar,
+    required this.onHabitToday,
+    required this.onEditHabit,
+    required this.onDeleteHabit,
   });
 
   final bool hasAnyEntries;
@@ -1351,6 +1661,13 @@ class _FlatList extends StatelessWidget {
   final void Function(_SkyEntry entry) onOpenStar;
   final void Function(Habit habit) onOpenHabit;
   final ValueChanged<SkyNavigationTarget> onNavigateTo;
+  final ValueChanged<Star> onShareStar;
+  final ValueChanged<Star> onEditStar;
+  final ValueChanged<Star> onDeleteStar;
+  final ValueChanged<Star> onLightStar;
+  final ValueChanged<Habit> onHabitToday;
+  final ValueChanged<Habit> onEditHabit;
+  final ValueChanged<Habit> onDeleteHabit;
 
   @override
   Widget build(BuildContext context) {
@@ -1432,6 +1749,22 @@ class _FlatList extends StatelessWidget {
           menuController: menuController,
           onTap: open,
           onNavigateTo: navigateTo,
+          kindAction: _kindAction(context, entry, habitCounts),
+          // Share is for lit stars. A dead one (star or pulsar) is brought
+          // back by its kind action instead of being edited or deleted.
+          onShare: entry.star != null && entry.star!.isLit
+              ? () => onShareStar(entry.star!)
+              : null,
+          onEdit: entry.kind == StarKind.dead
+              ? null
+              : entry.star != null
+              ? () => onEditStar(entry.star!)
+              : () => onEditHabit(entry.habit!),
+          onDelete: entry.kind == StarKind.dead
+              ? null
+              : entry.star != null
+              ? () => onDeleteStar(entry.star!)
+              : () => onDeleteHabit(entry.habit!),
         );
         return StaggeredEntrance(
           index: index,
@@ -1447,6 +1780,55 @@ class _FlatList extends StatelessWidget {
   }
 }
 
+extension on _FlatList {
+  /// The action particular to this kind of star, mirroring the star reader's
+  /// bottom bar: light a goal, mark a habit done today, or bring a dead star
+  /// back.
+  SearchCardAction? _kindAction(
+    BuildContext context,
+    _SkyEntry entry,
+    Map<DateTime, int> habitCounts,
+  ) {
+    final strings = context.strings;
+    if (entry.kind == StarKind.dead) {
+      return SearchCardAction(
+        icon: Icons.model_training,
+        label: strings.actionReignite,
+        onTap: () => entry.star != null
+            ? onEditStar(entry.star!)
+            : onEditHabit(entry.habit!),
+      );
+    }
+    if (entry.star != null && !entry.star!.isLit) {
+      return SearchCardAction(
+        icon: Icons.power_settings_new_rounded,
+        label: strings.actionLight,
+        onTap: () => onLightStar(entry.star!),
+      );
+    }
+    final habit = entry.habit;
+    if (habit != null) {
+      final now = DateTime.now();
+      final done = habitCounts.containsKey(DateTime(now.year, now.month, now.day));
+      final isStepper =
+          habit.frequency == HabitFrequency.daily && habit.targetPerPeriod > 1;
+      return SearchCardAction(
+        icon: isStepper
+            ? Icons.add_circle_outline_rounded
+            : Icons.local_fire_department_rounded,
+        label: isStepper
+            ? strings.habitProgressToday(
+                habitDailyProgress(habit, habitCounts),
+                habit.targetPerPeriod,
+              )
+            : (done ? strings.actionTurnOff : strings.actionLight),
+        onTap: () => onHabitToday(habit),
+      );
+    }
+    return null;
+  }
+}
+
 class _SearchStarCard extends StatelessWidget {
   const _SearchStarCard({
     required this.entry,
@@ -1457,7 +1839,14 @@ class _SearchStarCard extends StatelessWidget {
     required this.menuController,
     required this.onTap,
     required this.onNavigateTo,
+    this.kindAction,
+    this.onShare,
+    this.onEdit,
+    this.onDelete,
   });
+
+  /// The action particular to this kind of star, right after "open".
+  final SearchCardAction? kindAction;
 
   final _SkyEntry entry;
   final Project? project;
@@ -1467,6 +1856,9 @@ class _SearchStarCard extends StatelessWidget {
   final SearchCardMenuController menuController;
   final VoidCallback onTap;
   final VoidCallback? onNavigateTo;
+  final VoidCallback? onShare;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -1502,11 +1894,30 @@ class _SearchStarCard extends StatelessWidget {
         label: strings.searchCardOpenAction,
         onTap: onTap,
       ),
+      ?kindAction,
+      if (onShare != null)
+        SearchCardAction(
+          icon: Icons.ios_share_rounded,
+          label: strings.starQuickLookShareAction,
+          onTap: onShare!,
+        ),
       if (onNavigateTo != null)
         SearchCardAction(
           icon: Icons.navigation_rounded,
-          label: strings.takeMeThereAction,
+          label: strings.actionFly,
           onTap: onNavigateTo!,
+        ),
+      if (onEdit != null)
+        SearchCardAction(
+          icon: Icons.edit_rounded,
+          label: strings.starQuickLookEditAction,
+          onTap: onEdit!,
+        ),
+      if (onDelete != null)
+        SearchCardAction(
+          icon: Icons.delete_outline_rounded,
+          label: strings.deleteStarAction,
+          onTap: onDelete!,
         ),
     ];
     return SearchResultCard(

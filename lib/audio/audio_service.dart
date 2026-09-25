@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:audioplayers_platform_interface/audioplayers_platform_interface.dart'
+    show AudioplayersPlatformInterface;
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/widgets.dart';
 
 import '../data/audio_settings_repository.dart';
@@ -58,10 +61,29 @@ class AudioService with WidgetsBindingObserver {
     focus: AudioContextConfigFocus.mixWithOthers,
   ).build();
 
+  static const _playerIds = ['sky-background', 'sky-sfx', 'sky-transition'];
+
+  /// A hot restart drops the old isolate's Dart objects without disposing
+  /// them, but their native players live on — and the Android plugin's
+  /// `create` just overwrites its map entry for a reused id, leaving the old
+  /// player orphaned and still playing (a second background loop under the
+  /// new one, after every restart). Disposing by id first releases whatever
+  /// the previous run left behind; on a fresh launch there's nothing there
+  /// and the plugin answers with an error, which is expected and ignored.
+  /// Debug-only, since a hot restart can't happen in any other mode.
+  static Future<void> _disposeLeftoverPlayers() async {
+    for (final id in _playerIds) {
+      try {
+        await AudioplayersPlatformInterface.instance.dispose(id);
+      } catch (_) {}
+    }
+  }
+
   static Future<AudioService> create(AudioSettingsRepository settings) async {
-    final backgroundPlayer = AudioPlayer(playerId: 'sky-background');
-    final sfxPlayer = AudioPlayer(playerId: 'sky-sfx');
-    final transitionPlayer = AudioPlayer(playerId: 'sky-transition');
+    if (kDebugMode) await _disposeLeftoverPlayers();
+    final backgroundPlayer = AudioPlayer(playerId: _playerIds[0]);
+    final sfxPlayer = AudioPlayer(playerId: _playerIds[1]);
+    final transitionPlayer = AudioPlayer(playerId: _playerIds[2]);
     await backgroundPlayer.setReleaseMode(ReleaseMode.loop);
     await Future.wait([
       backgroundPlayer.setAudioContext(_mixAudioContext),
@@ -75,27 +97,38 @@ class AudioService with WidgetsBindingObserver {
       sfxPlayer,
       transitionPlayer,
     );
-    // Loaded (not played) regardless of paused state, so a later
-    // [resumeBackground] has something to resume without an audible gap
-    // for decoding the file.
-    await backgroundPlayer.setSource(
-      AssetSource(settings.backgroundTrack.assetPath),
-    );
-    await backgroundPlayer.setVolume(settings.backgroundVolume);
-    if (!settings.backgroundPaused) {
-      // Never awaited — confirmed live: on web, a browser that hasn't
-      // seen a user gesture yet blocks audio autoplay by leaving this
-      // call's underlying JS promise pending forever, which hung the
-      // *entire app* on its blank startup splash (this await sits in
-      // main.dart's own startup chain, before anything is ever shown).
-      // Fire it and move on: on every native platform it still starts
-      // the loop immediately same as before, and on a blocked web
-      // browser it resolves the moment the user's first tap/gesture
-      // anywhere in the app satisfies the autoplay policy.
-      unawaited(backgroundPlayer.resume());
-    }
+    // Loading the track never blocks startup: `setSource` waits for the
+    // native player's "prepared" event, and after a hot restart that event
+    // can fire before the new isolate is listening for it — so the await sat
+    // out the plugin's 30-second timeout with the app stuck on its splash,
+    // which is what made the first hot restart hang (the second, once the
+    // players were warm, went through). See [_prepareBackground].
+    unawaited(service._prepareBackground());
     WidgetsBinding.instance.addObserver(service);
     return service;
+  }
+
+  /// Loads the background track (loaded, not played, regardless of paused
+  /// state, so a later [resumeBackground] has something to resume without an
+  /// audible gap for decoding the file), applies its volume and, unless the
+  /// user has it paused, starts the loop.
+  ///
+  /// Not awaited by [create] — see the note there. If the plugin gives up
+  /// waiting for "prepared" (the event was lost, not the track), the player
+  /// is most likely ready anyway, so it still tries to start.
+  Future<void> _prepareBackground() async {
+    try {
+      await _backgroundPlayer.setVolume(_settings.backgroundVolume);
+      await _backgroundPlayer.setSource(
+        AssetSource(_settings.backgroundTrack.assetPath),
+      );
+    } catch (_) {
+      // Fall through and try to play regardless.
+    }
+    if (_settings.backgroundPaused) return;
+    try {
+      await _backgroundPlayer.resume();
+    } catch (_) {}
   }
 
   @override
