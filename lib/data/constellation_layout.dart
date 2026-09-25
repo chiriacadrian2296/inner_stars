@@ -173,6 +173,8 @@ buildConstellationRenderStars({
         lit: star.isLit,
         label: star.title,
         slotSequence: star.slotSequence,
+        intensity: star.intensity,
+        photoPath: star.photoPath,
       ),
     );
   }
@@ -206,6 +208,7 @@ buildConstellationRenderStars({
         kind: habit.dead ? StarKind.dead : StarKind.pulsar,
         lit: !habit.dead && isHabitLit(habit, countsByDay),
         label: habit.title,
+        intensity: habit.intensity,
       ),
     );
   }

@@ -18,6 +18,7 @@ class PhotoImage extends StatelessWidget {
     this.alignment = Alignment.center,
     this.width,
     this.height,
+    this.cacheWidth,
   });
 
   final String photoPath;
@@ -25,6 +26,10 @@ class PhotoImage extends StatelessWidget {
   final Alignment alignment;
   final double? width;
   final double? height;
+
+  /// Decode the photo no wider than this many pixels — for a small display
+  /// of a full-size photo, so it doesn't sit in memory at camera resolution.
+  final int? cacheWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +53,7 @@ class PhotoImage extends StatelessWidget {
       alignment: alignment,
       width: width,
       height: height,
+      cacheWidth: cacheWidth,
       gaplessPlayback: true,
     );
   }

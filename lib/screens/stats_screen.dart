@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' show pi, sin;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
@@ -705,12 +706,41 @@ class _TodayStarHeroState extends State<_TodayStarHero>
           index: 0,
           child: AnimatedBuilder(
             animation: _shakeController,
-            builder: (context, child) {
+            builder: (context, _) {
               final t = _shakeController.value;
               final dx = sin(t * pi * 6) * (1 - t) * 8;
-              return Transform.translate(offset: Offset(dx, 0), child: child);
+              // Lights up gold and glows for as long as the shake lasts —
+              // the same beat as the "light" buttons in the star reader.
+              final glow = sin(t * pi);
+              final star = Icon(
+                Icons.star,
+                size: starSize,
+                color: Color.lerp(colors.muted, colors.gold, glow),
+              );
+              return Transform.translate(
+                offset: Offset(dx, 0),
+                child: glow < 0.02
+                    ? star
+                    : Stack(
+                        alignment: Alignment.center,
+                        clipBehavior: Clip.none,
+                        children: [
+                          ImageFiltered(
+                            imageFilter: ui.ImageFilter.blur(
+                              sigmaX: starSize * 0.12,
+                              sigmaY: starSize * 0.12,
+                            ),
+                            child: Icon(
+                              Icons.star,
+                              size: starSize,
+                              color: colors.gold.withValues(alpha: 0.75 * glow),
+                            ),
+                          ),
+                          star,
+                        ],
+                      ),
+              );
             },
-            child: Icon(Icons.star, size: starSize, color: colors.muted),
           ),
         ),
         const SizedBox(height: 20),

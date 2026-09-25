@@ -1,8 +1,6 @@
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 
 import '../data/constellation_layout.dart';
 import '../data/constellation_shape.dart';
@@ -19,14 +17,17 @@ import '../models/project.dart';
 import '../models/star.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
+import '../widgets/constellation_map/constellation_map_view.dart';
+import '../widgets/constellation_map/pulsar_spacing.dart';
 import '../widgets/constellation_painter.dart';
 import '../widgets/staggered_entrance.dart';
 import 'pulsar_reader_screen.dart';
 import 'star_form_screen.dart';
 import 'star_reader_screen.dart';
 
-/// A single constellation up close: a pannable/zoomable star field shaped
-/// like the project's own hand-drawn [Project.starsShapeId] shape.
+/// A single constellation up close: a pannable/zoomable map shaped like the
+/// project's own hand-drawn [Project.starsShapeId] shape, every star a round
+/// button with its title beside it (see [ConstellationMapView]).
 /// Every slot on that shape holds a star — lit, unlit, dead, or still
 /// nascent — ordered by [Star.slotSequence]; pulsars are separate, smaller
 /// stars scattered around/inside/outside the shape (see
@@ -80,31 +81,24 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
   late List<Habit> _habits;
   late List<ConstellationStar> _renderStars;
   late List<(int, int)> _edges;
-  int _revision = 0;
-  ui.FragmentProgram? _flareProgram;
   final _transformationController = TransformationController();
   bool _framed = false;
+  double? _fitScale;
+
+  /// How far apart, on screen at the fit zoom, two scattered stars' buttons
+  /// must sit — a biggest button (with its rings) fits inside.
+  static const _kButtonSeparation = 60.0;
 
   @override
   void initState() {
     super.initState();
     _loadData();
-    _loadFlareProgram();
   }
 
   @override
   void dispose() {
     _transformationController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadFlareProgram() async {
-    final program = await buildConstellationFlareProgram();
-    if (!mounted) return;
-    setState(() {
-      _flareProgram = program;
-      _revision++;
-    });
   }
 
   void _loadData() {
@@ -128,7 +122,15 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
       completionsByHabit: completionsByHabit,
     );
     _edges = built.edges;
-    return built.stars;
+    // Before the first layout there is no viewport, so no fit scale to tell
+    // how far apart two buttons must sit; [_frameShape] spreads them then.
+    final fitScale = _fitScale;
+    if (fitScale == null) return built.stars;
+    return spreadScatteredStars(
+      built.stars,
+      canvasSize: _canvasSize,
+      minSeparation: _kButtonSeparation / fitScale,
+    );
   }
 
   Rect _boundsPixels() {
@@ -150,7 +152,8 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
           viewportSize.width / shapeWidth,
           viewportSize.height / shapeHeight,
         ) *
-        0.8;
+        // Leaves room around the shape for the labels, which sit outside it.
+        0.6;
     return scale <= 0 ? 0.1 : scale;
   }
 
@@ -158,19 +161,20 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
     if (_framed || viewportSize.isEmpty) return;
     _framed = true;
     final scale = _fitScaleFor(viewportSize);
+    _fitScale = scale;
     final center = _boundsPixels().center;
     final matrix = Matrix4.identity()
       ..translateByDouble(viewportSize.width / 2, viewportSize.height / 2, 0, 1)
       ..scaleByDouble(scale, scale, 1, 1)
       ..translateByDouble(-center.dx, -center.dy, 0, 1);
-    setState(() => _transformationController.value = matrix);
+    setState(() {
+      _transformationController.value = matrix;
+      _renderStars = _buildRenderStars();
+    });
   }
 
   void _refresh() {
-    setState(() {
-      _loadData();
-      _revision++;
-    });
+    setState(_loadData);
   }
 
   /// Opens the star reader on the tapped star — whatever kind it is, an
@@ -290,110 +294,23 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                         WidgetsBinding.instance.addPostFrameCallback(
                           (_) => _frameShape(viewportSize),
                         );
-                        final minScale = _fitScaleFor(viewportSize);
+                        // Not built until the shape has been framed, so its
+                        // first frame never shows the unzoomed identity view.
+                        if (!_framed) return const SizedBox.shrink();
 
-                        return InteractiveViewer(
-                          transformationController: _transformationController,
-                          constrained: false,
-                          boundaryMargin: const EdgeInsets.all(200),
-                          minScale: minScale,
-                          maxScale: minScale * 6,
-                          trackpadScrollCausesScale: true,
-                          child: RepaintBoundary(
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTapUp: (details) {
-                                final star = hitTestStar(
-                                  details.localPosition,
-                                  _canvasSize,
-                                  _renderStars,
-                                );
-                                if (star != null) _openStar(star);
-                              },
-                              child: _TickingConstellationCanvas(
-                                canvasSize: _canvasSize,
-                                stars: _renderStars,
-                                flareProgram: _flareProgram,
-                                revision: _revision,
-                                palette: StarPalette(
-                                  lit: colors.gold,
-                                  core: colors.text,
-                                  nascent: colors.starNascent,
-                                  unlit: colors.starUnlit,
-                                  dead: colors.starDead,
-                                ),
-                                edges: _edges,
-                              ),
-                            ),
-                          ),
+                        return ConstellationMapView(
+                          stars: _renderStars,
+                          edges: _edges,
+                          transformation: _transformationController,
+                          canvasSize: _canvasSize,
+                          fitScale: _fitScaleFor(viewportSize),
+                          onStarTap: _openStar,
                         );
                       },
                     ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// A self-ticking wrapper around [ConstellationPainter] — owns its own
-/// [Ticker] (same pattern as `AnimatedConstellationField`'s in the Galaxy
-/// tab) so the flare rays' flicker on lit stars actually animates, without
-/// making the whole surrounding screen (toolbar, `InteractiveViewer`, etc.)
-/// rebuild every frame just to feed this one painter a clock.
-class _TickingConstellationCanvas extends StatefulWidget {
-  const _TickingConstellationCanvas({
-    required this.canvasSize,
-    required this.stars,
-    required this.flareProgram,
-    required this.revision,
-    required this.palette,
-    required this.edges,
-  });
-
-  final Size canvasSize;
-  final List<ConstellationStar> stars;
-  final ui.FragmentProgram? flareProgram;
-  final int revision;
-  final StarPalette palette;
-  final List<(int, int)> edges;
-
-  @override
-  State<_TickingConstellationCanvas> createState() =>
-      _TickingConstellationCanvasState();
-}
-
-class _TickingConstellationCanvasState
-    extends State<_TickingConstellationCanvas>
-    with SingleTickerProviderStateMixin {
-  late final Ticker _ticker;
-  Duration _elapsed = Duration.zero;
-
-  @override
-  void initState() {
-    super.initState();
-    _ticker = createTicker((elapsed) => setState(() => _elapsed = elapsed))
-      ..start();
-  }
-
-  @override
-  void dispose() {
-    _ticker.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: widget.canvasSize,
-      painter: ConstellationPainter(
-        stars: widget.stars,
-        flareProgram: widget.flareProgram,
-        revision: widget.revision,
-        palette: widget.palette,
-        edges: widget.edges,
-        time: _elapsed.inMicroseconds / Duration.microsecondsPerSecond,
       ),
     );
   }

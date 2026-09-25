@@ -65,6 +65,8 @@ class ConstellationStar {
     required this.lit,
     required this.label,
     this.slotSequence,
+    this.intensity,
+    this.photoPath,
   });
 
   /// The [Star]/[Habit] this stands for. Always 0 for a
@@ -98,6 +100,15 @@ class ConstellationStar {
   /// straight to [StarRepository.add], so the new star lands on the exact
   /// slot that was tapped.
   final int? slotSequence;
+
+  /// The star's/habit's 1-5 intensity, or null when there isn't one yet (a
+  /// goal that hasn't been given one, a nascent slot). Only the
+  /// single-constellation view draws it — the Sky ignores it.
+  final int? intensity;
+
+  /// The star's photo, if it has one (see [Star.photoPath]) — shown inside
+  /// its button on the single-constellation view; the Sky ignores it.
+  final String? photoPath;
 }
 
 /// Compiles `shaders/constellation_flare.frag` once — callers hold the
