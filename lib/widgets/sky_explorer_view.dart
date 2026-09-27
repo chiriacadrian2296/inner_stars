@@ -358,7 +358,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
   }
 
   Future<void> _openArea(LifeArea area) async {
-    await Navigator.of(context).push(
+    final result = await Navigator.of(context).push<LifeArea>(
       MaterialPageRoute(
         builder: (_) => AreaDetailScreen(
           area: area,
@@ -370,10 +370,13 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
       ),
     );
     setState(() {});
+    if (result != null && mounted) {
+      widget.onNavigateTo(SkyAreaTarget(result));
+    }
   }
 
   Future<void> _openProject(Project project) async {
-    await Navigator.of(context).push(
+    final result = await Navigator.of(context).push<Project>(
       MaterialPageRoute(
         builder: (_) => ConstellationScreen(
           project: project,
@@ -386,6 +389,9 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
       ),
     );
     setState(() {});
+    if (result != null && mounted) {
+      widget.onNavigateTo(SkyProjectTarget(result));
+    }
   }
 
   Future<void> _openStarReader(String anchorKey) async {

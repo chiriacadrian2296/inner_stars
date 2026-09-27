@@ -4,30 +4,40 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
+import '../../l10n/strings_scope.dart';
 import '../../models/star_kind.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_style.dart';
 import '../constellation_painter.dart';
 import '../intensity_dots.dart';
 import '../photo_image.dart';
+import '../search_result_card.dart' show SearchStarVisual;
 import '../star_glyph.dart';
 import 'constellation_label_layout.dart';
 
-// Font size and box of a label at zoom-neutral scale; both then grow/shrink
-// with the view's own [_uiScale] and the layout's label scale.
+// Font size and size of a map card at zoom-neutral scale; both then
+// grow/shrink with the view's own [_uiScale] and the layout's card scale.
 const double _kLabelFontSize = 12;
-const double _kLabelMaxWidth = 116;
-const double _kLabelPadX = 8;
-const double _kLabelPadY = 4;
+// Cards stay part of the same zoom-scaled map, but begin noticeably smaller
+// than the nodes and constellation they annotate. This makes the shape read
+// first at the overview zoom without changing the camera's single scale.
+const double _kMapCardWidth = 160;
+const double _kMapCardHeight = 44;
+const double _kMapCardVisualWidth = 40;
 
-/// The one thickness every white line on the map shares: the constellation's
-/// own lines, the ring around each star, the leaders and the labels' borders,
-/// at any zoom.
-const double _kLineWidth = 2.5;
+/// The constellation is the map's primary structure: its edges and the
+/// stars' own outlines deliberately retain the strongest white stroke.
+const double _kConstellationEdgeWidth = 3.5;
+const double _kNodeStrokeWidth = 2.5;
+
+/// Cards are annotations, not another graph. Leaders inherit their star's
+/// color but remain much lighter and thinner than constellation edges.
+const double _kLabelLeaderWidth = 1.25;
+const double _kLabelLeaderOpacity = 0.78;
 
 /// One constellation as a map: every star a round, self-explaining button
-/// (its kind's icon, its intensity as dots and — for a stronger one — as
-/// concentric rings), each tied by a smooth S-shaped line to a label with its
-/// title, laid out so nothing sits on top of anything else.
+/// (its kind's icon, dots, and a proportional glow), each tied by a smooth
+/// line to a card, laid out so nothing sits on top of anything else.
 ///
 /// The map pans/zooms with the shared [transformation], driven by this
 /// widget's own gestures rather than an `InteractiveViewer`, so it can move
@@ -35,11 +45,9 @@ const double _kLineWidth = 2.5;
 /// a flick glides to a stop, a pinch or the wheel zooms toward where you are
 /// — and the map can be carried freely anywhere so long as at least one star
 /// stays on screen. Everything visible is drawn in *screen space* by an overlay
-/// underneath that reads the same matrix, so buttons and text keep a readable
-/// size at any zoom instead of shrinking with the canvas — they only scale a
-/// little (see [_uiScale]). Label positions depend on the zoom alone, so
-/// they are recomputed only when it changes and merely translated while
-/// panning.
+/// underneath that reads the same matrix. Every visual element follows the
+/// camera's linear zoom factor, while positions are recomputed only when that
+/// zoom changes and merely translated while panning.
 class ConstellationMapView extends StatefulWidget {
   const ConstellationMapView({
     super.key,
@@ -67,6 +75,12 @@ class ConstellationMapView extends StatefulWidget {
   /// [_uiScale] is measured against, and the basis of the zoom limits.
   final double fitScale;
 
+  /// Every constellation opens at this fixed overview level. Every visual
+  /// element uses this same linear zoom factor, like one scalable map image.
+  // Keep the overview far enough out to include every annotation with some
+  // breathing room, without making the cards and glow disappear into dots.
+  static const double initialZoomFactor = 0.5;
+
   final ValueChanged<ConstellationStar> onStarTap;
 
   @override
@@ -84,20 +98,15 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
   final Map<(int, double), Size> _labelSizes = {};
   Map<int, int> _previousCandidates = const {};
 
-  /// Labels grow with the zoom, but only a little (an exponent well under 1)
-  /// and never past these bounds — enough to feel like zooming, not enough to
-  /// make the text unreadably small or huge.
+  /// The map's one visual scale: cards, stars, glows, borders, and both line
+  /// families all grow and shrink by this exact same ratio.
   double _uiScale(double zoom) {
     final relative = zoom / widget.fitScale;
-    return math
-        .pow(relative <= 0 ? 1 : relative, 0.4)
-        .toDouble()
-        .clamp(0.85, 1.6)
-        .toDouble();
+    return relative <= 0 ? 1 : relative;
   }
 
   // How far the map may be zoomed out/in, as multiples of the fit zoom.
-  static const _minZoomFactor = 0.6;
+  static const _minZoomFactor = ConstellationMapView.initialZoomFactor;
   static const _maxZoomFactor = 14.0;
 
   /// How much of a star must stay inside the viewport's edge for it to count
@@ -127,6 +136,12 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
   Offset _velocity = Offset.zero;
   Ticker? _inertiaTicker;
   Duration _lastInertiaTick = Duration.zero;
+
+  // Raw pointer state supplements GestureDetector's recognizers: a star tap
+  // is only valid for a one-finger interaction from start to finish. A pinch
+  // that begins over a star must keep its priority as a camera gesture.
+  final Set<int> _activePointers = <int>{};
+  bool _gestureUsedMultiplePointers = false;
 
   @override
   void dispose() {
@@ -239,12 +254,21 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
     _apply(zoom, event.localPosition - anchor * zoom);
   }
 
-  /// The star buttons, unlike the text, are part of the map: their size is
-  /// exactly proportional to the zoom, like a marker's on a map. At the widest
-  /// view they are small dots so the whole constellation reads as a shape, and
-  /// zooming in makes them as big as you like — there is no upper limit.
+  void _onPointerDown(PointerDownEvent event) {
+    if (_activePointers.isEmpty) _gestureUsedMultiplePointers = false;
+    _activePointers.add(event.pointer);
+    if (_activePointers.length > 1) _gestureUsedMultiplePointers = true;
+  }
+
+  void _onPointerEnd(PointerEvent event) {
+    _activePointers.remove(event.pointer);
+  }
+
+  /// Star buttons use the same linear camera scale as cards and lines. At the
+  /// widest view they are small dots; zooming in enlarges the whole map in
+  /// lockstep.
   double _nodeScale(double zoom) {
-    return zoom / widget.fitScale * 0.7;
+    return zoom / widget.fitScale;
   }
 
   @override
@@ -274,12 +298,16 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
         Positioned.fill(
           child: Listener(
             onPointerSignal: _onPointerSignal,
+            onPointerDown: _onPointerDown,
+            onPointerUp: _onPointerEnd,
+            onPointerCancel: _onPointerEnd,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onScaleStart: _onScaleStart,
               onScaleUpdate: _onScaleUpdate,
               onScaleEnd: _onScaleEnd,
               onTapUp: (details) {
+                if (_gestureUsedMultiplePointers) return;
                 final star = _hitTest(details.localPosition);
                 if (star != null) widget.onStarTap(star);
               },
@@ -320,22 +348,9 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
     // Pinching walks through a continuum of font sizes; don't keep them all.
     if (_labelSizes.length > 1500) _labelSizes.clear();
     return _labelSizes.putIfAbsent(key, () {
-      final painter = TextPainter(
-        text: TextSpan(
-          text: widget.stars[index].label,
-          style: _labelStyle(context, fontSize),
-        ),
-        textDirection: TextDirection.ltr,
-        textScaler: MediaQuery.textScalerOf(context),
-        maxLines: 2,
-        ellipsis: '…',
-      )..layout(maxWidth: _kLabelMaxWidth * fontSize / _kLabelFontSize - _kLabelPadX * 2);
-      final size = Size(
-        painter.width.ceilToDouble() + 1 + _kLabelPadX * 2,
-        painter.height.ceilToDouble() + _kLabelPadY * 2,
-      );
-      painter.dispose();
-      return size;
+      final scale =
+          MediaQuery.textScalerOf(context).scale(fontSize) / _kLabelFontSize;
+      return Size(_kMapCardWidth * scale, _kMapCardHeight * scale);
     });
   }
 
@@ -403,6 +418,7 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
             id: node.index,
             center: node.center,
             radius: node.outer,
+            leaderRadius: node.metrics.coreOuter,
             // The crowded middle of the shape gets first pick of the free
             // space; the outer stars can always reach into the open sky.
             priority: -(node.center - anchor).distance,
@@ -414,6 +430,7 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
       edges: segments,
       anchor: anchor,
       previous: _previousCandidates,
+      leaderLengthScale: ui,
     );
     _previousCandidates = {
       for (final entry in layout.placements.entries)
@@ -427,7 +444,6 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
       segments: segments,
       layout: layout,
       uiScale: ui,
-      nodeScale: nodeScale,
     );
   }
 
@@ -448,7 +464,11 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
       leaders.add(
         _Leader(
           path: placement.path.shift(translation),
-          color: colors.text,
+          color: starKindColor(
+            stars[placement.id].kind,
+            colors,
+            lit: stars[placement.id].lit,
+          ).withValues(alpha: _kLabelLeaderOpacity),
         ),
       );
     }
@@ -456,6 +476,17 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
     return Stack(
       clipBehavior: Clip.none,
       children: [
+        // The glow is atmospheric: it stays below both the constellation and
+        // annotation lines instead of washing over the graph.
+        for (final node in geometry.nodes)
+          if (node.metrics.glowStrength > 0)
+            Positioned(
+              left: node.center.dx + translation.dx - node.outer,
+              top: node.center.dy + translation.dy - node.outer,
+              width: node.outer * 2,
+              height: node.outer * 2,
+              child: _StarGlow(star: stars[node.index], metrics: node.metrics),
+            ),
         Positioned.fill(
           child: CustomPaint(
             painter: _LinesPainter(
@@ -464,7 +495,8 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
                   (a + translation, b + translation),
               ],
               edgeColor: colors.text,
-              edgeWidth: _kLineWidth,
+              edgeWidth: _kConstellationEdgeWidth * geometry.uiScale,
+              leaderWidth: _kLabelLeaderWidth * geometry.uiScale,
               leaders: leaders,
             ),
           ),
@@ -478,13 +510,12 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
             child: _StarButton(
               star: stars[node.index],
               metrics: node.metrics,
-              uiScale: geometry.nodeScale,
             ),
           ),
         for (final placement in layout.placements.values)
           Positioned.fromRect(
             rect: placement.rect.shift(translation),
-            child: _LabelPill(
+            child: _StarMapCard(
               star: stars[placement.id],
               style: _labelStyle(
                 context,
@@ -503,16 +534,14 @@ class _MapGeometry {
     required this.segments,
     required this.layout,
     required this.uiScale,
-    required this.nodeScale,
   });
 
   final List<_MapNode> nodes;
   final List<(Offset, Offset)> segments;
   final LabelLayout layout;
 
-  /// Scale of the labels' text, and of the buttons (see [_nodeScale]).
+  /// The shared linear scale for cards and line weights.
   final double uiScale;
-  final double nodeScale;
 }
 
 class _MapNode {
@@ -534,54 +563,68 @@ class _MapNode {
   final double outer;
 }
 
-/// How big one star's button is: its disc, and how many decoration rings
-/// stack around it. Every star is the same size; intensity shows only in the
-/// rings (none for a light effort, four for the heaviest) and the dots.
+/// How big one star's button is: every disc stays the same size; intensity
+/// reads through a static aura around it and, when close enough, the dots
+/// inside it. The aura's breathing room also keeps labels from sitting over
+/// its visible light.
 class _NodeMetrics {
-  const _NodeMetrics({required this.diameter, required this.rings});
+  const _NodeMetrics({
+    required this.diameter,
+    required this.strokeWidth,
+    required this.glowStrength,
+  });
 
   factory _NodeMetrics.of(ConstellationStar star, double ui) {
     switch (star.kind) {
       // An empty slot is a little smaller: it's a place, not yet a star.
       case StarKind.nascent:
-        return _NodeMetrics(diameter: 32 * ui, rings: 0);
+        return _NodeMetrics(
+          diameter: 32 * ui,
+          strokeWidth: _kNodeStrokeWidth * ui,
+          glowStrength: 0,
+        );
       case StarKind.dead:
-        return _NodeMetrics(diameter: 40 * ui, rings: 0);
-      // Every other star is the same size whatever its intensity — that is
-      // what the rings around it are for.
+        return _NodeMetrics(
+          diameter: 40 * ui,
+          strokeWidth: _kNodeStrokeWidth * ui,
+          glowStrength: 0,
+        );
+      // Every other star is the same size whatever its intensity. The
+      // strength steps keep the difference clear without creating the
+      // technical-looking white rings the map used to have.
       case StarKind.lit:
       case StarKind.unlit:
       case StarKind.pulsar:
         final intensity = (star.intensity ?? 1).clamp(1, 5).toInt();
-        return _NodeMetrics(diameter: 40 * ui, rings: intensity - 1);
+        return _NodeMetrics(
+          diameter: 40 * ui,
+          strokeWidth: _kNodeStrokeWidth * ui,
+          glowStrength: _glowStrengths[intensity - 1],
+        );
     }
   }
 
   final double diameter;
-  final int rings;
+  final double strokeWidth;
+  final double glowStrength;
 
-  /// The distance between one ring and the next. Grows with the zoom like the
-  /// button itself, but never below what keeps two [_kLineWidth] rings
-  /// distinct, so they still read as separate rings from far away.
-  static double ringGap(double ui) => math.max(4.5, 5 * ui);
+  /// Holds the tighter radial aura inside the node so labels remain clear of
+  /// its visible light at every intensity.
+  double outer(double ui) =>
+      diameter / 2 + ((8 + 10 * glowStrength) / 2) * ui + strokeWidth;
 
-  double outer(double ui) => diameter / 2 + rings * ringGap(ui) + _kLineWidth;
+  /// Connectors leave from the solid disc; the decorative aura does not move
+  /// their endpoint farther away.
+  double get coreOuter => diameter / 2 + strokeWidth;
 }
 
+const _glowStrengths = [0.35, 0.55, 0.8, 1.05, 1.3];
+
 class _StarButton extends StatelessWidget {
-  const _StarButton({
-    required this.star,
-    required this.metrics,
-    required this.uiScale,
-  });
+  const _StarButton({required this.star, required this.metrics});
 
   final ConstellationStar star;
   final _NodeMetrics metrics;
-  final double uiScale;
-
-  /// Below this scale a button is too small for its five intensity dots to
-  /// read; it keeps just the icon (and its rings) until you zoom in.
-  static const _dotsMinScale = 0.65;
 
   @override
   Widget build(BuildContext context) {
@@ -589,12 +632,10 @@ class _StarButton extends StatelessWidget {
     final kind = star.kind;
     // Navy and white throughout, like the constellation editor and the shape
     // previews: the only colors are the kind's own (its icon — gold when it
-    // burns, blue when it doesn't) and gold for the intensity dots; the rings
-    // are white, like the border.
+    // burns, blue when it doesn't) and gold for the intensity dots.
     final kindColor = starKindColor(kind, colors, lit: star.lit);
     final diameter = metrics.diameter;
     final nascent = kind == StarKind.nascent;
-    final dead = kind == StarKind.dead;
     final photoPath = star.photoPath;
 
     final disc = Container(
@@ -606,7 +647,7 @@ class _StarButton extends StatelessWidget {
         color: colors.night,
         border: Border.all(
           color: colors.text,
-          width: _kLineWidth,
+          width: metrics.strokeWidth,
         ),
       ),
       // The star's photo, if it has one, fills the disc behind everything
@@ -630,42 +671,28 @@ class _StarButton extends StatelessWidget {
             Center(
               child: nascent
                   ? Icon(
-                      Icons.add,
+                      kind.icon,
                       size: diameter * 0.5,
                       color: colors.text.withValues(alpha: 0.5),
                     )
-                  // Too small to read, the dots simply aren't there; once the
-                  // button is big enough they fade in while the icon glides
-                  // up (and shrinks) to make room, and back again.
-                  : TweenAnimationBuilder<double>(
-                      tween: Tween(end: uiScale >= _dotsMinScale ? 1.0 : 0.0),
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeOut,
-                      builder: (context, t, _) => Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            kind.icon,
-                            size: diameter * (0.55 - 0.15 * t),
-                            color: kindColor,
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          kind.icon,
+                          size: diameter * 0.4,
+                          color: kindColor,
+                        ),
+                        Padding(
+                          padding: EdgeInsets.only(top: diameter * 0.04),
+                          child: IntensityDots(
+                            intensity: star.intensity,
+                            color: colors.gold,
+                            dotSize: diameter * 0.038,
+                            spacing: diameter * 0.024,
                           ),
-                          Align(
-                            heightFactor: t,
-                            child: Opacity(
-                              opacity: t,
-                              child: Padding(
-                                padding: EdgeInsets.only(top: diameter * 0.04),
-                                child: IntensityDots(
-                                  intensity: star.intensity,
-                                  color: colors.gold,
-                                  dotSize: math.max(1.1, diameter * 0.038),
-                                  spacing: math.max(0.7, diameter * 0.024),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
             ),
           ],
@@ -676,70 +703,88 @@ class _StarButton extends StatelessWidget {
     return Stack(
       alignment: Alignment.center,
       children: [
-        if (metrics.rings > 0)
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _RingsPainter(
-                color: colors.text,
-                rings: metrics.rings,
-                baseRadius: diameter / 2,
-                gap: _NodeMetrics.ringGap(uiScale),
-                strokeWidth: _kLineWidth,
-              ),
-            ),
-          ),
-        Opacity(opacity: dead ? 0.75 : 1, child: disc),
+        disc,
       ],
     );
   }
 }
 
-/// Concentric white rings around a star's disc — one per intensity level above
-/// the first, each fainter than the one inside it, so intensity reads as a
-/// halo that fades outward. The same thickness as the disc's own border.
-class _RingsPainter extends CustomPainter {
-  const _RingsPainter({
+/// Kept separate from [_StarButton] so the glow can be below every line on
+/// the map, while the solid star disc itself remains above them.
+class _StarGlow extends StatelessWidget {
+  const _StarGlow({required this.star, required this.metrics});
+
+  final ConstellationStar star;
+  final _NodeMetrics metrics;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return CustomPaint(
+      painter: _IntensityGlowPainter(
+        color: star.lit
+            ? colors.gold
+            : starKindColor(star.kind, colors, lit: false),
+        baseRadius: metrics.diameter / 2,
+        strength: metrics.glowStrength,
+      ),
+    );
+  }
+}
+
+/// Two compact radial layers make the intensity read at a glance. Unlike a
+/// [BoxShadow] tuned for large gold action buttons, this is painted inside the
+/// map node itself, so even a small, dark-disc star retains a visible aura.
+class _IntensityGlowPainter extends CustomPainter {
+  const _IntensityGlowPainter({
     required this.color,
-    required this.rings,
     required this.baseRadius,
-    required this.gap,
-    required this.strokeWidth,
+    required this.strength,
   });
 
   final Color color;
-  final int rings;
   final double baseRadius;
-  final double gap;
-  final double strokeWidth;
+  final double strength;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
-    for (var k = 1; k <= rings; k++) {
-      // Solid white next to the disc, fading to 40% at the outermost ring.
-      final fade = rings == 1 ? 1.0 : 1 - 0.6 * (k - 1) / (rings - 1);
+    final outerRadius = baseRadius + (8 + 10 * strength) / 2;
+    final innerRadius = baseRadius + (4 + 6 * strength) / 2;
+
+    void paintAura(double radius, double centerAlpha, double edgeAlpha) {
       canvas.drawCircle(
         center,
-        baseRadius + k * gap,
+        radius,
         Paint()
-          ..color = color.withValues(alpha: fade)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = strokeWidth,
+          ..shader = RadialGradient(
+            colors: [
+              color.withValues(alpha: centerAlpha),
+              color.withValues(alpha: edgeAlpha),
+              Colors.transparent,
+            ],
+            stops: const [0, 0.68, 1],
+          ).createShader(Rect.fromCircle(center: center, radius: radius)),
       );
     }
+
+    // Keep the brightness close to the disc: the glow communicates
+    // intensity without turning into a wide haze between nearby stars.
+    paintAura(outerRadius, 0.16 + 0.16 * strength, 0.035);
+    paintAura(innerRadius, 0.32 + 0.22 * strength, 0.08);
   }
 
   @override
-  bool shouldRepaint(_RingsPainter old) =>
+  bool shouldRepaint(_IntensityGlowPainter old) =>
       color != old.color ||
-      rings != old.rings ||
       baseRadius != old.baseRadius ||
-      gap != old.gap ||
-      strokeWidth != old.strokeWidth;
+      strength != old.strength;
 }
 
-class _LabelPill extends StatelessWidget {
-  const _LabelPill({required this.star, required this.style});
+/// Search-result card treatment, stripped of its quick-action drawer: on a
+/// constellation map the star itself remains the single tap target.
+class _StarMapCard extends StatelessWidget {
+  const _StarMapCard({required this.star, required this.style});
 
   final ConstellationStar star;
   final TextStyle style;
@@ -747,23 +792,82 @@ class _LabelPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final dead = star.kind == StarKind.dead;
+    final typeColor = starKindColor(star.kind, colors, lit: star.lit);
+    final strings = context.strings;
+    final scale = (style.fontSize ?? _kLabelFontSize) / _kLabelFontSize;
     return Container(
-      alignment: Alignment.center,
-      // With the border, exactly the padding `_measureLabel` reserved, so the
-      // text wraps as it was measured.
-      padding: const EdgeInsets.symmetric(horizontal: _kLabelPadX - _kLineWidth),
       decoration: BoxDecoration(
-        color: colors.nightPanel.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: colors.text, width: _kLineWidth),
+        color: colors.nightPanel,
+        borderRadius: BorderRadius.circular(kRadiusCard * scale),
+        border: Border.all(
+          color: typeColor,
+          width: kBorderWidth * scale,
+        ),
       ),
-      child: Text(
-        star.label,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
-        style: dead ? style.copyWith(color: colors.muted) : style,
+      child: Row(
+        children: [
+          SizedBox(
+            width: _kMapCardVisualWidth * scale,
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: SizedBox(
+                width: _kMapCardVisualWidth,
+                height: _kMapCardHeight,
+                child: SearchStarVisual(kind: star.kind, pulsarLit: star.lit),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                6 * scale,
+                1.5 * scale,
+                6 * scale,
+                1.5 * scale,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    star.kind.label(strings).toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 5.5 * scale,
+                      letterSpacing: 0.7 * scale,
+                      fontWeight: FontWeight.w700,
+                      color: typeColor,
+                    ),
+                  ),
+                  SizedBox(height: 1.5 * scale),
+                  Text(
+                    star.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: style.copyWith(
+                      fontSize: 8 * scale,
+                      height: 1.1,
+                      fontWeight: FontWeight.w700,
+                      color: colors.text,
+                    ),
+                  ),
+                  SizedBox(height: 2 * scale),
+                  Text(
+                    strings.intensityCount(star.intensity ?? 0),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 6.5 * scale,
+                      fontWeight: FontWeight.w600,
+                      color: colors.gold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -775,40 +879,41 @@ class _Leader {
   final Color color;
 }
 
-/// The constellation's own straight lines, then every label's S-curve leader
-/// on top of them — thinner and fainter, so a leader is never mistaken for
-/// part of the shape.
+/// Star-colored card leaders first, then the constellation's strong white
+/// edges. At crossings the graph remains visually on top of its annotations.
 class _LinesPainter extends CustomPainter {
   const _LinesPainter({
     required this.segments,
     required this.edgeColor,
     required this.edgeWidth,
+    required this.leaderWidth,
     required this.leaders,
   });
 
   final List<(Offset, Offset)> segments;
   final Color edgeColor;
   final double edgeWidth;
+  final double leaderWidth;
   final List<_Leader> leaders;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final edgePaint = Paint()
-      ..color = edgeColor
-      ..strokeWidth = edgeWidth
-      ..style = PaintingStyle.stroke;
-    for (final (a, b) in segments) {
-      canvas.drawLine(a, b, edgePaint);
-    }
     for (final leader in leaders) {
       canvas.drawPath(
         leader.path,
         Paint()
           ..color = leader.color
           ..style = PaintingStyle.stroke
-          ..strokeWidth = _kLineWidth
+          ..strokeWidth = leaderWidth
           ..strokeCap = StrokeCap.round,
       );
+    }
+    final edgePaint = Paint()
+      ..color = edgeColor
+      ..strokeWidth = edgeWidth
+      ..style = PaintingStyle.stroke;
+    for (final (a, b) in segments) {
+      canvas.drawLine(a, b, edgePaint);
     }
   }
 

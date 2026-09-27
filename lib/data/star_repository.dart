@@ -326,6 +326,17 @@ class StarRepository {
     await _prefs.remove(_storageKey);
   }
 
+  /// Physically removes every star in one deleted constellation, including
+  /// any photo files they owned. This is intentionally unlike [delete].
+  Future<void> deleteAllForProject(int projectId) async {
+    final stars = getAll();
+    final removed = stars.where((star) => star.projectId == projectId);
+    await _saveAll(stars.where((star) => star.projectId != projectId).toList());
+    for (final star in removed) {
+      if (star.photoPath != null) await PhotoStorage.delete(star.photoPath!);
+    }
+  }
+
   int _nextNumber(List<Star> stars) {
     return stars.fold<int>(
           0,

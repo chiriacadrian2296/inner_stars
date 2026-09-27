@@ -1,6 +1,10 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../data/constellation_layout.dart';
 import '../data/constellation_shape.dart';
@@ -17,11 +21,17 @@ import '../models/project.dart';
 import '../models/star.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_fonts.dart';
+import '../utils/app_modals.dart';
 import '../widgets/constellation_map/constellation_map_view.dart';
 import '../widgets/constellation_map/pulsar_spacing.dart';
 import '../widgets/constellation_painter.dart';
+import '../widgets/logo_watermark.dart';
+import '../widgets/marquee_title.dart';
+import '../widgets/shareable_constellation_card.dart';
 import '../widgets/staggered_entrance.dart';
 import 'pulsar_reader_screen.dart';
+import 'new_project_screen.dart';
 import 'star_form_screen.dart';
 import 'star_reader_screen.dart';
 
@@ -67,15 +77,12 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
   // (rather than looking a shape up from the project's icon, the way this
   // screen used to) is purely a defensive guard for that in-between moment,
   // not a live feature — it reuses the "shape missing" empty state below.
-  late final ConstellationShape? _shape =
-      widget.project.starsShapeId != null
-      ? widget.starsShapeRepository
-            .getById(widget.project.starsShapeId!)
-            ?.shape
+  late Project _project;
+  ConstellationShape? get _shape => _project.starsShapeId != null
+      ? widget.starsShapeRepository.getById(_project.starsShapeId!)?.shape
       : null;
-  late final Rect _shapeBounds = _shape == null
-      ? Rect.zero
-      : boundingBoxOf(_shape.points);
+  Rect get _shapeBounds =>
+      _shape == null ? Rect.zero : boundingBoxOf(_shape!.points);
 
   late List<Star> _stars;
   late List<Habit> _habits;
@@ -84,6 +91,11 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
   final _transformationController = TransformationController();
   bool _framed = false;
   double? _fitScale;
+  bool _contentReverse = false;
+  bool _hasNavigatedConstellations = false;
+  int _watermarkPulse = 0;
+  double _watermarkPulseDirection = -1;
+  final _shareKey = GlobalKey();
 
   /// How far apart, on screen at the fit zoom, two scattered stars' buttons
   /// must sit — a biggest button (with its rings) fits inside.
@@ -92,6 +104,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
   @override
   void initState() {
     super.initState();
+    _project = widget.project;
     _loadData();
   }
 
@@ -102,8 +115,8 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
   }
 
   void _loadData() {
-    _stars = widget.starRepository.getAllForProject(widget.project.id);
-    _habits = widget.habitRepository.getAllForProject(widget.project.id);
+    _stars = widget.starRepository.getAllForProject(_project.id);
+    _habits = widget.habitRepository.getAllForProject(_project.id);
     _renderStars = _buildRenderStars();
   }
 
@@ -160,8 +173,12 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
   void _frameShape(Size viewportSize) {
     if (_framed || viewportSize.isEmpty) return;
     _framed = true;
-    final scale = _fitScaleFor(viewportSize);
-    _fitScale = scale;
+    final fitScale = _fitScaleFor(viewportSize);
+    _fitScale = fitScale;
+    // A constellation now opens at the map's fixed farthest zoom: its star
+    // cards and leaders are laid out compactly there, giving the user the
+    // whole constellation before they zoom into one star.
+    final scale = fitScale * ConstellationMapView.initialZoomFactor;
     final center = _boundsPixels().center;
     final matrix = Matrix4.identity()
       ..translateByDouble(viewportSize.width / 2, viewportSize.height / 2, 0, 1)
@@ -177,6 +194,40 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
     setState(_loadData);
   }
 
+  /// The constellation's watermark follows the light currently visible on
+  /// its map. Pulsars already carry their live completion state in
+  /// [_renderStars], so a habit counts as lit only when it is burning today.
+  StarKind get _watermarkKind => _watermarkKindForStars(_renderStars);
+
+  StarKind _watermarkKindForStars(Iterable<ConstellationStar> stars) {
+    final values = stars.toList();
+    if (values.isNotEmpty && values.every((star) => star.lit)) {
+      return StarKind.lit;
+    }
+    if (values.any((star) => star.lit)) return StarKind.unlit;
+    return StarKind.nascent;
+  }
+
+  StarKind _watermarkKindForProject(Project project) {
+    final completionsByHabit = <int, List<HabitCompletion>>{};
+    for (final completion in widget.habitCompletionRepository.getAll()) {
+      completionsByHabit
+          .putIfAbsent(completion.habitId, () => [])
+          .add(completion);
+    }
+    final shape = project.starsShapeId == null
+        ? null
+        : widget.starsShapeRepository.getById(project.starsShapeId!)?.shape;
+    return _watermarkKindForStars(
+      buildConstellationRenderStars(
+        stars: widget.starRepository.getAllForProject(project.id),
+        habits: widget.habitRepository.getAllForProject(project.id),
+        shape: shape,
+        completionsByHabit: completionsByHabit,
+      ).stars,
+    );
+  }
+
   /// Opens the star reader on the tapped star — whatever kind it is, an
   /// empty slot and a pulsar included — with every other member of the
   /// constellation one swipe away.
@@ -186,12 +237,14 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
     // reliable test for which repository this star came from.
     final anchorKey = switch (star.slotSequence) {
       null => 'p${star.entityId}',
-      final slot when star.kind == StarKind.nascent =>
-        NascentEntry(projectId: widget.project.id, slot: slot).key,
+      final slot when star.kind == StarKind.nascent => NascentEntry(
+        projectId: _project.id,
+        slot: slot,
+      ).key,
       _ => 's${star.entityId}',
     };
     List<ReaderEntry> load() => projectReaderEntries(
-      project: widget.project,
+      project: _project,
       starRepository: widget.starRepository,
       habitRepository: widget.habitRepository,
       starsShapeRepository: widget.starsShapeRepository,
@@ -206,7 +259,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
           initialEntries: entries,
           startIndex: index,
           allowEdit: true,
-          projectsById: {widget.project.id: widget.project},
+          projectsById: {_project.id: _project},
           projectRepository: widget.projectRepository,
           starsShapeRepository: widget.starsShapeRepository,
           refreshEntries: load,
@@ -218,100 +271,503 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
     _refresh();
   }
 
+  void _moveBy(int direction) {
+    final projects = widget.projectRepository.getAll();
+    final current = projects.indexWhere((project) => project.id == _project.id);
+    if (current == -1 || projects.length < 2) return;
+    final next = (current + direction) % projects.length;
+    final nextProject = projects[next < 0 ? next + projects.length : next];
+    final sameWatermark = _watermarkKind ==
+        _watermarkKindForProject(nextProject);
+    setState(() {
+      if (sameWatermark) {
+        _watermarkPulse++;
+        _watermarkPulseDirection = direction < 0 ? 1 : -1;
+      }
+      _project = nextProject;
+      _framed = false;
+      _fitScale = null;
+      _contentReverse = direction < 0;
+      _hasNavigatedConstellations = true;
+      _loadData();
+    });
+  }
+
+  Future<void> _editProject() async {
+    final updated = await Navigator.of(context).push<Project>(
+      MaterialPageRoute(
+        builder: (_) => NewProjectScreen(
+          projectRepository: widget.projectRepository,
+          starsShapeRepository: widget.starsShapeRepository,
+          existingProject: _project,
+        ),
+      ),
+    );
+    if (updated != null && mounted) {
+      setState(() {
+        _project = updated;
+        _loadData();
+      });
+    }
+  }
+
+  Future<void> _deleteProject() async {
+    final strings = context.strings;
+    final confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Eliminare questa costellazione?'),
+        content: Text(
+          'Verranno eliminati definitivamente stelle, pulsar, completamenti e foto. Questa azione non può essere annullata.',
+          style: TextStyle(color: context.colors.muted),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(strings.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(strings.deleteStarAction),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final id = _project.id;
+    final shapeId = _project.starsShapeId;
+    final habitIds = await widget.habitRepository.deleteAllForProject(id);
+    for (final habitId in habitIds) {
+      await widget.habitCompletionRepository.deleteAllForHabit(habitId);
+    }
+    await widget.starRepository.deleteAllForProject(id);
+    await widget.projectRepository.delete(id);
+    if (shapeId != null &&
+        !widget.projectRepository.getAll().any(
+          (p) => p.starsShapeId == shapeId,
+        )) {
+      await widget.starsShapeRepository.delete(shapeId);
+    }
+    if (!mounted) return;
+    final remaining = widget.projectRepository.getAll();
+    if (remaining.isEmpty) {
+      Navigator.of(context).pop();
+    } else {
+      setState(() {
+        _project = remaining.first;
+        _framed = false;
+        _fitScale = null;
+        _loadData();
+      });
+    }
+  }
+
+  Future<void> _share() async {
+    final shape = _shape;
+    if (shape == null) return;
+    try {
+      final boundary =
+          _shareKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
+      if (boundary == null) return;
+      final image = await boundary.toImage(pixelRatio: 2);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (bytes == null) return;
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile.fromData(
+              bytes.buffer.asUint8List(),
+              mimeType: 'image/png',
+              name: '${_project.name}.png',
+            ),
+          ],
+          text: _project.name,
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.strings.shareStarError)));
+      }
+    }
+  }
+
+  Future<void> _addStar() async {
+    final capacity = _shape?.points.length ?? 0;
+    final occupied = _stars.map((star) => star.slotSequence).toSet();
+    int? firstFreeSlot;
+    for (var slot = 1; slot <= capacity; slot++) {
+      if (!occupied.contains(slot)) {
+        firstFreeSlot = slot;
+        break;
+      }
+    }
+    final result = await Navigator.of(context).push<Object>(
+      MaterialPageRoute(
+        builder: (_) => StarFormScreen(
+          lockedProject: _project,
+          projectRepository: widget.projectRepository,
+          starsShapeRepository: widget.starsShapeRepository,
+          slotSequence: firstFreeSlot,
+        ),
+      ),
+    );
+    if (result is StarFormResult) {
+      if (result.kind == StarKind.pulsar) {
+        await widget.habitRepository.add(
+          title: result.title,
+          description: result.description,
+          projectId: _project.id,
+          intensity: result.intensity ?? 3,
+          frequency: result.habitFrequency ?? HabitFrequency.daily,
+          targetPerPeriod: result.habitTargetPerPeriod ?? 1,
+          reminderHour: result.reminderHour,
+          reminderMinute: result.reminderMinute,
+        );
+      } else {
+        await widget.starRepository.add(
+          title: result.title,
+          description: result.description,
+          projectId: _project.id,
+          slotSequence: result.slotSequence,
+          targetDate: result.targetDate,
+          achievedDate: result.achievedDate,
+          intensity: result.intensity,
+          photoPath: result.photoPath,
+        );
+      }
+      _refresh();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final shape = _shape;
     final colors = context.colors;
     final strings = context.strings;
 
-    return Scaffold(
-      backgroundColor: colors.night,
-      body: SafeArea(
-        child: Column(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
+        systemStatusBarContrastEnforced: false,
+      ),
+      child: Scaffold(
+      // Edge-to-edge lets the night sky continue behind the status icons.
+      backgroundColor: Colors.black,
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF1C2747), Colors.black],
+          ),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Column(
           children: [
-            Row(
-              children: [
-                StaggeredEntrance(
-                  index: 0,
-                  axis: Axis.horizontal,
-                  child: IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.arrow_back, color: colors.muted),
-                  ),
-                ),
-                Expanded(
-                  child: StaggeredEntrance(
-                    index: 1,
-                    axis: Axis.horizontal,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          widget.project.name,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                            color: colors.text,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (widget.project.description case final description?
-                            when description.isNotEmpty)
-                          Text(
-                            description,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: colors.muted,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                      ],
+            DecoratedBox(
+              decoration: const BoxDecoration(color: Colors.transparent),
+              child: SizedBox(
+                height: 64,
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => _moveBy(-1),
+                      icon: Icon(Icons.chevron_left, color: colors.text),
                     ),
-                  ),
-                ),
-              ],
-            ),
-            Expanded(
-              child: shape == null
-                  ? StaggeredEntrance(
-                      index: 2,
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Text(
-                            strings.constellationShapeMissing,
-                            style: TextStyle(color: colors.muted),
-                            textAlign: TextAlign.center,
+                    Expanded(
+                      child: StaggeredEntrance(
+                        key: ValueKey('constellation-title-${_project.id}'),
+                        index: 0,
+                        axis: Axis.horizontal,
+                        reverse: _contentReverse,
+                        child: MarqueeTitle(
+                          key: ValueKey('constellation-title-${_project.id}'),
+                          title: _project.name,
+                          style: TextStyle(
+                            fontFamily: kFontStarTitle,
+                            fontSize: 32,
+                            fontWeight: FontWeight.w800,
+                            color: colors.text,
                           ),
                         ),
                       ),
-                    )
-                  : LayoutBuilder(
-                      builder: (context, constraints) {
-                        final viewportSize = constraints.biggest;
-                        WidgetsBinding.instance.addPostFrameCallback(
-                          (_) => _frameShape(viewportSize),
-                        );
-                        // Not built until the shape has been framed, so its
-                        // first frame never shows the unzoomed identity view.
-                        if (!_framed) return const SizedBox.shrink();
-
-                        return ConstellationMapView(
-                          stars: _renderStars,
-                          edges: _edges,
-                          transformation: _transformationController,
-                          canvasSize: _canvasSize,
-                          fitScale: _fitScaleFor(viewportSize),
-                          onStarTap: _openStar,
-                        );
-                      },
                     ),
+                    IconButton(
+                      onPressed: () => _moveBy(1),
+                      icon: Icon(Icons.chevron_right, color: colors.text),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: LogoWatermark(
+                      pulse: _watermarkPulse,
+                      pulseDirection: _watermarkPulseDirection,
+                      scale: logoWatermarkScale(_watermarkKind),
+                      color: logoWatermarkColor(colors, _watermarkKind),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: shape == null
+                        ? StaggeredEntrance(
+                            key: ValueKey('constellation-empty-${_project.id}'),
+                            index: 2,
+                            axis: Axis.horizontal,
+                            reverse: _contentReverse,
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Text(
+                                  strings.constellationShapeMissing,
+                                  style: TextStyle(color: colors.muted),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          )
+                        : LayoutBuilder(
+                            builder: (context, constraints) {
+                              final viewportSize = constraints.biggest;
+                              WidgetsBinding.instance.addPostFrameCallback(
+                                (_) => _frameShape(viewportSize),
+                              );
+                              // Not built until the shape has been framed, so its
+                              // first frame never shows the unzoomed identity view.
+                              if (!_framed) return const SizedBox.shrink();
+
+                              // The header arrows and the dedicated swipe bar
+                              // are the only ways to swap a constellation.
+                              // Start its entrance only after
+                              // the camera is framed, so the map never flashes
+                              // at identity zoom before it settles in.
+                              return StaggeredEntrance(
+                                key: ValueKey('constellation-map-${_project.id}'),
+                                index: 1,
+                                axis: Axis.horizontal,
+                                reverse: _contentReverse,
+                                child: ConstellationMapView(
+                                  stars: _renderStars,
+                                  edges: _edges,
+                                  transformation: _transformationController,
+                                  canvasSize: _canvasSize,
+                                  fitScale: _fitScaleFor(viewportSize),
+                                  onStarTap: _openStar,
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              // Keep the navigation affordance above the dock's upward
+              // shadow, so it belongs to the page rather than the dock.
+              padding: const EdgeInsets.only(bottom: 44),
+              child: _ConstellationSwipeBar(
+                onPrevious: () => _moveBy(-1),
+                onNext: () => _moveBy(1),
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.black,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.9),
+                    blurRadius: 32,
+                    spreadRadius: 6,
+                    offset: const Offset(0, -10),
+                  ),
+                ],
+              ),
+              padding: EdgeInsets.fromLTRB(
+                12,
+                16,
+                12,
+                16 + MediaQuery.paddingOf(context).bottom,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  StaggeredEntrance(
+                    index: 0,
+                    enabled: !_hasNavigatedConstellations,
+                    drift: 0.7,
+                    child: _ConstellationDockAction(
+                      icon: Icons.star,
+                      label: 'Nuova stella',
+                      onTap: _addStar,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  StaggeredEntrance(
+                    index: 1,
+                    enabled: !_hasNavigatedConstellations,
+                    drift: 0.7,
+                    child: _ConstellationDockAction(
+                      icon: Icons.share_outlined,
+                      label: 'Condividi',
+                      onTap: _share,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  StaggeredEntrance(
+                    index: 2,
+                    enabled: !_hasNavigatedConstellations,
+                    drift: 0.7,
+                    child: _ConstellationDockAction(
+                      icon: Icons.navigation,
+                      label: 'Vola',
+                      onTap: () => Navigator.of(context).pop(_project),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  StaggeredEntrance(
+                    index: 3,
+                    enabled: !_hasNavigatedConstellations,
+                    drift: 0.7,
+                    child: _ConstellationDockAction(
+                      icon: Icons.edit_outlined,
+                      label: 'Modifica',
+                      onTap: _editProject,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  StaggeredEntrance(
+                    index: 4,
+                    enabled: !_hasNavigatedConstellations,
+                    drift: 0.7,
+                    child: _ConstellationDockAction(
+                      icon: Icons.delete_outline,
+                      label: 'Elimina',
+                      onTap: _deleteProject,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              width: 0,
+              height: 0,
+              child: OverflowBox(
+                maxWidth: 400,
+                maxHeight: 600,
+                alignment: Alignment.topLeft,
+                child: Transform.translate(
+                  offset: const Offset(-1000, -1000),
+                  child: RepaintBoundary(
+                    key: _shareKey,
+                    child: SizedBox(
+                      width: 400,
+                      height: 600,
+                      child: ShareableConstellationCard(
+                        project: _project,
+                        shape:
+                            shape ??
+                            const ConstellationShape(points: [], edges: []),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
+          ),
         ),
+      ),
       ),
     );
   }
+}
+
+/// A deliberate, visible navigation zone: map gestures stay with the map,
+/// while only a horizontal swipe here changes which constellation is open.
+class _ConstellationSwipeBar extends StatelessWidget {
+  const _ConstellationSwipeBar({
+    required this.onPrevious,
+    required this.onNext,
+  });
+
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    behavior: HitTestBehavior.opaque,
+    onHorizontalDragEnd: (details) {
+      final velocity = details.primaryVelocity ?? 0;
+      if (velocity <= -150) {
+        onNext();
+      } else if (velocity >= 150) {
+        onPrevious();
+      }
+    },
+    child: const SizedBox(
+      height: 52,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.chevron_left, color: Colors.white),
+          SizedBox(width: 20),
+          Icon(Icons.swipe, color: Colors.white, size: 20),
+          SizedBox(width: 8),
+          Text(
+            'SWIPE',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.8,
+            ),
+          ),
+          SizedBox(width: 20),
+          Icon(Icons.chevron_right, color: Colors.white),
+        ],
+      ),
+    ),
+  );
+}
+
+/// The compact action in the Star Reader dock is exactly a 20 px glyph with
+/// 14 px padding on each side. This uses that same 48 px geometry and gold
+/// material treatment while the constellation supplies its own actions.
+class _ConstellationDockAction extends StatelessWidget {
+  const _ConstellationDockAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Tooltip(
+    message: label,
+    child: Material(
+      color: context.colors.gold,
+      shape: const StadiumBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const StadiumBorder(),
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: Center(
+            child: Icon(icon, size: 20, color: context.colors.onGold),
+          ),
+        ),
+      ),
+    ),
+  );
 }

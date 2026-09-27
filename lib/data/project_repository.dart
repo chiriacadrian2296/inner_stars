@@ -127,6 +127,44 @@ class ProjectRepository {
     return updated;
   }
 
+  /// Updates a constellation without changing its identity or its position in
+  /// the newest-first list. Its stars and pulsars remain attached by id.
+  Future<Project> update({
+    required int projectId,
+    required String name,
+    required LifeArea area,
+    required String iconSlug,
+    required int? starsShapeId,
+    String? description,
+  }) async {
+    final projects = getAll();
+    final index = projects.indexWhere((p) => p.id == projectId);
+    if (index == -1) throw StateError('No project found with id $projectId');
+    final trimmedDescription = description?.trim();
+    final existing = projects[index];
+    final updated = Project(
+      id: existing.id,
+      name: name.trim(),
+      area: area,
+      iconSlug: iconSlug,
+      starsShapeId: starsShapeId,
+      description: (trimmedDescription == null || trimmedDescription.isEmpty)
+          ? null : trimmedDescription,
+      createdAt: existing.createdAt,
+    );
+    projects[index] = updated;
+    await _saveAll(projects);
+    return updated;
+  }
+
+  /// Permanently removes just this project. Related records are deliberately
+  /// removed by the coordinating screen/repositories, where their photos and
+  /// completion history can be cleaned up too.
+  Future<void> delete(int projectId) async {
+    final projects = getAll();
+    await _saveAll(projects.where((p) => p.id != projectId).toList());
+  }
+
   /// Permanently deletes every project. Used by the "reset all data" action
   /// — there's no undo.
   Future<void> clear() async {

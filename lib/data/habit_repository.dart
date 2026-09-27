@@ -191,6 +191,15 @@ class HabitRepository {
     await _prefs.remove(_storageKey);
   }
 
+  /// Physically removes a constellation's pulsars. Their completion history
+  /// is cleaned by the caller, which has access to its separate repository.
+  Future<List<int>> deleteAllForProject(int projectId) async {
+    final habits = getAll();
+    final removed = habits.where((habit) => habit.projectId == projectId).toList();
+    await _saveAll(habits.where((habit) => habit.projectId != projectId).toList());
+    return removed.map((habit) => habit.id).toList();
+  }
+
   Future<void> _saveAll(List<Habit> habits) async {
     final encoded = jsonEncode(habits.map((h) => h.toJson()).toList());
     await _prefs.setString(_storageKey, encoded);

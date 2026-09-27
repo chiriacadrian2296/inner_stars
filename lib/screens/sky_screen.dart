@@ -1242,6 +1242,19 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
 
   void _closeSkyTooltip() => _skyTooltipController.close();
 
+  /// Gives the menu FAB the same first-interaction dismissal rule as the
+  /// sky itself: when a quick-look is already open, the first tap or hold on
+  /// the FAB only closes it. The button latches this result for the whole
+  /// press, so releasing a tap (or completing a hold) cannot also open one
+  /// of its menus after dismissing the tooltip.
+  bool _dismissSkyTooltipForMenuPress() {
+    if (!_skyTooltipController.isOpen) return false;
+    _closeSkyTooltip();
+    _lastEmptyTapTime = null;
+    _lastEmptyTapPosition = null;
+    return true;
+  }
+
   /// The actual [Star] the quick-look tooltip is showing — re-read from
   /// [_skyTooltipController]'s own data on every access (rather than
   /// cached separately) so an edit/achieve elsewhere that triggers
@@ -4020,6 +4033,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                                   key: _menuStarButtonKey,
                                   onTap: _openMenuModal,
                                   onQuickTap: _toggleQuickAccessMenu,
+                                  onDismissSkyTooltip:
+                                      _dismissSkyTooltipForMenuPress,
                                   onPressChanged: _setMenuControlPressed,
                                 ),
                               ),
@@ -4423,7 +4438,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
 
   Future<void> _viewConstellation(PlacedConstellation constellation) async {
     _closeSkyTooltip();
-    await Navigator.of(context).push(
+    final result = await Navigator.of(context).push<Project>(
       MaterialPageRoute(
         builder: (_) => ConstellationScreen(
           project: constellation.project,
@@ -4436,11 +4451,15 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       ),
     );
     _refresh();
+    if (result != null && mounted) {
+      final placed = _placedFor(result);
+      if (placed != null) _flyToConstellation(placed);
+    }
   }
 
   Future<void> _viewArea(LifeArea area) async {
     _closeSkyTooltip();
-    await Navigator.of(context).push(
+    final result = await Navigator.of(context).push<LifeArea>(
       MaterialPageRoute(
         builder: (_) => AreaDetailScreen(
           area: area,
@@ -4452,6 +4471,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       ),
     );
     _refresh();
+    if (result != null && mounted) _flyToArea(result);
   }
 }
 
@@ -4577,6 +4597,7 @@ class _MenuStarButton extends StatefulWidget {
     super.key,
     required this.onTap,
     required this.onQuickTap,
+    this.onDismissSkyTooltip,
     this.onPressChanged,
   });
 
@@ -4589,6 +4610,10 @@ class _MenuStarButton extends StatefulWidget {
   // gesture arena handing this touch to something else, e.g. a pan
   // starting on top of this button) — see `_handleTapUp`/`_handleTapCancel`.
   final VoidCallback onQuickTap;
+
+  /// Invoked at the start of a press. Returning true consumes this whole
+  /// press because an open sky tooltip was dismissed instead.
+  final bool Function()? onDismissSkyTooltip;
 
   /// Called `true` the instant a touch lands here, `false` the instant it
   /// releases or cancels — see `_SkyScreenState._menuControlPressed`'s own
@@ -4683,6 +4708,11 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   // widgets, so it's kept small and duplicated rather than factored out.
   bool _hapticActive = false;
 
+  // Latched on down rather than re-checking on up: dismissing the tooltip
+  // changes the parent's state immediately, but this press must remain a
+  // dismiss-only gesture through its release (or completed hold).
+  bool _dismissedSkyTooltip = false;
+
   // See `_SkyScreenState._hapticAmplitude`'s own doc comment for why this
   // needs to be set explicitly at all — the same low value, so the button's
   // own buzz matches the sky's.
@@ -4725,7 +4755,9 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   }
 
   void _handlePressStart() {
+    _dismissedSkyTooltip = widget.onDismissSkyTooltip?.call() ?? false;
     widget.onPressChanged?.call(true);
+    if (_dismissedSkyTooltip) return;
     _chargeController.forward();
     if (isTouchOnlyMobile) _startHoldHaptic();
   }
@@ -4741,6 +4773,10 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   void _handleTapUp() {
     widget.onPressChanged?.call(false);
     _stopHoldHaptic();
+    if (_dismissedSkyTooltip) {
+      _dismissedSkyTooltip = false;
+      return;
+    }
     if (_chargeController.status == AnimationStatus.forward) {
       _chargeController.reverse();
       widget.onQuickTap();
@@ -4753,6 +4789,10 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   void _handleTapCancel() {
     widget.onPressChanged?.call(false);
     _stopHoldHaptic();
+    if (_dismissedSkyTooltip) {
+      _dismissedSkyTooltip = false;
+      return;
+    }
     if (_chargeController.status == AnimationStatus.forward) {
       _chargeController.reverse();
       if (_showHoldHintFeature) {

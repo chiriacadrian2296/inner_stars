@@ -103,6 +103,7 @@ class ReaderPage extends StatelessWidget {
   final String? title;
   final Color? titleColor;
   final String? description;
+
   final String? note;
 
   /// Tall enough for the biggest thing that goes in the data slot.
@@ -186,16 +187,17 @@ class ReaderPage extends StatelessWidget {
             ),
           ),
         if (description != null) ...[
-          const SizedBox(height: 22),
+          if (title != null) const SizedBox(height: 22),
           entrance(
             6,
             Text(
               description!,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 18,
                 height: 1.6,
-                color: colors.nightlightMuted,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFFFFFFF),
               ),
             ),
           ),
@@ -207,10 +209,11 @@ class ReaderPage extends StatelessWidget {
             Text(
               note!,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 height: 1.6,
-                color: colors.nightlightMuted,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFFFFFFF),
               ),
             ),
           ),
@@ -392,8 +395,6 @@ class StarReaderContent extends StatelessWidget {
       project: project,
       numberLabel: strings.starSlotLabel(star.slotSequence),
       extra: extra,
-      title: star.title,
-      titleColor: star.dead ? colors.muted : null,
       description: star.dead ? null : star.description,
       note: star.dead ? strings.deadStarBody : null,
     );
@@ -468,8 +469,6 @@ class PulsarReaderContent extends StatelessWidget {
       project: project,
       numberLabel: number == null ? null : strings.pulsarNumberLabel(number!),
       extra: extra,
-      title: habit.title,
-      titleColor: habit.dead ? colors.muted : null,
       description: habit.dead ? null : habit.description,
       note: habit.dead ? strings.deadPulsarBody : null,
     );

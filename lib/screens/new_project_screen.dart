@@ -9,6 +9,7 @@ import '../l10n/app_strings.dart';
 import '../l10n/strings_scope.dart';
 import '../models/custom_constellation.dart';
 import '../models/life_area.dart';
+import '../models/project.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../tutorials/tour_intro_target.dart';
@@ -45,11 +46,13 @@ class NewProjectScreen extends StatefulWidget {
     required this.projectRepository,
     required this.starsShapeRepository,
     this.presetArea,
+    this.existingProject,
   });
 
   final ProjectRepository projectRepository;
   final StarsShapeRepository starsShapeRepository;
   final LifeArea? presetArea;
+  final Project? existingProject;
 
   @override
   State<NewProjectScreen> createState() => _NewProjectScreenState();
@@ -118,6 +121,16 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   @override
   void initState() {
     super.initState();
+    final existing = widget.existingProject;
+    if (existing != null) {
+      _nameController.text = existing.name;
+      _descriptionController.text = existing.description ?? '';
+      _selectedArea = existing.area;
+      _selectedIconSlug = existing.iconSlug;
+      if (existing.starsShapeId case final shapeId?) {
+        _selectedStarsShape = widget.starsShapeRepository.getById(shapeId);
+      }
+    }
     // The "constellation-form" tour — see its steps in [build] below.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -140,6 +153,15 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   /// means "has anything been entered at all" — [_selectedArea] is the one
   /// exception, seeded from [NewProjectScreen.presetArea] rather than null.
   bool get _hasUnsavedChanges {
+    final existing = widget.existingProject;
+    if (existing != null) {
+      return _nameController.text.trim() != existing.name ||
+          _descriptionController.text.trim() != (existing.description ?? '') ||
+          _selectedArea != existing.area ||
+          _selectedIconSlug != existing.iconSlug ||
+          _selectedStarsShape?.id != existing.starsShapeId ||
+          _selectedPreset != null;
+    }
     return _nameController.text.trim().isNotEmpty ||
         _descriptionController.text.trim().isNotEmpty ||
         _selectedArea != widget.presetArea ||
@@ -540,13 +562,26 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
           )
         : _selectedStarsShape!;
 
-    final project = await widget.projectRepository.add(
-      name: name,
-      area: area,
-      iconSlug: iconSlug,
-      starsShapeId: constellation.id,
-      description: _descriptionController.text,
-    );
+    final existing = widget.existingProject;
+    final Project project;
+    if (existing != null) {
+      project = await widget.projectRepository.update(
+        projectId: existing.id,
+        name: name,
+        area: area,
+        iconSlug: iconSlug,
+        starsShapeId: constellation.id,
+        description: _descriptionController.text,
+      );
+    } else {
+      project = await widget.projectRepository.add(
+        name: name,
+        area: area,
+        iconSlug: iconSlug,
+        starsShapeId: constellation.id,
+        description: _descriptionController.text,
+      );
+    }
     if (mounted) Navigator.of(context).pop(project);
   }
 
@@ -593,7 +628,9 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                         icon: Icon(Icons.arrow_back, color: colors.muted),
                       ),
                       Text(
-                        strings.newProjectEyebrow,
+                        widget.existingProject == null
+                            ? strings.newProjectEyebrow
+                            : strings.editStarEyebrow,
                         style: TextStyle(
                           fontSize: 12,
                           letterSpacing: 1.4,
@@ -608,7 +645,9 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                 StaggeredEntrance(
                   index: 0,
                   child: Text(
-                    strings.newProjectQuestion,
+                    widget.existingProject == null
+                        ? strings.newProjectQuestion
+                        : strings.newProjectQuestion,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 24,

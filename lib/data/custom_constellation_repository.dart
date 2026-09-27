@@ -144,6 +144,12 @@ class StarsShapeRepository {
     await _prefs.remove(_storageKey);
   }
 
+  /// Removes an orphaned saved shape. Callers must first ensure no project
+  /// still refers to it, since preset shapes may be shared.
+  Future<void> delete(int id) async {
+    await _saveAll(getAll().where((shape) => shape.id != id).toList());
+  }
+
   Future<void> _saveAll(List<StarsShape> shapes) async {
     final encoded = jsonEncode(shapes.map((s) => s.toJson()).toList());
     await _prefs.setString(_storageKey, encoded);

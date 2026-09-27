@@ -15,6 +15,7 @@ class MoodboardGrid extends StatelessWidget {
     required this.items,
     this.onTap,
     this.placeholders = false,
+    this.showEmptyMessage = true,
   });
   final List<MoodboardItem> items;
   final ValueChanged<MoodboardItem>? onTap;
@@ -24,9 +25,14 @@ class MoodboardGrid extends StatelessWidget {
   /// preview on an area's page.
   final bool placeholders;
 
+  /// The full moodboard supplies its own centered empty state over the
+  /// watermark; small previews can still use this grid's inline message.
+  final bool showEmptyMessage;
+
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty && placeholders) return const _MoodboardPlaceholders();
+    if (items.isEmpty && !showEmptyMessage) return const SizedBox.shrink();
     if (items.isEmpty) {
       return StaggeredEntrance(
         index: 0,

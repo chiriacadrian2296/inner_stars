@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="moonTitle moonDescription">
+  <title id="moonTitle">Moon mascot</title>
+  <desc id="moonDescription">A softly glowing blue spherical mascot with navy eyes and four-point star highlights.</desc>
+
+  <defs>
+    <radialGradient id="bodyGradient" cx="47%" cy="39%" r="61%">
+      <stop offset="0%" stop-color="#E9FEFF"/>
+      <stop offset="30%" stop-color="#9DEEFF"/>
+      <stop offset="62%" stop-color="#4B9EF4"/>
+      <stop offset="84%" stop-color="#2860CF"/>
+      <stop offset="100%" stop-color="#173982"/>
+    </radialGradient>
+
+    <linearGradient id="rimGradient" x1="18%" y1="10%" x2="82%" y2="91%">
+      <stop offset="0%" stop-color="#C9FAFF"/>
+      <stop offset="38%" stop-color="#51CFFF"/>
+      <stop offset="75%" stop-color="#386FE2"/>
+      <stop offset="100%" stop-color="#162F73"/>
+    </linearGradient>
+
+    <linearGradient id="eyeGradient" x1="38%" y1="0%" x2="60%" y2="100%">
+      <stop offset="0%" stop-color="#253F92"/>
+      <stop offset="58%" stop-color="#142C71"/>
+      <stop offset="100%" stop-color="#07194E"/>
+    </linearGradient>
+
+    <radialGradient id="blushGradient">
+      <stop offset="0%" stop-color="#9C87F4" stop-opacity="0.34"/>
+      <stop offset="100%" stop-color="#9C87F4" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="shineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.78"/>
+      <stop offset="100%" stop-color="#C4F9FF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <g id="moon-body">
+    <circle cx="512" cy="512" r="424" fill="url(#rimGradient)"/>
+    <circle cx="512" cy="512" r="411" fill="url(#bodyGradient)"/>
+    <ellipse cx="649" cy="231" rx="151" ry="75" fill="url(#shineGradient)" transform="rotate(19 649 231)"/>
+  </g>
+
+  <g id="moon-face">
+    <g id="moon-blush">
+      <ellipse cx="333" cy="601" rx="82" ry="53" fill="url(#blushGradient)"/>
+      <ellipse cx="691" cy="601" rx="82" ry="53" fill="url(#blushGradient)"/>
+    </g>
+
+    <g id="moon-eyebrows" fill="none" stroke="#183579" stroke-width="20" stroke-linecap="round">
+      <path d="M327 420 Q373 381 426 395"/>
+      <path d="M598 395 Q651 381 697 420"/>
+    </g>
+
+    <g id="moon-eyes">
+      <ellipse cx="382" cy="514" rx="57" ry="72" fill="url(#eyeGradient)"/>
+      <ellipse cx="642" cy="514" rx="57" ry="72" fill="url(#eyeGradient)"/>
+
+      <g id="moon-eye-glow" fill="#28CFFF" opacity="0.88">
+        <ellipse cx="367" cy="559" rx="14" ry="9"/>
+        <ellipse cx="627" cy="559" rx="14" ry="9"/>
+      </g>
+
+      <g id="moon-star-highlights" fill="#FFFFFF">
+        <path d="M382 454 C387 473 393 479 412 484 C393 489 387 495 382 514 C377 495 371 489 352 484 C371 479 377 473 382 454Z"/>
+        <path d="M642 454 C647 473 653 479 672 484 C653 489 647 495 642 514 C637 495 631 489 612 484 C631 479 637 473 642 454Z"/>
+      </g>
+    </g>
+
+    <path id="moon-smile" d="M452 607 Q512 662 572 607" fill="none" stroke="#173477" stroke-width="19" stroke-linecap="round"/>
+  </g>
+</svg>

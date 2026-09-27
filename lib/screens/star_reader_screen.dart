@@ -21,6 +21,7 @@ import '../models/habit.dart';
 import '../models/project.dart';
 import '../models/star.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_fonts.dart';
 import '../utils/app_modals.dart';
 import '../tutorials/tour_intro_target.dart';
 import '../tutorials/tour_step_card.dart';
@@ -29,6 +30,7 @@ import '../utils/page_settled.dart';
 import '../utils/responsive.dart';
 import '../widgets/intensity_bolts.dart';
 import '../widgets/logo_watermark.dart';
+import '../widgets/marquee_title.dart';
 import '../widgets/photo_image.dart';
 import '../widgets/photo_picker.dart';
 import '../widgets/reader_entry_content.dart';
@@ -835,6 +837,11 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
     final project = widget.projectsById[entry.projectId];
     final colors = context.colors;
     final strings = context.strings;
+    final headerTitle = switch (entry) {
+      StarEntry(:final star) => star.title,
+      PulsarEntry(:final habit) => habit.title,
+      NascentEntry(:final slot) => strings.starSlotLabel(slot),
+    };
 
     final photoPath = star != null && star.isLit ? star.photoPath : null;
     // The bar is identified by which buttons it holds (their icons), so it
@@ -907,13 +914,13 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
               child: _buildPhotoLayer(context, colors, photoPath),
             ),
           ),
-          // A photo-less star's logo watermark. Its own steady layer, not
-          // part of the per-star one above (which scales in with each star),
-          // so between stars the logo stays put and only its color changes.
+          // The logo sits over the photo as well as the plain sky while the
+          // reader's data is visible. Photo-only mode hides both pieces of
+          // chrome, leaving the image entirely unobstructed.
           Positioned.fill(
             key: const ValueKey('reader-watermark'),
             child: AnimatedOpacity(
-              opacity: photoPath == null ? 1 : 0,
+              opacity: photoPath == null || !_photoOnly ? 1 : 0,
               duration: const Duration(milliseconds: 200),
               child: LogoWatermark(
                 pulse: _watermarkPulse,
@@ -925,11 +932,13 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                         ? -1.0
                         : 1.0),
                 scale: logoWatermarkScale(entry.kind, lit: _isLit(entry)),
-                color: logoWatermarkColor(
+                // A photo needs only a trace of the mark; the regular
+                // watermark opacity would tint most of its visible image.
+                color: (logoWatermarkColor(
                   colors,
                   entry.kind,
                   lit: _isLit(entry),
-                ),
+                )).withValues(alpha: photoPath == null ? 0.25 : 0.14),
               ),
             ),
           ),
@@ -955,53 +964,52 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
               child: SafeArea(
                 bottom: false,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
                   child: Column(
                     children: [
                       ResponsiveContent(
-                        child: Row(
-                          children: [
-                            StaggeredEntrance(
-                              index: 0,
-                              axis: Axis.horizontal,
-                              child: IconButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                icon: Icon(
-                                  Icons.arrow_back,
-                                  color: colors.nightlightMuted,
+                        child: SizedBox(
+                          height: 64,
+                          child: Row(
+                            children: [
+                              IconButton(
+                                onPressed: _showPrevious,
+                                icon: const Icon(
+                                  Icons.chevron_left,
+                                  color: Colors.white,
                                 ),
                               ),
-                            ),
-                            Expanded(
-                              child: Center(
-                                child: StaggeredEntrance(
-                                  index: 1,
-                                  axis: Axis.horizontal,
-                                  child: Text(
-                                    strings.indexOfCount(
-                                      _index + 1,
-                                      _entries.length,
+                              Expanded(
+                                child: Stack(
+                                  children: [
+                                    Align(
+                                      alignment: Alignment.center,
+                                      child: SizedBox(
+                                        height: 38,
+                                        child: MarqueeTitle(
+                                          key: ValueKey(entry.key),
+                                          title: headerTitle,
+                                          style: const TextStyle(
+                                            fontFamily: kFontStarTitle,
+                                            fontSize: 32,
+                                            fontWeight: FontWeight.w800,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: colors.nightlightMuted,
-                                    ),
-                                  ),
+                                  ],
                                 ),
                               ),
-                            ),
-                            StaggeredEntrance(
-                              index: 2,
-                              axis: Axis.horizontal,
-                              child: IconButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                icon: Icon(
-                                  Icons.close,
-                                  color: colors.nightlightMuted,
+                              IconButton(
+                                onPressed: _showNext,
+                                icon: const Icon(
+                                  Icons.chevron_right,
+                                  color: Colors.white,
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                       Expanded(
@@ -1021,8 +1029,11 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                               Positioned.fill(
                                 child: Center(
                             child: SingleChildScrollView(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
+                              padding: EdgeInsets.fromLTRB(
+                                12,
+                                0,
+                                12,
+                                24,
                               ),
                               child: ResponsiveContent(
                                 // Fade-through: the star leaving fades out
@@ -1031,14 +1042,28 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                                 // `_kContentEntranceLead`). The arriving one
                                 // is drawn as-is here — its own blocks do the
                                 // fading in.
-                                child: AnimatedSwitcher(
-                                  duration: _kContentSwapDuration,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      strings.indexOfCount(
+                                        _index + 1,
+                                        _entries.length,
+                                      ),
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    AnimatedSwitcher(
+                                      duration: _kContentSwapDuration,
                                   // Eased both ends, so the old text
                                   // visibly dwindles all the way to 0 instead
                                   // of dropping off at the start.
                                   switchOutCurve: Curves.easeInOut,
                                   transitionBuilder: _swapTransition,
-                                  child: switch (entry) {
+                                      child: switch (entry) {
                                     StarEntry(:final star) => StarReaderContent(
                                       key: ValueKey(_index),
                                       star: star,
@@ -1058,7 +1083,9 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                                         project: project,
                                         entrance: entrance,
                                       ),
-                                  },
+                                      },
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -1243,8 +1270,8 @@ class _ReaderDock extends StatelessWidget {
 
   /// Its height without the system inset: the black band above the buttons,
   /// the buttons themselves, and the margin below.
-  static const _bandAbove = 24.0;
-  static const _below = 28.0;
+  static const _bandAbove = 16.0;
+  static const _below = 16.0;
   static const height = _bandAbove + 48 + _below;
 
   @override

@@ -5,10 +5,13 @@ import '../data/moodboard_repository.dart';
 import '../data/moodboard_storage.dart';
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
+import '../models/star_kind.dart';
+import '../theme/app_colors.dart';
 import '../utils/app_modals.dart';
 import '../utils/responsive.dart';
 import '../widgets/area_section_header.dart';
 import '../widgets/moodboard_grid.dart';
+import '../widgets/logo_watermark.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
 
@@ -239,8 +242,40 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
         title: Text(widget.area.displayName(strings)),
       ),
       body: SafeArea(
-        child: ResponsiveContent(
-          child: Column(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned(
+              left: 0,
+              right: 0,
+              // Keep the mark inside the canvas that begins below the
+              // heading and the add-media controls.
+              top: 220,
+              bottom: 0,
+              child: LogoWatermark(
+                scale: logoWatermarkScale(StarKind.unlit),
+                color: logoWatermarkColor(context.colors, StarKind.unlit),
+              ),
+            ),
+            if (_items.isEmpty)
+              Positioned(
+                left: 24,
+                right: 24,
+                top: 220,
+                bottom: 0,
+                child: Center(
+                  child: StaggeredEntrance(
+                    index: 4,
+                    child: Text(
+                      strings.moodboardEmpty,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                ),
+              ),
+            ResponsiveContent(
+              child: Column(
             children: [
               if (_busy) const LinearProgressIndicator(color: Colors.white),
               Expanded(
@@ -289,13 +324,19 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                         ),
                       const SizedBox(height: 20),
                       // The grid staggers its own tiles (see MoodboardGrid).
-                      MoodboardGrid(items: _items, onTap: _busy ? null : _open),
+                      MoodboardGrid(
+                        items: _items,
+                        onTap: _busy ? null : _open,
+                        showEmptyMessage: false,
+                      ),
                     ],
                   ),
                 ),
               ),
             ],
-          ),
+              ),
+            ),
+          ],
         ),
       ),
     );

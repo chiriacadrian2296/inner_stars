@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import '../data/area_vision_repository.dart';
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
+import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../utils/app_modals.dart';
 import '../widgets/area_section_header.dart';
 import '../widgets/live_markdown_controller.dart';
+import '../widgets/logo_watermark.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
 
@@ -284,6 +286,7 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
         if (!didPop) _leave();
       },
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         backgroundColor: colors.night,
         appBar: AppBar(
           elevation: 20,
@@ -530,43 +533,54 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                   ),
                 ),
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    child: StaggeredEntrance(
-                      index: 2,
-                      child: TextField(
-                        controller: _controller,
-                        focusNode: _focus,
-                        undoController: _undo,
-                        readOnly: _saving,
-                        expands: true,
-                        minLines: null,
-                        maxLines: null,
-                        textAlignVertical: TextAlignVertical.top,
-                        keyboardType: TextInputType.multiline,
-                        textCapitalization: TextCapitalization.sentences,
-                        style: TextStyle(
-                          fontFamily: kFontStarTitle,
-                          fontStyle: FontStyle.normal,
-                          color: colors.text,
-                          fontSize: 21,
-                          height: 1.6,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Positioned.fill(
+                        child: LogoWatermark(
+                          scale: logoWatermarkScale(StarKind.unlit),
+                          color: logoWatermarkColor(colors, StarKind.unlit),
                         ),
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          filled: false,
-                          hintText: strings.visionEditorHint,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 20,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        child: StaggeredEntrance(
+                          index: 2,
+                          child: TextField(
+                            controller: _controller,
+                            focusNode: _focus,
+                            undoController: _undo,
+                            readOnly: _saving,
+                            expands: true,
+                            minLines: null,
+                            maxLines: null,
+                            textAlignVertical: TextAlignVertical.top,
+                            keyboardType: TextInputType.multiline,
+                            textCapitalization: TextCapitalization.sentences,
+                            style: TextStyle(
+                              fontFamily: kFontStarTitle,
+                              fontStyle: FontStyle.normal,
+                              color: colors.text,
+                              fontSize: 21,
+                              height: 1.6,
+                            ),
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              filled: false,
+                              hintText: strings.visionEditorHint,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 20,
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ],

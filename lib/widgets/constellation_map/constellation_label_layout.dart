@@ -2,13 +2,14 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 /// One star as the label layout sees it: where it sits on screen, how much
-/// room its button (rings included) takes up, and how urgently it needs a
+/// room its button and visual effects take up, and how urgently it needs a
 /// good spot for its label.
 class MapNode {
   const MapNode({
     required this.id,
     required this.center,
     required this.radius,
+    this.leaderRadius,
     this.priority = 0,
   });
 
@@ -17,9 +18,12 @@ class MapNode {
   final int id;
   final Offset center;
 
-  /// The button's outer radius, decoration rings included: nothing else may
-  /// be placed inside it.
+  /// The visual exclusion radius: nothing else may be placed inside it.
   final double radius;
+
+  /// The radius a leader clears when leaving this node. It may be smaller
+  /// than [radius] when the latter includes a decorative glow.
+  final double? leaderRadius;
 
   /// Higher goes first when the labels are laid out one by one, so the
   /// hardest-to-place stars get first pick of the free space.
@@ -101,10 +105,12 @@ class LabelLayout {
   final int overlaps;
 }
 
-const double _kStartGap = 5;
-const double _kEndGap = 4;
-const int _kAngles = 16;
-const List<double> _kLengths = [22, 40, 62, 90, 130];
+const double _kStartGap = 4;
+const double _kEndGap = 3;
+const int _kAngles = 24;
+// Short first choices keep annotations visually attached to their stars.
+// The later candidates still let crowded constellations resolve cleanly.
+const List<double> _kLengths = [14, 26, 42, 64, 92, 130, 180];
 
 /// Places one label per node that has a size, in free space around its star.
 ///
@@ -130,6 +136,7 @@ LabelLayout layoutConstellationLabels({
   Offset? anchor,
   Map<int, int> previous = const {},
   List<double> labelScales = const [1, 0.9, 0.8],
+  double leaderLengthScale = 1,
 }) {
   LabelLayout? best;
   for (final scale in labelScales) {
@@ -140,6 +147,7 @@ LabelLayout layoutConstellationLabels({
       anchor: anchor,
       previous: previous,
       labelScale: scale,
+      leaderLengthScale: leaderLengthScale * scale,
     );
     if (best == null || layout.overlaps < best.overlaps) best = layout;
     if (layout.overlaps == 0) break;
@@ -165,6 +173,7 @@ LabelLayout _layoutAtScale({
   required Offset? anchor,
   required Map<int, int> previous,
   required double labelScale,
+  required double leaderLengthScale,
 }) {
   final labeled = <MapNode>[];
   final sizes = <int, Size>{};
@@ -188,7 +197,12 @@ LabelLayout _layoutAtScale({
 
   final candidates = {
     for (final node in labeled)
-      node.id: _candidatesFor(node, sizes[node.id]!, anchor),
+      node.id: _candidatesFor(
+        node,
+        sizes[node.id]!,
+        anchor,
+        leaderLengthScale,
+      ),
   };
   final chosen = <int, _Candidate>{};
 
@@ -241,7 +255,12 @@ LabelLayout _layoutAtScale({
   );
 }
 
-List<_Candidate> _candidatesFor(MapNode node, Size size, Offset? anchor) {
+List<_Candidate> _candidatesFor(
+  MapNode node,
+  Size size,
+  Offset? anchor,
+  double leaderLengthScale,
+) {
   var outwardDirection = Offset.zero;
   if (anchor != null) {
     final away = node.center - anchor;
@@ -250,11 +269,13 @@ List<_Candidate> _candidatesFor(MapNode node, Size size, Offset? anchor) {
   final result = <_Candidate>[];
   var index = 0;
   for (final length in _kLengths) {
+    final scaledLength = length * leaderLengthScale;
     for (var i = 0; i < _kAngles; i++) {
       final angle = 2 * math.pi * i / _kAngles;
       final direction = Offset(math.cos(angle), math.sin(angle));
-      final start = node.center + direction * (node.radius + _kStartGap);
-      final end = start + direction * length;
+      final start = node.center +
+          direction * ((node.leaderRadius ?? node.radius) + _kStartGap);
+      final end = start + direction * scaledLength;
       final horizontal = direction.dx.abs() >= direction.dy.abs();
       final Rect rect;
       if (horizontal) {
@@ -274,7 +295,7 @@ List<_Candidate> _candidatesFor(MapNode node, Size size, Offset? anchor) {
             horizontal: horizontal,
             candidate: index++,
           ),
-          length,
+          scaledLength,
           direction.dx * outwardDirection.dx + direction.dy * outwardDirection.dy,
         ),
       );
