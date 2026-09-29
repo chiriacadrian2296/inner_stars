@@ -37,6 +37,19 @@ const double _kNodeStrokeWidth = 2.5;
 const double _kLabelLeaderWidth = 1.25;
 const double _kLabelLeaderOpacity = 0.78;
 
+// A layout search is intentionally thorough for a crowded constellation. Keep
+// completed maps beyond the lifetime of one screen so moving away and back
+// never makes the UI thread solve the exact same geometry again.
+const int _kStoredLayoutsLimit = 18;
+final Map<String, _StoredLabelLayout> _storedLabelLayouts = {};
+
+class _StoredLabelLayout {
+  const _StoredLabelLayout({required this.layout, required this.referenceZoom});
+
+  final LabelLayout layout;
+  final double referenceZoom;
+}
+
 /// One constellation as a map: every star a round, self-explaining button
 /// (its kind's icon, dots, and a proportional glow), each tied by a smooth
 /// line to a card, laid out so nothing sits on top of anything else.
@@ -81,7 +94,7 @@ class ConstellationMapView extends StatefulWidget {
   /// element uses this same linear zoom factor, like one scalable map image.
   // Keep the overview far enough out to include every annotation with some
   // breathing room, without making the cards and glow disappear into dots.
-  static const double initialZoomFactor = 0.5;
+  static const double initialZoomFactor = 0.55;
 
   final ValueChanged<ConstellationStar> onStarTap;
 
@@ -361,6 +374,7 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
     _previousCandidates = const {};
     _lockedLayout = null;
     _layoutReferenceZoom = null;
+    _storedLabelLayouts.clear();
   }
 
   @override
@@ -527,6 +541,24 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
       );
     }
 
+    final layoutCacheKey = _layoutCacheKey(context, zoom);
+    final stored = _storedLabelLayouts[layoutCacheKey];
+    if (stored != null) {
+      // The cache contains a complete layout in exactly this map's coordinate
+      // system. It is immutable, so it can safely be shared across screens.
+      _lockedLayout = stored.layout;
+      _layoutReferenceZoom = stored.referenceZoom;
+      _layoutZoom = zoom;
+      _layoutStars = widget.stars;
+      return _geometry = _MapGeometry(
+        nodes: nodes,
+        segments: segments,
+        layout: _scaleLayout(stored.layout, zoom / stored.referenceZoom),
+        uiScale: ui,
+        grid: shapeGrid,
+      );
+    }
+
     final layout = layoutConstellationLabels(
       nodes: [
         for (final node in nodes)
@@ -559,6 +591,7 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
     // search, so no card can migrate around its own star while exploring.
     _lockedLayout = layout;
     _layoutReferenceZoom = zoom;
+    _storeLayout(layoutCacheKey, layout, zoom);
 
     _layoutZoom = zoom;
     _layoutStars = widget.stars;
@@ -568,6 +601,48 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
       layout: layout,
       uiScale: ui,
       grid: shapeGrid,
+    );
+  }
+
+  /// A version of the render inputs that affect label geometry. Updating a
+  /// constellation naturally changes this key; returning to an untouched one
+  /// reuses its finished map without even entering the placement solver.
+  String _layoutCacheKey(BuildContext context, double zoom) {
+    String number(double value) => value.toStringAsFixed(3);
+    final textScale = MediaQuery.textScalerOf(context).scale(_kLabelFontSize);
+    final starData = widget.stars.map((star) {
+      return [
+        star.entityId,
+        number(star.position.dx),
+        number(star.position.dy),
+        star.kind.name,
+        star.lit,
+        star.label,
+        star.slotSequence,
+        star.intensity,
+      ].join('~');
+    }).join('|');
+    final edgeData = widget.edges.map((edge) => '${edge.$1}:${edge.$2}').join(',');
+    return [
+      number(widget.canvasSize.width),
+      number(widget.canvasSize.height),
+      number(zoom),
+      number(textScale),
+      starData,
+      edgeData,
+    ].join('#');
+  }
+
+  void _storeLayout(String key, LabelLayout layout, double referenceZoom) {
+    // Dart maps retain insertion order. A tiny LRU-like cap is enough here:
+    // most people revisit only a handful of constellations in one session.
+    _storedLabelLayouts.remove(key);
+    while (_storedLabelLayouts.length >= _kStoredLayoutsLimit) {
+      _storedLabelLayouts.remove(_storedLabelLayouts.keys.first);
+    }
+    _storedLabelLayouts[key] = _StoredLabelLayout(
+      layout: layout,
+      referenceZoom: referenceZoom,
     );
   }
 
@@ -972,7 +1047,9 @@ class _StarMapCard extends StatelessWidget {
     final scale = (style.fontSize ?? _kLabelFontSize) / _kLabelFontSize;
     return Container(
       decoration: BoxDecoration(
-        color: colors.nightPanel,
+        // The card still reads as a surface, while the constellation's
+        // connectors remain subtly visible underneath it.
+        color: colors.nightPanel.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(_kMapCardRadius * scale),
         border: Border.all(
           color: typeColor,
