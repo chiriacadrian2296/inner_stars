@@ -116,6 +116,28 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('area cards expose their dock actions in the quick menu', (
+    tester,
+  ) async {
+    final repos = await repositories();
+    await pumpExplorer(tester, repos);
+
+    final firstCard = find.byType(SearchResultCard).first;
+    await tester.tap(
+      find.descendant(
+        of: firstCard,
+        matching: find.byKey(const Key('search-card-quick-menu-toggle')),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Vision'), findsOneWidget);
+    expect(find.text('Moodboard'), findsOneWidget);
+    expect(find.text('Riflessioni'), findsOneWidget);
+    expect(find.text('+ Costellazione'), findsOneWidget);
+    expect(find.text('Vola'), findsOneWidget);
+  });
+
   testWidgets('real Search uses compact cards in all three result levels', (
     tester,
   ) async {
@@ -159,6 +181,28 @@ void main() {
       ),
       findsOneWidget,
     );
+
+    final constellationCard = find.byType(SearchResultCard).first;
+    await tester.tap(
+      find.descendant(
+        of: constellationCard,
+        matching: find.byKey(const Key('search-card-quick-menu-toggle')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('+ Stella'), findsOneWidget);
+    expect(find.text('Condividi'), findsOneWidget);
+    expect(find.text('Vola'), findsOneWidget);
+    expect(find.text('Modifica'), findsOneWidget);
+    expect(find.text('Elimina'), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(
+        of: constellationCard,
+        matching: find.byKey(const Key('search-card-quick-menu-toggle')),
+      ),
+    );
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byIcon(Icons.star).first);
     await tester.pumpAndSettle();

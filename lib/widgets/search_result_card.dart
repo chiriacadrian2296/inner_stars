@@ -577,15 +577,18 @@ class _SearchQuickMenu extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(8, 20, 8, 5),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             for (var i = 0; i < actions.length; i++)
               Expanded(
                 child: _cascadeIn(
                   context,
                   index: i,
-                  child: _SearchQuickMenuAction(
-                    action: actions[i],
-                    onActionSelected: onActionSelected,
+                  child: SizedBox.expand(
+                    child: _SearchQuickMenuAction(
+                      action: actions[i],
+                      onActionSelected: onActionSelected,
+                    ),
                   ),
                 ),
               ),
@@ -595,23 +598,24 @@ class _SearchQuickMenu extends StatelessWidget {
     );
   }
 
-  /// Fades and slides the [index]-th button in from above, starting a little
-  /// after the one before it.
+  /// Fades the [index]-th button in a little after the one before it.
+  /// Keeping the action in its final vertical position throughout avoids an
+  /// optical (and, on interrupted animations, persistent) vertical offset.
   Widget _cascadeIn(
     BuildContext context, {
     required int index,
     required Widget child,
   }) {
     const stagger = 0.2;
-    final span = (1 - (actions.length - 1) * stagger).clamp(0.4, 1.0);
+    // Every action must complete by progress == 1. The previous shared span
+    // left each later action partially translated upward at rest, most
+    // visibly the final one in every card drawer.
+    final span = (1 - index * stagger).clamp(0.4, 1.0);
     final t = ((progress - index * stagger) / span).clamp(0.0, 1.0);
     final eased = Curves.easeOutCubic.transform(t);
     return Opacity(
       opacity: eased,
-      child: FractionalTranslation(
-        translation: Offset(0, -0.4 * (1 - eased)),
-        child: child,
-      ),
+      child: child,
     );
   }
 }

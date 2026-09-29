@@ -10,6 +10,7 @@ import '../data/custom_constellation_repository.dart';
 import '../data/constellation_shape.dart';
 import '../data/habit_completion_repository.dart';
 import '../data/habit_repository.dart';
+import '../data/moodboard_repository.dart';
 import '../data/photo_storage.dart';
 import '../data/project_repository.dart';
 import '../data/reader_entries.dart';
@@ -24,10 +25,14 @@ import '../models/star.dart';
 import '../models/star_kind.dart';
 import '../screens/area_detail_screen.dart';
 import '../screens/constellation_screen.dart';
+import '../screens/moodboard_screen.dart';
+import '../screens/new_project_screen.dart';
 import '../screens/star_form_screen.dart';
 import '../screens/star_reader_screen.dart';
+import '../screens/vision_editor_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../theme/life_area_theme.dart';
 import '../tutorials/tour_intro_target.dart';
 import '../tutorials/tour_step_card.dart';
 import '../utils/app_modals.dart';
@@ -44,6 +49,7 @@ import 'kind_filter_sheet.dart';
 import 'responsive_content.dart';
 import 'search_result_card.dart';
 import 'shareable_lit_star_card.dart';
+import 'shareable_constellation_card.dart';
 import 'sky_navigation_target.dart';
 import 'sort_filter_sheet.dart';
 import 'staggered_entrance.dart';
@@ -373,6 +379,209 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
     if (result != null && mounted) {
       widget.onNavigateTo(SkyAreaTarget(result));
     }
+  }
+
+  Future<void> _openAreaVision(LifeArea area) => Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => Theme(
+        data: buildLifeAreaTheme(),
+        child: VisionEditorScreen(
+          area: area,
+          repository: widget.areaVisionRepository,
+        ),
+      ),
+    ),
+  ).then((_) {
+    if (mounted) setState(() {});
+  });
+
+  Future<void> _openAreaMoodboard(LifeArea area) async {
+    try {
+      final repository = await MoodboardRepository.create();
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => Theme(
+            data: buildLifeAreaTheme(),
+            child: MoodboardScreen(area: area, repository: repository),
+          ),
+        ),
+      );
+      if (mounted) setState(() {});
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.strings.moodboardSaveError)),
+        );
+      }
+    }
+  }
+
+  Future<void> _openNewConstellation(LifeArea area) async {
+    final shapes = await StarsShapeRepository.create();
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Theme(
+          data: buildLifeAreaTheme(),
+          child: NewProjectScreen(
+            projectRepository: widget.projectRepository,
+            starsShapeRepository: shapes,
+            presetArea: area,
+          ),
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _openAreaReflections(LifeArea area) => Navigator.of(context)
+      .push(
+        MaterialPageRoute(
+          builder: (_) => Theme(
+            data: buildLifeAreaTheme(),
+            child: AreaReflectionsScreen(
+              area: area,
+              repository: widget.reflectionAnswerRepository,
+            ),
+          ),
+        ),
+      )
+      .then((_) {
+        if (mounted) setState(() {});
+      });
+
+  Future<void> _addStarToConstellation(Project project) async {
+    final shape = project.starsShapeId == null
+        ? null
+        : widget.starsShapeRepository.getById(project.starsShapeId!)?.shape;
+    final occupied = widget.starRepository
+        .getAllForProject(project.id)
+        .map((star) => star.slotSequence)
+        .toSet();
+    int? firstFreeSlot;
+    for (var slot = 1; slot <= (shape?.points.length ?? 0); slot++) {
+      if (!occupied.contains(slot)) {
+        firstFreeSlot = slot;
+        break;
+      }
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => StarFormScreen(
+          lockedProject: project,
+          projectRepository: widget.projectRepository,
+          starsShapeRepository: widget.starsShapeRepository,
+          slotSequence: firstFreeSlot,
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _editConstellation(Project project) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => NewProjectScreen(
+          projectRepository: widget.projectRepository,
+          starsShapeRepository: widget.starsShapeRepository,
+          existingProject: project,
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _shareConstellation(Project project) async {
+    final shape = project.starsShapeId == null
+        ? null
+        : widget.starsShapeRepository.getById(project.starsShapeId!)?.shape;
+    if (shape == null || !mounted) return;
+    final key = GlobalKey();
+    final size = MediaQuery.sizeOf(context);
+    final overlay = Overlay.of(context, rootOverlay: true);
+    OverlayEntry? entry;
+    try {
+      entry = OverlayEntry(
+        builder: (_) => Positioned(
+          left: -size.width * 2,
+          top: 0,
+          width: 400,
+          height: 600,
+          child: Material(
+            type: MaterialType.transparency,
+            child: RepaintBoundary(
+              key: key,
+              child: ShareableConstellationCard(project: project, shape: shape),
+            ),
+          ),
+        ),
+      );
+      overlay.insert(entry);
+      await WidgetsBinding.instance.endOfFrame;
+      final boundary = key.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+      if (boundary == null) return;
+      final image = await boundary.toImage(pixelRatio: 2);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (bytes == null) return;
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile.fromData(
+              bytes.buffer.asUint8List(),
+              mimeType: 'image/png',
+              name: '${project.name}.png',
+            ),
+          ],
+          text: project.name,
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.strings.shareStarError)),
+        );
+      }
+    } finally {
+      entry?.remove();
+    }
+  }
+
+  Future<void> _deleteConstellation(Project project) async {
+    final confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Eliminare questa costellazione?'),
+        content: Text(
+          'Verranno eliminati definitivamente stelle, pulsar, completamenti e foto. Questa azione non può essere annullata.',
+          style: TextStyle(color: context.colors.muted),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(context.strings.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(context.strings.deleteStarAction),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final habitIds = await widget.habitRepository.deleteAllForProject(project.id);
+    for (final habitId in habitIds) {
+      await widget.habitCompletionRepository.deleteAllForHabit(habitId);
+    }
+    await widget.starRepository.deleteAllForProject(project.id);
+    await widget.projectRepository.delete(project.id);
+    final shapeId = project.starsShapeId;
+    if (shapeId != null &&
+        !widget.projectRepository.getAll().any((p) => p.starsShapeId == shapeId)) {
+      await widget.starsShapeRepository.delete(shapeId);
+    }
+    if (mounted) setState(() {});
   }
 
   Future<void> _openProject(Project project) async {
@@ -1264,6 +1473,11 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                                 starCount: starCount,
                                 menuController: _cardMenuController,
                                 onTap: () => _openArea(area),
+                                onVision: () => _openAreaVision(area),
+                                onMoodboard: () => _openAreaMoodboard(area),
+                                onReflections: () => _openAreaReflections(area),
+                                onNewConstellation: () =>
+                                    _openNewConstellation(area),
                                 onNavigateTo: () =>
                                     widget.onNavigateTo(SkyAreaTarget(area)),
                               ),
@@ -1286,6 +1500,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                   menuController: _cardMenuController,
                   onTap: _openProject,
                   onNavigateTo: widget.onNavigateTo,
+                  onAddStar: _addStarToConstellation,
+                  onShare: _shareConstellation,
+                  onEdit: _editConstellation,
+                  onDelete: _deleteConstellation,
                 ),
                 _SkyMode.stars => _FlatList(
                   hasAnyEntries: allEntries.isNotEmpty,
@@ -1323,6 +1541,10 @@ class _AreaCard extends StatelessWidget {
     required this.starCount,
     required this.menuController,
     required this.onTap,
+    required this.onVision,
+    required this.onMoodboard,
+    required this.onReflections,
+    required this.onNewConstellation,
     required this.onNavigateTo,
   });
 
@@ -1331,6 +1553,10 @@ class _AreaCard extends StatelessWidget {
   final int starCount;
   final SearchCardMenuController menuController;
   final VoidCallback onTap;
+  final VoidCallback onVision;
+  final VoidCallback onMoodboard;
+  final VoidCallback onReflections;
+  final VoidCallback onNewConstellation;
   final VoidCallback onNavigateTo;
 
   @override
@@ -1352,13 +1578,28 @@ class _AreaCard extends StatelessWidget {
       ),
       actions: [
         SearchCardAction(
-          icon: Icons.open_in_new_rounded,
-          label: strings.searchCardOpenAction,
-          onTap: onTap,
+          icon: Icons.edit_outlined,
+          label: 'Vision',
+          onTap: onVision,
         ),
         SearchCardAction(
-          icon: Icons.navigation_rounded,
-          label: strings.takeMeThereAction,
+          icon: Icons.photo_library_outlined,
+          label: 'Moodboard',
+          onTap: onMoodboard,
+        ),
+        SearchCardAction(
+          icon: Icons.auto_stories_outlined,
+          label: 'Riflessioni',
+          onTap: onReflections,
+        ),
+        SearchCardAction(
+          icon: Icons.insights,
+          label: '+ Costellazione',
+          onTap: onNewConstellation,
+        ),
+        SearchCardAction(
+          icon: Icons.navigation,
+          label: 'Vola',
           onTap: onNavigateTo,
         ),
       ],
@@ -1555,6 +1796,10 @@ class _ConstellationsList extends StatelessWidget {
     required this.menuController,
     required this.onTap,
     required this.onNavigateTo,
+    required this.onAddStar,
+    required this.onShare,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   final bool hasAnyProjects;
@@ -1564,6 +1809,10 @@ class _ConstellationsList extends StatelessWidget {
   final SearchCardMenuController menuController;
   final void Function(Project) onTap;
   final ValueChanged<SkyNavigationTarget> onNavigateTo;
+  final ValueChanged<Project> onAddStar;
+  final ValueChanged<Project> onShare;
+  final ValueChanged<Project> onEdit;
+  final ValueChanged<Project> onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -1627,6 +1876,10 @@ class _ConstellationsList extends StatelessWidget {
                 menuController: menuController,
                 onTap: () => onTap(project),
                 onNavigateTo: () => onNavigateTo(SkyProjectTarget(project)),
+                onAddStar: () => onAddStar(project),
+                onShare: () => onShare(project),
+                onEdit: () => onEdit(project),
+                onDelete: () => onDelete(project),
               ),
             ),
           ),
@@ -1962,6 +2215,10 @@ class _ProjectCard extends StatelessWidget {
     required this.menuController,
     required this.onTap,
     required this.onNavigateTo,
+    required this.onAddStar,
+    required this.onShare,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   final Project project;
@@ -1971,6 +2228,10 @@ class _ProjectCard extends StatelessWidget {
   final SearchCardMenuController menuController;
   final VoidCallback onTap;
   final VoidCallback onNavigateTo;
+  final VoidCallback onAddStar;
+  final VoidCallback onShare;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -1989,14 +2250,29 @@ class _ProjectCard extends StatelessWidget {
       ),
       actions: [
         SearchCardAction(
-          icon: Icons.open_in_new_rounded,
-          label: strings.searchCardOpenAction,
-          onTap: onTap,
+          icon: Icons.star,
+          label: '+ Stella',
+          onTap: onAddStar,
         ),
         SearchCardAction(
-          icon: Icons.navigation_rounded,
-          label: strings.takeMeThereAction,
+          icon: Icons.share_outlined,
+          label: 'Condividi',
+          onTap: onShare,
+        ),
+        SearchCardAction(
+          icon: Icons.navigation,
+          label: 'Vola',
           onTap: onNavigateTo,
+        ),
+        SearchCardAction(
+          icon: Icons.edit_outlined,
+          label: 'Modifica',
+          onTap: onEdit,
+        ),
+        SearchCardAction(
+          icon: Icons.delete_outline,
+          label: 'Elimina',
+          onTap: onDelete,
         ),
       ],
     );

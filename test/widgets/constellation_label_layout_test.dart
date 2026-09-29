@@ -131,6 +131,46 @@ void main() {
       }
     });
 
+    test('mirrors the labels of a symmetric central pair', () {
+      final layout = layoutConstellationLabels(
+        nodes: const [
+          MapNode(id: 0, center: Offset(165, 200), radius: 10),
+          MapNode(id: 1, center: Offset(195, 200), radius: 10),
+          // An off-grid star can shift the visual anchor but must not shift
+          // the grid's actual symmetry axis.
+          MapNode(id: 2, center: Offset(300, 120), radius: 10),
+        ],
+        labelSize: (id, scale) =>
+            id == 2 ? null : Size(44 * scale, 16 * scale),
+        anchor: const Offset(220, 180),
+        symmetryAxisX: 180,
+      );
+      final left = layout.placements[0]!;
+      final right = layout.placements[1]!;
+
+      // The cards may both resolve above or below the close pair, but their
+      // geometry should remain a reflection about the constellation axis.
+      expect(left.rect.center.dx + right.rect.center.dx, closeTo(360, 0.01));
+      expect(left.rect.center.dy, closeTo(right.rect.center.dy, 0.01));
+    });
+
+    test('uses editor-grid vertices as leader anchors', () {
+      final layout = layoutConstellationLabels(
+        nodes: const [
+          MapNode(id: 0, center: Offset(90, 100), radius: 10),
+          MapNode(id: 1, center: Offset(150, 100), radius: 10),
+        ],
+        labelSize: (id, scale) => Size(40 * scale, 16 * scale),
+        anchor: const Offset(120, 100),
+        symmetryAxisX: 120,
+        grid: const LabelGrid(origin: Offset.zero, spacing: 20),
+      );
+      for (final placement in layout.placements.values) {
+        expect(placement.lineEnd.dx / 20, closeTo((placement.lineEnd.dx / 20).round(), 0.001));
+        expect(placement.lineEnd.dy / 20, closeTo((placement.lineEnd.dy / 20).round(), 0.001));
+      }
+    });
+
     test('the leader starts and ends clear of the star and the label', () {
       final layout = layoutConstellationLabels(
         nodes: const [MapNode(id: 0, center: Offset(200, 200), radius: 20)],

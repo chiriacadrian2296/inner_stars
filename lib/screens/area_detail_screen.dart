@@ -48,6 +48,61 @@ class AreaDetailScreen extends StatefulWidget {
   State<AreaDetailScreen> createState() => _AreaDetailScreenState();
 }
 
+/// The full reflection editor, shared by an area's section action and dock.
+class AreaReflectionsScreen extends StatelessWidget {
+  const AreaReflectionsScreen({
+    super.key,
+    required this.area,
+    required this.repository,
+  });
+
+  final LifeArea area;
+  final ReflectionAnswerRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = context.strings;
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        elevation: 20,
+        scrolledUnderElevation: 20,
+        shadowColor: Colors.black,
+        title: Text(area.displayName(strings)),
+      ),
+      body: SafeArea(
+        child: ResponsiveContent(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Align(
+                alignment: Alignment.topCenter,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      StaggeredEntrance(
+                        index: 0,
+                        child: AreaSectionHeader(
+                          title: strings.areaReflectionsTitle,
+                          description: strings.reflectionsPageDescription,
+                        ),
+                      ),
+                      const SizedBox(height: 26),
+                      ReflectionQuestionsSection(area: area, repository: repository),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _AreaDetailScreenState extends State<AreaDetailScreen> {
   late LifeArea _area;
   bool _contentReverse = false;
@@ -313,59 +368,10 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                       reverse: _contentReverse,
                                       label: strings.areaSectionOpen,
                                       onPressed: () => _open(
-                                        Scaffold(
-                                          backgroundColor: Colors.black,
-                                          appBar: AppBar(
-                                            elevation: 20,
-                                            scrolledUnderElevation: 20,
-                                            shadowColor: Colors.black,
-                                            title: Text(
-                                              area.displayName(strings),
-                                            ),
-                                          ),
-                                          body: SafeArea(
-                                            child: ResponsiveContent(
-                                              child: Stack(
-                                                fit: StackFit.expand,
-                                                children: [
-                                                  Align(
-                                                    alignment:
-                                                        Alignment.topCenter,
-                                                    child:
-                                                        SingleChildScrollView(
-                                                  padding: const EdgeInsets.all(
-                                                    20,
-                                                  ),
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      StaggeredEntrance(
-                                                        index: 0,
-                                                        child: AreaSectionHeader(
-                                                          title: strings
-                                                              .areaReflectionsTitle,
-                                                          description: strings
-                                                              .reflectionsPageDescription,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(
-                                                        height: 26,
-                                                      ),
-                                                      ReflectionQuestionsSection(
-                                                        area: area,
-                                                        repository: widget
-                                                            .reflectionAnswerRepository,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                        ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
+                                        AreaReflectionsScreen(
+                                          area: area,
+                                          repository:
+                                              widget.reflectionAnswerRepository,
                                         ),
                                       ),
                                     ),
@@ -396,8 +402,13 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                       ),
                     ),
                     onMoodboard: _openMoodboard,
+                    onReflections: () => _open(
+                      AreaReflectionsScreen(
+                        area: area,
+                        repository: widget.reflectionAnswerRepository,
+                      ),
+                    ),
                     onNewConstellation: _openNewConstellation,
-                    onReflections: () => Navigator.of(context).pop(area),
                   ),
                 ),
               ],
@@ -551,14 +562,25 @@ class _AreaDock extends StatelessWidget {
             enabled: animate,
             drift: 0.7,
             child: _AreaDockAction(
-              icon: Icons.insights,
-              label: 'Nuova costellazione',
-              onTap: onNewConstellation,
+              icon: Icons.auto_stories_outlined,
+              label: 'Riflessioni',
+              onTap: onReflections,
             ),
           ),
           const SizedBox(width: 8),
           StaggeredEntrance(
             index: 3,
+            enabled: animate,
+            drift: 0.7,
+            child: _AreaDockAction(
+              icon: Icons.insights,
+              label: '+ Costellazione',
+              onTap: onNewConstellation,
+            ),
+          ),
+          const SizedBox(width: 8),
+          StaggeredEntrance(
+            index: 4,
             enabled: animate,
             drift: 0.7,
             child: _AreaDockAction(

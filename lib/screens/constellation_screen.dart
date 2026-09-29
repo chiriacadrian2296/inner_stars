@@ -208,26 +208,6 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
     return StarKind.nascent;
   }
 
-  StarKind _watermarkKindForProject(Project project) {
-    final completionsByHabit = <int, List<HabitCompletion>>{};
-    for (final completion in widget.habitCompletionRepository.getAll()) {
-      completionsByHabit
-          .putIfAbsent(completion.habitId, () => [])
-          .add(completion);
-    }
-    final shape = project.starsShapeId == null
-        ? null
-        : widget.starsShapeRepository.getById(project.starsShapeId!)?.shape;
-    return _watermarkKindForStars(
-      buildConstellationRenderStars(
-        stars: widget.starRepository.getAllForProject(project.id),
-        habits: widget.habitRepository.getAllForProject(project.id),
-        shape: shape,
-        completionsByHabit: completionsByHabit,
-      ).stars,
-    );
-  }
-
   /// Opens the star reader on the tapped star — whatever kind it is, an
   /// empty slot and a pulsar included — with every other member of the
   /// constellation one swipe away.
@@ -277,13 +257,11 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
     if (current == -1 || projects.length < 2) return;
     final next = (current + direction) % projects.length;
     final nextProject = projects[next < 0 ? next + projects.length : next];
-    final sameWatermark = _watermarkKind ==
-        _watermarkKindForProject(nextProject);
     setState(() {
-      if (sameWatermark) {
-        _watermarkPulse++;
-        _watermarkPulseDirection = direction < 0 ? 1 : -1;
-      }
+      // The watermark and the swipe hint acknowledge every constellation
+      // change together, even if this project's light state also changes.
+      _watermarkPulse++;
+      _watermarkPulseDirection = direction < 0 ? 1 : -1;
       _project = nextProject;
       _framed = false;
       _fitScale = null;
@@ -565,16 +543,21 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                             },
                           ),
                   ),
+                  // The swipe affordance floats above the map rather than
+                  // occupying a separate page strip, so its transparency
+                  // reveals the constellation beneath it.
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 20,
+                    child: _ConstellationSwipeBar(
+                      onPrevious: () => _moveBy(-1),
+                      onNext: () => _moveBy(1),
+                      pulse: _watermarkPulse,
+                      pulseDirection: _watermarkPulseDirection,
+                    ),
+                  ),
                 ],
-              ),
-            ),
-            Padding(
-              // Keep the navigation affordance above the dock's upward
-              // shadow, so it belongs to the page rather than the dock.
-              padding: const EdgeInsets.only(bottom: 44),
-              child: _ConstellationSwipeBar(
-                onPrevious: () => _moveBy(-1),
-                onNext: () => _moveBy(1),
               ),
             ),
             Container(
@@ -658,22 +641,30 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
             SizedBox(
               width: 0,
               height: 0,
-              child: OverflowBox(
-                maxWidth: 400,
-                maxHeight: 600,
-                alignment: Alignment.topLeft,
-                child: Transform.translate(
-                  offset: const Offset(-1000, -1000),
-                  child: RepaintBoundary(
-                    key: _shareKey,
-                    child: SizedBox(
-                      width: 400,
-                      height: 600,
-                      child: ShareableConstellationCard(
-                        project: _project,
-                        shape:
-                            shape ??
-                            const ConstellationShape(points: [], edges: []),
+              // The sharing card has to stay in the render tree so its
+              // RepaintBoundary can be captured. On web, however, an
+              // OverflowBox is allowed to paint beyond this zero-sized
+              // placeholder; the translated card could therefore leak into
+              // the top-left of the constellation screen. Clip it from the
+              // page while preserving the boundary for [_share].
+              child: ClipRect(
+                child: OverflowBox(
+                  maxWidth: 400,
+                  maxHeight: 600,
+                  alignment: Alignment.topLeft,
+                  child: Transform.translate(
+                    offset: const Offset(-1000, -1000),
+                    child: RepaintBoundary(
+                      key: _shareKey,
+                      child: SizedBox(
+                        width: 400,
+                        height: 600,
+                        child: ShareableConstellationCard(
+                          project: _project,
+                          shape:
+                              shape ??
+                              const ConstellationShape(points: [], edges: []),
+                        ),
                       ),
                     ),
                   ),
@@ -691,48 +682,154 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
 
 /// A deliberate, visible navigation zone: map gestures stay with the map,
 /// while only a horizontal swipe here changes which constellation is open.
-class _ConstellationSwipeBar extends StatelessWidget {
+class _ConstellationSwipeBar extends StatefulWidget {
   const _ConstellationSwipeBar({
     required this.onPrevious,
     required this.onNext,
+    required this.pulse,
+    required this.pulseDirection,
   });
 
   final VoidCallback onPrevious;
   final VoidCallback onNext;
+  final int pulse;
+  final double pulseDirection;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    behavior: HitTestBehavior.opaque,
-    onHorizontalDragEnd: (details) {
-      final velocity = details.primaryVelocity ?? 0;
-      if (velocity <= -150) {
-        onNext();
-      } else if (velocity >= 150) {
-        onPrevious();
-      }
-    },
-    child: const SizedBox(
-      height: 52,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.chevron_left, color: Colors.white),
-          SizedBox(width: 20),
-          Icon(Icons.swipe, color: Colors.white, size: 20),
-          SizedBox(width: 8),
-          Text(
-            'SWIPE',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.8,
-            ),
+  State<_ConstellationSwipeBar> createState() =>
+      _ConstellationSwipeBarState();
+}
+
+class _ConstellationSwipeBarState extends State<_ConstellationSwipeBar>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _glide = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 350),
+  );
+
+  @override
+  void didUpdateWidget(_ConstellationSwipeBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.pulse != oldWidget.pulse) _glide.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _glide.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragEnd: (details) {
+        final velocity = details.primaryVelocity ?? 0;
+        if (velocity <= -150) {
+          widget.onNext();
+        } else if (velocity >= 150) {
+          widget.onPrevious();
+        }
+      },
+      child: SizedBox(
+        height: 52,
+        child: AnimatedBuilder(
+          animation: _glide,
+          builder: (context, child) {
+            final amount =
+                Curves.easeInOut.transform(_glide.value) * 3.141592653589793;
+            return Transform.translate(
+              offset: Offset(
+                widget.pulseDirection * 7 * math.sin(amount),
+                0,
+              ),
+              child: child,
+            );
+          },
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _OutlinedSwipeIcon(Icons.chevron_left),
+              SizedBox(width: 20),
+              _OutlinedSwipeIcon(Icons.swipe, size: 20),
+              SizedBox(width: 8),
+              _OutlinedSwipeText(),
+              SizedBox(width: 20),
+              _OutlinedSwipeIcon(Icons.chevron_right),
+            ],
           ),
-          SizedBox(width: 20),
-          Icon(Icons.chevron_right, color: Colors.white),
+        ),
+      ),
+    );
+  }
+}
+
+class _OutlinedSwipeIcon extends StatelessWidget {
+  const _OutlinedSwipeIcon(this.icon, {this.size = 24});
+
+  // Matches half of [_OutlinedSwipeText]'s 3 px stroke: every glyph gets a
+  // true 1.5 px outline, rather than the uneven edge left by scaling up a
+  // second icon behind it.
+  static const _outlineThickness = 1.5;
+
+  final IconData icon;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    const outlineOffsets = [
+      Offset(-_outlineThickness, -_outlineThickness),
+      Offset(0, -_outlineThickness),
+      Offset(_outlineThickness, -_outlineThickness),
+      Offset(-_outlineThickness, 0),
+      Offset(_outlineThickness, 0),
+      Offset(-_outlineThickness, _outlineThickness),
+      Offset(0, _outlineThickness),
+      Offset(_outlineThickness, _outlineThickness),
+    ];
+    return SizedBox(
+      width: size + _outlineThickness * 2,
+      height: size + _outlineThickness * 2,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          for (final offset in outlineOffsets)
+            Transform.translate(
+              offset: offset,
+              child: Icon(icon, color: Colors.black, size: size),
+            ),
+          Icon(icon, color: Colors.white, size: size),
         ],
       ),
+    );
+  }
+}
+
+class _OutlinedSwipeText extends StatelessWidget {
+  const _OutlinedSwipeText();
+
+  static const _style = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 1.8,
+  );
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.all(1.5),
+    child: Stack(
+      children: [
+        Text(
+          'SWIPE',
+          style: _style.copyWith(
+            foreground: Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 3
+              ..color = Colors.black,
+          ),
+        ),
+        Text('SWIPE', style: _style.copyWith(color: Colors.white)),
+      ],
     ),
   );
 }

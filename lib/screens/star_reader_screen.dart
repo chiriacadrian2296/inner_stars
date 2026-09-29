@@ -264,14 +264,13 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
         ),
       ],
     );
-    if (photoPath == null || !isWideLayout(context)) {
-      return Stack(
+    final framedPhoto = photoPath == null || !isWideLayout(context)
+        ? Stack(
         key: ValueKey(_index),
         fit: StackFit.expand,
         children: [photo],
-      );
-    }
-    return Stack(
+      )
+        : Stack(
       key: ValueKey(_index),
       fit: StackFit.expand,
       children: [
@@ -280,6 +279,13 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
         ),
         Center(child: AspectRatio(aspectRatio: 9 / 16, child: photo)),
       ],
+    );
+    if (photoPath == null) return framedPhoto;
+    return _ZoomablePhotoLayer(
+      key: ValueKey('zoomable-photo-$_index'),
+      enabled: _photoOnly,
+      onZoomOut: _togglePhotoOnly,
+      child: framedPhoto,
     );
   }
 
@@ -942,19 +948,6 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
               ),
             ),
           ),
-          if (photoPath != null)
-            // Catches the tap that brings everything back once the chrome
-            // below is [IgnorePointer]d in photo-only mode — translucent so
-            // it never steals a tap from an actual button when the chrome
-            // is showing (see the [IgnorePointer] below for why those still
-            // win first).
-            Positioned.fill(
-              key: const ValueKey('reader-photo-tap'),
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: _togglePhotoOnly,
-              ),
-            ),
           IgnorePointer(
             key: const ValueKey('reader-chrome'),
             ignoring: photoPath != null && _photoOnly,
@@ -1252,6 +1245,119 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                 ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Keeps the photo's gallery gestures local to photo-only mode. When the
+/// reader chrome returns, its camera glides back to the cover framing during
+/// the exact same ease-out window as the data fade-in.
+class _ZoomablePhotoLayer extends StatefulWidget {
+  const _ZoomablePhotoLayer({
+    super.key,
+    required this.enabled,
+    required this.onZoomOut,
+    required this.child,
+  });
+
+  final bool enabled;
+  final VoidCallback onZoomOut;
+  final Widget child;
+
+  @override
+  State<_ZoomablePhotoLayer> createState() => _ZoomablePhotoLayerState();
+}
+
+class _ZoomablePhotoLayerState extends State<_ZoomablePhotoLayer>
+    with SingleTickerProviderStateMixin {
+  final _controller = TransformationController();
+  late final AnimationController _resetAnimation = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 220),
+  );
+  Matrix4? _resetFrom;
+  Matrix4? _resetTo;
+  Offset _doubleTapPosition = Offset.zero;
+
+  static const _doubleTapZoom = 2.5;
+  static const _zoomOutThreshold = 1.5;
+
+  @override
+  void initState() {
+    super.initState();
+    _resetAnimation.addListener(() {
+      _controller.value = Matrix4Tween(
+        begin: _resetFrom,
+        end: _resetTo,
+      ).lerp(Curves.easeOut.transform(_resetAnimation.value))!;
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _ZoomablePhotoLayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.enabled && !widget.enabled) _resetToCover();
+  }
+
+  void _resetToCover() {
+    _animateTo(Matrix4.identity());
+  }
+
+  void _animateTo(Matrix4 target) {
+    _resetFrom = Matrix4.copy(_controller.value);
+    _resetTo = target;
+    _resetAnimation.forward(from: 0);
+  }
+
+  void _onDoubleTap() {
+    final currentScale = _controller.value.entry(0, 0);
+    if (currentScale >= _zoomOutThreshold) {
+      // Returning from a closer view is also the deliberate gesture that
+      // brings the reader's data back; a simple tap remains inert here.
+      widget.onZoomOut();
+      return;
+    }
+    final inverse = Matrix4.inverted(_controller.value);
+    final source = MatrixUtils.transformPoint(inverse, _doubleTapPosition);
+    _animateTo(
+      Matrix4.identity()
+        ..translateByDouble(
+          _doubleTapPosition.dx - source.dx * _doubleTapZoom,
+          _doubleTapPosition.dy - source.dy * _doubleTapZoom,
+          0,
+          1,
+        )
+        ..scaleByDouble(_doubleTapZoom, _doubleTapZoom, 1, 1),
+    );
+  }
+
+  @override
+  void dispose() {
+    _resetAnimation.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      // A regular tap intentionally has no effect in photo-only mode. The
+      // detector waits for the double-tap timeout so it can decide whether
+      // to come closer or to reset and reveal the data.
+      onDoubleTapDown: widget.enabled
+          ? (details) => _doubleTapPosition = details.localPosition
+          : null,
+      onDoubleTap: widget.enabled ? _onDoubleTap : null,
+      child: InteractiveViewer(
+        transformationController: _controller,
+        panEnabled: widget.enabled,
+        scaleEnabled: widget.enabled,
+        minScale: 1,
+        maxScale: 4,
+        clipBehavior: Clip.hardEdge,
+        child: widget.child,
       ),
     );
   }

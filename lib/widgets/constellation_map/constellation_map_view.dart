@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +12,6 @@ import '../../theme/app_style.dart';
 import '../constellation_painter.dart';
 import '../intensity_dots.dart';
 import '../photo_image.dart';
-import '../search_result_card.dart' show SearchStarVisual;
 import '../star_glyph.dart';
 import 'constellation_label_layout.dart';
 
@@ -21,9 +21,11 @@ const double _kLabelFontSize = 12;
 // Cards stay part of the same zoom-scaled map, but begin noticeably smaller
 // than the nodes and constellation they annotate. This makes the shape read
 // first at the overview zoom without changing the camera's single scale.
-const double _kMapCardWidth = 160;
-const double _kMapCardHeight = 44;
-const double _kMapCardVisualWidth = 40;
+const double _kMapCardWidth = 124;
+const double _kMapCardHeight = 36;
+// Search cards use a soft radius on a much taller surface. Keep that same
+// visual proportion here rather than making these compact labels pill-shaped.
+const double _kMapCardRadius = 6;
 
 /// The constellation is the map's primary structure: its edges and the
 /// stars' own outlines deliberately retain the strongest white stroke.
@@ -88,7 +90,7 @@ class ConstellationMapView extends StatefulWidget {
 }
 
 class _ConstellationMapViewState extends State<ConstellationMapView>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   // The layout is a function of the zoom (and the stars), not of the pan.
   double? _layoutZoom;
   Object? _layoutStars;
@@ -97,6 +99,8 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
 
   final Map<(int, double), Size> _labelSizes = {};
   Map<int, int> _previousCandidates = const {};
+  LabelLayout? _lockedLayout;
+  double? _layoutReferenceZoom;
 
   /// The map's one visual scale: cards, stars, glows, borders, and both line
   /// families all grow and shrink by this exact same ratio.
@@ -136,6 +140,17 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
   Offset _velocity = Offset.zero;
   Ticker? _inertiaTicker;
   Duration _lastInertiaTick = Duration.zero;
+  late final AnimationController _cameraAnimation = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 260),
+  );
+  double _cameraFromZoom = 1;
+  double _cameraToZoom = 1;
+  Offset _cameraFromPan = Offset.zero;
+  Offset _cameraToPan = Offset.zero;
+  Offset _lastTapPosition = Offset.zero;
+  Offset _lastDoubleTapPosition = Offset.zero;
+  late final Matrix4 _initialTransform;
 
   // Raw pointer state supplements GestureDetector's recognizers: a star tap
   // is only valid for a one-finger interaction from start to finish. A pinch
@@ -144,8 +159,25 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
   bool _gestureUsedMultiplePointers = false;
 
   @override
+  void initState() {
+    super.initState();
+    // The screen frames the shape before creating this map. Keep that exact
+    // camera so a double-tap zoom-out always returns to the centered opening
+    // composition, rather than merely zooming out around the last finger.
+    _initialTransform = Matrix4.copy(widget.transformation.value);
+    _cameraAnimation.addListener(() {
+      final t = Curves.easeOut.transform(_cameraAnimation.value);
+      _apply(
+        lerpDouble(_cameraFromZoom, _cameraToZoom, t)!,
+        Offset.lerp(_cameraFromPan, _cameraToPan, t)!,
+      );
+    });
+  }
+
+  @override
   void dispose() {
     _inertiaTicker?.dispose();
+    _cameraAnimation.dispose();
     super.dispose();
   }
 
@@ -154,6 +186,39 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
     _inertiaTicker?.dispose();
     _inertiaTicker = null;
     _velocity = Offset.zero;
+  }
+
+  /// Gallery-style double tap: below this threshold it comes closer; once
+  /// there, the next double tap returns to the constellation overview.
+  static const _doubleTapZoomFactor = 1.5;
+  static const _doubleTapResetThreshold = 1.25;
+
+  void _animateCameraTo(double zoom, Offset pan) {
+    _stopInertia();
+    _cameraAnimation.stop();
+    _cameraFromZoom = _zoom;
+    _cameraFromPan = _pan;
+    _cameraToZoom = zoom;
+    _cameraToPan = _constrainPan(zoom, pan);
+    _cameraAnimation
+      ..value = 0
+      ..forward(from: 0);
+  }
+
+  void _onDoubleTap(Offset focalPoint) {
+    final zoomingOut = _zoom / widget.fitScale >= _doubleTapResetThreshold;
+    if (zoomingOut) {
+      _animateCameraTo(
+        _initialTransform.entry(0, 0),
+        Offset(_initialTransform.entry(0, 3), _initialTransform.entry(1, 3)),
+      );
+      return;
+    }
+    final targetZoom = (widget.fitScale * _doubleTapZoomFactor)
+        .clamp(_minZoom, _maxZoom)
+        .toDouble();
+    final anchor = (focalPoint - _pan) / _zoom;
+    _animateCameraTo(targetZoom, focalPoint - anchor * targetZoom);
   }
 
   /// Moves the camera to zoom [zoom] and pan [pan], after nudging the pan
@@ -203,6 +268,7 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
 
   void _onScaleStart(ScaleStartDetails details) {
     _stopInertia();
+    _cameraAnimation.stop();
     _startZoom = _zoom;
     _startPan = _pan;
     _startFocal = details.localFocalPoint;
@@ -278,7 +344,23 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
         oldWidget.edges != widget.edges) {
       _layoutStars = null;
       _labelSizes.clear();
+      _lockedLayout = null;
+      _layoutReferenceZoom = null;
     }
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    // A hot reload keeps State alive. The map deliberately freezes its first
+    // composition, but a new label-layout algorithm must be able to compose
+    // a fresh snapshot while it is being tuned in debug.
+    _geometry = null;
+    _layoutZoom = null;
+    _layoutStars = null;
+    _previousCandidates = const {};
+    _lockedLayout = null;
+    _layoutReferenceZoom = null;
   }
 
   @override
@@ -306,9 +388,16 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
               onScaleStart: _onScaleStart,
               onScaleUpdate: _onScaleUpdate,
               onScaleEnd: _onScaleEnd,
-              onTapUp: (details) {
+              onDoubleTapDown: (details) =>
+                  _lastDoubleTapPosition = details.localPosition,
+              onDoubleTap: () => _onDoubleTap(_lastDoubleTapPosition),
+              onTapUp: (details) => _lastTapPosition = details.localPosition,
+              // `onTap`, unlike `onTapUp`, waits for Flutter to rule out a
+              // double tap. A double tap on a star therefore zooms the map
+              // instead of opening that star on its first touch.
+              onTap: () {
                 if (_gestureUsedMultiplePointers) return;
-                final star = _hitTest(details.localPosition);
+                final star = _hitTest(_lastTapPosition);
                 if (star != null) widget.onStarTap(star);
               },
             ),
@@ -405,11 +494,38 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
     // which sit on no slot, never take part.
     final shapeNodes = nodes.where((n) => stars[n.index].slotSequence != null).toList()
       ..sort((a, b) => stars[a.index].slotSequence!.compareTo(stars[b.index].slotSequence!));
+    // The shape, rather than the average of every visible star, defines its
+    // vertical symmetry axis. Pulsars can sit outside the grid and must not
+    // make two genuinely mirrored grid stars look asymmetric.
+    final symmetryAxisX = shapeNodes.isEmpty
+        ? anchor.dx
+        : (shapeNodes
+                    .map((node) => node.center.dx)
+                    .reduce((left, right) => left < right ? left : right) +
+                shapeNodes
+                    .map((node) => node.center.dx)
+                    .reduce((left, right) => left > right ? left : right)) /
+            2;
     final segments = <(Offset, Offset)>[
       for (final (a, b) in widget.edges)
         if (a < shapeNodes.length && b < shapeNodes.length)
           (shapeNodes[a].center, shapeNodes[b].center),
     ];
+    final shapeGrid = _gridForShapeNodes(shapeNodes);
+
+    final lockedLayout = _lockedLayout;
+    final referenceZoom = _layoutReferenceZoom;
+    if (lockedLayout != null && referenceZoom != null) {
+      _layoutZoom = zoom;
+      _layoutStars = widget.stars;
+      return _geometry = _MapGeometry(
+        nodes: nodes,
+        segments: segments,
+        layout: _scaleLayout(lockedLayout, zoom / referenceZoom),
+        uiScale: ui,
+        grid: shapeGrid,
+      );
+    }
 
     final layout = layoutConstellationLabels(
       nodes: [
@@ -429,6 +545,8 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
           : _measureLabel(context, id, _kLabelFontSize * ui * labelScale),
       edges: segments,
       anchor: anchor,
+      symmetryAxisX: symmetryAxisX,
+      grid: shapeGrid,
       previous: _previousCandidates,
       leaderLengthScale: ui,
     );
@@ -436,6 +554,11 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
       for (final entry in layout.placements.entries)
         entry.key: entry.value.candidate,
     };
+    // Keep the first complete composition in map coordinates. Zoom and pan
+    // transform this snapshot as one image rather than running another label
+    // search, so no card can migrate around its own star while exploring.
+    _lockedLayout = layout;
+    _layoutReferenceZoom = zoom;
 
     _layoutZoom = zoom;
     _layoutStars = widget.stars;
@@ -444,6 +567,56 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
       segments: segments,
       layout: layout,
       uiScale: ui,
+      grid: shapeGrid,
+    );
+  }
+
+  /// The rendered graph may contain midpoint stars grown from the editor's
+  /// original edges. Its finest occupied interval is therefore the grid we
+  /// can actually show: every rendered shape star lies on this lattice.
+  LabelGrid? _gridForShapeNodes(List<_MapNode> nodes) {
+    if (nodes.length < 2) return null;
+    final xs = nodes.map((node) => node.center.dx).toSet().toList()..sort();
+    final ys = nodes.map((node) => node.center.dy).toSet().toList()..sort();
+    double? spacing;
+    void readIntervals(List<double> values) {
+      for (var i = 1; i < values.length; i++) {
+        final interval = values[i] - values[i - 1];
+        if (interval <= 0.001) continue;
+        if (spacing == null || interval < spacing!) spacing = interval;
+      }
+    }
+
+    readIntervals(xs);
+    readIntervals(ys);
+    if (spacing == null) return null;
+    return LabelGrid(
+      origin: Offset(xs.first, ys.first),
+      spacing: spacing!,
+    );
+  }
+
+  LabelLayout _scaleLayout(LabelLayout source, double scale) {
+    LabelPlacement scaled(LabelPlacement placement) => LabelPlacement(
+      id: placement.id,
+      rect: Rect.fromLTRB(
+        placement.rect.left * scale,
+        placement.rect.top * scale,
+        placement.rect.right * scale,
+        placement.rect.bottom * scale,
+      ),
+      lineStart: placement.lineStart * scale,
+      lineEnd: placement.lineEnd * scale,
+      horizontal: placement.horizontal,
+      candidate: placement.candidate,
+    );
+    return LabelLayout(
+      placements: {
+        for (final entry in source.placements.entries)
+          entry.key: scaled(entry.value),
+      },
+      labelScale: source.labelScale,
+      overlaps: source.overlaps,
     );
   }
 
@@ -534,6 +707,7 @@ class _MapGeometry {
     required this.segments,
     required this.layout,
     required this.uiScale,
+    required this.grid,
   });
 
   final List<_MapNode> nodes;
@@ -542,6 +716,7 @@ class _MapGeometry {
 
   /// The shared linear scale for cards and line weights.
   final double uiScale;
+  final LabelGrid? grid;
 }
 
 class _MapNode {
@@ -798,7 +973,7 @@ class _StarMapCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colors.nightPanel,
-        borderRadius: BorderRadius.circular(kRadiusCard * scale),
+        borderRadius: BorderRadius.circular(_kMapCardRadius * scale),
         border: Border.all(
           color: typeColor,
           width: kBorderWidth * scale,
@@ -806,24 +981,11 @@ class _StarMapCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          SizedBox(
-            width: _kMapCardVisualWidth * scale,
-            child: FittedBox(
-              fit: BoxFit.contain,
-              child: SizedBox(
-                width: _kMapCardVisualWidth,
-                height: _kMapCardHeight,
-                child: SearchStarVisual(kind: star.kind, pulsarLit: star.lit),
-              ),
-            ),
-          ),
           Expanded(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                6 * scale,
-                1.5 * scale,
-                6 * scale,
-                1.5 * scale,
+              padding: EdgeInsets.symmetric(
+                horizontal: 7 * scale,
+                vertical: scale,
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -834,31 +996,31 @@ class _StarMapCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 5.5 * scale,
+                      fontSize: 5 * scale,
                       letterSpacing: 0.7 * scale,
                       fontWeight: FontWeight.w700,
                       color: typeColor,
                     ),
                   ),
-                  SizedBox(height: 1.5 * scale),
+                  SizedBox(height: scale),
                   Text(
                     star.label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: style.copyWith(
-                      fontSize: 8 * scale,
+                      fontSize: 7.5 * scale,
                       height: 1.1,
                       fontWeight: FontWeight.w700,
                       color: colors.text,
                     ),
                   ),
-                  SizedBox(height: 2 * scale),
+                  SizedBox(height: scale),
                   Text(
                     strings.intensityCount(star.intensity ?? 0),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 6.5 * scale,
+                      fontSize: 6 * scale,
                       fontWeight: FontWeight.w600,
                       color: colors.gold,
                     ),
