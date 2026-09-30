@@ -101,27 +101,6 @@ class _QuickSettingsScreenState extends State<QuickSettingsScreen> {
               children: [
                 StaggeredEntrance(
                   index: 0,
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: Icon(Icons.arrow_back, color: colors.muted),
-                      ),
-                      Text(
-                        strings.quickSettingsEyebrow,
-                        style: TextStyle(
-                          fontSize: 12,
-                          letterSpacing: 1.4,
-                          fontWeight: FontWeight.w600,
-                          color: colors.gold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                StaggeredEntrance(
-                  index: 0,
                   child: Text(
                     strings.quickSettingsTitle,
                     style: TextStyle(

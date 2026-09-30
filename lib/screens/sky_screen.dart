@@ -943,7 +943,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     if (zoom != null) _zoom = zoom;
     _preTutorialCamera = null;
     _preTutorialZoom = null;
-    // A Skip during orders 10-14 (the quick-access fan's own five steps)
+    // A Skip during the quick-access fan's own steps (orders 11-14)
     // would otherwise strand the fan open with nothing left to close it
     // — its own buttons only stay modal *because* the tour is still
     // running (see [_QuickAccessFan]'s own doc comment).
@@ -1796,6 +1796,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
           reflectionAnswerRepository: widget.reflectionAnswerRepository,
           audioSettingsRepository: widget.audioSettingsRepository,
           reminderService: widget.reminderService,
+          audioService: widget.audioService,
         ),
       ),
     );
@@ -1960,13 +1961,12 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// Opens the search/filter popup (three levels of the same sky, minus a
   /// header — see [SkySearchScreen]).
   ///
-  /// A plain back out of the popup — the header's own arrow, or a system
-  /// back gesture — leaves whatever menu opened it open behind it instead:
+  /// A plain back out of the popup leaves whatever menu opened it open behind
+  /// it instead:
   /// most likely a peek that wasn't meant to go anywhere, so landing back
   /// on the menu (rather than the bare Sky, with it silently gone) is what
   /// actually resumes what the user was doing. Only a real pick — a
-  /// card's "take me there" (a [SkyNavigationTarget]) — or the popup's own
-  /// explicit close button (a [SkySearchClosed]) closes that menu, via
+  /// card's "take me there" (a [SkyNavigationTarget]) closes that menu, via
   /// [_closeInvokingMenu]. [onCloseMenu] covers the one invoking menu that
   /// isn't [Navigator]-backed — the quick-access fan (see
   /// [_selectQuickAccess]'s own doc comment for why every one of its
@@ -1993,7 +1993,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       ),
     );
     _refresh();
-    if (result is SkyNavigationTarget || result is SkySearchClosed) {
+    if (result is SkyNavigationTarget) {
       onCloseMenu?.call();
       _closeInvokingMenu();
     }
@@ -4161,13 +4161,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                                   child: _QuickAccessFan(
                                     onQuickSettings: () =>
                                         _selectQuickAccess(_openQuickSettings),
-                                    onSupernovas: () =>
-                                        _selectQuickAccess(_openVisions),
-                                    onConstellations: () => _selectQuickAccess(
-                                      _openNewConstellation,
-                                    ),
-                                    onStars: () =>
-                                        _selectQuickAccess(_openStarForm),
+                                    onStatistics: () =>
+                                        _selectQuickAccess(_openStatistics),
+                                    onNightlight: () =>
+                                        _selectQuickAccess(_openNightlight),
                                     // Not routed through [_selectQuickAccess]
                                     // like every other button here — this
                                     // fan isn't [Navigator]-backed, so
@@ -5056,28 +5053,25 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   }
 }
 
-/// The quick-access mini menu's five buttons, fanned out in a dome above
+/// The quick-access mini menu's four buttons, fanned out in a dome above
 /// [_MenuStarButton] — flutter_expandable_fab's "center fan" arrangement,
 /// built by hand instead of the package itself: [_MenuStarButton] is
 /// already a bespoke shader-drawn control with its own hold-to-charge
 /// gesture, not a real [FloatingActionButton], so there's no host widget
 /// that package could actually expand. Left to right per the request this
-/// was built from: Quick Settings, Supernovas, Constellations, Stars,
-/// Search.
+/// was built from: Quick Settings, Nightlight, Statistics, Sky.
 class _QuickAccessFan extends StatelessWidget {
   const _QuickAccessFan({
     required this.onQuickSettings,
-    required this.onSupernovas,
-    required this.onConstellations,
-    required this.onStars,
+    required this.onStatistics,
+    required this.onNightlight,
     required this.onSearch,
     this.onPressChanged,
   });
 
   final VoidCallback onQuickSettings;
-  final VoidCallback onSupernovas;
-  final VoidCallback onConstellations;
-  final VoidCallback onStars;
+  final VoidCallback onStatistics;
+  final VoidCallback onNightlight;
   final VoidCallback onSearch;
 
   /// Forwarded to every [_QuickAccessButton] below — see
@@ -5086,14 +5080,8 @@ class _QuickAccessFan extends StatelessWidget {
   final ValueChanged<bool>? onPressChanged;
 
   // An ellipse, not a circle: [_radiusX] alone decides how far Quick
-  // Settings/Search reach out to the sides (see [_angleDeg] — they sit at
-  // exactly 180°/0°, so only [_radiusX] ever affects their position, never
-  // [_radiusY]), while [_radiusY] alone decides how high
-  // Supernovas/Constellations/Stars dome up above the main button. Shrunk
-  // from an equal-on-both-axes 92 (itself already pulled in from an even
-  // wider 118) specifically to lower that dome per request, without also
-  // pulling the two side buttons in past where they need to be to clear
-  // the main button horizontally.
+  // All four shortcuts stay in the upper arc, close to the FAB — the same
+  // compact cluster the former area/constellation/star actions used.
   static const _radiusX = 100.0;
   static const _radiusY = 85.0;
   // [_MenuStarButtonState._tapTargetSize] halved — the main button's own
@@ -5104,19 +5092,12 @@ class _QuickAccessFan extends StatelessWidget {
   // button's true center instead of its bottom edge.
   static const _hubLift = 55.0;
   // One angle per button, left to right, measured the way [math.cos]/
-  // [math.sin] expect (0° is straight right, 90° straight up). Quick
-  // Settings and Search sit at exactly 180°/0° — pure horizontal, so
-  // [_radiusY]'s own vertical contribution (`sin(180°)`/`sin(0°)`, both
-  // 0) drops out entirely and their center lands exactly [_hubLift] above
-  // the baseline, the same height as the main button's own true center,
-  // by construction rather than by tuning — "all three centers on one
-  // horizontal line", per request. Supernovas/Constellations/Stars stay
-  // in a tighter 30°-apart cluster around 90° (dead center, straight up),
-  // leaving a wide, visibly empty 60° gap on the arc between that middle
-  // cluster and each side button.
-  static const _angleDeg = [180.0, 120.0, 90.0, 60.0, 0.0];
+  // [math.sin] expect (0° is straight right, 90° straight up). The evenly
+  // stepped upper arc keeps every action above the FAB while giving each
+  // icon the same comfortable visual gap.
+  static const _angleDeg = [142.5, 107.5, 72.5, 37.5];
 
-  /// The tour's own five steps over these buttons (orders 11-15, left to
+  /// The tour's own four steps over these buttons (orders 11-14, left to
   /// right — see [skyTourQuickMenuTapTitle]'s own doc comment for where
   /// they fit in the sequence). Purely informational: `passthrough` stays
   /// off (the default), so the real buttons stay inert — can't actually
@@ -5142,32 +5123,25 @@ class _QuickAccessFan extends StatelessWidget {
             strings.skyTourQuickSettingsHintBody,
           ),
           (
-            Icons.flare,
-            strings.lightYourSkyChooserSupernovaOption,
-            onSupernovas,
-            strings.skyTourSupernovasHintTitle,
-            strings.skyTourSupernovasHintBody,
+            Icons.nights_stay,
+            strings.menuFindYourLight,
+            onNightlight,
+            strings.skyTourNightlightHintTitle,
+            strings.skyTourNightlightHintBody,
           ),
           (
-            Icons.insights,
-            strings.menuNewConstellation,
-            onConstellations,
-            strings.skyTourConstellationsHintTitle,
-            strings.skyTourConstellationsHintBody,
+            Icons.bar_chart_outlined,
+            strings.menuStatistics,
+            onStatistics,
+            strings.skyTourStatisticsHintTitle,
+            strings.skyTourStatisticsHintBody,
           ),
           (
-            Icons.star,
-            strings.menuLightAStar,
-            onStars,
-            strings.skyTourStarsHintTitle,
-            strings.skyTourStarsHintBody,
-          ),
-          (
-            Icons.saved_search,
+            Icons.auto_awesome,
             strings.menuSearch,
             onSearch,
-            strings.skyTourSearchHintTitle,
-            strings.skyTourSearchHintBody,
+            strings.skyTourSkyHintTitle,
+            strings.skyTourSkyHintBody,
           ),
         ];
 

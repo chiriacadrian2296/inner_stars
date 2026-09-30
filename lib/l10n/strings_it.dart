@@ -196,7 +196,7 @@ class StringsIt implements AppStrings {
   @override
   String get menuButtonHoldHint => 'Tieni premuto per aprire';
   @override
-  String get menuSearchSection => 'Cerca';
+  String get menuSearchSection => 'Cielo';
   @override
   String get menuActivitySection => 'Attività';
   @override
@@ -212,7 +212,7 @@ class StringsIt implements AppStrings {
   @override
   String get menuDataSection => 'Dati';
   @override
-  String get menuSearch => 'Cerca Stelle';
+  String get menuSearch => 'Cielo';
   @override
   String get menuStatistics => 'Statistiche';
   @override
@@ -831,26 +831,20 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get skyTourQuickSettingsHintBody =>
       'Ti porta dritto alle impostazioni audio e video.';
   @override
-  String get skyTourSupernovasHintTitle => 'Supernove';
+  String get skyTourStatisticsHintTitle => 'Statistiche';
   @override
-  String get skyTourSupernovasHintBody =>
-      'Ti porta alla supernova di qualsiasi area della vita.';
+  String get skyTourStatisticsHintBody =>
+      'Ti porta ai numeri e ai progressi del tuo cielo.';
   @override
-  String get skyTourConstellationsHintTitle => 'Costellazioni';
+  String get skyTourNightlightHintTitle => 'Nightlight';
   @override
-  String get skyTourConstellationsHintBody =>
-      'Inizia una nuova costellazione da zero.';
+  String get skyTourNightlightHintBody =>
+      'Un posto per ritrovare luce quando ne hai bisogno.';
   @override
-  String get skyTourStarsHintTitle => 'Stelle';
+  String get skyTourSkyHintTitle => 'Cielo';
   @override
-  String get skyTourStarsHintBody =>
-      'Apre il modulo per registrare una vittoria, un obiettivo o '
-      'un\'abitudine.';
-  @override
-  String get skyTourSearchHintTitle => 'Cerca Stelle';
-  @override
-  String get skyTourSearchHintBody =>
-      'Trova qualsiasi supernova, costellazione o stella per nome.';
+  String get skyTourSkyHintBody =>
+      'Trova e aggiungi supernove, costellazioni e stelle.';
   @override
   String get starTourIntroTitle => 'Registrare una vittoria';
   @override

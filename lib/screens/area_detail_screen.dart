@@ -64,12 +64,6 @@ class AreaReflectionsScreen extends StatelessWidget {
     final strings = context.strings;
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        elevation: 20,
-        scrolledUnderElevation: 20,
-        shadowColor: Colors.black,
-        title: Text(area.displayName(strings)),
-      ),
       body: SafeArea(
         child: ResponsiveContent(
           child: Stack(
@@ -85,7 +79,8 @@ class AreaReflectionsScreen extends StatelessWidget {
                       StaggeredEntrance(
                         index: 0,
                         child: AreaSectionHeader(
-                          title: strings.areaReflectionsTitle,
+                          title:
+                              '${strings.areaReflectionsTitle} - ${area.displayName(strings)}',
                           description: strings.reflectionsPageDescription,
                         ),
                       ),
@@ -596,6 +591,8 @@ class _AreaDock extends StatelessWidget {
 }
 
 /// Same compact, phone-width 48 px action geometry as the Star Reader dock.
+/// Area actions intentionally stay icon-only: this dock sits below rich
+/// content, so a white disc behind every action pulls attention away from it.
 class _AreaDockAction extends StatelessWidget {
   const _AreaDockAction({
     required this.icon,
@@ -610,22 +607,12 @@ class _AreaDockAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Tooltip(
     message: label,
-    child: Material(
-      // Area detail screens use the monochrome area palette rather than the
-      // sky's gold actions, matching the rest of the area-specific editors.
-      color: Colors.white,
-      shape: const StadiumBorder(),
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const StadiumBorder(),
-        child: SizedBox(
-          width: 48,
-          height: 48,
-          child: Center(
-            child: Icon(icon, size: 20, color: const Color(0xFF141D30)),
-          ),
-        ),
-      ),
+    child: IconButton(
+      onPressed: onTap,
+      icon: Icon(icon, size: 22, color: Colors.white),
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+      splashRadius: 24,
     ),
   );
 }
@@ -785,7 +772,7 @@ class _SectionButton extends StatelessWidget {
         ),
         onPressed: onPressed,
         icon: const Icon(Icons.edit_outlined, size: 20),
-        label: Text(label),
+        label: Text(label.toUpperCase()),
       ),
     ),
   );

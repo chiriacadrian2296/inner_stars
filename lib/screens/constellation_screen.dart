@@ -834,9 +834,8 @@ class _OutlinedSwipeText extends StatelessWidget {
   );
 }
 
-/// The compact action in the Star Reader dock is exactly a 20 px glyph with
-/// 14 px padding on each side. This uses that same 48 px geometry and gold
-/// material treatment while the constellation supplies its own actions.
+/// The constellation dock keeps actions icon-only and without a disc, so the
+/// map remains the visual focus above it.
 class _ConstellationDockAction extends StatelessWidget {
   const _ConstellationDockAction({
     required this.icon,
@@ -851,20 +850,12 @@ class _ConstellationDockAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Tooltip(
     message: label,
-    child: Material(
-      color: context.colors.gold,
-      shape: const StadiumBorder(),
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const StadiumBorder(),
-        child: SizedBox(
-          width: 48,
-          height: 48,
-          child: Center(
-            child: Icon(icon, size: 20, color: context.colors.onGold),
-          ),
-        ),
-      ),
+    child: IconButton(
+      onPressed: onTap,
+      icon: Icon(icon, size: 22, color: context.colors.gold),
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+      splashRadius: 24,
     ),
   );
 }

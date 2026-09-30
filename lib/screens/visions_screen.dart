@@ -92,49 +92,27 @@ class _VisionsScreenState extends State<VisionsScreen> {
       body: SafeArea(
         left: false,
         right: false,
-        child: ListView(
-          padding: const EdgeInsets.only(top: 8, bottom: 32),
-          children: [
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final contentWidth = constraints.maxWidth
+                .clamp(0.0, kResponsiveContentMaxWidth)
+                .toDouble();
+            final carouselHeight = (contentWidth * 1.15)
+                .clamp(340.0, 560.0)
+                .toDouble();
+            final verticalPadding =
+                ((constraints.maxHeight - carouselHeight - 120) / 2)
+                    .clamp(8.0, 140.0)
+                    .toDouble();
+            return ListView(
+              padding: EdgeInsets.symmetric(vertical: verticalPadding),
+              children: [
             ResponsiveContent(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    StaggeredEntrance(
-                      index: 0,
-                      child: Row(
-                        children: [
-                          IconButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            icon: Icon(Icons.arrow_back, color: colors.muted),
-                          ),
-                          Text(
-                            strings.visionsEyebrow,
-                            style: TextStyle(
-                              fontSize: 12,
-                              letterSpacing: 1.4,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    StaggeredEntrance(
-                      index: 0,
-                      child: Text(
-                        strings.visionsTitle,
-                        style: TextStyle(
-                          fontFamily: kFontStarTitle,
-                          fontSize: 30,
-                          fontWeight: FontWeight.w700,
-                          color: colors.text,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
                     StaggeredEntrance(
                       index: 0,
                       child: Text(
@@ -157,35 +135,37 @@ class _VisionsScreenState extends State<VisionsScreen> {
                 ),
               ),
             ),
-            HintTarget(
-              tour: 'supernova-vision',
-              order: 2,
-              showArrow: true,
-              contentBuilder: appTourStepCard,
-              title: strings.supernovaTourListTitle,
-              description: strings.supernovaTourListBody,
-              child: StaggeredEntrance(
-                index: 1,
-                child: LayoutBuilder(
-                  builder: (context, constraints) => SizedBox(
-                    height: (constraints.maxWidth * 1.15).clamp(340.0, 560.0),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        LoopingHeroCarousel(
-                          freeScroll: _freeScroll,
-                          onTap: (index) => _openArea(LifeArea.values[index]),
-                          children: [
-                            for (final area in LifeArea.values)
-                              _VisionCard(
-                                area: area,
-                                vision: widget.areaVisionRepository.getVision(
-                                  area,
+            ResponsiveContent(
+              child: HintTarget(
+                tour: 'supernova-vision',
+                order: 2,
+                showArrow: true,
+                contentBuilder: appTourStepCard,
+                title: strings.supernovaTourListTitle,
+                description: strings.supernovaTourListBody,
+                child: StaggeredEntrance(
+                  index: 1,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) => SizedBox(
+                      height: (constraints.maxWidth * 1.15).clamp(340.0, 560.0),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          LoopingHeroCarousel(
+                            freeScroll: _freeScroll,
+                            onTap: (index) => _openArea(LifeArea.values[index]),
+                            children: [
+                              for (final area in LifeArea.values)
+                                _VisionCard(
+                                  area: area,
+                                  vision: widget.areaVisionRepository.getVision(
+                                    area,
+                                  ),
                                 ),
-                              ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -236,7 +216,9 @@ class _VisionsScreenState extends State<VisionsScreen> {
                 ),
               ),
             ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );

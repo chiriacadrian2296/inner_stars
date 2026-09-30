@@ -122,7 +122,11 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
         elevation: litElevation,
         shadowColor: palette.gold.withValues(alpha: 0.55),
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
-        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+          letterSpacing: 1.8,
+        ),
         shape: const StadiumBorder(),
       ),
     ),
@@ -132,7 +136,11 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
         disabledForegroundColor: palette.muted,
         side: BorderSide(color: palette.gold, width: kBorderWidthActive),
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
-        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+          letterSpacing: 1.8,
+        ),
         shape: const StadiumBorder(),
       ),
     ),
@@ -140,7 +148,11 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
       style: TextButton.styleFrom(
         foregroundColor: palette.gold,
         disabledForegroundColor: palette.muted,
-        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+          letterSpacing: 1.8,
+        ),
         shape: const StadiumBorder(),
       ),
     ),

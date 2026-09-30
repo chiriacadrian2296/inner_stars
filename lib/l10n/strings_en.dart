@@ -195,7 +195,7 @@ class StringsEn implements AppStrings {
   @override
   String get menuButtonHoldHint => 'Hold to open';
   @override
-  String get menuSearchSection => 'Search';
+  String get menuSearchSection => 'Sky';
   @override
   String get menuActivitySection => 'Activity';
   @override
@@ -211,7 +211,7 @@ class StringsEn implements AppStrings {
   @override
   String get menuDataSection => 'Data';
   @override
-  String get menuSearch => 'Search Stars';
+  String get menuSearch => 'Sky';
   @override
   String get menuStatistics => 'Statistics';
   @override
@@ -825,25 +825,20 @@ My contribution meets a real need and is something I can sustain.
   String get skyTourQuickSettingsHintBody =>
       'Jumps straight to sound and display settings.';
   @override
-  String get skyTourSupernovasHintTitle => 'Supernovas';
+  String get skyTourStatisticsHintTitle => 'Statistics';
   @override
-  String get skyTourSupernovasHintBody =>
-      'Takes you to any life area\'s own supernova.';
+  String get skyTourStatisticsHintBody =>
+      'Takes you to your sky\'s numbers and progress.';
   @override
-  String get skyTourConstellationsHintTitle => 'Constellations';
+  String get skyTourNightlightHintTitle => 'Nightlight';
   @override
-  String get skyTourConstellationsHintBody =>
-      'Starts a brand-new constellation from scratch.';
+  String get skyTourNightlightHintBody =>
+      'A place to find light whenever you need it.';
   @override
-  String get skyTourStarsHintTitle => 'Stars';
+  String get skyTourSkyHintTitle => 'Sky';
   @override
-  String get skyTourStarsHintBody =>
-      'Opens the form to record a win, a goal, or a habit.';
-  @override
-  String get skyTourSearchHintTitle => 'Search Stars';
-  @override
-  String get skyTourSearchHintBody =>
-      'Finds any supernova, constellation, or star by name.';
+  String get skyTourSkyHintBody =>
+      'Find and add supernovas, constellations, and stars.';
   @override
   String get starTourIntroTitle => 'Recording a victory';
   @override

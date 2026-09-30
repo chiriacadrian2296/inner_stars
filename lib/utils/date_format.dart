@@ -1,11 +1,14 @@
 import '../l10n/app_strings.dart';
 
-/// Formats a date as e.g. "26 Aug 2026", using [strings]' localized month
-/// abbreviations.
+/// Formats a date using [strings]' localized month abbreviations. The current
+/// year is implied, so it is omitted (e.g. "26 Aug"); other years remain
+/// explicit (e.g. "26 Aug 2026").
 String formatDisplayDate(DateTime date, AppStrings strings) {
   final day = date.day.toString().padLeft(2, '0');
   final month = strings.monthAbbreviations[date.month - 1];
-  return '$day $month ${date.year}';
+  return date.year == DateTime.now().year
+      ? '$day $month'
+      : '$day $month ${date.year}';
 }
 
 /// Formats a date as e.g. "15/06" — day/month only, no year, both numeric

@@ -55,7 +55,7 @@ class PillActionButton extends StatelessWidget {
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
-                  label,
+                  label.toUpperCase(),
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: foreground,
@@ -123,7 +123,7 @@ class SaveActionButton extends StatelessWidget {
                 Icon(icon, color: foreground, size: 20),
                 const SizedBox(width: 10),
                 Text(
-                  label,
+                  label.toUpperCase(),
                   style: TextStyle(
                     color: foreground,
                     fontWeight: FontWeight.w600,

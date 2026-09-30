@@ -592,14 +592,24 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        content: Text(
-          strings.cannotSaveMissingInfo,
-          style: TextStyle(color: colors.text),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              strings.cannotSaveMissingInfo,
+              style: TextStyle(color: colors.text),
+            ),
+            const SizedBox(height: 16),
+            const FieldRequirementLegend(),
+          ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(strings.gotIt, style: TextStyle(color: colors.gold)),
+            child: Text(
+              strings.gotIt.toUpperCase(),
+              style: TextStyle(color: colors.gold),
+            ),
           ),
         ],
       ),
@@ -621,29 +631,6 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
               children: [
                 StaggeredEntrance(
                   index: 0,
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: _handleBack,
-                        icon: Icon(Icons.arrow_back, color: colors.muted),
-                      ),
-                      Text(
-                        widget.existingProject == null
-                            ? strings.newProjectEyebrow
-                            : strings.editStarEyebrow,
-                        style: TextStyle(
-                          fontSize: 12,
-                          letterSpacing: 1.4,
-                          fontWeight: FontWeight.w600,
-                          color: colors.gold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                StaggeredEntrance(
-                  index: 0,
                   child: Text(
                     widget.existingProject == null
                         ? strings.newProjectQuestion
@@ -662,19 +649,6 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                   title: strings.constellationTourIntroTitle,
                   description: strings.constellationTourIntroBody,
                 ),
-                HintTarget(
-                  tour: 'constellation-form',
-                  order: 2,
-                  showArrow: true,
-                  contentBuilder: appTourStepCard,
-                  title: strings.constellationTourLegendTitle,
-                  description: strings.constellationTourLegendBody,
-                  child: StaggeredEntrance(
-                    index: 1,
-                    child: const FieldRequirementLegend(),
-                  ),
-                ),
-                const SizedBox(height: 16),
                 if (widget.presetArea == null)
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,

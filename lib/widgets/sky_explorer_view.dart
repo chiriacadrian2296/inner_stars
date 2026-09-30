@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 
+import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:hint_kit/hint_kit.dart';
@@ -30,6 +31,7 @@ import '../screens/new_project_screen.dart';
 import '../screens/star_form_screen.dart';
 import '../screens/star_reader_screen.dart';
 import '../screens/vision_editor_screen.dart';
+import '../screens/visions_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../theme/life_area_theme.dart';
@@ -42,6 +44,7 @@ import '../utils/habit_stats.dart';
 import '../utils/page_settled.dart';
 import '../utils/responsive.dart';
 import 'animated_presence.dart';
+import 'app_action_disc.dart';
 import 'app_field.dart';
 import 'area_filter_sheet.dart';
 import 'date_range_filter_sheet.dart';
@@ -152,8 +155,38 @@ class SkyExplorerView extends StatefulWidget {
   State<SkyExplorerView> createState() => _SkyExplorerViewState();
 }
 
-class _SkyExplorerViewState extends State<SkyExplorerView> {
+class _SkyExplorerViewState extends State<SkyExplorerView>
+    with SingleTickerProviderStateMixin {
   _SkyMode _mode = _SkyMode.supernovas;
+  bool _modeReverse = false;
+  late final _modeAnimation = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 340),
+    value: 1,
+  );
+
+  void _selectMode(_SkyMode mode) {
+    if (mode == _mode) return;
+    _cardMenuController.closeAll();
+    setState(() {
+      _modeReverse = mode.index < _mode.index;
+      _mode = mode;
+      _modeEpoch++;
+    });
+    _modeAnimation.forward(from: 0);
+  }
+
+  /// Moves only one step in the same sequence as the segmented switch:
+  /// Areas ↔ Constellations ↔ Stars.
+  void _swipeMode(double horizontalVelocity) {
+    const minimumVelocity = 180.0;
+    if (horizontalVelocity.abs() < minimumVelocity) return;
+    final direction = horizontalVelocity.isNegative ? 1 : -1;
+    final rawIndex = _mode.index + direction;
+    if (rawIndex < 0 || rawIndex >= _SkyMode.values.length) return;
+    final nextIndex = rawIndex;
+    _selectMode(_SkyMode.values[nextIndex]);
+  }
 
   /// Bumped only when the person picks a mode themselves (never by
   /// [_syncModeToTour]), so the filter buttons that swap in place replay
@@ -347,6 +380,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
 
   @override
   void dispose() {
+    _modeAnimation.dispose();
     _queryController.dispose();
     _cardMenuController.dispose();
     super.dispose();
@@ -434,6 +468,97 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
     );
     if (mounted) setState(() {});
   }
+
+  /// The search-level creation route deliberately has no area or
+  /// constellation preselected: this is the one place that sees the whole
+  /// sky, so the form's picker is the right place to choose where the new
+  /// star belongs.
+  Future<void> _createStar() async {
+    final result = await Navigator.of(context).push<Object>(
+      MaterialPageRoute(
+        builder: (_) => StarFormScreen(
+          projectRepository: widget.projectRepository,
+          starsShapeRepository: widget.starsShapeRepository,
+        ),
+      ),
+    );
+    if (result is! StarFormResult) return;
+
+    if (result.kind == StarKind.pulsar) {
+      await widget.habitRepository.add(
+        title: result.title,
+        description: result.description,
+        projectId: result.projectId,
+        intensity: result.intensity ?? 3,
+        frequency: result.habitFrequency ?? HabitFrequency.daily,
+        targetPerPeriod: result.habitTargetPerPeriod ?? 1,
+        reminderHour: result.reminderHour,
+        reminderMinute: result.reminderMinute,
+      );
+    } else {
+      await widget.starRepository.add(
+        title: result.title,
+        description: result.description,
+        projectId: result.projectId,
+        slotSequence: result.slotSequence,
+        targetDate: result.targetDate,
+        achievedDate: result.achievedDate,
+        intensity: result.intensity,
+        photoPath: result.photoPath,
+      );
+    }
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _createConstellation() async {
+    final shapes = await StarsShapeRepository.create();
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Theme(
+          data: buildLifeAreaTheme(),
+          child: NewProjectScreen(
+            projectRepository: widget.projectRepository,
+            starsShapeRepository: shapes,
+          ),
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _manageAreas() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => VisionsScreen(
+          areaVisionRepository: widget.areaVisionRepository,
+          reflectionAnswerRepository: widget.reflectionAnswerRepository,
+          projectRepository: widget.projectRepository,
+          starRepository: widget.starRepository,
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
+  }
+
+  ({IconData icon, String tooltip, VoidCallback onPressed}) get _modeAction =>
+      switch (_mode) {
+        _SkyMode.stars => (
+          icon: Icons.star,
+          tooltip: 'Aggiungi stella',
+          onPressed: _createStar,
+        ),
+        _SkyMode.constellations => (
+          icon: Icons.insights,
+          tooltip: 'Aggiungi costellazione',
+          onPressed: _createConstellation,
+        ),
+        _SkyMode.supernovas => (
+          icon: Icons.flare,
+          tooltip: 'Gestisci aree',
+          onPressed: _manageAreas,
+        ),
+      };
 
   Future<void> _openAreaReflections(LifeArea area) => Navigator.of(context)
       .push(
@@ -1206,9 +1331,15 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
         ? _filteredEntries
         : const <_SkyEntry>[];
 
-    return Container(
-      color: colors.night,
-      child: Column(
+    final action = _modeAction;
+    return GestureDetector(
+      onHorizontalDragEnd: (details) =>
+          _swipeMode(details.velocity.pixelsPerSecond.dx),
+      child: Stack(
+        children: [
+        Container(
+          color: colors.night,
+          child: Column(
         children: [
           // Only the fixed header chrome is width-capped here — the
           // Expanded list below stays full width so its own scrollbar
@@ -1235,31 +1366,28 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                     description: strings.searchTourModeBody,
                     child: StaggeredEntrance(
                       index: 1,
-                      child: SegmentedButton<_SkyMode>(
-                        showSelectedIcon: false,
-                        segments: const [
-                          ButtonSegment(
-                            value: _SkyMode.supernovas,
-                            icon: Icon(Icons.flare, size: 20),
+                      child: AnimatedToggleSwitch<_SkyMode>.rolling(
+                        current: _mode,
+                        values: _SkyMode.values,
+                        onChanged: _selectMode,
+                        iconBuilder: (value, size) => Icon(
+                          switch (value) {
+                            _SkyMode.supernovas => Icons.flare,
+                            _SkyMode.constellations => Icons.insights,
+                            _SkyMode.stars => Icons.star,
+                          },
+                          size: 20,
+                          color: value == _mode ? colors.night : colors.muted,
+                        ),
+                        style: ToggleStyle(
+                          backgroundColor: colors.nightPanel,
+                          indicatorColor: colors.gold,
+                          borderColor: colors.nightBorder,
+                          borderRadius: BorderRadius.circular(kRadiusField),
+                          indicatorBorderRadius: BorderRadius.circular(
+                            kRadiusField,
                           ),
-                          ButtonSegment(
-                            value: _SkyMode.constellations,
-                            icon: Icon(Icons.insights, size: 20),
-                          ),
-                          ButtonSegment(
-                            value: _SkyMode.stars,
-                            icon: Icon(Icons.star, size: 20),
-                          ),
-                        ],
-                        selected: {_mode},
-                        onSelectionChanged: (selection) {
-                          final mode = selection.first;
-                          _cardMenuController.closeAll();
-                          setState(() {
-                            _mode = mode;
-                            _modeEpoch++;
-                          });
-                        },
+                        ),
                       ),
                     ),
                   ),
@@ -1401,14 +1529,29 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
             ),
           ),
           Expanded(
-            child: NotificationListener<ScrollNotification>(
-              onNotification: (notification) {
+            child: FadeTransition(
+              opacity: CurvedAnimation(
+                parent: _modeAnimation,
+                curve: Curves.easeOut,
+              ),
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: Offset(_modeReverse ? -0.12 : 0.12, 0),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(
+                    parent: _modeAnimation,
+                    curve: Curves.easeOutCubic,
+                  ),
+                ),
+                child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
                 if (notification is ScrollStartNotification) {
                   _cardMenuController.closeAll();
                 }
                 return false;
               },
-              child: switch (_mode) {
+                child: switch (_mode) {
                 // A plain top-flowing ListView, like Constellations/Stars
                 // below — deliberately not the old LayoutBuilder +
                 // full-height ConstrainedBox + Column approach, which forced
@@ -1527,7 +1670,59 @@ class _SkyExplorerViewState extends State<SkyExplorerView> {
                 ),
               },
             ),
+              ),
+            ),
           ),
+        ],
+          ),
+        ),
+        Positioned(
+          right: 20,
+          bottom: 20,
+          child: SafeArea(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              switchInCurve: Curves.easeOutBack,
+              switchOutCurve: Curves.easeOut,
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: RotationTransition(
+                  turns: Tween<double>(
+                    begin: _modeReverse ? 0.12 : -0.12,
+                    end: 0,
+                  ).animate(animation),
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.84, end: 1).animate(animation),
+                    child: child,
+                  ),
+                ),
+              ),
+              child: TweenAnimationBuilder<double>(
+                key: ValueKey('sky-fab-${_mode.name}'),
+                tween: Tween(begin: 1, end: 0),
+                duration: const Duration(milliseconds: 420),
+                curve: Curves.easeOutCubic,
+                builder: (context, glow, child) => DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: goldGlow(
+                      colors,
+                      strength: 0.55 * glow,
+                      size: 64,
+                    ),
+                  ),
+                  child: child,
+                ),
+                child: AppActionDisc(
+                  icon: action.icon,
+                  onPressed: action.onPressed,
+                  heroTag: 'sky-search-${_mode.name}-action',
+                  tooltip: action.tooltip,
+                ),
+              ),
+            ),
+          ),
+        ),
         ],
       ),
     );
@@ -1572,9 +1767,13 @@ class _AreaCard extends StatelessWidget {
       ),
       content: SearchCardTextContent(
         title: area.displayName(strings),
-        primary:
-            '${strings.areaConstellationsStatLabel}: $constellationCount · '
-            '${strings.areaStarsStatLabel}: $starCount',
+        metrics: [
+          SearchCardMetric(
+            icon: Icons.insights_outlined,
+            value: '$constellationCount',
+          ),
+          SearchCardMetric(icon: Icons.star_outline_rounded, value: '$starCount'),
+        ],
       ),
       actions: [
         SearchCardAction(
@@ -2122,6 +2321,7 @@ class _SearchStarCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = context.strings;
+    final colors = context.colors;
     final kind = entry.kind;
     final description = entry.description;
     final normalizedQuery = query.trim().toLowerCase();
@@ -2129,20 +2329,38 @@ class _SearchStarCard extends StatelessWidget {
         normalizedQuery.isNotEmpty &&
         (description?.toLowerCase().contains(normalizedQuery) ?? false);
     final deadDate = entry.star?.deadDate ?? entry.habit?.deadDate;
-    final primary = switch (kind) {
-      StarKind.lit => strings.intensityCount(entry.star!.intensity ?? 0),
-      StarKind.unlit =>
-        entry.star!.targetDate == null
-            ? strings.noTargetDateLabel
-            : '${strings.targetDateBadgeLabel} '
-                  '${formatDisplayDate(entry.star!.targetDate!, strings)}',
-      StarKind.pulsar => '${strings.streakBadgeLabel} $currentStreak',
-      StarKind.dead =>
-        deadDate == null
-            ? strings.noDeadDateLabel
-            : '${strings.deadDateBadgeLabel} '
-                  '${formatDisplayDate(deadDate, strings)}',
-      StarKind.nascent => kind.label(strings),
+    final metrics = switch (kind) {
+      StarKind.lit => [
+        SearchCardMetric(
+          icon: Icons.bolt_rounded,
+          value: '${entry.star!.intensity ?? 0}',
+        ),
+        if (entry.star!.photoPath != null)
+          const SearchCardMetric(icon: Icons.photo_camera_rounded),
+      ],
+      StarKind.unlit => [
+        SearchCardMetric(
+          icon: Icons.calendar_month_rounded,
+          value: entry.star!.targetDate == null
+              ? '—'
+              : formatDisplayDate(entry.star!.targetDate!, strings),
+          color: entry.star!.targetDate == null ? colors.starUnlit : null,
+        ),
+      ],
+      StarKind.pulsar => [
+        SearchCardMetric(
+          icon: Icons.local_fire_department_rounded,
+          value: '$currentStreak',
+          color: pulsarLit ? null : colors.starUnlit,
+        ),
+      ],
+      StarKind.dead => [
+        SearchCardMetric(
+          icon: Icons.cancel_outlined,
+          value: deadDate == null ? '—' : formatDisplayDate(deadDate, strings),
+        ),
+      ],
+      StarKind.nascent => const [SearchCardMetric(icon: Icons.star_outline)],
     };
     final eyebrow = kind == StarKind.dead && entry.habit != null
         ? '${kind.label(strings)} · ${strings.formerPulsarLabel}'
@@ -2195,7 +2413,7 @@ class _SearchStarCard extends StatelessWidget {
             : '${project!.area.displayName(strings)} → ${project!.name}',
         description: descriptionMatched ? description : null,
         descriptionMatched: descriptionMatched,
-        primary: primary,
+        metrics: metrics,
       ),
       actions: actions,
     );
@@ -2244,9 +2462,13 @@ class _ProjectCard extends StatelessWidget {
       content: SearchCardTextContent(
         title: project.name,
         breadcrumb: project.area.displayName(strings),
-        primary:
-            '${strings.starsCount(starCount)} · '
-            '${strings.unlitStarsBadge(unlitStars)}',
+        metrics: [
+          SearchCardMetric(icon: Icons.star_rounded, value: '$starCount'),
+          SearchCardMetric(
+            icon: Icons.star_outline_rounded,
+            value: '$unlitStars',
+          ),
+        ],
       ),
       actions: [
         SearchCardAction(

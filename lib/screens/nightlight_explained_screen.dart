@@ -131,16 +131,6 @@ class _NightlightExplainedScreenState extends State<NightlightExplainedScreen>
                   ResponsiveContent(
                     child: Row(
                       children: [
-                        StaggeredEntrance(
-                          index: 0,
-                          child: IconButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            icon: const Icon(
-                              Icons.arrow_back,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
                         const Spacer(),
                         StaggeredEntrance(
                           index: 0,

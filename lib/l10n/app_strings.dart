@@ -280,7 +280,7 @@ abstract class AppStrings {
   // quick-access mini menu (orders 10-15) — see `_openMenuModal`/
   // `_QuickAccessFan` in `sky_screen.dart`. Order 9 shows while the full
   // menu modal from order 8 is open, and waits for it to actually close
-  // (any of the three ways) rather than a Next tap. Orders 11-15 are
+  // (any of the three ways) rather than a Next tap. Orders 11-14 are
   // purely informational — the real buttons stay modal (not
   // `passthrough`) until the tour finishes, so a Next tap is what moves
   // each one along (never Skip — this tour never offers one, at any
@@ -292,14 +292,12 @@ abstract class AppStrings {
   String get skyTourQuickMenuTapBody;
   String get skyTourQuickSettingsHintTitle;
   String get skyTourQuickSettingsHintBody;
-  String get skyTourSupernovasHintTitle;
-  String get skyTourSupernovasHintBody;
-  String get skyTourConstellationsHintTitle;
-  String get skyTourConstellationsHintBody;
-  String get skyTourStarsHintTitle;
-  String get skyTourStarsHintBody;
-  String get skyTourSearchHintTitle;
-  String get skyTourSearchHintBody;
+  String get skyTourStatisticsHintTitle;
+  String get skyTourStatisticsHintBody;
+  String get skyTourNightlightHintTitle;
+  String get skyTourNightlightHintBody;
+  String get skyTourSkyHintTitle;
+  String get skyTourSkyHintBody;
 
   // "star-form" tour (`lib/tutorials/`) — the whole star form, every
   // creatable kind (lit victory, unlit goal, pulsar habit).

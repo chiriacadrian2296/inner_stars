@@ -203,7 +203,7 @@ class SearchCardTextContent extends StatelessWidget {
   const SearchCardTextContent({
     super.key,
     required this.title,
-    required this.primary,
+    required this.metrics,
     this.eyebrow,
     this.eyebrowColor,
     this.breadcrumb,
@@ -217,7 +217,7 @@ class SearchCardTextContent extends StatelessWidget {
   final String? breadcrumb;
   final String? description;
   final bool descriptionMatched;
-  final String primary;
+  final List<SearchCardMetric> metrics;
 
   @override
   Widget build(BuildContext context) {
@@ -276,14 +276,60 @@ class SearchCardTextContent extends StatelessWidget {
         ],
         if (!descriptionMatched) ...[
           const SizedBox(height: 6),
+          Wrap(
+            spacing: 14,
+            runSpacing: 4,
+            children: [for (final metric in metrics) _SearchCardMetric(metric)],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// A compact, visual-first fact on a search card. A photo needs only its
+/// gold glyph; intensity uses the same gold disc/bolt language as the Sky.
+class SearchCardMetric {
+  const SearchCardMetric({
+    required this.icon,
+    this.value,
+    this.color,
+  });
+
+  final IconData icon;
+  final String? value;
+
+  /// Defaults to gold, but a metric can opt into its star kind's own
+  /// color — for example an unlit goal without a date and an unlit habit.
+  final Color? color;
+}
+
+class _SearchCardMetric extends StatelessWidget {
+  const _SearchCardMetric(this.metric);
+
+  final SearchCardMetric metric;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final color = metric.color ?? colors.gold;
+    final icon = Icon(
+      metric.icon,
+      size: 14,
+      color: color,
+    );
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        icon,
+        if (metric.value != null) ...[
+          const SizedBox(width: 2),
           Text(
-            primary,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            metric.value!,
             style: TextStyle(
               fontSize: 11.5,
-              fontWeight: FontWeight.w600,
-              color: colors.gold,
+              fontWeight: FontWeight.w700,
+              color: color,
             ),
           ),
         ],
@@ -519,8 +565,12 @@ class _SearchQuickMenuToggle extends StatelessWidget {
               color: isOpen ? AppColors.dark.gold : colors.night,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: AppColors.dark.gold,
-                width: 1,
+                // The drawer trigger belongs to its card rather than being
+                // a primary action itself, so it keeps the card's quiet
+                // navy outline. Its gold icon/fill still communicates the
+                // open state without pulling focus from the result.
+                color: colors.nightBorder,
+                width: kBorderWidth,
               ),
             ),
             child: AnimatedRotation(
@@ -530,7 +580,7 @@ class _SearchQuickMenuToggle extends StatelessWidget {
               child: Icon(
                 Icons.more_vert_rounded,
                 size: 18,
-                color: isOpen ? colors.night : AppColors.dark.gold,
+                color: isOpen ? colors.night : colors.muted,
               ),
             ),
           ),

@@ -123,14 +123,13 @@ class _NightlightGateScreenState extends State<NightlightGateScreen>
                   ResponsiveContent(
                     child: Row(
                       children: [
+                        const Spacer(),
                         StaggeredEntrance(
                           index: 0,
                           child: IconButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            icon: const Icon(
-                              Icons.arrow_back,
-                              color: Colors.white,
-                            ),
+                            onPressed: () => Navigator.of(context)
+                                .popUntil((route) => route.isFirst),
+                            icon: const Icon(Icons.close, color: Colors.white),
                           ),
                         ),
                       ],

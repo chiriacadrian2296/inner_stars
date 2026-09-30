@@ -133,18 +133,28 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
           context,
           Scaffold(
             backgroundColor: Colors.black,
-            appBar: AppBar(
-              title: Text(context.strings.moodboardTitle),
-              actions: [
-                if (item.kind == MoodboardKind.quote)
-                  IconButton(
-                    tooltip: context.strings.moodboardEdit,
-                    onPressed: () => Navigator.pop(context, 'edit'),
-                    icon: const Icon(Icons.edit_outlined),
+            body: SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: item.kind == MoodboardKind.quote
+                        ? SingleChildScrollView(
+                            child: MoodboardMedia(item: item, expanded: true),
+                          )
+                        : MoodboardMedia(item: item, expanded: true),
                   ),
-                IconButton(
-                  tooltip: context.strings.moodboardRemove,
-                  onPressed: () async {
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (item.kind == MoodboardKind.quote)
+                        IconButton(
+                          tooltip: context.strings.moodboardEdit,
+                          onPressed: () => Navigator.pop(context, 'edit'),
+                          icon: const Icon(Icons.edit_outlined),
+                        ),
+                      IconButton(
+                        tooltip: context.strings.moodboardRemove,
+                        onPressed: () async {
                     final confirmed = await showAppDialog<bool>(
                       context: context,
                       builder: (dialogContext) => AlertDialog(
@@ -168,18 +178,11 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                       Navigator.pop(context, 'delete');
                     }
                   },
-                  icon: const Icon(Icons.delete_outline),
-                ),
-              ],
-            ),
-            body: SafeArea(
-              child: StaggeredEntrance(
-                index: 0,
-                child: item.kind == MoodboardKind.quote
-                    ? SingleChildScrollView(
-                        child: MoodboardMedia(item: item, expanded: true),
-                      )
-                    : MoodboardMedia(item: item, expanded: true),
+                        icon: const Icon(Icons.delete_outline),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
@@ -235,12 +238,6 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
     );
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        elevation: 20,
-        scrolledUnderElevation: 20,
-        shadowColor: Colors.black,
-        title: Text(widget.area.displayName(strings)),
-      ),
       body: SafeArea(
         child: Stack(
           fit: StackFit.expand,
@@ -287,7 +284,8 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                       StaggeredEntrance(
                         index: 0,
                         child: AreaSectionHeader(
-                          title: strings.moodboardTitle,
+                          title:
+                              '${strings.moodboardTitle} - ${widget.area.displayName(strings)}',
                           description: strings.moodboardPageDescription,
                         ),
                       ),

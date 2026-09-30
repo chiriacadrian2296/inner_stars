@@ -196,7 +196,7 @@ class StringsRo implements AppStrings {
   @override
   String get menuButtonHoldHint => 'Ține apăsat pentru a deschide';
   @override
-  String get menuSearchSection => 'Căutare';
+  String get menuSearchSection => 'Cer';
   @override
   String get menuActivitySection => 'Activitate';
   @override
@@ -212,7 +212,7 @@ class StringsRo implements AppStrings {
   @override
   String get menuDataSection => 'Date';
   @override
-  String get menuSearch => 'Caută Stele';
+  String get menuSearch => 'Cer';
   @override
   String get menuStatistics => 'Statistici';
   @override
@@ -831,26 +831,20 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get skyTourQuickSettingsHintBody =>
       'Te duce direct la setările de sunet și afișaj.';
   @override
-  String get skyTourSupernovasHintTitle => 'Supernove';
+  String get skyTourStatisticsHintTitle => 'Statistici';
   @override
-  String get skyTourSupernovasHintBody =>
-      'Te duce la supernova oricărei arii de viață.';
+  String get skyTourStatisticsHintBody =>
+      'Te duce la cifrele și progresul cerului tău.';
   @override
-  String get skyTourConstellationsHintTitle => 'Constelații';
+  String get skyTourNightlightHintTitle => 'Nightlight';
   @override
-  String get skyTourConstellationsHintBody =>
-      'Începe o constelație nouă de la zero.';
+  String get skyTourNightlightHintBody =>
+      'Un loc unde poți găsi lumină când ai nevoie.';
   @override
-  String get skyTourStarsHintTitle => 'Stele';
+  String get skyTourSkyHintTitle => 'Cer';
   @override
-  String get skyTourStarsHintBody =>
-      'Deschide formularul pentru a înregistra o victorie, un obiectiv '
-      'sau un obicei.';
-  @override
-  String get skyTourSearchHintTitle => 'Caută Stele';
-  @override
-  String get skyTourSearchHintBody =>
-      'Găsește orice supernovă, constelație sau stea după nume.';
+  String get skyTourSkyHintBody =>
+      'Găsește și adaugă supernove, constelații și stele.';
   @override
   String get starTourIntroTitle => 'Înregistrarea unei victorii';
   @override

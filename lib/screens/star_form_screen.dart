@@ -486,12 +486,12 @@ class _StarFormScreenState extends State<StarFormScreen> {
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
             style: TextButton.styleFrom(foregroundColor: colors.muted),
-            child: Text(strings.cancel),
+            child: Text(strings.cancel.toUpperCase()),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             style: TextButton.styleFrom(foregroundColor: colors.danger),
-            child: Text(confirmLabel),
+            child: Text(confirmLabel.toUpperCase()),
           ),
         ],
       ),
@@ -535,11 +535,18 @@ class _StarFormScreenState extends State<StarFormScreen> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        content: Text(strings.cannotSaveMissingInfo),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(strings.cannotSaveMissingInfo),
+            const SizedBox(height: 16),
+            const FieldRequirementLegend(),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(strings.gotIt),
+            child: Text(strings.gotIt.toUpperCase()),
           ),
         ],
       ),
@@ -630,7 +637,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     child: TextButton(
                       onPressed: () => Navigator.of(dialogContext).pop(),
                       child: Text(
-                        strings.cancel,
+                        strings.cancel.toUpperCase(),
                         style: TextStyle(color: colors.muted),
                       ),
                     ),
@@ -802,11 +809,18 @@ class _StarFormScreenState extends State<StarFormScreen> {
     StarKind.nascent || StarKind.dead => strings.litDetailsHint,
   };
 
-  String _eyebrow(AppStrings strings) {
-    if (widget.slotSequence != null && !widget.isEditing) {
-      return strings.configureStarEyebrow;
-    }
-    return widget.isEditing ? strings.editStarEyebrow : strings.newStarEyebrow;
+  void _switchKindBySwipe(DragEndDetails details) {
+    const minimumVelocity = 180.0;
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity.abs() < minimumVelocity) return;
+    final kinds = _availableKinds;
+    final currentIndex = kinds.indexOf(_kind);
+    final nextIndex = currentIndex + (velocity.isNegative ? 1 : -1);
+    if (nextIndex < 0 || nextIndex >= kinds.length) return;
+    setState(() {
+      _kind = kinds[nextIndex];
+      _kindEpoch++;
+    });
   }
 
   @override
@@ -816,34 +830,17 @@ class _StarFormScreenState extends State<StarFormScreen> {
     final strings = context.strings;
     final kinds = _availableKinds;
 
-    final scaffold = Scaffold(
-      body: SafeArea(
+    final scaffold = GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onHorizontalDragEnd: _switchKindBySwipe,
+      child: Scaffold(
+        body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
           child: ResponsiveContent(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                StaggeredEntrance(
-                  index: 0,
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: _handleBack,
-                        icon: Icon(Icons.arrow_back, color: colors.muted),
-                      ),
-                      Text(
-                        _eyebrow(strings),
-                        style: TextStyle(
-                          fontSize: 12,
-                          letterSpacing: 1.4,
-                          fontWeight: FontWeight.w600,
-                          color: colors.gold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
                 TourIntroTarget(
                   tour: 'star-form',
                   order: 1,
@@ -903,29 +900,6 @@ class _StarFormScreenState extends State<StarFormScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Sits here rather than at the very top of the form so it
-                // reads as introducing the fields, not the question above
-                // them — right before whichever field ends up first,
-                // whether that's Supernova (below) or, when
-                // [widget.lockedProject] hides both picker fields, Title
-                // further down.
-                HintTarget(
-                  // Keyed — see the Supernova field's own HintTarget below
-                  // for why.
-                  key: const ValueKey('star-form-legend'),
-                  tour: 'star-form',
-                  order: 3,
-                  showArrow: true,
-                  contentBuilder: appTourStepCard,
-                  title: strings.starTourLegendTitle,
-                  description: strings.starTourLegendBody,
-                  child: StaggeredEntrance(
-                    index: 2,
-                    replayKey: _kindEpoch,
-                    child: const FieldRequirementLegend(),
-                  ),
-                ),
-                const SizedBox(height: 16),
                 if (widget.lockedProject == null) ...[
                   HintTarget(
                     // Explicit keys on every HintTarget in this form: with
@@ -1566,6 +1540,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
           ),
         ),
       ),
+    ),
     );
 
     return PopScope(
@@ -1648,8 +1623,19 @@ class _StarKindSwitch extends StatelessWidget {
     // stretch actually needs to work — without this, each `Expanded` sized
     // to its own content, so three meaning texts of different lengths
     // (wrapping to one line here, two there) left the tiles visibly uneven.
-    return IntrinsicHeight(
-      child: Row(
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onHorizontalDragEnd: (details) {
+        const minimumVelocity = 180.0;
+        final velocity = details.primaryVelocity ?? 0;
+        if (velocity.abs() < minimumVelocity) return;
+        final currentIndex = kinds.indexOf(selected);
+        final nextIndex = currentIndex + (velocity.isNegative ? 1 : -1);
+        if (nextIndex < 0 || nextIndex >= kinds.length) return;
+        onChanged(kinds[nextIndex]);
+      },
+      child: IntrinsicHeight(
+        child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (var i = 0; i < kinds.length; i++) ...[
@@ -1719,6 +1705,7 @@ class _StarKindSwitch extends StatelessWidget {
             ),
           ],
         ],
+        ),
       ),
     );
   }

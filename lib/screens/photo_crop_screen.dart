@@ -179,32 +179,10 @@ class _PhotoCropScreenState extends State<PhotoCropScreen> {
 
     return Scaffold(
       backgroundColor: colors.night,
-      appBar: AppBar(
-        backgroundColor: colors.night,
-        foregroundColor: colors.text,
-        title: Text(strings.cropPhotoTitle),
-        actions: [
-          TextButton(
-            onPressed: image == null || _saving ? null : _confirm,
-            child: _saving
-                ? SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: colors.gold),
-                  )
-                : Text(strings.cropPhotoConfirm, style: TextStyle(color: colors.gold, fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-      body: image == null
-          ? Center(child: CircularProgressIndicator(color: colors.gold))
-          // The app bar already clears the top inset; this only needs to
-          // protect the hint text from the bottom system bar — on edge-to-
-          // edge Android (gesture nav or a translucent button bar), body
-          // content otherwise renders underneath it.
-          : SafeArea(
-              top: false,
-              child: Column(
+      body: SafeArea(
+        child: image == null
+            ? Center(child: CircularProgressIndicator(color: colors.gold))
+            : Column(
                 children: [
                   Expanded(
                     child: Center(
@@ -256,9 +234,36 @@ class _PhotoCropScreenState extends State<PhotoCropScreen> {
                       ),
                     ),
                   ),
+                  StaggeredEntrance(
+                    index: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      child: Center(
+                        child: TextButton(
+                          onPressed: _saving ? null : _confirm,
+                          child: _saving
+                              ? SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: colors.gold,
+                                  ),
+                                )
+                              : Text(
+                                  strings.cropPhotoConfirm,
+                                  style: TextStyle(
+                                    color: colors.gold,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
-            ),
+      ),
     );
   }
 }

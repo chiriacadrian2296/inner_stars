@@ -434,11 +434,6 @@ class _NightlightBreathingScreenState extends State<NightlightBreathingScreen>
     );
   }
 
-  void _goBack() {
-    _done = true;
-    Navigator.of(context).pop();
-  }
-
   void _close() {
     _done = true;
     Navigator.of(context).popUntil((route) => route.isFirst);
@@ -512,16 +507,6 @@ class _NightlightBreathingScreenState extends State<NightlightBreathingScreen>
                   ResponsiveContent(
                     child: Row(
                       children: [
-                        StaggeredEntrance(
-                          index: 0,
-                          child: IconButton(
-                            onPressed: _goBack,
-                            icon: const Icon(
-                              Icons.arrow_back,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
                         const Spacer(),
                         StaggeredEntrance(
                           index: 0,

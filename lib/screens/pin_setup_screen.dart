@@ -108,13 +108,6 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
 
     return Scaffold(
       backgroundColor: colors.night,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-      ),
       body: SafeArea(
         child: ResponsiveContent(
           child: Padding(

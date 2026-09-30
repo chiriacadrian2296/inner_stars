@@ -1429,18 +1429,12 @@ class _NavCircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: context.colors.nightlightMuted.withValues(alpha: 0.15),
-      shape: const CircleBorder(),
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: SizedBox(
-          width: 48,
-          height: 48,
-          child: Icon(icon, color: context.colors.text),
-        ),
-      ),
+    return IconButton(
+      onPressed: onTap,
+      icon: Icon(icon, color: context.colors.gold),
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+      splashRadius: 24,
     );
   }
 }
@@ -1515,10 +1509,7 @@ class _TapStrip extends StatelessWidget {
 }
 
 /// The reader's bottom bar between the two arrows: every action available
-/// for the page, all in the same gold pill. With room, each shows its icon
-/// and label; short of it, the first (the kind's own main action) keeps its
-/// label and the rest go icon-only; and if even that doesn't fit, all of
-/// them are icon-only.
+/// for the page, kept icon-only so the content above remains the focus.
 class _ReaderActionBar extends StatelessWidget {
   const _ReaderActionBar({
     super.key,
@@ -1540,60 +1531,23 @@ class _ReaderActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (actions.isEmpty) return const SizedBox.shrink();
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        double labeledWidth(_ReaderAction action) {
-          final painter = TextPainter(
-            text: TextSpan(text: action.label, style: _ActionButton.labelStyle),
-            textDirection: Directionality.of(context),
-            textScaler: MediaQuery.textScalerOf(context),
-            maxLines: 1,
-          )..layout();
-          return _ActionButton.labeledPadding * 2 +
-              _ActionButton.iconSize +
-              _ActionButton.iconGap +
-              painter.width;
-        }
-
-        double total(List<double> widths) =>
-            widths.fold<double>(0, (sum, w) => sum + w) +
-            _gap * (widths.length - 1);
-
-        const compact = _ActionButton.compactWidth;
-        final allLabeled = total([for (final a in actions) labeledWidth(a)]);
-        final firstLabeled = total([
-          labeledWidth(actions.first),
-          for (var i = 1; i < actions.length; i++) compact,
-        ]);
-
-        // Text only where there's room for it: never on a phone, and on a
-        // wide screen as many labels as fit.
-        final labeledCount = !isWideLayout(context)
-            ? 0
-            : allLabeled <= constraints.maxWidth
-            ? actions.length
-            : (firstLabeled <= constraints.maxWidth ? 1 : 0);
-
-        return Wrap(
-          alignment: WrapAlignment.center,
-          spacing: _gap,
-          runSpacing: _gap,
-          children: [
-            for (var i = 0; i < actions.length; i++)
-              entrance(
-                7 + (reverseOrder ? actions.length - 1 - i : i),
-                _ActionButton(
-                  icon: actions[i].icon,
-                  label: actions[i].label,
-                  onTap: actions[i].onTap,
-                  loading: actions[i].loading,
-                  off: actions[i].off,
-                  compact: i >= labeledCount,
-                ),
-              ),
-          ],
-        );
-      },
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: _gap,
+      runSpacing: _gap,
+      children: [
+        for (var i = 0; i < actions.length; i++)
+          entrance(
+            7 + (reverseOrder ? actions.length - 1 - i : i),
+            _ActionButton(
+              icon: actions[i].icon,
+              label: actions[i].label,
+              onTap: actions[i].onTap,
+              loading: actions[i].loading,
+              off: actions[i].off,
+            ),
+          ),
+      ],
     );
   }
 }
@@ -1610,7 +1564,6 @@ class _ActionButton extends StatefulWidget {
     required this.label,
     required this.onTap,
     this.loading = false,
-    this.compact = false,
     this.off = false,
   });
 
@@ -1618,23 +1571,12 @@ class _ActionButton extends StatefulWidget {
   final String label;
   final VoidCallback? onTap;
   final bool loading;
-  final bool compact;
 
   /// Dark and muted instead of gold.
   final bool off;
 
   static const iconSize = 20.0;
-  static const iconGap = 8.0;
-  static const labeledPadding = 16.0;
   static const _verticalPadding = 14.0;
-
-  /// Icon-only: the icon plus the same padding all round.
-  static const compactWidth = iconSize + _verticalPadding * 2;
-
-  static const labelStyle = TextStyle(
-    fontWeight: FontWeight.w700,
-    fontSize: 15,
-  );
 
   // The stats' big star shakes every 5 seconds; this one is meant to be
   // noticed more, so it repeats about twice as often. The first shake comes
@@ -1702,7 +1644,9 @@ class _ActionButtonState extends State<_ActionButton>
   Widget build(BuildContext context) {
     final colors = context.colors;
     final off = widget.off;
-    final foreground = off ? colors.muted : colors.onGold;
+    final foreground = widget.onTap == null && !widget.loading
+        ? colors.muted
+        : colors.gold;
     final Widget leading;
     if (widget.loading) {
       leading = SizedBox(
@@ -1761,42 +1705,17 @@ class _ActionButtonState extends State<_ActionButton>
         size: _ActionButton.iconSize,
       );
     }
-    final fill = off ? colors.nightBorder : colors.gold;
     final pill = Material(
-      color: widget.onTap == null && !widget.loading
-          ? fill.withValues(alpha: 0.4)
-          : fill,
-      shape: const StadiumBorder(),
+      color: Colors.transparent,
       child: InkWell(
         onTap: widget.onTap,
-        customBorder: const StadiumBorder(),
         child: Padding(
-          padding: widget.compact
-              ? const EdgeInsets.all(_ActionButton._verticalPadding)
-              : const EdgeInsets.symmetric(
-                  horizontal: _ActionButton.labeledPadding,
-                  vertical: _ActionButton._verticalPadding,
-                ),
-          child: widget.compact
-              ? leading
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    leading,
-                    const SizedBox(width: _ActionButton.iconGap),
-                    Text(
-                      widget.label,
-                      maxLines: 1,
-                      style: _ActionButton.labelStyle.copyWith(
-                        color: foreground,
-                      ),
-                    ),
-                  ],
-                ),
+          padding: const EdgeInsets.all(_ActionButton._verticalPadding),
+          child: leading,
         ),
       ),
     );
-    return widget.compact ? Tooltip(message: widget.label, child: pill) : pill;
+    return Tooltip(message: widget.label, child: pill);
   }
 }
 

@@ -288,22 +288,6 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
       child: Scaffold(
         resizeToAvoidBottomInset: false,
         backgroundColor: colors.night,
-        appBar: AppBar(
-          elevation: 20,
-          scrolledUnderElevation: 20,
-          shadowColor: Colors.black,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: _leave,
-          ),
-          title: Text(widget.area.displayName(strings)),
-          actions: [
-            TextButton(
-              onPressed: _saving ? null : _save,
-              child: Text(strings.saveChanges),
-            ),
-          ],
-        ),
         body: SafeArea(
           child: ResponsiveContent(
             child: Column(
@@ -314,7 +298,8 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                     child: AreaSectionHeader(
-                      title: strings.visionPageTitle,
+                      title:
+                          '${strings.visionPageTitle} - ${widget.area.displayName(strings)}',
                       description: strings.visionPageDescription,
                     ),
                   ),
@@ -581,6 +566,18 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                         ),
                       ),
                     ],
+                  ),
+                ),
+                StaggeredEntrance(
+                  index: 3,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                    child: Center(
+                      child: TextButton(
+                        onPressed: _saving ? null : _save,
+                        child: Text(strings.saveChanges),
+                      ),
+                    ),
                   ),
                 ),
               ],

@@ -38,6 +38,7 @@ dependencies:
   idb_shim: ^2.9.9
   animations: ^3.0.0
   rive: 0.14.11
+  animated_toggle_switch: ^0.8.7
 
 dev_dependencies:
   flutter_test:

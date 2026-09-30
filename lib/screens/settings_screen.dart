@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:hint_kit/hint_kit.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../data/app_lock_repository.dart';
@@ -17,6 +18,7 @@ import '../data/legacy_constellation_migration.dart';
 import '../data/project_repository.dart';
 import '../data/reflection_answer_repository.dart';
 import '../data/star_repository.dart';
+import '../audio/audio_service.dart';
 import '../debug/seed_data.dart';
 import '../l10n/strings_scope.dart';
 import '../notifications/reminder_service.dart';
@@ -24,12 +26,14 @@ import '../settings/settings_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
+import '../tutorials/tutorial_management.dart' show kAllTourNames;
 import '../utils/app_modals.dart';
 import '../widgets/apk_download_prompt.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
 import 'onboarding_screen.dart';
 import 'pin_setup_screen.dart';
+import 'sound_lab_screen.dart';
 
 /// Parks this screen's "Replay onboarding" debug button — see
 /// `main.dart`'s own `_kShowOnboarding` doc comment for why. Left wired up
@@ -64,6 +68,7 @@ class SettingsScreen extends StatefulWidget {
     required this.reflectionAnswerRepository,
     required this.audioSettingsRepository,
     required this.reminderService,
+    required this.audioService,
   });
 
   final SettingsController settings;
@@ -80,6 +85,7 @@ class SettingsScreen extends StatefulWidget {
   // sound section itself moved to `SoundLabScreen`.
   final AudioSettingsRepository audioSettingsRepository;
   final ReminderService reminderService;
+  final AudioService audioService;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -87,6 +93,39 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _biometricAvailable = false;
+
+  Future<void> _toggleBackgroundPlayback() async {
+    if (widget.audioService.backgroundPaused) {
+      await widget.audioService.resumeBackground();
+    } else {
+      await widget.audioService.pauseBackground();
+    }
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _setBackgroundVolume(double volume) async {
+    await widget.audioService.setBackgroundVolume(volume);
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _replayAllTours(BuildContext context) async {
+    final tour = Tour.read(context);
+    for (final name in kAllTourNames) {
+      await tour.storage.reset(name);
+    }
+    unawaited(tour.start('sky-navigation', force: true));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.strings.replayToursResult)),
+      );
+    }
+  }
+
+  void _openSoundLab() => Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => SoundLabScreen(audioService: widget.audioService),
+    ),
+  );
 
   @override
   void initState() {
@@ -351,30 +390,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   StaggeredEntrance(
                     index: 0,
-                    child: Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          icon: Icon(Icons.arrow_back, color: colors.muted),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          strings.settingsEyebrow,
-                          style: TextStyle(
-                            fontSize: 12,
-                            letterSpacing: 2,
-                            fontWeight: FontWeight.w600,
-                            color: colors.accentDim,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  StaggeredEntrance(
-                    index: 0,
                     child: Text(
                       strings.settingsTitle,
                       style: TextStyle(
@@ -535,6 +550,96 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                   StaggeredEntrance(
                     index: 5,
+                    child: _SectionLabel(strings.quickSettingsAudioSection),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: panelDecoration(colors),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: _toggleBackgroundPlayback,
+                          tooltip: widget.audioService.backgroundPaused
+                              ? strings.playBackgroundTrackAction
+                              : strings.pauseBackgroundTrackAction,
+                          icon: Icon(
+                            widget.audioService.backgroundPaused
+                                ? Icons.play_arrow
+                                : Icons.pause,
+                            color: colors.gold,
+                          ),
+                        ),
+                        Expanded(
+                          child: SliderTheme(
+                            data: SliderTheme.of(context).copyWith(
+                              padding: EdgeInsets.zero,
+                              trackHeight: 4,
+                            ),
+                            child: Slider(
+                              value: widget.audioService.backgroundVolume,
+                              onChanged: _setBackgroundVolume,
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 40,
+                          child: Text(
+                            '${(widget.audioService.backgroundVolume * 100).round()}%',
+                            textAlign: TextAlign.end,
+                            style: TextStyle(fontSize: 12, color: colors.muted),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: _openSoundLab,
+                      icon: const Icon(Icons.graphic_eq, size: 18),
+                      label: Text(strings.quickSettingsOpenSoundLabAction),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+
+                  StaggeredEntrance(
+                    index: 6,
+                    child: _SectionLabel(strings.tutorialsManagementTitle),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    decoration: panelDecoration(colors),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(kRadiusCard),
+                      clipBehavior: Clip.antiAlias,
+                      child: SwitchListTile(
+                        value: widget.settings.tutorialsEnabled,
+                        onChanged: widget.settings.setTutorialsEnabled,
+                        title: Text(
+                          strings.tutorialsEnabledLabel,
+                          style: TextStyle(color: colors.text, fontSize: 14),
+                        ),
+                        subtitle: Text(
+                          strings.tutorialsEnabledDescription,
+                          style: TextStyle(color: colors.muted, fontSize: 12.5),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => _replayAllTours(context),
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: Text(strings.replayToursAction),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+
+                  StaggeredEntrance(
+                    index: 7,
                     child: _SectionLabel(strings.appLockSection),
                   ),
                   const SizedBox(height: 4),
