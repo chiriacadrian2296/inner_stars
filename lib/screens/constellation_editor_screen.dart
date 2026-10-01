@@ -270,10 +270,7 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AppDialog(
-          title: Text(
-            strings.constellationEditorHelpTitle,
-            style: TextStyle(color: colors.text),
-          ),
+          title: Text(strings.constellationEditorHelpTitle),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -706,10 +703,7 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
     final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (dialogContext) => AppDialog(
-        title: Text(
-          strings.discardChangesConfirmTitle,
-          style: TextStyle(color: colors.text),
-        ),
+        title: Text(strings.discardChangesConfirmTitle),
         content: Text(
           strings.discardChangesConfirmBody,
           style: TextStyle(color: colors.muted),
@@ -1795,18 +1789,28 @@ class _NameConstellationDialogState extends State<_NameConstellationDialog> {
     final strings = context.strings;
     final colors = context.colors;
     return AppDialog(
-      title: Text(
-        strings.nameYourConstellationTitle,
-        style: TextStyle(color: colors.text),
-      ),
+      title: Text(strings.nameYourConstellationTitle),
       content: StaggeredEntrance(
         index: 0,
-        child: TextField(
-          controller: _controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.sentences,
-          style: TextStyle(color: colors.text),
-          decoration: InputDecoration(hintText: strings.constellationNameHint),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              strings.nameYourConstellationDescription,
+              style: TextStyle(color: colors.muted),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              textCapitalization: TextCapitalization.sentences,
+              style: TextStyle(color: colors.text),
+              decoration: InputDecoration(
+                hintText: strings.constellationNameHint,
+              ),
+            ),
+          ],
         ),
       ),
       actions: [

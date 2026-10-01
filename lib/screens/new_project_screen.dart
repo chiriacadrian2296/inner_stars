@@ -182,10 +182,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     final discard = await showAppDialog<bool>(
       context: context,
       builder: (dialogContext) => AppDialog(
-        title: Text(
-          strings.discardChangesConfirmTitle,
-          style: TextStyle(color: colors.text),
-        ),
+        title: Text(strings.discardChangesConfirmTitle),
         content: Text(
           strings.discardChangesConfirmBody,
           style: TextStyle(color: colors.muted),
@@ -595,6 +592,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AppDialog(
+        title: Text(strings.cannotSaveTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

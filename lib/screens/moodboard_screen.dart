@@ -80,12 +80,20 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
       context: context,
       builder: (context) => AppDialog(
         title: Text(context.strings.moodboardQuote),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          minLines: 3,
-          maxLines: 8,
-          maxLength: 1000,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(context.strings.moodboardQuoteDescription),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              minLines: 3,
+              maxLines: 8,
+              maxLength: 1000,
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -155,29 +163,15 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                       IconButton(
                         tooltip: context.strings.moodboardRemove,
                         onPressed: () async {
-                          final confirmed = await showAppDialog<bool>(
+                          final confirmed = await showAppConfirmation(
                             context: context,
-                            builder: (dialogContext) => AppDialog(
-                              title: Text(
-                                dialogContext.strings.moodboardRemoveConfirm,
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(dialogContext, false),
-                                  child: Text(dialogContext.strings.cancel),
-                                ),
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(dialogContext, true),
-                                  child: Text(
-                                    dialogContext.strings.moodboardRemove,
-                                  ),
-                                ),
-                              ],
-                            ),
+                            title: context.strings.moodboardRemoveConfirm,
+                            body: context.strings.moodboardRemoveDescription,
+                            cancelLabel: context.strings.cancel,
+                            confirmLabel: context.strings.moodboardRemove,
+                            tone: AppConfirmationTone.destructive,
                           );
-                          if (confirmed == true && mounted) {
+                          if (confirmed && mounted) {
                             Navigator.pop(context, 'delete');
                           }
                         },

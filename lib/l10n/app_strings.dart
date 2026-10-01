@@ -470,6 +470,7 @@ abstract class AppStrings {
   String get constellationsModeLabel;
   String get listModeLabel;
   String get skyModeSupernovas;
+
   /// The mobile "Filtri" trigger's own tooltip/sheet title — collects
   /// [filterAreasAction]/[filterKindAction]/[filterDateRangeAction]/
   /// [sortAction] onto one sheet on narrow layouts (see
@@ -504,6 +505,7 @@ abstract class AppStrings {
   String get sortDirectionDescending;
   String get searchButtonLabel;
   String get takeMeThereAction;
+  String get creationSuccessOpenAction;
   String get searchCardMenuOpenAction;
   String get searchCardMenuCloseAction;
   String get searchCardOpenAction;
@@ -576,6 +578,7 @@ abstract class AppStrings {
   String get deletePointAction;
   String get saveConstellationAction;
   String get nameYourConstellationTitle;
+  String get nameYourConstellationDescription;
   String get constellationNameHint;
   String get constellationEditorGridToggleLabel;
   String get constellationEditorMirrorToggleLabel;
@@ -631,6 +634,8 @@ abstract class AppStrings {
   String get chooseIconTitle;
   String get pickerConfirmAction;
   String get closeAction;
+  String get displaySettingsTitle;
+  String get displaySettingsDescription;
   String get createProject;
   String get newProject;
 
@@ -690,6 +695,7 @@ abstract class AppStrings {
   /// than lit up.
   String get placeThisStarAction;
 
+  String get cannotSaveTitle;
   String get cannotSaveMissingInfo;
   String get gotIt;
   String get deleteStarConfirmTitle;
@@ -891,10 +897,12 @@ abstract class AppStrings {
   String get moodboardAddLabel;
   String get moodboardEmpty;
   String get moodboardQuote;
+  String get moodboardQuoteDescription;
   String get moodboardVideo;
   String get moodboardEdit;
   String get moodboardRemove;
   String get moodboardRemoveConfirm;
+  String get moodboardRemoveDescription;
   String get moodboardSaveError;
   String get moodboardMediaError;
   String get moodboardPlay;

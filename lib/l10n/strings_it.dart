@@ -19,6 +19,9 @@ class StringsIt implements AppStrings {
   @override
   String get moodboardQuote => 'Frase';
   @override
+  String get moodboardQuoteDescription =>
+      'Scrivi una frase breve da aggiungere al moodboard.';
+  @override
   String get moodboardVideo => 'Video';
   @override
   String get moodboardEdit => 'Modifica';
@@ -26,6 +29,9 @@ class StringsIt implements AppStrings {
   String get moodboardRemove => 'Rimuovi';
   @override
   String get moodboardRemoveConfirm => 'Rimuovere questo elemento?';
+  @override
+  String get moodboardRemoveDescription =>
+      'L’elemento verrà rimosso definitivamente dal moodboard.';
   @override
   String get moodboardSaveError =>
       'Impossibile salvare. Verifica lo spazio disponibile e riprova.';
@@ -334,7 +340,7 @@ class StringsIt implements AppStrings {
   @override
   String get dayDetailEmpty => 'Nessuna stella accesa in questo giorno.';
   @override
-  String get addStarForDayLabel => 'Aggiungi una stella per questo giorno';
+  String get addStarForDayLabel => 'Aggiungi';
 
   @override
   String get firstStarLabel => 'Prima stella';
@@ -405,7 +411,7 @@ class StringsIt implements AppStrings {
   String activeKindsCount(int count) =>
       count == 1 ? '1 tipo stella' : '$count tipi stella';
   @override
-  String get applyFilterAction => 'Applica filtro';
+  String get applyFilterAction => 'Applica';
   @override
   String get filterDateRangeAction => 'Filtra per periodo';
   @override
@@ -446,6 +452,8 @@ class StringsIt implements AppStrings {
   String get searchButtonLabel => 'Cerca';
   @override
   String get takeMeThereAction => 'Portami lì';
+  @override
+  String get creationSuccessOpenAction => 'Vai';
   @override
   String get searchCardMenuOpenAction => 'Apri menu della card';
   @override
@@ -623,7 +631,7 @@ Voglio contribuire al benessere di persone e luoghi oltre la mia vita quotidiana
 Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
 ''';
   @override
-  String get areaCoverEnterAction => 'Gestisci Questa Area';
+  String get areaCoverEnterAction => 'Gestisci';
   @override
   String get areaCoverVisionTitle => 'Visione';
   @override
@@ -1051,7 +1059,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get supernovaTourReflectionBody =>
       "Alcuni spunti per quest'area — rispondi quando ti va.";
   @override
-  String get replayToursAction => 'Rivedi i tutorial';
+  String get replayToursAction => 'Rivedi';
   @override
   String get replayToursResult =>
       'Tutorial azzerati — riapri ogni schermata per rivederli';
@@ -1073,23 +1081,26 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get quickSettingsAudioSection => 'Audio';
   @override
-  String get quickSettingsOpenSoundLabAction => 'Apri Sound Lab';
+  String get quickSettingsOpenSoundLabAction => 'Sound Lab';
   @override
   String get uiSandboxButtonTooltip => 'Sandbox UI';
   @override
   String get uiSandboxTitle => 'Sandbox UI';
   @override
-  String get uiSandboxIntro => 'Un audit consultabile delle varianti attuali e degli standard candidati. Gli esempi sono interattivi ma non modificano mai i dati reali.';
+  String get uiSandboxIntro =>
+      'Un audit consultabile delle varianti attuali e degli standard candidati. Gli esempi sono interattivi ma non modificano mai i dati reali.';
   @override
   String get uiSandboxFiltersTitle => 'Filtri audit';
   @override
   String get uiSandboxViewportTitle => 'Esempi responsive';
   @override
-  String get uiSandboxViewportBody => 'Cambia la larghezza del viewport e prova gli stati isolati qui sotto.';
+  String get uiSandboxViewportBody =>
+      'Cambia la larghezza del viewport e prova gli stati isolati qui sotto.';
   @override
   String get uiSandboxMatrixTitle => 'Matrice dell’audit';
   @override
-  String uiSandboxMatrixBody(int count) => '$count elementi corrispondenti. Espandine uno per vedere evidenze, opzioni e raccomandazione.';
+  String uiSandboxMatrixBody(int count) =>
+      '$count elementi corrispondenti. Espandine uno per vedere evidenze, opzioni e raccomandazione.';
   @override
   String uiSandboxVariantsCount(int count) => '$count varianti attuali';
   @override
@@ -1214,6 +1225,9 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get nameYourConstellationTitle =>
       'Dai Un Nome Alla Tua Forma Di Stelle';
   @override
+  String get nameYourConstellationDescription =>
+      'Scegli un nome breve per riconoscerla nel cielo.';
+  @override
   String get constellationNameHint => 'Es. Il mio percorso';
   @override
   String get constellationEditorGridToggleLabel => 'Griglia';
@@ -1271,7 +1285,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get noCustomShapesYetHint => 'Non hai ancora disegnato nessuna forma';
   @override
-  String get editSelectedShapeAction => 'Modifica questa forma';
+  String get editSelectedShapeAction => 'Modifica';
 
   @override
   String get fieldLegendTitle => 'Info';
@@ -1303,6 +1317,11 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get pickerConfirmAction => 'OK';
   @override
   String get closeAction => 'Chiudi';
+  @override
+  String get displaySettingsTitle => 'Visualizzazione';
+  @override
+  String get displaySettingsDescription =>
+      'Scegli quali controlli mostrare nel cielo.';
   @override
   String get createProject => 'Crea costellazione';
   @override
@@ -1374,24 +1393,25 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get cropPhotoHint =>
       'Pizzica e trascina per adattare la foto alla cornice';
   @override
-  String get saveChanges => 'Salva modifiche';
+  String get saveChanges => 'Salva';
   @override
-  String get lightThisStar => 'Accendi questa stella';
+  String get lightThisStar => 'Salva';
   @override
-  String get placeThisStarAction => 'Mettila nel cielo';
+  String get placeThisStarAction => 'Salva';
+  @override
+  String get cannotSaveTitle => 'Dati mancanti';
   @override
   String get cannotSaveMissingInfo =>
-      'Impossibile salvare: mancano delle informazioni';
+      'Completa i campi obbligatori indicati prima di salvare.';
   @override
-  String get gotIt => 'Ho capito';
+  String get gotIt => 'OK';
   @override
   String get deleteStarConfirmTitle => 'Eliminare questa stella?';
   @override
   String get deleteStarConfirmBody =>
       'La stella diventerà un fallimento: uscirà da qui, ma resterà al suo posto nel cielo e potrai riaccenderla in seguito.';
   @override
-  String get deletePulsarConfirmTitle =>
-      'Eliminare questa abitudine?';
+  String get deletePulsarConfirmTitle => 'Eliminare questa abitudine?';
   @override
   String get deletePulsarConfirmBody =>
       'L\'abitudine diventerà un fallimento: smette di pulsare, ma resta al suo posto nel cielo e potrai riaccenderla come abitudine in seguito.';
@@ -1403,7 +1423,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get discardChangesConfirmBody =>
       'Perderai le modifiche fatte a questa stella.';
   @override
-  String get discardChangesAction => 'Scarta modifiche';
+  String get discardChangesAction => 'Scarta';
 
   @override
   String get targetDateLabel => 'Data obbiettivo';
@@ -1417,14 +1437,13 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String starSlotLabel(int slot) => 'Stella n. $slot';
 
   @override
-  String pulsarNumberLabel(int number) =>
-      'Abitudine n. $number';
+  String pulsarNumberLabel(int number) => 'Abitudine n. $number';
   @override
   String get markAchievedAction => 'Segna come raggiunta';
   @override
   String get markAchievedSheetTitle => 'Quanto ti è costato raggiungerla?';
   @override
-  String get markAchievedConfirm => 'Accendi questa stella';
+  String get markAchievedConfirm => 'Salva';
   @override
   String get undoAchievedAction => 'Segna come non raggiunta';
   @override
@@ -1434,7 +1453,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get deadPulsarBody =>
       'Questa abitudine è stata eliminata. Puoi riaccenderla come una nuova abitudine, nello stesso punto del cielo — la vecchia serie resta indietro.';
   @override
-  String get reigniteAction => 'Riaccendi questa stella';
+  String get reigniteAction => 'Riaccendi';
 
   @override
   String get habitFrequencyLabel => 'Frequenza';
@@ -1455,7 +1474,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get habitCurrentStreakLabel => 'Serie attuale';
   @override
-  String get markHabitDoneAction => 'Segna oggi come fatto';
+  String get markHabitDoneAction => 'Completa';
   @override
   String get habitDoneTodayLabel => 'Fatto oggi';
   @override
@@ -1488,9 +1507,10 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get habitStatsSupportDayLabel => 'Giorno da sostenere';
   @override
-  String get habitStatsNotEnoughData => 'Serve ancora un po’ di storia per vedere questo ritmo.';
+  String get habitStatsNotEnoughData =>
+      'Serve ancora un po’ di storia per vedere questo ritmo.';
   @override
-  String get habitStatsArchiveAction => 'Pulsar passate';
+  String get habitStatsArchiveAction => 'Archivio';
   @override
   String get habitStatsArchiveTitle => 'Pulsar passate';
   @override
@@ -1498,7 +1518,8 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String habitStatsDays(int count) => count == 1 ? '1 giorno' : '$count giorni';
   @override
-  String habitStatsWeeks(int count) => count == 1 ? '1 settimana' : '$count settimane';
+  String habitStatsWeeks(int count) =>
+      count == 1 ? '1 settimana' : '$count settimane';
 
   @override
   String unlitStarsBadge(int count) =>
@@ -1581,7 +1602,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get noStarsInSelection =>
       'Nessuna stella ancora accesa nelle supernove scelte.';
   @override
-  String get viewYourStars => 'Guarda le tue stelle';
+  String get viewYourStars => 'Visualizza';
 
   @override
   String get nightlightGateQuestionPrefix => 'Prima di cominciare, sei ';
@@ -1632,7 +1653,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get nightlightBreathingExhale => 'Espira';
   @override
-  String get nightlightBreathingSkip => 'Sono pronto';
+  String get nightlightBreathingSkip => 'Continua';
   @override
   String nightlightBreathingCycleLabel(int current, int total) =>
       'Ciclo $current di $total';
@@ -1758,14 +1779,12 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get shareStarError =>
       'Non è stato possibile condividere questa stella. Riprova?';
   @override
-  String get starReaderTourIntroTitle =>
-      'Sfoglia le tue stelle';
+  String get starReaderTourIntroTitle => 'Sfoglia le tue stelle';
   @override
   String get starReaderTourIntroBody =>
       'Tutte le stelle di questa costellazione sono qui, una dopo l\'altra: vittorie, obiettivi, abitudini e persino le opportunità.';
   @override
-  String get starReaderTourPrevTitle =>
-      'Stella precedente';
+  String get starReaderTourPrevTitle => 'Stella precedente';
   @override
   String get starReaderTourPrevBody =>
       'Tocca il bordo sinistro dello schermo per tornare indietro. Funziona anche lo swipe verso destra.';
@@ -1773,8 +1792,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get starReaderTourPrevArrowBody =>
       'Usa questa freccia per tornare indietro.';
   @override
-  String get starReaderTourNextTitle =>
-      'Stella successiva';
+  String get starReaderTourNextTitle => 'Stella successiva';
   @override
   String get starReaderTourNextBody =>
       'Tocca il bordo destro per andare avanti. Funziona anche lo swipe verso sinistra.';
@@ -1782,14 +1800,12 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get starReaderTourNextArrowBody =>
       'Usa questa freccia per andare avanti.';
   @override
-  String get starReaderTourCenterTitle =>
-      'Il centro della pagina';
+  String get starReaderTourCenterTitle => 'Il centro della pagina';
   @override
   String get starReaderTourCenterBody =>
       'Su una stella con foto, tocca il centro per nascondere tutto e vedere solo la foto. Tocca di nuovo per riavere i dati.';
   @override
-  String get starReaderTourDockTitle =>
-      'Tutto quello che puoi fare';
+  String get starReaderTourDockTitle => 'Tutto quello che puoi fare';
   @override
   String get starReaderTourDockBody =>
       'Questi pulsanti cambiano con la stella: accenderla, condividerla, modificarla, eliminarla o riportarla in vita.';
@@ -1897,11 +1913,11 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
       'Stai usando la versione web. Per l\'app Android vera e propria, con '
       'notifiche e tutto il resto, scarica il file APK.';
   @override
-  String get downloadApkAction => 'Scarica l\'app per Android';
+  String get downloadApkAction => 'Scarica';
   @override
   String get downloadApkPromptTitle => 'Vuoi l\'app vera?';
   @override
-  String get downloadApkPromptContinueAction => 'Resta sul web';
+  String get downloadApkPromptContinueAction => 'Continua';
 
   @override
   List<String> get monthAbbreviations => const [

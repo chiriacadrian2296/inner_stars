@@ -525,6 +525,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AppDialog(
+        title: Text(strings.cannotSaveTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

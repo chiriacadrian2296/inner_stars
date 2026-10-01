@@ -19,6 +19,9 @@ class StringsRo implements AppStrings {
   @override
   String get moodboardQuote => 'Citat';
   @override
+  String get moodboardQuoteDescription =>
+      'Scrie un citat scurt pentru moodboard.';
+  @override
   String get moodboardVideo => 'Video';
   @override
   String get moodboardEdit => 'Editează';
@@ -26,6 +29,9 @@ class StringsRo implements AppStrings {
   String get moodboardRemove => 'Elimină';
   @override
   String get moodboardRemoveConfirm => 'Elimini acest element?';
+  @override
+  String get moodboardRemoveDescription =>
+      'Elementul va fi eliminat definitiv din moodboard.';
   @override
   String get moodboardSaveError =>
       'Salvarea a eșuat. Verifică spațiul disponibil și încearcă din nou.';
@@ -334,7 +340,7 @@ class StringsRo implements AppStrings {
   @override
   String get dayDetailEmpty => 'Nicio stea aprinsă în această zi.';
   @override
-  String get addStarForDayLabel => 'Adaugă o stea pentru această zi';
+  String get addStarForDayLabel => 'Adaugă';
 
   @override
   String get firstStarLabel => 'Prima stea';
@@ -405,7 +411,7 @@ class StringsRo implements AppStrings {
   String activeKindsCount(int count) =>
       count == 1 ? '1 tip de stea' : '$count tipuri de stele';
   @override
-  String get applyFilterAction => 'Aplică filtrul';
+  String get applyFilterAction => 'Aplică';
   @override
   String get filterDateRangeAction => 'Filtrează după perioadă';
   @override
@@ -446,6 +452,8 @@ class StringsRo implements AppStrings {
   String get searchButtonLabel => 'Caută';
   @override
   String get takeMeThereAction => 'Du-mă acolo';
+  @override
+  String get creationSuccessOpenAction => 'Deschide';
   @override
   String get searchCardMenuOpenAction => 'Deschide meniul cardului';
   @override
@@ -623,7 +631,7 @@ Vreau să contribui la binele oamenilor și al locurilor dincolo de viața mea c
 Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
 ''';
   @override
-  String get areaCoverEnterAction => 'Gestionează Această Zonă';
+  String get areaCoverEnterAction => 'Gestionează';
   @override
   String get areaCoverVisionTitle => 'Viziune';
   @override
@@ -1055,7 +1063,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get supernovaTourReflectionBody =>
       'Câteva întrebări pentru această zonă — răspunde când simți nevoia.';
   @override
-  String get replayToursAction => 'Repetă tutorialele';
+  String get replayToursAction => 'Repetă';
   @override
   String get replayToursResult =>
       'Tutoriale resetate — redeschide fiecare ecran pentru a le revedea';
@@ -1077,23 +1085,26 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get quickSettingsAudioSection => 'Audio';
   @override
-  String get quickSettingsOpenSoundLabAction => 'Deschide Sound Lab';
+  String get quickSettingsOpenSoundLabAction => 'Sound Lab';
   @override
   String get uiSandboxButtonTooltip => 'Sandbox UI';
   @override
   String get uiSandboxTitle => 'Sandbox UI';
   @override
-  String get uiSandboxIntro => 'Un audit consultabil al variantelor actuale și al standardelor propuse. Exemplele sunt interactive, dar nu modifică datele reale.';
+  String get uiSandboxIntro =>
+      'Un audit consultabil al variantelor actuale și al standardelor propuse. Exemplele sunt interactive, dar nu modifică datele reale.';
   @override
   String get uiSandboxFiltersTitle => 'Filtre audit';
   @override
   String get uiSandboxViewportTitle => 'Exemple responsive';
   @override
-  String get uiSandboxViewportBody => 'Schimbă lățimea zonei și testează stările izolate de mai jos.';
+  String get uiSandboxViewportBody =>
+      'Schimbă lățimea zonei și testează stările izolate de mai jos.';
   @override
   String get uiSandboxMatrixTitle => 'Matricea auditului';
   @override
-  String uiSandboxMatrixBody(int count) => '$count elemente potrivite. Extinde unul pentru dovezi, opțiuni și recomandare.';
+  String uiSandboxMatrixBody(int count) =>
+      '$count elemente potrivite. Extinde unul pentru dovezi, opțiuni și recomandare.';
   @override
   String uiSandboxVariantsCount(int count) => '$count variante actuale';
   @override
@@ -1217,6 +1228,9 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get nameYourConstellationTitle => 'Dă Un Nume Formei Tale De Stele';
   @override
+  String get nameYourConstellationDescription =>
+      'Alege un nume scurt ca să o recunoști pe cer.';
+  @override
   String get constellationNameHint => 'Ex. Drumul meu';
   @override
   String get constellationEditorGridToggleLabel => 'Grilă';
@@ -1274,7 +1288,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get noCustomShapesYetHint => 'Nu ai desenat încă nicio formă';
   @override
-  String get editSelectedShapeAction => 'Editează această formă';
+  String get editSelectedShapeAction => 'Editează';
 
   @override
   String get fieldLegendTitle => 'Info';
@@ -1306,6 +1320,11 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get pickerConfirmAction => 'OK';
   @override
   String get closeAction => 'Închide';
+  @override
+  String get displaySettingsTitle => 'Afișare';
+  @override
+  String get displaySettingsDescription =>
+      'Alege ce controale sunt vizibile pe cer.';
   @override
   String get createProject => 'Creează constelație';
   @override
@@ -1375,23 +1394,25 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get cropPhotoHint =>
       'Ciupește și trage pentru a încadra fotografia în cadru';
   @override
-  String get saveChanges => 'Salvează modificările';
+  String get saveChanges => 'Salvează';
   @override
-  String get lightThisStar => 'Aprinde această stea';
+  String get lightThisStar => 'Salvează';
   @override
-  String get placeThisStarAction => 'Pune-o pe cer';
+  String get placeThisStarAction => 'Salvează';
   @override
-  String get cannotSaveMissingInfo => 'Nu se poate salva: lipsesc informații';
+  String get cannotSaveTitle => 'Informații lipsă';
   @override
-  String get gotIt => 'Am înțeles';
+  String get cannotSaveMissingInfo =>
+      'Completează câmpurile obligatorii indicate înainte de salvare.';
+  @override
+  String get gotIt => 'OK';
   @override
   String get deleteStarConfirmTitle => 'Ștergi această stea?';
   @override
   String get deleteStarConfirmBody =>
       'Steaua va deveni un eșec: dispare de aici, dar rămâne la locul ei pe cer și o poți reaprinde mai târziu.';
   @override
-  String get deletePulsarConfirmTitle =>
-      'Ștergi acest obicei?';
+  String get deletePulsarConfirmTitle => 'Ștergi acest obicei?';
   @override
   String get deletePulsarConfirmBody =>
       'Obiceiul devine un eșec: nu mai pulsează, dar rămâne la locul lui pe cer și îl poți reaprinde mai târziu, tot ca obicei.';
@@ -1403,7 +1424,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get discardChangesConfirmBody =>
       'Vei pierde modificările făcute acestei stele.';
   @override
-  String get discardChangesAction => 'Renunță la modificări';
+  String get discardChangesAction => 'Renunță';
 
   @override
   String get targetDateLabel => 'Dată țintă';
@@ -1417,14 +1438,13 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String starSlotLabel(int slot) => 'Steaua nr. $slot';
 
   @override
-  String pulsarNumberLabel(int number) =>
-      'Obicei nr. $number';
+  String pulsarNumberLabel(int number) => 'Obicei nr. $number';
   @override
   String get markAchievedAction => 'Marchează ca atins';
   @override
   String get markAchievedSheetTitle => 'Cât efort te-a costat să ajungi aici?';
   @override
-  String get markAchievedConfirm => 'Aprinde această stea';
+  String get markAchievedConfirm => 'Salvează';
   @override
   String get undoAchievedAction => 'Marchează ca neatins';
   @override
@@ -1434,7 +1454,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get deadPulsarBody =>
       'Acest obicei a fost șters. Îl poți reaprinde ca un obicei complet nou, în același loc pe cer — vechea serie rămâne în urmă.';
   @override
-  String get reigniteAction => 'Reaprinde această stea';
+  String get reigniteAction => 'Reaprinde';
 
   @override
   String get habitFrequencyLabel => 'Frecvență';
@@ -1455,7 +1475,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get habitCurrentStreakLabel => 'Serie curentă';
   @override
-  String get markHabitDoneAction => 'Marchează azi ca făcut';
+  String get markHabitDoneAction => 'Finalizează';
   @override
   String get habitDoneTodayLabel => 'Făcut azi';
   @override
@@ -1488,9 +1508,10 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get habitStatsSupportDayLabel => 'Zi de susținut';
   @override
-  String get habitStatsNotEnoughData => 'Mai este nevoie de puțin istoric pentru acest tipar.';
+  String get habitStatsNotEnoughData =>
+      'Mai este nevoie de puțin istoric pentru acest tipar.';
   @override
-  String get habitStatsArchiveAction => 'Pulsari din trecut';
+  String get habitStatsArchiveAction => 'Arhivă';
   @override
   String get habitStatsArchiveTitle => 'Pulsari din trecut';
   @override
@@ -1498,7 +1519,8 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String habitStatsDays(int count) => count == 1 ? '1 zi' : '$count zile';
   @override
-  String habitStatsWeeks(int count) => count == 1 ? '1 săptămână' : '$count săptămâni';
+  String habitStatsWeeks(int count) =>
+      count == 1 ? '1 săptămână' : '$count săptămâni';
 
   @override
   String unlitStarsBadge(int count) =>
@@ -1582,7 +1604,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get noStarsInSelection =>
       'Nicio stea aprinsă încă în supernovele alese.';
   @override
-  String get viewYourStars => 'Privește-ți stelele';
+  String get viewYourStars => 'Vezi';
 
   @override
   String get nightlightGateQuestionPrefix => 'Înainte să începem, ești ';
@@ -1633,7 +1655,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get nightlightBreathingExhale => 'Expiră';
   @override
-  String get nightlightBreathingSkip => 'Sunt gata';
+  String get nightlightBreathingSkip => 'Continuă';
   @override
   String nightlightBreathingCycleLabel(int current, int total) =>
       'Ciclul $current din $total';
@@ -1758,14 +1780,12 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get shareStarError =>
       'Nu am putut distribui această stea. Încerci din nou?';
   @override
-  String get starReaderTourIntroTitle =>
-      'Răsfoiește stelele tale';
+  String get starReaderTourIntroTitle => 'Răsfoiește stelele tale';
   @override
   String get starReaderTourIntroBody =>
       'Toate stelele acestei constelații sunt aici, una după alta: victorii, obiective, obiceiuri și chiar oportunitățile.';
   @override
-  String get starReaderTourPrevTitle =>
-      'Steaua anterioară';
+  String get starReaderTourPrevTitle => 'Steaua anterioară';
   @override
   String get starReaderTourPrevBody =>
       'Atinge marginea din stânga a ecranului ca să te întorci. Merge și glisarea spre dreapta.';
@@ -1773,8 +1793,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get starReaderTourPrevArrowBody =>
       'Folosește această săgeată ca să te întorci.';
   @override
-  String get starReaderTourNextTitle =>
-      'Steaua următoare';
+  String get starReaderTourNextTitle => 'Steaua următoare';
   @override
   String get starReaderTourNextBody =>
       'Atinge marginea din dreapta ca să mergi mai departe. Merge și glisarea spre stânga.';
@@ -1782,14 +1801,12 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get starReaderTourNextArrowBody =>
       'Folosește această săgeată ca să mergi mai departe.';
   @override
-  String get starReaderTourCenterTitle =>
-      'Mijlocul paginii';
+  String get starReaderTourCenterTitle => 'Mijlocul paginii';
   @override
   String get starReaderTourCenterBody =>
       'La o stea cu poză, atinge mijlocul ca să ascunzi tot și să vezi doar poza. Atinge din nou ca să revii la detalii.';
   @override
-  String get starReaderTourDockTitle =>
-      'Tot ce poți face';
+  String get starReaderTourDockTitle => 'Tot ce poți face';
   @override
   String get starReaderTourDockBody =>
       'Aceste butoane se schimbă în funcție de stea: aprinde-o, distribuie-o, editeaz-o, șterge-o sau readu-o la viață.';
@@ -1897,11 +1914,11 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
       'Folosești versiunea web. Pentru aplicația Android adevărată, cu '
       'notificări și tot restul, descarcă fișierul APK.';
   @override
-  String get downloadApkAction => 'Descarcă aplicația pentru Android';
+  String get downloadApkAction => 'Descarcă';
   @override
   String get downloadApkPromptTitle => 'Vrei aplicația adevărată?';
   @override
-  String get downloadApkPromptContinueAction => 'Rămâi pe web';
+  String get downloadApkPromptContinueAction => 'Continuă';
 
   @override
   List<String> get monthAbbreviations => const [

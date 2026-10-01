@@ -178,7 +178,7 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
     dialogTheme: DialogThemeData(
       backgroundColor: palette.nightPanel,
       titleTextStyle: TextStyle(
-        color: palette.text,
+        color: Colors.white,
         fontSize: 18,
         fontWeight: FontWeight.w700,
       ),

@@ -68,7 +68,12 @@ class AppDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       icon: icon,
-      title: title,
+      title: title == null
+          ? null
+          : DefaultTextStyle.merge(
+              style: const TextStyle(color: Colors.white),
+              child: title!,
+            ),
       content: content,
       actions: actions,
       backgroundColor: backgroundColor,

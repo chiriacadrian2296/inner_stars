@@ -105,7 +105,7 @@ class CreationSuccessDialog extends StatelessWidget {
                   axis: Axis.horizontal,
                   child: _CreationSuccessAction(
                     icon: Icons.navigation,
-                    label: strings.takeMeThereAction,
+                    label: strings.creationSuccessOpenAction,
                     color: colors.gold,
                     onTap: () {
                       Navigator.of(context).pop();

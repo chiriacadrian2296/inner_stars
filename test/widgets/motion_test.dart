@@ -279,6 +279,11 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
+      final titleContext = tester.element(
+        find.text('Eliminare questa stella?'),
+      );
+      expect(DefaultTextStyle.of(titleContext).style.color, Colors.white);
+
       final cancel = tester.widget<TextButton>(
         find.widgetWithText(TextButton, 'Annulla'),
       );

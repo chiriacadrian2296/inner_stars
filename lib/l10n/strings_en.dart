@@ -19,6 +19,9 @@ class StringsEn implements AppStrings {
   @override
   String get moodboardQuote => 'Quote';
   @override
+  String get moodboardQuoteDescription =>
+      'Write a short quote to add to the moodboard.';
+  @override
   String get moodboardVideo => 'Video';
   @override
   String get moodboardEdit => 'Edit';
@@ -26,6 +29,9 @@ class StringsEn implements AppStrings {
   String get moodboardRemove => 'Remove';
   @override
   String get moodboardRemoveConfirm => 'Remove this item?';
+  @override
+  String get moodboardRemoveDescription =>
+      'The item will be permanently removed from the moodboard.';
   @override
   String get moodboardSaveError =>
       'Could not save. Check available storage and try again.';
@@ -332,7 +338,7 @@ class StringsEn implements AppStrings {
   @override
   String get dayDetailEmpty => 'No stars lit this day.';
   @override
-  String get addStarForDayLabel => 'Add a star for this day';
+  String get addStarForDayLabel => 'Add';
 
   @override
   String get firstStarLabel => 'First star';
@@ -402,7 +408,7 @@ class StringsEn implements AppStrings {
   String activeKindsCount(int count) =>
       count == 1 ? '1 star kind' : '$count star kinds';
   @override
-  String get applyFilterAction => 'Apply filter';
+  String get applyFilterAction => 'Apply';
   @override
   String get filterDateRangeAction => 'Filter by date';
   @override
@@ -443,6 +449,8 @@ class StringsEn implements AppStrings {
   String get searchButtonLabel => 'Search';
   @override
   String get takeMeThereAction => 'Take me there';
+  @override
+  String get creationSuccessOpenAction => 'Open';
   @override
   String get searchCardMenuOpenAction => 'Open card menu';
   @override
@@ -620,7 +628,7 @@ I want to support people and places beyond my everyday life. I offer **time, att
 My contribution meets a real need and is something I can sustain.
 ''';
   @override
-  String get areaCoverEnterAction => 'Manage This Area';
+  String get areaCoverEnterAction => 'Manage';
   @override
   String get areaCoverVisionTitle => 'Vision';
   @override
@@ -1044,7 +1052,7 @@ My contribution meets a real need and is something I can sustain.
   String get supernovaTourReflectionBody =>
       'A few prompts for this area — answer whenever you feel like it.';
   @override
-  String get replayToursAction => 'Replay tutorials';
+  String get replayToursAction => 'Replay';
   @override
   String get replayToursResult =>
       'Tutorials reset — open each screen again to see them';
@@ -1066,23 +1074,26 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get quickSettingsAudioSection => 'Audio';
   @override
-  String get quickSettingsOpenSoundLabAction => 'Open Sound Lab';
+  String get quickSettingsOpenSoundLabAction => 'Sound Lab';
   @override
   String get uiSandboxButtonTooltip => 'UI Sandbox';
   @override
   String get uiSandboxTitle => 'UI Sandbox';
   @override
-  String get uiSandboxIntro => 'A read-only audit of current variants and proposed standards. Samples are interactive but never touch real app data.';
+  String get uiSandboxIntro =>
+      'A read-only audit of current variants and proposed standards. Samples are interactive but never touch real app data.';
   @override
   String get uiSandboxFiltersTitle => 'Audit filters';
   @override
   String get uiSandboxViewportTitle => 'Responsive specimens';
   @override
-  String get uiSandboxViewportBody => 'Switch viewport width, then exercise the isolated states below.';
+  String get uiSandboxViewportBody =>
+      'Switch viewport width, then exercise the isolated states below.';
   @override
   String get uiSandboxMatrixTitle => 'Audit matrix';
   @override
-  String uiSandboxMatrixBody(int count) => '$count matching entries. Expand one to review evidence, options and recommendation.';
+  String uiSandboxMatrixBody(int count) =>
+      '$count matching entries. Expand one to review evidence, options and recommendation.';
   @override
   String uiSandboxVariantsCount(int count) => '$count current variants';
   @override
@@ -1206,6 +1217,9 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get nameYourConstellationTitle => 'Name Your Stars Shape';
   @override
+  String get nameYourConstellationDescription =>
+      'Choose a short name so you can recognize it in the sky.';
+  @override
   String get constellationNameHint => 'E.g. My own path';
   @override
   String get constellationEditorGridToggleLabel => 'Grid';
@@ -1262,7 +1276,7 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get noCustomShapesYetHint => "You haven't drawn any shapes yet";
   @override
-  String get editSelectedShapeAction => 'Edit this shape';
+  String get editSelectedShapeAction => 'Edit';
 
   @override
   String get fieldLegendTitle => 'Info';
@@ -1294,6 +1308,11 @@ My contribution meets a real need and is something I can sustain.
   String get pickerConfirmAction => 'OK';
   @override
   String get closeAction => 'Close';
+  @override
+  String get displaySettingsTitle => 'Display';
+  @override
+  String get displaySettingsDescription =>
+      'Choose which controls are visible in the sky.';
   @override
   String get createProject => 'Create constellation';
   @override
@@ -1360,23 +1379,25 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get cropPhotoHint => 'Pinch and drag to fit your photo into the frame';
   @override
-  String get saveChanges => 'Save changes';
+  String get saveChanges => 'Save';
   @override
-  String get lightThisStar => 'Light this star';
+  String get lightThisStar => 'Save';
   @override
-  String get placeThisStarAction => 'Put it in the sky';
+  String get placeThisStarAction => 'Save';
   @override
-  String get cannotSaveMissingInfo => "Can't save yet — some info is missing";
+  String get cannotSaveTitle => 'Missing information';
   @override
-  String get gotIt => 'Got it';
+  String get cannotSaveMissingInfo =>
+      'Complete the required fields shown below before saving.';
+  @override
+  String get gotIt => 'OK';
   @override
   String get deleteStarConfirmTitle => 'Delete this star?';
   @override
   String get deleteStarConfirmBody =>
       "This turns the star into a failure — it leaves here, but stays in its spot in the sky, and you can reignite it later.";
   @override
-  String get deletePulsarConfirmTitle =>
-      'Delete this habit?';
+  String get deletePulsarConfirmTitle => 'Delete this habit?';
   @override
   String get deletePulsarConfirmBody =>
       'The habit becomes a failure — it stops beating, but stays in its spot in the sky, and you can reignite it later as a habit again.';
@@ -1402,14 +1423,13 @@ My contribution meets a real need and is something I can sustain.
   String starSlotLabel(int slot) => 'Star #$slot';
 
   @override
-  String pulsarNumberLabel(int number) =>
-      'Habit #$number';
+  String pulsarNumberLabel(int number) => 'Habit #$number';
   @override
   String get markAchievedAction => 'Mark as achieved';
   @override
   String get markAchievedSheetTitle => 'How much did it take to get there?';
   @override
-  String get markAchievedConfirm => 'Light this star';
+  String get markAchievedConfirm => 'Save';
   @override
   String get undoAchievedAction => 'Mark as not achieved';
   @override
@@ -1419,7 +1439,7 @@ My contribution meets a real need and is something I can sustain.
   String get deadPulsarBody =>
       'This habit was deleted. You can reignite it as a brand new habit, in the same spot in the sky — its old streak stays behind.';
   @override
-  String get reigniteAction => 'Reignite this star';
+  String get reigniteAction => 'Reignite';
 
   @override
   String get habitFrequencyLabel => 'Frequency';
@@ -1440,7 +1460,7 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get habitCurrentStreakLabel => 'Current streak';
   @override
-  String get markHabitDoneAction => 'Mark today as done';
+  String get markHabitDoneAction => 'Complete';
   @override
   String get habitDoneTodayLabel => 'Done today';
   @override
@@ -1473,9 +1493,10 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get habitStatsSupportDayLabel => 'Day to support';
   @override
-  String get habitStatsNotEnoughData => 'A little more history will reveal this pattern.';
+  String get habitStatsNotEnoughData =>
+      'A little more history will reveal this pattern.';
   @override
-  String get habitStatsArchiveAction => 'Past pulsars';
+  String get habitStatsArchiveAction => 'Archive';
   @override
   String get habitStatsArchiveTitle => 'Past pulsars';
   @override
@@ -1486,8 +1507,7 @@ My contribution meets a real need and is something I can sustain.
   String habitStatsWeeks(int count) => count == 1 ? '1 week' : '$count weeks';
 
   @override
-  String unlitStarsBadge(int count) =>
-      count == 1 ? '1 goal' : '$count goals';
+  String unlitStarsBadge(int count) => count == 1 ? '1 goal' : '$count goals';
   @override
   String activePulsarsBadge(int count) =>
       count == 1 ? '1 active habit' : '$count active habits';
@@ -1564,7 +1584,7 @@ My contribution meets a real need and is something I can sustain.
   String get noStarsInSelection =>
       "No stars lit yet in the supernovas you picked.";
   @override
-  String get viewYourStars => 'View your stars';
+  String get viewYourStars => 'View';
 
   @override
   String get nightlightGateQuestionPrefix => 'Before we start, are you ';
@@ -1615,7 +1635,7 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get nightlightBreathingExhale => 'Breathe Out';
   @override
-  String get nightlightBreathingSkip => "I'm ready";
+  String get nightlightBreathingSkip => 'Continue';
   @override
   String nightlightBreathingCycleLabel(int current, int total) =>
       'Cycle $current of $total';
@@ -1737,38 +1757,31 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get shareStarError => "Couldn't share that star. Try again?";
   @override
-  String get starReaderTourIntroTitle =>
-      'Browse your stars';
+  String get starReaderTourIntroTitle => 'Browse your stars';
   @override
   String get starReaderTourIntroBody =>
       'Every star of this constellation lives here, one after another: victories, goals, habits, even the opportunities.';
   @override
-  String get starReaderTourPrevTitle =>
-      'Previous star';
+  String get starReaderTourPrevTitle => 'Previous star';
   @override
   String get starReaderTourPrevBody =>
       'Tap the left edge of the screen to go back. Swiping right works too.';
   @override
-  String get starReaderTourPrevArrowBody =>
-      'Use this arrow to go back.';
+  String get starReaderTourPrevArrowBody => 'Use this arrow to go back.';
   @override
-  String get starReaderTourNextTitle =>
-      'Next star';
+  String get starReaderTourNextTitle => 'Next star';
   @override
   String get starReaderTourNextBody =>
       'Tap the right edge to move on. Swiping left works too.';
   @override
-  String get starReaderTourNextArrowBody =>
-      'Use this arrow to move on.';
+  String get starReaderTourNextArrowBody => 'Use this arrow to move on.';
   @override
-  String get starReaderTourCenterTitle =>
-      'The middle of the page';
+  String get starReaderTourCenterTitle => 'The middle of the page';
   @override
   String get starReaderTourCenterBody =>
       'On a star with a photo, tap the middle to hide everything and see just the photo. Tap again to bring the details back.';
   @override
-  String get starReaderTourDockTitle =>
-      'Everything you can do';
+  String get starReaderTourDockTitle => 'Everything you can do';
   @override
   String get starReaderTourDockBody =>
       'These buttons change with the star: light it, share it, edit it, delete it, or bring it back.';
@@ -1875,11 +1888,11 @@ My contribution meets a real need and is something I can sustain.
       "You're using the web version. For the real Android app, with "
       'notifications and everything else, download the APK.';
   @override
-  String get downloadApkAction => 'Download the Android app';
+  String get downloadApkAction => 'Download';
   @override
   String get downloadApkPromptTitle => 'Want the real app?';
   @override
-  String get downloadApkPromptContinueAction => 'Stay on the web';
+  String get downloadApkPromptContinueAction => 'Continue';
 
   @override
   List<String> get monthAbbreviations => const [

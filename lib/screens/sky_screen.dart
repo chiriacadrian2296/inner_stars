@@ -3299,9 +3299,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
               title: StaggeredEntrance(
                 index: 0,
                 child: Text(
-                  'Display',
+                  strings.displaySettingsTitle,
                   style: TextStyle(
-                    color: colors.muted,
+                    color: Colors.white,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -3310,6 +3310,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  Text(
+                    strings.displaySettingsDescription,
+                    style: TextStyle(color: colors.muted),
+                  ),
+                  const SizedBox(height: 8),
                   row(
                     1,
                     'Grid',

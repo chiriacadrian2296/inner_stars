@@ -210,7 +210,7 @@ const uiAuditCatalog = <UiAuditItem>[
         'Call sites should choose intent rather than reconstruct appearance.',
     risks: 'Loading and explainable-disabled behavior need explicit policy before migration.',
     options: ['Four roles', 'Four roles plus compact variants'],
-    recommendation: 'Use four roles with shared height and padding tokens. Every text button keeps intrinsic content width and centers its icon/label; compact density is reserved for icon-only toolbars.',
+    recommendation: 'Use four roles with shared height and padding tokens. Every text button keeps intrinsic content width, centers its icon/label and uses one action word whenever possible; compact density is reserved for icon-only toolbars.',
   ),
   UiAuditItem(
     id: 'field-shared',
