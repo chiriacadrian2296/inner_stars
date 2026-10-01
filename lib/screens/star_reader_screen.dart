@@ -240,22 +240,21 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
         AnimatedOpacity(
           // Only the photo's own darkening veil fades away in photo-only
           // mode — a star with no photo has nothing to reveal underneath,
-          // so its plain [nightlightGradient] background never toggles.
+          // so its plain app-night background never toggles.
           opacity: photoPath != null && _photoOnly ? 0 : 1,
           duration: const Duration(milliseconds: 220),
           child: Container(
             decoration: BoxDecoration(
+              color: photoPath == null ? colors.night : null,
               gradient: photoPath == null
-                  ? colors.nightlightGradient
+                  ? null
                   : RadialGradient(
                       center: const Alignment(0, -0.6),
                       radius: 1.2,
                       colors: [
-                        colors.nightlightGradientCenter.withValues(
-                          alpha: 0.55,
-                        ),
-                        colors.nightlightGradientMid.withValues(alpha: 0.75),
-                        colors.nightlightGradientOuter.withValues(alpha: 0.9),
+                        colors.nightPanel.withValues(alpha: 0.55),
+                        colors.night.withValues(alpha: 0.75),
+                        colors.night.withValues(alpha: 0.9),
                       ],
                       stops: const [0.0, 0.55, 1.0],
                     ),
@@ -265,21 +264,17 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
       ],
     );
     final framedPhoto = photoPath == null || !isWideLayout(context)
-        ? Stack(
-        key: ValueKey(_index),
-        fit: StackFit.expand,
-        children: [photo],
-      )
+        ? Stack(key: ValueKey(_index), fit: StackFit.expand, children: [photo])
         : Stack(
-      key: ValueKey(_index),
-      fit: StackFit.expand,
-      children: [
-        DecoratedBox(
-          decoration: BoxDecoration(gradient: colors.nightlightGradient),
-        ),
-        Center(child: AspectRatio(aspectRatio: 9 / 16, child: photo)),
-      ],
-    );
+            key: ValueKey(_index),
+            fit: StackFit.expand,
+            children: [
+              ColoredBox(color: colors.night),
+              Center(
+                child: AspectRatio(aspectRatio: 9 / 16, child: photo),
+              ),
+            ],
+          );
     if (photoPath == null) return framedPhoto;
     return _ZoomablePhotoLayer(
       key: ValueKey('zoomable-photo-$_index'),
@@ -307,7 +302,10 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
         mimeType: 'image/png',
       );
       await SharePlus.instance.share(
-        ShareParams(files: [shareFile], text: (_entries[_index] as StarEntry).star.title),
+        ShareParams(
+          files: [shareFile],
+          text: (_entries[_index] as StarEntry).star.title,
+        ),
       );
     } catch (_) {
       if (mounted) {
@@ -479,10 +477,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
   }
 
   Future<void> _unlogInstance(Habit habit) async {
-    await widget.habitCompletionRepository!.unlogLastInstance(
-      habit.id,
-      _today,
-    );
+    await widget.habitCompletionRepository!.unlogLastInstance(habit.id, _today);
     if (mounted) setState(() => _animateContent = false);
   }
 
@@ -626,12 +621,12 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
     );
     // Its place among the constellation's pulsars, dead ones included (they
     // keep theirs), in order of creation.
-    final siblings = [
-      ...?widget.habitRepository?.getAllForProject(habit.projectId),
-    ]..sort((a, b) {
-        final byDate = a.createdAt.compareTo(b.createdAt);
-        return byDate != 0 ? byDate : a.id.compareTo(b.id);
-      });
+    final siblings =
+        [...?widget.habitRepository?.getAllForProject(habit.projectId)]
+          ..sort((a, b) {
+            final byDate = a.createdAt.compareTo(b.createdAt);
+            return byDate != 0 ? byDate : a.id.compareTo(b.id);
+          });
     final position = siblings.indexWhere((h) => h.id == habit.id);
     return PulsarReaderContent(
       key: ValueKey(_index),
@@ -799,7 +794,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
     final isPulsar = entry is PulsarEntry;
     final confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => AppDialog(
         title: Text(
           isPulsar
               ? strings.deletePulsarConfirmTitle
@@ -853,9 +848,8 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
     // The bar is identified by which buttons it holds (their icons), so it
     // only re-enters when that set changes.
     final barActions = _actionsFor(entry, project);
-    final barSignature = [
-      for (final a in barActions) a.icon.codePoint,
-    ].join(',');
+    final barSignature = [for (final a in barActions) a.icon.codePoint]
+        .join(',');
     final entrance = ReaderEntrance(
       animate: _animateContent,
       axis: _contentAxis,
@@ -1021,68 +1015,64 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                             children: [
                               Positioned.fill(
                                 child: Center(
-                            child: SingleChildScrollView(
-                              padding: EdgeInsets.fromLTRB(
-                                12,
-                                0,
-                                12,
-                                24,
-                              ),
-                              child: ResponsiveContent(
-                                // Fade-through: the star leaving fades out
-                                // and slips away toward the swipe; only then
-                                // does the next one's cascade begin (see
-                                // `_kContentEntranceLead`). The arriving one
-                                // is drawn as-is here — its own blocks do the
-                                // fading in.
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      strings.indexOfCount(
-                                        _index + 1,
-                                        _entries.length,
-                                      ),
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.white,
+                                  child: SingleChildScrollView(
+                                    padding: EdgeInsets.fromLTRB(12, 0, 12, 24),
+                                    child: ResponsiveContent(
+                                      // Fade-through: the star leaving fades out
+                                      // and slips away toward the swipe; only then
+                                      // does the next one's cascade begin (see
+                                      // `_kContentEntranceLead`). The arriving one
+                                      // is drawn as-is here — its own blocks do the
+                                      // fading in.
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            strings.indexOfCount(
+                                              _index + 1,
+                                              _entries.length,
+                                            ),
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          AnimatedSwitcher(
+                                            duration: _kContentSwapDuration,
+                                            // Eased both ends, so the old text
+                                            // visibly dwindles all the way to 0 instead
+                                            // of dropping off at the start.
+                                            switchOutCurve: Curves.easeInOut,
+                                            transitionBuilder: _swapTransition,
+                                            child: switch (entry) {
+                                              StarEntry(:final star) =>
+                                                StarReaderContent(
+                                                  key: ValueKey(_index),
+                                                  star: star,
+                                                  project: project,
+                                                  entrance: entrance,
+                                                ),
+                                              PulsarEntry(:final habit) =>
+                                                _pulsarContent(
+                                                  habit,
+                                                  project,
+                                                  entrance,
+                                                ),
+                                              NascentEntry(:final slot) =>
+                                                NascentReaderContent(
+                                                  key: ValueKey(_index),
+                                                  slot: slot,
+                                                  project: project,
+                                                  entrance: entrance,
+                                                ),
+                                            },
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    const SizedBox(height: 12),
-                                    AnimatedSwitcher(
-                                      duration: _kContentSwapDuration,
-                                  // Eased both ends, so the old text
-                                  // visibly dwindles all the way to 0 instead
-                                  // of dropping off at the start.
-                                  switchOutCurve: Curves.easeInOut,
-                                  transitionBuilder: _swapTransition,
-                                      child: switch (entry) {
-                                    StarEntry(:final star) => StarReaderContent(
-                                      key: ValueKey(_index),
-                                      star: star,
-                                      project: project,
-                                      entrance: entrance,
-                                    ),
-                                    PulsarEntry(:final habit) =>
-                                      _pulsarContent(
-                                        habit,
-                                        project,
-                                        entrance,
-                                      ),
-                                    NascentEntry(:final slot) =>
-                                      NascentReaderContent(
-                                        key: ValueKey(_index),
-                                        slot: slot,
-                                        project: project,
-                                        entrance: entrance,
-                                      ),
-                                      },
-                                    ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ),
                               ),
                               // Phones: invisible strips down both edges, like
                               // tapping through stories — left goes to the
@@ -1154,95 +1144,92 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
           _ReaderDock(
             key: const ValueKey('reader-dock'),
             hidden: photoPath != null && _photoOnly,
-            child:
-                ResponsiveContent(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      if (isWideLayout(context))
-                        StaggeredEntrance(
-                          index: 6,
-                          axis: Axis.horizontal,
-                          child: HintTarget(
-                            tour: 'star-reader',
-                            order: 2,
-                            showArrow: true,
-                            contentBuilder: appTourStepCard,
-                            title: strings.starReaderTourPrevTitle,
-                            description: strings.starReaderTourPrevArrowBody,
-                            child: _NavCircleButton(
-                              icon: Icons.chevron_left,
-                              onTap: _showPrevious,
-                            ),
-                          ),
+            child: ResponsiveContent(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (isWideLayout(context))
+                    StaggeredEntrance(
+                      index: 6,
+                      axis: Axis.horizontal,
+                      child: HintTarget(
+                        tour: 'star-reader',
+                        order: 2,
+                        showArrow: true,
+                        contentBuilder: appTourStepCard,
+                        title: strings.starReaderTourPrevTitle,
+                        description: strings.starReaderTourPrevArrowBody,
+                        child: _NavCircleButton(
+                          icon: Icons.chevron_left,
+                          onTap: _showPrevious,
                         ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                          ),
-                          child: HintTarget(
-                            tour: 'star-reader',
-                            order: 5,
-                            showArrow: true,
-                            direction: HintDirection.top,
-                            contentBuilder: appTourStepCard,
-                            title: strings.starReaderTourDockTitle,
-                            description: strings.starReaderTourDockBody,
-                            child: Center(
-                            // Only a different set of buttons animates: the
-                            // old set sinks and fades out, then the new one
-                            // rises one button after another from below.
-                            // Moving to a star with the same buttons leaves
-                            // the bar alone.
-                            child: AnimatedSwitcher(
-                              duration: _kContentSwapDuration,
-                              switchOutCurve: Curves.easeInOut,
-                              transitionBuilder: (child, animation) =>
-                                  _sinkTransition(
-                                    child,
-                                    animation,
-                                    ValueKey(barSignature),
-                                  ),
-                              child: _ReaderActionBar(
-                                key: ValueKey(barSignature),
-                                actions: barActions,
-                                entrance: entrance.risingFromBelow(),
-                                // Swiping right (previous) runs the
-                                // cascade right to left, so the last button
-                                // up is the leftmost one; swiping left, and
-                                // the first opening, keep it left to right.
-                                reverseOrder:
-                                    _contentAxis == Axis.horizontal &&
-                                    _contentReverse !=
-                                        (Directionality.of(context) ==
-                                            TextDirection.rtl),
-                              ),
+                      ),
+                    ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: HintTarget(
+                        tour: 'star-reader',
+                        order: 5,
+                        showArrow: true,
+                        direction: HintDirection.top,
+                        contentBuilder: appTourStepCard,
+                        title: strings.starReaderTourDockTitle,
+                        description: strings.starReaderTourDockBody,
+                        child: Center(
+                          // Only a different set of buttons animates: the
+                          // old set sinks and fades out, then the new one
+                          // rises one button after another from below.
+                          // Moving to a star with the same buttons leaves
+                          // the bar alone.
+                          child: AnimatedSwitcher(
+                            duration: _kContentSwapDuration,
+                            switchOutCurve: Curves.easeInOut,
+                            transitionBuilder: (child, animation) =>
+                                _sinkTransition(
+                                  child,
+                                  animation,
+                                  ValueKey(barSignature),
+                                ),
+                            child: _ReaderActionBar(
+                              key: ValueKey(barSignature),
+                              actions: barActions,
+                              entrance: entrance.risingFromBelow(),
+                              // Swiping right (previous) runs the
+                              // cascade right to left, so the last button
+                              // up is the leftmost one; swiping left, and
+                              // the first opening, keep it left to right.
+                              reverseOrder:
+                                  _contentAxis == Axis.horizontal &&
+                                  _contentReverse !=
+                                      (Directionality.of(context) ==
+                                          TextDirection.rtl),
                             ),
-                          ),
                           ),
                         ),
                       ),
-                      if (isWideLayout(context))
-                        StaggeredEntrance(
-                          index: 8,
-                          axis: Axis.horizontal,
-                          child: HintTarget(
-                            tour: 'star-reader',
-                            order: 3,
-                            showArrow: true,
-                            contentBuilder: appTourStepCard,
-                            title: strings.starReaderTourNextTitle,
-                            description: strings.starReaderTourNextArrowBody,
-                            child: _NavCircleButton(
-                              icon: Icons.chevron_right,
-                              onTap: _showNext,
-                            ),
-                          ),
-                        ),
-                    ],
+                    ),
                   ),
-                ),
+                  if (isWideLayout(context))
+                    StaggeredEntrance(
+                      index: 8,
+                      axis: Axis.horizontal,
+                      child: HintTarget(
+                        tour: 'star-reader',
+                        order: 3,
+                        showArrow: true,
+                        contentBuilder: appTourStepCard,
+                        title: strings.starReaderTourNextTitle,
+                        description: strings.starReaderTourNextArrowBody,
+                        child: _NavCircleButton(
+                          icon: Icons.chevron_right,
+                          onTap: _showNext,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -1599,10 +1586,7 @@ class _ActionButtonState extends State<_ActionButton>
   bool _reduceMotion = false;
 
   bool get _beckons =>
-      widget.off &&
-      widget.onTap != null &&
-      !widget.loading &&
-      !_reduceMotion;
+      widget.off && widget.onTap != null && !widget.loading && !_reduceMotion;
 
   @override
   void didChangeDependencies() {
@@ -1682,10 +1666,7 @@ class _ActionButtonState extends State<_ActionButton>
                     clipBehavior: Clip.none,
                     children: [
                       ImageFiltered(
-                        imageFilter: ui.ImageFilter.blur(
-                          sigmaX: 4,
-                          sigmaY: 4,
-                        ),
+                        imageFilter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
                         child: Icon(
                           widget.icon,
                           size: _ActionButton.iconSize,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../theme/app_typography.dart';
 
 /// Whether a field must be filled in to submit its form — shown as a small
 /// dot beside that field's own [AppFieldLabel]/[AppPickerField] rather than
@@ -46,7 +47,7 @@ class AppFieldLabel extends StatelessWidget {
           Icon(requirement._icon, size: 8, color: requirement._color(colors)),
           const SizedBox(width: 5),
         ],
-        Text(label, style: TextStyle(fontSize: 13, color: colors.muted)),
+        Text(label, style: context.typography.compactSectionLabel),
       ],
     );
   }
@@ -147,6 +148,9 @@ class AppTextField extends StatefulWidget {
     this.textInputAction,
     this.onChanged,
     this.prefixIcon,
+    this.enabled = true,
+    this.readOnly = false,
+    this.errorText,
   });
 
   final TextEditingController controller;
@@ -157,6 +161,9 @@ class AppTextField extends StatefulWidget {
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onChanged;
   final Widget? prefixIcon;
+  final bool enabled;
+  final bool readOnly;
+  final String? errorText;
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -187,6 +194,8 @@ class _AppTextFieldState extends State<AppTextField> {
         final state = fieldStateOf(
           hasValue: value.text.trim().isNotEmpty,
           focused: _focusNode.hasFocus,
+          enabled: widget.enabled,
+          hasError: widget.errorText != null,
         );
         // The glow can't go through InputDecoration, so it's painted behind
         // the field; the border itself still comes from the decoration so
@@ -201,6 +210,8 @@ class _AppTextFieldState extends State<AppTextField> {
           child: TextField(
             controller: widget.controller,
             focusNode: _focusNode,
+            enabled: widget.enabled,
+            readOnly: widget.readOnly,
             autofocus: widget.autofocus,
             minLines: widget.minLines,
             maxLines: widget.maxLines,
@@ -209,6 +220,7 @@ class _AppTextFieldState extends State<AppTextField> {
             style: TextStyle(color: colors.text, fontSize: 15),
             decoration: InputDecoration(
               hintText: widget.hintText,
+              errorText: widget.errorText,
               prefixIcon: widget.prefixIcon,
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(kRadiusField),
@@ -245,6 +257,8 @@ class AppPickerField extends StatelessWidget {
     required this.onTap,
     this.trailing,
     this.iconOnly = false,
+    this.enabled = true,
+    this.errorText,
   });
 
   /// Omitted when the surrounding form already labels this field some other
@@ -268,15 +282,22 @@ class AppPickerField extends StatelessWidget {
   final Widget? trailing;
 
   final bool iconOnly;
+  final bool enabled;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final filled = text != null;
-    final state = fieldStateOf(hasValue: filled, focused: false);
+    final state = fieldStateOf(
+      hasValue: filled,
+      focused: false,
+      enabled: enabled,
+      hasError: errorText != null,
+    );
 
     final field = InkWell(
-      onTap: onTap,
+      onTap: enabled ? onTap : null,
       borderRadius: BorderRadius.circular(kRadiusField),
       child: Container(
         width: double.infinity,
@@ -298,9 +319,7 @@ class AppPickerField extends StatelessWidget {
                       style: TextStyle(
                         color: filled ? colors.text : colors.muted,
                         fontSize: 15,
-                        fontWeight: filled
-                            ? FontWeight.w600
-                            : FontWeight.w400,
+                        fontWeight: filled ? FontWeight.w600 : FontWeight.w400,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -311,13 +330,27 @@ class AppPickerField extends StatelessWidget {
       ),
     );
 
-    if (label == null) return field;
+    final fieldWithError = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Opacity(opacity: enabled ? 1 : 0.45, child: field),
+        if (errorText != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            errorText!,
+            style: TextStyle(color: colors.danger, fontSize: 12),
+          ),
+        ],
+      ],
+    );
+
+    if (label == null) return fieldWithError;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppFieldLabel(label!, requirement: requirement),
         const SizedBox(height: 6),
-        field,
+        fieldWithError,
       ],
     );
   }

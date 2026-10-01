@@ -7,6 +7,7 @@ import '../l10n/app_strings.dart';
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../utils/app_modals.dart';
 import '../widgets/app_field.dart';
 import '../widgets/app_toggle_chip.dart';
 import '../widgets/pill_action_button.dart';
@@ -523,7 +524,7 @@ class _InteractiveSpecimens extends StatelessWidget {
     final colors = context.colors;
     return showDialog<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => AppDialog(
         title: Text(
           destructive ? 'Destructive confirmation' : 'Information dialog',
         ),

@@ -50,7 +50,11 @@ class StarExtraBadge extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               value!,
-              style: TextStyle(fontSize: 14, fontFamily: kFontMono, color: color),
+              style: TextStyle(
+                fontSize: 14,
+                fontFamily: kFontMono,
+                color: color,
+              ),
             ),
           ],
         ],

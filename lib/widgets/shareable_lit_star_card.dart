@@ -40,15 +40,16 @@ class ShareableLitStarCard extends StatelessWidget {
           ),
         Container(
           decoration: BoxDecoration(
+            color: photoPath == null ? colors.night : null,
             gradient: photoPath == null
-                ? colors.nightlightGradient
+                ? null
                 : RadialGradient(
                     center: const Alignment(0, -0.6),
                     radius: 1.2,
                     colors: [
-                      colors.nightlightGradientCenter.withValues(alpha: 0.55),
-                      colors.nightlightGradientMid.withValues(alpha: 0.75),
-                      colors.nightlightGradientOuter.withValues(alpha: 0.9),
+                      colors.nightPanel.withValues(alpha: 0.55),
+                      colors.night.withValues(alpha: 0.75),
+                      colors.night.withValues(alpha: 0.9),
                     ],
                     stops: const [0.0, 0.55, 1.0],
                   ),
@@ -68,7 +69,7 @@ class ShareableLitStarCard extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: kFontMono,
                       fontSize: 15,
-                      color: colors.nightlightMuted,
+                      color: colors.muted,
                     ),
                   ),
                   if (project != null) ...[
@@ -77,7 +78,7 @@ class ShareableLitStarCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     ProjectTag(
                       project: project!,
-                      textColor: colors.nightlightMuted,
+                      textColor: colors.muted,
                       iconSize: 17,
                       fontSize: 17,
                     ),
@@ -103,7 +104,7 @@ class ShareableLitStarCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         height: 1.6,
-                        color: colors.nightlightMuted,
+                        color: colors.muted,
                       ),
                     ),
                   ],

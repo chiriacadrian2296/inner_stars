@@ -3,10 +3,10 @@ import 'package:hint_kit/hint_kit.dart';
 
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
-import '../theme/app_colors.dart';
-import '../theme/app_style.dart';
+import '../theme/app_typography.dart';
 import '../tutorials/tour_step_card.dart';
 import '../utils/app_modals.dart';
+import 'app_choice_chip.dart';
 import 'app_toggle_chip.dart';
 import 'staggered_entrance.dart';
 
@@ -116,7 +116,7 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
                       child: StaggeredEntrance(
                         index: 2 + row + col,
                         axis: Axis.horizontal,
-                        child: _FilterChip(
+                        child: AppChoiceChip(
                           icon: LifeArea.values[row * 2 + col].icon,
                           label: LifeArea.values[row * 2 + col].displayName(
                             strings,
@@ -124,8 +124,10 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
                           selected: _areas.contains(
                             LifeArea.values[row * 2 + col],
                           ),
-                          onTap: () =>
+                          onPressed: () =>
                               _toggleArea(LifeArea.values[row * 2 + col]),
+                          showCheck: true,
+                          expand: true,
                         ),
                       ),
                     ),
@@ -161,55 +163,6 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
 
 /// One toggleable chip in the area grid — icon, label, and a trailing check
 /// that fills in once selected.
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(kRadiusField),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: selectableDecoration(colors, selected: selected),
-        child: Row(
-          children: [
-            Icon(icon, size: 16, color: selected ? colors.gold : colors.muted),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                label,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  color: selected ? colors.text : colors.muted,
-                ),
-              ),
-            ),
-            Icon(
-              selected ? Icons.check_circle : Icons.circle_outlined,
-              size: 16,
-              color: selected ? colors.gold : colors.muted,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// A simple, low-key header above the chip grid.
 class _SectionTitle extends StatelessWidget {
   const _SectionTitle(this.title);
@@ -218,17 +171,9 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     return Align(
       alignment: Alignment.centerLeft,
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: colors.muted,
-        ),
-      ),
+      child: Text(title, style: context.typography.compactSectionLabel),
     );
   }
 }

@@ -38,10 +38,7 @@ class LiveMarkdownController extends TextEditingController {
     }
     final spans = <InlineSpan>[];
     final contentWidth =
-        math.min(
-          MediaQuery.sizeOf(context).width,
-          kResponsiveContentMaxWidth,
-        ) -
+        math.min(MediaQuery.sizeOf(context).width, kResponsiveContentMaxWidth) -
         40;
     var offset = 0;
     final lines = text.split('\n');
@@ -118,10 +115,7 @@ class LiveMarkdownController extends TextEditingController {
           TextSpan(
             text: '\n',
             style: collapsesDividerSpacing
-                ? (style ?? const TextStyle()).copyWith(
-                    fontSize: 0,
-                    height: 0,
-                  )
+                ? (style ?? const TextStyle()).copyWith(fontSize: 0, height: 0)
                 : style,
           ),
         );
@@ -221,10 +215,11 @@ List<InlineSpan> markdownInlineSpans(
   final end = first.end;
   final absoluteStart = sourceOffset + start;
   final absoluteEnd = sourceOffset + end;
-  final revealThis = revealRange != null &&
+  final revealThis =
+      revealRange != null &&
       (revealRange.isCollapsed
           ? revealRange.start >= absoluteStart &&
-              revealRange.start <= absoluteEnd
+                revealRange.start <= absoluteEnd
           : revealRange.start < absoluteEnd && revealRange.end > absoluteStart);
   return [
     if (start > 0) TextSpan(text: text.substring(0, start), style: style),

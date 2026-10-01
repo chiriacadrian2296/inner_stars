@@ -112,10 +112,7 @@ class _LogoWatermarkState extends State<LogoWatermark>
                     );
                     return Transform.translate(
                       offset: Offset(
-                        widget.pulseDirection *
-                            side *
-                            _glideDistance *
-                            drift,
+                        widget.pulseDirection * side * _glideDistance * drift,
                         0,
                       ),
                       child: Transform.scale(scale: factor, child: child),
@@ -126,10 +123,7 @@ class _LogoWatermarkState extends State<LogoWatermark>
                   'assets/icon/Logo.svg',
                   width: side,
                   height: side,
-                  colorFilter: ColorFilter.mode(
-                    tint ?? color,
-                    BlendMode.srcIn,
-                  ),
+                  colorFilter: ColorFilter.mode(tint ?? color, BlendMode.srcIn),
                 ),
               ),
             ),
@@ -143,25 +137,13 @@ class _LogoWatermarkState extends State<LogoWatermark>
 /// The watermark color for a page about a [kind] of star, alpha included —
 /// built from the theme's own colors: gold eased toward white for anything
 /// burning (a lit star, a pulsar that kept its rhythm), so it reads cream
-/// rather than brown at this transparency; the night gradient's blues,
+/// rather than brown at this transparency; the app-night blues,
 /// brightened toward the unlit-star and dead-star blues, for anything dark
 /// (dead one step darker than unlit); and white for a slot still empty.
-Color logoWatermarkColor(
-  AppColors colors,
-  StarKind kind, {
-  bool lit = true,
-}) {
+Color logoWatermarkColor(AppColors colors, StarKind kind, {bool lit = true}) {
   final burning = Color.lerp(colors.gold, Colors.white, 0.55)!;
-  final dark = Color.lerp(
-    colors.nightlightGradientCenter,
-    colors.starUnlit,
-    0.8,
-  )!;
-  final dead = Color.lerp(
-    colors.nightlightGradientOuter,
-    colors.starDead,
-    0.7,
-  )!;
+  final dark = Color.lerp(colors.nightPanel, colors.starUnlit, 0.8)!;
+  final dead = Color.lerp(colors.night, colors.starDead, 0.7)!;
   final color = switch (kind) {
     StarKind.lit => burning,
     StarKind.pulsar => lit ? burning : dark,
@@ -176,10 +158,9 @@ const _opacity = 0.25;
 
 /// How big the watermark is, by state: full size for anything burning, a bit
 /// smaller for anything dark, smallest for a slot still empty or a dead star.
-double logoWatermarkScale(StarKind kind, {bool lit = true}) =>
-    switch (kind) {
-      StarKind.lit => 1,
-      StarKind.pulsar => lit ? 1 : 0.85,
-      StarKind.unlit => 0.85,
-      StarKind.nascent || StarKind.dead => 0.75,
-    };
+double logoWatermarkScale(StarKind kind, {bool lit = true}) => switch (kind) {
+  StarKind.lit => 1,
+  StarKind.pulsar => lit ? 1 : 0.85,
+  StarKind.unlit => 0.85,
+  StarKind.nascent || StarKind.dead => 0.75,
+};

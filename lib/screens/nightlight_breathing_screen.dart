@@ -365,7 +365,7 @@ class _NightlightBreathingScreenState extends State<NightlightBreathingScreen>
     final action = await showAppDialog<_CheckInAction>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => AppDialog(
         backgroundColor: colors.nightPanel,
         title: Text(
           strings.nightlightBreathingCheckInTitle,

@@ -71,8 +71,7 @@ class StarsShapeEditorScreen extends StatefulWidget {
   final String? initialShapeName;
 
   @override
-  State<StarsShapeEditorScreen> createState() =>
-      _StarsShapeEditorScreenState();
+  State<StarsShapeEditorScreen> createState() => _StarsShapeEditorScreenState();
 }
 
 /// A soft cap, distinct from `maxChainedStars` in constellation_layout.dart
@@ -127,6 +126,7 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
   /// front.
   final List<Offset> _points = [];
   final List<(int, int)> _edges = [];
+
   /// Parallel to [_points]: [_mirrorOf]\[i\] is the index of point i's
   /// mirror partner (see [_mirrorEnabled]), itself if it sits exactly on
   /// the mirror axis, or null if it has none — either mirror mode was off
@@ -269,8 +269,8 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
     await showAppDialog<void>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-              title: Text(
+        builder: (dialogContext, setDialogState) => AppDialog(
+          title: Text(
             strings.constellationEditorHelpTitle,
             style: TextStyle(color: colors.text),
           ),
@@ -349,7 +349,10 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                           Expanded(
                             child: Text(
                               strings.constellationEditorHelpDontShowAgain,
-                              style: TextStyle(color: colors.muted, fontSize: 13),
+                              style: TextStyle(
+                                color: colors.muted,
+                                fontSize: 13,
+                              ),
                             ),
                           ),
                         ],
@@ -533,8 +536,9 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
       // A self-mirrored point (sitting on the axis) stays pinned to it
       // while dragging, rather than drifting off; anything else moves its
       // separate partner to the reflected position instead.
-      _points[downIndex == mirrorIndex ? downIndex : mirrorIndex] =
-          downIndex == mirrorIndex
+      _points[downIndex == mirrorIndex
+          ? downIndex
+          : mirrorIndex] = downIndex == mirrorIndex
           ? (_mirrorVertical
                 ? Offset(0.5, relative.dy)
                 : Offset(relative.dx, 0.5))
@@ -673,7 +677,8 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
     final startingShape = widget.existing?.shape ?? widget.initialShape;
     final initialPoints = startingShape?.points ?? const <Offset>[];
     final initialEdges = startingShape?.edges ?? const <(int, int)>[];
-    return !listEquals(_points, initialPoints) || !listEquals(_edges, initialEdges);
+    return !listEquals(_points, initialPoints) ||
+        !listEquals(_edges, initialEdges);
   }
 
   /// Shared by the back button and the system back gesture (see the
@@ -700,8 +705,8 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
     final strings = context.strings;
     final confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-          title: Text(
+      builder: (dialogContext) => AppDialog(
+        title: Text(
           strings.discardChangesConfirmTitle,
           style: TextStyle(color: colors.text),
         ),
@@ -742,10 +747,7 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
     );
     final existing = widget.existing;
     final saved = existing == null
-        ? await widget.starsShapeRepository.add(
-            name: name,
-            shape: shape,
-          )
+        ? await widget.starsShapeRepository.add(name: name, shape: shape)
         : await widget.starsShapeRepository.update(
             id: existing.id,
             name: name,
@@ -858,7 +860,10 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                           ),
                           colors,
                         ),
-                        TextSpan(text: '     ', style: TextStyle(color: colors.muted)),
+                        TextSpan(
+                          text: '     ',
+                          style: TextStyle(color: colors.muted),
+                        ),
                         ..._highlightFirstNumber(
                           strings.constellationEditorDisconnectedWarning(
                             disconnected,
@@ -911,7 +916,8 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                               axis: Axis.horizontal,
                               child: _EditorToggle(
                                 icon: Icons.grid_on,
-                                label: strings.constellationEditorGridToggleLabel,
+                                label:
+                                    strings.constellationEditorGridToggleLabel,
                                 value: _gridEnabled,
                                 onChanged: (value) =>
                                     setState(() => _gridEnabled = value),
@@ -923,8 +929,8 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                               axis: Axis.horizontal,
                               child: _EditorToggle(
                                 icon: Icons.flip,
-                                label:
-                                    strings.constellationEditorMirrorToggleLabel,
+                                label: strings
+                                    .constellationEditorMirrorToggleLabel,
                                 value: _mirrorEnabled,
                                 onChanged: (value) =>
                                     setState(() => _mirrorEnabled = value),
@@ -992,128 +998,121 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                         fit: FlexFit.loose,
                         child: LayoutBuilder(
                           builder: (context, constraints) {
-                              final canvasSize = math.min(
-                                constraints.maxWidth,
-                                constraints.maxHeight,
-                              );
-                              // No [Center] wrapper here — Center always
-                              // fills whatever bounded space it's given
-                              // (that's what lets it center a child
-                              // *within* extra room), so it would report
-                              // its own size as the full available height
-                              // regardless of [canvasSize] being smaller,
-                              // silently defeating the parent [Flexible]'s
-                              // `loose` fit above. A bare [SizedBox]
-                              // reports its true, exact size instead, which
-                              // is what the outer Column's own
-                              // [mainAxisAlignment.center] needs to
-                              // actually have leftover height to work
-                              // with.
-                              return SizedBox(
-                                width: canvasSize,
-                                height: canvasSize,
-                                child: LayoutBuilder(
-                                  builder: (context, canvasConstraints) {
-                                      _canvasSize = canvasConstraints.biggest;
-                                      return Listener(
-                                        behavior: HitTestBehavior.opaque,
-                                        onPointerDown: _handlePointerDown,
-                                        onPointerMove: _handlePointerMove,
-                                        onPointerUp: _handlePointerUp,
-                                        child: StaggeredEntrance(
-                                          index: 4,
-                                          child: Container(
-                                            clipBehavior: Clip.antiAlias,
-                                            decoration: BoxDecoration(
-                                              color: colors.nightPanel,
-                                              border: Border.all(
-                                                color: colors.nightBorder,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                            child: Stack(
-                                              children: [
-                                                if (_gridEnabled)
-                                                  Positioned.fill(
-                                                    child: CustomPaint(
-                                                      painter: _GridPainter(
-                                                        divisions:
-                                                            _gridDivisions,
-                                                        color:
-                                                            colors.nightBorder,
-                                                        // Just a touch
-                                                        // brighter than the
-                                                        // regular grid lines —
-                                                        // a small blend
-                                                        // toward `muted`
-                                                        // rather than jumping
-                                                        // straight to it, so
-                                                        // the center reads as
-                                                        // "the same grid,
-                                                        // slightly lifted"
-                                                        // rather than a
-                                                        // visually distinct
-                                                        // line.
-                                                        centerColor: Color.lerp(
-                                                          colors.nightBorder,
-                                                          colors.muted,
-                                                          0.3,
-                                                        )!,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                if (_mirrorEnabled)
-                                                  Positioned.fill(
-                                                    child: CustomPaint(
-                                                      painter: _MirrorAxisPainter(
-                                                        vertical: _mirrorVertical,
-                                                        color: Colors.white
-                                                            .withValues(
-                                                              alpha: 0.5,
-                                                            ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                // No empty-canvas hint any
-                                                // more — the grid plus the
-                                                // help action already say
-                                                // enough, and an always-on
-                                                // canvas (no swap between a
-                                                // hint and the painter) is
-                                                // one less thing to jump the
-                                                // moment the first star
-                                                // lands.
-                                                CustomPaint(
-                                                  size:
-                                                      canvasConstraints.biggest,
-                                                  painter:
-                                                      ConstellationEditorPainter(
-                                                        points: _pixelPoints,
-                                                        edges: _edges,
-                                                        highlightedIndex:
-                                                            _armedIndex ??
-                                                            _draggingIndex,
-                                                        pointColor: colors.text,
-                                                        highlightColor:
-                                                            colors.gold,
-                                                        lineColor: Colors.white
-                                                            .withValues(
-                                                              alpha: 0.5,
-                                                            ),
-                                                      ),
-                                                ),
-                                              ],
-                                            ),
+                            final canvasSize = math.min(
+                              constraints.maxWidth,
+                              constraints.maxHeight,
+                            );
+                            // No [Center] wrapper here — Center always
+                            // fills whatever bounded space it's given
+                            // (that's what lets it center a child
+                            // *within* extra room), so it would report
+                            // its own size as the full available height
+                            // regardless of [canvasSize] being smaller,
+                            // silently defeating the parent [Flexible]'s
+                            // `loose` fit above. A bare [SizedBox]
+                            // reports its true, exact size instead, which
+                            // is what the outer Column's own
+                            // [mainAxisAlignment.center] needs to
+                            // actually have leftover height to work
+                            // with.
+                            return SizedBox(
+                              width: canvasSize,
+                              height: canvasSize,
+                              child: LayoutBuilder(
+                                builder: (context, canvasConstraints) {
+                                  _canvasSize = canvasConstraints.biggest;
+                                  return Listener(
+                                    behavior: HitTestBehavior.opaque,
+                                    onPointerDown: _handlePointerDown,
+                                    onPointerMove: _handlePointerMove,
+                                    onPointerUp: _handlePointerUp,
+                                    child: StaggeredEntrance(
+                                      index: 4,
+                                      child: Container(
+                                        clipBehavior: Clip.antiAlias,
+                                        decoration: BoxDecoration(
+                                          color: colors.nightPanel,
+                                          border: Border.all(
+                                            color: colors.nightBorder,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
                                           ),
                                         ),
-                                      );
-                                    },
-                                  ),
-                                );
-                            },
-                          ),
+                                        child: Stack(
+                                          children: [
+                                            if (_gridEnabled)
+                                              Positioned.fill(
+                                                child: CustomPaint(
+                                                  painter: _GridPainter(
+                                                    divisions: _gridDivisions,
+                                                    color: colors.nightBorder,
+                                                    // Just a touch
+                                                    // brighter than the
+                                                    // regular grid lines —
+                                                    // a small blend
+                                                    // toward `muted`
+                                                    // rather than jumping
+                                                    // straight to it, so
+                                                    // the center reads as
+                                                    // "the same grid,
+                                                    // slightly lifted"
+                                                    // rather than a
+                                                    // visually distinct
+                                                    // line.
+                                                    centerColor: Color.lerp(
+                                                      colors.nightBorder,
+                                                      colors.muted,
+                                                      0.3,
+                                                    )!,
+                                                  ),
+                                                ),
+                                              ),
+                                            if (_mirrorEnabled)
+                                              Positioned.fill(
+                                                child: CustomPaint(
+                                                  painter: _MirrorAxisPainter(
+                                                    vertical: _mirrorVertical,
+                                                    color: Colors.white
+                                                        .withValues(alpha: 0.5),
+                                                  ),
+                                                ),
+                                              ),
+                                            // No empty-canvas hint any
+                                            // more — the grid plus the
+                                            // help action already say
+                                            // enough, and an always-on
+                                            // canvas (no swap between a
+                                            // hint and the painter) is
+                                            // one less thing to jump the
+                                            // moment the first star
+                                            // lands.
+                                            CustomPaint(
+                                              size: canvasConstraints.biggest,
+                                              painter:
+                                                  ConstellationEditorPainter(
+                                                    points: _pixelPoints,
+                                                    edges: _edges,
+                                                    highlightedIndex:
+                                                        _armedIndex ??
+                                                        _draggingIndex,
+                                                    pointColor: colors.text,
+                                                    highlightColor: colors.gold,
+                                                    lineColor: Colors.white
+                                                        .withValues(alpha: 0.5),
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            );
+                          },
                         ),
+                      ),
                       const SizedBox(height: 8),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
@@ -1134,6 +1133,7 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                                   icon: Icons.undo,
                                   label: strings.undoAction,
                                   onTap: _undoStack.isEmpty ? null : _undo,
+                                  compact: true,
                                 ),
                               ),
                             ),
@@ -1146,6 +1146,7 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                                   icon: Icons.redo,
                                   label: strings.redoAction,
                                   onTap: _redoStack.isEmpty ? null : _redo,
+                                  compact: true,
                                 ),
                               ),
                             ),
@@ -1161,6 +1162,7 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                                       ? null
                                       : _deleteArmedPoint,
                                   danger: true,
+                                  compact: true,
                                 ),
                               ),
                             ),
@@ -1506,12 +1508,7 @@ class _GestureDiagramPainter extends CustomPainter {
         );
       } else {
         final y = size.height / 2;
-        _drawDashedLine(
-          canvas,
-          Offset(0, y),
-          Offset(size.width, y),
-          axisPaint,
-        );
+        _drawDashedLine(canvas, Offset(0, y), Offset(size.width, y), axisPaint);
       }
     }
 
@@ -1800,7 +1797,7 @@ class _NameConstellationDialogState extends State<_NameConstellationDialog> {
   Widget build(BuildContext context) {
     final strings = context.strings;
     final colors = context.colors;
-    return AlertDialog(
+    return AppDialog(
       title: Text(
         strings.nameYourConstellationTitle,
         style: TextStyle(color: colors.text),

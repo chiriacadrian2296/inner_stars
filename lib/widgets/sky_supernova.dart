@@ -220,7 +220,12 @@ class _SkySupernovaPainter extends CustomPainter {
   /// itself. All three via `TextStyle.foreground` (the stroke/fill-text
   /// technique — `TextStyle` has no stroke+fill+blur of its own, but a
   /// `Paint` with those set, dropped into `foreground`, reproduces each).
-  void _paintOutlineIcon(Canvas canvas, Offset center, double diameter, IconData icon) {
+  void _paintOutlineIcon(
+    Canvas canvas,
+    Offset center,
+    double diameter,
+    IconData icon,
+  ) {
     final text = String.fromCharCode(icon.codePoint);
     // Border thinned further (was diameter * 0.03) and the glow pulled
     // shortened again (was diameter * 0.14, then 0.11).
@@ -233,7 +238,8 @@ class _SkySupernovaPainter extends CustomPainter {
     // need to move, only which end of it is "light" and which is "dark".
     // A faster spin (was 0.6) for a shorter, quicker-feeling cycle.
     final glowAngle = time * 2.2;
-    final glowAxis = Offset(math.cos(glowAngle), math.sin(glowAngle)) * (diameter / 2);
+    final glowAxis =
+        Offset(math.cos(glowAngle), math.sin(glowAngle)) * (diameter / 2);
     final glowShader = ui.Gradient.linear(
       center - glowAxis,
       center + glowAxis,
@@ -293,7 +299,8 @@ class _SkySupernovaPainter extends CustomPainter {
       )
       ..layout();
 
-    final topLeft = center - Offset(outlinePainter.width / 2, outlinePainter.height / 2);
+    final topLeft =
+        center - Offset(outlinePainter.width / 2, outlinePainter.height / 2);
     glowPainter.paint(canvas, topLeft);
     fillPainter.paint(canvas, topLeft);
     outlinePainter.paint(canvas, topLeft);

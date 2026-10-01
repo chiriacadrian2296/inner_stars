@@ -290,11 +290,7 @@ class SearchCardTextContent extends StatelessWidget {
 /// A compact, visual-first fact on a search card. A photo needs only its
 /// gold glyph; intensity uses the same gold disc/bolt language as the Sky.
 class SearchCardMetric {
-  const SearchCardMetric({
-    required this.icon,
-    this.value,
-    this.color,
-  });
+  const SearchCardMetric({required this.icon, this.value, this.color});
 
   final IconData icon;
   final String? value;
@@ -313,11 +309,7 @@ class _SearchCardMetric extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final color = metric.color ?? colors.gold;
-    final icon = Icon(
-      metric.icon,
-      size: 14,
-      color: color,
-    );
+    final icon = Icon(metric.icon, size: 14, color: color);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -446,9 +438,7 @@ class SearchStarVisual extends StatelessWidget {
           colors: [c.withValues(alpha: 0.28), c.withValues(alpha: 0)],
         );
     return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: both ? null : glow(color),
-      ),
+      decoration: BoxDecoration(gradient: both ? null : glow(color)),
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -663,10 +653,7 @@ class _SearchQuickMenu extends StatelessWidget {
     final span = (1 - index * stagger).clamp(0.4, 1.0);
     final t = ((progress - index * stagger) / span).clamp(0.0, 1.0);
     final eased = Curves.easeOutCubic.transform(t);
-    return Opacity(
-      opacity: eased,
-      child: child,
-    );
+    return Opacity(opacity: eased, child: child);
   }
 }
 

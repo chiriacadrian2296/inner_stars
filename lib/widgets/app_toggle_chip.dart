@@ -25,7 +25,7 @@ class AppToggleChip extends StatelessWidget {
 
   final String label;
   final bool value;
-  final ValueChanged<bool> onChanged;
+  final ValueChanged<bool>? onChanged;
 
   /// Overrides the label's color. The one caller that passes this is the
   /// reflection screen, which sits on the Nightlight gradient rather than
@@ -39,36 +39,49 @@ class AppToggleChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final enabled = onChanged != null;
     return Center(
-      child: InkWell(
-        onTap: () => onChanged(!value),
-        borderRadius: BorderRadius.circular(_pillRadius),
-        child: Container(
-          padding: const EdgeInsets.only(left: 16, right: 6),
-          decoration: selectableDecoration(
-            colors,
-            selected: value,
-            radius: _pillRadius,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: labelColor ?? colors.text,
-                  fontWeight: value ? FontWeight.w600 : FontWeight.w400,
-                ),
+      child: Semantics(
+        button: true,
+        toggled: value,
+        enabled: enabled,
+        label: label,
+        child: Opacity(
+          opacity: enabled ? 1 : 0.45,
+          child: InkWell(
+            onTap: enabled ? () => onChanged!(!value) : null,
+            borderRadius: BorderRadius.circular(_pillRadius),
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 48),
+              padding: const EdgeInsets.only(left: 16, right: 6),
+              decoration: selectableDecoration(
+                colors,
+                selected: value,
+                radius: _pillRadius,
               ),
-              const SizedBox(width: 6),
-              // Shrunk to sit comfortably inside a pill rather than
-              // dominating it; the colors are the theme's, untouched.
-              Transform.scale(
-                scale: 0.8,
-                child: Switch(value: value, onChanged: onChanged),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ExcludeSemantics(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: labelColor ?? colors.text,
+                        fontWeight: value ? FontWeight.w600 : FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  ExcludeSemantics(
+                    child: Transform.scale(
+                      scale: 0.8,
+                      child: Switch(value: value, onChanged: onChanged),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

@@ -181,11 +181,7 @@ class _ProjectPickerSheetState extends State<_ProjectPickerSheet> {
                 style: TextStyle(color: colors.text, fontSize: 15),
                 decoration: InputDecoration(
                   hintText: strings.searchHint,
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: colors.muted,
-                    size: 20,
-                  ),
+                  prefixIcon: Icon(Icons.search, color: colors.muted, size: 20),
                 ),
               ),
             ),
@@ -193,7 +189,8 @@ class _ProjectPickerSheetState extends State<_ProjectPickerSheet> {
             StaggeredEntrance(
               index: 2,
               child: InkWell(
-                onTap: () => Navigator.of(context).pop(const _CreateNewProject()),
+                onTap: () =>
+                    Navigator.of(context).pop(const _CreateNewProject()),
                 borderRadius: BorderRadius.circular(kRadiusField),
                 child: Container(
                   width: double.infinity,
@@ -232,10 +229,7 @@ class _ProjectPickerSheetState extends State<_ProjectPickerSheet> {
                                   )
                                 : strings.noSearchResults,
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: colors.muted,
-                              fontSize: 14,
-                            ),
+                            style: TextStyle(color: colors.muted, fontSize: 14),
                           ),
                         ),
                       ),
@@ -342,11 +336,7 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
                 style: TextStyle(color: colors.text, fontSize: 15),
                 decoration: InputDecoration(
                   hintText: strings.searchHint,
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: colors.muted,
-                    size: 20,
-                  ),
+                  prefixIcon: Icon(Icons.search, color: colors.muted, size: 20),
                 ),
               ),
             ),
@@ -354,7 +344,8 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
             StaggeredEntrance(
               index: 2,
               child: InkWell(
-                onTap: () => Navigator.of(context).pop(const _CreateNewProject()),
+                onTap: () =>
+                    Navigator.of(context).pop(const _CreateNewProject()),
                 borderRadius: BorderRadius.circular(kRadiusField),
                 child: Container(
                   width: double.infinity,
@@ -391,10 +382,7 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
                                 ? strings.noProjectsYet
                                 : strings.noSearchResults,
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: colors.muted,
-                              fontSize: 14,
-                            ),
+                            style: TextStyle(color: colors.muted, fontSize: 14),
                           ),
                         ),
                       ),

@@ -78,7 +78,7 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
     final controller = TextEditingController(text: existing?.content ?? '');
     final result = await showAppDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => AppDialog(
         title: Text(context.strings.moodboardQuote),
         content: TextField(
           controller: controller,
@@ -155,29 +155,32 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                       IconButton(
                         tooltip: context.strings.moodboardRemove,
                         onPressed: () async {
-                    final confirmed = await showAppDialog<bool>(
-                      context: context,
-                      builder: (dialogContext) => AlertDialog(
-                        title: Text(
-                          dialogContext.strings.moodboardRemoveConfirm,
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () =>
-                                Navigator.pop(dialogContext, false),
-                            child: Text(dialogContext.strings.cancel),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(dialogContext, true),
-                            child: Text(dialogContext.strings.moodboardRemove),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (confirmed == true && mounted) {
-                      Navigator.pop(context, 'delete');
-                    }
-                  },
+                          final confirmed = await showAppDialog<bool>(
+                            context: context,
+                            builder: (dialogContext) => AppDialog(
+                              title: Text(
+                                dialogContext.strings.moodboardRemoveConfirm,
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(dialogContext, false),
+                                  child: Text(dialogContext.strings.cancel),
+                                ),
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(dialogContext, true),
+                                  child: Text(
+                                    dialogContext.strings.moodboardRemove,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirmed == true && mounted) {
+                            Navigator.pop(context, 'delete');
+                          }
+                        },
                         icon: const Icon(Icons.delete_outline),
                       ),
                     ],
@@ -273,65 +276,66 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
               ),
             ResponsiveContent(
               child: Column(
-            children: [
-              if (_busy) const LinearProgressIndicator(color: Colors.white),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      StaggeredEntrance(
-                        index: 0,
-                        child: AreaSectionHeader(
-                          title:
-                              '${strings.moodboardTitle} - ${widget.area.displayName(strings)}',
-                          description: strings.moodboardPageDescription,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      StaggeredEntrance(
-                        index: 1,
-                        child: Center(
-                          child: Text(
-                            strings.moodboardAddLabel,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
+                children: [
+                  if (_busy) const LinearProgressIndicator(color: Colors.white),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          StaggeredEntrance(
+                            index: 0,
+                            child: AreaSectionHeader(
+                              title:
+                                  '${strings.moodboardTitle} - ${widget.area.displayName(strings)}',
+                              description: strings.moodboardPageDescription,
                             ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      if (isTouchOnlyMobile)
-                        SizedBox(
-                          width: double.infinity,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: sideBySideActions,
+                          const SizedBox(height: 24),
+                          StaggeredEntrance(
+                            index: 1,
+                            child: Center(
+                              child: Text(
+                                strings.moodboardAddLabel,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
                           ),
-                        )
-                      else
-                        Center(
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            alignment: WrapAlignment.center,
-                            children: sideBySideActions,
+                          const SizedBox(height: 10),
+                          if (isTouchOnlyMobile)
+                            SizedBox(
+                              width: double.infinity,
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: sideBySideActions,
+                              ),
+                            )
+                          else
+                            Center(
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                alignment: WrapAlignment.center,
+                                children: sideBySideActions,
+                              ),
+                            ),
+                          const SizedBox(height: 20),
+                          // The grid staggers its own tiles (see MoodboardGrid).
+                          MoodboardGrid(
+                            items: _items,
+                            onTap: _busy ? null : _open,
+                            showEmptyMessage: false,
                           ),
-                        ),
-                      const SizedBox(height: 20),
-                      // The grid staggers its own tiles (see MoodboardGrid).
-                      MoodboardGrid(
-                        items: _items,
-                        onTap: _busy ? null : _open,
-                        showEmptyMessage: false,
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            ],
+                ],
               ),
             ),
           ],

@@ -23,7 +23,8 @@ class SkyWisps extends StatefulWidget {
   State<SkyWisps> createState() => _SkyWispsState();
 }
 
-class _SkyWispsState extends State<SkyWisps> with SingleTickerProviderStateMixin {
+class _SkyWispsState extends State<SkyWisps>
+    with SingleTickerProviderStateMixin {
   ui.FragmentShader? _shader;
   late final Ticker _ticker;
   Duration _elapsed = Duration.zero;
@@ -37,7 +38,9 @@ class _SkyWispsState extends State<SkyWisps> with SingleTickerProviderStateMixin
   }
 
   Future<void> _loadShader() async {
-    final program = await ui.FragmentProgram.fromAsset('shaders/sky_wisps.frag');
+    final program = await ui.FragmentProgram.fromAsset(
+      'shaders/sky_wisps.frag',
+    );
     if (!mounted) return;
     setState(() => _shader = program.fragmentShader());
   }

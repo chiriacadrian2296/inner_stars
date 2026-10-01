@@ -28,7 +28,7 @@ class ShareablePulsarCard extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Container(decoration: BoxDecoration(gradient: colors.nightlightGradient)),
+        ColoredBox(color: colors.night),
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -43,7 +43,7 @@ class ShareablePulsarCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     ProjectTag(
                       project: project!,
-                      textColor: colors.nightlightMuted,
+                      textColor: colors.muted,
                       iconSize: 17,
                       fontSize: 17,
                     ),
@@ -69,7 +69,7 @@ class ShareablePulsarCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         height: 1.6,
-                        color: colors.nightlightMuted,
+                        color: colors.muted,
                       ),
                     ),
                   ],

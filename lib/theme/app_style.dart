@@ -33,6 +33,18 @@ const double kRadiusCard = 16;
 /// other.
 const double kRadiusPill = 999;
 
+/// Shared spacing rhythm. Page-level insets intentionally have three named
+/// contexts; arbitrary per-screen values should not be added beside them.
+const double kSpaceXs = 6;
+const double kSpaceSm = 10;
+const double kSpaceMd = 16;
+const double kSpaceLg = 24;
+const double kSpaceXl = 32;
+const double kSpaceXxl = 44;
+const double kPageInsetCompact = 20;
+const double kPageInsetRegular = 24;
+const double kPageInsetImmersive = 28;
+
 /// Border weights. Active is heavier as well as gold — the weight alone
 /// carries the state for anyone who can't easily separate the two colors.
 ///
@@ -125,16 +137,33 @@ enum FieldState {
 
   /// Being typed into or otherwise engaged. Gold ring and a glow.
   focused,
+
+  /// Invalid and requires attention. Danger takes precedence over focus.
+  error,
+
+  /// Unavailable for interaction but still readable.
+  disabled,
 }
 
 /// Resolves [FieldState] from the two things a field actually knows.
-FieldState fieldStateOf({required bool hasValue, required bool focused}) {
+FieldState fieldStateOf({
+  required bool hasValue,
+  required bool focused,
+  bool enabled = true,
+  bool hasError = false,
+}) {
+  if (!enabled) return FieldState.disabled;
+  if (hasError) return FieldState.error;
   if (focused) return FieldState.focused;
   return hasValue ? FieldState.filled : FieldState.empty;
 }
 
 Color fieldBorderColor(AppColors colors, FieldState state) {
-  return state == FieldState.empty ? colors.nightBorder : colors.gold;
+  return switch (state) {
+    FieldState.empty || FieldState.disabled => colors.nightBorder,
+    FieldState.error => colors.danger,
+    FieldState.filled || FieldState.focused => colors.gold,
+  };
 }
 
 /// The same in every state: a field's border takes up room, so a thicker one

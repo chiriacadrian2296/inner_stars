@@ -30,7 +30,7 @@ class ShareableGoalCard extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Container(decoration: BoxDecoration(gradient: colors.nightlightGradient)),
+        ColoredBox(color: colors.night),
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -47,7 +47,7 @@ class ShareableGoalCard extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: kFontMono,
                       fontSize: 15,
-                      color: colors.nightlightMuted,
+                      color: colors.muted,
                     ),
                   ),
                   if (project != null) ...[
@@ -56,7 +56,7 @@ class ShareableGoalCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     ProjectTag(
                       project: project!,
-                      textColor: colors.nightlightMuted,
+                      textColor: colors.muted,
                       iconSize: 17,
                       fontSize: 17,
                     ),
@@ -82,7 +82,7 @@ class ShareableGoalCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         height: 1.6,
-                        color: colors.nightlightMuted,
+                        color: colors.muted,
                       ),
                     ),
                   ],

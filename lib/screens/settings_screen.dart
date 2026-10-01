@@ -26,6 +26,7 @@ import '../settings/settings_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
+import '../theme/app_typography.dart';
 import '../tutorials/tutorial_management.dart' show kAllTourNames;
 import '../utils/app_modals.dart';
 import '../widgets/apk_download_prompt.dart';
@@ -333,7 +334,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     final confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => AppDialog(
         title: Text(strings.resetAllDataConfirmTitle),
         content: Text(strings.resetAllDataConfirmBody),
         actions: [
@@ -810,7 +811,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 StaggeredEntrance(
                                   index: 3,
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Icon(
                                         Icons.android,
@@ -958,14 +960,7 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        color: context.colors.muted,
-      ),
-    );
+    return Text(label, style: context.typography.compactSectionLabel);
   }
 }
 
@@ -1019,7 +1014,11 @@ class _PlaceholderPanel extends StatelessWidget {
               axis: Axis.horizontal,
               child: Text(
                 body,
-                style: TextStyle(color: colors.muted, fontSize: 13, height: 1.45),
+                style: TextStyle(
+                  color: colors.muted,
+                  fontSize: 13,
+                  height: 1.45,
+                ),
               ),
             ),
           ),

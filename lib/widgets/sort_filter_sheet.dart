@@ -4,6 +4,7 @@ import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
+import 'app_choice_chip.dart';
 import 'staggered_entrance.dart';
 
 /// What Sky's Constellations/Stars lists can be ordered by — the same three
@@ -97,10 +98,11 @@ class _SortFilterSheetState extends State<_SortFilterSheet> {
                   child: StaggeredEntrance(
                     index: 0,
                     axis: Axis.horizontal,
-                    child: _SortFieldChip(
+                    child: AppChoiceChip(
                       label: strings.sortFieldDate,
                       selected: _field == SortField.date,
-                      onTap: () => setState(() => _field = SortField.date),
+                      onPressed: () => setState(() => _field = SortField.date),
+                      expand: true,
                     ),
                   ),
                 ),
@@ -109,10 +111,12 @@ class _SortFilterSheetState extends State<_SortFilterSheet> {
                   child: StaggeredEntrance(
                     index: 1,
                     axis: Axis.horizontal,
-                    child: _SortFieldChip(
+                    child: AppChoiceChip(
                       label: strings.sortFieldIntensity,
                       selected: _field == SortField.intensity,
-                      onTap: () => setState(() => _field = SortField.intensity),
+                      onPressed: () =>
+                          setState(() => _field = SortField.intensity),
+                      expand: true,
                     ),
                   ),
                 ),
@@ -121,10 +125,11 @@ class _SortFilterSheetState extends State<_SortFilterSheet> {
                   child: StaggeredEntrance(
                     index: 2,
                     axis: Axis.horizontal,
-                    child: _SortFieldChip(
+                    child: AppChoiceChip(
                       label: strings.sortFieldName,
                       selected: _field == SortField.name,
-                      onTap: () => setState(() => _field = SortField.name),
+                      onPressed: () => setState(() => _field = SortField.name),
+                      expand: true,
                     ),
                   ),
                 ),
@@ -164,41 +169,6 @@ class _SortFilterSheetState extends State<_SortFilterSheet> {
 
 /// A single-line sort-field chip — same treatment as `_PresetChip` in
 /// `date_range_filter_sheet.dart`.
-class _SortFieldChip extends StatelessWidget {
-  const _SortFieldChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(kRadiusField),
-      child: Container(
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: selectableDecoration(colors, selected: selected),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 13.5,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-            color: selected ? colors.text : colors.muted,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// Flips [SortDirection] on tap — an up or down arrow standing in for
 /// ascending/descending rather than spelling either word out, since this
 /// sheet is already tight on width with three field chips beside it.

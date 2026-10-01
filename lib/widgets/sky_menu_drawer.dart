@@ -214,10 +214,7 @@ class SkyMenuContent extends StatelessWidget {
               // actually keeps it from reading as *too* tightly
               // shrink-wrapped now that [Dialog]'s own 280 default
               // minWidth is off.
-              padding: const EdgeInsets.symmetric(
-                horizontal: 32,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
               // The Row default (fills whatever width it's given), not
               // `mainAxisSize.min` — every row is now stretched to the
               // width of the widest one by the `IntrinsicWidth` +
@@ -662,7 +659,10 @@ class SkyMenuModalFrame extends StatefulWidget {
   /// [ScrollPhysics] this frame needs its scrollable descendant to use
   /// — see [_SkyMenuModalFrameState]'s own doc comment on why both are
   /// necessary for a pull that can be canceled by reversing direction.
-  final Widget Function(ScrollController scrollController, ScrollPhysics? physics)
+  final Widget Function(
+    ScrollController scrollController,
+    ScrollPhysics? physics,
+  )
   builder;
 
   @override

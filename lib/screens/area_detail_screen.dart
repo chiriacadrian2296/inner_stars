@@ -85,7 +85,10 @@ class AreaReflectionsScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 26),
-                      ReflectionQuestionsSection(area: area, repository: repository),
+                      ReflectionQuestionsSection(
+                        area: area,
+                        repository: repository,
+                      ),
                     ],
                   ),
                 ),
@@ -180,238 +183,257 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
             decoration: const BoxDecoration(color: Colors.black),
             child: ResponsiveContent(
               child: Stack(
-              fit: StackFit.expand,
-              children: [
-                GestureDetector(
-                  onHorizontalDragEnd: (details) {
-                    final velocity = details.primaryVelocity ?? 0;
-                    if (velocity.abs() > 180) _moveBy(velocity < 0 ? 1 : -1);
-                  },
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return Column(
-                        children: [
-                          _AreaNavigationBar(
-                            title: area.displayName(strings),
-                            replayKey: area,
-                            reverse: _contentReverse,
-                            animate: _hasNavigatedAreas,
-                            onPrevious: () => _moveBy(-1),
-                            onNext: () => _moveBy(1),
-                          ),
-                          Expanded(
-                            child: CustomScrollView(
-                          slivers: [
-                            const SliverToBoxAdapter(
-                              child: SizedBox(height: 16),
+                fit: StackFit.expand,
+                children: [
+                  GestureDetector(
+                    onHorizontalDragEnd: (details) {
+                      final velocity = details.primaryVelocity ?? 0;
+                      if (velocity.abs() > 180) _moveBy(velocity < 0 ? 1 : -1);
+                    },
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return Column(
+                          children: [
+                            _AreaNavigationBar(
+                              title: area.displayName(strings),
+                              replayKey: area,
+                              reverse: _contentReverse,
+                              animate: _hasNavigatedAreas,
+                              onPrevious: () => _moveBy(-1),
+                              onNext: () => _moveBy(1),
                             ),
-                            SliverToBoxAdapter(
-                              child: StaggeredEntrance(
-                                key: ValueKey('area-art-${area.name}'),
-                                index: 0,
-                                axis: Axis.horizontal,
-                                reverse: _contentReverse,
-                                child: SizedBox(
-                                  width: double.infinity,
-                                  child: tonedAreaHeroArt(
-                                    child: Image.asset(
-                                      kAreaHeroArt[area]!.skyAsset,
-                                      width: constraints.maxWidth,
-                                      fit: BoxFit.fitWidth,
+                            Expanded(
+                              child: CustomScrollView(
+                                slivers: [
+                                  const SliverToBoxAdapter(
+                                    child: SizedBox(height: 16),
+                                  ),
+                                  SliverToBoxAdapter(
+                                    child: StaggeredEntrance(
+                                      key: ValueKey('area-art-${area.name}'),
+                                      index: 0,
+                                      axis: Axis.horizontal,
+                                      reverse: _contentReverse,
+                                      child: SizedBox(
+                                        width: double.infinity,
+                                        child: tonedAreaHeroArt(
+                                          child: Image.asset(
+                                            kAreaHeroArt[area]!.skyAsset,
+                                            width: constraints.maxWidth,
+                                            fit: BoxFit.fitWidth,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
+                                  SliverToBoxAdapter(
+                                    child: Padding(
+                                      padding: EdgeInsets.fromLTRB(
+                                        28,
+                                        36,
+                                        28,
+                                        80 +
+                                            MediaQuery.paddingOf(context)
+                                                .bottom,
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          _AreaSection(
+                                            index: 0,
+                                            replayKey: area,
+                                            reverse: _contentReverse,
+                                            title: strings.areaCoverVisionTitle,
+                                            preview: VisionMarkdown(
+                                              data: vision.trim().isEmpty
+                                                  ? area.visionPlaceholder(
+                                                      strings,
+                                                    )
+                                                  : vision,
+                                              color: Colors.white,
+                                            ),
+                                            action: HintTarget(
+                                              tour: 'supernova-vision',
+                                              order: 3,
+                                              showArrow: true,
+                                              contentBuilder: appTourStepCard,
+                                              title: strings
+                                                  .supernovaTourEditTitle,
+                                              description:
+                                                  strings.supernovaTourEditBody,
+                                              child: _SectionButton(
+                                                index: 2,
+                                                replayKey: area,
+                                                reverse: _contentReverse,
+                                                label: strings.areaSectionOpen,
+                                                onPressed: () => _open(
+                                                  VisionEditorScreen(
+                                                    area: area,
+                                                    repository: widget
+                                                        .areaVisionRepository,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          _AreaSection(
+                                            index: 2,
+                                            replayKey: area,
+                                            reverse: _contentReverse,
+                                            staggerPreview: false,
+                                            showWatermark: false,
+                                            title: strings.moodboardTitle,
+                                            preview:
+                                                FutureBuilder<
+                                                  MoodboardRepository
+                                                >(
+                                                  future: _moodboard,
+                                                  builder: (context, snapshot) {
+                                                    if (snapshot.hasError) {
+                                                      return Text(
+                                                        strings
+                                                            .moodboardSaveError,
+                                                      );
+                                                    }
+                                                    if (!snapshot.hasData) {
+                                                      return const Center(
+                                                        child:
+                                                            CircularProgressIndicator(
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                      );
+                                                    }
+                                                    return MoodboardGrid(
+                                                      placeholders: true,
+                                                      items: snapshot.data!
+                                                          .getItems(area)
+                                                          .take(6)
+                                                          .toList(),
+                                                    );
+                                                  },
+                                                ),
+                                            action: _SectionButton(
+                                              index: 4,
+                                              replayKey: area,
+                                              reverse: _contentReverse,
+                                              label: strings.areaSectionOpen,
+                                              onPressed: _openMoodboard,
+                                            ),
+                                          ),
+                                          _AreaSection(
+                                            index: 4,
+                                            replayKey: area,
+                                            reverse: _contentReverse,
+                                            title: strings.areaReflectionsTitle,
+                                            preview: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  '${answers.length}/${questions.length} ${strings.reflectionAnsweredCountLabel}',
+                                                  style: const TextStyle(
+                                                    color: Colors.white54,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 12),
+                                                for (
+                                                  var i = 0;
+                                                  i < questions.length;
+                                                  i++
+                                                ) ...[
+                                                  Text(
+                                                    questions[i],
+                                                    style: const TextStyle(
+                                                      fontFamily:
+                                                          kFontStarTitle,
+                                                      fontSize: 18,
+                                                      height: 1.4,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 6),
+                                                  Text(
+                                                    answers['$i']?.answerText ??
+                                                        strings
+                                                            .reflectionAnswerHint,
+                                                    maxLines: 2,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                      color: Colors.white60,
+                                                      height: 1.4,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 18),
+                                                ],
+                                              ],
+                                            ),
+                                            action: HintTarget(
+                                              tour: 'supernova-vision',
+                                              order: 4,
+                                              showArrow: true,
+                                              contentBuilder: appTourStepCard,
+                                              title: strings
+                                                  .supernovaTourReflectionTitle,
+                                              description: strings
+                                                  .supernovaTourReflectionBody,
+                                              child: _SectionButton(
+                                                index: 6,
+                                                replayKey: area,
+                                                reverse: _contentReverse,
+                                                label: strings.areaSectionOpen,
+                                                onPressed: () => _open(
+                                                  AreaReflectionsScreen(
+                                                    area: area,
+                                                    repository: widget
+                                                        .reflectionAnswerRepository,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              28,
-                              36,
-                              28,
-                              80 + MediaQuery.paddingOf(context).bottom,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _AreaSection(
-                                  index: 0,
-                                  replayKey: area,
-                                  reverse: _contentReverse,
-                                  title: strings.areaCoverVisionTitle,
-                                  preview: VisionMarkdown(
-                                    data: vision.trim().isEmpty
-                                        ? area.visionPlaceholder(strings)
-                                        : vision,
-                                    color: Colors.white,
-                                  ),
-                                  action: HintTarget(
-                                    tour: 'supernova-vision',
-                                    order: 3,
-                                    showArrow: true,
-                                    contentBuilder: appTourStepCard,
-                                    title: strings.supernovaTourEditTitle,
-                                    description: strings.supernovaTourEditBody,
-                                    child: _SectionButton(
-                                      index: 2,
-                                      replayKey: area,
-                                      reverse: _contentReverse,
-                                      label: strings.areaSectionOpen,
-                                      onPressed: () => _open(
-                                        VisionEditorScreen(
-                                          area: area,
-                                          repository:
-                                              widget.areaVisionRepository,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                _AreaSection(
-                                  index: 2,
-                                  replayKey: area,
-                                  reverse: _contentReverse,
-                                  staggerPreview: false,
-                                  showWatermark: false,
-                                  title: strings.moodboardTitle,
-                                  preview: FutureBuilder<MoodboardRepository>(
-                                    future: _moodboard,
-                                    builder: (context, snapshot) {
-                                      if (snapshot.hasError) {
-                                        return Text(strings.moodboardSaveError);
-                                      }
-                                      if (!snapshot.hasData) {
-                                        return const Center(
-                                          child: CircularProgressIndicator(
-                                            color: Colors.white,
-                                          ),
-                                        );
-                                      }
-                                      return MoodboardGrid(
-                                        placeholders: true,
-                                        items: snapshot.data!
-                                            .getItems(area)
-                                            .take(6)
-                                            .toList(),
-                                      );
-                                    },
-                                  ),
-                                  action: _SectionButton(
-                                    index: 4,
-                                    replayKey: area,
-                                    reverse: _contentReverse,
-                                    label: strings.areaSectionOpen,
-                                    onPressed: _openMoodboard,
-                                  ),
-                                ),
-                                _AreaSection(
-                                  index: 4,
-                                  replayKey: area,
-                                  reverse: _contentReverse,
-                                  title: strings.areaReflectionsTitle,
-                                  preview: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        '${answers.length}/${questions.length} ${strings.reflectionAnsweredCountLabel}',
-                                        style: const TextStyle(
-                                          color: Colors.white54,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      for (
-                                        var i = 0;
-                                        i < questions.length;
-                                        i++
-                                      ) ...[
-                                        Text(
-                                          questions[i],
-                                          style: const TextStyle(
-                                            fontFamily: kFontStarTitle,
-                                            fontSize: 18,
-                                            height: 1.4,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          answers['$i']?.answerText ??
-                                              strings.reflectionAnswerHint,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            color: Colors.white60,
-                                            height: 1.4,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 18),
-                                      ],
-                                    ],
-                                  ),
-                                  action: HintTarget(
-                                    tour: 'supernova-vision',
-                                    order: 4,
-                                    showArrow: true,
-                                    contentBuilder: appTourStepCard,
-                                    title: strings.supernovaTourReflectionTitle,
-                                    description:
-                                        strings.supernovaTourReflectionBody,
-                                    child: _SectionButton(
-                                      index: 6,
-                                      replayKey: area,
-                                      reverse: _contentReverse,
-                                      label: strings.areaSectionOpen,
-                                      onPressed: () => _open(
-                                        AreaReflectionsScreen(
-                                          area: area,
-                                          repository:
-                                              widget.reflectionAnswerRepository,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: _AreaDock(
+                      animate: !_hasNavigatedAreas,
+                      onVision: () => _open(
+                        VisionEditorScreen(
+                          area: area,
+                          repository: widget.areaVisionRepository,
                         ),
-                      ],
+                      ),
+                      onMoodboard: _openMoodboard,
+                      onReflections: () => _open(
+                        AreaReflectionsScreen(
+                          area: area,
+                          repository: widget.reflectionAnswerRepository,
+                        ),
+                      ),
+                      onNewConstellation: _openNewConstellation,
                     ),
                   ),
                 ],
-              );
-                    },
-                  ),
-                ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: _AreaDock(
-                    animate: !_hasNavigatedAreas,
-                    onVision: () => _open(
-                      VisionEditorScreen(
-                        area: area,
-                        repository: widget.areaVisionRepository,
-                      ),
-                    ),
-                    onMoodboard: _openMoodboard,
-                    onReflections: () => _open(
-                      AreaReflectionsScreen(
-                        area: area,
-                        repository: widget.reflectionAnswerRepository,
-                      ),
-                    ),
-                    onNewConstellation: _openNewConstellation,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
       ),
-    ),
     );
   }
 }
@@ -680,55 +702,55 @@ class _AreaSection extends StatelessWidget {
       child: ClipRect(
         clipBehavior: Clip.antiAliasWithSaveLayer,
         child: ScrollbarTheme(
-              data: ScrollbarTheme.of(context).copyWith(minThumbLength: 10),
-              // The thumb is painted after the Stack, while the fades still
-              // stay above the preview content. Its track can therefore run
-              // to the real bottom edge of the preview.
-              child: Scrollbar(
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    if (showWatermark)
-                      Positioned.fill(
-                        child: LogoWatermark(
-                          scale: logoWatermarkScale(StarKind.nascent),
-                          color: logoWatermarkColor(
-                            context.colors,
-                            StarKind.nascent,
-                          ),
-                        ),
-                      ),
-                    SingleChildScrollView(child: preview),
-                    const IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Colors.black, Colors.transparent],
-                            stops: [0, 0.22],
-                          ),
-                        ),
+          data: ScrollbarTheme.of(context).copyWith(minThumbLength: 10),
+          // The thumb is painted after the Stack, while the fades still
+          // stay above the preview content. Its track can therefore run
+          // to the real bottom edge of the preview.
+          child: Scrollbar(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (showWatermark)
+                  Positioned.fill(
+                    child: LogoWatermark(
+                      scale: logoWatermarkScale(StarKind.nascent),
+                      color: logoWatermarkColor(
+                        context.colors,
+                        StarKind.nascent,
                       ),
                     ),
-                    const IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Colors.transparent, Colors.black],
-                            stops: [0.78, 1],
-                          ),
-                        ),
+                  ),
+                SingleChildScrollView(child: preview),
+                const IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.black, Colors.transparent],
+                        stops: [0, 0.22],
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
+                const IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, Colors.black],
+                        stops: [0.78, 1],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
+          ),
         ),
-      );
+      ),
+    );
     return staggerPreview
         ? StaggeredEntrance(
             index: index + 1,

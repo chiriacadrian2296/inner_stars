@@ -193,7 +193,11 @@ Offset constellationWorldPosition(LifeArea area, int indexInArea) {
 /// a whole packed ring of them) doesn't have to duplicate the tangent-frame
 /// math. See [constellationWorldPosition] for why this is done in 3D
 /// rather than by offsetting azimuth/elevation directly.
-Offset offsetWorldPosition(Offset center, double radiusRadians, double angleRadians) {
+Offset offsetWorldPosition(
+  Offset center,
+  double radiusRadians,
+  double angleRadians,
+) {
   final centerDir = _directionOn(center.dx, center.dy);
   final azimuth = center.dx * _twoPi;
   final canonicalRight = (-math.sin(azimuth), 0.0, math.cos(azimuth));
@@ -792,8 +796,11 @@ _ConstellationTransform? _projectConstellationTransform(
       transform.right.dx * transform.up.dy -
       transform.up.dx * transform.right.dy;
   if (det.abs() < 1e-9) return null;
-  final w = (relative.dx * transform.up.dy - transform.up.dx * relative.dy) / det;
-  final h = (transform.right.dx * relative.dy - relative.dx * transform.right.dy) / det;
+  final w =
+      (relative.dx * transform.up.dy - transform.up.dx * relative.dy) / det;
+  final h =
+      (transform.right.dx * relative.dy - relative.dx * transform.right.dy) /
+      det;
 
   final localSizePx = (transform.right.distance + transform.up.distance) / 2;
   return (w, h, localSizePx);
@@ -936,7 +943,11 @@ const double _footprintRibbonHalfWidth = 0.125;
 /// when there are no valid edges at all yet (a brand new single-star
 /// constellation) — nothing to trace a ribbon along, but that one star
 /// still needs *some* comfortable tap zone of its own.
-bool _nearConstellationShape(PlacedConstellation constellation, double w, double h) {
+bool _nearConstellationShape(
+  PlacedConstellation constellation,
+  double w,
+  double h,
+) {
   final shapeStars =
       constellation.renderStars.where((s) => s.slotSequence != null).toList()
         ..sort((a, b) => a.slotSequence!.compareTo(b.slotSequence!));
@@ -1080,7 +1091,10 @@ LifeArea? hitTestSupernovas(
     if (projection == null) continue;
     final radius = math.max(
       _minSupernovaHitRadius,
-      _supernovaHitWorldRadius * zoom * screenSize.height * projection.perspectiveScale,
+      _supernovaHitWorldRadius *
+          zoom *
+          screenSize.height *
+          projection.perspectiveScale,
     );
     if ((screenPos - projection.position).distanceSquared <= radius * radius) {
       return area;
@@ -1152,7 +1166,8 @@ class _DebugSkyHitZonesPainter extends CustomPainter {
     ..color = const Color(0x5500FF66)
     ..style = PaintingStyle.stroke
     ..strokeCap = StrokeCap.round;
-  static final _footprintFallbackFill = Paint()..color = const Color(0x5500FF66);
+  static final _footprintFallbackFill = Paint()
+    ..color = const Color(0x5500FF66);
   static final _starFieldReachFill = Paint()..color = const Color(0x2200FF66);
   static final _starFill = Paint()..color = const Color(0x9900FF66);
   static final _outline = Paint()
@@ -1259,7 +1274,11 @@ class _DebugSkyHitZonesPainter extends CustomPainter {
 
     final radius = _footprintRibbonHalfWidth * localSizePx;
     for (final star in shapeStars) {
-      canvas.drawCircle(toScreen(star.position), radius, _footprintFallbackFill);
+      canvas.drawCircle(
+        toScreen(star.position),
+        radius,
+        _footprintFallbackFill,
+      );
     }
   }
 
@@ -1431,10 +1450,16 @@ void _drawPillLabel(
       ..color = kConstellationGold.withValues(alpha: alpha * 0.45)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
   );
-  canvas.drawRRect(rrect, Paint()..color = _kLabelGold.withValues(alpha: alpha * 0.85));
+  canvas.drawRRect(
+    rrect,
+    Paint()..color = _kLabelGold.withValues(alpha: alpha * 0.85),
+  );
   textPainter.paint(
     canvas,
-    Offset(anchor.dx - textPainter.width / 2, anchor.dy - textPainter.height / 2),
+    Offset(
+      anchor.dx - textPainter.width / 2,
+      anchor.dy - textPainter.height / 2,
+    ),
   );
 }
 
@@ -1548,10 +1573,8 @@ class ConstellationFieldPainter extends CustomPainter {
           0,
           1,
           0,
-          transform.center.dx -
-              (transform.right.dx + transform.up.dx) / 2,
-          transform.center.dy -
-              (transform.right.dy + transform.up.dy) / 2,
+          transform.center.dx - (transform.right.dx + transform.up.dx) / 2,
+          transform.center.dy - (transform.right.dy + transform.up.dy) / 2,
           0,
           1,
         ]),
@@ -1674,8 +1697,7 @@ class AnimatedConstellationField extends StatefulWidget {
       _AnimatedConstellationFieldState();
 }
 
-class _AnimatedConstellationFieldState
-    extends State<AnimatedConstellationField>
+class _AnimatedConstellationFieldState extends State<AnimatedConstellationField>
     with SingleTickerProviderStateMixin {
   late final Ticker _ticker;
   Duration _elapsed = Duration.zero;

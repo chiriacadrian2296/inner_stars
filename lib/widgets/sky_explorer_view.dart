@@ -415,19 +415,21 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     }
   }
 
-  Future<void> _openAreaVision(LifeArea area) => Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (_) => Theme(
-        data: buildLifeAreaTheme(),
-        child: VisionEditorScreen(
-          area: area,
-          repository: widget.areaVisionRepository,
+  Future<void> _openAreaVision(LifeArea area) => Navigator.of(context)
+      .push(
+        MaterialPageRoute(
+          builder: (_) => Theme(
+            data: buildLifeAreaTheme(),
+            child: VisionEditorScreen(
+              area: area,
+              repository: widget.areaVisionRepository,
+            ),
+          ),
         ),
-      ),
-    ),
-  ).then((_) {
-    if (mounted) setState(() {});
-  });
+      )
+      .then((_) {
+        if (mounted) setState(() {});
+      });
 
   Future<void> _openAreaMoodboard(LifeArea area) async {
     try {
@@ -560,21 +562,22 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         ),
       };
 
-  Future<void> _openAreaReflections(LifeArea area) => Navigator.of(context)
-      .push(
-        MaterialPageRoute(
-          builder: (_) => Theme(
-            data: buildLifeAreaTheme(),
-            child: AreaReflectionsScreen(
-              area: area,
-              repository: widget.reflectionAnswerRepository,
+  Future<void> _openAreaReflections(LifeArea area) =>
+      Navigator.of(context)
+          .push(
+            MaterialPageRoute(
+              builder: (_) => Theme(
+                data: buildLifeAreaTheme(),
+                child: AreaReflectionsScreen(
+                  area: area,
+                  repository: widget.reflectionAnswerRepository,
+                ),
+              ),
             ),
-          ),
-        ),
-      )
-      .then((_) {
-        if (mounted) setState(() {});
-      });
+          )
+          .then((_) {
+            if (mounted) setState(() {});
+          });
 
   Future<void> _addStarToConstellation(Project project) async {
     final shape = project.starsShapeId == null
@@ -644,8 +647,8 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       );
       overlay.insert(entry);
       await WidgetsBinding.instance.endOfFrame;
-      final boundary = key.currentContext?.findRenderObject()
-          as RenderRepaintBoundary?;
+      final boundary =
+          key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) return;
       final image = await boundary.toImage(pixelRatio: 2);
       final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
@@ -664,9 +667,9 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       );
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.strings.shareStarError)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.strings.shareStarError)));
       }
     } finally {
       entry?.remove();
@@ -676,7 +679,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   Future<void> _deleteConstellation(Project project) async {
     final confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => AppDialog(
         title: const Text('Eliminare questa costellazione?'),
         content: Text(
           'Verranno eliminati definitivamente stelle, pulsar, completamenti e foto. Questa azione non può essere annullata.',
@@ -695,7 +698,9 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       ),
     );
     if (confirmed != true) return;
-    final habitIds = await widget.habitRepository.deleteAllForProject(project.id);
+    final habitIds = await widget.habitRepository.deleteAllForProject(
+      project.id,
+    );
     for (final habitId in habitIds) {
       await widget.habitCompletionRepository.deleteAllForHabit(habitId);
     }
@@ -703,7 +708,9 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     await widget.projectRepository.delete(project.id);
     final shapeId = project.starsShapeId;
     if (shapeId != null &&
-        !widget.projectRepository.getAll().any((p) => p.starsShapeId == shapeId)) {
+        !widget.projectRepository.getAll().any(
+          (p) => p.starsShapeId == shapeId,
+        )) {
       await widget.starsShapeRepository.delete(shapeId);
     }
     if (mounted) setState(() {});
@@ -917,7 +924,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     final strings = context.strings;
     final confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => AppDialog(
         title: StaggeredEntrance(
           index: 0,
           child: Text(strings.deletePulsarConfirmTitle),
@@ -955,7 +962,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     final strings = context.strings;
     final confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => AppDialog(
         title: StaggeredEntrance(
           index: 0,
           child: Text(strings.deleteStarConfirmTitle),
@@ -1337,392 +1344,421 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           _swipeMode(details.velocity.pixelsPerSecond.dx),
       child: Stack(
         children: [
-        Container(
-          color: colors.night,
-          child: Column(
-        children: [
-          // Only the fixed header chrome is width-capped here — the
-          // Expanded list below stays full width so its own scrollbar
-          // sits at the true page edge on wide viewports rather than
-          // hugging a centered column (see ResponsiveContent's doc).
-          TourIntroTarget(
-            tour: 'search-stars',
-            order: 1,
-            title: strings.searchTourIntroTitle,
-            description: strings.searchTourIntroBody,
-          ),
-          ResponsiveContent(
+          Container(
+            color: colors.night,
             child: Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
-                  child: HintTarget(
-                    tour: 'search-stars',
-                    order: 2,
-                    showArrow: true,
-                    spotlightPadding: const EdgeInsets.all(8),
-                    contentBuilder: appTourStepCard,
-                    title: strings.searchTourModeTitle,
-                    description: strings.searchTourModeBody,
-                    child: StaggeredEntrance(
-                      index: 1,
-                      child: AnimatedToggleSwitch<_SkyMode>.rolling(
-                        current: _mode,
-                        values: _SkyMode.values,
-                        onChanged: _selectMode,
-                        iconBuilder: (value, size) => Icon(
-                          switch (value) {
-                            _SkyMode.supernovas => Icons.flare,
-                            _SkyMode.constellations => Icons.insights,
-                            _SkyMode.stars => Icons.star,
-                          },
-                          size: 20,
-                          color: value == _mode ? colors.night : colors.muted,
-                        ),
-                        style: ToggleStyle(
-                          backgroundColor: colors.nightPanel,
-                          indicatorColor: colors.gold,
-                          borderColor: colors.nightBorder,
-                          borderRadius: BorderRadius.circular(kRadiusField),
-                          indicatorBorderRadius: BorderRadius.circular(
-                            kRadiusField,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+                // Only the fixed header chrome is width-capped here — the
+                // Expanded list below stays full width so its own scrollbar
+                // sits at the true page edge on wide viewports rather than
+                // hugging a centered column (see ResponsiveContent's doc).
+                TourIntroTarget(
+                  tour: 'search-stars',
+                  order: 1,
+                  title: strings.searchTourIntroTitle,
+                  description: strings.searchTourIntroBody,
                 ),
-                Builder(
-                  builder: (context) {
-                    final searchField = HintTarget(
-                      tour: 'search-stars',
-                      order: 3,
-                      showArrow: true,
-                      contentBuilder: appTourStepCard,
-                      title: strings.searchTourFieldTitle,
-                      description: strings.searchTourFieldBody,
-                      child: StaggeredEntrance(
-                        index: 2,
-                        child: AppTextField(
-                          controller: _queryController,
-                          hintText: strings.searchHint,
-                          onChanged: (value) {
-                            _cardMenuController.closeAll();
-                            setState(() => _query = value);
-                          },
-                          prefixIcon: Icon(
-                            Icons.search,
-                            color: colors.muted,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    );
-
-                    // Wide layouts keep room for every filter button right
-                    // beside the search field (search always exactly half;
-                    // the buttons split the other half evenly, so the
-                    // field's own flex matches their combined count). A real
-                    // phone width doesn't have that room — narrow layouts
-                    // get one "Filtri" trigger beside the field instead,
-                    // opening every filter (area/kind/date/sort) on a sheet
-                    // of its own rather than a second permanent row eating
-                    // vertical space on every visit.
-                    if (isWideLayout(context)) {
-                      final filterButtons = _buildFilterButtons(strings);
-                      // Search takes exactly half once the filter buttons
-                      // are there and the whole row when they aren't; the
-                      // buttons slide away and back with the mode.
-                      return Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
-                        child: LayoutBuilder(
-                          builder: (context, constraints) => Row(
-                            children: [
-                              Expanded(child: searchField),
-                              AnimatedPresence(
-                                visible: filterButtons.isNotEmpty,
-                                entranceIndex: 3,
-                                child: SizedBox(
-                                  width: constraints.maxWidth / 2,
-                                  child: Row(
-                                    children: [
-                                      for (
-                                        var i = 0;
-                                        i < filterButtons.length;
-                                        i++
-                                      ) ...[
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: i == 0
-                                              ? HintTarget(
-                                                  tour: 'search-stars',
-                                                  order: 4,
-                                                  showArrow: true,
-                                                  contentBuilder:
-                                                      appTourStepCard,
-                                                  title: strings
-                                                      .searchTourFilterButtonTitle,
-                                                  description: strings
-                                                      .searchTourFilterButtonBody,
-                                                  child: StaggeredEntrance(
-                                                    index: 3 + i,
-                                                    axis: Axis.horizontal,
-                                                    replayKey: _modeEpoch,
-                                                    child: filterButtons[i],
-                                                  ),
-                                                )
-                                              : StaggeredEntrance(
-                                                  index: 3 + i,
-                                                  axis: Axis.horizontal,
-                                                  replayKey: _modeEpoch,
-                                                  child: filterButtons[i],
-                                                ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
+                ResponsiveContent(
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
+                        child: HintTarget(
+                          tour: 'search-stars',
+                          order: 2,
+                          showArrow: true,
+                          spotlightPadding: const EdgeInsets.all(8),
+                          contentBuilder: appTourStepCard,
+                          title: strings.searchTourModeTitle,
+                          description: strings.searchTourModeBody,
+                          child: StaggeredEntrance(
+                            index: 1,
+                            child: AnimatedToggleSwitch<_SkyMode>.rolling(
+                              current: _mode,
+                              values: _SkyMode.values,
+                              onChanged: _selectMode,
+                              iconBuilder: (value, size) => Icon(
+                                switch (value) {
+                                  _SkyMode.supernovas => Icons.flare,
+                                  _SkyMode.constellations => Icons.insights,
+                                  _SkyMode.stars => Icons.star,
+                                },
+                                size: 20,
+                                color: value == _mode
+                                    ? colors.night
+                                    : colors.muted,
+                              ),
+                              style: ToggleStyle(
+                                backgroundColor: colors.nightPanel,
+                                indicatorColor: colors.gold,
+                                borderColor: colors.nightBorder,
+                                borderRadius: BorderRadius.circular(
+                                  kRadiusField,
+                                ),
+                                indicatorBorderRadius: BorderRadius.circular(
+                                  kRadiusField,
                                 ),
                               ),
-                            ],
+                            ),
                           ),
                         ),
-                      );
-                    }
-                    final hasFilters = _mode != _SkyMode.supernovas;
-                    return Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
-                      child: Row(
-                        children: [
-                          Expanded(child: searchField),
-                          // Comes and goes with the mode, so it animates both
-                          // ways instead of popping out on Supernovas.
-                          AnimatedPresence(
-                            visible: hasFilters,
-                            entranceIndex: 3,
+                      ),
+                      Builder(
+                        builder: (context) {
+                          final searchField = HintTarget(
+                            tour: 'search-stars',
+                            order: 3,
+                            showArrow: true,
+                            contentBuilder: appTourStepCard,
+                            title: strings.searchTourFieldTitle,
+                            description: strings.searchTourFieldBody,
+                            child: StaggeredEntrance(
+                              index: 2,
+                              child: AppTextField(
+                                controller: _queryController,
+                                hintText: strings.searchHint,
+                                onChanged: (value) {
+                                  _cardMenuController.closeAll();
+                                  setState(() => _query = value);
+                                },
+                                prefixIcon: Icon(
+                                  Icons.search,
+                                  color: colors.muted,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          );
+
+                          // Wide layouts keep room for every filter button right
+                          // beside the search field (search always exactly half;
+                          // the buttons split the other half evenly, so the
+                          // field's own flex matches their combined count). A real
+                          // phone width doesn't have that room — narrow layouts
+                          // get one "Filtri" trigger beside the field instead,
+                          // opening every filter (area/kind/date/sort) on a sheet
+                          // of its own rather than a second permanent row eating
+                          // vertical space on every visit.
+                          if (isWideLayout(context)) {
+                            final filterButtons = _buildFilterButtons(strings);
+                            // Search takes exactly half once the filter buttons
+                            // are there and the whole row when they aren't; the
+                            // buttons slide away and back with the mode.
+                            return Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                20,
+                                10,
+                                20,
+                                12,
+                              ),
+                              child: LayoutBuilder(
+                                builder: (context, constraints) => Row(
+                                  children: [
+                                    Expanded(child: searchField),
+                                    AnimatedPresence(
+                                      visible: filterButtons.isNotEmpty,
+                                      entranceIndex: 3,
+                                      child: SizedBox(
+                                        width: constraints.maxWidth / 2,
+                                        child: Row(
+                                          children: [
+                                            for (
+                                              var i = 0;
+                                              i < filterButtons.length;
+                                              i++
+                                            ) ...[
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: i == 0
+                                                    ? HintTarget(
+                                                        tour: 'search-stars',
+                                                        order: 4,
+                                                        showArrow: true,
+                                                        contentBuilder:
+                                                            appTourStepCard,
+                                                        title: strings
+                                                            .searchTourFilterButtonTitle,
+                                                        description: strings
+                                                            .searchTourFilterButtonBody,
+                                                        child: StaggeredEntrance(
+                                                          index: 3 + i,
+                                                          axis: Axis.horizontal,
+                                                          replayKey: _modeEpoch,
+                                                          child:
+                                                              filterButtons[i],
+                                                        ),
+                                                      )
+                                                    : StaggeredEntrance(
+                                                        index: 3 + i,
+                                                        axis: Axis.horizontal,
+                                                        replayKey: _modeEpoch,
+                                                        child: filterButtons[i],
+                                                      ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+                          final hasFilters = _mode != _SkyMode.supernovas;
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
                             child: Row(
-                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                const SizedBox(width: 10),
-                                HintTarget(
-                                  tour: 'search-stars',
-                                  order: 4,
-                                  showArrow: true,
-                                  contentBuilder: appTourStepCard,
-                                  title: strings.searchTourFilterButtonTitle,
-                                  description:
-                                      strings.searchTourFilterButtonBody,
-                                  child: _FiltersTriggerButton(
-                                    active: _isAnyFilterActive,
-                                    tooltip: strings.filtersAction,
-                                    onTap: () => _openFiltersSheet(context),
+                                Expanded(child: searchField),
+                                // Comes and goes with the mode, so it animates both
+                                // ways instead of popping out on Supernovas.
+                                AnimatedPresence(
+                                  visible: hasFilters,
+                                  entranceIndex: 3,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const SizedBox(width: 10),
+                                      HintTarget(
+                                        tour: 'search-stars',
+                                        order: 4,
+                                        showArrow: true,
+                                        contentBuilder: appTourStepCard,
+                                        title:
+                                            strings.searchTourFilterButtonTitle,
+                                        description:
+                                            strings.searchTourFilterButtonBody,
+                                        child: _FiltersTriggerButton(
+                                          active: _isAnyFilterActive,
+                                          tooltip: strings.filtersAction,
+                                          onTap: () =>
+                                              _openFiltersSheet(context),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                        ],
+                          );
+                        },
                       ),
-                    );
-                  },
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: FadeTransition(
+                    opacity: CurvedAnimation(
+                      parent: _modeAnimation,
+                      curve: Curves.easeOut,
+                    ),
+                    child: SlideTransition(
+                      position:
+                          Tween<Offset>(
+                            begin: Offset(_modeReverse ? -0.12 : 0.12, 0),
+                            end: Offset.zero,
+                          ).animate(
+                            CurvedAnimation(
+                              parent: _modeAnimation,
+                              curve: Curves.easeOutCubic,
+                            ),
+                          ),
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: (notification) {
+                          if (notification is ScrollStartNotification) {
+                            _cardMenuController.closeAll();
+                          }
+                          return false;
+                        },
+                        child: switch (_mode) {
+                          // A plain top-flowing ListView, like Constellations/Stars
+                          // below — deliberately not the old LayoutBuilder +
+                          // full-height ConstrainedBox + Column approach, which forced
+                          // this branch's box to at least fill the available height and
+                          // then, on wide layouts, had `ResponsiveContent`'s own
+                          // `Center` (there to cap width) center the whole card column
+                          // *within* that stretched box — a Column's own
+                          // `mainAxisAlignment` has no say over that, since the
+                          // centering was happening one level up. A plain ListView
+                          // sizes to its own content and never fights this: all 8
+                          // unfiltered still read as one screen with no scrolling
+                          // needed on any normal phone, and a search narrowed down to
+                          // one or two cards now sits right under the search row
+                          // instead of floating mid-screen.
+                          _SkyMode.supernovas => Builder(
+                            builder: (context) {
+                              final areas = _filteredSupernovaAreas(strings);
+                              if (areas.isEmpty) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 32,
+                                  ),
+                                  child: Center(
+                                    child: StaggeredEntrance(
+                                      index: 0,
+                                      child: Text(
+                                        strings.noSearchResultsSupernovas,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: colors.muted,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                              return ListView.separated(
+                                padding: const EdgeInsets.fromLTRB(0, 4, 0, 16),
+                                itemCount: areas.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(height: 10),
+                                itemBuilder: (context, index) {
+                                  final area = areas[index];
+                                  final projects = widget.projectRepository
+                                      .getAll()
+                                      .where((project) => project.area == area)
+                                      .toList();
+                                  final starCount = projects.fold<int>(
+                                    0,
+                                    (count, project) =>
+                                        count +
+                                        widget.starRepository
+                                            .getAllForProject(project.id)
+                                            .length +
+                                        widget.habitRepository
+                                            .getAllForProject(project.id)
+                                            .length,
+                                  );
+                                  return StaggeredEntrance(
+                                    index: index,
+                                    child: ResponsiveContent(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                        ),
+                                        child: _AreaCard(
+                                          area: area,
+                                          constellationCount: projects.length,
+                                          starCount: starCount,
+                                          menuController: _cardMenuController,
+                                          onTap: () => _openArea(area),
+                                          onVision: () => _openAreaVision(area),
+                                          onMoodboard: () =>
+                                              _openAreaMoodboard(area),
+                                          onReflections: () =>
+                                              _openAreaReflections(area),
+                                          onNewConstellation: () =>
+                                              _openNewConstellation(area),
+                                          onNavigateTo: () =>
+                                              widget.onNavigateTo(
+                                                SkyAreaTarget(area),
+                                              ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                          _SkyMode.constellations => _ConstellationsList(
+                            hasAnyProjects: _filteredAreaProjects.isNotEmpty,
+                            filteredProjects: _filteredProjects,
+                            starsForProject: _starsForProject,
+                            shapeForProject: (project) =>
+                                project.starsShapeId == null
+                                ? null
+                                : widget.starsShapeRepository
+                                      .getById(project.starsShapeId!)
+                                      ?.shape,
+                            menuController: _cardMenuController,
+                            onTap: _openProject,
+                            onNavigateTo: widget.onNavigateTo,
+                            onAddStar: _addStarToConstellation,
+                            onShare: _shareConstellation,
+                            onEdit: _editConstellation,
+                            onDelete: _deleteConstellation,
+                          ),
+                          _SkyMode.stars => _FlatList(
+                            hasAnyEntries: allEntries.isNotEmpty,
+                            entries: filteredEntries,
+                            projectsById: _projectsById,
+                            countsByDayFor: _countsByDayFor,
+                            query: _query,
+                            menuController: _cardMenuController,
+                            onOpenStar: (entry) =>
+                                _openStarReader(StarEntry(entry.star!).key),
+                            onOpenHabit: (habit) =>
+                                _openStarReader(PulsarEntry(habit).key),
+                            onNavigateTo: widget.onNavigateTo,
+                            onShareStar: _shareStar,
+                            onEditStar: _editStar,
+                            onDeleteStar: _deleteStar,
+                            onLightStar: _lightStar,
+                            onHabitToday: _habitTodayAction,
+                            onEditHabit: _editHabit,
+                            onDeleteHabit: _deleteHabit,
+                          ),
+                        },
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          Expanded(
-            child: FadeTransition(
-              opacity: CurvedAnimation(
-                parent: _modeAnimation,
-                curve: Curves.easeOut,
-              ),
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: Offset(_modeReverse ? -0.12 : 0.12, 0),
-                  end: Offset.zero,
-                ).animate(
-                  CurvedAnimation(
-                    parent: _modeAnimation,
-                    curve: Curves.easeOutCubic,
-                  ),
-                ),
-                child: NotificationListener<ScrollNotification>(
-                onNotification: (notification) {
-                if (notification is ScrollStartNotification) {
-                  _cardMenuController.closeAll();
-                }
-                return false;
-              },
-                child: switch (_mode) {
-                // A plain top-flowing ListView, like Constellations/Stars
-                // below — deliberately not the old LayoutBuilder +
-                // full-height ConstrainedBox + Column approach, which forced
-                // this branch's box to at least fill the available height and
-                // then, on wide layouts, had `ResponsiveContent`'s own
-                // `Center` (there to cap width) center the whole card column
-                // *within* that stretched box — a Column's own
-                // `mainAxisAlignment` has no say over that, since the
-                // centering was happening one level up. A plain ListView
-                // sizes to its own content and never fights this: all 8
-                // unfiltered still read as one screen with no scrolling
-                // needed on any normal phone, and a search narrowed down to
-                // one or two cards now sits right under the search row
-                // instead of floating mid-screen.
-                _SkyMode.supernovas => Builder(
-                  builder: (context) {
-                    final areas = _filteredSupernovaAreas(strings);
-                    if (areas.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32),
-                        child: Center(
-                          child: StaggeredEntrance(
-                            index: 0,
-                            child: Text(
-                              strings.noSearchResultsSupernovas,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 14, color: colors.muted),
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-                    return ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(0, 4, 0, 16),
-                      itemCount: areas.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        final area = areas[index];
-                        final projects = widget.projectRepository
-                            .getAll()
-                            .where((project) => project.area == area)
-                            .toList();
-                        final starCount = projects.fold<int>(
-                          0,
-                          (count, project) =>
-                              count +
-                              widget.starRepository
-                                  .getAllForProject(project.id)
-                                  .length +
-                              widget.habitRepository
-                                  .getAllForProject(project.id)
-                                  .length,
-                        );
-                        return StaggeredEntrance(
-                          index: index,
-                          child: ResponsiveContent(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
-                              child: _AreaCard(
-                                area: area,
-                                constellationCount: projects.length,
-                                starCount: starCount,
-                                menuController: _cardMenuController,
-                                onTap: () => _openArea(area),
-                                onVision: () => _openAreaVision(area),
-                                onMoodboard: () => _openAreaMoodboard(area),
-                                onReflections: () => _openAreaReflections(area),
-                                onNewConstellation: () =>
-                                    _openNewConstellation(area),
-                                onNavigateTo: () =>
-                                    widget.onNavigateTo(SkyAreaTarget(area)),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-                _SkyMode.constellations => _ConstellationsList(
-                  hasAnyProjects: _filteredAreaProjects.isNotEmpty,
-                  filteredProjects: _filteredProjects,
-                  starsForProject: _starsForProject,
-                  shapeForProject: (project) => project.starsShapeId == null
-                      ? null
-                      : widget.starsShapeRepository
-                            .getById(project.starsShapeId!)
-                            ?.shape,
-                  menuController: _cardMenuController,
-                  onTap: _openProject,
-                  onNavigateTo: widget.onNavigateTo,
-                  onAddStar: _addStarToConstellation,
-                  onShare: _shareConstellation,
-                  onEdit: _editConstellation,
-                  onDelete: _deleteConstellation,
-                ),
-                _SkyMode.stars => _FlatList(
-                  hasAnyEntries: allEntries.isNotEmpty,
-                  entries: filteredEntries,
-                  projectsById: _projectsById,
-                  countsByDayFor: _countsByDayFor,
-                  query: _query,
-                  menuController: _cardMenuController,
-                  onOpenStar: (entry) =>
-                      _openStarReader(StarEntry(entry.star!).key),
-                  onOpenHabit: (habit) =>
-                      _openStarReader(PulsarEntry(habit).key),
-                  onNavigateTo: widget.onNavigateTo,
-                  onShareStar: _shareStar,
-                  onEditStar: _editStar,
-                  onDeleteStar: _deleteStar,
-                  onLightStar: _lightStar,
-                  onHabitToday: _habitTodayAction,
-                  onEditHabit: _editHabit,
-                  onDeleteHabit: _deleteHabit,
-                ),
-              },
-            ),
-              ),
-            ),
-          ),
-        ],
-          ),
-        ),
-        Positioned(
-          right: 20,
-          bottom: 20,
-          child: SafeArea(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              switchInCurve: Curves.easeOutBack,
-              switchOutCurve: Curves.easeOut,
-              transitionBuilder: (child, animation) => FadeTransition(
-                opacity: animation,
-                child: RotationTransition(
-                  turns: Tween<double>(
-                    begin: _modeReverse ? 0.12 : -0.12,
-                    end: 0,
-                  ).animate(animation),
-                  child: ScaleTransition(
-                    scale: Tween<double>(begin: 0.84, end: 1).animate(animation),
-                    child: child,
-                  ),
-                ),
-              ),
-              child: TweenAnimationBuilder<double>(
-                key: ValueKey('sky-fab-${_mode.name}'),
-                tween: Tween(begin: 1, end: 0),
-                duration: const Duration(milliseconds: 420),
-                curve: Curves.easeOutCubic,
-                builder: (context, glow, child) => DecoratedBox(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: goldGlow(
-                      colors,
-                      strength: 0.55 * glow,
-                      size: 64,
+          Positioned(
+            right: 20,
+            bottom: 20,
+            child: SafeArea(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                switchInCurve: Curves.easeOutBack,
+                switchOutCurve: Curves.easeOut,
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: RotationTransition(
+                    turns: Tween<double>(
+                      begin: _modeReverse ? 0.12 : -0.12,
+                      end: 0,
+                    ).animate(animation),
+                    child: ScaleTransition(
+                      scale: Tween<double>(
+                        begin: 0.84,
+                        end: 1,
+                      ).animate(animation),
+                      child: child,
                     ),
                   ),
-                  child: child,
                 ),
-                child: AppActionDisc(
-                  icon: action.icon,
-                  onPressed: action.onPressed,
-                  heroTag: 'sky-search-${_mode.name}-action',
-                  tooltip: action.tooltip,
+                child: TweenAnimationBuilder<double>(
+                  key: ValueKey('sky-fab-${_mode.name}'),
+                  tween: Tween(begin: 1, end: 0),
+                  duration: const Duration(milliseconds: 420),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, glow, child) => DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: goldGlow(
+                        colors,
+                        strength: 0.55 * glow,
+                        size: 64,
+                      ),
+                    ),
+                    child: child,
+                  ),
+                  child: AppActionDisc(
+                    icon: action.icon,
+                    onPressed: action.onPressed,
+                    heroTag: 'sky-search-${_mode.name}-action',
+                    tooltip: action.tooltip,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
         ],
       ),
     );
@@ -1772,7 +1808,10 @@ class _AreaCard extends StatelessWidget {
             icon: Icons.insights_outlined,
             value: '$constellationCount',
           ),
-          SearchCardMetric(icon: Icons.star_outline_rounded, value: '$starCount'),
+          SearchCardMetric(
+            icon: Icons.star_outline_rounded,
+            value: '$starCount',
+          ),
         ],
       ),
       actions: [
@@ -2267,7 +2306,9 @@ extension on _FlatList {
     final habit = entry.habit;
     if (habit != null) {
       final now = DateTime.now();
-      final done = habitCounts.containsKey(DateTime(now.year, now.month, now.day));
+      final done = habitCounts.containsKey(
+        DateTime(now.year, now.month, now.day),
+      );
       final isStepper =
           habit.frequency == HabitFrequency.daily && habit.targetPerPeriod > 1;
       return SearchCardAction(
@@ -2471,11 +2512,7 @@ class _ProjectCard extends StatelessWidget {
         ],
       ),
       actions: [
-        SearchCardAction(
-          icon: Icons.star,
-          label: '+ Stella',
-          onTap: onAddStar,
-        ),
+        SearchCardAction(icon: Icons.star, label: '+ Stella', onTap: onAddStar),
         SearchCardAction(
           icon: Icons.share_outlined,
           label: 'Condividi',

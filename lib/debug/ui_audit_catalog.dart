@@ -154,7 +154,7 @@ const uiAuditCatalog = <UiAuditItem>[
     rationale: 'It represents the final act of lighting/saving rather than an equal half of a button pair.',
     risks: 'Without an explicit primary-action rule, its size can be mistaken for accidental inconsistency.',
     options: ['Keep as primary action', 'Make equal to every adjacent action'],
-    recommendation: 'Keep, document as the primary commit action, and never use it for cancel.',
+    recommendation: 'Keep as the primary commit action, but give it the same geometry as cancel and adjacent actions; importance comes from fill and glow, not size.',
   ),
   UiAuditItem(
     id: 'action-pill-utility-danger',
@@ -211,7 +211,7 @@ const uiAuditCatalog = <UiAuditItem>[
     risks: 'Loading and explainable-disabled behavior need explicit policy before migration.',
     options: ['Four roles', 'Four roles plus compact variants'],
     recommendation:
-        'Use four roles with regular and compact density where necessary.',
+        'Use four roles with one shared regular geometry; compact density is reserved for toolbars and editor utilities, never to make cancel smaller than save.',
   ),
   UiAuditItem(
     id: 'field-shared',
@@ -514,7 +514,7 @@ const uiAuditCatalog = <UiAuditItem>[
       'Ban raw colors',
       'Allow only documented rendering/export exceptions',
     ],
-    recommendation: 'Use palette tokens for UI; permit fixed colors only for artwork, shaders and exported media.',
+    recommendation: 'Use the standard night/gold palette throughout the app. The white-on-black meta theme is reserved for Manage Areas and Nightlight; fixed colors remain allowed only inside artwork and shaders.',
   ),
   UiAuditItem(
     id: 'icons-size-and-container',

@@ -309,24 +309,25 @@ class _AdmireStarsScreenState extends State<AdmireStarsScreen>
                               // layered on top since [nightlightButtonStyle]
                               // doesn't define one.
                               style: nightlightButtonStyle(colors).copyWith(
-                                backgroundColor: WidgetStateProperty.resolveWith((
-                                  states,
-                                ) {
-                                  if (states.contains(WidgetState.disabled)) {
-                                    return colors.nightlightMuted.withValues(
-                                      alpha: 0.15,
-                                    );
-                                  }
-                                  return colors.nightBorder;
-                                }),
-                                foregroundColor: WidgetStateProperty.resolveWith((
-                                  states,
-                                ) {
-                                  if (states.contains(WidgetState.disabled)) {
-                                    return colors.nightlightMuted;
-                                  }
-                                  return Colors.white;
-                                }),
+                                backgroundColor:
+                                    WidgetStateProperty.resolveWith((states) {
+                                      if (states.contains(
+                                        WidgetState.disabled,
+                                      )) {
+                                        return colors.nightlightMuted
+                                            .withValues(alpha: 0.15);
+                                      }
+                                      return colors.nightBorder;
+                                    }),
+                                foregroundColor:
+                                    WidgetStateProperty.resolveWith((states) {
+                                      if (states.contains(
+                                        WidgetState.disabled,
+                                      )) {
+                                        return colors.nightlightMuted;
+                                      }
+                                      return Colors.white;
+                                    }),
                               ),
                             ),
                           ),

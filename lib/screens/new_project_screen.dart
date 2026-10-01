@@ -181,7 +181,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     final colors = context.colors;
     final discard = await showAppDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => AppDialog(
         title: Text(
           strings.discardChangesConfirmTitle,
           style: TextStyle(color: colors.text),
@@ -422,7 +422,10 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                     child: Text(
                       strings.noCustomShapesYetHint,
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: context.colors.muted, fontSize: 14),
+                      style: TextStyle(
+                        color: context.colors.muted,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ),
@@ -591,7 +594,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     showAppDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => AppDialog(
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1664,17 +1667,20 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
               Expanded(
                 child: filtered.isEmpty
                     ? StaggeredEntrance(
-                      index: 0,
-                      child: Padding(
+                        index: 0,
+                        child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 24),
                           child: Center(
                             child: Text(
                               strings.noSearchResults,
-                              style: TextStyle(color: colors.muted, fontSize: 14),
+                              style: TextStyle(
+                                color: colors.muted,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         ),
-                    )
+                      )
                     : SingleChildScrollView(
                         child: widget.bodyBuilder(
                           context,

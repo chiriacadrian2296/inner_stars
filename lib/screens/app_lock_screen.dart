@@ -71,11 +71,8 @@ class _AppLockScreenState extends State<AppLockScreen> {
   // Shared by the PIN title and the fingerprint label below, so the two
   // section headings read as the same kind of text rather than one
   // looking like a heading and the other like a caption.
-  TextStyle _sectionTitleStyle(AppColors colors) => TextStyle(
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: FontWeight.w600,
-  );
+  TextStyle _sectionTitleStyle(AppColors colors) =>
+      TextStyle(color: colors.text, fontSize: 20, fontWeight: FontWeight.w600);
 
   Widget _buildPinSection(AppColors colors, AppStrings strings) {
     return Column(
@@ -179,10 +176,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
         body: SafeArea(
           child: ResponsiveContent(
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 32,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
               // Without biometrics there's only the PIN block, so it stays
               // centered same as before. With both, `spaceBetween` is what
               // actually pushes the two toward the screen's own top/bottom

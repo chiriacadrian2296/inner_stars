@@ -438,9 +438,7 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          DecoratedBox(
-            decoration: BoxDecoration(gradient: colors.nightlightGradient),
-          ),
+          ColoredBox(color: colors.night),
           LogoWatermark(
             scale: logoWatermarkScale(watermarkKind, lit: doneToday),
             color: logoWatermarkColor(colors, watermarkKind, lit: doneToday),

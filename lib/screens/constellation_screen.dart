@@ -293,7 +293,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
     final strings = context.strings;
     final confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => AppDialog(
         title: Text('Eliminare questa costellazione?'),
         content: Text(
           'Verranno eliminati definitivamente stelle, pulsar, completamenti e foto. Questa azione non può essere annullata.',
@@ -432,249 +432,258 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
         systemStatusBarContrastEnforced: false,
       ),
       child: Scaffold(
-      // Edge-to-edge lets the night sky continue behind the status icons.
-      backgroundColor: Colors.black,
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF1C2747), Colors.black],
-          ),
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-          children: [
-            DecoratedBox(
-              decoration: const BoxDecoration(color: Colors.transparent),
-              child: SizedBox(
-                height: 64,
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => _moveBy(-1),
-                      icon: Icon(Icons.chevron_left, color: colors.text),
-                    ),
-                    Expanded(
-                      child: StaggeredEntrance(
-                        key: ValueKey('constellation-title-${_project.id}'),
-                        index: 0,
-                        axis: Axis.horizontal,
-                        reverse: _contentReverse,
-                        child: MarqueeTitle(
-                          key: ValueKey('constellation-title-${_project.id}'),
-                          title: _project.name,
-                          style: TextStyle(
-                            fontFamily: kFontStarTitle,
-                            fontSize: 32,
-                            fontWeight: FontWeight.w800,
-                            color: colors.text,
-                          ),
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => _moveBy(1),
-                      icon: Icon(Icons.chevron_right, color: colors.text),
-                    ),
-                  ],
-                ),
-              ),
+        // Edge-to-edge lets the night sky continue behind the status icons.
+        backgroundColor: Colors.black,
+        body: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF1C2747), Colors.black],
             ),
-            Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: LogoWatermark(
-                      pulse: _watermarkPulse,
-                      pulseDirection: _watermarkPulseDirection,
-                      scale: logoWatermarkScale(_watermarkKind),
-                      color: logoWatermarkColor(colors, _watermarkKind),
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: shape == null
-                        ? StaggeredEntrance(
-                            key: ValueKey('constellation-empty-${_project.id}'),
-                            index: 2,
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                DecoratedBox(
+                  decoration: const BoxDecoration(color: Colors.transparent),
+                  child: SizedBox(
+                    height: 64,
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => _moveBy(-1),
+                          icon: Icon(Icons.chevron_left, color: colors.text),
+                        ),
+                        Expanded(
+                          child: StaggeredEntrance(
+                            key: ValueKey('constellation-title-${_project.id}'),
+                            index: 0,
                             axis: Axis.horizontal,
                             reverse: _contentReverse,
-                            child: Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(24),
-                                child: Text(
-                                  strings.constellationShapeMissing,
-                                  style: TextStyle(color: colors.muted),
-                                  textAlign: TextAlign.center,
-                                ),
+                            child: MarqueeTitle(
+                              key: ValueKey(
+                                'constellation-title-${_project.id}',
+                              ),
+                              title: _project.name,
+                              style: TextStyle(
+                                fontFamily: kFontStarTitle,
+                                fontSize: 32,
+                                fontWeight: FontWeight.w800,
+                                color: colors.text,
                               ),
                             ),
-                          )
-                        : LayoutBuilder(
-                            builder: (context, constraints) {
-                              final viewportSize = constraints.biggest;
-                              WidgetsBinding.instance.addPostFrameCallback(
-                                (_) => _frameShape(viewportSize),
-                              );
-                              // Not built until the shape has been framed, so its
-                              // first frame never shows the unzoomed identity view.
-                              if (!_framed) return const SizedBox.shrink();
-
-                              // The header arrows and the dedicated swipe bar
-                              // are the only ways to swap a constellation.
-                              // Start its entrance only after
-                              // the camera is framed, so the map never flashes
-                              // at identity zoom before it settles in.
-                              return StaggeredEntrance(
-                                key: ValueKey('constellation-map-${_project.id}'),
-                                index: 1,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => _moveBy(1),
+                          icon: Icon(Icons.chevron_right, color: colors.text),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: LogoWatermark(
+                          pulse: _watermarkPulse,
+                          pulseDirection: _watermarkPulseDirection,
+                          scale: logoWatermarkScale(_watermarkKind),
+                          color: logoWatermarkColor(colors, _watermarkKind),
+                        ),
+                      ),
+                      Positioned.fill(
+                        child: shape == null
+                            ? StaggeredEntrance(
+                                key: ValueKey(
+                                  'constellation-empty-${_project.id}',
+                                ),
+                                index: 2,
                                 axis: Axis.horizontal,
                                 reverse: _contentReverse,
-                                child: ConstellationMapView(
-                                  stars: _renderStars,
-                                  edges: _edges,
-                                  transformation: _transformationController,
-                                  canvasSize: _canvasSize,
-                                  fitScale: _fitScaleFor(viewportSize),
-                                  onStarTap: _openStar,
+                                child: Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(24),
+                                    child: Text(
+                                      strings.constellationShapeMissing,
+                                      style: TextStyle(color: colors.muted),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
                                 ),
-                              );
-                            },
+                              )
+                            : LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final viewportSize = constraints.biggest;
+                                  WidgetsBinding.instance.addPostFrameCallback(
+                                    (_) => _frameShape(viewportSize),
+                                  );
+                                  // Not built until the shape has been framed, so its
+                                  // first frame never shows the unzoomed identity view.
+                                  if (!_framed) return const SizedBox.shrink();
+
+                                  // The header arrows and the dedicated swipe bar
+                                  // are the only ways to swap a constellation.
+                                  // Start its entrance only after
+                                  // the camera is framed, so the map never flashes
+                                  // at identity zoom before it settles in.
+                                  return StaggeredEntrance(
+                                    key: ValueKey(
+                                      'constellation-map-${_project.id}',
+                                    ),
+                                    index: 1,
+                                    axis: Axis.horizontal,
+                                    reverse: _contentReverse,
+                                    child: ConstellationMapView(
+                                      stars: _renderStars,
+                                      edges: _edges,
+                                      transformation: _transformationController,
+                                      canvasSize: _canvasSize,
+                                      fitScale: _fitScaleFor(viewportSize),
+                                      onStarTap: _openStar,
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                      // The swipe affordance floats above the map rather than
+                      // occupying a separate page strip, so its transparency
+                      // reveals the constellation beneath it.
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 20,
+                        child: _ConstellationSwipeBar(
+                          onPrevious: () => _moveBy(-1),
+                          onNext: () => _moveBy(1),
+                          pulse: _watermarkPulse,
+                          pulseDirection: _watermarkPulseDirection,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.9),
+                        blurRadius: 32,
+                        spreadRadius: 6,
+                        offset: const Offset(0, -10),
+                      ),
+                    ],
+                  ),
+                  padding: EdgeInsets.fromLTRB(
+                    12,
+                    16,
+                    12,
+                    16 + MediaQuery.paddingOf(context).bottom,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      StaggeredEntrance(
+                        index: 0,
+                        enabled: !_hasNavigatedConstellations,
+                        drift: 0.7,
+                        child: _ConstellationDockAction(
+                          icon: Icons.star,
+                          label: 'Nuova stella',
+                          onTap: _addStar,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      StaggeredEntrance(
+                        index: 1,
+                        enabled: !_hasNavigatedConstellations,
+                        drift: 0.7,
+                        child: _ConstellationDockAction(
+                          icon: Icons.share_outlined,
+                          label: 'Condividi',
+                          onTap: _share,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      StaggeredEntrance(
+                        index: 2,
+                        enabled: !_hasNavigatedConstellations,
+                        drift: 0.7,
+                        child: _ConstellationDockAction(
+                          icon: Icons.navigation,
+                          label: 'Vola',
+                          onTap: () => Navigator.of(context).pop(_project),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      StaggeredEntrance(
+                        index: 3,
+                        enabled: !_hasNavigatedConstellations,
+                        drift: 0.7,
+                        child: _ConstellationDockAction(
+                          icon: Icons.edit_outlined,
+                          label: 'Modifica',
+                          onTap: _editProject,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      StaggeredEntrance(
+                        index: 4,
+                        enabled: !_hasNavigatedConstellations,
+                        drift: 0.7,
+                        child: _ConstellationDockAction(
+                          icon: Icons.delete_outline,
+                          label: 'Elimina',
+                          onTap: _deleteProject,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(
+                  width: 0,
+                  height: 0,
+                  // The sharing card has to stay in the render tree so its
+                  // RepaintBoundary can be captured. On web, however, an
+                  // OverflowBox is allowed to paint beyond this zero-sized
+                  // placeholder; the translated card could therefore leak into
+                  // the top-left of the constellation screen. Clip it from the
+                  // page while preserving the boundary for [_share].
+                  child: ClipRect(
+                    child: OverflowBox(
+                      maxWidth: 400,
+                      maxHeight: 600,
+                      alignment: Alignment.topLeft,
+                      child: Transform.translate(
+                        offset: const Offset(-1000, -1000),
+                        child: RepaintBoundary(
+                          key: _shareKey,
+                          child: SizedBox(
+                            width: 400,
+                            height: 600,
+                            child: ShareableConstellationCard(
+                              project: _project,
+                              shape:
+                                  shape ??
+                                  const ConstellationShape(
+                                    points: [],
+                                    edges: [],
+                                  ),
+                            ),
                           ),
-                  ),
-                  // The swipe affordance floats above the map rather than
-                  // occupying a separate page strip, so its transparency
-                  // reveals the constellation beneath it.
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 20,
-                    child: _ConstellationSwipeBar(
-                      onPrevious: () => _moveBy(-1),
-                      onNext: () => _moveBy(1),
-                      pulse: _watermarkPulse,
-                      pulseDirection: _watermarkPulseDirection,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.black,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.9),
-                    blurRadius: 32,
-                    spreadRadius: 6,
-                    offset: const Offset(0, -10),
-                  ),
-                ],
-              ),
-              padding: EdgeInsets.fromLTRB(
-                12,
-                16,
-                12,
-                16 + MediaQuery.paddingOf(context).bottom,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  StaggeredEntrance(
-                    index: 0,
-                    enabled: !_hasNavigatedConstellations,
-                    drift: 0.7,
-                    child: _ConstellationDockAction(
-                      icon: Icons.star,
-                      label: 'Nuova stella',
-                      onTap: _addStar,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  StaggeredEntrance(
-                    index: 1,
-                    enabled: !_hasNavigatedConstellations,
-                    drift: 0.7,
-                    child: _ConstellationDockAction(
-                      icon: Icons.share_outlined,
-                      label: 'Condividi',
-                      onTap: _share,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  StaggeredEntrance(
-                    index: 2,
-                    enabled: !_hasNavigatedConstellations,
-                    drift: 0.7,
-                    child: _ConstellationDockAction(
-                      icon: Icons.navigation,
-                      label: 'Vola',
-                      onTap: () => Navigator.of(context).pop(_project),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  StaggeredEntrance(
-                    index: 3,
-                    enabled: !_hasNavigatedConstellations,
-                    drift: 0.7,
-                    child: _ConstellationDockAction(
-                      icon: Icons.edit_outlined,
-                      label: 'Modifica',
-                      onTap: _editProject,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  StaggeredEntrance(
-                    index: 4,
-                    enabled: !_hasNavigatedConstellations,
-                    drift: 0.7,
-                    child: _ConstellationDockAction(
-                      icon: Icons.delete_outline,
-                      label: 'Elimina',
-                      onTap: _deleteProject,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(
-              width: 0,
-              height: 0,
-              // The sharing card has to stay in the render tree so its
-              // RepaintBoundary can be captured. On web, however, an
-              // OverflowBox is allowed to paint beyond this zero-sized
-              // placeholder; the translated card could therefore leak into
-              // the top-left of the constellation screen. Clip it from the
-              // page while preserving the boundary for [_share].
-              child: ClipRect(
-                child: OverflowBox(
-                  maxWidth: 400,
-                  maxHeight: 600,
-                  alignment: Alignment.topLeft,
-                  child: Transform.translate(
-                    offset: const Offset(-1000, -1000),
-                    child: RepaintBoundary(
-                      key: _shareKey,
-                      child: SizedBox(
-                        width: 400,
-                        height: 600,
-                        child: ShareableConstellationCard(
-                          project: _project,
-                          shape:
-                              shape ??
-                              const ConstellationShape(points: [], edges: []),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
           ),
         ),
-      ),
       ),
     );
   }
@@ -696,8 +705,7 @@ class _ConstellationSwipeBar extends StatefulWidget {
   final double pulseDirection;
 
   @override
-  State<_ConstellationSwipeBar> createState() =>
-      _ConstellationSwipeBarState();
+  State<_ConstellationSwipeBar> createState() => _ConstellationSwipeBarState();
 }
 
 class _ConstellationSwipeBarState extends State<_ConstellationSwipeBar>
@@ -739,10 +747,7 @@ class _ConstellationSwipeBarState extends State<_ConstellationSwipeBar>
             final amount =
                 Curves.easeInOut.transform(_glide.value) * 3.141592653589793;
             return Transform.translate(
-              offset: Offset(
-                widget.pulseDirection * 7 * math.sin(amount),
-                0,
-              ),
+              offset: Offset(widget.pulseDirection * 7 * math.sin(amount), 0),
               child: child,
             );
           },

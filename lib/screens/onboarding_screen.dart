@@ -16,11 +16,15 @@ import '../widgets/star_glyph.dart';
 /// [StarGlyph]) — so the tutorial teaches the actual thing the user will
 /// be looking at, not a stand-in for it.
 class _OnboardingPage {
-  const _OnboardingPage({this.icon, this.kind, required this.title, required this.body})
-    : assert(
-        icon != null || kind != null,
-        'A page needs something to show: an icon or a star kind.',
-      );
+  const _OnboardingPage({
+    this.icon,
+    this.kind,
+    required this.title,
+    required this.body,
+  }) : assert(
+         icon != null || kind != null,
+         'A page needs something to show: an icon or a star kind.',
+       );
 
   final IconData? icon;
   final StarKind? kind;

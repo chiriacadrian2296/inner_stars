@@ -229,10 +229,7 @@ class _LevelSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          StaggeredEntrance(
-            index: 0,
-            child: Center(child: picture),
-          ),
+          StaggeredEntrance(index: 0, child: Center(child: picture)),
           const SizedBox(height: 16),
           StaggeredEntrance(
             index: 1,

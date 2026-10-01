@@ -39,7 +39,7 @@ class ShareableConstellationCard extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Container(decoration: BoxDecoration(gradient: colors.nightlightGradient)),
+        ColoredBox(color: colors.night),
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -70,7 +70,11 @@ class ShareableConstellationCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Icon(iconForSlug(project.iconSlug), size: 32, color: colors.gold),
+                  Icon(
+                    iconForSlug(project.iconSlug),
+                    size: 32,
+                    color: colors.gold,
+                  ),
                   const SizedBox(height: 16),
                   AreaTag(area: project.area, iconSize: 24, fontSize: 21),
                   const SizedBox(height: 24),
@@ -94,17 +98,20 @@ class ShareableConstellationCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         height: 1.6,
-                        color: colors.nightlightMuted,
+                        color: colors.muted,
                       ),
                     ),
                   ],
                   const SizedBox(height: 24),
                   Text(
-                    strings.constellationTooltipLitCount(0, shape.points.length),
+                    strings.constellationTooltipLitCount(
+                      0,
+                      shape.points.length,
+                    ),
                     style: TextStyle(
                       fontFamily: kFontMono,
                       fontSize: 15,
-                      color: colors.nightlightMuted,
+                      color: colors.muted,
                     ),
                   ),
                 ],

@@ -1391,7 +1391,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _closeSkyTooltip();
     final confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => AppDialog(
         title: StaggeredEntrance(
           index: 0,
           child: Text(strings.deleteStarConfirmTitle),
@@ -3318,7 +3318,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
               );
             }
 
-            return AlertDialog(
+            return AppDialog(
               title: StaggeredEntrance(
                 index: 0,
                 child: Text(

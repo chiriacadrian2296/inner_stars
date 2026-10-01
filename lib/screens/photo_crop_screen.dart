@@ -142,7 +142,9 @@ class _PhotoCropScreenState extends State<PhotoCropScreen> {
   Future<void> _confirm() async {
     setState(() => _saving = true);
     try {
-      final boundary = _boundaryKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      final boundary =
+          _boundaryKey.currentContext!.findRenderObject()
+              as RenderRepaintBoundary;
       // Rendered at a fixed output width regardless of the crop frame's own
       // on-screen pixel size, so the saved photo has consistent resolution
       // across devices.
@@ -162,7 +164,9 @@ class _PhotoCropScreenState extends State<PhotoCropScreen> {
       Navigator.of(context).pop(jpegBytes);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.strings.photoPickError)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.strings.photoPickError)));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -214,7 +218,10 @@ class _PhotoCropScreenState extends State<PhotoCropScreen> {
                                 child: SizedBox(
                                   width: image.width.toDouble(),
                                   height: image.height.toDouble(),
-                                  child: RawImage(image: image, fit: BoxFit.fill),
+                                  child: RawImage(
+                                    image: image,
+                                    fit: BoxFit.fill,
+                                  ),
                                 ),
                               ),
                             ),

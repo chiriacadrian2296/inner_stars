@@ -17,6 +17,7 @@ class PillActionButton extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.danger = false,
+    this.compact = false,
   });
 
   final IconData icon;
@@ -29,6 +30,10 @@ class PillActionButton extends StatelessWidget {
   /// you can't undo" rather than blending in as just another enabled
   /// action.
   final bool danger;
+  final bool compact;
+
+  static const _minimumHeight = 48.0;
+  static const _padding = EdgeInsets.symmetric(horizontal: 20, vertical: 12);
 
   @override
   Widget build(BuildContext context) {
@@ -46,13 +51,15 @@ class PillActionButton extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         customBorder: const StadiumBorder(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        child: Container(
+          width: compact ? null : 196,
+          constraints: const BoxConstraints(minHeight: _minimumHeight),
+          padding: _padding,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, color: foreground, size: 18),
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
               Flexible(
                 child: Text(
                   label.toUpperCase(),
@@ -80,7 +87,8 @@ class PillActionButton extends StatelessWidget {
 /// parked, see that file's own doc comment) already had, just carried over
 /// to this pill shape instead of a round FAB so it reads as one family with
 /// [PillActionButton]'s delete/undo/redo pills rather than a visually
-/// unrelated control.
+/// unrelated control. Primary and secondary actions deliberately share the
+/// same geometry; importance comes from fill/glow, never from a larger size.
 ///
 /// [onPressed] stays callable even while [lit] is false (same reasoning as
 /// `AppActionDisc`) so a screen can use the tap to explain *why* it can't
@@ -99,6 +107,9 @@ class SaveActionButton extends StatelessWidget {
   final bool lit;
   final IconData icon;
 
+  static const _minimumHeight = 48.0;
+  static const _padding = EdgeInsets.symmetric(horizontal: 20, vertical: 12);
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -115,19 +126,25 @@ class SaveActionButton extends StatelessWidget {
         child: InkWell(
           onTap: onPressed,
           customBorder: const StadiumBorder(),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+          child: Container(
+            width: 196,
+            constraints: const BoxConstraints(minHeight: _minimumHeight),
+            padding: _padding,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: foreground, size: 20),
-                const SizedBox(width: 10),
-                Text(
-                  label.toUpperCase(),
-                  style: TextStyle(
-                    color: foreground,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
+                Icon(icon, color: foreground, size: 18),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    label.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: foreground,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ],

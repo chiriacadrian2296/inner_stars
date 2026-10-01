@@ -8,6 +8,7 @@ import '../l10n/strings_scope.dart';
 import '../settings/settings_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../theme/app_typography.dart';
 import '../tutorials/tutorial_management.dart' show kAllTourNames;
 import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
@@ -70,9 +71,8 @@ class _QuickSettingsScreenState extends State<QuickSettingsScreen> {
     }
     unawaited(tour.start('sky-navigation', force: true));
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(strings.replayToursResult)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(strings.replayToursResult)));
     }
   }
 
@@ -103,11 +103,7 @@ class _QuickSettingsScreenState extends State<QuickSettingsScreen> {
                   index: 0,
                   child: Text(
                     strings.quickSettingsTitle,
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w700,
-                      color: colors.text,
-                    ),
+                    style: context.typography.utilityPageTitle,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -180,7 +176,11 @@ class _QuickSettingsScreenState extends State<QuickSettingsScreen> {
                     alignment: Alignment.centerLeft,
                     child: TextButton.icon(
                       onPressed: _openSoundLab,
-                      icon: Icon(Icons.graphic_eq, size: 18, color: colors.gold),
+                      icon: Icon(
+                        Icons.graphic_eq,
+                        size: 18,
+                        color: colors.gold,
+                      ),
                       label: Text(
                         strings.quickSettingsOpenSoundLabAction,
                         style: TextStyle(color: colors.gold),
@@ -276,13 +276,6 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        color: context.colors.muted,
-      ),
-    );
+    return Text(label, style: context.typography.compactSectionLabel);
   }
 }

@@ -63,7 +63,12 @@ class SkyNascentStarTooltip extends StatelessWidget {
             runSpacing: 6,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              ProjectTag(project: project, textColor: colors.muted, iconSize: 14, fontSize: 13),
+              ProjectTag(
+                project: project,
+                textColor: colors.muted,
+                iconSize: 14,
+                fontSize: 13,
+              ),
               AreaTag(area: project.area, iconSize: 14, fontSize: 13),
             ],
           ),

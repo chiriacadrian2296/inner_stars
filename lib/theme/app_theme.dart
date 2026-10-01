@@ -4,6 +4,7 @@ import 'app_colors.dart';
 import 'app_fonts.dart';
 import 'app_motion.dart';
 import 'app_style.dart';
+import 'app_typography.dart';
 
 /// The app's one and only theme — night sky, gold stars. There's no light
 /// mode: a "daytime sky" doesn't fit an app about lighting stars against a
@@ -122,6 +123,7 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
         elevation: litElevation,
         shadowColor: palette.gold.withValues(alpha: 0.55),
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+        minimumSize: const Size(0, 48),
         textStyle: const TextStyle(
           fontWeight: FontWeight.w700,
           fontSize: 12,
@@ -136,6 +138,7 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
         disabledForegroundColor: palette.muted,
         side: BorderSide(color: palette.gold, width: kBorderWidthActive),
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+        minimumSize: const Size(0, 48),
         textStyle: const TextStyle(
           fontWeight: FontWeight.w700,
           fontSize: 12,
@@ -148,6 +151,7 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
       style: TextButton.styleFrom(
         foregroundColor: palette.gold,
         disabledForegroundColor: palette.muted,
+        minimumSize: const Size(0, 48),
         textStyle: const TextStyle(
           fontWeight: FontWeight.w700,
           fontSize: 12,
@@ -161,6 +165,12 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
       foregroundColor: palette.onGold,
       elevation: 0,
       shape: const CircleBorder(),
+    ),
+    iconButtonTheme: const IconButtonThemeData(
+      style: ButtonStyle(
+        minimumSize: WidgetStatePropertyAll(Size(48, 48)),
+        tapTargetSize: MaterialTapTargetSize.padded,
+      ),
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: palette.nightPanel,
@@ -184,6 +194,27 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(kRadiusCard)),
       ),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: palette.nightPanel,
+      contentTextStyle: TextStyle(
+        color: palette.text,
+        fontSize: 14,
+        height: 1.35,
+      ),
+      actionTextColor: palette.gold,
+      disabledActionTextColor: palette.muted,
+      behavior: SnackBarBehavior.floating,
+      elevation: 6,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: palette.nightBorder),
+        borderRadius: BorderRadius.circular(kRadiusField),
+      ),
+    ),
+    progressIndicatorTheme: ProgressIndicatorThemeData(
+      color: palette.gold,
+      linearTrackColor: palette.nightBorder,
+      circularTrackColor: palette.nightBorder,
     ),
     sliderTheme: SliderThemeData(
       activeTrackColor: palette.gold,
@@ -275,6 +306,6 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
             : Colors.transparent,
       ),
     ),
-    extensions: [palette],
+    extensions: [palette, AppTypography.fromColors(palette)],
   );
 }

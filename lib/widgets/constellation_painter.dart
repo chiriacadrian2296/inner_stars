@@ -233,9 +233,8 @@ class ConstellationPainter extends CustomPainter {
       // Sitting on a slot is what makes a star part of the shape — not its
       // kind. A deleted pulsar is a dead star too, but it keeps its own
       // scattered spot and no slot, so it must never shift this indexing.
-      final shapeStars =
-          stars.where((s) => s.slotSequence != null).toList()
-            ..sort((a, b) => a.slotSequence!.compareTo(b.slotSequence!));
+      final shapeStars = stars.where((s) => s.slotSequence != null).toList()
+        ..sort((a, b) => a.slotSequence!.compareTo(b.slotSequence!));
       for (final (a, b) in edges) {
         if (a >= shapeStars.length || b >= shapeStars.length) continue;
         canvas.drawLine(

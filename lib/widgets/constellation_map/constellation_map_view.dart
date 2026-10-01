@@ -506,20 +506,24 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
 
     // Same slot ordering the painter uses to resolve edge indices — pulsars,
     // which sit on no slot, never take part.
-    final shapeNodes = nodes.where((n) => stars[n.index].slotSequence != null).toList()
-      ..sort((a, b) => stars[a.index].slotSequence!.compareTo(stars[b.index].slotSequence!));
+    final shapeNodes =
+        nodes.where((n) => stars[n.index].slotSequence != null).toList()..sort(
+          (a, b) => stars[a.index].slotSequence!.compareTo(
+            stars[b.index].slotSequence!,
+          ),
+        );
     // The shape, rather than the average of every visible star, defines its
     // vertical symmetry axis. Pulsars can sit outside the grid and must not
     // make two genuinely mirrored grid stars look asymmetric.
     final symmetryAxisX = shapeNodes.isEmpty
         ? anchor.dx
         : (shapeNodes
-                    .map((node) => node.center.dx)
-                    .reduce((left, right) => left < right ? left : right) +
-                shapeNodes
-                    .map((node) => node.center.dx)
-                    .reduce((left, right) => left > right ? left : right)) /
-            2;
+                      .map((node) => node.center.dx)
+                      .reduce((left, right) => left < right ? left : right) +
+                  shapeNodes
+                      .map((node) => node.center.dx)
+                      .reduce((left, right) => left > right ? left : right)) /
+              2;
     final segments = <(Offset, Offset)>[
       for (final (a, b) in widget.edges)
         if (a < shapeNodes.length && b < shapeNodes.length)
@@ -610,19 +614,23 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
   String _layoutCacheKey(BuildContext context, double zoom) {
     String number(double value) => value.toStringAsFixed(3);
     final textScale = MediaQuery.textScalerOf(context).scale(_kLabelFontSize);
-    final starData = widget.stars.map((star) {
-      return [
-        star.entityId,
-        number(star.position.dx),
-        number(star.position.dy),
-        star.kind.name,
-        star.lit,
-        star.label,
-        star.slotSequence,
-        star.intensity,
-      ].join('~');
-    }).join('|');
-    final edgeData = widget.edges.map((edge) => '${edge.$1}:${edge.$2}').join(',');
+    final starData = widget.stars
+        .map((star) {
+          return [
+            star.entityId,
+            number(star.position.dx),
+            number(star.position.dy),
+            star.kind.name,
+            star.lit,
+            star.label,
+            star.slotSequence,
+            star.intensity,
+          ].join('~');
+        })
+        .join('|');
+    final edgeData = widget.edges
+        .map((edge) => '${edge.$1}:${edge.$2}')
+        .join(',');
     return [
       number(widget.canvasSize.width),
       number(widget.canvasSize.height),
@@ -665,10 +673,7 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
     readIntervals(xs);
     readIntervals(ys);
     if (spacing == null) return null;
-    return LabelGrid(
-      origin: Offset(xs.first, ys.first),
-      spacing: spacing!,
-    );
+    return LabelGrid(origin: Offset(xs.first, ys.first), spacing: spacing!);
   }
 
   LabelLayout _scaleLayout(LabelLayout source, double scale) {
@@ -755,10 +760,7 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
             top: node.center.dy + translation.dy - node.outer,
             width: node.outer * 2,
             height: node.outer * 2,
-            child: _StarButton(
-              star: stars[node.index],
-              metrics: node.metrics,
-            ),
+            child: _StarButton(star: stars[node.index], metrics: node.metrics),
           ),
         for (final placement in layout.placements.values)
           Positioned.fromRect(
@@ -895,10 +897,7 @@ class _StarButton extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: colors.night,
-        border: Border.all(
-          color: colors.text,
-          width: metrics.strokeWidth,
-        ),
+        border: Border.all(color: colors.text, width: metrics.strokeWidth),
       ),
       // The star's photo, if it has one, fills the disc behind everything
       // else at half strength — its center, cropped to the circle.
@@ -928,11 +927,7 @@ class _StarButton extends StatelessWidget {
                   : Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          kind.icon,
-                          size: diameter * 0.4,
-                          color: kindColor,
-                        ),
+                        Icon(kind.icon, size: diameter * 0.4, color: kindColor),
                         Padding(
                           padding: EdgeInsets.only(top: diameter * 0.04),
                           child: IntensityDots(
@@ -950,12 +945,7 @@ class _StarButton extends StatelessWidget {
       ),
     );
 
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        disc,
-      ],
-    );
+    return Stack(alignment: Alignment.center, children: [disc]);
   }
 }
 
@@ -1051,10 +1041,7 @@ class _StarMapCard extends StatelessWidget {
         // connectors remain subtly visible underneath it.
         color: colors.nightPanel.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(_kMapCardRadius * scale),
-        border: Border.all(
-          color: typeColor,
-          width: kBorderWidth * scale,
-        ),
+        border: Border.all(color: typeColor, width: kBorderWidth * scale),
       ),
       child: Row(
         children: [

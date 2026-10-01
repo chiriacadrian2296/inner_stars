@@ -120,8 +120,8 @@ class _SoundLabScreenState extends State<SoundLabScreen> {
   void _previewHoldVolume(double _) =>
       widget.audioService.previewHoldSound(widget.audioService.holdSound);
 
-  void _previewWhooshVolume(double _) => widget.audioService
-      .previewWhooshSound(widget.audioService.whooshInSound);
+  void _previewWhooshVolume(double _) =>
+      widget.audioService.previewWhooshSound(widget.audioService.whooshInSound);
 
   Future<void> _resetToDefaults() async {
     await widget.audioService.resetToDefaults();
@@ -184,7 +184,11 @@ class _SoundLabScreenState extends State<SoundLabScreen> {
                 index: 0,
                 child: Text(
                   strings.soundLabSubtitle,
-                  style: TextStyle(fontSize: 14, height: 1.45, color: colors.muted),
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.45,
+                    color: colors.muted,
+                  ),
                 ),
               ),
               const SizedBox(height: 22),
@@ -249,8 +253,10 @@ class _SoundLabScreenState extends State<SoundLabScreen> {
                                     _PlayPauseButton(
                                       paused: paused,
                                       onTap: _toggleBackgroundPlayback,
-                                      playTooltip: strings.playBackgroundTrackAction,
-                                      pauseTooltip: strings.pauseBackgroundTrackAction,
+                                      playTooltip:
+                                          strings.playBackgroundTrackAction,
+                                      pauseTooltip:
+                                          strings.pauseBackgroundTrackAction,
                                     ),
                                   ],
                                 ),
@@ -567,10 +573,7 @@ class _PlayPauseButton extends StatelessWidget {
         padding: EdgeInsets.zero,
         splashRadius: 18,
         tooltip: paused ? playTooltip : pauseTooltip,
-        icon: Icon(
-          paused ? Icons.play_arrow : Icons.pause,
-          color: colors.gold,
-        ),
+        icon: Icon(paused ? Icons.play_arrow : Icons.pause, color: colors.gold),
       ),
     );
   }
@@ -620,10 +623,8 @@ class _VolumeSliderRow extends StatelessWidget {
             index: 1,
             axis: Axis.horizontal,
             child: SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                padding: EdgeInsets.zero,
-                trackHeight: 4,
-              ),
+              data: SliderTheme.of(context)
+                  .copyWith(padding: EdgeInsets.zero, trackHeight: 4),
               child: Slider(
                 value: value,
                 onChanged: onChanged,

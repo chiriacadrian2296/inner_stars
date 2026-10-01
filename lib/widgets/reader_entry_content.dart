@@ -286,7 +286,7 @@ class _Crumb extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: colors.nightlightMuted,
+            color: colors.muted,
           ),
         ),
       ],

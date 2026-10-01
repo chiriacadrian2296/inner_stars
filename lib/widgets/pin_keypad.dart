@@ -91,10 +91,7 @@ class PinKeypadState extends State<PinKeypad>
             final t = _shakeController.value;
             // Four back-and-forth cycles, decaying to 0 by the end.
             final offset = math.sin(t * math.pi * 8) * 10 * (1 - t);
-            return Transform.translate(
-              offset: Offset(offset, 0),
-              child: child,
-            );
+            return Transform.translate(offset: Offset(offset, 0), child: child);
           },
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -234,7 +231,10 @@ class _KeypadButton extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: colors.nightBorder, width: kBorderWidth),
+              border: Border.all(
+                color: colors.nightBorder,
+                width: kBorderWidth,
+              ),
             ),
             child: DefaultTextStyle(
               style: TextStyle(

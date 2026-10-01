@@ -96,9 +96,7 @@ _Vec3 _normalized(_Vec3 v) {
 /// just using the camera's own right/up, is what lets [SkyAreaSigils]
 /// line its own cross up with the star's.
 _Vec3 _axisAFor(_Vec3 center) {
-  final reference = center.$2.abs() < 0.99
-      ? (0.0, 1.0, 0.0)
-      : (1.0, 0.0, 0.0);
+  final reference = center.$2.abs() < 0.99 ? (0.0, 1.0, 0.0) : (1.0, 0.0, 0.0);
   return _normalized(_cross(reference, center));
 }
 
@@ -260,7 +258,8 @@ class _SkyAreaSigilsPainter extends CustomPainter {
   // of the pulse, not the resting size — see [_pulseAmplitude].
   static const _sigilPeakWorldRadius = 0.038;
   static const _pulseAmplitude = 0.018;
-  static const _sigilWorldRadius = _sigilPeakWorldRadius / (1 + _pulseAmplitude);
+  static const _sigilWorldRadius =
+      _sigilPeakWorldRadius / (1 + _pulseAmplitude);
 
   // The supernova's own visible ring's *center* line (see
   // `hitTestSupernovas`' own derivation in constellation_field.dart:
@@ -353,14 +352,22 @@ class _SkyAreaSigilsPainter extends CustomPainter {
   /// Slightly thicker and softly glowing (a blurred pass underneath a
   /// crisper one on top) compared to the sigil's own plain rings, so it
   /// reads as the one fixed anchor everything else moves around.
-  void _paintAnchorRing(Canvas canvas, Offset center, double radius, int areaIndex) {
+  void _paintAnchorRing(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    int areaIndex,
+  ) {
     if (radius <= 0) return;
     final color = _sigilColor(areaIndex);
     final glowPaint = Paint()
       ..color = color.withValues(alpha: 0.45)
       ..style = PaintingStyle.stroke
       ..strokeWidth = math.max(1.2, radius * 0.06)
-      ..maskFilter = MaskFilter.blur(BlurStyle.normal, math.max(1.0, radius * 0.05));
+      ..maskFilter = MaskFilter.blur(
+        BlurStyle.normal,
+        math.max(1.0, radius * 0.05),
+      );
     canvas.drawCircle(center, radius, glowPaint);
     final crispPaint = Paint()
       ..color = color.withValues(alpha: 0.7)
@@ -488,7 +495,13 @@ class _SkyAreaSigilsPainter extends CustomPainter {
         final r = maxRadius * t;
         final angle = startAngle + t * turns * 2 * math.pi;
         final point = Offset(math.cos(angle), math.sin(angle)) * r;
-        _paintIcon(canvas, point, maxRadius * 0.15, recipe.accentIcon, accentColor);
+        _paintIcon(
+          canvas,
+          point,
+          maxRadius * 0.15,
+          recipe.accentIcon,
+          accentColor,
+        );
       }
     }
   }
@@ -520,7 +533,8 @@ class _SkyAreaSigilsPainter extends CustomPainter {
       } else {
         final midAngle = angle - math.pi / count;
         final control =
-            Offset(math.cos(midAngle), math.sin(midAngle)) * (ringRadius * 0.75);
+            Offset(math.cos(midAngle), math.sin(midAngle)) *
+            (ringRadius * 0.75);
         path.quadraticBezierTo(control.dx, control.dy, point.dx, point.dy);
       }
     }
@@ -529,7 +543,13 @@ class _SkyAreaSigilsPainter extends CustomPainter {
     for (var i = 0; i < count; i++) {
       final angle = innerRotation + i * (2 * math.pi / count);
       final point = Offset(math.cos(angle), math.sin(angle)) * ringRadius;
-      _paintIcon(canvas, point, maxRadius * 0.17, recipe.accentIcon, accentColor);
+      _paintIcon(
+        canvas,
+        point,
+        maxRadius * 0.17,
+        recipe.accentIcon,
+        accentColor,
+      );
     }
   }
 
@@ -538,7 +558,13 @@ class _SkyAreaSigilsPainter extends CustomPainter {
   /// render a Material [IconData] onto a canvas, just plain-filled here
   /// rather than outlined/glowing, since these are meant to read as small
   /// scattered sparkles rather than another focal point.
-  void _paintIcon(Canvas canvas, Offset center, double size, IconData icon, Color color) {
+  void _paintIcon(
+    Canvas canvas,
+    Offset center,
+    double size,
+    IconData icon,
+    Color color,
+  ) {
     final painter = TextPainter(textDirection: TextDirection.ltr)
       ..text = TextSpan(
         text: String.fromCharCode(icon.codePoint),
@@ -550,7 +576,10 @@ class _SkyAreaSigilsPainter extends CustomPainter {
         ),
       )
       ..layout();
-    painter.paint(canvas, center - Offset(painter.width / 2, painter.height / 2));
+    painter.paint(
+      canvas,
+      center - Offset(painter.width / 2, painter.height / 2),
+    );
   }
 
   /// A small petal/leaf shape stretched along [angle] (its "outward"
@@ -559,7 +588,13 @@ class _SkyAreaSigilsPainter extends CustomPainter {
   /// accents do, and its two side points sit exactly on the circle/line
   /// [center] was already placed on, so it never pokes out one side more
   /// than the other by some arbitrary, accidental-looking amount.
-  void _paintPetal(Canvas canvas, Offset center, double angle, double halfLength, Paint paint) {
+  void _paintPetal(
+    Canvas canvas,
+    Offset center,
+    double angle,
+    double halfLength,
+    Paint paint,
+  ) {
     final dir = Offset(math.cos(angle), math.sin(angle));
     final perp = Offset(-dir.dy, dir.dx);
     final halfWidth = halfLength * 0.55;

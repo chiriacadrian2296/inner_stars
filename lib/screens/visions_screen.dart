@@ -107,115 +107,120 @@ class _VisionsScreenState extends State<VisionsScreen> {
             return ListView(
               padding: EdgeInsets.symmetric(vertical: verticalPadding),
               children: [
-            ResponsiveContent(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    StaggeredEntrance(
-                      index: 0,
-                      child: Text(
-                        strings.visionsSubtitle,
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 1.45,
-                          color: colors.muted,
+                ResponsiveContent(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        StaggeredEntrance(
+                          index: 0,
+                          child: Text(
+                            strings.visionsSubtitle,
+                            style: TextStyle(
+                              fontSize: 14,
+                              height: 1.45,
+                              color: colors.muted,
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 22),
+                        TourIntroTarget(
+                          tour: 'supernova-vision',
+                          order: 1,
+                          title: strings.supernovaTourIntroTitle,
+                          description: strings.supernovaTourIntroBody,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 22),
-                    TourIntroTarget(
-                      tour: 'supernova-vision',
-                      order: 1,
-                      title: strings.supernovaTourIntroTitle,
-                      description: strings.supernovaTourIntroBody,
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-            ResponsiveContent(
-              child: HintTarget(
-                tour: 'supernova-vision',
-                order: 2,
-                showArrow: true,
-                contentBuilder: appTourStepCard,
-                title: strings.supernovaTourListTitle,
-                description: strings.supernovaTourListBody,
-                child: StaggeredEntrance(
-                  index: 1,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) => SizedBox(
-                      height: (constraints.maxWidth * 1.15).clamp(340.0, 560.0),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          LoopingHeroCarousel(
-                            freeScroll: _freeScroll,
-                            onTap: (index) => _openArea(LifeArea.values[index]),
+                ResponsiveContent(
+                  child: HintTarget(
+                    tour: 'supernova-vision',
+                    order: 2,
+                    showArrow: true,
+                    contentBuilder: appTourStepCard,
+                    title: strings.supernovaTourListTitle,
+                    description: strings.supernovaTourListBody,
+                    child: StaggeredEntrance(
+                      index: 1,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => SizedBox(
+                          height: (constraints.maxWidth * 1.15).clamp(
+                            340.0,
+                            560.0,
+                          ),
+                          child: Stack(
+                            fit: StackFit.expand,
                             children: [
-                              for (final area in LifeArea.values)
-                                _VisionCard(
-                                  area: area,
-                                  vision: widget.areaVisionRepository.getVision(
-                                    area,
-                                  ),
-                                ),
+                              LoopingHeroCarousel(
+                                freeScroll: _freeScroll,
+                                onTap: (index) =>
+                                    _openArea(LifeArea.values[index]),
+                                children: [
+                                  for (final area in LifeArea.values)
+                                    _VisionCard(
+                                      area: area,
+                                      vision: widget.areaVisionRepository
+                                          .getVision(area),
+                                    ),
+                                ],
+                              ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ResponsiveContent(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  children: [
-                    StaggeredEntrance(
-                      index: 2,
-                      child: Semantics(
-                        label: strings.carouselFreeScroll,
-                        child: Switch(
-                          value: _freeScroll,
-                          onChanged: (value) =>
-                              setState(() => _freeScroll = value),
-                          thumbColor: WidgetStateProperty.resolveWith(
-                            (states) => states.contains(WidgetState.selected)
-                                ? const Color(0xFF0D1220)
-                                : Colors.white,
-                          ),
-                          trackColor: WidgetStateProperty.resolveWith(
-                            (states) => states.contains(WidgetState.selected)
-                                ? Colors.white
-                                : const Color(0xFF0D1220),
-                          ),
-                          trackOutlineColor: const WidgetStatePropertyAll(
-                            Colors.white54,
+                const SizedBox(height: 16),
+                ResponsiveContent(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: [
+                        StaggeredEntrance(
+                          index: 2,
+                          child: Semantics(
+                            label: strings.carouselFreeScroll,
+                            child: Switch(
+                              value: _freeScroll,
+                              onChanged: (value) =>
+                                  setState(() => _freeScroll = value),
+                              thumbColor: WidgetStateProperty.resolveWith(
+                                (states) =>
+                                    states.contains(WidgetState.selected)
+                                    ? const Color(0xFF0D1220)
+                                    : Colors.white,
+                              ),
+                              trackColor: WidgetStateProperty.resolveWith(
+                                (states) =>
+                                    states.contains(WidgetState.selected)
+                                    ? Colors.white
+                                    : const Color(0xFF0D1220),
+                              ),
+                              trackOutlineColor: const WidgetStatePropertyAll(
+                                Colors.white54,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 4),
+                        StaggeredEntrance(
+                          index: 2,
+                          child: Text(
+                            _freeScroll
+                                ? strings.carouselFreeScroll
+                                : strings.carouselOneAtATime,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: colors.text),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    StaggeredEntrance(
-                      index: 2,
-                      child: Text(
-                        _freeScroll
-                            ? strings.carouselFreeScroll
-                            : strings.carouselOneAtATime,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: colors.text),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
               ],
             );
           },

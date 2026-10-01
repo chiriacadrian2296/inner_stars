@@ -55,7 +55,11 @@ class IntensityBolts extends StatelessWidget {
     final isEmphasized = emphasizeLast && lit && i == intensity;
     final iconData = lit ? Icons.offline_bolt : Icons.offline_bolt_outlined;
     final iconSize = isEmphasized ? size * emphasizedScale : size;
-    final icon = Icon(iconData, size: iconSize, color: lit ? resolvedColor : resolvedColor.withValues(alpha: 0.35));
+    final icon = Icon(
+      iconData,
+      size: iconSize,
+      color: lit ? resolvedColor : resolvedColor.withValues(alpha: 0.35),
+    );
     if (!isEmphasized) return icon;
     // A blurred copy of the same glyph, behind the sharp one — its glow
     // follows the bolt's actual silhouette, hollow center included, instead
@@ -72,7 +76,11 @@ class IntensityBolts extends StatelessWidget {
       children: [
         ImageFiltered(
           imageFilter: ui.ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
-          child: Icon(iconData, size: iconSize * 1.15, color: resolvedColor.withValues(alpha: 0.45)),
+          child: Icon(
+            iconData,
+            size: iconSize * 1.15,
+            color: resolvedColor.withValues(alpha: 0.45),
+          ),
         ),
         icon,
       ],

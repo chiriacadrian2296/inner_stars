@@ -127,8 +127,9 @@ class _NightlightGateScreenState extends State<NightlightGateScreen>
                         StaggeredEntrance(
                           index: 0,
                           child: IconButton(
-                            onPressed: () => Navigator.of(context)
-                                .popUntil((route) => route.isFirst),
+                            onPressed: () =>
+                                Navigator.of(context)
+                                    .popUntil((route) => route.isFirst),
                             icon: const Icon(Icons.close, color: Colors.white),
                           ),
                         ),
@@ -162,7 +163,10 @@ class _NightlightGateScreenState extends State<NightlightGateScreen>
                                     // blur pass, since this is a [Text]
                                     // rather than a canvas shape.
                                     shadows: const [
-                                      Shadow(color: Colors.white, blurRadius: 22),
+                                      Shadow(
+                                        color: Colors.white,
+                                        blurRadius: 22,
+                                      ),
                                       Shadow(
                                         color: Colors.white54,
                                         blurRadius: 42,
@@ -188,19 +192,19 @@ class _NightlightGateScreenState extends State<NightlightGateScreen>
                                     ),
                                     children: [
                                       TextSpan(
-                                        text:
-                                            strings.nightlightGateQuestionPrefix,
+                                        text: strings
+                                            .nightlightGateQuestionPrefix,
                                       ),
                                       TextSpan(
-                                        text:
-                                            strings.nightlightGateQuestionOkWord,
+                                        text: strings
+                                            .nightlightGateQuestionOkWord,
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                       TextSpan(
-                                        text:
-                                            strings.nightlightGateQuestionMiddle,
+                                        text: strings
+                                            .nightlightGateQuestionMiddle,
                                       ),
                                       TextSpan(
                                         text: strings
@@ -210,8 +214,8 @@ class _NightlightGateScreenState extends State<NightlightGateScreen>
                                         ),
                                       ),
                                       TextSpan(
-                                        text:
-                                            strings.nightlightGateQuestionSuffix,
+                                        text: strings
+                                            .nightlightGateQuestionSuffix,
                                       ),
                                     ],
                                   ),
@@ -246,8 +250,8 @@ class _NightlightGateScreenState extends State<NightlightGateScreen>
                                                     .nightlightGateOkPrefix,
                                               ),
                                               TextSpan(
-                                                text:
-                                                    strings.nightlightGateOkWord,
+                                                text: strings
+                                                    .nightlightGateOkWord,
                                                 style: const TextStyle(
                                                   fontWeight: FontWeight.bold,
                                                 ),

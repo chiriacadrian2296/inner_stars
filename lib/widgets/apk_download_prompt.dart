@@ -35,7 +35,7 @@ Future<void> showApkDownloadPrompt(
     builder: (dialogContext) {
       final strings = dialogContext.strings;
       final colors = dialogContext.colors;
-      return AlertDialog(
+      return AppDialog(
         icon: StaggeredEntrance(
           index: 0,
           child: Icon(Icons.android, color: colors.gold, size: 32),

@@ -103,7 +103,7 @@ class TotalStarsDetailScreen extends StatelessWidget {
                     fontSize: 12,
                     letterSpacing: 1.2,
                     fontWeight: FontWeight.w600,
-                    color: colors.nightlightMuted,
+                    color: colors.muted,
                   ),
                 ),
               ),
@@ -128,10 +128,7 @@ class TotalStarsDetailScreen extends StatelessWidget {
                         ),
                         Text(
                           strings.starsCount(countByArea[areasByCount[i]]!),
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: colors.nightlightMuted,
-                          ),
+                          style: TextStyle(fontSize: 13, color: colors.muted),
                         ),
                       ],
                     ),
@@ -278,8 +275,8 @@ class _StatDetailScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(gradient: colors.nightlightGradient),
+      body: ColoredBox(
+        color: colors.night,
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -288,7 +285,7 @@ class _StatDetailScaffold extends StatelessWidget {
                 index: 0,
                 child: IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: Icon(Icons.arrow_back, color: colors.nightlightMuted),
+                  icon: Icon(Icons.arrow_back, color: colors.muted),
                 ),
               ),
               Expanded(
@@ -348,10 +345,7 @@ class _StatDetailScaffold extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 28),
-                        StaggeredEntrance(
-                          index: 2,
-                          child: body,
-                        ),
+                        StaggeredEntrance(index: 2, child: body),
                       ],
                     ),
                   ),
@@ -387,9 +381,7 @@ class _DetailCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 18),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
-        border: Border.all(
-          color: colors.nightlightMuted.withValues(alpha: 0.15),
-        ),
+        border: Border.all(color: colors.nightBorder),
         borderRadius: BorderRadius.circular(kRadiusCard),
       ),
       child: Column(
@@ -400,10 +392,7 @@ class _DetailCard extends StatelessWidget {
               child: divideRows && i > 0
                   ? Column(
                       children: [
-                        Divider(
-                          color: colors.nightlightMuted.withValues(alpha: 0.12),
-                          height: 1,
-                        ),
+                        Divider(color: colors.nightBorder, height: 1),
                         children[i],
                       ],
                     )
@@ -434,18 +423,14 @@ class _DetailRow extends StatelessWidget {
       decoration: isLast
           ? null
           : BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: colors.nightlightMuted.withValues(alpha: 0.12),
-                ),
-              ),
+              border: Border(bottom: BorderSide(color: colors.nightBorder)),
             ),
       child: Row(
         children: [
           Expanded(
             child: Text(
               label,
-              style: TextStyle(fontSize: 14, color: colors.nightlightMuted),
+              style: TextStyle(fontSize: 14, color: colors.muted),
             ),
           ),
           Text(
@@ -473,11 +458,7 @@ class _EmptyBody extends StatelessWidget {
     return Text(
       text,
       textAlign: TextAlign.center,
-      style: TextStyle(
-        fontSize: 14,
-        height: 1.5,
-        color: context.colors.nightlightMuted,
-      ),
+      style: TextStyle(fontSize: 14, height: 1.5, color: context.colors.muted),
     );
   }
 }

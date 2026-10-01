@@ -168,8 +168,7 @@ LabelLayout layoutConstellationLabels({
     if (best == null || layout.overlaps < best.overlaps) best = layout;
     if (layout.overlaps == 0) break;
   }
-  return best ??
-      const LabelLayout(placements: {}, labelScale: 1, overlaps: 0);
+  return best ?? const LabelLayout(placements: {}, labelScale: 1, overlaps: 0);
 }
 
 class _Candidate {
@@ -251,7 +250,8 @@ LabelLayout _layoutAtScale({
     for (final other in labeled) {
       if (other.id <= node.id) continue;
       final otherPlacement = chosen[other.id]?.placement;
-      if (otherPlacement != null && placement.rect.overlaps(otherPlacement.rect)) {
+      if (otherPlacement != null &&
+          placement.rect.overlaps(otherPlacement.rect)) {
         overlaps++;
       }
     }
@@ -291,17 +291,32 @@ List<_Candidate> _candidatesFor(
     for (var i = 0; i < _kAngles; i++) {
       final angle = 2 * math.pi * i / _kAngles;
       final direction = Offset(math.cos(angle), math.sin(angle));
-      final start = node.center +
+      final start =
+          node.center +
           direction * ((node.leaderRadius ?? node.radius) + _kStartGap);
       final end = start + direction * scaledLength;
       final horizontal = direction.dx.abs() >= direction.dy.abs();
       final Rect rect;
       if (horizontal) {
-        final left = direction.dx > 0 ? end.dx + _kEndGap : end.dx - _kEndGap - size.width;
-        rect = Rect.fromLTWH(left, end.dy - size.height / 2, size.width, size.height);
+        final left = direction.dx > 0
+            ? end.dx + _kEndGap
+            : end.dx - _kEndGap - size.width;
+        rect = Rect.fromLTWH(
+          left,
+          end.dy - size.height / 2,
+          size.width,
+          size.height,
+        );
       } else {
-        final top = direction.dy > 0 ? end.dy + _kEndGap : end.dy - _kEndGap - size.height;
-        rect = Rect.fromLTWH(end.dx - size.width / 2, top, size.width, size.height);
+        final top = direction.dy > 0
+            ? end.dy + _kEndGap
+            : end.dy - _kEndGap - size.height;
+        rect = Rect.fromLTWH(
+          end.dx - size.width / 2,
+          top,
+          size.width,
+          size.height,
+        );
       }
       result.add(
         _Candidate(
@@ -314,7 +329,8 @@ List<_Candidate> _candidatesFor(
             candidate: index++,
           ),
           scaledLength,
-          direction.dx * outwardDirection.dx + direction.dy * outwardDirection.dy,
+          direction.dx * outwardDirection.dx +
+              direction.dy * outwardDirection.dy,
           direction,
         ),
       );
@@ -388,14 +404,35 @@ Map<int, _Candidate> _solveConstellationLabels({
       }
       // Symmetry never authorizes an overlap. If the shape offers no clear
       // mirrored alternatives, solve the two labels independently.
-      groups.add(_singleGroup(node, candidates[node.id]!, allNodes,
-          fixedCandidates[node.id], previous[node.id]));
-      groups.add(_singleGroup(partner, candidates[partner.id]!, allNodes,
-          fixedCandidates[partner.id], previous[partner.id]));
+      groups.add(
+        _singleGroup(
+          node,
+          candidates[node.id]!,
+          allNodes,
+          fixedCandidates[node.id],
+          previous[node.id],
+        ),
+      );
+      groups.add(
+        _singleGroup(
+          partner,
+          candidates[partner.id]!,
+          allNodes,
+          fixedCandidates[partner.id],
+          previous[partner.id],
+        ),
+      );
       continue;
     }
-    groups.add(_singleGroup(node, candidates[node.id]!, allNodes,
-        fixedCandidates[node.id], previous[node.id]));
+    groups.add(
+      _singleGroup(
+        node,
+        candidates[node.id]!,
+        allNodes,
+        fixedCandidates[node.id],
+        previous[node.id],
+      ),
+    );
   }
 
   // The fewest alternatives first makes the beam spend its breadth on the
@@ -409,10 +446,12 @@ Map<int, _Candidate> _solveConstellationLabels({
       for (final option in group.options) {
         if (_optionConflicts(option, state.chosen)) continue;
         final extra = _transitionCost(option, state.chosen, edges);
-        next.add(_SearchState(
-          {...state.chosen, ...option.candidates},
-          state.cost + option.cost + extra,
-        ));
+        next.add(
+          _SearchState({
+            ...state.chosen,
+            ...option.candidates,
+          }, state.cost + option.cost + extra),
+        );
       }
     }
     if (next.isEmpty) {
@@ -424,9 +463,11 @@ Map<int, _Candidate> _solveConstellationLabels({
     next.sort((a, b) => a.cost.compareTo(b.cost));
     states = next.take(192).toList();
   }
-  states.sort((a, b) => b.chosen.length != a.chosen.length
-      ? b.chosen.length.compareTo(a.chosen.length)
-      : a.cost.compareTo(b.cost));
+  states.sort(
+    (a, b) => b.chosen.length != a.chosen.length
+        ? b.chosen.length.compareTo(a.chosen.length)
+        : a.cost.compareTo(b.cost),
+  );
   return states.first.chosen;
 }
 
@@ -440,16 +481,19 @@ _PlacementGroup _singleGroup(
   var clear = raw.where((candidate) => !_cardHitsAnyStar(candidate, allNodes));
   if (fixedCandidate != null) {
     final fixed = clear.where(
-        (candidate) => candidate.placement.candidate == fixedCandidate);
+      (candidate) => candidate.placement.candidate == fixedCandidate,
+    );
     if (fixed.isNotEmpty) clear = fixed;
   }
-  final options = clear
-      .map((candidate) => _PlacementOption(
-            {node.id: candidate},
-            _candidateBaseCost(candidate, previousCandidate),
-          ))
-      .toList()
-    ..sort((a, b) => a.cost.compareTo(b.cost));
+  final options =
+      clear
+          .map(
+            (candidate) => _PlacementOption({
+              node.id: candidate,
+            }, _candidateBaseCost(candidate, previousCandidate)),
+          )
+          .toList()
+        ..sort((a, b) => a.cost.compareTo(b.cost));
   return _PlacementGroup(options.take(72).toList());
 }
 
@@ -473,10 +517,12 @@ List<_PlacementOption> _symmetricOptions(
     for (final b in secondClear) {
       if (!_areMirrored(a.placement, b.placement, axisX)) continue;
       if (a.placement.rect.overlaps(b.placement.rect.inflate(2))) continue;
-      options.add(_PlacementOption(
-        {first.id: a, second.id: b},
-        _candidateBaseCost(a, null) + _candidateBaseCost(b, null),
-      ));
+      options.add(
+        _PlacementOption({
+          first.id: a,
+          second.id: b,
+        }, _candidateBaseCost(a, null) + _candidateBaseCost(b, null)),
+      );
     }
   }
   options.sort((a, b) => a.cost.compareTo(b.cost));
@@ -489,14 +535,13 @@ double _candidateBaseCost(_Candidate candidate, int? previousCandidate) {
   return cost;
 }
 
-bool _optionConflicts(
-  _PlacementOption option,
-  Map<int, _Candidate> chosen,
-) {
+bool _optionConflicts(_PlacementOption option, Map<int, _Candidate> chosen) {
   final values = option.candidates.values.toList();
   for (var i = 0; i < values.length; i++) {
     for (var j = i + 1; j < values.length; j++) {
-      if (values[i].placement.rect.overlaps(values[j].placement.rect.inflate(2))) {
+      if (values[i].placement.rect.overlaps(
+        values[j].placement.rect.inflate(2),
+      )) {
         return true;
       }
     }
@@ -535,7 +580,12 @@ double _transitionCost(
     }
     for (final (a, b) in edges) {
       if (_segmentHitsRect(a, b, candidate.placement.rect)) cost += 16;
-      if (_segmentsCross(candidate.placement.lineStart, candidate.placement.lineEnd, a, b)) {
+      if (_segmentsCross(
+        candidate.placement.lineStart,
+        candidate.placement.lineEnd,
+        a,
+        b,
+      )) {
         cost += 4;
       }
     }
@@ -579,7 +629,10 @@ double _layoutQuality(
       if (_rectHitsCircle(rect, node.center, node.radius)) collisions++;
     }
   }
-  final length = values.fold<double>(0, (sum, candidate) => sum + candidate.length);
+  final length = values.fold<double>(
+    0,
+    (sum, candidate) => sum + candidate.length,
+  );
   return collisions * 1000000 + length;
 }
 

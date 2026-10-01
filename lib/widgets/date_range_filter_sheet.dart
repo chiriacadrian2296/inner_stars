@@ -8,6 +8,7 @@ import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import '../utils/date_format.dart';
 import '../utils/responsive.dart';
+import 'app_choice_chip.dart';
 import 'responsive_content.dart';
 import 'staggered_entrance.dart';
 
@@ -273,10 +274,11 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
                       child: StaggeredEntrance(
                         index: 0,
                         axis: Axis.horizontal,
-                        child: _PresetChip(
+                        child: AppChoiceChip(
                           label: strings.dateRangeUnitWeek,
                           selected: _preset == DateRangePreset.week,
-                          onTap: () => _selectUnit(DateRangePreset.week),
+                          onPressed: () => _selectUnit(DateRangePreset.week),
+                          expand: true,
                         ),
                       ),
                     ),
@@ -285,10 +287,11 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
                       child: StaggeredEntrance(
                         index: 1,
                         axis: Axis.horizontal,
-                        child: _PresetChip(
+                        child: AppChoiceChip(
                           label: strings.dateRangeUnitMonth,
                           selected: _preset == DateRangePreset.month,
-                          onTap: () => _selectUnit(DateRangePreset.month),
+                          onPressed: () => _selectUnit(DateRangePreset.month),
+                          expand: true,
                         ),
                       ),
                     ),
@@ -297,10 +300,11 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
                       child: StaggeredEntrance(
                         index: 2,
                         axis: Axis.horizontal,
-                        child: _PresetChip(
+                        child: AppChoiceChip(
                           label: strings.dateRangeUnitYear,
                           selected: _preset == DateRangePreset.year,
-                          onTap: () => _selectUnit(DateRangePreset.year),
+                          onPressed: () => _selectUnit(DateRangePreset.year),
+                          expand: true,
                         ),
                       ),
                     ),
@@ -364,41 +368,6 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
 /// `area_filter_sheet.dart`, just without its leading icon and trailing
 /// check, since three short labels in a row already read as a set of
 /// mutually exclusive choices on their own.
-class _PresetChip extends StatelessWidget {
-  const _PresetChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(kRadiusField),
-      child: Container(
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: selectableDecoration(colors, selected: selected),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 13.5,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-            color: selected ? colors.text : colors.muted,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// One of the two arrows beside the duration chips — steps [_range] back or
 /// forward by a whole [DateRangePreset] unit (see [_DateRangeFilterSheetState
 /// ._stepBackward]/`._stepForward`). Dimmed and inert rather than hidden
