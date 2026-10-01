@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 
-import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
 
 /// A feature sketched into the menu ahead of the real thing existing yet —
 /// [ShootingStarsScreen] and [FriendsScreen] are both just this with their
-/// own icon, title and body. Same header shape as every other standalone
-/// screen ([MetaphorScreen], [AreaDetailScreen]): back button, then an
-/// eyebrow ([AppStrings.comingSoonBadge], shared across every placeholder)
-/// over the real title, so a placeholder never reads as a dead end — it
-/// reads as a page that just hasn't been built yet.
+/// own icon, title and body. It deliberately has no app bar: the title is
+/// part of the page content, like the other immersive destinations.
 class PlaceholderScreen extends StatelessWidget {
   const PlaceholderScreen({
     super.key,
@@ -27,8 +23,6 @@ class PlaceholderScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final strings = context.strings;
-
     return Scaffold(
       backgroundColor: colors.night,
       body: SafeArea(
@@ -39,30 +33,6 @@ class PlaceholderScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  StaggeredEntrance(
-                    index: 0,
-                    child: Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          icon: Icon(Icons.arrow_back, color: colors.muted),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          strings.comingSoonBadge,
-                          style: TextStyle(
-                            fontSize: 12,
-                            letterSpacing: 2,
-                            fontWeight: FontWeight.w600,
-                            color: colors.accentDim,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 6),
                   StaggeredEntrance(
                     index: 0,
                     child: Text(

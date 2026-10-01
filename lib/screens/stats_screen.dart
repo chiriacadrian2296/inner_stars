@@ -338,30 +338,6 @@ class _StatsScreenState extends State<StatsScreen> {
                 children: [
                   StaggeredEntrance(
                     index: 0,
-                    child: Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          icon: Icon(Icons.arrow_back, color: colors.muted),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          strings.statsEyebrow,
-                          style: TextStyle(
-                            fontSize: 12,
-                            letterSpacing: 2,
-                            fontWeight: FontWeight.w600,
-                            color: colors.accentDim,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  StaggeredEntrance(
-                    index: 0,
                     child: Text(
                       strings.statsTitle,
                       style: TextStyle(
