@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -18,8 +18,7 @@ import '../data/area_vision_repository.dart';
 import '../data/audio_settings_repository.dart';
 import '../data/biometric_auth_service.dart';
 import '../data/constellation_layout.dart';
-import '../data/constellation_presets.dart'
-    show LocalizedNameX, presetById;
+import '../data/constellation_presets.dart' show LocalizedNameX, presetById;
 import '../data/constellation_shape.dart';
 import '../data/custom_constellation_repository.dart';
 import '../data/habit_completion_repository.dart';
@@ -90,6 +89,7 @@ import 'shooting_stars_screen.dart';
 import 'star_form_screen.dart';
 import 'star_reader_screen.dart';
 import 'stats_screen.dart';
+import 'ui_sandbox_screen.dart';
 import 'visions_screen.dart';
 
 /// Shared by the Grid switch pill and [_ZoomSlider] at the bottom of the
@@ -765,9 +765,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     Map<int, List<HabitCompletion>> completionsByHabit,
   ) {
     final shape = project.starsShapeId != null
-        ? widget.starsShapeRepository
-              .getById(project.starsShapeId!)
-              ?.shape
+        ? widget.starsShapeRepository.getById(project.starsShapeId!)?.shape
         : null;
     final stars = widget.starRepository.getAllForProject(project.id);
     final habits = widget.habitRepository.getAllForProject(project.id);
@@ -1000,7 +998,13 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       shapeVertexCentroid(shape),
       _tutorialDemoSpotlightBlend,
     )!;
-    return constellationLocalWorldPosition(placed, target, camera, zoom, screenSize);
+    return constellationLocalWorldPosition(
+      placed,
+      target,
+      camera,
+      zoom,
+      screenSize,
+    );
   }
 
   /// The specific star inside the placeholder constellation the tour's
@@ -1082,7 +1086,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// camera to [renderStar] (see [_openStarQuickLook]'s own doc comment
   /// for why its exact position, not [SkyStarTarget]'s coarser
   /// constellation-wide one) without ever opening the tooltip.
-  void _flyToStar(PlacedConstellation constellation, ConstellationStar renderStar) {
+  void _flyToStar(
+    PlacedConstellation constellation,
+    ConstellationStar renderStar,
+  ) {
     final size = context.size;
     if (size == null) return;
     final world = starWorldPosition(
@@ -1176,7 +1183,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _openTooltipDuringFlight(
       _flyToWorld(
         world,
-        zoomFromPercent(_starZoomPercent).clamp(minZoomWithoutRepeats, _maxZoom),
+        zoomFromPercent(_starZoomPercent)
+            .clamp(minZoomWithoutRepeats, _maxZoom),
       ),
       _NascentStarTooltip(constellation, star),
     );
@@ -1271,15 +1279,14 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// or a constellation's own; null while neither is showing (including
   /// while a supernova's is, which has no single constellation to point
   /// to).
-  PlacedConstellation? get _quickLookConstellation => switch (
-    _skyTooltipController.data
-  ) {
-    _StarTooltip(:final constellation) => constellation,
-    _PulsarTooltip(:final constellation) => constellation,
-    _ConstellationTooltip(:final constellation) => constellation,
-    _NascentStarTooltip(:final constellation) => constellation,
-    _AreaTooltip() || null => null,
-  };
+  PlacedConstellation? get _quickLookConstellation =>
+      switch (_skyTooltipController.data) {
+        _StarTooltip(:final constellation) => constellation,
+        _PulsarTooltip(:final constellation) => constellation,
+        _ConstellationTooltip(:final constellation) => constellation,
+        _NascentStarTooltip(:final constellation) => constellation,
+        _AreaTooltip() || null => null,
+      };
 
   Future<void> _viewQuickLookStar() async {
     final data = _skyTooltipController.data;
@@ -1528,7 +1535,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// there" for a freshly created star, and a search result's own (via
   /// [_flyToWithHoldFeedback]'s [SkyStarTarget] case, when it carries a
   /// [SkyStarTarget.starId]).
-  void _flyToStarWithHoldFeedback(PlacedConstellation constellation, int starId) {
+  void _flyToStarWithHoldFeedback(
+    PlacedConstellation constellation,
+    int starId,
+  ) {
     final index = constellation.stars.indexWhere((s) => s.id == starId);
     if (index == -1) return;
     ConstellationStar? renderStar;
@@ -1596,7 +1606,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// from [_openStarForm], the only place a pulsar is ever made.
   void _announcePulsarCreated(Habit habit) {
     final placed = _placedForHabit(habit.id);
-    setState(() => _creationShareSubject = _PulsarShare(habit, placed?.project));
+    setState(
+      () => _creationShareSubject = _PulsarShare(habit, placed?.project),
+    );
     CreationSuccessDialog.show(
       context,
       icon: StarKind.pulsar.icon,
@@ -1855,6 +1867,12 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     );
   }
 
+  void _openUiSandbox() {
+    assert(kDebugMode);
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const UiSandboxScreen()));
+  }
+
   /// The FAB's own way into the same menu the drawer opens — same content
   /// ([SkyMenuContent], same callbacks), just as a modal sheet from the
   /// bottom instead of a panel from the side. An alternative entry point
@@ -2092,9 +2110,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// supernova nearby (it was the thing just tapped, its job already
   /// done).
   Offset? _worldFor(SkyNavigationTarget target) => switch (target) {
-    SkyAreaTarget(:final area) => _tutorialDemoActive && area == _tutorialArea
-        ? tutorialDemoWorldPosition(area)
-        : areaWorldPosition(area),
+    SkyAreaTarget(:final area) =>
+      _tutorialDemoActive && area == _tutorialArea
+          ? tutorialDemoWorldPosition(area)
+          : areaWorldPosition(area),
     SkyProjectTarget(:final project) => _placedFor(project)?.worldPosition,
     SkyStarTarget(:final project) => _placedFor(project)?.worldPosition,
   };
@@ -2223,7 +2242,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     final backdropArea = straightenBackdropArea;
     final rollCorrection = straightenRoll
         ? math.pi -
-              cameraRollAngle(_camera.rotatedToAlign(_camera.forward, targetForward))
+              cameraRollAngle(
+                _camera.rotatedToAlign(_camera.forward, targetForward),
+              )
         : backdropArea != null
         ? -areaBackdropRollReading(
             backdropArea,
@@ -2240,7 +2261,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     final angleToTarget = math.acos(
       _dotDirections(_camera.forward, targetForward).clamp(-1.0, 1.0),
     );
-    final movedEnough = angleToTarget > _flyMovementAngleEpsilon ||
+    final movedEnough =
+        angleToTarget > _flyMovementAngleEpsilon ||
         (zoomPercent(targetZoom) - zoomPercent(_zoom)).abs() >
             _flyMovementZoomPercentEpsilon ||
         rollCorrection.abs() > _flyMovementAngleEpsilon;
@@ -2773,7 +2795,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       return;
     }
     final size = context.size;
-    final hasTarget = size != null && _hasHoldTarget(details.localPosition, size);
+    final hasTarget =
+        size != null && _hasHoldTarget(details.localPosition, size);
     if (hasTarget) {
       _holdRingCenter = details.localPosition;
       _holdRingArmTimer = Timer(_holdRingArmDelay, () {
@@ -2965,7 +2988,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     if (lastTime != null &&
         lastPosition != null &&
         now.difference(lastTime) < _doubleTapWindow &&
-        (details.localPosition - lastPosition).distance < _doubleTapMaxDistance) {
+        (details.localPosition - lastPosition).distance <
+            _doubleTapMaxDistance) {
       _lastEmptyTapTime = null;
       _lastEmptyTapPosition = null;
       // Same "a movement just started" buzz as a direct hit above — the
@@ -3098,9 +3122,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   bool _tourWantsGesture(int order) =>
       !_tourGestureLockActive ||
       (!_hideTourDuringFlight &&
-          TourScope.of(
-                context,
-              ).orderAt('sky-navigation', Tour.of(context).index) ==
+          TourScope.of(context)
+                  .orderAt('sky-navigation', Tour.of(context).index) ==
               order);
 
   /// Whether `sky-navigation` is currently sitting on one of
@@ -3118,9 +3141,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       return false;
     }
     if (_hideTourDuringFlight) return true;
-    final activeOrder = TourScope.of(
-      context,
-    ).orderAt('sky-navigation', controller.index);
+    final activeOrder = TourScope.of(context)
+        .orderAt('sky-navigation', controller.index);
     return _gestureLockedTourOrders.contains(activeOrder);
   }
 
@@ -3141,9 +3163,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// which independently made stray hits far less likely) before landing
   /// here once both could be tuned together. Desktop/web keep the
   /// original spot, unreported and untouched.
-  Alignment get _emptySkySpotAlignment => isTouchOnlyMobile
-      ? const Alignment(0, 0.5)
-      : const Alignment(-0.6, 0);
+  Alignment get _emptySkySpotAlignment =>
+      isTouchOnlyMobile ? const Alignment(0, 0.5) : const Alignment(-0.6, 0);
 
   /// Reacts to the sky's own tooltip opening, closing or changing data —
   /// the `setState` nudge every part of [build] reading
@@ -4172,8 +4193,13 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                                     // own [onCloseMenu] instead, closed only
                                     // once it actually knows whether to
                                     // (see that method's own doc comment).
-                                    onSearch: () =>
-                                        _openSearch(onCloseMenu: _closeQuickAccessMenu),
+                                    onSearch: () => _openSearch(
+                                      onCloseMenu: _closeQuickAccessMenu,
+                                    ),
+                                    onUiSandbox: kDebugMode
+                                        ? () =>
+                                              _selectQuickAccess(_openUiSandbox)
+                                        : null,
                                     onPressChanged: _setMenuControlPressed,
                                   ),
                                 ),
@@ -4220,13 +4246,17 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                 child: RepaintBoundary(
                   key: _creationShareKey,
                   child: switch (subject) {
-                    _StarShare(:final star, :final project) => star.isLit
-                        ? ShareableLitStarCard(star: star, project: project)
-                        : ShareableGoalCard(star: star, project: project),
+                    _StarShare(:final star, :final project) =>
+                      star.isLit
+                          ? ShareableLitStarCard(star: star, project: project)
+                          : ShareableGoalCard(star: star, project: project),
                     _PulsarShare(:final habit, :final project) =>
                       ShareablePulsarCard(habit: habit, project: project),
                     _ConstellationShare(:final project, :final shape) =>
-                      ShareableConstellationCard(project: project, shape: shape),
+                      ShareableConstellationCard(
+                        project: project,
+                        shape: shape,
+                      ),
                   },
                 ),
               ),
@@ -4340,10 +4370,14 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// itself decides whether that's ever actually visible.
   Widget _buildSkyTooltip() {
     return switch (_skyTooltipController.data) {
-      _StarTooltip(:final constellation, :final starIndex) =>
-        _buildStarTooltip(constellation, starIndex),
-      _PulsarTooltip(:final constellation, :final habit) =>
-        _buildPulsarTooltip(constellation, habit),
+      _StarTooltip(:final constellation, :final starIndex) => _buildStarTooltip(
+        constellation,
+        starIndex,
+      ),
+      _PulsarTooltip(:final constellation, :final habit) => _buildPulsarTooltip(
+        constellation,
+        habit,
+      ),
       _ConstellationTooltip(:final constellation) => SkyConstellationTooltip(
         project: constellation.project,
         stars: constellation.stars,
@@ -4386,10 +4420,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   Offset _tooltipAnchorOffset(_SkyTooltip? data) => switch (data) {
     _ConstellationTooltip() => const Offset(0, _constellationTooltipDrop),
     _AreaTooltip() => const Offset(0, _areaTooltipDrop),
-    _StarTooltip() || _PulsarTooltip() || _NascentStarTooltip() => const Offset(
-      0,
-      _starTooltipDrop,
-    ),
+    _StarTooltip() ||
+    _PulsarTooltip() ||
+    _NascentStarTooltip() => const Offset(0, _starTooltipDrop),
     null => Offset.zero,
   };
 
@@ -4487,7 +4520,8 @@ class _HoldRingPainter extends CustomPainter {
   // up here), web's is a small mouse cursor (shrunk so the ring wraps it
   // closely instead of reading as oversized), and native desktop's mouse
   // keeps the size this had before either of those were split out.
-  static double get _radius => isTouchOnlyMobile ? 50.0 : (kIsWeb ? 14.0 : 28.0);
+  static double get _radius =>
+      isTouchOnlyMobile ? 50.0 : (kIsWeb ? 14.0 : 28.0);
   static double get _strokeWidth =>
       isTouchOnlyMobile ? 4.5 : (kIsWeb ? 2.0 : 3.0);
   static double get _glowBlur =>
@@ -4640,13 +4674,10 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   // the tap target itself (tried first) drew a button far bigger than
   // this one ever visually was.
   static const _visibleSize = 72.0;
-  // Smaller than [_QuickAccessButton]'s own 24/40 icon-to-disc ratio —
-  // that ratio read as too big on this button's own bigger disc.
-  static const _svgIconSize = _visibleSize * 0.52;
-  // Star.svg fills its whole viewBox (the old app_star.svg had padding
-  // around its shape), so it's scaled down to land at about the old
-  // glyph's on-screen size.
-  static const _starGlyphScale = 1.4;
+  // Logo.svg contains only the two marks that read as an S from afar. Its
+  // viewBox has generous breathing room, so this box is deliberately a
+  // touch larger than the disc; the white marks themselves still sit inside.
+  static const _menuMarkSize = _visibleSize * 0.86;
   // Big enough that the shader's own glow/spikes fade out naturally well
   // before this canvas's own edge, rather than clipping hard against a
   // boundary that's part of the visible glow.
@@ -4943,16 +4974,16 @@ class _MenuStarButtonState extends State<_MenuStarButton>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: context.colors.nightPanel,
-                    border: Border.all(color: Colors.white, width: 4),
+                    border: Border.all(color: Colors.white, width: 3),
                   ),
                   child: Align(
-                    // Star.svg is symmetric, so unlike the old 5-point
-                    // star it needs no optical lift.
+                    // Only the logo's inner marks belong here — recolored
+                    // white, with no gold disc or outer app-icon treatment.
                     alignment: Alignment.center,
                     child: SvgPicture.asset(
-                      'assets/icon/Star.svg',
-                      width: _svgIconSize * _starGlyphScale,
-                      height: _svgIconSize * _starGlyphScale,
+                      'assets/icon/Logo.svg',
+                      width: _menuMarkSize,
+                      height: _menuMarkSize,
                       colorFilter: const ColorFilter.mode(
                         Colors.white,
                         BlendMode.srcIn,
@@ -5066,6 +5097,7 @@ class _QuickAccessFan extends StatelessWidget {
     required this.onStatistics,
     required this.onNightlight,
     required this.onSearch,
+    this.onUiSandbox,
     this.onPressChanged,
   });
 
@@ -5073,6 +5105,7 @@ class _QuickAccessFan extends StatelessWidget {
   final VoidCallback onStatistics;
   final VoidCallback onNightlight;
   final VoidCallback onSearch;
+  final VoidCallback? onUiSandbox;
 
   /// Forwarded to every [_QuickAccessButton] below — see
   /// `_SkyScreenState._menuControlPressed`'s own doc comment for what this
@@ -5147,13 +5180,28 @@ class _QuickAccessFan extends StatelessWidget {
 
     return SizedBox(
       width: 280,
-      height: 180,
+      height: onUiSandbox == null ? 180 : 210,
       child: Stack(
         alignment: Alignment.bottomCenter,
         clipBehavior: Clip.none,
         children: [
           for (var i = 0; i < items.length; i++)
-            _fanItem(angleDeg: _angleDeg[i], order: _firstOrder + i, item: items[i]),
+            _fanItem(
+              angleDeg: _angleDeg[i],
+              order: _firstOrder + i,
+              item: items[i],
+            ),
+          if (onUiSandbox case final openSandbox?)
+            Transform.translate(
+              offset: const Offset(0, -172),
+              child: _QuickAccessButton(
+                key: const Key('quick-access-ui-sandbox'),
+                icon: Icons.science_outlined,
+                tooltip: strings.uiSandboxButtonTooltip,
+                onTap: openSandbox,
+                onPressChanged: onPressChanged,
+              ),
+            ),
         ],
       ),
     );
@@ -5209,6 +5257,7 @@ class _QuickAccessFan extends StatelessWidget {
 /// more thing in the gold-ringed family [_SkyOverlayButton] belongs to.
 class _QuickAccessButton extends StatelessWidget {
   const _QuickAccessButton({
+    super.key,
     required this.icon,
     required this.tooltip,
     required this.onTap,

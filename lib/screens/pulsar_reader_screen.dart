@@ -52,12 +52,265 @@ class PulsarReaderScreen extends StatefulWidget {
   State<PulsarReaderScreen> createState() => _PulsarReaderScreenState();
 }
 
+class _HabitAnalytics extends StatelessWidget {
+  const _HabitAnalytics({
+    required this.habit,
+    required this.summary,
+    required this.range,
+    required this.onRangeChanged,
+  });
+
+  final Habit habit;
+  final HabitStatsSummary summary;
+  final HabitStatsRange range;
+  final ValueChanged<HabitStatsRange> onRangeChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final strings = context.strings;
+    final streakText = habit.frequency == HabitFrequency.weekly
+        ? strings.habitStatsWeeks(summary.longestStreak)
+        : strings.habitStatsDays(summary.longestStreak);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 8,
+          children: [
+            for (final value in HabitStatsRange.values)
+              ChoiceChip(
+                label: Text('${value.days}'),
+                selected: value == range,
+                onSelected: (_) => onRangeChanged(value),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _HabitMetric(
+                label: strings.habitStatsConsistencyLabel,
+                value: '${(summary.completionRate * 100).round()}%',
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _HabitMetric(
+                label: strings.habitStatsLongestLabel,
+                value: streakText,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _HabitMetric(
+          label: strings.habitStatsTotalLabel,
+          value: '${summary.totalCompletions}',
+        ),
+        const SizedBox(height: 18),
+        Text(
+          strings.habitStatsTrendLabel,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: colors.muted,
+          ),
+        ),
+        const SizedBox(height: 10),
+        _HabitTrend(points: summary.trend),
+        const SizedBox(height: 18),
+        Text(
+          strings.habitStatsWeekdaysLabel,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: colors.muted,
+          ),
+        ),
+        const SizedBox(height: 10),
+        _WeekdayBars(values: summary.weekdays),
+        const SizedBox(height: 12),
+        if (summary.bestWeekday == null || summary.weakestWeekday == null)
+          Text(
+            strings.habitStatsNotEnoughData,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: colors.muted),
+          )
+        else
+          Row(
+            children: [
+              Expanded(
+                child: _PatternLabel(
+                  label: strings.habitStatsBestDayLabel,
+                  weekday: summary.bestWeekday!.weekday,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _PatternLabel(
+                  label: strings.habitStatsSupportDayLabel,
+                  weekday: summary.weakestWeekday!.weekday,
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
+class _HabitMetric extends StatelessWidget {
+  const _HabitMetric({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: panelDecoration(colors),
+      child: Column(
+        children: [
+          Text(
+            value,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: colors.gold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 11, color: colors.muted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HabitTrend extends StatelessWidget {
+  const _HabitTrend({required this.points});
+  final List<HabitTrendPoint> points;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final visible = points.length > 30
+        ? points.sublist(points.length - 30)
+        : points;
+    return SizedBox(
+      height: 58,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          for (final point in visible)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 1),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  height: 6 + 52 * point.progress,
+                  decoration: BoxDecoration(
+                    color: Color.lerp(
+                      colors.muted.withValues(alpha: 0.12),
+                      colors.gold,
+                      point.progress,
+                    ),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WeekdayBars extends StatelessWidget {
+  const _WeekdayBars({required this.values});
+  final List<HabitWeekdayStat> values;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final labels = context.strings.weekdayAbbreviations;
+    return Row(
+      children: [
+        for (final value in values)
+          Expanded(
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 48,
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Container(
+                      width: 8,
+                      height: 4 + 44 * value.rate,
+                      decoration: BoxDecoration(
+                        color: colors.gold.withValues(
+                          alpha: 0.25 + 0.75 * value.rate,
+                        ),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  labels[value.weekday - 1],
+                  style: TextStyle(fontSize: 10, color: colors.muted),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _PatternLabel extends StatelessWidget {
+  const _PatternLabel({required this.label, required this.weekday});
+  final String label;
+  final int weekday;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Text(
+      '$label · ${context.strings.weekdayAbbreviations[weekday - 1]}',
+      textAlign: TextAlign.center,
+      style: TextStyle(fontSize: 11, color: colors.muted),
+    );
+  }
+}
+
 class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
   late Habit _habit = widget.habit;
+  HabitStatsRange _statsRange = HabitStatsRange.days30;
+  DateTime _displayedMonth = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+  );
 
   DateTime get _today {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day);
+  }
+
+  void _changeMonth(int delta) {
+    final current = DateTime(_today.year, _today.month);
+    final next = DateTime(_displayedMonth.year, _displayedMonth.month + delta);
+    setState(() => _displayedMonth = next.isAfter(current) ? current : next);
   }
 
   /// The binary path — a [HabitFrequency.weekly] habit's own day is still a
@@ -84,10 +337,7 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
   }
 
   Future<void> _unlogInstance() async {
-    await widget.habitCompletionRepository.unlogLastInstance(
-      _habit.id,
-      _today,
-    );
+    await widget.habitCompletionRepository.unlogLastInstance(_habit.id, _today);
     setState(() {});
   }
 
@@ -169,9 +419,9 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
     );
     final countsByDay = habitCompletionCountsByDay(completions);
     final streak = habitCurrentStreak(_habit, countsByDay);
+    final summary = habitStatsSummary(_habit, completions, range: _statsRange);
     final isWeekly = _habit.frequency == HabitFrequency.weekly;
-    final isDailyStepper =
-        !isWeekly && _habit.targetPerPeriod > 1;
+    final isDailyStepper = !isWeekly && _habit.targetPerPeriod > 1;
     final todayCount = habitDailyProgress(_habit, countsByDay);
     final doneToday = countsByDay.containsKey(_today);
     final weekProgress = isWeekly
@@ -253,7 +503,10 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
                         const SizedBox(height: 6),
                         StaggeredEntrance(
                           index: 1,
-                          child: ProjectTag(project: widget.project!, fontSize: 14),
+                          child: ProjectTag(
+                            project: widget.project!,
+                            fontSize: 14,
+                          ),
                         ),
                       ],
                       if (_habit.description != null) ...[
@@ -305,6 +558,38 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
                               height: 1.6,
                               color: colors.muted,
                             ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        _HabitAnalytics(
+                          habit: _habit,
+                          summary: summary,
+                          range: _statsRange,
+                          onRangeChanged: (value) =>
+                              setState(() => _statsRange = value),
+                        ),
+                        const SizedBox(height: 24),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          clipBehavior: Clip.antiAlias,
+                          decoration: panelDecoration(colors),
+                          child: StarHeatmap(
+                            month: _displayedMonth,
+                            countsByDay: countsByDay,
+                            intensityByDay: countsByDay,
+                            progressByDay: habitProgressByDay(
+                              _habit,
+                              countsByDay,
+                            ),
+                            availableFrom: _habit.createdAt,
+                            availableThrough: _habit.deadDate,
+                            onPreviousMonth: () => _changeMonth(-1),
+                            onNextMonth:
+                                _displayedMonth.year == _today.year &&
+                                    _displayedMonth.month == _today.month
+                                ? null
+                                : () => _changeMonth(1),
                           ),
                         ),
                         const SizedBox(height: 28),
@@ -390,6 +675,14 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
+                        _HabitAnalytics(
+                          habit: _habit,
+                          summary: summary,
+                          range: _statsRange,
+                          onRangeChanged: (value) =>
+                              setState(() => _statsRange = value),
+                        ),
+                        const SizedBox(height: 24),
                         StaggeredEntrance(
                           index: 3,
                           replayKey: _habit.dead,
@@ -399,8 +692,21 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
                             clipBehavior: Clip.antiAlias,
                             decoration: panelDecoration(colors),
                             child: StarHeatmap(
+                              month: _displayedMonth,
                               countsByDay: countsByDay,
                               intensityByDay: countsByDay,
+                              progressByDay: habitProgressByDay(
+                                _habit,
+                                countsByDay,
+                              ),
+                              availableFrom: _habit.createdAt,
+                              availableThrough: _habit.deadDate,
+                              onPreviousMonth: () => _changeMonth(-1),
+                              onNextMonth:
+                                  _displayedMonth.year == _today.year &&
+                                      _displayedMonth.month == _today.month
+                                  ? null
+                                  : () => _changeMonth(1),
                             ),
                           ),
                         ),
@@ -435,7 +741,9 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
                                 index: 4,
                                 axis: Axis.horizontal,
                                 child: IconButton(
-                                  onPressed: todayCount > 0 ? _unlogInstance : null,
+                                  onPressed: todayCount > 0
+                                      ? _unlogInstance
+                                      : null,
                                   icon: Icon(
                                     Icons.remove_circle_outline,
                                     color: colors.gold,

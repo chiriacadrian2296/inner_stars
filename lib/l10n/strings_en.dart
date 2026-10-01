@@ -1068,6 +1068,98 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get quickSettingsOpenSoundLabAction => 'Open Sound Lab';
   @override
+  String get uiSandboxButtonTooltip => 'UI Sandbox';
+  @override
+  String get uiSandboxTitle => 'UI Sandbox';
+  @override
+  String get uiSandboxIntro => 'A read-only audit of current variants and proposed standards. Samples are interactive but never touch real app data.';
+  @override
+  String get uiSandboxFiltersTitle => 'Audit filters';
+  @override
+  String get uiSandboxViewportTitle => 'Responsive specimens';
+  @override
+  String get uiSandboxViewportBody => 'Switch viewport width, then exercise the isolated states below.';
+  @override
+  String get uiSandboxMatrixTitle => 'Audit matrix';
+  @override
+  String uiSandboxMatrixBody(int count) => '$count matching entries. Expand one to review evidence, options and recommendation.';
+  @override
+  String uiSandboxVariantsCount(int count) => '$count current variants';
+  @override
+  String uiSandboxCandidatesCount(int count) => '$count candidates';
+  @override
+  String uiSandboxCategoriesCount(int count) => '$count categories';
+  @override
+  String get uiSandboxCategoryLabel => 'Category';
+  @override
+  String get uiSandboxAllLabel => 'All';
+  @override
+  String get uiSandboxAllStatesLabel => 'All decisions';
+  @override
+  String get uiSandboxExistingLabel => 'Current variant';
+  @override
+  String get uiSandboxCandidateLabel => 'Candidate standard';
+  @override
+  String get uiSandboxReviewStatus => 'To review';
+  @override
+  String get uiSandboxKeepStatus => 'Keep';
+  @override
+  String get uiSandboxReplaceStatus => 'Replace';
+  @override
+  String get uiSandboxExceptionStatus => 'Approved exception';
+  @override
+  String get uiSandboxOriginsLabel => 'Origins';
+  @override
+  String get uiSandboxStatesLabel => 'States checked';
+  @override
+  String get uiSandboxDifferencesLabel => 'Differences';
+  @override
+  String get uiSandboxRationaleLabel => 'Possible rationale';
+  @override
+  String get uiSandboxRisksLabel => 'UX and accessibility risks';
+  @override
+  String get uiSandboxOptionsLabel => 'Options';
+  @override
+  String get uiSandboxRecommendationLabel => 'Candidate recommendation';
+  @override
+  String get uiSandboxResetFiltersAction => 'Reset filters';
+  @override
+  String get uiSandboxTypographyCategory => 'Typography';
+  @override
+  String get uiSandboxActionsCategory => 'Buttons and actions';
+  @override
+  String get uiSandboxFieldsCategory => 'Fields';
+  @override
+  String get uiSandboxSelectionCategory => 'Selection controls';
+  @override
+  String get uiSandboxSurfacesCategory => 'Cards and surfaces';
+  @override
+  String get uiSandboxOverlaysCategory => 'Dialogs and sheets';
+  @override
+  String get uiSandboxNavigationCategory => 'Navigation';
+  @override
+  String get uiSandboxFeedbackCategory => 'Feedback';
+  @override
+  String get uiSandboxSpacingCategory => 'Spacing and shape';
+  @override
+  String get uiSandboxColorCategory => 'Color and states';
+  @override
+  String get uiSandboxIconsCategory => 'Icons';
+  @override
+  String get uiSandboxMotionCategory => 'Motion';
+  @override
+  String get uiSandboxTypographySpecimen => 'Typography variants';
+  @override
+  String get uiSandboxActionsSpecimen => 'Action variants and states';
+  @override
+  String get uiSandboxFieldsSpecimen => 'Field states';
+  @override
+  String get uiSandboxSelectionSpecimen => 'Selection states';
+  @override
+  String get uiSandboxSurfacesSpecimen => 'Gold theme principle';
+  @override
+  String get uiSandboxOverlaysSpecimen => 'Isolated modal patterns';
+  @override
   String get volumeSectionLabel => 'Volume';
   @override
   String get backgroundVolumeLabel => 'Background';
@@ -1358,6 +1450,40 @@ My contribution meets a real need and is something I can sustain.
   @override
   String habitProgressThisWeek(int done, int target) =>
       '$done/$target this week';
+  @override
+  String get habitStatsSectionTitle => 'Pulsars';
+  @override
+  String get starsStatsSectionTitle => 'Stars';
+  @override
+  String get habitStatsActiveLabel => 'Active';
+  @override
+  String get habitStatsOnTrackLabel => 'On track';
+  @override
+  String get habitStatsConsistencyLabel => 'Consistency';
+  @override
+  String get habitStatsLongestLabel => 'Personal best';
+  @override
+  String get habitStatsTotalLabel => 'Total completions';
+  @override
+  String get habitStatsTrendLabel => 'Recent rhythm';
+  @override
+  String get habitStatsWeekdaysLabel => 'Your week';
+  @override
+  String get habitStatsBestDayLabel => 'Strongest day';
+  @override
+  String get habitStatsSupportDayLabel => 'Day to support';
+  @override
+  String get habitStatsNotEnoughData => 'A little more history will reveal this pattern.';
+  @override
+  String get habitStatsArchiveAction => 'Past pulsars';
+  @override
+  String get habitStatsArchiveTitle => 'Past pulsars';
+  @override
+  String get habitStatsArchiveEmpty => 'No past pulsars yet.';
+  @override
+  String habitStatsDays(int count) => count == 1 ? '1 day' : '$count days';
+  @override
+  String habitStatsWeeks(int count) => count == 1 ? '1 week' : '$count weeks';
 
   @override
   String unlitStarsBadge(int count) =>

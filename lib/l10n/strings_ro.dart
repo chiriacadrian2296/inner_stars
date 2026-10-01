@@ -1079,6 +1079,98 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get quickSettingsOpenSoundLabAction => 'Deschide Sound Lab';
   @override
+  String get uiSandboxButtonTooltip => 'Sandbox UI';
+  @override
+  String get uiSandboxTitle => 'Sandbox UI';
+  @override
+  String get uiSandboxIntro => 'Un audit consultabil al variantelor actuale și al standardelor propuse. Exemplele sunt interactive, dar nu modifică datele reale.';
+  @override
+  String get uiSandboxFiltersTitle => 'Filtre audit';
+  @override
+  String get uiSandboxViewportTitle => 'Exemple responsive';
+  @override
+  String get uiSandboxViewportBody => 'Schimbă lățimea zonei și testează stările izolate de mai jos.';
+  @override
+  String get uiSandboxMatrixTitle => 'Matricea auditului';
+  @override
+  String uiSandboxMatrixBody(int count) => '$count elemente potrivite. Extinde unul pentru dovezi, opțiuni și recomandare.';
+  @override
+  String uiSandboxVariantsCount(int count) => '$count variante actuale';
+  @override
+  String uiSandboxCandidatesCount(int count) => '$count propuneri';
+  @override
+  String uiSandboxCategoriesCount(int count) => '$count categorii';
+  @override
+  String get uiSandboxCategoryLabel => 'Categorie';
+  @override
+  String get uiSandboxAllLabel => 'Toate';
+  @override
+  String get uiSandboxAllStatesLabel => 'Toate deciziile';
+  @override
+  String get uiSandboxExistingLabel => 'Variantă actuală';
+  @override
+  String get uiSandboxCandidateLabel => 'Standard propus';
+  @override
+  String get uiSandboxReviewStatus => 'De evaluat';
+  @override
+  String get uiSandboxKeepStatus => 'Păstrează';
+  @override
+  String get uiSandboxReplaceStatus => 'Înlocuiește';
+  @override
+  String get uiSandboxExceptionStatus => 'Excepție aprobată';
+  @override
+  String get uiSandboxOriginsLabel => 'Origini';
+  @override
+  String get uiSandboxStatesLabel => 'Stări verificate';
+  @override
+  String get uiSandboxDifferencesLabel => 'Diferențe';
+  @override
+  String get uiSandboxRationaleLabel => 'Motivație posibilă';
+  @override
+  String get uiSandboxRisksLabel => 'Riscuri UX și accesibilitate';
+  @override
+  String get uiSandboxOptionsLabel => 'Opțiuni';
+  @override
+  String get uiSandboxRecommendationLabel => 'Recomandare propusă';
+  @override
+  String get uiSandboxResetFiltersAction => 'Resetează filtrele';
+  @override
+  String get uiSandboxTypographyCategory => 'Tipografie';
+  @override
+  String get uiSandboxActionsCategory => 'Butoane și acțiuni';
+  @override
+  String get uiSandboxFieldsCategory => 'Câmpuri';
+  @override
+  String get uiSandboxSelectionCategory => 'Controale de selecție';
+  @override
+  String get uiSandboxSurfacesCategory => 'Carduri și suprafețe';
+  @override
+  String get uiSandboxOverlaysCategory => 'Dialoguri și panouri';
+  @override
+  String get uiSandboxNavigationCategory => 'Navigare';
+  @override
+  String get uiSandboxFeedbackCategory => 'Feedback';
+  @override
+  String get uiSandboxSpacingCategory => 'Spațiere și forme';
+  @override
+  String get uiSandboxColorCategory => 'Culori și stări';
+  @override
+  String get uiSandboxIconsCategory => 'Pictograme';
+  @override
+  String get uiSandboxMotionCategory => 'Mișcare';
+  @override
+  String get uiSandboxTypographySpecimen => 'Variante tipografice';
+  @override
+  String get uiSandboxActionsSpecimen => 'Variante și stări ale acțiunilor';
+  @override
+  String get uiSandboxFieldsSpecimen => 'Stările câmpurilor';
+  @override
+  String get uiSandboxSelectionSpecimen => 'Stări de selecție';
+  @override
+  String get uiSandboxSurfacesSpecimen => 'Principiul temei aurii';
+  @override
+  String get uiSandboxOverlaysSpecimen => 'Modele modale izolate';
+  @override
   String get volumeSectionLabel => 'Volum';
   @override
   String get backgroundVolumeLabel => 'Fundal';
@@ -1373,6 +1465,40 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String habitProgressThisWeek(int done, int target) =>
       '$done/$target săptămâna aceasta';
+  @override
+  String get habitStatsSectionTitle => 'Pulsari';
+  @override
+  String get starsStatsSectionTitle => 'Stele';
+  @override
+  String get habitStatsActiveLabel => 'Active';
+  @override
+  String get habitStatsOnTrackLabel => 'În ritm';
+  @override
+  String get habitStatsConsistencyLabel => 'Consecvență';
+  @override
+  String get habitStatsLongestLabel => 'Record personal';
+  @override
+  String get habitStatsTotalLabel => 'Completări totale';
+  @override
+  String get habitStatsTrendLabel => 'Ritm recent';
+  @override
+  String get habitStatsWeekdaysLabel => 'Săptămâna ta';
+  @override
+  String get habitStatsBestDayLabel => 'Ziua cea mai bună';
+  @override
+  String get habitStatsSupportDayLabel => 'Zi de susținut';
+  @override
+  String get habitStatsNotEnoughData => 'Mai este nevoie de puțin istoric pentru acest tipar.';
+  @override
+  String get habitStatsArchiveAction => 'Pulsari din trecut';
+  @override
+  String get habitStatsArchiveTitle => 'Pulsari din trecut';
+  @override
+  String get habitStatsArchiveEmpty => 'Nu există încă pulsari din trecut.';
+  @override
+  String habitStatsDays(int count) => count == 1 ? '1 zi' : '$count zile';
+  @override
+  String habitStatsWeeks(int count) => count == 1 ? '1 săptămână' : '$count săptămâni';
 
   @override
   String unlitStarsBadge(int count) =>

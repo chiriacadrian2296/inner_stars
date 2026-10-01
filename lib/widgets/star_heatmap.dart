@@ -16,6 +16,9 @@ class StarHeatmap extends StatelessWidget {
     super.key,
     required this.countsByDay,
     required this.intensityByDay,
+    this.progressByDay,
+    this.availableFrom,
+    this.availableThrough,
     this.onDayTap,
     this.month,
     this.onPreviousMonth,
@@ -28,6 +31,12 @@ class StarHeatmap extends StatelessWidget {
   /// values) — see [winIntensityByDay]. Drives the glow, independently of
   /// [countsByDay], which only drives the star's fill opacity.
   final Map<DateTime, int> intensityByDay;
+
+  /// Optional habit-specific completion ratio per day. When supplied, the
+  /// calendar distinguishes partial progress from a reached target.
+  final Map<DateTime, double>? progressByDay;
+  final DateTime? availableFrom;
+  final DateTime? availableThrough;
 
   final void Function(DateTime day)? onDayTap;
 
@@ -127,6 +136,9 @@ class StarHeatmap extends StatelessWidget {
                               today: todayDate,
                               countsByDay: countsByDay,
                               intensityByDay: intensityByDay,
+                              progressByDay: progressByDay,
+                              availableFrom: availableFrom,
+                              availableThrough: availableThrough,
                               minIntensity: minIntensity,
                               maxIntensity: maxIntensity,
                               onTap: onDayTap,
@@ -174,6 +186,9 @@ class _DayCell extends StatelessWidget {
     required this.today,
     required this.countsByDay,
     required this.intensityByDay,
+    required this.progressByDay,
+    required this.availableFrom,
+    required this.availableThrough,
     required this.minIntensity,
     required this.maxIntensity,
     this.onTap,
@@ -185,6 +200,9 @@ class _DayCell extends StatelessWidget {
   final DateTime today;
   final Map<DateTime, int> countsByDay;
   final Map<DateTime, int> intensityByDay;
+  final Map<DateTime, double>? progressByDay;
+  final DateTime? availableFrom;
+  final DateTime? availableThrough;
   final int minIntensity;
   final int maxIntensity;
   final void Function(DateTime day)? onTap;
@@ -207,7 +225,25 @@ class _DayCell extends StatelessWidget {
     }
 
     final day = DateTime(month.year, month.month, dayNumber);
-    if (day.isAfter(today)) {
+    final unavailable =
+        day.isAfter(today) ||
+        (availableFrom != null &&
+            day.isBefore(
+              DateTime(
+                availableFrom!.year,
+                availableFrom!.month,
+                availableFrom!.day,
+              ),
+            )) ||
+        (availableThrough != null &&
+            day.isAfter(
+              DateTime(
+                availableThrough!.year,
+                availableThrough!.month,
+                availableThrough!.day,
+              ),
+            ));
+    if (unavailable) {
       return SizedBox(
         width: _slotSize,
         height: _slotSize,
@@ -225,7 +261,9 @@ class _DayCell extends StatelessWidget {
 
     final count = countsByDay[day] ?? 0;
     final colors = context.colors;
-    final isLit = count > 0;
+    final progress = progressByDay?[day];
+    final isComplete = progress == null ? count > 0 : progress >= 1;
+    final isPartial = progress != null && progress > 0 && progress < 1;
 
     final dayIntensity = intensityByDay[day] ?? 0;
     var glowStrength = 0.0;
@@ -272,10 +310,16 @@ class _DayCell extends StatelessWidget {
               // down for low counts, which just made a light day look like a
               // rendering glitch rather than a deliberate "less glow" day.
               child: Icon(
-                isLit ? Icons.star : Icons.star_border,
+                isComplete
+                    ? Icons.star
+                    : isPartial
+                    ? Icons.star_half
+                    : Icons.star_border,
                 size: _starSize,
-                color: isLit
+                color: isComplete
                     ? colors.gold
+                    : isPartial
+                    ? colors.gold.withValues(alpha: 0.65)
                     : colors.gold.withValues(alpha: 0.16),
               ),
             ),

@@ -1,6 +1,61 @@
 import '../models/habit.dart';
 import '../models/habit_completion.dart';
 
+enum HabitStatsRange {
+  days7(7),
+  days30(30),
+  days90(90);
+
+  const HabitStatsRange(this.days);
+  final int days;
+}
+
+class HabitTrendPoint {
+  const HabitTrendPoint({required this.date, required this.progress});
+
+  final DateTime date;
+  final double progress;
+}
+
+class HabitWeekdayStat {
+  const HabitWeekdayStat({
+    required this.weekday,
+    required this.completed,
+    required this.available,
+  });
+
+  final int weekday;
+  final int completed;
+  final int available;
+  double get rate => available == 0 ? 0 : completed / available;
+}
+
+class HabitStatsSummary {
+  const HabitStatsSummary({
+    required this.range,
+    required this.currentStreak,
+    required this.longestStreak,
+    required this.completionRate,
+    required this.totalCompletions,
+    required this.trend,
+    required this.progressByDay,
+    required this.weekdays,
+    required this.bestWeekday,
+    required this.weakestWeekday,
+  });
+
+  final HabitStatsRange range;
+  final int currentStreak;
+  final int longestStreak;
+  final double completionRate;
+  final int totalCompletions;
+  final List<HabitTrendPoint> trend;
+  final Map<DateTime, double> progressByDay;
+  final List<HabitWeekdayStat> weekdays;
+  final HabitWeekdayStat? bestWeekday;
+  final HabitWeekdayStat? weakestWeekday;
+}
+
 DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
 
 /// Monday of the calendar week containing [day] — [HabitFrequency.weekly]'s
@@ -26,6 +81,18 @@ Map<DateTime, int> habitCompletionCountsByDay(
   return counts;
 }
 
+Map<DateTime, double> habitProgressByDay(
+  Habit habit,
+  Map<DateTime, int> countsByDay,
+) {
+  return {
+    for (final entry in countsByDay.entries)
+      entry.key: habit.frequency == HabitFrequency.daily
+          ? (entry.value / habit.targetPerPeriod).clamp(0.0, 1.0).toDouble()
+          : (entry.value > 0 ? 1.0 : 0.0),
+  };
+}
+
 /// Whether [day] counts as "met" for [habit] — the one place both
 /// frequencies' own definition of a satisfied day lives. A [daily] habit
 /// needs that day's own count to reach [Habit.targetPerPeriod] (e.g. 3 of 3
@@ -43,7 +110,11 @@ bool _dayMet(Habit habit, Map<DateTime, int> countsByDay, DateTime day) {
 /// safe to call on a week still in progress, since a day that hasn't
 /// happened yet simply has no completions and so isn't met, the same as a
 /// missed one; it never needs to be excluded separately.
-int _weekMetDays(Habit habit, Map<DateTime, int> countsByDay, DateTime weekStart) {
+int _weekMetDays(
+  Habit habit,
+  Map<DateTime, int> countsByDay,
+  DateTime weekStart,
+) {
   var count = 0;
   for (var i = 0; i < 7; i++) {
     if (_dayMet(habit, countsByDay, weekStart.add(Duration(days: i)))) {
@@ -150,4 +221,162 @@ int habitCurrentStreak(
     weekStart = weekStart.subtract(const Duration(days: 7));
   }
   return streak;
+}
+
+DateTime _habitEnd(Habit habit, DateTime now) {
+  final today = _dateOnly(now);
+  if (habit.deadDate == null) return today;
+  final deadDay = _dateOnly(habit.deadDate!);
+  return deadDay.isBefore(today) ? deadDay : today;
+}
+
+DateTime _maxDay(DateTime a, DateTime b) => a.isAfter(b) ? a : b;
+
+/// The longest run over the habit's complete eligible lifetime. Daily habits
+/// return days; weekly habits return calendar weeks that reached their target.
+int habitLongestStreak(
+  Habit habit,
+  Map<DateTime, int> countsByDay, {
+  DateTime? now,
+}) {
+  final end = _habitEnd(habit, now ?? DateTime.now());
+  final start = _dateOnly(habit.createdAt);
+  if (end.isBefore(start)) return 0;
+
+  var longest = 0;
+  var running = 0;
+  if (habit.frequency == HabitFrequency.daily) {
+    for (
+      var day = start;
+      !day.isAfter(end);
+      day = day.add(const Duration(days: 1))
+    ) {
+      if (_dayMet(habit, countsByDay, day)) {
+        running++;
+        if (running > longest) longest = running;
+      } else {
+        running = 0;
+      }
+    }
+    return longest;
+  }
+
+  for (
+    var week = _weekStart(start);
+    !week.isAfter(_weekStart(end));
+    week = week.add(const Duration(days: 7))
+  ) {
+    if (_weekMetDays(habit, countsByDay, week) >= habit.targetPerPeriod) {
+      running++;
+      if (running > longest) longest = running;
+    } else {
+      running = 0;
+    }
+  }
+  return longest;
+}
+
+/// Builds every figure used by the overview and the pulsar dashboard.
+/// Values are clamped to the habit's lifetime and [now] is injectable so the
+/// result remains stable in tests.
+HabitStatsSummary habitStatsSummary(
+  Habit habit,
+  List<HabitCompletion> completions, {
+  HabitStatsRange range = HabitStatsRange.days30,
+  DateTime? now,
+}) {
+  final effectiveNow = now ?? DateTime.now();
+  final end = _habitEnd(habit, effectiveNow);
+  final lifetimeStart = _dateOnly(habit.createdAt);
+  final requestedStart = end.subtract(Duration(days: range.days - 1));
+  final start = _maxDay(lifetimeStart, requestedStart);
+  final counts = habitCompletionCountsByDay(completions);
+  final progress = <DateTime, double>{};
+  final trend = <HabitTrendPoint>[];
+  final weekdayCompleted = List<int>.filled(7, 0);
+  final weekdayAvailable = List<int>.filled(7, 0);
+
+  var earned = 0.0;
+  var possible = 0.0;
+  if (!end.isBefore(start)) {
+    for (
+      var day = start;
+      !day.isAfter(end);
+      day = day.add(const Duration(days: 1))
+    ) {
+      final raw = counts[day] ?? 0;
+      final dayProgress = habit.frequency == HabitFrequency.daily
+          ? (raw / habit.targetPerPeriod).clamp(0.0, 1.0).toDouble()
+          : (raw > 0 ? 1.0 : 0.0);
+      progress[day] = dayProgress;
+      trend.add(HabitTrendPoint(date: day, progress: dayProgress));
+      weekdayAvailable[day.weekday - 1]++;
+      if (dayProgress >= 1) weekdayCompleted[day.weekday - 1]++;
+    }
+
+    if (habit.frequency == HabitFrequency.daily) {
+      possible = trend.length.toDouble();
+      earned = trend.where((point) => point.progress >= 1).length.toDouble();
+    } else {
+      for (
+        var week = _weekStart(start);
+        !week.isAfter(_weekStart(end));
+        week = week.add(const Duration(days: 7))
+      ) {
+        final segmentStart = _maxDay(week, start);
+        final weekEnd = week.add(const Duration(days: 6));
+        final segmentEnd = weekEnd.isBefore(end) ? weekEnd : end;
+        final availableDays = segmentEnd.difference(segmentStart).inDays + 1;
+        final expected = availableDays < habit.targetPerPeriod
+            ? availableDays
+            : habit.targetPerPeriod;
+        var completedDays = 0;
+        for (
+          var day = segmentStart;
+          !day.isAfter(segmentEnd);
+          day = day.add(const Duration(days: 1))
+        ) {
+          if (_dayMet(habit, counts, day)) completedDays++;
+        }
+        possible += expected;
+        earned += completedDays > expected ? expected : completedDays;
+      }
+    }
+  }
+
+  final weekdays = List<HabitWeekdayStat>.generate(
+    7,
+    (index) => HabitWeekdayStat(
+      weekday: index + 1,
+      completed: weekdayCompleted[index],
+      available: weekdayAvailable[index],
+    ),
+  );
+  final comparable = weekdays.where((item) => item.available > 0).toList();
+  HabitWeekdayStat? best;
+  HabitWeekdayStat? weakest;
+  // Avoid claiming a pattern before every weekday has had at least one fair
+  // chance to occur in the selected interval.
+  if (comparable.length == 7) {
+    best = comparable.reduce((a, b) => b.rate > a.rate ? b : a);
+    weakest = comparable.reduce((a, b) => b.rate < a.rate ? b : a);
+  }
+
+  return HabitStatsSummary(
+    range: range,
+    currentStreak: habit.dead
+        ? 0
+        : habitCurrentStreak(habit, counts, now: effectiveNow),
+    longestStreak: habitLongestStreak(habit, counts, now: effectiveNow),
+    completionRate: possible == 0 ? 0 : earned / possible,
+    totalCompletions: completions.where((completion) {
+      final day = _dateOnly(completion.date);
+      return !day.isBefore(lifetimeStart) && !day.isAfter(end);
+    }).length,
+    trend: List.unmodifiable(trend),
+    progressByDay: Map.unmodifiable(progress),
+    weekdays: List.unmodifiable(weekdays),
+    bestWeekday: best,
+    weakestWeekday: weakest,
+  );
 }

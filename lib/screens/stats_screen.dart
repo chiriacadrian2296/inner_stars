@@ -61,6 +61,8 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
+  HabitStatsRange _habitRange = HabitStatsRange.days30;
+
   /// The month the activity calendar is currently showing — always the 1st,
   /// so it can be compared/offset by month without caring what day it was
   /// created on. Defaults to the current month; [_changeDisplayedMonth]
@@ -98,6 +100,69 @@ class _StatsScreenState extends State<StatsScreen> {
           habitCompletionRepository: widget.habitCompletionRepository,
           projectRepository: widget.projectRepository,
           starsShapeRepository: widget.starsShapeRepository,
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _openPulsarArchive() async {
+    final dead = widget.habitRepository
+        .getAll()
+        .where((habit) => habit.dead)
+        .toList();
+    await showAppSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                context.strings.habitStatsArchiveTitle,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: context.colors.text,
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (dead.isEmpty)
+                Text(
+                  context.strings.habitStatsArchiveEmpty,
+                  style: TextStyle(color: context.colors.muted),
+                )
+              else
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: dead.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    itemBuilder: (_, index) {
+                      final habit = dead[index];
+                      final summary = habitStatsSummary(
+                        habit,
+                        widget.habitCompletionRepository.getAllForHabit(
+                          habit.id,
+                        ),
+                        range: _habitRange,
+                      );
+                      return _PulsarTile(
+                        habit: habit,
+                        summary: summary,
+                        onTap: () {
+                          Navigator.of(sheetContext).pop();
+                          _openPulsarDashboard(habit);
+                        },
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -306,6 +371,19 @@ class _StatsScreenState extends State<StatsScreen> {
                       ),
                     ),
                   ),
+                  ..._pulsarSection(context),
+                  const SizedBox(height: 30),
+                  StaggeredEntrance(
+                    index: 1,
+                    child: Text(
+                      strings.starsStatsSectionTitle,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: colors.text,
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   StaggeredEntrance(
                     index: 1,
@@ -420,7 +498,6 @@ class _StatsScreenState extends State<StatsScreen> {
                       ),
                     ],
                   ),
-                  ..._pulsarSection(context),
                 ],
               ),
             ),
@@ -430,7 +507,7 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  /// One tile per living pulsar, each opening its dashboard.
+  /// Motivational overview of every living pulsar.
   List<Widget> _pulsarSection(BuildContext context) {
     final colors = context.colors;
     final strings = context.strings;
@@ -438,32 +515,127 @@ class _StatsScreenState extends State<StatsScreen> {
         .getAll()
         .where((h) => h.isActive)
         .toList();
-    if (habits.isEmpty) return const [];
+    final summaries = {
+      for (final habit in habits)
+        habit.id: habitStatsSummary(
+          habit,
+          widget.habitCompletionRepository.getAllForHabit(habit.id),
+          range: _habitRange,
+        ),
+    };
+    final thirtyDaySummaries = {
+      for (final habit in habits)
+        habit.id: habitStatsSummary(
+          habit,
+          widget.habitCompletionRepository.getAllForHabit(habit.id),
+          range: HabitStatsRange.days30,
+        ),
+    };
+    habits.sort((a, b) {
+      final aCounts = habitCompletionCountsByDay(
+        widget.habitCompletionRepository.getAllForHabit(a.id),
+      );
+      final bCounts = habitCompletionCountsByDay(
+        widget.habitCompletionRepository.getAllForHabit(b.id),
+      );
+      final attention = isHabitLit(a, aCounts) ? 1 : 0;
+      final otherAttention = isHabitLit(b, bCounts) ? 1 : 0;
+      return attention.compareTo(otherAttention);
+    });
+    final onTrack = habits
+        .where(
+          (habit) => isHabitLit(
+            habit,
+            habitCompletionCountsByDay(
+              widget.habitCompletionRepository.getAllForHabit(habit.id),
+            ),
+          ),
+        )
+        .length;
+    final consistency = habits.isEmpty
+        ? 0
+        : (thirtyDaySummaries.values.fold<double>(
+                    0,
+                    (sum, item) => sum + item.completionRate,
+                  ) /
+                  habits.length *
+                  100)
+              .round();
     return [
       const SizedBox(height: 24),
       StaggeredEntrance(
-        index: 6,
-        child: Text(
-          StarKind.pulsar.plural(strings),
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: colors.muted,
-          ),
+        index: 1,
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                strings.habitStatsSectionTitle,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: colors.text,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: _openPulsarArchive,
+              child: Text(strings.habitStatsArchiveAction),
+            ),
+          ],
         ),
       ),
       const SizedBox(height: 10),
+      Row(
+        children: [
+          Expanded(
+            child: _OverviewMetric(
+              value: '${habits.length}',
+              label: strings.habitStatsActiveLabel,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _OverviewMetric(
+              value: '$onTrack',
+              label: strings.habitStatsOnTrackLabel,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _OverviewMetric(
+              value: '$consistency%',
+              label: strings.habitStatsConsistencyLabel,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      Wrap(
+        spacing: 8,
+        children: [
+          for (final range in HabitStatsRange.values)
+            ChoiceChip(
+              label: Text('${range.days}'),
+              selected: range == _habitRange,
+              onSelected: (_) => setState(() => _habitRange = range),
+            ),
+        ],
+      ),
+      if (habits.isEmpty) ...[
+        const SizedBox(height: 14),
+        Text(
+          strings.habitStatsNotEnoughData,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: colors.muted),
+        ),
+      ],
+      if (habits.isNotEmpty) const SizedBox(height: 10),
       for (final habit in habits) ...[
         StaggeredEntrance(
-          index: 6,
+          index: 2,
           child: _PulsarTile(
             habit: habit,
-            streak: habitCurrentStreak(
-              habit,
-              habitCompletionCountsByDay(
-                widget.habitCompletionRepository.getAllForHabit(habit.id),
-              ),
-            ),
+            summary: summaries[habit.id]!,
             onTap: () => _openPulsarDashboard(habit),
           ),
         ),
@@ -473,16 +645,49 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 }
 
-/// One pulsar in the stats list: its icon, title and current streak.
+class _OverviewMetric extends StatelessWidget {
+  const _OverviewMetric({required this.value, required this.label});
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 6),
+      decoration: panelDecoration(colors),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: colors.gold,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 10, color: colors.muted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One pulsar in the stats list: its icon, title and key figures.
 class _PulsarTile extends StatelessWidget {
   const _PulsarTile({
     required this.habit,
-    required this.streak,
+    required this.summary,
     required this.onTap,
   });
 
   final Habit habit;
-  final int streak;
+  final HabitStatsSummary summary;
   final VoidCallback onTap;
 
   @override
@@ -514,13 +719,23 @@ class _PulsarTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  '$streak',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: colors.gold,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${(summary.completionRate * 100).round()}%',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: colors.gold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${summary.currentStreak} / ${summary.longestStreak}',
+                      style: TextStyle(fontSize: 11, color: colors.muted),
+                    ),
+                  ],
                 ),
                 const SizedBox(width: 4),
                 Icon(Icons.chevron_right, color: colors.muted),
@@ -772,7 +987,10 @@ class _TodayStarHeroState extends State<_TodayStarHero>
                     ..._glow(colors.gold, 44),
                   ],
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 child: child,
               );
             },
@@ -924,18 +1142,14 @@ class _DayDetailSheetState extends State<_DayDetailSheet> {
                   ? Expanded(
                       child: StaggeredEntrance(
                         index: 3,
-                        child: Center(
-                          child: _emptyStateText(strings, colors),
-                        ),
+                        child: Center(child: _emptyStateText(strings, colors)),
                       ),
                     )
                   : StaggeredEntrance(
                       index: 3,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 24),
-                        child: Center(
-                          child: _emptyStateText(strings, colors),
-                        ),
+                        child: Center(child: _emptyStateText(strings, colors)),
                       ),
                     )
             else

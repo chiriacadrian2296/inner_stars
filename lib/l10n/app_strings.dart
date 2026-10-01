@@ -410,6 +410,54 @@ abstract class AppStrings {
   String get quickSettingsAudioSection;
   String get quickSettingsOpenSoundLabAction;
 
+  // Debug-only UI/UX audit sandbox.
+  String get uiSandboxButtonTooltip;
+  String get uiSandboxTitle;
+  String get uiSandboxIntro;
+  String get uiSandboxFiltersTitle;
+  String get uiSandboxViewportTitle;
+  String get uiSandboxViewportBody;
+  String get uiSandboxMatrixTitle;
+  String uiSandboxMatrixBody(int count);
+  String uiSandboxVariantsCount(int count);
+  String uiSandboxCandidatesCount(int count);
+  String uiSandboxCategoriesCount(int count);
+  String get uiSandboxCategoryLabel;
+  String get uiSandboxAllLabel;
+  String get uiSandboxAllStatesLabel;
+  String get uiSandboxExistingLabel;
+  String get uiSandboxCandidateLabel;
+  String get uiSandboxReviewStatus;
+  String get uiSandboxKeepStatus;
+  String get uiSandboxReplaceStatus;
+  String get uiSandboxExceptionStatus;
+  String get uiSandboxOriginsLabel;
+  String get uiSandboxStatesLabel;
+  String get uiSandboxDifferencesLabel;
+  String get uiSandboxRationaleLabel;
+  String get uiSandboxRisksLabel;
+  String get uiSandboxOptionsLabel;
+  String get uiSandboxRecommendationLabel;
+  String get uiSandboxResetFiltersAction;
+  String get uiSandboxTypographyCategory;
+  String get uiSandboxActionsCategory;
+  String get uiSandboxFieldsCategory;
+  String get uiSandboxSelectionCategory;
+  String get uiSandboxSurfacesCategory;
+  String get uiSandboxOverlaysCategory;
+  String get uiSandboxNavigationCategory;
+  String get uiSandboxFeedbackCategory;
+  String get uiSandboxSpacingCategory;
+  String get uiSandboxColorCategory;
+  String get uiSandboxIconsCategory;
+  String get uiSandboxMotionCategory;
+  String get uiSandboxTypographySpecimen;
+  String get uiSandboxActionsSpecimen;
+  String get uiSandboxFieldsSpecimen;
+  String get uiSandboxSelectionSpecimen;
+  String get uiSandboxSurfacesSpecimen;
+  String get uiSandboxOverlaysSpecimen;
+
   // Sky + area projects
   String starsCount(int count);
   String areaEmptyProjects(String areaName);
@@ -709,6 +757,24 @@ abstract class AppStrings {
   /// [habitCurrentStreakLabel] rather than instead of it (the day itself is
   /// still a plain done/not-done toggle; only the week total is a count).
   String habitProgressThisWeek(int done, int target);
+
+  String get habitStatsSectionTitle;
+  String get starsStatsSectionTitle;
+  String get habitStatsActiveLabel;
+  String get habitStatsOnTrackLabel;
+  String get habitStatsConsistencyLabel;
+  String get habitStatsLongestLabel;
+  String get habitStatsTotalLabel;
+  String get habitStatsTrendLabel;
+  String get habitStatsWeekdaysLabel;
+  String get habitStatsBestDayLabel;
+  String get habitStatsSupportDayLabel;
+  String get habitStatsNotEnoughData;
+  String get habitStatsArchiveAction;
+  String get habitStatsArchiveTitle;
+  String get habitStatsArchiveEmpty;
+  String habitStatsDays(int count);
+  String habitStatsWeeks(int count);
 
   // Constellation card badges, alongside the existing star count
   String unlitStarsBadge(int count);
