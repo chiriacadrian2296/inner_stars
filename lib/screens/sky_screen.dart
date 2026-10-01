@@ -1389,38 +1389,15 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // on why (the tooltip's root-overlay entry doesn't get covered by a
     // new one the way the old in-tree panel did).
     _closeSkyTooltip();
-    final confirmed = await showAppDialog<bool>(
+    final confirmed = await showAppConfirmation(
       context: context,
-      builder: (dialogContext) => AppDialog(
-        title: StaggeredEntrance(
-          index: 0,
-          child: Text(strings.deleteStarConfirmTitle),
-        ),
-        content: StaggeredEntrance(
-          index: 1,
-          child: Text(strings.deleteStarConfirmBody),
-        ),
-        actions: [
-          StaggeredEntrance(
-            index: 2,
-            axis: Axis.horizontal,
-            child: TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(strings.cancel),
-            ),
-          ),
-          StaggeredEntrance(
-            index: 3,
-            axis: Axis.horizontal,
-            child: TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(strings.deleteStarAction),
-            ),
-          ),
-        ],
-      ),
+      title: strings.deleteStarConfirmTitle,
+      body: strings.deleteStarConfirmBody,
+      cancelLabel: strings.cancel,
+      confirmLabel: strings.deleteStarAction,
+      tone: AppConfirmationTone.destructive,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
     await widget.starRepository.delete(star.id);
     _refresh();
   }

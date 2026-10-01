@@ -461,42 +461,32 @@ class _StarFormScreenState extends State<StarFormScreen> {
           ? strings.deletePulsarConfirmBody
           : strings.deleteStarConfirmBody,
       confirmLabel: strings.deleteStarAction,
+      destructive: true,
     );
     if (confirmed && mounted) {
       Navigator.of(context).pop(const StarFormDeleteRequested());
     }
   }
 
-  /// A yes/no dialog styled like the rest of the app's destructive
-  /// confirmations — a muted cancel next to a [AppColors.danger]-colored
-  /// confirm action.
+  /// Shared confirmation; callers declare whether the confirming action is
+  /// destructive so its color follows meaning rather than location.
   Future<bool> _confirm({
     required String title,
     required String body,
     required String confirmLabel,
+    bool destructive = false,
   }) async {
-    final colors = context.colors;
     final strings = context.strings;
-    final confirmed = await showAppDialog<bool>(
+    return showAppConfirmation(
       context: context,
-      builder: (dialogContext) => AppDialog(
-        title: Text(title),
-        content: Text(body),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            style: TextButton.styleFrom(foregroundColor: colors.muted),
-            child: Text(strings.cancel.toUpperCase()),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: colors.danger),
-            child: Text(confirmLabel.toUpperCase()),
-          ),
-        ],
-      ),
+      title: title,
+      body: body,
+      cancelLabel: strings.cancel,
+      confirmLabel: confirmLabel,
+      tone: destructive
+          ? AppConfirmationTone.destructive
+          : AppConfirmationTone.standard,
     );
-    return confirmed ?? false;
   }
 
   void _save() {

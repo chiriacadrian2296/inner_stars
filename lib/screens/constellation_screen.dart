@@ -291,27 +291,15 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
 
   Future<void> _deleteProject() async {
     final strings = context.strings;
-    final confirmed = await showAppDialog<bool>(
+    final confirmed = await showAppConfirmation(
       context: context,
-      builder: (dialogContext) => AppDialog(
-        title: Text('Eliminare questa costellazione?'),
-        content: Text(
-          'Verranno eliminati definitivamente stelle, pulsar, completamenti e foto. Questa azione non può essere annullata.',
-          style: TextStyle(color: context.colors.muted),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(strings.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(strings.deleteStarAction),
-          ),
-        ],
-      ),
+      title: 'Eliminare questa costellazione?',
+      body: 'Verranno eliminati definitivamente stelle, pulsar, completamenti e foto. Questa azione non può essere annullata.',
+      cancelLabel: strings.cancel,
+      confirmLabel: strings.deleteStarAction,
+      tone: AppConfirmationTone.destructive,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
     final id = _project.id;
     final shapeId = _project.starsShapeId;
     final habitIds = await widget.habitRepository.deleteAllForProject(id);

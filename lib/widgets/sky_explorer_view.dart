@@ -677,27 +677,16 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   }
 
   Future<void> _deleteConstellation(Project project) async {
-    final confirmed = await showAppDialog<bool>(
+    final strings = context.strings;
+    final confirmed = await showAppConfirmation(
       context: context,
-      builder: (dialogContext) => AppDialog(
-        title: const Text('Eliminare questa costellazione?'),
-        content: Text(
-          'Verranno eliminati definitivamente stelle, pulsar, completamenti e foto. Questa azione non può essere annullata.',
-          style: TextStyle(color: context.colors.muted),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(context.strings.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(context.strings.deleteStarAction),
-          ),
-        ],
-      ),
+      title: 'Eliminare questa costellazione?',
+      body: 'Verranno eliminati definitivamente stelle, pulsar, completamenti e foto. Questa azione non può essere annullata.',
+      cancelLabel: strings.cancel,
+      confirmLabel: strings.deleteStarAction,
+      tone: AppConfirmationTone.destructive,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
     final habitIds = await widget.habitRepository.deleteAllForProject(
       project.id,
     );
@@ -922,76 +911,30 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
 
   Future<void> _deleteHabit(Habit habit) async {
     final strings = context.strings;
-    final confirmed = await showAppDialog<bool>(
+    final confirmed = await showAppConfirmation(
       context: context,
-      builder: (dialogContext) => AppDialog(
-        title: StaggeredEntrance(
-          index: 0,
-          child: Text(strings.deletePulsarConfirmTitle),
-        ),
-        content: StaggeredEntrance(
-          index: 1,
-          child: Text(strings.deletePulsarConfirmBody),
-        ),
-        actions: [
-          StaggeredEntrance(
-            index: 2,
-            axis: Axis.horizontal,
-            child: TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(strings.cancel),
-            ),
-          ),
-          StaggeredEntrance(
-            index: 3,
-            axis: Axis.horizontal,
-            child: TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(strings.deleteStarAction),
-            ),
-          ),
-        ],
-      ),
+      title: strings.deletePulsarConfirmTitle,
+      body: strings.deletePulsarConfirmBody,
+      cancelLabel: strings.cancel,
+      confirmLabel: strings.deleteStarAction,
+      tone: AppConfirmationTone.destructive,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
     await widget.habitRepository.delete(habit.id);
     if (mounted) setState(() {});
   }
 
   Future<void> _deleteStar(Star star) async {
     final strings = context.strings;
-    final confirmed = await showAppDialog<bool>(
+    final confirmed = await showAppConfirmation(
       context: context,
-      builder: (dialogContext) => AppDialog(
-        title: StaggeredEntrance(
-          index: 0,
-          child: Text(strings.deleteStarConfirmTitle),
-        ),
-        content: StaggeredEntrance(
-          index: 1,
-          child: Text(strings.deleteStarConfirmBody),
-        ),
-        actions: [
-          StaggeredEntrance(
-            index: 2,
-            axis: Axis.horizontal,
-            child: TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(strings.cancel),
-            ),
-          ),
-          StaggeredEntrance(
-            index: 3,
-            axis: Axis.horizontal,
-            child: TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(strings.deleteStarAction),
-            ),
-          ),
-        ],
-      ),
+      title: strings.deleteStarConfirmTitle,
+      body: strings.deleteStarConfirmBody,
+      cancelLabel: strings.cancel,
+      confirmLabel: strings.deleteStarAction,
+      tone: AppConfirmationTone.destructive,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
     await widget.starRepository.delete(star.id);
     if (mounted) setState(() {});
   }

@@ -329,29 +329,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _resetAllData() async {
-    final colors = context.colors;
     final strings = context.strings;
 
-    final confirmed = await showAppDialog<bool>(
+    final confirmed = await showAppConfirmation(
       context: context,
-      builder: (dialogContext) => AppDialog(
-        title: Text(strings.resetAllDataConfirmTitle),
-        content: Text(strings.resetAllDataConfirmBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            style: TextButton.styleFrom(foregroundColor: colors.muted),
-            child: Text(strings.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: colors.danger),
-            child: Text(strings.deleteEverything),
-          ),
-        ],
-      ),
+      title: strings.resetAllDataConfirmTitle,
+      body: strings.resetAllDataConfirmBody,
+      cancelLabel: strings.cancel,
+      confirmLabel: strings.deleteEverything,
+      tone: AppConfirmationTone.destructive,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     await widget.starRepository.clear();
     await widget.projectRepository.clear();

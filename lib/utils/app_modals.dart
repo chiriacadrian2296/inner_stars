@@ -1,7 +1,48 @@
 import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
 import '../theme/app_motion.dart';
+
+enum AppConfirmationTone { standard, destructive }
+
+/// One confirmation contract for every entry point that performs the same
+/// action. Labels keep their localized casing; color communicates function:
+/// cancel is neutral, while a destructive confirmation is always red.
+Future<bool> showAppConfirmation({
+  required BuildContext context,
+  required String title,
+  required String body,
+  required String cancelLabel,
+  required String confirmLabel,
+  AppConfirmationTone tone = AppConfirmationTone.standard,
+}) async {
+  final colors = context.colors;
+  final result = await showAppDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AppDialog(
+      title: Text(title),
+      content: Text(body),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          style: TextButton.styleFrom(foregroundColor: colors.muted),
+          child: Text(cancelLabel),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          style: TextButton.styleFrom(
+            foregroundColor: tone == AppConfirmationTone.destructive
+                ? colors.danger
+                : colors.gold,
+          ),
+          child: Text(confirmLabel),
+        ),
+      ],
+    ),
+  );
+  return result ?? false;
+}
 
 /// Shared dialog shell. Purpose-specific dialogs keep their own content and
 /// actions, while width, spacing, scrolling and action alignment stay stable.

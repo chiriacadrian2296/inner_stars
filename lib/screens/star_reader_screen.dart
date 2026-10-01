@@ -790,36 +790,20 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
   Future<void> _deleteCurrent() async {
     final entry = _entries[_index];
     final strings = context.strings;
-    final colors = context.colors;
     final isPulsar = entry is PulsarEntry;
-    final confirmed = await showAppDialog<bool>(
+    final confirmed = await showAppConfirmation(
       context: context,
-      builder: (dialogContext) => AppDialog(
-        title: Text(
-          isPulsar
-              ? strings.deletePulsarConfirmTitle
-              : strings.deleteStarConfirmTitle,
-        ),
-        content: Text(
-          isPulsar
-              ? strings.deletePulsarConfirmBody
-              : strings.deleteStarConfirmBody,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            style: TextButton.styleFrom(foregroundColor: colors.muted),
-            child: Text(strings.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: colors.danger),
-            child: Text(strings.deleteStarAction),
-          ),
-        ],
-      ),
+      title: isPulsar
+          ? strings.deletePulsarConfirmTitle
+          : strings.deleteStarConfirmTitle,
+      body: isPulsar
+          ? strings.deletePulsarConfirmBody
+          : strings.deleteStarConfirmBody,
+      cancelLabel: strings.cancel,
+      confirmLabel: strings.deleteStarAction,
+      tone: AppConfirmationTone.destructive,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
     switch (entry) {
       case StarEntry(:final star):
         await widget.repository.delete(star.id);

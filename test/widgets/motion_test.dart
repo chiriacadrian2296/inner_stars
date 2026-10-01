@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inner_stars/theme/app_colors.dart';
 import 'package:inner_stars/theme/app_theme.dart';
 import 'package:inner_stars/utils/app_modals.dart';
 import 'package:inner_stars/widgets/animated_presence.dart';
@@ -251,6 +252,47 @@ void main() {
   });
 
   group('app modals and route transitions', () {
+    testWidgets('destructive confirmation uses neutral and danger actions', (
+      tester,
+    ) async {
+      bool? result;
+      await _app(
+        Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () async {
+                result = await showAppConfirmation(
+                  context: context,
+                  title: 'Eliminare questa stella?',
+                  body: 'La stella verrà rimossa.',
+                  cancelLabel: 'Annulla',
+                  confirmLabel: 'Elimina',
+                  tone: AppConfirmationTone.destructive,
+                );
+              },
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ).pump(tester);
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      final cancel = tester.widget<TextButton>(
+        find.widgetWithText(TextButton, 'Annulla'),
+      );
+      final delete = tester.widget<TextButton>(
+        find.widgetWithText(TextButton, 'Elimina'),
+      );
+      expect(cancel.style?.foregroundColor?.resolve({}), AppColors.dark.muted);
+      expect(delete.style?.foregroundColor?.resolve({}), AppColors.dark.danger);
+
+      await tester.tap(find.text('Elimina'));
+      await tester.pumpAndSettle();
+      expect(result, isTrue);
+    });
+
     testWidgets('showAppDialog opens and dismisses', (tester) async {
       await _app(
         Builder(
