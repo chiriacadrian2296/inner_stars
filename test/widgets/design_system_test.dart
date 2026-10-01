@@ -14,7 +14,7 @@ void main() {
     home: Scaffold(body: Center(child: child)),
   );
 
-  testWidgets('save and destructive actions have identical geometry', (
+  testWidgets('action pills use intrinsic width and center their content', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -40,11 +40,27 @@ void main() {
       ),
     );
 
-    expect(
-      tester.getSize(find.byKey(const Key('save'))),
-      tester.getSize(find.byKey(const Key('delete'))),
-    );
-    expect(tester.getSize(find.byKey(const Key('save'))), const Size(196, 48));
+    final save = find.byKey(const Key('save'));
+    final delete = find.byKey(const Key('delete'));
+    expect(tester.getSize(save).height, 48);
+    expect(tester.getSize(delete).height, 48);
+    expect(tester.getSize(save).width, lessThan(196));
+    expect(tester.getSize(delete).width, lessThan(196));
+    expect(tester.getSize(save).width, isNot(tester.getSize(delete).width));
+
+    void expectContentCentered(Finder button) {
+      final iconRect = tester.getRect(
+        find.descendant(of: button, matching: find.byType(Icon)),
+      );
+      final textRect = tester.getRect(
+        find.descendant(of: button, matching: find.byType(Text)),
+      );
+      final contentCenter = (iconRect.left + textRect.right) / 2;
+      expect(contentCenter, closeTo(tester.getCenter(button).dx, 0.5));
+    }
+
+    expectContentCentered(save);
+    expectContentCentered(delete);
   });
 
   testWidgets('disabled toggle keeps semantics and cannot change', (
@@ -78,12 +94,14 @@ void main() {
     );
 
     expect(
-      tester.getSize(
-        find.descendant(
-          of: find.byType(AppChoiceChip),
-          matching: find.byType(InkWell),
-        ),
-      ).height,
+      tester
+          .getSize(
+            find.descendant(
+              of: find.byType(AppChoiceChip),
+              matching: find.byType(InkWell),
+            ),
+          )
+          .height,
       48,
     );
     expect(find.bySemanticsLabel('Area'), findsOneWidget);

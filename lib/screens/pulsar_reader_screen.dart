@@ -594,8 +594,7 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
                         StaggeredEntrance(
                           index: 4,
                           replayKey: _habit.dead,
-                          child: SizedBox(
-                            width: double.infinity,
+                          child: Align(
                             child: ElevatedButton.icon(
                               onPressed: _reignite,
                               icon: const Icon(Icons.auto_fix_high),

@@ -138,8 +138,7 @@ class _KindFilterSheetState extends State<_KindFilterSheet> {
             const SizedBox(height: 16),
             StaggeredEntrance(
               index: 2 + (kListableStarKinds.length + 1) ~/ 2 + 1,
-              child: SizedBox(
-                width: double.infinity,
+              child: Align(
                 child: ElevatedButton(
                   onPressed: () => Navigator.of(context).pop(_kinds),
                   child: Text(strings.applyFilterAction),

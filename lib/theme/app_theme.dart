@@ -124,6 +124,7 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
         shadowColor: palette.gold.withValues(alpha: 0.55),
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
         minimumSize: const Size(0, 48),
+        alignment: Alignment.center,
         textStyle: const TextStyle(
           fontWeight: FontWeight.w700,
           fontSize: 12,
@@ -139,6 +140,7 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
         side: BorderSide(color: palette.gold, width: kBorderWidthActive),
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
         minimumSize: const Size(0, 48),
+        alignment: Alignment.center,
         textStyle: const TextStyle(
           fontWeight: FontWeight.w700,
           fontSize: 12,
@@ -152,6 +154,7 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
         foregroundColor: palette.gold,
         disabledForegroundColor: palette.muted,
         minimumSize: const Size(0, 48),
+        alignment: Alignment.center,
         textStyle: const TextStyle(
           fontWeight: FontWeight.w700,
           fontSize: 12,

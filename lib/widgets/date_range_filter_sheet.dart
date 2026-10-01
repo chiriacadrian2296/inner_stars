@@ -344,8 +344,7 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
                 const SizedBox(height: 20),
                 StaggeredEntrance(
                   index: 7,
-                  child: SizedBox(
-                    width: double.infinity,
+                  child: Align(
                     child: ElevatedButton(
                       onPressed: () =>
                           Navigator.of(context)

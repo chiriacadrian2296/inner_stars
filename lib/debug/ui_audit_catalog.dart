@@ -150,11 +150,11 @@ const uiAuditCatalog = <UiAuditItem>[
       'constellation_editor_screen.dart',
     ],
     states: ['lit', 'unlit but explainable', 'pressed'],
-    differences: 'A large glowing primary pill; intentionally larger than nearby utility and destructive pills.',
-    rationale: 'It represents the final act of lighting/saving rather than an equal half of a button pair.',
-    risks: 'Without an explicit primary-action rule, its size can be mistaken for accidental inconsistency.',
-    options: ['Keep as primary action', 'Make equal to every adjacent action'],
-    recommendation: 'Keep as the primary commit action, but give it the same geometry as cancel and adjacent actions; importance comes from fill and glow, not size.',
+    differences: 'A glowing primary pill with the same height and padding grammar as adjacent actions.',
+    rationale: 'It represents the final act of lighting/saving through color and glow, not through extra width.',
+    risks: 'A fixed or forced width would create empty space and make button geometry depend on location rather than content.',
+    options: ['Intrinsic content width', 'Forced shared width'],
+    recommendation: 'Keep as the primary commit action with intrinsic content width and centered icon/label; importance comes from fill and glow, not size.',
   ),
   UiAuditItem(
     id: 'action-pill-utility-danger',
@@ -172,7 +172,7 @@ const uiAuditCatalog = <UiAuditItem>[
     rationale: 'Secondary canvas/form actions need less emphasis than save.',
     risks: 'Danger styling is not yet used consistently by every delete/cancel action elsewhere.',
     options: ['Keep', 'Merge into Material buttons'],
-    recommendation: 'Keep as compact utility/destructive action and define where it is allowed.',
+    recommendation: 'Keep as an intrinsic-width utility/destructive action with centered icon and label.',
   ),
   UiAuditItem(
     id: 'action-cancel-meanings',
@@ -210,8 +210,7 @@ const uiAuditCatalog = <UiAuditItem>[
         'Call sites should choose intent rather than reconstruct appearance.',
     risks: 'Loading and explainable-disabled behavior need explicit policy before migration.',
     options: ['Four roles', 'Four roles plus compact variants'],
-    recommendation:
-        'Use four roles with one shared regular geometry; compact density is reserved for toolbars and editor utilities, never to make cancel smaller than save.',
+    recommendation: 'Use four roles with shared height and padding tokens. Every text button keeps intrinsic content width and centers its icon/label; compact density is reserved for icon-only toolbars.',
   ),
   UiAuditItem(
     id: 'field-shared',

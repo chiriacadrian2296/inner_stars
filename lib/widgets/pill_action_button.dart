@@ -17,7 +17,6 @@ class PillActionButton extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.danger = false,
-    this.compact = false,
   });
 
   final IconData icon;
@@ -30,7 +29,6 @@ class PillActionButton extends StatelessWidget {
   /// you can't undo" rather than blending in as just another enabled
   /// action.
   final bool danger;
-  final bool compact;
 
   static const _minimumHeight = 48.0;
   static const _padding = EdgeInsets.symmetric(horizontal: 20, vertical: 12);
@@ -52,23 +50,20 @@ class PillActionButton extends StatelessWidget {
         onTap: onTap,
         customBorder: const StadiumBorder(),
         child: Container(
-          width: compact ? null : 196,
           constraints: const BoxConstraints(minHeight: _minimumHeight),
           padding: _padding,
           child: Row(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, color: foreground, size: 18),
               const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  label.toUpperCase(),
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: foreground,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
+              Text(
+                label.toUpperCase(),
+                style: TextStyle(
+                  color: foreground,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
                 ),
               ),
             ],
@@ -88,7 +83,9 @@ class PillActionButton extends StatelessWidget {
 /// to this pill shape instead of a round FAB so it reads as one family with
 /// [PillActionButton]'s delete/undo/redo pills rather than a visually
 /// unrelated control. Primary and secondary actions deliberately share the
-/// same geometry; importance comes from fill/glow, never from a larger size.
+/// same height and spacing grammar; each button's width is determined only
+/// by its own content and padding. Importance comes from fill/glow, never
+/// from extra width.
 ///
 /// [onPressed] stays callable even while [lit] is false (same reasoning as
 /// `AppActionDisc`) so a screen can use the tap to explain *why* it can't
@@ -127,24 +124,21 @@ class SaveActionButton extends StatelessWidget {
           onTap: onPressed,
           customBorder: const StadiumBorder(),
           child: Container(
-            width: 196,
             constraints: const BoxConstraints(minHeight: _minimumHeight),
             padding: _padding,
             child: Row(
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(icon, color: foreground, size: 18),
                 const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    label.toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: foreground,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
+                Text(
+                  label.toUpperCase(),
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: foreground,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
                   ),
                 ),
               ],

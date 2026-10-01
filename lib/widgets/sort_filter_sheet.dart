@@ -150,8 +150,7 @@ class _SortFilterSheetState extends State<_SortFilterSheet> {
             const SizedBox(height: 20),
             StaggeredEntrance(
               index: 4,
-              child: SizedBox(
-                width: double.infinity,
+              child: Align(
                 child: ElevatedButton(
                   onPressed: () =>
                       Navigator.of(context)

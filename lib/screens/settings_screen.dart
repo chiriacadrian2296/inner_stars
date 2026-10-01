@@ -909,8 +909,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       // regular user goes looking for on purpose.
                       StaggeredEntrance(
                         index: 11,
-                        child: SizedBox(
-                          width: double.infinity,
+                        child: Align(
                           child: TextButton.icon(
                             onPressed: () => _push(const OnboardingScreen()),
                             style: _debugButtonStyle(colors, colors.muted),

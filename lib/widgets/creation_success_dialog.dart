@@ -95,43 +95,38 @@ class CreationSuccessDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 22),
-            SizedBox(
-              width: double.infinity,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: StaggeredEntrance(
-                      index: 2,
-                      axis: Axis.horizontal,
-                      child: _CreationSuccessAction(
-                        icon: Icons.navigation,
-                        label: strings.takeMeThereAction,
-                        color: colors.gold,
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          onTakeMeThere();
-                        },
-                      ),
-                    ),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                StaggeredEntrance(
+                  index: 2,
+                  axis: Axis.horizontal,
+                  child: _CreationSuccessAction(
+                    icon: Icons.navigation,
+                    label: strings.takeMeThereAction,
+                    color: colors.gold,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      onTakeMeThere();
+                    },
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: StaggeredEntrance(
-                      index: 3,
-                      axis: Axis.horizontal,
-                      child: _CreationSuccessAction(
-                        icon: Icons.share_outlined,
-                        label: strings.starQuickLookShareAction,
-                        color: colors.muted,
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          onShare();
-                        },
-                      ),
-                    ),
+                ),
+                StaggeredEntrance(
+                  index: 3,
+                  axis: Axis.horizontal,
+                  child: _CreationSuccessAction(
+                    icon: Icons.share_outlined,
+                    label: strings.starQuickLookShareAction,
+                    color: colors.muted,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      onShare();
+                    },
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ],
         ),
@@ -169,7 +164,7 @@ class _CreationSuccessAction extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(kRadiusField),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

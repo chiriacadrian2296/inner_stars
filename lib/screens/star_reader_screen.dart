@@ -1858,8 +1858,7 @@ class _MarkAchievedSheetState extends State<MarkAchievedSheet> {
             const SizedBox(height: 16),
             StaggeredEntrance(
               index: 3,
-              child: SizedBox(
-                width: double.infinity,
+              child: Align(
                 child: ElevatedButton(
                   onPressed: () => Navigator.of(context).pop(
                     MarkAchievedResult(

@@ -1103,8 +1103,7 @@ class _DayDetailSheetState extends State<_DayDetailSheet> {
             const SizedBox(height: 12),
             StaggeredEntrance(
               index: 2,
-              child: SizedBox(
-                width: double.infinity,
+              child: Align(
                 child: OutlinedButton.icon(
                   onPressed: widget.onAddForDay,
                   icon: const Icon(Icons.add),

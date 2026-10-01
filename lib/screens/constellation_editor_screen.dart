@@ -1133,7 +1133,6 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                                   icon: Icons.undo,
                                   label: strings.undoAction,
                                   onTap: _undoStack.isEmpty ? null : _undo,
-                                  compact: true,
                                 ),
                               ),
                             ),
@@ -1146,7 +1145,6 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                                   icon: Icons.redo,
                                   label: strings.redoAction,
                                   onTap: _redoStack.isEmpty ? null : _redo,
-                                  compact: true,
                                 ),
                               ),
                             ),
@@ -1162,7 +1160,6 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                                       ? null
                                       : _deleteArmedPoint,
                                   danger: true,
-                                  compact: true,
                                 ),
                               ),
                             ),

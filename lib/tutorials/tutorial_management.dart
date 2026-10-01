@@ -66,9 +66,8 @@ class _TutorialManagementDialog extends StatelessWidget {
     // sky-navigation right now regardless of the switch above".
     unawaited(tour.start('sky-navigation', force: true));
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(strings.replayToursResult)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(strings.replayToursResult)));
     }
   }
 
@@ -123,8 +122,7 @@ class _TutorialManagementDialog extends StatelessWidget {
               const SizedBox(height: 16),
               StaggeredEntrance(
                 index: 2,
-                child: SizedBox(
-                  width: double.infinity,
+                child: Align(
                   child: TextButton.icon(
                     onPressed: () => _replayAllTours(context),
                     icon: Icon(Icons.refresh, size: 18, color: colors.gold),

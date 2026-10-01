@@ -145,8 +145,7 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
               description: strings.searchTourApplyBody,
               child: StaggeredEntrance(
                 index: 2 + (LifeArea.values.length + 1) ~/ 2 + 1,
-                child: SizedBox(
-                  width: double.infinity,
+                child: Align(
                   child: ElevatedButton(
                     onPressed: () => Navigator.of(context).pop(_areas),
                     child: Text(strings.applyFilterAction),

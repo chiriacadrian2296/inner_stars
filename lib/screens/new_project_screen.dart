@@ -1691,8 +1691,7 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
                       ),
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
+              Align(
                 child: StaggeredEntrance(
                   index: 4,
                   child: ElevatedButton(
