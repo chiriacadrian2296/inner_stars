@@ -1,9 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../l10n/strings_scope.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_typography.dart';
 import '../utils/app_modals.dart';
 import 'app_choice_chip.dart';
 import 'app_toggle_chip.dart';
@@ -13,15 +13,15 @@ import 'star_glyph.dart';
 /// Opens the star-kind filter used by Sky's Stars view — a multi-select
 /// chip grid, one chip per [kListableStarKinds] entry, each in its own
 /// family's color so the filter reads the same way the sky does. Tapping a
-/// chip *adds* it to the filter; none checked (the default) means no
-/// restriction, i.e. every kind. Sibling to [showAreaFilterSheet] (split
+/// chip *adds* it to the filter; every kind starts checked, matching the
+/// unfiltered result set. Sibling to [showAreaFilterSheet] (split
 /// into its own button/sheet rather than a second section bolted onto that
 /// one, so each filter stands for exactly one thing) — same shape, same
 /// apply-or-keep contract, just for kinds instead of areas.
 ///
 /// Returns the new selection, or null if dismissed without tapping Apply
 /// (caller should keep its previous filter in that case). An empty result
-/// is valid and meaningful — see [showAreaFilterSheet]'s own doc for why.
+/// is valid and means that no kind matches.
 Future<Set<StarKind>?> showKindFilterSheet(
   BuildContext context, {
   required Set<StarKind> selectedKinds,
@@ -44,8 +44,10 @@ class _KindFilterSheet extends StatefulWidget {
 
 class _KindFilterSheetState extends State<_KindFilterSheet> {
   late Set<StarKind> _kinds = {...widget.initialKinds};
+  late final Set<StarKind> _initialKinds = {...widget.initialKinds};
 
   bool get _allKindsSelected => _kinds.length == kListableStarKinds.length;
+  bool get _hasChanges => !setEquals(_kinds, _initialKinds);
 
   void _toggleAllKinds() {
     setState(() => _kinds = _allKindsSelected ? {} : {...kListableStarKinds});
@@ -56,6 +58,8 @@ class _KindFilterSheetState extends State<_KindFilterSheet> {
       if (!_kinds.remove(kind)) _kinds.add(kind);
     });
   }
+
+  void _clear() => setState(() => _kinds = {...kListableStarKinds});
 
   @override
   Widget build(BuildContext context) {
@@ -70,21 +74,9 @@ class _KindFilterSheetState extends State<_KindFilterSheet> {
           children: [
             StaggeredEntrance(
               index: 0,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _SectionTitle(strings.filterKindSectionTitle),
-                  ),
-                  if (_kinds.isNotEmpty)
-                    StaggeredEntrance(
-                      index: 0,
-                      axis: Axis.horizontal,
-                      child: TextButton(
-                        onPressed: () => setState(() => _kinds = {}),
-                        child: Text(strings.clearFilterAction),
-                      ),
-                    ),
-                ],
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: AppSheetTitle(strings.filterKindSectionTitle),
               ),
             ),
             const SizedBox(height: 10),
@@ -138,34 +130,27 @@ class _KindFilterSheetState extends State<_KindFilterSheet> {
             const SizedBox(height: 16),
             StaggeredEntrance(
               index: 2 + (kListableStarKinds.length + 1) ~/ 2 + 1,
-              child: Align(
-                child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(_kinds),
-                  child: Text(strings.applyFilterAction),
-                ),
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 12,
+                runSpacing: 8,
+                children: [
+                  TextButton(
+                    onPressed: _allKindsSelected ? null : _clear,
+                    child: Text(strings.clearFilterAction),
+                  ),
+                  ElevatedButton(
+                    onPressed: _hasChanges
+                        ? () => Navigator.of(context).pop(_kinds)
+                        : null,
+                    child: Text(strings.applyFilterAction),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-/// One toggleable chip in the kind grid — icon (tinted with that kind's own
-/// family color), label, and a trailing check that fills in once selected.
-
-/// A simple, low-key header above the chip grid.
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.title);
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(title, style: context.typography.compactSectionLabel),
     );
   }
 }

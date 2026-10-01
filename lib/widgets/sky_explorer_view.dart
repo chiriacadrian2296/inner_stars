@@ -201,16 +201,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   bool _autoSwitchedModeForTour = false;
   final _queryController = TextEditingController();
   String _query = '';
-  // Empty means unfiltered (every area/kind shown) rather than "show
-  // nothing" — opening either filter sheet with nothing pre-checked is the
-  // point: picking a filter is choosing what to *add*, not what to remove
-  // from an already-full selection. See [_filteredAreaProjects] and
-  // [_filteredEntries] for the "empty ⟺ no restriction" read side, and
-  // [_isAreaFilterNarrowed]/[_isKindFilterNarrowed] for why an explicit full
-  // selection (still reachable via each sheet's own "All areas"/"All kinds"
-  // toggle) counts as just as unfiltered as empty does.
-  Set<StarKind> _kindFilter = {};
-  Set<LifeArea> _areaFilter = {};
+  // Filters model exactly what their sheets show: everything starts on,
+  // and an empty set really means that nothing matches.
+  Set<StarKind> _kindFilter = {...kListableStarKinds};
+  Set<LifeArea> _areaFilter = {...LifeArea.values};
   DateTimeRange? _dateRangeFilter;
 
   /// Which chip (if any) produced [_dateRangeFilter] — kept alongside it
@@ -239,7 +233,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
 
   List<Project> get _filteredAreaProjects => widget.projectRepository
       .getAll()
-      .where((p) => _areaFilter.isEmpty || _areaFilter.contains(p.area))
+      .where((p) => _areaFilter.contains(p.area))
       .toList();
 
   /// The 8 fixed areas, narrowed by [_query] against each one's own
@@ -355,7 +349,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     final query = _query.trim().toLowerCase();
     final range = _dateRangeFilter;
     final entries = _allEntries.where((e) {
-      if (_kindFilter.isNotEmpty && !_kindFilter.contains(e.kind)) {
+      if (!_kindFilter.contains(e.kind)) {
         return false;
       }
       if (range != null && !_isWithinRange(e.sortKey, range)) return false;
@@ -1074,15 +1068,13 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   }
 
   /// Whether [_areaFilter] has actually narrowed anything from "everything".
-  /// Only a *partial* selection counts — empty (the default) and the full
-  /// set (still reachable via the sheet's own "All areas" toggle) both mean
-  /// "no restriction", so neither one should light the button up.
+  /// Every area starts selected; any smaller set, including none, is active.
   bool get _isAreaFilterNarrowed =>
-      _areaFilter.isNotEmpty && _areaFilter.length != LifeArea.values.length;
+      _areaFilter.length != LifeArea.values.length;
 
   /// Same idea as [_isAreaFilterNarrowed], for [_kindFilter].
   bool get _isKindFilterNarrowed =>
-      _kindFilter.isNotEmpty && _kindFilter.length != kListableStarKinds.length;
+      _kindFilter.length != kListableStarKinds.length;
 
   /// Whether any of the filters that actually apply to [_mode] right now is
   /// narrowed/non-default — lights up the mobile "Filtri" trigger button

@@ -83,6 +83,11 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
   /// last set, which would make a stored offset ambiguous anyway.
   int _periodOffset = 0;
 
+  bool get _hasChanges =>
+      _preset != widget.initialPreset ||
+      _range?.start != widget.initialRange?.start ||
+      _range?.end != widget.initialRange?.end;
+
   DateTime get _today {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day);
@@ -211,7 +216,6 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     final strings = context.strings;
 
     return SafeArea(
@@ -239,29 +243,7 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
               children: [
                 StaggeredEntrance(
                   index: 0,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          strings.dateRangeFilterSectionTitle,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: colors.muted,
-                          ),
-                        ),
-                      ),
-                      if (_range != null)
-                        StaggeredEntrance(
-                          index: 0,
-                          axis: Axis.horizontal,
-                          child: TextButton(
-                            onPressed: _clear,
-                            child: Text(strings.clearFilterAction),
-                          ),
-                        ),
-                    ],
-                  ),
+                  child: AppSheetTitle(strings.dateRangeFilterSectionTitle),
                 ),
                 const SizedBox(height: 10),
                 // The duration on one side (which chip is lit is also what
@@ -344,13 +326,24 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
                 const SizedBox(height: 20),
                 StaggeredEntrance(
                   index: 7,
-                  child: Align(
-                    child: ElevatedButton(
-                      onPressed: () =>
-                          Navigator.of(context)
-                              .pop((range: _range, preset: _preset)),
-                      child: Text(strings.applyFilterAction),
-                    ),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: [
+                      TextButton(
+                        onPressed: _range == null ? null : _clear,
+                        child: Text(strings.clearFilterAction),
+                      ),
+                      ElevatedButton(
+                        onPressed: _hasChanges
+                            ? () =>
+                                  Navigator.of(context)
+                                      .pop((range: _range, preset: _preset))
+                            : null,
+                        child: Text(strings.applyFilterAction),
+                      ),
+                    ],
                   ),
                 ),
               ],

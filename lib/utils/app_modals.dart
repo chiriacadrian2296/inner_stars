@@ -6,6 +6,26 @@ import '../theme/app_motion.dart';
 
 enum AppConfirmationTone { standard, destructive }
 
+/// Canonical heading for bottom sheets: same scale as dialog titles, with
+/// gold distinguishing a sheet from a blocking popup.
+class AppSheetTitle extends StatelessWidget {
+  const AppSheetTitle(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        color: context.colors.gold,
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+      ),
+    );
+  }
+}
+
 /// One confirmation contract for every entry point that performs the same
 /// action. Labels keep their localized casing; color communicates function:
 /// cancel is neutral, while a destructive confirmation is always red.

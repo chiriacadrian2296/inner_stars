@@ -56,6 +56,8 @@ class _SortFilterSheet extends StatefulWidget {
 class _SortFilterSheetState extends State<_SortFilterSheet> {
   late SortField _field = widget.initialField;
   late SortDirection _direction = widget.initialDirection;
+  bool get _hasChanges =>
+      _field != widget.initialField || _direction != widget.initialDirection;
 
   void _toggleDirection() {
     setState(() {
@@ -67,7 +69,6 @@ class _SortFilterSheetState extends State<_SortFilterSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     final strings = context.strings;
 
     return SafeArea(
@@ -79,14 +80,7 @@ class _SortFilterSheetState extends State<_SortFilterSheet> {
           children: [
             StaggeredEntrance(
               index: 0,
-              child: Text(
-                strings.sortSheetTitle,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: colors.muted,
-                ),
-              ),
+              child: AppSheetTitle(strings.sortSheetTitle),
             ),
             const SizedBox(height: 10),
             // The field on one side, a single icon button flipping the
@@ -152,9 +146,11 @@ class _SortFilterSheetState extends State<_SortFilterSheet> {
               index: 4,
               child: Align(
                 child: ElevatedButton(
-                  onPressed: () =>
-                      Navigator.of(context)
-                          .pop((field: _field, direction: _direction)),
+                  onPressed: _hasChanges
+                      ? () =>
+                            Navigator.of(context)
+                                .pop((field: _field, direction: _direction))
+                      : null,
                   child: Text(strings.applyFilterAction),
                 ),
               ),

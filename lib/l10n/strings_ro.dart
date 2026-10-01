@@ -404,7 +404,7 @@ class StringsRo implements AppStrings {
   @override
   String get filterKindSectionTitle => 'Tipul stelei';
   @override
-  String get allKindsLabel => 'Toate tipurile';
+  String get allKindsLabel => 'Toate';
   @override
   String get kindFilterDefaultLabel => 'Tipuri de stele';
   @override
@@ -1594,7 +1594,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get chooseSupernovasToInclude =>
       'Alege supernovele pe care vrei să le incluzi';
   @override
-  String get allAreasLabel => 'Toate supernovele';
+  String get allAreasLabel => 'Toate';
   @override
   String get admireAllAreasLabel => 'Toate';
   @override

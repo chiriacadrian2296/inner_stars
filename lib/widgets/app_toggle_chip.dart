@@ -67,7 +67,8 @@ class AppToggleChip extends StatelessWidget {
                       label,
                       style: TextStyle(
                         fontSize: 14,
-                        color: labelColor ?? colors.text,
+                        color:
+                            labelColor ?? (value ? colors.text : colors.muted),
                         fontWeight: value ? FontWeight.w600 : FontWeight.w400,
                       ),
                     ),

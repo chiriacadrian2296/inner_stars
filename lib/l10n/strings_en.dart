@@ -401,7 +401,7 @@ class StringsEn implements AppStrings {
   @override
   String get filterKindSectionTitle => 'Star kind';
   @override
-  String get allKindsLabel => 'All kinds';
+  String get allKindsLabel => 'All';
   @override
   String get kindFilterDefaultLabel => 'Star kinds';
   @override
@@ -1575,7 +1575,7 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get chooseSupernovasToInclude => 'Choose which supernovas to include';
   @override
-  String get allAreasLabel => 'All supernovas';
+  String get allAreasLabel => 'All';
   @override
   String get admireAllAreasLabel => 'All';
   @override

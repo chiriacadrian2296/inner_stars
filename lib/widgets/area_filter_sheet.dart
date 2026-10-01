@@ -1,9 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hint_kit/hint_kit.dart';
 
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
-import '../theme/app_typography.dart';
 import '../tutorials/tour_step_card.dart';
 import '../utils/app_modals.dart';
 import 'app_choice_chip.dart';
@@ -12,8 +12,8 @@ import 'staggered_entrance.dart';
 
 /// Opens the area filter used by Sky's Constellations/Stars views — a
 /// multi-select chip grid, one chip per [LifeArea]. Tapping a chip *adds* it
-/// to the filter; none checked (the default) means no restriction, i.e.
-/// every area, restyled to the app's normal night/gold palette instead of
+/// to the filter; every area starts checked, matching the unfiltered result
+/// set, restyled to the app's normal night/gold palette instead of
 /// [AdmireStarsScreen]'s Nightlight gradient (same interaction as that
 /// screen's own area picker). Split out from what used to also carry a
 /// star-kind section — that's [showKindFilterSheet] now, its own separate
@@ -21,9 +21,7 @@ import 'staggered_entrance.dart';
 ///
 /// Returns the new selection, or null if dismissed without tapping Apply
 /// (caller should keep its previous filter in that case). An empty result
-/// is a valid, meaningful answer — it's [SkyExplorerView]'s own default
-/// (see `_areaFilter`'s doc there) — this sheet has no opinion of its own on
-/// what "nothing checked" means, it just reports back whatever's checked.
+/// is a valid answer and means that no area matches.
 Future<Set<LifeArea>?> showAreaFilterSheet(
   BuildContext context, {
   required Set<LifeArea> selectedAreas,
@@ -46,8 +44,10 @@ class _AreaFilterSheet extends StatefulWidget {
 
 class _AreaFilterSheetState extends State<_AreaFilterSheet> {
   late Set<LifeArea> _areas = {...widget.initialAreas};
+  late final Set<LifeArea> _initialAreas = {...widget.initialAreas};
 
   bool get _allAreasSelected => _areas.length == LifeArea.values.length;
+  bool get _hasChanges => !setEquals(_areas, _initialAreas);
 
   void _toggleAllAreas() {
     setState(() => _areas = _allAreasSelected ? {} : {...LifeArea.values});
@@ -58,6 +58,8 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
       if (!_areas.remove(area)) _areas.add(area);
     });
   }
+
+  void _clear() => setState(() => _areas = {...LifeArea.values});
 
   @override
   Widget build(BuildContext context) {
@@ -71,19 +73,9 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
           children: [
             StaggeredEntrance(
               index: 0,
-              child: Row(
-                children: [
-                  Expanded(child: _SectionTitle(strings.skyModeSupernovas)),
-                  if (_areas.isNotEmpty)
-                    StaggeredEntrance(
-                      index: 0,
-                      axis: Axis.horizontal,
-                      child: TextButton(
-                        onPressed: () => setState(() => _areas = {}),
-                        child: Text(strings.clearFilterAction),
-                      ),
-                    ),
-                ],
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: AppSheetTitle(strings.skyModeSupernovas),
               ),
             ),
             const SizedBox(height: 10),
@@ -145,34 +137,28 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
               description: strings.searchTourApplyBody,
               child: StaggeredEntrance(
                 index: 2 + (LifeArea.values.length + 1) ~/ 2 + 1,
-                child: Align(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(_areas),
-                    child: Text(strings.applyFilterAction),
-                  ),
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    TextButton(
+                      onPressed: _allAreasSelected ? null : _clear,
+                      child: Text(strings.clearFilterAction),
+                    ),
+                    ElevatedButton(
+                      onPressed: _hasChanges
+                          ? () => Navigator.of(context).pop(_areas)
+                          : null,
+                      child: Text(strings.applyFilterAction),
+                    ),
+                  ],
                 ),
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-/// One toggleable chip in the area grid — icon, label, and a trailing check
-/// that fills in once selected.
-/// A simple, low-key header above the chip grid.
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.title);
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(title, style: context.typography.compactSectionLabel),
     );
   }
 }

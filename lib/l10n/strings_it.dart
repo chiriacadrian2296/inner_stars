@@ -404,7 +404,7 @@ class StringsIt implements AppStrings {
   @override
   String get filterKindSectionTitle => 'Tipo di stella';
   @override
-  String get allKindsLabel => 'Tutti i tipi';
+  String get allKindsLabel => 'Tutto';
   @override
   String get kindFilterDefaultLabel => 'Tipi stella';
   @override
@@ -1592,7 +1592,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get chooseSupernovasToInclude => 'Scegli le supernove da includere';
   @override
-  String get allAreasLabel => 'Tutte le supernove';
+  String get allAreasLabel => 'Tutto';
   @override
   String get admireAllAreasLabel => 'Tutte';
   @override
