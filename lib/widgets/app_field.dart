@@ -148,6 +148,7 @@ class AppTextField extends StatefulWidget {
     this.textInputAction,
     this.onChanged,
     this.prefixIcon,
+    this.suffixIcon,
     this.enabled = true,
     this.readOnly = false,
     this.errorText,
@@ -161,6 +162,7 @@ class AppTextField extends StatefulWidget {
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onChanged;
   final Widget? prefixIcon;
+  final Widget? suffixIcon;
   final bool enabled;
   final bool readOnly;
   final String? errorText;
@@ -217,11 +219,13 @@ class _AppTextFieldState extends State<AppTextField> {
             maxLines: widget.maxLines,
             textInputAction: widget.textInputAction,
             onChanged: widget.onChanged,
+            onTapOutside: (_) => _focusNode.unfocus(),
             style: TextStyle(color: colors.text, fontSize: 15),
             decoration: InputDecoration(
               hintText: widget.hintText,
               errorText: widget.errorText,
               prefixIcon: widget.prefixIcon,
+              suffixIcon: widget.suffixIcon,
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(kRadiusField),
                 borderSide: BorderSide(

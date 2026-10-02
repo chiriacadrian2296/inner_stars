@@ -433,6 +433,8 @@ class StringsIt implements AppStrings {
   @override
   String get clearFilterAction => 'Reset';
   @override
+  String get clearSearchTooltip => 'Cancella ricerca';
+  @override
   String get sortAction => 'Ordina risultati';
   @override
   String get sortButtonDefaultLabel => 'Ordina';
@@ -2028,6 +2030,19 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get onboardingGetStartedAction => 'Inizia';
   @override
   String get onboardingSkipTooltip => 'Salta';
+  @override
+  String get dateInputInvalidValues => 'Valori non validi';
+  @override
+  String get dateInputInvalidDay => 'Controlla il giorno evidenziato.';
+  @override
+  String get dateInputInvalidMonth =>
+      'Il mese deve essere compreso tra 1 e 12.';
+  @override
+  String dateInputInvalidYear(int firstYear, int lastYear) =>
+      'L’anno deve essere compreso tra $firstYear e $lastYear.';
+  @override
+  String get dateInputOutsideRange =>
+      'Questa data non rientra nell’intervallo consentito.';
 }
 
 const _fullMonths = [

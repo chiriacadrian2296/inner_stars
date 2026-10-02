@@ -399,11 +399,11 @@ class StringsEn implements AppStrings {
   @override
   String get filterKindAction => 'Filter kinds';
   @override
-  String get filterKindSectionTitle => 'Star kind';
+  String get filterKindSectionTitle => 'Star Kinds';
   @override
   String get allKindsLabel => 'All';
   @override
-  String get kindFilterDefaultLabel => 'Star kinds';
+  String get kindFilterDefaultLabel => 'Star Kinds';
   @override
   String activeKindsCount(int count) =>
       count == 1 ? '1 star kind' : '$count star kinds';
@@ -412,7 +412,7 @@ class StringsEn implements AppStrings {
   @override
   String get filterDateRangeAction => 'Filter by date';
   @override
-  String get dateRangeFilterSectionTitle => 'Date range';
+  String get dateRangeFilterSectionTitle => 'Date Range';
   @override
   String get dateRangeUnitWeek => 'Week';
   @override
@@ -429,6 +429,8 @@ class StringsEn implements AppStrings {
   String get dateRangeToLabel => 'To';
   @override
   String get clearFilterAction => 'Reset';
+  @override
+  String get clearSearchTooltip => 'Clear search';
   @override
   String get sortAction => 'Sort results';
   @override
@@ -1999,6 +2001,17 @@ My contribution meets a real need and is something I can sustain.
   String get onboardingGetStartedAction => 'Get started';
   @override
   String get onboardingSkipTooltip => 'Skip';
+  @override
+  String get dateInputInvalidValues => 'Invalid values';
+  @override
+  String get dateInputInvalidDay => 'Check the highlighted day.';
+  @override
+  String get dateInputInvalidMonth => 'The month must be between 1 and 12.';
+  @override
+  String dateInputInvalidYear(int firstYear, int lastYear) =>
+      'The year must be between $firstYear and $lastYear.';
+  @override
+  String get dateInputOutsideRange => 'This date is outside the allowed range.';
 }
 
 const _fullMonths = [

@@ -24,6 +24,7 @@ class SkySearchScreen extends StatefulWidget {
     required this.starsShapeRepository,
     required this.areaVisionRepository,
     required this.reflectionAnswerRepository,
+    required this.session,
   });
 
   final ProjectRepository projectRepository;
@@ -33,6 +34,7 @@ class SkySearchScreen extends StatefulWidget {
   final StarsShapeRepository starsShapeRepository;
   final AreaVisionRepository areaVisionRepository;
   final ReflectionAnswerRepository reflectionAnswerRepository;
+  final SkyExplorerSession session;
 
   @override
   State<SkySearchScreen> createState() => _SkySearchScreenState();
@@ -43,17 +45,28 @@ class _SkySearchScreenState extends State<SkySearchScreen> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Scaffold(
+      // Sky's search field is fixed near the top. Resizing this data-heavy
+      // page for every intermediate IME inset forces the whole result tree
+      // through layout while the keyboard animates. Let the keyboard overlay
+      // the lower results instead; the focused field remains visible.
+      resizeToAvoidBottomInset: false,
       backgroundColor: colors.night,
       body: SafeArea(
-        child: SkyExplorerView(
-          projectRepository: widget.projectRepository,
-          starRepository: widget.starRepository,
-          habitRepository: widget.habitRepository,
-          habitCompletionRepository: widget.habitCompletionRepository,
-          starsShapeRepository: widget.starsShapeRepository,
-          areaVisionRepository: widget.areaVisionRepository,
-          reflectionAnswerRepository: widget.reflectionAnswerRepository,
-          onNavigateTo: (target) => Navigator.of(context).pop(target),
+        maintainBottomViewPadding: true,
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: SkyExplorerView(
+            projectRepository: widget.projectRepository,
+            starRepository: widget.starRepository,
+            habitRepository: widget.habitRepository,
+            habitCompletionRepository: widget.habitCompletionRepository,
+            starsShapeRepository: widget.starsShapeRepository,
+            areaVisionRepository: widget.areaVisionRepository,
+            reflectionAnswerRepository: widget.reflectionAnswerRepository,
+            session: widget.session,
+            onNavigateTo: (target) => Navigator.of(context).pop(target),
+          ),
         ),
       ),
     );

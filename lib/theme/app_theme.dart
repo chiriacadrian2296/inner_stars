@@ -12,26 +12,22 @@ class _SheetOutline extends ShapeBorder {
   final BorderSide side;
 
   @override
-  EdgeInsetsGeometry get dimensions => EdgeInsets.fromLTRB(
-    side.width,
-    side.width,
-    side.width,
-    0,
-  );
+  EdgeInsetsGeometry get dimensions =>
+      EdgeInsets.fromLTRB(side.width, side.width, side.width, 0);
 
   @override
   Path getInnerPath(Rect rect, {TextDirection? textDirection}) =>
       getOuterPath(rect.deflate(side.width), textDirection: textDirection);
 
   @override
-  Path getOuterPath(Rect rect, {TextDirection? textDirection}) => Path()
-    ..addRRect(
-      RRect.fromRectAndCorners(
-        rect,
-        topLeft: const Radius.circular(kRadiusCard),
-        topRight: const Radius.circular(kRadiusCard),
-      ),
-    );
+  Path getOuterPath(Rect rect, {TextDirection? textDirection}) =>
+      Path()..addRRect(
+        RRect.fromRectAndCorners(
+          rect,
+          topLeft: const Radius.circular(kRadiusCard),
+          topRight: const Radius.circular(kRadiusCard),
+        ),
+      );
 
   @override
   void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {
@@ -82,6 +78,25 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
       borderSide: BorderSide(color: color, width: width),
     );
   }
+
+  final pickerCancelButtonStyle = TextButton.styleFrom(
+    foregroundColor: palette.gold,
+    minimumSize: const Size(0, 48),
+    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+    shape: const StadiumBorder(),
+  );
+  final pickerConfirmButtonStyle = TextButton.styleFrom(
+    backgroundColor: palette.gold,
+    foregroundColor: palette.onGold,
+    minimumSize: const Size(0, 48),
+    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+    textStyle: const TextStyle(
+      fontWeight: FontWeight.w700,
+      fontSize: 12,
+      letterSpacing: 1.8,
+    ),
+    shape: const StadiumBorder(),
+  );
 
   return ThemeData(
     useMaterial3: true,
@@ -285,11 +300,23 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
     // themed explicitly here so any time/date picker anywhere in the app
     // stays on-brand, not just the one screen that first surfaced it.
     timePickerTheme: TimePickerThemeData(
-      backgroundColor: palette.nightPanel,
+      // The dialog is the deepest surface; its internal controls sit one
+      // level above it, matching fields/cards elsewhere in the app.
+      backgroundColor: palette.night,
+      padding: const EdgeInsets.all(20),
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: palette.nightBorder),
+        borderRadius: BorderRadius.circular(kRadiusCard),
+      ),
+      cancelButtonStyle: pickerCancelButtonStyle,
+      confirmButtonStyle: pickerConfirmButtonStyle,
+      helpTextStyle: TextStyle(
+        color: palette.gold,
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+      ),
       hourMinuteColor: WidgetStateColor.resolveWith(
-        (states) => states.contains(WidgetState.selected)
-            ? palette.gold.withValues(alpha: 0.2)
-            : palette.night,
+        (states) => palette.nightPanel,
       ),
       hourMinuteTextColor: WidgetStateColor.resolveWith(
         (states) =>
@@ -307,7 +334,7 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
       ),
       dayPeriodBorderSide: BorderSide(color: palette.nightBorder),
       dialHandColor: palette.gold,
-      dialBackgroundColor: palette.night,
+      dialBackgroundColor: palette.nightPanel,
       dialTextColor: WidgetStateColor.resolveWith(
         (states) => states.contains(WidgetState.selected)
             ? palette.onGold
@@ -319,9 +346,21 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
     // when backdating a star, and for the search date-range filter) on-brand
     // instead of Material 3's default teal.
     datePickerTheme: DatePickerThemeData(
-      backgroundColor: palette.nightPanel,
-      headerBackgroundColor: palette.gold,
-      headerForegroundColor: palette.onGold,
+      backgroundColor: palette.night,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: palette.nightBorder),
+        borderRadius: BorderRadius.circular(kRadiusCard),
+      ),
+      headerBackgroundColor: palette.night,
+      headerForegroundColor: palette.gold,
+      headerHelpStyle: TextStyle(
+        color: palette.gold,
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+      ),
+      cancelButtonStyle: pickerCancelButtonStyle,
+      confirmButtonStyle: pickerConfirmButtonStyle,
       // The connecting band `showDateRangePicker` paints behind an in-range
       // day (confirmed live: without this it defaults to
       // `colorScheme.secondaryContainer`, which `ColorScheme.dark()` leaves

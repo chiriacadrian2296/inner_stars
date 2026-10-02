@@ -154,13 +154,20 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
   Future<void> _openNewConstellation() async {
     final starsShapeRepository = await _starsShapes;
     if (!mounted) return;
-    await _open(
-      NewProjectScreen(
-        projectRepository: widget.projectRepository,
-        starsShapeRepository: starsShapeRepository,
-        presetArea: _area,
+    // Constellation creation always uses the app's canonical gold/navy
+    // editor. The area's other tools deliberately keep their Meta theme,
+    // so this route must not go through [_open], which wraps destinations
+    // in [buildLifeAreaTheme].
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => NewProjectScreen(
+          projectRepository: widget.projectRepository,
+          starsShapeRepository: starsShapeRepository,
+          presetArea: _area,
+        ),
       ),
     );
+    if (mounted) setState(() {});
   }
 
   @override

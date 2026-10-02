@@ -20,10 +20,13 @@ import '../theme/app_style.dart';
 import '../tutorials/tour_intro_target.dart';
 import '../tutorials/tour_step_card.dart';
 import '../utils/app_modals.dart';
+import '../utils/app_date_picker.dart';
+import '../utils/app_time_picker.dart';
 import '../utils/date_format.dart';
 import '../utils/icon_for_slug.dart';
 import '../utils/page_settled.dart';
 import '../widgets/app_field.dart';
+import '../widgets/area_picker.dart';
 import '../widgets/intensity_bolts.dart';
 import '../widgets/photo_picker.dart';
 import '../widgets/pill_action_button.dart';
@@ -584,7 +587,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final current = _date;
-    final picked = await showDatePicker(
+    final picked = await showAppDatePicker(
       context: context,
       initialDate: current == null || current.isAfter(today) ? today : current,
       firstDate: DateTime(2000),
@@ -605,7 +608,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
   Future<void> _pickTime() async {
     final now = DateTime.now();
     final current = _date;
-    final picked = await showTimePicker(
+    final picked = await showAppTimePicker(
       context: context,
       initialTime: TimeOfDay(
         hour: current?.hour ?? now.hour,
@@ -627,7 +630,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
 
   Future<void> _pickTargetDate() async {
     final now = DateTime.now();
-    final picked = await showDatePicker(
+    final picked = await showAppDatePicker(
       context: context,
       initialDate: _targetDate ?? now,
       firstDate: DateTime(2000),
@@ -638,7 +641,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
   }
 
   Future<void> _pickReminderTime() async {
-    final picked = await showTimePicker(
+    final picked = await showAppTimePicker(
       context: context,
       initialTime: TimeOfDay(hour: _reminderHour, minute: _reminderMinute),
     );
@@ -650,8 +653,8 @@ class _StarFormScreenState extends State<StarFormScreen> {
   }
 
   /// The supernova field's own picker — a plain [pickArea], no constellation
-  /// step (that's [_openProjectPicker]'s job, filtered by whatever this
-  /// picks). Changing to an area the current constellation doesn't belong
+  /// step (that's [_openProjectPicker]'s job). Changing to an area the
+  /// current constellation doesn't belong
   /// to clears it rather than leaving the two fields disagreeing about
   /// which supernova the star is actually under.
   Future<void> _openAreaPicker() async {
@@ -676,13 +679,12 @@ class _StarFormScreenState extends State<StarFormScreen> {
       area: _selectedArea,
     );
     if (picked != null && mounted) {
-      // A constellation picked without a supernova chosen first (the flat,
-      // every-area list — see [pickProject]) fills this field in from its
-      // own area automatically, rather than leaving it looking unanswered
-      // when it's really just implied by what was just picked.
+      // The constellation is authoritative for its area: choosing one from
+      // another area updates the supernova field as well, so the two fields
+      // can never disagree.
       setState(() {
         _selectedProject = picked;
-        _selectedArea ??= picked.area;
+        _selectedArea = picked.area;
       });
     }
   }

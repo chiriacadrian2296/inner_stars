@@ -495,6 +495,7 @@ abstract class AppStrings {
   String get dateRangeFromLabel;
   String get dateRangeToLabel;
   String get clearFilterAction;
+  String get clearSearchTooltip;
   String get sortAction;
   String get sortButtonDefaultLabel;
   String get sortSheetTitle;
@@ -1076,4 +1077,9 @@ abstract class AppStrings {
   String get onboardingNextAction;
   String get onboardingGetStartedAction;
   String get onboardingSkipTooltip;
+  String get dateInputInvalidValues;
+  String get dateInputInvalidDay;
+  String get dateInputInvalidMonth;
+  String dateInputInvalidYear(int firstYear, int lastYear);
+  String get dateInputOutsideRange;
 }

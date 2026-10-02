@@ -10,7 +10,11 @@ import 'constellation_editor_painter.dart';
 import 'star_glyph.dart';
 
 class SearchCardMenuController extends ChangeNotifier {
+  SearchCardMenuController({Object? initialOpenId}) : _openId = initialOpenId;
+
   Object? _openId;
+
+  Object? get openId => _openId;
 
   bool isOpen(Object id) => _openId == id;
 
@@ -54,6 +58,7 @@ class SearchResultCard extends StatelessWidget {
     required this.actions,
     required this.onTap,
     this.showBorder = true,
+    this.preserveMenuOnAction = false,
   });
 
   static const visualSize = 88.0;
@@ -69,6 +74,7 @@ class SearchResultCard extends StatelessWidget {
   final List<SearchCardAction> actions;
   final VoidCallback onTap;
   final bool showBorder;
+  final bool preserveMenuOnAction;
 
   @override
   Widget build(BuildContext context) {
@@ -106,7 +112,9 @@ class SearchResultCard extends StatelessWidget {
                       opacity: ease(progress),
                       child: _SearchQuickMenu(
                         actions: actions,
-                        onActionSelected: menuController.closeAll,
+                        onActionSelected: preserveMenuOnAction
+                            ? () {}
+                            : menuController.closeAll,
                         progress: progress,
                       ),
                     ),

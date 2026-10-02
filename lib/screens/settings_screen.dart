@@ -29,6 +29,7 @@ import '../theme/app_style.dart';
 import '../theme/app_typography.dart';
 import '../tutorials/tutorial_management.dart' show kAllTourNames;
 import '../utils/app_modals.dart';
+import '../utils/app_time_picker.dart';
 import '../widgets/apk_download_prompt.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
@@ -253,7 +254,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _pickReminderTime() async {
     final strings = context.strings;
-    final picked = await showTimePicker(
+    final picked = await showAppTimePicker(
       context: context,
       initialTime: TimeOfDay(
         hour: widget.settings.reminderHour,

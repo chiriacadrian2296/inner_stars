@@ -17,6 +17,7 @@ import '../tutorials/tour_step_card.dart';
 import '../utils/app_modals.dart';
 import '../utils/page_settled.dart';
 import '../widgets/app_field.dart';
+import '../widgets/area_picker.dart';
 import '../utils/icon_for_slug.dart';
 import '../widgets/constellation_editor_painter.dart';
 import '../widgets/pill_action_button.dart';
@@ -37,9 +38,9 @@ import 'constellation_editor_screen.dart';
 /// preset no longer fills the icon field in on its own; see
 /// [_selectPreset]'s own note.
 ///
-/// [presetArea] locks the area (e.g. opened from that area's project list);
-/// when omitted (e.g. opened inline while adding a win), the user picks an
-/// area here first.
+/// [presetArea] only pre-fills the area (e.g. when opened from an area's
+/// project list). The same visible, editable area field is always present,
+/// regardless of entry point or whether this is create or edit.
 class NewProjectScreen extends StatefulWidget {
   const NewProjectScreen({
     super.key,
@@ -461,41 +462,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   }
 
   Future<void> _openAreaPicker() async {
-    final strings = context.strings;
-    final picked = await _showSearchablePicker<LifeArea>(
-      context: context,
-      title: strings.areaLabel,
-      items: LifeArea.values,
-      matches: (area, query) =>
-          area.displayName(strings).toLowerCase().contains(query),
-      // Only 8, fixed areas — a search field would just be clutter.
-      showSearch: false,
-      initialSelection: _selectedArea,
-      bodyBuilder: (context, filtered, selected, onSelect) {
-        // 2 columns x 4 rows — all 8 areas visible at once, no scrolling
-        // needed or possible. Same square-tile idea as the icon grid,
-        // just with room for the area's name inside too.
-        return GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          childAspectRatio: 1.3,
-          children: [
-            for (final (i, area) in filtered.indexed)
-              StaggeredEntrance(
-                index: i + 1,
-                child: _AreaOption(
-                  area: area,
-                  selected: selected == area,
-                  onTap: () => onSelect(area),
-                ),
-              ),
-          ],
-        );
-      },
-    );
+    final picked = await pickArea(context);
     if (picked != null && mounted) {
       setState(() => _selectedArea = picked);
     }
@@ -650,62 +617,44 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                   title: strings.constellationTourIntroTitle,
                   description: strings.constellationTourIntroBody,
                 ),
-                if (widget.presetArea == null)
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: HintTarget(
-                          tour: 'constellation-form',
-                          order: 3,
-                          showArrow: true,
-                          contentBuilder: appTourStepCard,
-                          title: strings.constellationTourAreaTitle,
-                          description: strings.constellationTourAreaBody,
-                          child: StaggeredEntrance(
-                            index: 2,
-                            axis: Axis.horizontal,
-                            child: _buildAreaField(colors, strings),
-                          ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: HintTarget(
+                        tour: 'constellation-form',
+                        order: 3,
+                        showArrow: true,
+                        contentBuilder: appTourStepCard,
+                        title: strings.constellationTourAreaTitle,
+                        description: strings.constellationTourAreaBody,
+                        child: StaggeredEntrance(
+                          index: 2,
+                          axis: Axis.horizontal,
+                          child: _buildAreaField(colors, strings),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 1,
-                        // Same order either way — only one of this and the
-                        // branch below is ever mounted for a given
-                        // `presetArea`, same mutual-exclusion trick the
-                        // star-form tour uses for its date fields.
-                        child: HintTarget(
-                          tour: 'constellation-form',
-                          order: 4,
-                          showArrow: true,
-                          contentBuilder: appTourStepCard,
-                          title: strings.constellationTourIconFieldTitle,
-                          description: strings.constellationTourIconFieldBody,
-                          child: StaggeredEntrance(
-                            index: 3,
-                            axis: Axis.horizontal,
-                            child: _buildIconField(colors, strings),
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                else
-                  HintTarget(
-                    tour: 'constellation-form',
-                    order: 4,
-                    showArrow: true,
-                    contentBuilder: appTourStepCard,
-                    title: strings.constellationTourIconFieldTitle,
-                    description: strings.constellationTourIconFieldBody,
-                    child: StaggeredEntrance(
-                      index: 2,
-                      child: _buildIconField(colors, strings),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 1,
+                      child: HintTarget(
+                        tour: 'constellation-form',
+                        order: 4,
+                        showArrow: true,
+                        contentBuilder: appTourStepCard,
+                        title: strings.constellationTourIconFieldTitle,
+                        description: strings.constellationTourIconFieldBody,
+                        child: StaggeredEntrance(
+                          index: 3,
+                          axis: Axis.horizontal,
+                          child: _buildIconField(colors, strings),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 20),
                 HintTarget(
                   tour: 'constellation-form',
@@ -995,61 +944,6 @@ class _IconOption extends StatelessWidget {
           iconForSlug(slug),
           color: selected ? colors.gold : colors.muted,
           size: 20,
-        ),
-      ),
-    );
-  }
-}
-
-/// One square tile in the area picker's 2x4 grid — icon on top, name
-/// below, same selected/unselected treatment as [_IconOption].
-class _AreaOption extends StatelessWidget {
-  const _AreaOption({
-    required this.area,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final LifeArea area;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final strings = context.strings;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(kRadiusField),
-      child: Container(
-        decoration: selectableDecoration(colors, selected: selected),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // A chosen area is literally a supernova, so it's drawn as
-            // one: a white glyph inside the gold ring the decoration
-            // already provides, rather than a gold-on-gold icon.
-            Icon(
-              area.icon,
-              size: 34,
-              color: selected ? Colors.white : colors.muted,
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Text(
-                area.displayName(strings),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: selected ? colors.gold : colors.text,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -1605,10 +1499,7 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              StaggeredEntrance(
-                index: 0,
-                child: AppSheetTitle(widget.title),
-              ),
+              StaggeredEntrance(index: 0, child: AppSheetTitle(widget.title)),
               if (widget.showSearch) ...[
                 const SizedBox(height: 20),
                 StaggeredEntrance(
@@ -1629,30 +1520,35 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
               ],
               SizedBox(height: widget.showSearch ? 12 : 20),
               Expanded(
-                child: filtered.isEmpty
-                    ? StaggeredEntrance(
-                        index: 0,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 24),
-                          child: Center(
-                            child: Text(
-                              strings.noSearchResults,
-                              style: TextStyle(
-                                color: colors.muted,
-                                fontSize: 14,
+                // The results are the only scrolling region. Clip them at
+                // this boundary so cards never paint behind the fixed title,
+                // search field, or footer actions during scroll/animation.
+                child: ClipRect(
+                  child: filtered.isEmpty
+                      ? StaggeredEntrance(
+                          index: 0,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 24),
+                            child: Center(
+                              child: Text(
+                                strings.noSearchResults,
+                                style: TextStyle(
+                                  color: colors.muted,
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
                           ),
+                        )
+                      : SingleChildScrollView(
+                          child: widget.bodyBuilder(
+                            context,
+                            filtered,
+                            _selected,
+                            (item) => setState(() => _selected = item),
+                          ),
                         ),
-                      )
-                    : SingleChildScrollView(
-                        child: widget.bodyBuilder(
-                          context,
-                          filtered,
-                          _selected,
-                          (item) => setState(() => _selected = item),
-                        ),
-                      ),
+                ),
               ),
               const SizedBox(height: 24),
               Align(

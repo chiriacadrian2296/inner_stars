@@ -58,6 +58,22 @@ import 'star_glyph.dart';
 
 enum _SkyMode { supernovas, constellations, stars }
 
+/// In-memory navigation state for Sky. Owned by Cosmo so opening a result,
+/// flying to it, and later returning to Sky restores the exact working
+/// context instead of constructing a fresh browser every time.
+class SkyExplorerSession {
+  int modeIndex = 0;
+  String query = '';
+  Set<StarKind> kindFilter = {...kListableStarKinds};
+  Set<LifeArea> areaFilter = {...LifeArea.values};
+  DateTimeRange? dateRangeFilter;
+  DateRangePreset dateRangePreset = DateRangePreset.allTime;
+  SortField sortField = SortField.date;
+  SortDirection sortDirection = SortDirection.descending;
+  final scrollOffsets = <int, double>{};
+  Object? openCardMenuId;
+}
+
 /// One flat-list row — either a [Star] (lit, unlit or dead) or a [Habit]
 /// (a pulsar, or dead if it's been deleted) — wrapped with a shared
 /// [sortKey] so the two can be merged into one newest-first list without
@@ -134,6 +150,7 @@ class SkyExplorerView extends StatefulWidget {
     required this.starsShapeRepository,
     required this.areaVisionRepository,
     required this.reflectionAnswerRepository,
+    this.session,
     required this.onNavigateTo,
   });
 
@@ -144,6 +161,7 @@ class SkyExplorerView extends StatefulWidget {
   final StarsShapeRepository starsShapeRepository;
   final AreaVisionRepository areaVisionRepository;
   final ReflectionAnswerRepository reflectionAnswerRepository;
+  final SkyExplorerSession? session;
 
   /// See [SkyNavigationTarget] — called when a card's "take me there" button
   /// is tapped.
@@ -155,7 +173,7 @@ class SkyExplorerView extends StatefulWidget {
 
 class _SkyExplorerViewState extends State<SkyExplorerView>
     with SingleTickerProviderStateMixin {
-  _SkyMode _mode = _SkyMode.supernovas;
+  late _SkyMode _mode;
   bool _modeReverse = false;
   late final _modeAnimation = AnimationController(
     vsync: this,
@@ -171,6 +189,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       _mode = mode;
       _modeEpoch++;
     });
+    _saveSession();
     _modeAnimation.forward(from: 0);
   }
 
@@ -190,19 +209,21 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   /// [_syncModeToTour]), so the filter buttons that swap in place replay
   /// their entrance for that switch and not under a tour's spotlight.
   int _modeEpoch = 0;
-  final _cardMenuController = SearchCardMenuController();
+  late final SearchCardMenuController _cardMenuController;
+  late final List<ScrollController> _scrollControllers;
+  late final SkyExplorerSession _session;
 
   /// Whether [_syncModeToTour] has already forced Supernovas out once.
   ///
   /// Guards it from doing so a second time — see its own doc comment for
   /// why a single correction is all it should ever make.
   bool _autoSwitchedModeForTour = false;
-  final _queryController = TextEditingController();
-  String _query = '';
+  late final TextEditingController _queryController;
+  late String _query;
   // Filters model exactly what their sheets show: everything starts on,
   // and an empty set really means that nothing matches.
-  Set<StarKind> _kindFilter = {...kListableStarKinds};
-  Set<LifeArea> _areaFilter = {...LifeArea.values};
+  late Set<StarKind> _kindFilter;
+  late Set<LifeArea> _areaFilter;
   DateTimeRange? _dateRangeFilter;
 
   /// Which chip (if any) produced [_dateRangeFilter] — kept alongside it
@@ -212,14 +233,67 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   /// name, precisely so seeing it doesn't require opening the sheet.) See
   /// [DateRangePreset]'s own doc for why this can't just be recomputed from
   /// the range on demand.
-  DateRangePreset _dateRangePreset = DateRangePreset.allTime;
+  late DateRangePreset _dateRangePreset;
 
   /// Unlike the three filters above, sorting has no "off" state to default
   /// to empty — results are always in *some* order — so these two start at
   /// whatever this file's lists always used to be sorted by (newest first)
   /// rather than at a neutral placeholder.
-  SortField _sortField = SortField.date;
-  SortDirection _sortDirection = SortDirection.descending;
+  late SortField _sortField;
+  late SortDirection _sortDirection;
+  late List<Project> _projectsCache;
+  late List<Star> _starsCache;
+  late List<Habit> _habitsCache;
+  late Map<int, List<Star>> _starsByProjectCache;
+  late Map<int, Map<DateTime, int>> _completionCountsCache;
+  late Map<int, ConstellationShape> _shapesByIdCache;
+
+  void _refreshDataCache() {
+    _projectsCache = widget.projectRepository.getAll();
+    _starsCache = widget.starRepository.getAll();
+    _habitsCache = widget.habitRepository.getAll();
+    _shapesByIdCache = {
+      for (final shape in widget.starsShapeRepository.getAll())
+        shape.id: shape.shape,
+    };
+    _starsByProjectCache = <int, List<Star>>{};
+    for (final star in _starsCache) {
+      (_starsByProjectCache[star.projectId] ??= <Star>[]).add(star);
+    }
+    for (final stars in _starsByProjectCache.values) {
+      stars.sort((a, b) => a.slotSequence.compareTo(b.slotSequence));
+    }
+    final completions = widget.habitCompletionRepository.getAll();
+    _completionCountsCache = {
+      for (final habit in _habitsCache)
+        habit.id: habitCompletionCountsByDay(
+          completions.where((entry) => entry.habitId == habit.id).toList(),
+        ),
+    };
+  }
+
+  void _refreshAndRebuild() {
+    _refreshDataCache();
+    if (mounted) setState(() {});
+  }
+
+  void _saveSession() {
+    final session = _session;
+    session
+      ..modeIndex = _mode.index
+      ..query = _query
+      ..kindFilter = {..._kindFilter}
+      ..areaFilter = {..._areaFilter}
+      ..dateRangeFilter = _dateRangeFilter
+      ..dateRangePreset = _dateRangePreset
+      ..sortField = _sortField
+      ..sortDirection = _sortDirection
+      ..openCardMenuId = _cardMenuController.openId;
+    for (var i = 0; i < _scrollControllers.length; i++) {
+      final controller = _scrollControllers[i];
+      if (controller.hasClients) session.scrollOffsets[i] = controller.offset;
+    }
+  }
 
   /// Applies [_sortDirection] to a raw ascending-sense comparison — the one
   /// place that flip happens, so [_filteredProjects] and [_filteredEntries]
@@ -229,10 +303,8 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       ? ascendingCompare
       : -ascendingCompare;
 
-  List<Project> get _filteredAreaProjects => widget.projectRepository
-      .getAll()
-      .where((p) => _areaFilter.contains(p.area))
-      .toList();
+  List<Project> get _filteredAreaProjects =>
+      _projectsCache.where((p) => _areaFilter.contains(p.area)).toList();
 
   /// The 8 fixed areas, narrowed by [_query] against each one's own
   /// localized display name — the same free-text search Constellations and
@@ -253,12 +325,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   };
 
   List<Star> _starsForProject(int projectId) =>
-      widget.starRepository.getAllForProject(projectId);
+      _starsByProjectCache[projectId] ?? const <Star>[];
 
   Map<DateTime, int> _countsByDayFor(int habitId) {
-    return habitCompletionCountsByDay(
-      widget.habitCompletionRepository.getAllForHabit(habitId),
-    );
+    return _completionCountsCache[habitId] ?? const <DateTime, int>{};
   }
 
   /// What "sort by date" means for a project — the most recent of its own
@@ -324,11 +394,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   List<_SkyEntry> get _allEntries {
     final projectIds = _projectsById.keys.toSet();
     final entries = <_SkyEntry>[
-      for (final star in widget.starRepository.getAll())
+      for (final star in _starsCache)
         if (projectIds.contains(star.projectId)) _SkyEntry.fromStar(star),
-      for (final projectId in projectIds)
-        for (final habit in widget.habitRepository.getAllForProject(projectId))
-          _SkyEntry.fromHabit(habit),
+      for (final habit in _habitsCache)
+        if (projectIds.contains(habit.projectId)) _SkyEntry.fromHabit(habit),
     ];
     entries.sort((a, b) => b.sortKey.compareTo(a.sortKey));
     return entries;
@@ -372,8 +441,12 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
 
   @override
   void dispose() {
+    _saveSession();
     _modeAnimation.dispose();
     _queryController.dispose();
+    for (final controller in _scrollControllers) {
+      controller.dispose();
+    }
     _cardMenuController.dispose();
     super.dispose();
   }
@@ -381,6 +454,34 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   @override
   void initState() {
     super.initState();
+    final session = _session = widget.session ?? SkyExplorerSession();
+    final modeIndex = session.modeIndex < 0
+        ? 0
+        : session.modeIndex >= _SkyMode.values.length
+        ? _SkyMode.values.length - 1
+        : session.modeIndex;
+    _mode = _SkyMode.values[modeIndex];
+    _query = session.query;
+    _queryController = TextEditingController(text: _query);
+    _kindFilter = {...session.kindFilter};
+    _areaFilter = {...session.areaFilter};
+    _dateRangeFilter = session.dateRangeFilter;
+    _dateRangePreset = session.dateRangePreset;
+    _sortField = session.sortField;
+    _sortDirection = session.sortDirection;
+    _refreshDataCache();
+    _cardMenuController = SearchCardMenuController(
+      initialOpenId: session.openCardMenuId,
+    )..addListener(() => session.openCardMenuId = _cardMenuController.openId);
+    _scrollControllers = List.generate(_SkyMode.values.length, (index) {
+      final controller = ScrollController(
+        initialScrollOffset: session.scrollOffsets[index] ?? 0,
+      );
+      controller.addListener(
+        () => session.scrollOffsets[index] = controller.offset,
+      );
+      return controller;
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       whenPageSettled(context, () {
@@ -401,7 +502,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         ),
       ),
     );
-    setState(() {});
+    _refreshAndRebuild();
     if (result != null && mounted) {
       widget.onNavigateTo(SkyAreaTarget(result));
     }
@@ -420,7 +521,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         ),
       )
       .then((_) {
-        if (mounted) setState(() {});
+        _refreshAndRebuild();
       });
 
   Future<void> _openAreaMoodboard(LifeArea area) async {
@@ -435,7 +536,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           ),
         ),
       );
-      if (mounted) setState(() {});
+      _refreshAndRebuild();
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -450,17 +551,14 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => Theme(
-          data: buildLifeAreaTheme(),
-          child: NewProjectScreen(
-            projectRepository: widget.projectRepository,
-            starsShapeRepository: shapes,
-            presetArea: area,
-          ),
+        builder: (_) => NewProjectScreen(
+          projectRepository: widget.projectRepository,
+          starsShapeRepository: shapes,
+          presetArea: area,
         ),
       ),
     );
-    if (mounted) setState(() {});
+    _refreshAndRebuild();
   }
 
   /// The search-level creation route deliberately has no area or
@@ -501,7 +599,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         photoPath: result.photoPath,
       );
     }
-    if (mounted) setState(() {});
+    _refreshAndRebuild();
   }
 
   Future<void> _createConstellation() async {
@@ -509,16 +607,13 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => Theme(
-          data: buildLifeAreaTheme(),
-          child: NewProjectScreen(
-            projectRepository: widget.projectRepository,
-            starsShapeRepository: shapes,
-          ),
+        builder: (_) => NewProjectScreen(
+          projectRepository: widget.projectRepository,
+          starsShapeRepository: shapes,
         ),
       ),
     );
-    if (mounted) setState(() {});
+    _refreshAndRebuild();
   }
 
   Future<void> _manageAreas() async {
@@ -532,7 +627,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         ),
       ),
     );
-    if (mounted) setState(() {});
+    _refreshAndRebuild();
   }
 
   ({IconData icon, String tooltip, VoidCallback onPressed}) get _modeAction =>
@@ -568,7 +663,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
             ),
           )
           .then((_) {
-            if (mounted) setState(() {});
+            _refreshAndRebuild();
           });
 
   Future<void> _addStarToConstellation(Project project) async {
@@ -596,7 +691,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         ),
       ),
     );
-    if (mounted) setState(() {});
+    _refreshAndRebuild();
   }
 
   Future<void> _editConstellation(Project project) async {
@@ -609,7 +704,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         ),
       ),
     );
-    if (mounted) setState(() {});
+    _refreshAndRebuild();
   }
 
   Future<void> _shareConstellation(Project project) async {
@@ -651,7 +746,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         )) {
       await widget.starsShapeRepository.delete(shapeId);
     }
-    if (mounted) setState(() {});
+    _refreshAndRebuild();
   }
 
   Future<void> _openProject(Project project) async {
@@ -667,7 +762,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         ),
       ),
     );
-    setState(() {});
+    _refreshAndRebuild();
     if (result != null && mounted) {
       widget.onNavigateTo(SkyProjectTarget(result));
     }
@@ -695,7 +790,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         ),
       ),
     );
-    setState(() {});
+    _refreshAndRebuild();
   }
 
   /// Same two branches and repository calls as
@@ -727,7 +822,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         intensity: result.intensity,
         photoPath: result.photoPath,
       );
-      if (mounted) setState(() {});
+      _refreshAndRebuild();
       return;
     }
 
@@ -745,7 +840,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
 
     if (result is StarFormDeleteRequested) {
       await widget.starRepository.delete(star.id);
-      if (mounted) setState(() {});
+      _refreshAndRebuild();
       return;
     }
 
@@ -760,7 +855,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       intensity: edited.intensity,
       photoPath: edited.photoPath,
     );
-    if (mounted) setState(() {});
+    _refreshAndRebuild();
   }
 
   /// Lights a goal from its card: the same sheet the reader uses.
@@ -772,7 +867,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       intensity: result.intensity,
       photoPath: result.photoPath,
     );
-    if (mounted) setState(() {});
+    _refreshAndRebuild();
   }
 
   /// A pulsar's "done today" from its card: marks today (or takes it back
@@ -791,7 +886,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     } else {
       await completions.markDone(habit.id);
     }
-    if (mounted) setState(() {});
+    _refreshAndRebuild();
   }
 
   /// Edit, or for a dead pulsar bring it back — the same two branches as the
@@ -823,7 +918,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         reminderMinute: result.reminderMinute,
         completionRepository: widget.habitCompletionRepository,
       );
-      if (mounted) setState(() {});
+      _refreshAndRebuild();
       return;
     }
 
@@ -840,7 +935,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     if (result == null) return;
     if (result is StarFormDeleteRequested) {
       await widget.habitRepository.delete(habit.id);
-      if (mounted) setState(() {});
+      _refreshAndRebuild();
       return;
     }
     final edited = result as StarFormResult;
@@ -855,7 +950,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       reminderHour: edited.reminderHour,
       reminderMinute: edited.reminderMinute,
     );
-    if (mounted) setState(() {});
+    _refreshAndRebuild();
   }
 
   Future<void> _deleteHabit(Habit habit) async {
@@ -870,7 +965,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     );
     if (!confirmed) return;
     await widget.habitRepository.delete(habit.id);
-    if (mounted) setState(() {});
+    _refreshAndRebuild();
   }
 
   Future<void> _deleteStar(Star star) async {
@@ -885,7 +980,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     );
     if (!confirmed) return;
     await widget.starRepository.delete(star.id);
-    if (mounted) setState(() {});
+    _refreshAndRebuild();
   }
 
   bool _sharingStar = false;
@@ -939,6 +1034,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     );
     if (result == null) return;
     setState(() => _areaFilter = result);
+    _saveSession();
   }
 
   Future<void> _openKindFilter() async {
@@ -948,6 +1044,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     );
     if (result == null) return;
     setState(() => _kindFilter = result);
+    _saveSession();
   }
 
   Future<void> _openDateRangeFilter() async {
@@ -961,6 +1058,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       _dateRangeFilter = result.range;
       _dateRangePreset = result.preset;
     });
+    _saveSession();
   }
 
   Future<void> _openSortFilter() async {
@@ -974,6 +1072,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       _sortField = result.field;
       _sortDirection = result.direction;
     });
+    _saveSession();
   }
 
   /// Whether the current sort differs from this file's own long-standing
@@ -1034,6 +1133,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       _sortField = SortField.date;
       _sortDirection = SortDirection.descending;
     });
+    _saveSession();
   }
 
   /// The area-filter button's own label — a neutral prompt while nothing's
@@ -1129,6 +1229,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _mode != _SkyMode.supernovas) return;
       setState(() => _mode = _SkyMode.stars);
+      _saveSession();
     });
   }
 
@@ -1316,12 +1417,29 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                                 onChanged: (value) {
                                   _cardMenuController.closeAll();
                                   setState(() => _query = value);
+                                  _saveSession();
                                 },
                                 prefixIcon: Icon(
                                   Icons.search,
                                   color: colors.muted,
                                   size: 20,
                                 ),
+                                suffixIcon: _query.isEmpty
+                                    ? null
+                                    : IconButton(
+                                        tooltip: strings.clearSearchTooltip,
+                                        onPressed: () {
+                                          _queryController.clear();
+                                          _cardMenuController.closeAll();
+                                          setState(() => _query = '');
+                                          _saveSession();
+                                        },
+                                        icon: Icon(
+                                          Icons.close,
+                                          color: colors.muted,
+                                          size: 20,
+                                        ),
+                                      ),
                               ),
                             ),
                           );
@@ -1506,25 +1624,28 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                                 );
                               }
                               return ListView.separated(
+                                controller: _scrollControllers[0],
                                 padding: const EdgeInsets.fromLTRB(0, 4, 0, 16),
                                 itemCount: areas.length,
                                 separatorBuilder: (_, _) =>
                                     const SizedBox(height: 10),
                                 itemBuilder: (context, index) {
                                   final area = areas[index];
-                                  final projects = widget.projectRepository
-                                      .getAll()
+                                  final projects = _projectsCache
                                       .where((project) => project.area == area)
                                       .toList();
                                   final starCount = projects.fold<int>(
                                     0,
                                     (count, project) =>
                                         count +
-                                        widget.starRepository
-                                            .getAllForProject(project.id)
-                                            .length +
-                                        widget.habitRepository
-                                            .getAllForProject(project.id)
+                                        (_starsByProjectCache[project.id]
+                                                ?.length ??
+                                            0) +
+                                        _habitsCache
+                                            .where(
+                                              (habit) =>
+                                                  habit.projectId == project.id,
+                                            )
                                             .length,
                                   );
                                   return StaggeredEntrance(
@@ -1560,15 +1681,12 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                             },
                           ),
                           _SkyMode.constellations => _ConstellationsList(
+                            scrollController: _scrollControllers[1],
                             hasAnyProjects: _filteredAreaProjects.isNotEmpty,
                             filteredProjects: _filteredProjects,
                             starsForProject: _starsForProject,
                             shapeForProject: (project) =>
-                                project.starsShapeId == null
-                                ? null
-                                : widget.starsShapeRepository
-                                      .getById(project.starsShapeId!)
-                                      ?.shape,
+                                _shapesByIdCache[project.starsShapeId],
                             menuController: _cardMenuController,
                             onTap: _openProject,
                             onNavigateTo: widget.onNavigateTo,
@@ -1578,6 +1696,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                             onDelete: _deleteConstellation,
                           ),
                           _SkyMode.stars => _FlatList(
+                            scrollController: _scrollControllers[2],
                             hasAnyEntries: allEntries.isNotEmpty,
                             entries: filteredEntries,
                             projectsById: _projectsById,
@@ -1690,6 +1809,7 @@ class _AreaCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = context.strings;
     return SearchResultCard(
+      preserveMenuOnAction: true,
       menuId: 'area:${area.name}',
       menuController: menuController,
       onTap: onTap,
@@ -1945,6 +2065,7 @@ class _ConstellationsList extends StatelessWidget {
     required this.onShare,
     required this.onEdit,
     required this.onDelete,
+    required this.scrollController,
   });
 
   final bool hasAnyProjects;
@@ -1958,6 +2079,7 @@ class _ConstellationsList extends StatelessWidget {
   final ValueChanged<Project> onShare;
   final ValueChanged<Project> onEdit;
   final ValueChanged<Project> onDelete;
+  final ScrollController scrollController;
 
   @override
   Widget build(BuildContext context) {
@@ -1996,6 +2118,7 @@ class _ConstellationsList extends StatelessWidget {
     }
 
     return ListView.separated(
+      controller: scrollController,
       // Horizontal margin comes from each item's own Padding below, applied
       // *inside* its ResponsiveContent instead of here — see that widget's
       // comment for why: it's what keeps a card's left edge lined up with
@@ -2054,6 +2177,7 @@ class _FlatList extends StatelessWidget {
     required this.onHabitToday,
     required this.onEditHabit,
     required this.onDeleteHabit,
+    required this.scrollController,
   });
 
   final bool hasAnyEntries;
@@ -2072,6 +2196,7 @@ class _FlatList extends StatelessWidget {
   final ValueChanged<Habit> onHabitToday;
   final ValueChanged<Habit> onEditHabit;
   final ValueChanged<Habit> onDeleteHabit;
+  final ScrollController scrollController;
 
   @override
   Widget build(BuildContext context) {
@@ -2110,6 +2235,7 @@ class _FlatList extends StatelessWidget {
     }
 
     return ListView.separated(
+      controller: scrollController,
       // Horizontal margin comes from each item's own Padding below — see
       // the matching comment in [_ConstellationsList].
       padding: const EdgeInsets.fromLTRB(0, 4, 0, 24),
@@ -2339,6 +2465,7 @@ class _SearchStarCard extends StatelessWidget {
         ),
     ];
     return SearchResultCard(
+      preserveMenuOnAction: true,
       menuId: entry.star == null
           ? 'habit:${entry.habit!.id}'
           : 'star:${entry.star!.id}',
@@ -2396,6 +2523,7 @@ class _ProjectCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = context.strings;
     return SearchResultCard(
+      preserveMenuOnAction: true,
       menuId: 'project:${project.id}',
       menuController: menuController,
       onTap: onTap,

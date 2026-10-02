@@ -433,6 +433,8 @@ class StringsRo implements AppStrings {
   @override
   String get clearFilterAction => 'Resetează';
   @override
+  String get clearSearchTooltip => 'Șterge căutarea';
+  @override
   String get sortAction => 'Sortează rezultatele';
   @override
   String get sortButtonDefaultLabel => 'Sortează';
@@ -2027,6 +2029,18 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get onboardingGetStartedAction => 'Începe';
   @override
   String get onboardingSkipTooltip => 'Sari peste';
+  @override
+  String get dateInputInvalidValues => 'Valori nevalide';
+  @override
+  String get dateInputInvalidDay => 'Verifică ziua evidențiată.';
+  @override
+  String get dateInputInvalidMonth => 'Luna trebuie să fie între 1 și 12.';
+  @override
+  String dateInputInvalidYear(int firstYear, int lastYear) =>
+      'Anul trebuie să fie între $firstYear și $lastYear.';
+  @override
+  String get dateInputOutsideRange =>
+      'Această dată este în afara intervalului permis.';
 }
 
 const _fullMonths = [

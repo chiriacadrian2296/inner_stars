@@ -70,6 +70,7 @@ import '../widgets/sky_area_tooltip.dart';
 import '../widgets/sky_constellation_tooltip.dart';
 import '../widgets/sky_menu_drawer.dart';
 import '../widgets/sky_nascent_star_tooltip.dart';
+import '../widgets/sky_explorer_view.dart' show SkyExplorerSession;
 import '../widgets/sky_navigation_target.dart';
 import '../widgets/sky_pulsar_tooltip.dart';
 import '../widgets/sky_star_tooltip.dart';
@@ -259,6 +260,7 @@ class _ConstellationShare extends _CreationShareSubject {
 }
 
 class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
+  final _skySession = SkyExplorerSession();
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   // See kSkyMaxZoom's own doc comment (constellation_field.dart) for why
   // this value, and why it's shared rather than private to this class.
@@ -1970,6 +1972,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
           starsShapeRepository: widget.starsShapeRepository,
           areaVisionRepository: widget.areaVisionRepository,
           reflectionAnswerRepository: widget.reflectionAnswerRepository,
+          session: _skySession,
         ),
       ),
     );
@@ -4809,13 +4812,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _closeSkyTooltip();
     final project = await Navigator.of(context).push<Project>(
       MaterialPageRoute(
-        builder: (_) => Theme(
-          data: buildLifeAreaTheme(),
-          child: NewProjectScreen(
-            projectRepository: widget.projectRepository,
-            starsShapeRepository: widget.starsShapeRepository,
-            presetArea: area,
-          ),
+        builder: (_) => NewProjectScreen(
+          projectRepository: widget.projectRepository,
+          starsShapeRepository: widget.starsShapeRepository,
+          presetArea: area,
         ),
       ),
     );
@@ -5072,9 +5072,10 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   // widgets, so it's kept small and duplicated rather than factored out.
   bool _hapticActive = false;
 
-  // Latched on down rather than re-checking on up: a short tap remains a
-  // dismiss-only gesture, but a completed hold deliberately clears this and
-  // continues into the full menu.
+  // Latched on down so a cancelled gesture can clean up consistently after
+  // dismissing a tooltip. A completed hold clears it before opening the full
+  // menu; a genuine short tap now dismisses the tooltip *and* continues into
+  // the quick menu in the same gesture.
   bool _dismissedSkyTooltip = false;
 
   // See `_SkyScreenState._hapticAmplitude`'s own doc comment for why this
@@ -5137,13 +5138,7 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   void _handleTapUp() {
     widget.onPressChanged?.call(false);
     _stopHoldHaptic();
-    if (_dismissedSkyTooltip) {
-      _dismissedSkyTooltip = false;
-      if (_chargeController.status == AnimationStatus.forward) {
-        _chargeController.reverse();
-      }
-      return;
-    }
+    _dismissedSkyTooltip = false;
     if (_chargeController.status == AnimationStatus.forward) {
       _chargeController.reverse();
       widget.onQuickTap();
