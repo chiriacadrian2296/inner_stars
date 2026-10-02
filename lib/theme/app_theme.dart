@@ -6,6 +6,57 @@ import 'app_motion.dart';
 import 'app_style.dart';
 import 'app_typography.dart';
 
+class _SheetOutline extends ShapeBorder {
+  const _SheetOutline(this.side);
+
+  final BorderSide side;
+
+  @override
+  EdgeInsetsGeometry get dimensions => EdgeInsets.fromLTRB(
+    side.width,
+    side.width,
+    side.width,
+    0,
+  );
+
+  @override
+  Path getInnerPath(Rect rect, {TextDirection? textDirection}) =>
+      getOuterPath(rect.deflate(side.width), textDirection: textDirection);
+
+  @override
+  Path getOuterPath(Rect rect, {TextDirection? textDirection}) => Path()
+    ..addRRect(
+      RRect.fromRectAndCorners(
+        rect,
+        topLeft: const Radius.circular(kRadiusCard),
+        topRight: const Radius.circular(kRadiusCard),
+      ),
+    );
+
+  @override
+  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {
+    if (side.style == BorderStyle.none) return;
+    final radius = kRadiusCard;
+    final path = Path()
+      ..moveTo(rect.left, rect.bottom)
+      ..lineTo(rect.left, rect.top + radius)
+      ..quadraticBezierTo(rect.left, rect.top, rect.left + radius, rect.top)
+      ..lineTo(rect.right - radius, rect.top)
+      ..quadraticBezierTo(rect.right, rect.top, rect.right, rect.top + radius)
+      ..lineTo(rect.right, rect.bottom);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = side.color
+        ..strokeWidth = side.width
+        ..style = PaintingStyle.stroke,
+    );
+  }
+
+  @override
+  ShapeBorder scale(double t) => _SheetOutline(side.scale(t));
+}
+
 /// The app's one and only theme — night sky, gold stars. There's no light
 /// mode: a "daytime sky" doesn't fit an app about lighting stars against a
 /// dark backdrop, so [AppColors] has never had more than the one palette
@@ -192,11 +243,9 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
       ),
     ),
     bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: palette.nightPanel,
+      backgroundColor: palette.night,
       surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(kRadiusCard)),
-      ),
+      shape: _SheetOutline(BorderSide(color: palette.nightBorder)),
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: palette.nightPanel,

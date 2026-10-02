@@ -117,6 +117,7 @@ void main() {
     await tester.fling(carousel, const Offset(-280, 0), 2500);
     await tester.pumpAndSettle();
     await expectArea(4);
+    debugDefaultTargetPlatformOverride = null;
   });
 
   testWidgets('hides arrow navigation on native mobile', (tester) async {
@@ -143,5 +144,6 @@ void main() {
 
     expect(find.byIcon(Icons.chevron_left), findsNothing);
     expect(find.byIcon(Icons.chevron_right), findsNothing);
+    debugDefaultTargetPlatformOverride = null;
   });
 }

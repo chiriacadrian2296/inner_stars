@@ -13,7 +13,9 @@ import '../widgets/area_section_header.dart';
 import '../widgets/live_markdown_controller.dart';
 import '../widgets/logo_watermark.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/shareable_area_content_card.dart';
 import '../widgets/staggered_entrance.dart';
+import 'share_preview_screen.dart';
 
 class VisionEditorScreen extends StatefulWidget {
   const VisionEditorScreen({
@@ -102,6 +104,19 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
       ).showSnackBar(SnackBar(content: Text(context.strings.visionSaveError)));
     }
   }
+
+  Future<void> _share() => showSharePreview(
+    context: context,
+    content: ShareableVisionCard(
+      area: widget.area,
+      vision: _controller.text.trim().isEmpty
+          ? widget.area.visionPlaceholder(context.strings)
+          : _controller.text,
+    ),
+    shareText:
+        '${context.strings.visionSection} - ${widget.area.displayName(context.strings)}',
+    fileName: 'vision_${widget.area.name}.png',
+  );
 
   void _format(
     String marker, {
@@ -562,11 +577,33 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                   index: 3,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                    child: Center(
-                      child: TextButton(
-                        onPressed: _saving ? null : _save,
-                        child: Text(strings.saveChanges),
-                      ),
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 12,
+                      runSpacing: 8,
+                      children: [
+                        TextButton.icon(
+                          onPressed: _saving ? null : _share,
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 22,
+                              vertical: 14,
+                            ),
+                          ),
+                          icon: const Icon(Icons.share_outlined),
+                          label: Text(strings.starQuickLookShareAction),
+                        ),
+                        ElevatedButton(
+                          onPressed: _saving ? null : _save,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: colors.night,
+                            disabledBackgroundColor: Colors.white38,
+                            disabledForegroundColor: colors.muted,
+                          ),
+                          child: Text(strings.saveChanges),
+                        ),
+                      ],
                     ),
                   ),
                 ),

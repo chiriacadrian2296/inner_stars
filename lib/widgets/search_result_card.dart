@@ -14,6 +14,12 @@ class SearchCardMenuController extends ChangeNotifier {
 
   bool isOpen(Object id) => _openId == id;
 
+  void open(Object id) {
+    if (_openId == id) return;
+    _openId = id;
+    notifyListeners();
+  }
+
   void toggle(Object id) {
     _openId = _openId == id ? null : id;
     notifyListeners();
@@ -47,6 +53,7 @@ class SearchResultCard extends StatelessWidget {
     required this.content,
     required this.actions,
     required this.onTap,
+    this.showBorder = true,
   });
 
   static const visualSize = 88.0;
@@ -61,6 +68,7 @@ class SearchResultCard extends StatelessWidget {
   final Widget content;
   final List<SearchCardAction> actions;
   final VoidCallback onTap;
+  final bool showBorder;
 
   @override
   Widget build(BuildContext context) {
@@ -149,21 +157,22 @@ class SearchResultCard extends StatelessWidget {
                                   child: content,
                                 ),
                               ),
-                              Positioned.fill(
-                                child: IgnorePointer(
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(
-                                        kRadiusCard,
-                                      ),
-                                      border: Border.all(
-                                        color: colors.nightBorder,
-                                        width: kBorderWidth,
+                              if (showBorder)
+                                Positioned.fill(
+                                  child: IgnorePointer(
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(
+                                          kRadiusCard,
+                                        ),
+                                        border: Border.all(
+                                          color: colors.nightBorder,
+                                          width: kBorderWidth,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
                             ],
                           ),
                         ),

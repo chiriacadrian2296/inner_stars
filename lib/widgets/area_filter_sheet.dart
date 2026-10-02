@@ -67,7 +67,7 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -78,7 +78,7 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
                 child: AppSheetTitle(strings.skyModeSupernovas),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
             HintTarget(
               tour: 'search-stars',
               order: 5,
@@ -127,7 +127,7 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
                 ],
               ),
             ],
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             HintTarget(
               tour: 'search-stars',
               order: 7,

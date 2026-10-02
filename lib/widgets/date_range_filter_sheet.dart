@@ -236,7 +236,7 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
             maxWidth: kResponsiveContentMaxWidth,
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,7 +245,7 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
                   index: 0,
                   child: AppSheetTitle(strings.dateRangeFilterSectionTitle),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 20),
                 // The duration on one side (which chip is lit is also what
                 // the arrows step by), a pair of step buttons on the
                 // other — greyed out until a duration is actually picked,
@@ -323,27 +323,30 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
                   to: _range?.end,
                   onTap: _pickCustom,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 StaggeredEntrance(
                   index: 7,
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 12,
-                    runSpacing: 8,
-                    children: [
-                      TextButton(
-                        onPressed: _range == null ? null : _clear,
-                        child: Text(strings.clearFilterAction),
-                      ),
-                      ElevatedButton(
-                        onPressed: _hasChanges
-                            ? () =>
-                                  Navigator.of(context)
-                                      .pop((range: _range, preset: _preset))
-                            : null,
-                        child: Text(strings.applyFilterAction),
-                      ),
-                    ],
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 12,
+                      runSpacing: 8,
+                      children: [
+                        TextButton(
+                          onPressed: _range == null ? null : _clear,
+                          child: Text(strings.clearFilterAction),
+                        ),
+                        ElevatedButton(
+                          onPressed: _hasChanges
+                              ? () => Navigator.of(context).pop(
+                                  (range: _range, preset: _preset),
+                                )
+                              : null,
+                          child: Text(strings.applyFilterAction),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

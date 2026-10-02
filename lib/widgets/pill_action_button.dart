@@ -17,6 +17,7 @@ class PillActionButton extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.danger = false,
+    this.compact = false,
   });
 
   final IconData icon;
@@ -30,6 +31,11 @@ class PillActionButton extends StatelessWidget {
   /// action.
   final bool danger;
 
+  /// A deliberate exception for dense toolbars such as the constellation
+  /// shape editor, where these controls must match an adjacent compact
+  /// switch row and remain on one line.
+  final bool compact;
+
   static const _minimumHeight = 48.0;
   static const _padding = EdgeInsets.symmetric(horizontal: 20, vertical: 12);
 
@@ -40,6 +46,13 @@ class PillActionButton extends StatelessWidget {
     final foreground = !enabled
         ? colors.muted
         : (danger ? colors.danger : colors.onGold);
+    final minimumHeight = compact ? 40.0 : _minimumHeight;
+    final padding = compact
+        ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+        : _padding;
+    final iconSize = compact ? 16.0 : 18.0;
+    final gap = compact ? 6.0 : 8.0;
+    final fontSize = compact ? 12.0 : 13.0;
 
     return Material(
       color: enabled
@@ -50,20 +63,20 @@ class PillActionButton extends StatelessWidget {
         onTap: onTap,
         customBorder: const StadiumBorder(),
         child: Container(
-          constraints: const BoxConstraints(minHeight: _minimumHeight),
-          padding: _padding,
+          constraints: BoxConstraints(minHeight: minimumHeight),
+          padding: padding,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: foreground, size: 18),
-              const SizedBox(width: 8),
+              Icon(icon, color: foreground, size: iconSize),
+              SizedBox(width: gap),
               Text(
                 label.toUpperCase(),
                 style: TextStyle(
                   color: foreground,
                   fontWeight: FontWeight.w600,
-                  fontSize: 13,
+                  fontSize: fontSize,
                 ),
               ),
             ],

@@ -68,7 +68,7 @@ class _KindFilterSheetState extends State<_KindFilterSheet> {
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -79,7 +79,7 @@ class _KindFilterSheetState extends State<_KindFilterSheet> {
                 child: AppSheetTitle(strings.filterKindSectionTitle),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
             StaggeredEntrance(
               index: 1,
               child: AppToggleChip(
@@ -106,10 +106,14 @@ class _KindFilterSheetState extends State<_KindFilterSheet> {
                         axis: Axis.horizontal,
                         child: AppChoiceChip(
                           icon: kListableStarKinds[row * 2 + col].icon,
-                          iconColor: starKindColor(
+                          iconColor: _kinds.contains(
                             kListableStarKinds[row * 2 + col],
-                            colors,
-                          ),
+                          )
+                              ? starKindColor(
+                                kListableStarKinds[row * 2 + col],
+                                colors,
+                              )
+                              : colors.muted,
                           label: kListableStarKinds[row * 2 + col].plural(
                             strings,
                           ),
@@ -127,7 +131,7 @@ class _KindFilterSheetState extends State<_KindFilterSheet> {
                 ],
               ),
             ],
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             StaggeredEntrance(
               index: 2 + (kListableStarKinds.length + 1) ~/ 2 + 1,
               child: Wrap(

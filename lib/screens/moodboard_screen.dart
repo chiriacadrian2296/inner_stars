@@ -13,7 +13,9 @@ import '../widgets/area_section_header.dart';
 import '../widgets/moodboard_grid.dart';
 import '../widgets/logo_watermark.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/shareable_area_content_card.dart';
 import '../widgets/staggered_entrance.dart';
+import 'share_preview_screen.dart';
 
 class MoodboardScreen extends StatefulWidget {
   const MoodboardScreen({
@@ -30,6 +32,14 @@ class MoodboardScreen extends StatefulWidget {
 class _MoodboardScreenState extends State<MoodboardScreen> {
   bool _busy = false;
   List<MoodboardItem> get _items => widget.repository.getItems(widget.area);
+
+  Future<void> _share() => showSharePreview(
+    context: context,
+    content: ShareableMoodboardCard(area: widget.area, items: _items),
+    shareText:
+        '${context.strings.moodboardTitle} - ${widget.area.displayName(context.strings)}',
+    fileName: 'moodboard_${widget.area.name}.png',
+  );
   void _error() {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -304,9 +314,16 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: sideBySideActions,
+                                children: [
+                                  for (
+                                    var i = 0;
+                                    i < sideBySideActions.length;
+                                    i++
+                                  ) ...[
+                                    if (i > 0) const SizedBox(width: 8),
+                                    Expanded(child: sideBySideActions[i]),
+                                  ],
+                                ],
                               ),
                             )
                           else
@@ -326,6 +343,25 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                             showEmptyMessage: false,
                           ),
                         ],
+                      ),
+                    ),
+                  ),
+                  StaggeredEntrance(
+                    index: 5,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                      child: Center(
+                        child: TextButton.icon(
+                          onPressed: _busy ? null : _share,
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 22,
+                              vertical: 14,
+                            ),
+                          ),
+                          icon: const Icon(Icons.share_outlined),
+                          label: Text(strings.starQuickLookShareAction),
+                        ),
                       ),
                     ),
                   ),

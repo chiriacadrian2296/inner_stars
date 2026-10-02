@@ -109,7 +109,9 @@ class CreationSuccessDialog extends StatelessWidget {
                     color: colors.gold,
                     onTap: () {
                       Navigator.of(context).pop();
-                      onTakeMeThere();
+                      WidgetsBinding.instance.addPostFrameCallback(
+                        (_) => onTakeMeThere(),
+                      );
                     },
                   ),
                 ),
@@ -122,7 +124,9 @@ class CreationSuccessDialog extends StatelessWidget {
                     color: colors.muted,
                     onTap: () {
                       Navigator.of(context).pop();
-                      onShare();
+                      WidgetsBinding.instance.addPostFrameCallback(
+                        (_) => onShare(),
+                      );
                     },
                   ),
                 ),

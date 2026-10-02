@@ -49,13 +49,11 @@ class PanelMaterial extends StatelessWidget {
           shadowColor: Theme.of(context).shadowColor,
           shape: shape,
           clipBehavior: Clip.antiAlias,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: TooltipCardSpacing.md,
-              vertical: TooltipCardSpacing.sm,
-            ),
-            child: child,
-          ),
+          // Spacing belongs to BeakedPanelWithBeak's public `padding`
+          // parameter. Keeping a second, implicit 12 px horizontal / 8 px
+          // vertical inset here made an explicitly uniform padding render
+          // visibly wider at the sides.
+          child: child,
         ),
       ),
     );

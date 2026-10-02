@@ -50,11 +50,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'area detail');
     expect(find.text('Gestisci Questa Area'), findsNothing);
-    final edit = find.text(const StringsIt().editVisionAction);
-    await tester.ensureVisible(edit);
-    await tester.tap(edit);
+    await tester.tap(find.byTooltip('Vision'));
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'vision editor');
     expect(find.byType(VisionEditorScreen), findsOneWidget);
     final editorTheme = Theme.of(
       tester.element(find.byType(VisionEditorScreen)),
@@ -71,18 +71,19 @@ void main() {
       }),
       Colors.white,
     );
-    await tester.tap(find.byIcon(Icons.arrow_back).last);
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
-    final open = find.text('Apri e modifica');
-    await tester.ensureVisible(open.first);
-    await tester.tap(open.first);
+    expect(tester.takeException(), isNull, reason: 'return from vision');
+    await tester.tap(find.byTooltip('Moodboard'));
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'moodboard');
     expect(find.byType(MoodboardScreen), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.arrow_back).last);
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
-    await tester.ensureVisible(open.last);
-    await tester.tap(open.last);
+    expect(tester.takeException(), isNull, reason: 'return from moodboard');
+    await tester.tap(find.byTooltip('Riflessioni'));
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'reflections');
     expect(find.byType(ReflectionQuestionsSection), findsOneWidget);
     final reflectionTheme = Theme.of(
       tester.element(find.byType(ReflectionQuestionsSection)),
@@ -99,7 +100,7 @@ void main() {
       'Una risposta da conservare',
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.arrow_back).last);
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(
       ReflectionAnswerRepository(prefs)

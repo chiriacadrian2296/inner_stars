@@ -170,23 +170,21 @@ class SkyMenuContent extends StatelessWidget {
   // star mark, pre-composited over the app's night background).
 
   /// "Light Your Sky" covers both of the app's two creation flows, so
-  /// tapping it offers the choice rather than picking one — a small sheet
-  /// in the same [colors.nightPanel]/gold language as every other sheet in
-  /// the app, not a full screen of its own.
+  /// tapping it offers the choice rather than picking one — a standard
+  /// functional sheet, matching the filters rather than a blocking popup.
   void _openLightYourSkyChooser(BuildContext context) {
-    final colors = context.colors;
     final strings = context.strings;
 
-    // Fired here, not inside the dialog's own builder — by the time
-    // `showDialog` schedules that builder's first frame, this call has
+    // Fired here, not inside the sheet's own builder — by the time
+    // the route schedules that builder's first frame, this call has
     // already reached `Tour.start`'s async storage check, so the "waits
     // for its target" behavior (see `HintTarget`'s own doc comment) is
     // what actually bridges the two rather than any ordering guarantee.
     Tour.read(context).start('light-your-sky');
 
-    showAppDialog<void>(
+    showAppSheet<void>(
       context: context,
-      builder: (dialogContext) {
+      builder: (sheetContext) {
         Widget choice({
           required IconData icon,
           required String label,
@@ -196,46 +194,12 @@ class SkyMenuContent extends StatelessWidget {
           String? tourTitle,
           String? tourBody,
         }) {
-          final inkTile = InkWell(
-            onTap: () {
-              Navigator.of(dialogContext).pop();
+          final inkTile = AppSheetAction(
+            icon: icon,
+            label: label,
+            onPressed: () {
               onTap();
             },
-            // No ripple/highlight on these — Android's default press
-            // feedback is a light flash, which reads as a stray white
-            // flicker against this dark popup rather than a deliberate
-            // part of its look.
-            splashFactory: NoSplash.splashFactory,
-            highlightColor: Colors.transparent,
-            child: Padding(
-              // Horizontal is wider than these labels strictly need —
-              // deliberately: with the popup's own width coming straight
-              // from this padding (see the comment below), this is what
-              // actually keeps it from reading as *too* tightly
-              // shrink-wrapped now that [Dialog]'s own 280 default
-              // minWidth is off.
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-              // The Row default (fills whatever width it's given), not
-              // `mainAxisSize.min` — every row is now stretched to the
-              // width of the widest one by the `IntrinsicWidth` +
-              // `CrossAxisAlignment.stretch` wrapping all three below, so
-              // each row's own natural width no longer matters here; this
-              // just lets it actually fill that shared width instead of
-              // shrinking back to its own label's size inside it.
-              child: Row(
-                children: [
-                  Icon(icon, color: colors.gold),
-                  const SizedBox(width: 12),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: colors.text,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
           );
           final tile = StaggeredEntrance(index: index, child: inkTile);
           if (tourOrder == null) return tile;
@@ -250,95 +214,61 @@ class SkyMenuContent extends StatelessWidget {
           );
         }
 
-        // A popup rather than a sheet, per request — [Dialog] alone (not
-        // [AlertDialog]) since the content here is a plain list of
-        // choices, not a title/actions layout; it still picks up the
-        // app's own dialog theme (background, shape) automatically. No
-        // title any more — the three choices, one per level of the sky
-        // itself, don't need one to make sense — and Cancel sits right
-        // below them, no divider: the muted color and plain-text
-        // [TextButton] treatment (versus the icon+label choices above
-        // it) already read as "the way out", not a fourth choice.
-        return Dialog(
-          // [Dialog]'s own default constraints impose a 280 minWidth
-          // regardless of content — wider than these three short
-          // options actually need, which is exactly why this kept
-          // looking too wide no matter how tightly the content itself
-          // was sized. An empty [BoxConstraints] (no minimum at all)
-          // is what actually lets it shrink to fit.
-          constraints: const BoxConstraints(),
+        return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 4),
+                AppSheetTitle(strings.menuLightYourSky),
+                const SizedBox(height: 20),
                 TourIntroTarget(
                   tour: 'light-your-sky',
                   order: 1,
                   title: strings.lightYourSkyTourIntroTitle,
                   description: strings.lightYourSkyTourIntroBody,
                 ),
-                // `IntrinsicWidth` measures the widest of the three rows,
-                // then `CrossAxisAlignment.stretch` makes every row that
-                // same width — different from just centering them, which
-                // would leave the shorter labels' *tap targets* narrower
-                // than the widest one even if the text looked aligned.
-                // Plain `CrossAxisAlignment.stretch` alone (no
-                // `IntrinsicWidth`) would instead stretch every row to
-                // whatever width the dialog's parent offers — up to
-                // nearly full-screen — which is exactly what [Dialog]'s
-                // own unbounded `constraints` below was chosen to avoid.
-                // Scoped to just these three (a nested widget) rather
-                // than the whole dialog, so Cancel below stays centered
-                // on its own — it isn't one of the icon+label choices
-                // this is about.
-                IntrinsicWidth(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      choice(
-                        icon: Icons.flare,
-                        label: strings.lightYourSkyChooserSupernovaOption,
-                        onTap: onVisions,
-                        index: 0,
-                        tourOrder: 2,
-                        tourTitle: strings.lightYourSkyTourSupernovaTitle,
-                        tourBody: strings.lightYourSkyTourSupernovaBody,
-                      ),
-                      choice(
-                        icon: Icons.insights,
-                        label: strings.menuNewConstellation,
-                        onTap: onNewConstellation,
-                        index: 1,
-                        tourOrder: 3,
-                        tourTitle: strings.lightYourSkyTourConstellationTitle,
-                        tourBody: strings.lightYourSkyTourConstellationBody,
-                      ),
-                      choice(
-                        icon: Icons.star,
-                        label: strings.menuLightAStar,
-                        onTap: onLightAStar,
-                        index: 2,
-                        tourOrder: 4,
-                        tourTitle: strings.lightYourSkyTourStarTitle,
-                        tourBody: strings.lightYourSkyTourStarBody,
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: StaggeredEntrance(
-                    index: 3,
-                    child: TextButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(),
-                      child: Text(
-                        strings.cancel,
-                        style: TextStyle(color: colors.muted),
-                      ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    choice(
+                      icon: Icons.flare,
+                      label: strings.lightYourSkyChooserSupernovaOption,
+                      onTap: onVisions,
+                      index: 0,
+                      tourOrder: 2,
+                      tourTitle: strings.lightYourSkyTourSupernovaTitle,
+                      tourBody: strings.lightYourSkyTourSupernovaBody,
                     ),
+                    const SizedBox(height: 10),
+                    choice(
+                      icon: Icons.insights,
+                      label: strings.menuNewConstellation,
+                      onTap: onNewConstellation,
+                      index: 1,
+                      tourOrder: 3,
+                      tourTitle: strings.lightYourSkyTourConstellationTitle,
+                      tourBody: strings.lightYourSkyTourConstellationBody,
+                    ),
+                    const SizedBox(height: 10),
+                    choice(
+                      icon: Icons.star,
+                      label: strings.menuLightAStar,
+                      onTap: onLightAStar,
+                      index: 2,
+                      tourOrder: 4,
+                      tourTitle: strings.lightYourSkyTourStarTitle,
+                      tourBody: strings.lightYourSkyTourStarBody,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Align(
+                  alignment: Alignment.center,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                    child: Text(strings.cancel),
                   ),
                 ),
               ],
@@ -809,7 +739,12 @@ class _SkyMenuModalFrameState extends State<SkyMenuModalFrame>
       offset: Offset(0, _dragOffset),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: colors.nightPanel,
+          color: colors.night,
+          border: Border(
+            top: BorderSide(color: colors.nightBorder),
+            left: BorderSide(color: colors.nightBorder),
+            right: BorderSide(color: colors.nightBorder),
+          ),
           borderRadius: const BorderRadius.vertical(
             top: Radius.circular(kRadiusCard),
           ),

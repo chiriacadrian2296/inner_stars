@@ -131,11 +131,26 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Vision'), findsOneWidget);
-    expect(find.text('Moodboard'), findsOneWidget);
-    expect(find.text('Riflessioni'), findsOneWidget);
-    expect(find.text('+ Costellazione'), findsOneWidget);
-    expect(find.text('Vola'), findsOneWidget);
+    expect(
+      find.descendant(of: firstCard, matching: find.text('Vision')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: firstCard, matching: find.text('Moodboard')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: firstCard, matching: find.text('Riflessioni')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: firstCard, matching: find.text('+ Costellazione')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: firstCard, matching: find.text('Vola')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('real Search uses compact cards in all three result levels', (
@@ -170,7 +185,7 @@ void main() {
 
     expect(find.byType(SearchResultCard), findsWidgets);
 
-    await tester.tap(find.byIcon(Icons.insights));
+    await tester.tap(find.byIcon(Icons.insights).first);
     await tester.pumpAndSettle();
     expect(find.text('Costellazione test'), findsOneWidget);
     expect(

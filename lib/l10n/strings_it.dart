@@ -431,7 +431,7 @@ class StringsIt implements AppStrings {
   @override
   String get dateRangeToLabel => 'A';
   @override
-  String get clearFilterAction => 'Cancella';
+  String get clearFilterAction => 'Reset';
   @override
   String get sortAction => 'Ordina risultati';
   @override
@@ -1269,7 +1269,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get chooseShapeLabel => 'Forma della costellazione';
   @override
-  String get shapeLibraryTitle => 'Libreria Di Forme';
+  String get shapeLibraryTitle => 'Forma Costellazione';
   @override
   String get pickFromLibraryShort => 'Forme';
   @override
@@ -1312,7 +1312,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get iconLabel => 'Icona';
   @override
-  String get chooseIconTitle => 'Scegli Un\'Icona';
+  String get chooseIconTitle => 'Icona';
   @override
   String get pickerConfirmAction => 'OK';
   @override
@@ -1326,6 +1326,8 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get createProject => 'Crea costellazione';
   @override
   String get newProject => 'Nuova costellazione';
+  @override
+  String get newAction => 'Nuova';
 
   @override
   String get newStarEyebrow => 'NUOVA STELLA';
@@ -1379,9 +1381,11 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get addPhotoHint => 'Aggiungi una foto';
   @override
-  String get takePhotoOption => 'Scatta una foto';
+  String get photoSourceTitle => 'Aggiungi Foto';
   @override
-  String get choosePhotoOption => 'Scegli dalla libreria';
+  String get takePhotoOption => 'Scatta';
+  @override
+  String get choosePhotoOption => 'Carica';
   @override
   String get photoPickError =>
       'Non è stato possibile ottenere la foto. Riprova?';
@@ -1420,8 +1424,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get discardChangesConfirmTitle => 'Scartare le modifiche?';
   @override
-  String get discardChangesConfirmBody =>
-      'Perderai le modifiche fatte a questa stella.';
+  String get discardChangesConfirmBody => 'Perderai le modifiche effettuate.';
   @override
   String get discardChangesAction => 'Scarta';
 
@@ -1778,6 +1781,21 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get shareStarError =>
       'Non è stato possibile condividere questa stella. Riprova?';
+  @override
+  String get shareContentError =>
+      'Non è stato possibile condividere questo contenuto. Riprova?';
+  @override
+  String get sharePreviewTitle => 'Anteprima condivisione';
+  @override
+  String get shareChooseLayout => 'Scegli una composizione';
+  @override
+  String get shareLayoutImmersive => 'Editoriale';
+  @override
+  String get shareLayoutFramed => 'Fotografica';
+  @override
+  String get shareLayoutPostcard => 'Frase';
+  @override
+  String get shareNowAction => 'Condividi';
   @override
   String get starReaderTourIntroTitle => 'Sfoglia le tue stelle';
   @override

@@ -45,7 +45,7 @@ void main() {
     expect(find.widgetWithText(ChoiceChip, '30'), findsOneWidget);
     expect(find.widgetWithText(ChoiceChip, '90'), findsOneWidget);
 
-    await tester.tap(find.text('Past pulsars'));
+    await tester.tap(find.text('Archive'));
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('No past pulsars yet.'), findsOneWidget);
   });

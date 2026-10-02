@@ -151,6 +151,26 @@ List<InlineSpan> markdownInlineSpans(
 }) {
   final patterns = <(RegExp, int, int, TextStyle)>[
     (
+      RegExp(r'\*\*\*(.+?)\*\*\*'),
+      3,
+      3,
+      style.copyWith(
+        fontWeight: FontWeight.bold,
+        fontStyle: FontStyle.italic,
+        fontVariations: const [FontVariation('wght', 700)],
+      ),
+    ),
+    (
+      RegExp(r'___(.+?)___'),
+      3,
+      3,
+      style.copyWith(
+        fontWeight: FontWeight.bold,
+        fontStyle: FontStyle.italic,
+        fontVariations: const [FontVariation('wght', 700)],
+      ),
+    ),
+    (
       RegExp(r'\*\*(.+?)\*\*'),
       2,
       2,

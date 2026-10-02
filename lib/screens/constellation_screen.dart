@@ -1,10 +1,7 @@
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../data/constellation_layout.dart';
 import '../data/constellation_shape.dart';
@@ -31,6 +28,7 @@ import '../widgets/marquee_title.dart';
 import '../widgets/shareable_constellation_card.dart';
 import '../widgets/staggered_entrance.dart';
 import 'pulsar_reader_screen.dart';
+import 'share_preview_screen.dart';
 import 'new_project_screen.dart';
 import 'star_form_screen.dart';
 import 'star_reader_screen.dart';
@@ -331,33 +329,12 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
   Future<void> _share() async {
     final shape = _shape;
     if (shape == null) return;
-    try {
-      final boundary =
-          _shareKey.currentContext?.findRenderObject()
-              as RenderRepaintBoundary?;
-      if (boundary == null) return;
-      final image = await boundary.toImage(pixelRatio: 2);
-      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (bytes == null) return;
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [
-            XFile.fromData(
-              bytes.buffer.asUint8List(),
-              mimeType: 'image/png',
-              name: '${_project.name}.png',
-            ),
-          ],
-          text: _project.name,
-        ),
-      );
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(context.strings.shareStarError)));
-      }
-    }
+    await showSharePreview(
+      context: context,
+      content: ShareableConstellationCard(project: _project, shape: shape),
+      shareText: _project.name,
+      fileName: 'constellation_${_project.id}.png',
+    );
   }
 
   Future<void> _addStar() async {

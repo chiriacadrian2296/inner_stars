@@ -1,10 +1,6 @@
-import 'dart:ui' as ui;
-
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:hint_kit/hint_kit.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../data/area_vision_repository.dart';
 import '../data/custom_constellation_repository.dart';
@@ -12,7 +8,6 @@ import '../data/constellation_shape.dart';
 import '../data/habit_completion_repository.dart';
 import '../data/habit_repository.dart';
 import '../data/moodboard_repository.dart';
-import '../data/photo_storage.dart';
 import '../data/project_repository.dart';
 import '../data/reader_entries.dart';
 import '../data/reflection_answer_repository.dart';
@@ -28,6 +23,7 @@ import '../screens/area_detail_screen.dart';
 import '../screens/constellation_screen.dart';
 import '../screens/moodboard_screen.dart';
 import '../screens/new_project_screen.dart';
+import '../screens/share_preview_screen.dart';
 import '../screens/star_form_screen.dart';
 import '../screens/star_reader_screen.dart';
 import '../screens/vision_editor_screen.dart';
@@ -53,6 +49,8 @@ import 'responsive_content.dart';
 import 'search_result_card.dart';
 import 'shareable_lit_star_card.dart';
 import 'shareable_constellation_card.dart';
+import 'shareable_goal_card.dart';
+import 'shareable_pulsar_card.dart';
 import 'sky_navigation_target.dart';
 import 'sort_filter_sheet.dart';
 import 'staggered_entrance.dart';
@@ -619,55 +617,12 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         ? null
         : widget.starsShapeRepository.getById(project.starsShapeId!)?.shape;
     if (shape == null || !mounted) return;
-    final key = GlobalKey();
-    final size = MediaQuery.sizeOf(context);
-    final overlay = Overlay.of(context, rootOverlay: true);
-    OverlayEntry? entry;
-    try {
-      entry = OverlayEntry(
-        builder: (_) => Positioned(
-          left: -size.width * 2,
-          top: 0,
-          width: 400,
-          height: 600,
-          child: Material(
-            type: MaterialType.transparency,
-            child: RepaintBoundary(
-              key: key,
-              child: ShareableConstellationCard(project: project, shape: shape),
-            ),
-          ),
-        ),
-      );
-      overlay.insert(entry);
-      await WidgetsBinding.instance.endOfFrame;
-      final boundary =
-          key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary == null) return;
-      final image = await boundary.toImage(pixelRatio: 2);
-      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (bytes == null) return;
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [
-            XFile.fromData(
-              bytes.buffer.asUint8List(),
-              mimeType: 'image/png',
-              name: '${project.name}.png',
-            ),
-          ],
-          text: project.name,
-        ),
-      );
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(context.strings.shareStarError)));
-      }
-    } finally {
-      entry?.remove();
-    }
+    await showSharePreview(
+      context: context,
+      content: ShareableConstellationCard(project: project, shape: shape),
+      shareText: project.name,
+      fileName: 'constellation_${project.id}.png',
+    );
   }
 
   Future<void> _deleteConstellation(Project project) async {
@@ -935,67 +890,44 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
 
   bool _sharingStar = false;
 
-  /// Same capture-and-share as `StarReaderScreen._shareCurrent`, for a lit
-  /// star that isn't on screen: its [ShareableLitStarCard] is built in a
-  /// throwaway overlay entry far off to the side (never visible, but laid
-  /// out and painted, which [RenderRepaintBoundary.toImage] needs), captured,
-  /// and removed again.
-  Future<void> _shareStar(Star star) async {
-    if (!star.isLit || _sharingStar) return;
+  Future<void> _shareEntry(_SkyEntry entry) async {
+    if (entry.kind == StarKind.dead ||
+        entry.kind == StarKind.nascent ||
+        _sharingStar) {
+      return;
+    }
     _sharingStar = true;
-    final size = MediaQuery.sizeOf(context);
-    final pixelRatio = MediaQuery.devicePixelRatioOf(context);
-    final overlay = Overlay.of(context, rootOverlay: true);
-    final messenger = ScaffoldMessenger.of(context);
-    final errorText = context.strings.shareStarError;
-    final project = _projectsById[star.projectId];
-    final key = GlobalKey();
-    OverlayEntry? entry;
     try {
-      // The photo loads and decodes asynchronously; without this the capture
-      // could land before it shows.
-      final photoPath = star.photoPath;
-      if (photoPath != null) {
-        final bytes = await PhotoStorage.readBytes(photoPath);
-        if (bytes != null && mounted) {
-          await precacheImage(MemoryImage(bytes), context);
-        }
-      }
       if (!mounted) return;
-      entry = OverlayEntry(
-        builder: (_) => Positioned(
-          left: -size.width * 2,
-          top: 0,
-          width: size.width,
-          height: size.height,
-          child: Material(
-            type: MaterialType.transparency,
-            child: RepaintBoundary(
-              key: key,
-              child: ShareableLitStarCard(star: star, project: project),
-            ),
-          ),
-        ),
+      final (content, text, fileName) = entry.star != null
+          ? (
+              entry.star!.isLit
+                  ? ShareableLitStarCard(
+                      star: entry.star!,
+                      project: _projectsById[entry.star!.projectId],
+                    )
+                  : ShareableGoalCard(
+                      star: entry.star!,
+                      project: _projectsById[entry.star!.projectId],
+                    ),
+              entry.star!.title,
+              'star_${entry.star!.id}.png',
+            )
+          : (
+              ShareablePulsarCard(
+                habit: entry.habit!,
+                project: _projectsById[entry.habit!.projectId],
+              ),
+              entry.habit!.title,
+              'pulsar_${entry.habit!.id}.png',
+            );
+      await showSharePreview(
+        context: context,
+        content: content,
+        shareText: text,
+        fileName: fileName,
       );
-      overlay.insert(entry);
-      await WidgetsBinding.instance.endOfFrame;
-      final boundary =
-          key.currentContext!.findRenderObject() as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: pixelRatio);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) throw StateError('toByteData returned null');
-      final shareFile = XFile.fromData(
-        byteData.buffer.asUint8List(),
-        name: 'star_${DateTime.now().microsecondsSinceEpoch}.png',
-        mimeType: 'image/png',
-      );
-      await SharePlus.instance.share(
-        ShareParams(files: [shareFile], text: star.title),
-      );
-    } catch (_) {
-      messenger.showSnackBar(SnackBar(content: Text(errorText)));
     } finally {
-      entry?.remove();
       _sharingStar = false;
     }
   }
@@ -1086,6 +1018,23 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       (_mode == _SkyMode.stars && _isKindFilterNarrowed) ||
       _dateRangeFilter != null ||
       _isSortNonDefault;
+
+  bool get _hasAnyConfiguredFilter =>
+      _isAreaFilterNarrowed ||
+      _isKindFilterNarrowed ||
+      _dateRangeFilter != null ||
+      _isSortNonDefault;
+
+  void _resetAllFilters() {
+    setState(() {
+      _areaFilter = {...LifeArea.values};
+      _kindFilter = {...kListableStarKinds};
+      _dateRangeFilter = null;
+      _dateRangePreset = DateRangePreset.allTime;
+      _sortField = SortField.date;
+      _sortDirection = SortDirection.descending;
+    });
+  }
 
   /// The area-filter button's own label — a neutral prompt while nothing's
   /// narrowed, otherwise how many areas are currently picked (e.g. "2
@@ -1197,6 +1146,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   List<Widget> _buildFilterButtons(
     AppStrings strings, {
     VoidCallback? onChanged,
+    bool horizontal = false,
   }) {
     if (_mode == _SkyMode.supernovas) return const <Widget>[];
 
@@ -1211,6 +1161,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         active: _isAreaFilterNarrowed,
         label: _areaFilterButtonLabel(strings),
         tooltip: strings.filterAreasAction,
+        horizontal: horizontal,
         onTap: () => wrap(_openAreaFilter),
       ),
       if (_mode == _SkyMode.stars)
@@ -1219,6 +1170,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           active: _isKindFilterNarrowed,
           label: _kindFilterButtonLabel(strings),
           tooltip: strings.filterKindAction,
+          horizontal: horizontal,
           onTap: () => wrap(_openKindFilter),
         ),
       _FilterButton(
@@ -1226,6 +1178,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         active: _dateRangeFilter != null,
         label: _dateRangeButtonLabel(strings),
         tooltip: strings.filterDateRangeAction,
+        horizontal: horizontal,
         onTap: () => wrap(_openDateRangeFilter),
       ),
       _FilterButton(
@@ -1233,6 +1186,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         active: _isSortNonDefault,
         label: _sortButtonLabel(strings),
         tooltip: strings.sortAction,
+        horizontal: horizontal,
         onTap: () => wrap(_openSortFilter),
       ),
     ];
@@ -1255,7 +1209,14 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           buttons: _buildFilterButtons(
             strings,
             onChanged: () => setSheetState(() {}),
+            horizontal: true,
           ),
+          canReset: _hasAnyConfiguredFilter,
+          resetLabel: strings.clearFilterAction,
+          onReset: () {
+            _resetAllFilters();
+            setSheetState(() {});
+          },
         ),
       ),
     );
@@ -1628,7 +1589,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                             onOpenHabit: (habit) =>
                                 _openStarReader(PulsarEntry(habit).key),
                             onNavigateTo: widget.onNavigateTo,
-                            onShareStar: _shareStar,
+                            onShareEntry: _shareEntry,
                             onEditStar: _editStar,
                             onDeleteStar: _deleteStar,
                             onLightStar: _lightStar,
@@ -1798,12 +1759,14 @@ class _FilterButton extends StatelessWidget {
     required this.label,
     required this.tooltip,
     required this.onTap,
+    this.horizontal = false,
   });
 
   final IconData icon;
   final bool active;
   final String label;
   final String tooltip;
+  final bool horizontal;
   final VoidCallback onTap;
 
   @override
@@ -1819,9 +1782,10 @@ class _FilterButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(kRadiusField),
           child: Container(
             height: 48,
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: EdgeInsets.symmetric(horizontal: horizontal ? 12 : 4),
             decoration: selectableDecoration(colors, selected: active),
-            child: Column(
+            child: Flex(
+              direction: horizontal ? Axis.horizontal : Axis.vertical,
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1830,16 +1794,18 @@ class _FilterButton extends StatelessWidget {
                   size: 16,
                   color: active ? colors.gold : colors.muted,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                    color: active ? colors.text : colors.muted,
+                SizedBox(width: horizontal ? 8 : 0, height: horizontal ? 0 : 2),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: horizontal ? TextAlign.start : TextAlign.center,
+                    style: TextStyle(
+                      fontSize: horizontal ? 12 : 10.5,
+                      fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                      color: active ? colors.text : colors.muted,
+                    ),
                   ),
                 ),
               ],
@@ -1901,33 +1867,31 @@ class _FiltersTriggerButton extends StatelessWidget {
 /// applies to the current mode, two to a row (the same shape they'd have had
 /// paired up in the old wide-layout row), on a modal sheet instead of inline.
 class _FiltersSheet extends StatelessWidget {
-  const _FiltersSheet({required this.title, required this.buttons});
+  const _FiltersSheet({
+    required this.title,
+    required this.buttons,
+    required this.canReset,
+    required this.resetLabel,
+    required this.onReset,
+  });
 
   final String title;
   final List<Widget> buttons;
+  final bool canReset;
+  final String resetLabel;
+  final VoidCallback onReset;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            StaggeredEntrance(
-              index: 0,
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: colors.muted,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
+            StaggeredEntrance(index: 0, child: AppSheetTitle(title)),
+            const SizedBox(height: 20),
             for (var i = 0; i < buttons.length; i += 2) ...[
               if (i > 0) const SizedBox(height: 10),
               Row(
@@ -1953,6 +1917,14 @@ class _FiltersSheet extends StatelessWidget {
                 ],
               ),
             ],
+            const SizedBox(height: 24),
+            Align(
+              alignment: Alignment.center,
+              child: ElevatedButton(
+                onPressed: canReset ? onReset : null,
+                child: Text(resetLabel),
+              ),
+            ),
           ],
         ),
       ),
@@ -2075,7 +2047,7 @@ class _FlatList extends StatelessWidget {
     required this.onOpenStar,
     required this.onOpenHabit,
     required this.onNavigateTo,
-    required this.onShareStar,
+    required this.onShareEntry,
     required this.onEditStar,
     required this.onDeleteStar,
     required this.onLightStar,
@@ -2093,7 +2065,7 @@ class _FlatList extends StatelessWidget {
   final void Function(_SkyEntry entry) onOpenStar;
   final void Function(Habit habit) onOpenHabit;
   final ValueChanged<SkyNavigationTarget> onNavigateTo;
-  final ValueChanged<Star> onShareStar;
+  final ValueChanged<_SkyEntry> onShareEntry;
   final ValueChanged<Star> onEditStar;
   final ValueChanged<Star> onDeleteStar;
   final ValueChanged<Star> onLightStar;
@@ -2182,10 +2154,8 @@ class _FlatList extends StatelessWidget {
           onTap: open,
           onNavigateTo: navigateTo,
           kindAction: _kindAction(context, entry, habitCounts),
-          // Share is for lit stars. A dead one (star or pulsar) is brought
-          // back by its kind action instead of being edited or deleted.
-          onShare: entry.star != null && entry.star!.isLit
-              ? () => onShareStar(entry.star!)
+          onShare: entry.kind != StarKind.dead && entry.kind != StarKind.nascent
+              ? () => onShareEntry(entry)
               : null,
           onEdit: entry.kind == StarKind.dead
               ? null
@@ -2342,15 +2312,10 @@ class _SearchStarCard extends StatelessWidget {
         ? '${kind.label(strings)} · ${strings.formerPulsarLabel}'
         : kind.label(strings);
     final actions = <SearchCardAction>[
-      SearchCardAction(
-        icon: Icons.open_in_new_rounded,
-        label: strings.searchCardOpenAction,
-        onTap: onTap,
-      ),
       ?kindAction,
       if (onShare != null)
         SearchCardAction(
-          icon: Icons.ios_share_rounded,
+          icon: Icons.share_outlined,
           label: strings.starQuickLookShareAction,
           onTap: onShare!,
         ),

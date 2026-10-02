@@ -1127,6 +1127,7 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                                   icon: Icons.undo,
                                   label: strings.undoAction,
                                   onTap: _undoStack.isEmpty ? null : _undo,
+                                  compact: true,
                                 ),
                               ),
                             ),
@@ -1139,6 +1140,7 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                                   icon: Icons.redo,
                                   label: strings.redoAction,
                                   onTap: _redoStack.isEmpty ? null : _redo,
+                                  compact: true,
                                 ),
                               ),
                             ),
@@ -1154,6 +1156,7 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                                       ? null
                                       : _deleteArmedPoint,
                                   danger: true,
+                                  compact: true,
                                 ),
                               ),
                             ),
@@ -1174,10 +1177,22 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                   // gap before Save rather than double-padding the same gap.
                   padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
                   child: Center(
-                    child: SaveActionButton(
-                      label: strings.saveConstellationAction,
-                      lit: canSave,
-                      onPressed: canSave ? _save : null,
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 12,
+                      runSpacing: 8,
+                      children: [
+                        TextButton(
+                          onPressed: _handleBack,
+                          child: Text(strings.cancel),
+                        ),
+                        SaveActionButton(
+                          label: strings.saveConstellationAction,
+                          lit: canSave,
+                          onPressed: canSave ? _save : null,
+                        ),
+                      ],
                     ),
                   ),
                 ),

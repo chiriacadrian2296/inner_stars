@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_motion.dart';
+import '../theme/app_style.dart';
 
 enum AppConfirmationTone { standard, destructive }
 
@@ -21,6 +22,59 @@ class AppSheetTitle extends StatelessWidget {
         color: context.colors.gold,
         fontSize: 18,
         fontWeight: FontWeight.w700,
+      ),
+    );
+  }
+}
+
+/// A destination inside a functional sheet: visually related to filter
+/// surfaces, but without pretending that an action is a selected value.
+class AppSheetAction extends StatelessWidget {
+  const AppSheetAction({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.iconColor,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+  final Color? iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Semantics(
+      button: true,
+      label: label,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(kRadiusField),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 48),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: selectableDecoration(colors, selected: false),
+          child: ExcludeSemantics(
+            child: Row(
+              children: [
+                Icon(icon, size: 18, color: iconColor ?? colors.gold),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: colors.text,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -212,9 +266,22 @@ Future<T?> showAppSheet<T>({
   double? elevation,
 }) {
   final reduceMotion = MediaQuery.disableAnimationsOf(context);
+  final openingMediaQuery = MediaQuery.of(context);
   return showModalBottomSheet<T>(
     context: context,
-    builder: builder,
+    builder: (sheetContext) {
+      final routeMediaQuery = MediaQuery.of(sheetContext);
+      final fixedMediaQuery = openingMediaQuery.copyWith(
+        padding: routeMediaQuery.padding,
+        viewPadding: routeMediaQuery.viewPadding,
+        systemGestureInsets: routeMediaQuery.systemGestureInsets,
+        viewInsets: EdgeInsets.zero,
+      );
+      return MediaQuery(
+        data: fixedMediaQuery,
+        child: Builder(builder: builder),
+      );
+    },
     backgroundColor: backgroundColor,
     barrierColor: barrierColor,
     constraints: constraints,
@@ -233,5 +300,60 @@ Future<T?> showAppSheet<T>({
       curve: kMotionEnter,
       reverseCurve: kMotionExit,
     ),
+  );
+}
+
+/// A bottom-aligned modal whose geometry never reacts to the keyboard.
+/// The keyboard is allowed to cover its lower portion instead of resizing
+/// or translating it. Used by searchable pickers with controls anchored at
+/// the bottom of a fixed-height sheet.
+Future<T?> showFixedAppSheet<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  bool isDismissible = true,
+}) {
+  final openingMediaQuery = MediaQuery.of(context);
+  final mediaQuery = openingMediaQuery.copyWith(
+    padding: openingMediaQuery.padding.copyWith(top: 0),
+    viewPadding: openingMediaQuery.viewPadding.copyWith(top: 0),
+    viewInsets: EdgeInsets.zero,
+    disableAnimations: true,
+  );
+  final theme = Theme.of(context);
+  final sheetTheme = theme.bottomSheetTheme;
+  final reduceMotion = MediaQuery.disableAnimationsOf(context);
+
+  return showGeneralDialog<T>(
+    context: context,
+    barrierDismissible: isDismissible,
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    barrierColor: Colors.black54,
+    transitionDuration: reduceMotion ? Duration.zero : kMotionBase,
+    pageBuilder: (routeContext, _, _) => MediaQuery(
+      data: mediaQuery,
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Material(
+          color: sheetTheme.backgroundColor ?? Colors.transparent,
+          elevation: sheetTheme.elevation ?? 0,
+          shape: sheetTheme.shape,
+          clipBehavior: Clip.antiAlias,
+          child: SizedBox(
+            width: mediaQuery.size.width,
+            child: Builder(builder: builder),
+          ),
+        ),
+      ),
+    ),
+    transitionBuilder: (context, animation, secondaryAnimation, child) =>
+        SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 1),
+            end: Offset.zero,
+          ).animate(
+            CurvedAnimation(parent: animation, curve: kMotionEnter),
+          ),
+          child: child,
+        ),
   );
 }

@@ -4,10 +4,8 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:hint_kit/hint_kit.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../data/custom_constellation_repository.dart';
 import '../data/habit_completion_repository.dart';
@@ -36,8 +34,11 @@ import '../widgets/photo_picker.dart';
 import '../widgets/reader_entry_content.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/shareable_lit_star_card.dart';
+import '../widgets/shareable_goal_card.dart';
+import '../widgets/shareable_pulsar_card.dart';
 import '../widgets/staggered_entrance.dart';
 import 'photo_crop_screen.dart';
+import 'share_preview_screen.dart';
 import 'star_form_screen.dart';
 
 /// Moving to another star is a fade-through: the one leaving fades out
@@ -286,33 +287,40 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
 
   Future<void> _shareCurrent() async {
     if (_sharing) return;
+    final entry = _entries[_index];
+    if (entry is NascentEntry) return;
     setState(() => _sharing = true);
     try {
-      final boundary =
-          _shareKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-      final image = await boundary.toImage(
-        pixelRatio: MediaQuery.of(context).devicePixelRatio,
-      );
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) throw StateError('toByteData returned null');
-      if (!mounted) return;
-      final shareFile = XFile.fromData(
-        byteData.buffer.asUint8List(),
-        name: 'star_${DateTime.now().microsecondsSinceEpoch}.png',
-        mimeType: 'image/png',
-      );
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [shareFile],
-          text: (_entries[_index] as StarEntry).star.title,
+      final (content, text, fileName) = switch (entry) {
+        StarEntry(:final star) => (
+          star.isLit
+              ? ShareableLitStarCard(
+                  star: star,
+                  project: widget.projectsById[star.projectId],
+                )
+              : ShareableGoalCard(
+                  star: star,
+                  project: widget.projectsById[star.projectId],
+                ),
+          star.title,
+          'star_${star.id}.png',
         ),
+        PulsarEntry(:final habit) => (
+          ShareablePulsarCard(
+            habit: habit,
+            project: widget.projectsById[habit.projectId],
+          ),
+          habit.title,
+          'pulsar_${habit.id}.png',
+        ),
+        NascentEntry() => throw StateError('A nascent star is not shareable'),
+      };
+      await showSharePreview(
+        context: context,
+        content: content,
+        shareText: text,
+        fileName: fileName,
       );
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(context.strings.shareStarError)));
-      }
     } finally {
       if (mounted) setState(() => _sharing = false);
     }
@@ -674,16 +682,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
               ),
             );
           }
-        } else if (star.isLit) {
-          actions.add(
-            _ReaderAction(
-              icon: Icons.share_outlined,
-              label: strings.starQuickLookShareAction,
-              onTap: _sharing ? null : _shareCurrent,
-              loading: _sharing,
-            ),
-          );
-        } else if (canRefresh) {
+        } else if (!star.isLit && canRefresh) {
           // Lights the star. Drawn dark, like a pulsar that isn't burning:
           // the star is off, and this is what switches it on.
           actions.add(
@@ -692,6 +691,16 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
               label: strings.actionLight,
               onTap: _markAchieved,
               off: true,
+            ),
+          );
+        }
+        if (!star.dead) {
+          actions.add(
+            _ReaderAction(
+              icon: Icons.share_outlined,
+              label: strings.starQuickLookShareAction,
+              onTap: _sharing ? null : _shareCurrent,
+              loading: _sharing,
             ),
           );
         }
@@ -756,6 +765,14 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
             );
           }
         }
+        actions.add(
+          _ReaderAction(
+            icon: Icons.share_outlined,
+            label: strings.starQuickLookShareAction,
+            onTap: _sharing ? null : _shareCurrent,
+            loading: _sharing,
+          ),
+        );
         if (canEdit) {
           actions.add(_editAction());
           actions.add(_deleteAction());
@@ -1261,7 +1278,7 @@ class _ZoomablePhotoLayerState extends State<_ZoomablePhotoLayer>
       _controller.value = Matrix4Tween(
         begin: _resetFrom,
         end: _resetTo,
-      ).lerp(Curves.easeOut.transform(_resetAnimation.value))!;
+      ).lerp(Curves.easeOut.transform(_resetAnimation.value));
     });
   }
 
@@ -1719,51 +1736,8 @@ class _MarkAchievedSheetState extends State<MarkAchievedSheet> {
   String? _photoPath;
 
   Future<void> _pickPhoto() async {
-    final colors = context.colors;
     final strings = context.strings;
-
-    final source = await showAppSheet<ImageSource>(
-      context: context,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              StaggeredEntrance(
-                index: 0,
-                child: ListTile(
-                  leading: Icon(
-                    Icons.photo_camera_outlined,
-                    color: colors.gold,
-                  ),
-                  title: Text(
-                    strings.takePhotoOption,
-                    style: TextStyle(color: colors.text),
-                  ),
-                  onTap: () =>
-                      Navigator.of(sheetContext).pop(ImageSource.camera),
-                ),
-              ),
-              StaggeredEntrance(
-                index: 1,
-                child: ListTile(
-                  leading: Icon(
-                    Icons.photo_library_outlined,
-                    color: colors.gold,
-                  ),
-                  title: Text(
-                    strings.choosePhotoOption,
-                    style: TextStyle(color: colors.text),
-                  ),
-                  onTap: () =>
-                      Navigator.of(sheetContext).pop(ImageSource.gallery),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+    final source = await showPhotoSourceSheet(context);
     if (source == null || !mounted) return;
 
     try {
@@ -1798,23 +1772,18 @@ class _MarkAchievedSheetState extends State<MarkAchievedSheet> {
 
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             StaggeredEntrance(
               index: 0,
-              child: Text(
-                strings.markAchievedSheetTitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: colors.text,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 17,
-                ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: AppSheetTitle(strings.markAchievedSheetTitle),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
             StaggeredEntrance(
               index: 1,
               child: IntensityBolts(
@@ -1855,18 +1824,29 @@ class _MarkAchievedSheetState extends State<MarkAchievedSheet> {
                 onRemove: _removePhoto,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             StaggeredEntrance(
               index: 3,
               child: Align(
-                child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(
-                    MarkAchievedResult(
-                      intensity: _intensity,
-                      photoPath: _photoPath,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(strings.cancel),
                     ),
-                  ),
-                  child: Text(strings.markAchievedConfirm),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(
+                        MarkAchievedResult(
+                          intensity: _intensity,
+                          photoPath: _photoPath,
+                        ),
+                      ),
+                      child: Text(strings.markAchievedConfirm),
+                    ),
+                  ],
                 ),
               ),
             ),

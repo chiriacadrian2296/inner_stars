@@ -9,7 +9,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hint_kit/hint_kit.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:tooltip_card/tooltip_card.dart';
 
 import '../audio/audio_service.dart';
@@ -23,6 +22,7 @@ import '../data/constellation_shape.dart';
 import '../data/custom_constellation_repository.dart';
 import '../data/habit_completion_repository.dart';
 import '../data/habit_repository.dart';
+import '../data/moodboard_repository.dart';
 import '../data/project_repository.dart';
 import '../data/reader_entries.dart';
 import '../data/reflection_answer_repository.dart';
@@ -38,6 +38,7 @@ import '../notifications/reminder_service.dart';
 import '../settings/settings_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../theme/life_area_theme.dart';
 import '../tutorials/sky_hint_target.dart';
 import '../tutorials/tour_gesture_step.dart';
 import '../tutorials/tour_step_card.dart';
@@ -78,11 +79,13 @@ import 'area_detail_screen.dart';
 import 'friends_screen.dart';
 import 'sky_search_screen.dart';
 import 'metaphor_screen.dart';
+import 'moodboard_screen.dart';
 import 'new_project_screen.dart';
 import 'nightlight_gate_screen.dart';
 import 'pulsar_reader_screen.dart';
 import 'quick_settings_screen.dart';
 import 'settings_screen.dart';
+import 'share_preview_screen.dart';
 import 'sound_lab_screen.dart';
 import 'constellation_screen.dart';
 import 'shooting_stars_screen.dart';
@@ -91,6 +94,7 @@ import 'star_reader_screen.dart';
 import 'stats_screen.dart';
 import 'ui_sandbox_screen.dart';
 import 'visions_screen.dart';
+import 'vision_editor_screen.dart';
 
 /// Shared by the Grid switch pill and [_ZoomSlider] at the bottom of the
 /// sky overlay, so the two read as matching controls rather than each
@@ -101,6 +105,7 @@ import 'visions_screen.dart';
 /// squared-off rectangle.
 const double _bottomPillHeight = 44.0;
 const double _bottomPillRadius = 22.0;
+const double _skyTooltipPadding = 8.0;
 
 /// Shared by every hold-to-activate gesture on this screen — the sky's own
 /// hold-to-peek (see `_SkyScreenState._holdDuration`) and the menu button's
@@ -636,6 +641,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _tourController?.removeListener(_handleTourChanged);
     _holdTimer?.cancel();
     _holdRingArmTimer?.cancel();
+    _holdTooltipDismissTimer?.cancel();
     _stopHoldHaptic();
     _flyController.dispose();
     _holdRingController.dispose();
@@ -1250,11 +1256,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
 
   void _closeSkyTooltip() => _skyTooltipController.close();
 
-  /// Gives the menu FAB the same first-interaction dismissal rule as the
-  /// sky itself: when a quick-look is already open, the first tap or hold on
-  /// the FAB only closes it. The button latches this result for the whole
-  /// press, so releasing a tap (or completing a hold) cannot also open one
-  /// of its menus after dismissing the tooltip.
+  /// Closes a quick-look as soon as a press begins on the menu FAB. The
+  /// button uses the return value to keep a short tap dismissal-only, while
+  /// still letting a completed hold continue into the full menu.
   bool _dismissSkyTooltipForMenuPress() {
     if (!_skyTooltipController.isOpen) return false;
     _closeSkyTooltip();
@@ -1402,83 +1406,56 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _refresh();
   }
 
-  /// Mirrors `StarReaderScreen._shareCurrent` exactly (same
-  /// [RenderRepaintBoundary] capture, same [SharePlus] call) — captures
-  /// [_quickLookShareKey], which wraps a [ShareableLitStarCard] rendered
-  /// far off-screen (see the `build` Stack) purely so it exists to
-  /// capture; only ever reachable when [_quickLookStar] is lit (see
-  /// [SkyStarTooltip]'s own `onShare`, null otherwise).
   Future<void> _shareQuickLookStar() async {
     final star = _quickLookStar;
-    if (star == null || !star.isLit || _sharingQuickLookStar) return;
+    if (star == null || star.dead || _sharingQuickLookStar) return;
+    final project = _quickLookConstellation?.project;
+    _closeSkyTooltip();
     setState(() => _sharingQuickLookStar = true);
     try {
-      final boundary =
-          _quickLookShareKey.currentContext!.findRenderObject()
-              as RenderRepaintBoundary;
-      final image = await boundary.toImage(
-        pixelRatio: MediaQuery.of(context).devicePixelRatio,
-      );
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) throw StateError('toByteData returned null');
       if (!mounted) return;
-      final shareFile = XFile.fromData(
-        byteData.buffer.asUint8List(),
-        name: 'star_${DateTime.now().microsecondsSinceEpoch}.png',
-        mimeType: 'image/png',
+      await showSharePreview(
+        context: context,
+        content: star.isLit
+            ? ShareableLitStarCard(star: star, project: project)
+            : ShareableGoalCard(star: star, project: project),
+        shareText: star.title,
+        fileName: 'star_${star.id}.png',
       );
-      await SharePlus.instance.share(
-        ShareParams(files: [shareFile], text: star.title),
-      );
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(context.strings.shareStarError)));
-      }
     } finally {
       if (mounted) setState(() => _sharingQuickLookStar = false);
     }
   }
 
-  /// [CreationSuccessDialog]'s own Share button — same capture-and-share
-  /// shape as [_shareQuickLookStar], just reading [_creationShareSubject]/
-  /// [_creationShareKey] instead of the sky tooltip's own, and covering
-  /// every kind a creation can be (a lit star, a goal, a pulsar, a whole
-  /// new constellation) rather than just a lit star.
   Future<void> _shareCreation() async {
     final subject = _creationShareSubject;
     if (subject == null || _sharingCreation) return;
     setState(() => _sharingCreation = true);
     try {
-      final boundary =
-          _creationShareKey.currentContext!.findRenderObject()
-              as RenderRepaintBoundary;
-      final image = await boundary.toImage(
-        pixelRatio: MediaQuery.of(context).devicePixelRatio,
-      );
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) throw StateError('toByteData returned null');
       if (!mounted) return;
-      final shareFile = XFile.fromData(
-        byteData.buffer.asUint8List(),
-        name: 'creation_${DateTime.now().microsecondsSinceEpoch}.png',
-        mimeType: 'image/png',
-      );
       final text = switch (subject) {
         _StarShare(:final star) => star.title,
         _PulsarShare(:final habit) => habit.title,
         _ConstellationShare(:final project) => project.name,
       };
-      await SharePlus.instance.share(
-        ShareParams(files: [shareFile], text: text),
+      final content = switch (subject) {
+        _StarShare(:final star, :final project) =>
+          star.isLit
+              ? ShareableLitStarCard(star: star, project: project)
+              : ShareableGoalCard(star: star, project: project),
+        _PulsarShare(:final habit, :final project) => ShareablePulsarCard(
+          habit: habit,
+          project: project,
+        ),
+        _ConstellationShare(:final project, :final shape) =>
+          ShareableConstellationCard(project: project, shape: shape),
+      };
+      await showSharePreview(
+        context: context,
+        content: content,
+        shareText: text,
+        fileName: 'creation_${DateTime.now().microsecondsSinceEpoch}.png',
       );
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(context.strings.shareStarError)));
-      }
     } finally {
       if (mounted) setState(() => _sharingCreation = false);
     }
@@ -1566,17 +1543,20 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     final placed = _placedForStar(star.id);
     final strings = context.strings;
     setState(() => _creationShareSubject = _StarShare(star, placed?.project));
-    CreationSuccessDialog.show(
-      context,
-      icon: star.isLit ? Icons.star : Icons.star_border,
-      message: star.isLit
-          ? strings.creationSuccessLitMessage
-          : strings.creationSuccessUnlitMessage,
-      onTakeMeThere: () {
-        if (placed != null) _flyToStarWithHoldFeedback(placed, star.id);
-      },
-      onShare: _shareCreation,
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      CreationSuccessDialog.show(
+        context,
+        icon: star.isLit ? Icons.star : Icons.star_border,
+        message: star.isLit
+            ? strings.creationSuccessLitMessage
+            : strings.creationSuccessUnlitMessage,
+        onTakeMeThere: () {
+          if (placed != null) _flyToStarWithHoldFeedback(placed, star.id);
+        },
+        onShare: _shareCreation,
+      );
+    });
   }
 
   /// Same as [_announceStarCreated], for a freshly created pulsar — called
@@ -1586,15 +1566,18 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     setState(
       () => _creationShareSubject = _PulsarShare(habit, placed?.project),
     );
-    CreationSuccessDialog.show(
-      context,
-      icon: StarKind.pulsar.icon,
-      message: context.strings.creationSuccessPulsarMessage,
-      onTakeMeThere: () {
-        if (placed != null) _flyToPulsarWithHoldFeedback(placed, habit.id);
-      },
-      onShare: _shareCreation,
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      CreationSuccessDialog.show(
+        context,
+        icon: StarKind.pulsar.icon,
+        message: context.strings.creationSuccessPulsarMessage,
+        onTakeMeThere: () {
+          if (placed != null) _flyToPulsarWithHoldFeedback(placed, habit.id);
+        },
+        onShare: _shareCreation,
+      );
+    });
   }
 
   /// Same as [_announceStarCreated], for a freshly created constellation —
@@ -1610,13 +1593,16 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
           ? null
           : _ConstellationShare(project, placed!.shape!);
     });
-    CreationSuccessDialog.show(
-      context,
-      icon: iconForSlug(project.iconSlug),
-      message: context.strings.creationSuccessConstellationMessage,
-      onTakeMeThere: () => _flyToWithHoldFeedback(SkyProjectTarget(project)),
-      onShare: _shareCreation,
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      CreationSuccessDialog.show(
+        context,
+        icon: iconForSlug(project.iconSlug),
+        message: context.strings.creationSuccessConstellationMessage,
+        onTakeMeThere: () => _flyToWithHoldFeedback(SkyProjectTarget(project)),
+        onShare: _shareCreation,
+      );
+    });
   }
 
   /// Opens the star form on one specific empty slot of [constellation]'s
@@ -2635,6 +2621,12 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   static const _holdRingArmDelay = Duration(milliseconds: 100);
   Timer? _holdRingArmTimer;
 
+  /// Closes an already-open tooltip as soon as a new press has lasted long
+  /// enough to read as the beginning of a hold, even if that hold never
+  /// completes or points at empty sky.
+  Timer? _holdTooltipDismissTimer;
+  bool _tooltipDismissedForPendingHold = false;
+
   /// One real, continuous motor vibration for the length of a hold, via
   /// [Haptics]'s own native channel — [HapticFeedback] can only fire
   /// discrete, fixed-length system clicks, not a buzz of arbitrary
@@ -2735,9 +2727,19 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
 
   void _handleTapDown(TapDownDetails details) {
     _holdFired = false;
+    _tooltipDismissedForPendingHold = false;
     _holdTimer?.cancel();
     _holdRingArmTimer?.cancel();
     _holdRingArmTimer = null;
+    _holdTooltipDismissTimer?.cancel();
+    _holdTooltipDismissTimer = Timer(_holdRingArmDelay, () {
+      _holdTooltipDismissTimer = null;
+      if (!_skyTooltipController.isOpen) return;
+      _skyTooltipController.close();
+      _tooltipDismissedForPendingHold = true;
+      _lastEmptyTapTime = null;
+      _lastEmptyTapPosition = null;
+    });
     _stopHoldHaptic();
     _holdTargetIsMenuControl = _menuControlPressed;
     if (_holdTargetIsMenuControl) {
@@ -2819,6 +2821,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _holdTimer = null;
     _holdRingArmTimer?.cancel();
     _holdRingArmTimer = null;
+    _holdTooltipDismissTimer?.cancel();
+    _holdTooltipDismissTimer = null;
     _stopHoldHaptic();
     _collapseHoldRing();
   }
@@ -2903,6 +2907,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _holdTimer = null;
     _holdRingArmTimer?.cancel();
     _holdRingArmTimer = null;
+    _holdTooltipDismissTimer?.cancel();
+    _holdTooltipDismissTimer = null;
     _stopHoldHaptic();
     // Captured before [_collapseHoldRing] below, which starts its own
     // reverse animation and would otherwise make `isAnimating` read true
@@ -2919,6 +2925,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // [_handleHold]) before this release arrived; the release itself is
     // not a second, separate tap on top of that.
     if (_holdFired) return;
+    // The press lasted long enough to begin a hold and already dismissed the
+    // old tooltip. Its release must not become a second action on whatever
+    // happened to be underneath.
+    if (_tooltipDismissedForPendingHold) return;
     // A hold that started charging — the ring was already visibly on
     // screen — but let go before firing isn't a tap either: it's an
     // abandoned hold, and should read as exactly that. Falling through to
@@ -4300,9 +4310,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         controller: _skyTooltipController,
         placementSide: TooltipCardPlacementSide.bottom,
         flyoutBackgroundColor: colors.nightPanel,
-        borderColor: colors.nightBorder,
+        borderColor: Colors.transparent,
         beakColor: colors.nightPanel,
-        borderRadius: BorderRadius.circular(kRadiusCard),
+        // The outer curve stays concentric with the card's own 16 px curve:
+        // its radius grows by exactly the space between the two surfaces.
+        borderRadius: BorderRadius.circular(kRadiusCard + _skyTooltipPadding),
         elevation: 8,
         // `tooltip_card`'s own position delegate caps width by
         // horizontal clearance to *one* screen edge from the
@@ -4318,9 +4330,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         // screen instead.
         fitToViewport: false,
         constraints: BoxConstraints(
-          maxWidth: math.min(380, MediaQuery.sizeOf(context).width - 48),
+          maxWidth: math.min(480, MediaQuery.sizeOf(context).width - 12),
         ),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(_skyTooltipPadding),
         // `TooltipCard`'s own default (`WhenContentHide.goAway`) auto-closes
         // on the pointer leaving the panel — meant for a *hover*-triggered
         // tooltip, but it applies to any "press-like" trigger mode
@@ -4363,8 +4375,13 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       _ConstellationTooltip(:final constellation) => SkyConstellationTooltip(
         project: constellation.project,
         stars: constellation.stars,
+        shape: constellation.shape,
         onClose: _closeSkyTooltip,
         onView: () => _viewConstellation(constellation),
+        onAddStar: () => _addStarToQuickLookConstellation(constellation),
+        onShare: () => _shareQuickLookConstellation(constellation),
+        onEdit: () => _editQuickLookConstellation(constellation),
+        onDelete: () => _deleteQuickLookConstellation(constellation),
       ),
       _AreaTooltip(:final area) => SkyAreaTooltip(
         area: area,
@@ -4375,6 +4392,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         ),
         onClose: _closeSkyTooltip,
         onView: () => _viewArea(area),
+        onVision: () => _openQuickLookAreaVision(area),
+        onMoodboard: () => _openQuickLookAreaMoodboard(area),
+        onReflections: () => _openQuickLookAreaReflections(area),
+        onNewConstellation: () => _openQuickLookAreaConstellation(area),
       ),
       _NascentStarTooltip(:final constellation) => SkyNascentStarTooltip(
         project: constellation.project,
@@ -4417,6 +4438,12 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     final countsByDay = habitCompletionCountsByDay(
       widget.habitCompletionRepository.getAllForHabit(habit.id),
     );
+    final now = DateTime.now();
+    final doneToday = countsByDay.containsKey(
+      DateTime(now.year, now.month, now.day),
+    );
+    final isStepper =
+        habit.frequency == HabitFrequency.daily && habit.targetPerPeriod > 1;
     return SkyPulsarTooltip(
       habit: habit,
       project: constellation.project,
@@ -4424,7 +4451,136 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       isLit: !habit.dead && isHabitLit(habit, countsByDay),
       onClose: _closeSkyTooltip,
       onView: _viewQuickLookPulsar,
+      onToday: () => _quickLookPulsarToday(habit),
+      todayActionIcon: isStepper
+          ? Icons.add_circle_outline_rounded
+          : Icons.local_fire_department_rounded,
+      todayActionLabel: isStepper
+          ? context.strings.habitProgressToday(
+              habitDailyProgress(habit, countsByDay),
+              habit.targetPerPeriod,
+            )
+          : (doneToday
+                ? context.strings.actionTurnOff
+                : context.strings.actionLight),
+      onEdit: () => _editQuickLookPulsar(constellation, habit),
+      onDelete: habit.dead ? null : () => _deleteQuickLookPulsar(habit),
+      onShare: habit.dead
+          ? null
+          : () => _shareQuickLookPulsar(constellation, habit),
     );
+  }
+
+  Future<void> _shareQuickLookPulsar(
+    PlacedConstellation constellation,
+    Habit habit,
+  ) async {
+    _closeSkyTooltip();
+    await showSharePreview(
+      context: context,
+      content: ShareablePulsarCard(
+        habit: habit,
+        project: constellation.project,
+      ),
+      shareText: habit.title,
+      fileName: 'pulsar_${habit.id}.png',
+    );
+  }
+
+  Future<void> _quickLookPulsarToday(Habit habit) async {
+    _closeSkyTooltip();
+    final completions = widget.habitCompletionRepository;
+    final counts = habitCompletionCountsByDay(
+      completions.getAllForHabit(habit.id),
+    );
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final isStepper =
+        habit.frequency == HabitFrequency.daily && habit.targetPerPeriod > 1;
+    if (isStepper) {
+      await completions.logInstance(habit.id);
+    } else if (counts.containsKey(today)) {
+      await completions.unmarkDone(habit.id, today);
+    } else {
+      await completions.markDone(habit.id);
+    }
+    _refresh();
+  }
+
+  Future<void> _editQuickLookPulsar(
+    PlacedConstellation constellation,
+    Habit habit,
+  ) async {
+    _closeSkyTooltip();
+    final result = await Navigator.of(context).push<Object>(
+      MaterialPageRoute(
+        builder: (_) => StarFormScreen(
+          existingHabit: habit,
+          contextProject: constellation.project,
+          projectRepository: widget.projectRepository,
+          starsShapeRepository: widget.starsShapeRepository,
+          hideDelete: habit.dead,
+        ),
+      ),
+    );
+    if (result is! StarFormResult) return;
+    if (habit.dead) {
+      await widget.habitRepository.resurrect(
+        habit.id,
+        title: result.title,
+        description: result.description,
+        projectId: result.projectId,
+        intensity: result.intensity ?? habit.intensity,
+        frequency: result.habitFrequency ?? habit.frequency,
+        targetPerPeriod: result.habitTargetPerPeriod ?? habit.targetPerPeriod,
+        reminderHour: result.reminderHour,
+        reminderMinute: result.reminderMinute,
+        completionRepository: widget.habitCompletionRepository,
+      );
+    } else {
+      await widget.habitRepository.update(
+        id: habit.id,
+        title: result.title,
+        description: result.description,
+        projectId: result.projectId,
+        intensity: result.intensity ?? habit.intensity,
+        frequency: result.habitFrequency ?? habit.frequency,
+        targetPerPeriod: result.habitTargetPerPeriod ?? habit.targetPerPeriod,
+        reminderHour: result.reminderHour,
+        reminderMinute: result.reminderMinute,
+      );
+    }
+    _refresh();
+  }
+
+  Future<void> _deleteQuickLookPulsar(Habit habit) async {
+    _closeSkyTooltip();
+    final strings = context.strings;
+    final confirmed = await showAppConfirmation(
+      context: context,
+      title: strings.deletePulsarConfirmTitle,
+      body: strings.deletePulsarConfirmBody,
+      cancelLabel: strings.cancel,
+      confirmLabel: strings.deleteStarAction,
+      tone: AppConfirmationTone.destructive,
+    );
+    if (!confirmed) return;
+    await widget.habitRepository.delete(habit.id);
+    _refresh();
+  }
+
+  Future<void> _lightQuickLookStar() async {
+    final star = _quickLookStar;
+    if (star == null || !star.isUnlit) return;
+    _closeSkyTooltip();
+    final result = await showMarkAchievedSheet(context);
+    if (result == null) return;
+    await widget.starRepository.markAchieved(
+      star.id,
+      intensity: result.intensity,
+      photoPath: result.photoPath,
+    );
+    _refresh();
   }
 
   /// Split out from [_buildSkyTooltip] only because a [_StarTooltip]'s own
@@ -4443,9 +4599,134 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       onClose: _closeSkyTooltip,
       onView: _viewQuickLookStar,
       onEdit: _editQuickLookStar,
-      onShare: star.isLit ? _shareQuickLookStar : null,
+      onLight: star.isUnlit ? _lightQuickLookStar : null,
+      onShare: star.dead ? null : _shareQuickLookStar,
       onDelete: star.dead ? null : _deleteQuickLookStar,
     );
+  }
+
+  Future<void> _addStarToQuickLookConstellation(
+    PlacedConstellation constellation,
+  ) async {
+    _closeSkyTooltip();
+    final occupied = constellation.stars
+        .map((star) => star.slotSequence)
+        .toSet();
+    int? firstFreeSlot;
+    for (
+      var slot = 1;
+      slot <= (constellation.shape?.points.length ?? 0);
+      slot++
+    ) {
+      if (!occupied.contains(slot)) {
+        firstFreeSlot = slot;
+        break;
+      }
+    }
+    final result = await Navigator.of(context).push<Object>(
+      MaterialPageRoute(
+        builder: (_) => StarFormScreen(
+          lockedProject: constellation.project,
+          projectRepository: widget.projectRepository,
+          starsShapeRepository: widget.starsShapeRepository,
+          slotSequence: firstFreeSlot,
+        ),
+      ),
+    );
+    if (result is! StarFormResult) return;
+    if (result.kind == StarKind.pulsar) {
+      final created = await widget.habitRepository.add(
+        title: result.title,
+        description: result.description,
+        projectId: constellation.project.id,
+        intensity: result.intensity ?? 3,
+        frequency: result.habitFrequency ?? HabitFrequency.daily,
+        targetPerPeriod: result.habitTargetPerPeriod ?? 1,
+        reminderHour: result.reminderHour,
+        reminderMinute: result.reminderMinute,
+      );
+      _refresh();
+      _announcePulsarCreated(created);
+    } else {
+      final created = await widget.starRepository.add(
+        title: result.title,
+        description: result.description,
+        projectId: constellation.project.id,
+        slotSequence: result.slotSequence,
+        targetDate: result.targetDate,
+        achievedDate: result.achievedDate,
+        intensity: result.intensity,
+        photoPath: result.photoPath,
+      );
+      _refresh();
+      _announceStarCreated(created);
+    }
+  }
+
+  Future<void> _shareQuickLookConstellation(
+    PlacedConstellation constellation,
+  ) async {
+    final shape = constellation.shape;
+    if (shape == null) return;
+    _closeSkyTooltip();
+    await showSharePreview(
+      context: context,
+      content: ShareableConstellationCard(
+        project: constellation.project,
+        shape: shape,
+      ),
+      shareText: constellation.project.name,
+      fileName: 'constellation_${constellation.project.id}.png',
+    );
+  }
+
+  Future<void> _editQuickLookConstellation(
+    PlacedConstellation constellation,
+  ) async {
+    _closeSkyTooltip();
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => NewProjectScreen(
+          projectRepository: widget.projectRepository,
+          starsShapeRepository: widget.starsShapeRepository,
+          existingProject: constellation.project,
+        ),
+      ),
+    );
+    _refresh();
+  }
+
+  Future<void> _deleteQuickLookConstellation(
+    PlacedConstellation constellation,
+  ) async {
+    _closeSkyTooltip();
+    final strings = context.strings;
+    final project = constellation.project;
+    final confirmed = await showAppConfirmation(
+      context: context,
+      title: 'Eliminare questa costellazione?',
+      body: 'Verranno eliminati definitivamente stelle, pulsar, completamenti e foto. Questa azione non può essere annullata.',
+      cancelLabel: strings.cancel,
+      confirmLabel: strings.deleteStarAction,
+      tone: AppConfirmationTone.destructive,
+    );
+    if (!confirmed) return;
+    final habitIds = await widget.habitRepository.deleteAllForProject(
+      project.id,
+    );
+    for (final habitId in habitIds) {
+      await widget.habitCompletionRepository.deleteAllForHabit(habitId);
+    }
+    await widget.starRepository.deleteAllForProject(project.id);
+    await widget.projectRepository.delete(project.id);
+    final shapeId = project.starsShapeId;
+    if (shapeId != null &&
+        !widget.projectRepository.getAll().any(
+          (candidate) => candidate.starsShapeId == shapeId,
+        )) {
+      await widget.starsShapeRepository.delete(shapeId);
+    }
+    _refresh();
   }
 
   Future<void> _viewConstellation(PlacedConstellation constellation) async {
@@ -4467,6 +4748,79 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       final placed = _placedFor(result);
       if (placed != null) _flyToConstellation(placed);
     }
+  }
+
+  Future<void> _openQuickLookAreaVision(LifeArea area) async {
+    _closeSkyTooltip();
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Theme(
+          data: buildLifeAreaTheme(),
+          child: VisionEditorScreen(
+            area: area,
+            repository: widget.areaVisionRepository,
+          ),
+        ),
+      ),
+    );
+    _refresh();
+  }
+
+  Future<void> _openQuickLookAreaMoodboard(LifeArea area) async {
+    _closeSkyTooltip();
+    try {
+      final repository = await MoodboardRepository.create();
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => Theme(
+            data: buildLifeAreaTheme(),
+            child: MoodboardScreen(area: area, repository: repository),
+          ),
+        ),
+      );
+      _refresh();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.strings.moodboardSaveError)),
+        );
+      }
+    }
+  }
+
+  Future<void> _openQuickLookAreaReflections(LifeArea area) async {
+    _closeSkyTooltip();
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Theme(
+          data: buildLifeAreaTheme(),
+          child: AreaReflectionsScreen(
+            area: area,
+            repository: widget.reflectionAnswerRepository,
+          ),
+        ),
+      ),
+    );
+    _refresh();
+  }
+
+  Future<void> _openQuickLookAreaConstellation(LifeArea area) async {
+    _closeSkyTooltip();
+    final project = await Navigator.of(context).push<Project>(
+      MaterialPageRoute(
+        builder: (_) => Theme(
+          data: buildLifeAreaTheme(),
+          child: NewProjectScreen(
+            projectRepository: widget.projectRepository,
+            starsShapeRepository: widget.starsShapeRepository,
+            presetArea: area,
+          ),
+        ),
+      ),
+    );
+    _refresh();
+    if (project != null) _announceConstellationCreated(project);
   }
 
   Future<void> _viewArea(LifeArea area) async {
@@ -4624,8 +4978,8 @@ class _MenuStarButton extends StatefulWidget {
   // starting on top of this button) — see `_handleTapUp`/`_handleTapCancel`.
   final VoidCallback onQuickTap;
 
-  /// Invoked at the start of a press. Returning true consumes this whole
-  /// press because an open sky tooltip was dismissed instead.
+  /// Invoked at the start of a press. Returning true makes a short tap
+  /// dismiss-only, while a completed hold is still allowed to open the menu.
   final bool Function()? onDismissSkyTooltip;
 
   /// Called `true` the instant a touch lands here, `false` the instant it
@@ -4718,9 +5072,9 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   // widgets, so it's kept small and duplicated rather than factored out.
   bool _hapticActive = false;
 
-  // Latched on down rather than re-checking on up: dismissing the tooltip
-  // changes the parent's state immediately, but this press must remain a
-  // dismiss-only gesture through its release (or completed hold).
+  // Latched on down rather than re-checking on up: a short tap remains a
+  // dismiss-only gesture, but a completed hold deliberately clears this and
+  // continues into the full menu.
   bool _dismissedSkyTooltip = false;
 
   // See `_SkyScreenState._hapticAmplitude`'s own doc comment for why this
@@ -4750,6 +5104,7 @@ class _MenuStarButtonState extends State<_MenuStarButton>
             if (status == AnimationStatus.completed) {
               _chargeController.reset();
               _stopHoldHaptic();
+              _dismissedSkyTooltip = false;
               widget.onTap();
             }
           });
@@ -4767,7 +5122,6 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   void _handlePressStart() {
     _dismissedSkyTooltip = widget.onDismissSkyTooltip?.call() ?? false;
     widget.onPressChanged?.call(true);
-    if (_dismissedSkyTooltip) return;
     _chargeController.forward();
     if (isTouchOnlyMobile) _startHoldHaptic();
   }
@@ -4785,6 +5139,9 @@ class _MenuStarButtonState extends State<_MenuStarButton>
     _stopHoldHaptic();
     if (_dismissedSkyTooltip) {
       _dismissedSkyTooltip = false;
+      if (_chargeController.status == AnimationStatus.forward) {
+        _chargeController.reverse();
+      }
       return;
     }
     if (_chargeController.status == AnimationStatus.forward) {
@@ -4801,6 +5158,9 @@ class _MenuStarButtonState extends State<_MenuStarButton>
     _stopHoldHaptic();
     if (_dismissedSkyTooltip) {
       _dismissedSkyTooltip = false;
+      if (_chargeController.status == AnimationStatus.forward) {
+        _chargeController.reverse();
+      }
       return;
     }
     if (_chargeController.status == AnimationStatus.forward) {

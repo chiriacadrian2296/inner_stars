@@ -53,7 +53,7 @@ void main() {
         eyebrow: 'Stella accesa',
         title: 'Un titolo italiano molto lungo da troncare',
         breadcrumb: 'Crescita personale → Una costellazione molto lunga',
-        primary: 'Intensità: 5',
+        metrics: [SearchCardMetric(icon: Icons.bolt_rounded, value: '5')],
       ),
       actions: [
         SearchCardAction(

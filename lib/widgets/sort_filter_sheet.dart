@@ -67,13 +67,21 @@ class _SortFilterSheetState extends State<_SortFilterSheet> {
     });
   }
 
+  void _reset() => setState(() {
+    _field = SortField.date;
+    _direction = SortDirection.descending;
+  });
+
+  bool get _isDefault =>
+      _field == SortField.date && _direction == SortDirection.descending;
+
   @override
   Widget build(BuildContext context) {
     final strings = context.strings;
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,7 +90,7 @@ class _SortFilterSheetState extends State<_SortFilterSheet> {
               index: 0,
               child: AppSheetTitle(strings.sortSheetTitle),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
             // The field on one side, a single icon button flipping the
             // direction on the other — same "picker beside a stepper" shape
             // as the date-range sheet's duration chips + step arrows.
@@ -141,17 +149,28 @@ class _SortFilterSheetState extends State<_SortFilterSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             StaggeredEntrance(
               index: 4,
               child: Align(
-                child: ElevatedButton(
-                  onPressed: _hasChanges
-                      ? () =>
-                            Navigator.of(context)
-                                .pop((field: _field, direction: _direction))
-                      : null,
-                  child: Text(strings.applyFilterAction),
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    TextButton(
+                      onPressed: _isDefault ? null : _reset,
+                      child: Text(strings.clearFilterAction),
+                    ),
+                    ElevatedButton(
+                      onPressed: _hasChanges
+                          ? () => Navigator.of(context).pop(
+                              (field: _field, direction: _direction),
+                            )
+                          : null,
+                      child: Text(strings.applyFilterAction),
+                    ),
+                  ],
                 ),
               ),
             ),

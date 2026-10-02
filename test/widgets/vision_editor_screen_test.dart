@@ -101,7 +101,7 @@ void main() {
   ) async {
     final repository = await open(tester);
     await tester.enterText(find.byType(TextField), 'Nuova bozza');
-    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(find.byType(AlertDialog), findsOneWidget);
     await tester.tap(find.text(const StringsIt().cancel));
@@ -110,7 +110,7 @@ void main() {
       tester.widget<TextField>(find.byType(TextField)).controller!.text,
       'Nuova bozza',
     );
-    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     await tester.tap(find.text(const StringsIt().discardChangesAction));
     await tester.pumpAndSettle();
@@ -200,10 +200,7 @@ void main() {
     expect(controller.selection.baseOffset, controller.text.length);
     await tester.tap(find.text(const StringsIt().saveChanges));
     await tester.pumpAndSettle();
-    expect(
-      repository.getVision(LifeArea.physical),
-      '### <u>Vision</u>\n\n---',
-    );
+    expect(repository.getVision(LifeArea.physical), '### <u>Vision</u>\n\n---');
     expect(tester.takeException(), isNull);
   });
 }

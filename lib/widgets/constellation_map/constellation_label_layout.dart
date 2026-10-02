@@ -610,32 +610,6 @@ bool _cardHitsAnyStar(_Candidate candidate, List<MapNode> nodes) => nodes.any(
   (node) => _rectHitsCircle(candidate.placement.rect, node.center, node.radius),
 );
 
-/// Scores complete candidate assignments. A collision dominates everything;
-/// once the diagram is clear, the total leader length decides which valid
-/// composition uses the constellation's surrounding space most compactly.
-double _layoutQuality(
-  Map<int, _Candidate> chosen,
-  List<MapNode> nodes,
-  int labelCount,
-) {
-  var collisions = labelCount - chosen.length;
-  final values = chosen.values.toList();
-  for (var i = 0; i < values.length; i++) {
-    final rect = values[i].placement.rect;
-    for (var j = i + 1; j < values.length; j++) {
-      if (rect.overlaps(values[j].placement.rect.inflate(2))) collisions++;
-    }
-    for (final node in nodes) {
-      if (_rectHitsCircle(rect, node.center, node.radius)) collisions++;
-    }
-  }
-  final length = values.fold<double>(
-    0,
-    (sum, candidate) => sum + candidate.length,
-  );
-  return collisions * 1000000 + length;
-}
-
 List<_Candidate> _gridCandidatesFor(
   MapNode node,
   Size size,
@@ -728,10 +702,6 @@ List<_Candidate> _gridCandidatesFor(
   return candidates;
 }
 
-const double _kMirrorDirectionPenalty = 220;
-const double _kMirrorLengthPenalty = 8;
-const double _kAxisHorizontalPenalty = 18;
-
 /// Associates labels whose nodes are reflections across the anchor's vertical
 /// axis. The tolerance is deliberately tied to a node's visual radius: exact
 /// grid mirrors match, while merely nearby stars do not get forced together.
@@ -771,19 +741,6 @@ bool _rectHitsCircle(Rect rect, Offset center, double radius) {
   final dx = center.dx - nearestX;
   final dy = center.dy - nearestY;
   return dx * dx + dy * dy < radius * radius;
-}
-
-bool _segmentHitsCircle(Offset a, Offset b, Offset center, double radius) {
-  final ab = b - a;
-  final lengthSq = ab.distanceSquared;
-  final t = lengthSq == 0
-      ? 0.0
-      : (((center - a).dx * ab.dx + (center - a).dy * ab.dy) / lengthSq).clamp(
-          0.0,
-          1.0,
-        );
-  final nearest = a + ab * t;
-  return (center - nearest).distanceSquared < radius * radius;
 }
 
 double _orient(Offset a, Offset b, Offset c) =>

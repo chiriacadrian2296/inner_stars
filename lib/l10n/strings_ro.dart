@@ -431,7 +431,7 @@ class StringsRo implements AppStrings {
   @override
   String get dateRangeToLabel => 'Până la';
   @override
-  String get clearFilterAction => 'Șterge';
+  String get clearFilterAction => 'Resetează';
   @override
   String get sortAction => 'Sortează rezultatele';
   @override
@@ -1272,7 +1272,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get chooseShapeLabel => 'Forma constelației';
   @override
-  String get shapeLibraryTitle => 'Bibliotecă De Forme';
+  String get shapeLibraryTitle => 'Forma Constelației';
   @override
   String get pickFromLibraryShort => 'Forme';
   @override
@@ -1315,7 +1315,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get iconLabel => 'Pictogramă';
   @override
-  String get chooseIconTitle => 'Alege O Pictogramă';
+  String get chooseIconTitle => 'Pictogramă';
   @override
   String get pickerConfirmAction => 'OK';
   @override
@@ -1329,6 +1329,8 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get createProject => 'Creează constelație';
   @override
   String get newProject => 'Constelație nouă';
+  @override
+  String get newAction => 'Nouă';
 
   @override
   String get newStarEyebrow => 'STEA NOUĂ';
@@ -1380,9 +1382,11 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get addPhotoHint => 'Adaugă o fotografie';
   @override
-  String get takePhotoOption => 'Fă o fotografie';
+  String get photoSourceTitle => 'Adaugă o Fotografie';
   @override
-  String get choosePhotoOption => 'Alege din galerie';
+  String get takePhotoOption => 'Fotografiază';
+  @override
+  String get choosePhotoOption => 'Încarcă';
   @override
   String get photoPickError =>
       'Nu am putut obține fotografia. Încerci din nou?';
@@ -1421,8 +1425,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get discardChangesConfirmTitle => 'Renunți la modificări?';
   @override
-  String get discardChangesConfirmBody =>
-      'Vei pierde modificările făcute acestei stele.';
+  String get discardChangesConfirmBody => 'Vei pierde modificările făcute.';
   @override
   String get discardChangesAction => 'Renunță';
 
@@ -1779,6 +1782,20 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get shareStarError =>
       'Nu am putut distribui această stea. Încerci din nou?';
+  @override
+  String get shareContentError => 'Nu am putut distribui. Încerci din nou?';
+  @override
+  String get sharePreviewTitle => 'Previzualizare distribuire';
+  @override
+  String get shareChooseLayout => 'Alege un aranjament';
+  @override
+  String get shareLayoutImmersive => 'Editorial';
+  @override
+  String get shareLayoutFramed => 'Fotografic';
+  @override
+  String get shareLayoutPostcard => 'Declarație';
+  @override
+  String get shareNowAction => 'Distribuie';
   @override
   String get starReaderTourIntroTitle => 'Răsfoiește stelele tale';
   @override

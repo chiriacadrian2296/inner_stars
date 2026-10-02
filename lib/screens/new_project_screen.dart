@@ -945,7 +945,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                           title: strings.constellationTourSaveTitle,
                           description: strings.constellationTourSaveBody,
                           child: SaveActionButton(
-                            label: strings.createProject,
+                            label: strings.saveChanges,
                             lit: canSave,
                             onPressed: canSave ? _save : _showCannotSaveMessage,
                           ),
@@ -1526,10 +1526,9 @@ Future<T?> _showSearchablePicker<T>({
   bool showSearch = true,
   String? searchHint,
 }) {
-  return showAppSheet<T>(
+  final sheetHeight = MediaQuery.sizeOf(context).height * 0.85;
+  return showFixedAppSheet<T>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: context.colors.nightPanel,
     builder: (sheetContext) => _SearchablePickerSheet<T>(
       title: title,
       items: items,
@@ -1538,6 +1537,7 @@ Future<T?> _showSearchablePicker<T>({
       initialSelection: initialSelection,
       showSearch: showSearch,
       searchHint: searchHint,
+      sheetHeight: sheetHeight,
     ),
   );
 }
@@ -1551,6 +1551,7 @@ class _SearchablePickerSheet<T> extends StatefulWidget {
     required this.initialSelection,
     required this.showSearch,
     required this.searchHint,
+    required this.sheetHeight,
   });
 
   final String title;
@@ -1571,6 +1572,7 @@ class _SearchablePickerSheet<T> extends StatefulWidget {
   /// "search by title or description" doesn't fit all of them. Falls back to
   /// that generic hint when omitted.
   final String? searchHint;
+  final double sheetHeight;
 
   @override
   State<_SearchablePickerSheet<T>> createState() =>
@@ -1592,59 +1594,23 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
     final colors = context.colors;
     final strings = context.strings;
     final filtered = _filtered;
-    // Fixed, not just capped — a min==max height means the sheet doesn't
-    // visibly shrink as typing a search query narrows the results down to
-    // just a couple of items; the body area below just has more empty
-    // space instead of the whole sheet resizing under the user's thumb.
-    //
-    // The keyboard is subtracted from that target height (not just capped
-    // by it): showModalBottomSheet already wraps this content in its own
-    // AnimatedPadding that grows by the keyboard's height as it opens, so
-    // without this the sheet's *total* footprint (our fixed height + that
-    // padding) would grow past the original 85%, pushing the whole sheet's
-    // top edge upward — which is exactly the "shifts slightly" the search
-    // field inside the icon picker causes. Shrinking our own height by the
-    // same amount the padding is about to add cancels that out, so the top
-    // edge stays put and only the scrollable body gets shorter.
-    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
-    final sheetHeight =
-        (MediaQuery.sizeOf(context).height * 0.85 - keyboardInset).clamp(
-          0.0,
-          MediaQuery.sizeOf(context).height * 0.85,
-        );
-
+    // Fixed, not just capped: filtering changes only the scrollable body.
+    // The route itself deliberately ignores keyboard insets, so neither
+    // this height nor the footer's position changes while typing.
     return SafeArea(
       child: SizedBox(
-        height: sheetHeight,
+        height: widget.sheetHeight,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               StaggeredEntrance(
                 index: 0,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        widget.title,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 18,
-                          color: colors.text,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: Icon(Icons.close, color: colors.muted),
-                      tooltip: strings.closeAction,
-                    ),
-                  ],
-                ),
+                child: AppSheetTitle(widget.title),
               ),
               if (widget.showSearch) ...[
-                const SizedBox(height: 4),
+                const SizedBox(height: 20),
                 StaggeredEntrance(
                   index: 1,
                   child: TextField(
@@ -1661,7 +1627,7 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
                   ),
                 ),
               ],
-              const SizedBox(height: 12),
+              SizedBox(height: widget.showSearch ? 12 : 20),
               Expanded(
                 child: filtered.isEmpty
                     ? StaggeredEntrance(
@@ -1688,15 +1654,26 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
                         ),
                       ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               Align(
                 child: StaggeredEntrance(
                   index: 4,
-                  child: ElevatedButton(
-                    onPressed: _selected == null
-                        ? null
-                        : () => Navigator.of(context).pop(_selected),
-                    child: Text(strings.pickerConfirmAction),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text(strings.cancel),
+                      ),
+                      ElevatedButton(
+                        onPressed: _selected == null
+                            ? null
+                            : () => Navigator.of(context).pop(_selected),
+                        child: Text(strings.pickerConfirmAction),
+                      ),
+                    ],
                   ),
                 ),
               ),

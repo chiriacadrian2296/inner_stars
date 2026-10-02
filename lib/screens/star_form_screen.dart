@@ -446,6 +446,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
       title: context.strings.discardChangesConfirmTitle,
       body: context.strings.discardChangesConfirmBody,
       confirmLabel: context.strings.discardChangesAction,
+      destructive: true,
     );
     if (discard && mounted) Navigator.of(context).pop();
   }
@@ -547,99 +548,9 @@ class _StarFormScreenState extends State<StarFormScreen> {
   /// Offers camera vs. gallery, sends whatever's picked through
   /// [PhotoCropScreen] to force it into 9:16, and copies the cropped result
   /// into app-private storage (see [PhotoStorage]).
-  ///
-  /// A popup (see `SkyMenuDrawer._openLightYourSkyChooser`'s own doc
-  /// comment), not a bottom sheet, per request — same [Dialog] with empty
-  /// [BoxConstraints] shrink-wrapped to its own two choices, same
-  /// icon+label row treatment, same plain-text Cancel underneath. Kept
-  /// local rather than factored into a shared helper — there's no third
-  /// caller yet to justify one, and the two are already small enough to
-  /// duplicate without it costing much.
   Future<void> _pickPhoto() async {
-    final colors = context.colors;
     final strings = context.strings;
-
-    final source = await showAppDialog<ImageSource>(
-      context: context,
-      builder: (dialogContext) {
-        Widget choice({
-          required IconData icon,
-          required String label,
-          required ImageSource source,
-        }) {
-          return InkWell(
-            onTap: () => Navigator.of(dialogContext).pop(source),
-            splashFactory: NoSplash.splashFactory,
-            highlightColor: Colors.transparent,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, color: colors.gold),
-                  const SizedBox(width: 12),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: colors.text,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
-        return Dialog(
-          constraints: const BoxConstraints(),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 4),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    StaggeredEntrance(
-                      index: 0,
-                      child: choice(
-                        icon: Icons.photo_camera_outlined,
-                        label: strings.takePhotoOption,
-                        source: ImageSource.camera,
-                      ),
-                    ),
-                    StaggeredEntrance(
-                      index: 1,
-                      child: choice(
-                        icon: Icons.photo_library_outlined,
-                        label: strings.choosePhotoOption,
-                        source: ImageSource.gallery,
-                      ),
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: StaggeredEntrance(
-                    index: 2,
-                    child: TextButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(),
-                      child: Text(
-                        strings.cancel.toUpperCase(),
-                        style: TextStyle(color: colors.muted),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+    final source = await showPhotoSourceSheet(context);
     if (source == null || !mounted) return;
 
     try {

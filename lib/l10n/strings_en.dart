@@ -428,7 +428,7 @@ class StringsEn implements AppStrings {
   @override
   String get dateRangeToLabel => 'To';
   @override
-  String get clearFilterAction => 'Clear';
+  String get clearFilterAction => 'Reset';
   @override
   String get sortAction => 'Sort results';
   @override
@@ -1260,7 +1260,7 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get chooseShapeLabel => 'Constellation shape';
   @override
-  String get shapeLibraryTitle => 'Shape Library';
+  String get shapeLibraryTitle => 'Constellation Shape';
   @override
   String get pickFromLibraryShort => 'Shapes';
   @override
@@ -1303,7 +1303,7 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get iconLabel => 'Icon';
   @override
-  String get chooseIconTitle => 'Choose An Icon';
+  String get chooseIconTitle => 'Icon';
   @override
   String get pickerConfirmAction => 'OK';
   @override
@@ -1317,6 +1317,8 @@ My contribution meets a real need and is something I can sustain.
   String get createProject => 'Create constellation';
   @override
   String get newProject => 'New constellation';
+  @override
+  String get newAction => 'New';
 
   @override
   String get newStarEyebrow => 'NEW STAR';
@@ -1367,9 +1369,11 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get addPhotoHint => 'Add a photo';
   @override
-  String get takePhotoOption => 'Take a photo';
+  String get photoSourceTitle => 'Add Photo';
   @override
-  String get choosePhotoOption => 'Choose from library';
+  String get takePhotoOption => 'Capture';
+  @override
+  String get choosePhotoOption => 'Upload';
   @override
   String get photoPickError => "Couldn't get that photo. Try again?";
   @override
@@ -1406,8 +1410,7 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get discardChangesConfirmTitle => 'Discard changes?';
   @override
-  String get discardChangesConfirmBody =>
-      "You'll lose the changes you made to this star.";
+  String get discardChangesConfirmBody => "You'll lose the changes you made.";
   @override
   String get discardChangesAction => 'Discard';
 
@@ -1756,6 +1759,20 @@ My contribution meets a real need and is something I can sustain.
   String get shareStarLabel => 'Share this Star';
   @override
   String get shareStarError => "Couldn't share that star. Try again?";
+  @override
+  String get shareContentError => "Couldn't share that. Try again?";
+  @override
+  String get sharePreviewTitle => 'Share preview';
+  @override
+  String get shareChooseLayout => 'Choose a layout';
+  @override
+  String get shareLayoutImmersive => 'Editorial';
+  @override
+  String get shareLayoutFramed => 'Photo';
+  @override
+  String get shareLayoutPostcard => 'Statement';
+  @override
+  String get shareNowAction => 'Share';
   @override
   String get starReaderTourIntroTitle => 'Browse your stars';
   @override

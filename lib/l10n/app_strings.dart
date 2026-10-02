@@ -638,6 +638,7 @@ abstract class AppStrings {
   String get displaySettingsDescription;
   String get createProject;
   String get newProject;
+  String get newAction;
 
   // The star form — one page for every kind of star (see [StarKind]).
   String get newStarEyebrow;
@@ -681,6 +682,7 @@ abstract class AppStrings {
   String get intensityLabel;
   String get photoLabel;
   String get addPhotoHint;
+  String get photoSourceTitle;
   String get takePhotoOption;
   String get choosePhotoOption;
   String get photoPickError;
@@ -948,6 +950,13 @@ abstract class AppStrings {
   String indexOfCount(int index, int total);
   String get shareStarLabel;
   String get shareStarError;
+  String get shareContentError;
+  String get sharePreviewTitle;
+  String get shareChooseLayout;
+  String get shareLayoutImmersive;
+  String get shareLayoutFramed;
+  String get shareLayoutPostcard;
+  String get shareNowAction;
 
   // "star-reader" tour — `StarReaderScreen`. The `...Arrow...` bodies are the
   // wide-layout variants (arrows instead of tap strips).

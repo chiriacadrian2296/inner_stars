@@ -1,10 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../utils/app_modals.dart';
 import 'photo_image.dart';
 import 'staggered_entrance.dart';
+
+Future<ImageSource?> showPhotoSourceSheet(BuildContext context) {
+  final strings = context.strings;
+  return showAppSheet<ImageSource>(
+    context: context,
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppSheetTitle(strings.photoSourceTitle),
+            const SizedBox(height: 20),
+            AppSheetAction(
+              icon: Icons.photo_camera_outlined,
+              label: strings.takePhotoOption,
+              onPressed: () =>
+                  Navigator.of(sheetContext).pop(ImageSource.camera),
+            ),
+            const SizedBox(height: 10),
+            AppSheetAction(
+              icon: Icons.photo_library_outlined,
+              label: strings.choosePhotoOption,
+              onPressed: () =>
+                  Navigator.of(sheetContext).pop(ImageSource.gallery),
+            ),
+            const SizedBox(height: 24),
+            Align(
+              alignment: Alignment.center,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(sheetContext).pop(),
+                child: Text(strings.cancel),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
 
 /// Either an empty tappable placeholder (no photo yet) or a preview of the
 /// current photo, with a small remove button over its corner. Shared by

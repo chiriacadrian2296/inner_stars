@@ -16,10 +16,12 @@ import '../widgets/intensity_bolts.dart';
 import '../widgets/logo_watermark.dart';
 import '../widgets/project_tag.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/shareable_pulsar_card.dart';
 import '../widgets/staggered_entrance.dart';
 import '../widgets/star_glyph.dart';
 import '../widgets/star_heatmap.dart';
 import 'star_form_screen.dart';
+import 'share_preview_screen.dart';
 
 /// A pulsar's own detail/dashboard screen — current streak, the intensity
 /// of the effort it costs each day, a [StarHeatmap] of its history, and a
@@ -341,6 +343,13 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
     setState(() {});
   }
 
+  Future<void> _share() => showSharePreview(
+    context: context,
+    content: ShareablePulsarCard(habit: _habit, project: widget.project),
+    shareText: _habit.title,
+    fileName: 'pulsar_${_habit.id}.png',
+  );
+
   Future<void> _edit() async {
     final result = await Navigator.of(context).push<Object>(
       MaterialPageRoute(
@@ -473,6 +482,19 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            if (!_habit.dead)
+                              StaggeredEntrance(
+                                index: 0,
+                                axis: Axis.horizontal,
+                                child: IconButton(
+                                  tooltip: strings.starQuickLookShareAction,
+                                  onPressed: _share,
+                                  icon: Icon(
+                                    Icons.share_outlined,
+                                    color: colors.muted,
+                                  ),
+                                ),
+                              ),
                             if (!_habit.dead)
                               StaggeredEntrance(
                                 index: 0,

@@ -116,7 +116,7 @@ class _StatsScreenState extends State<StatsScreen> {
       isScrollControlled: true,
       builder: (sheetContext) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -129,7 +129,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   color: context.colors.text,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               if (dead.isEmpty)
                 Text(
                   context.strings.habitStatsArchiveEmpty,
@@ -1073,7 +1073,7 @@ class _DayDetailSheetState extends State<_DayDetailSheet> {
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
         child: Column(
           mainAxisSize: hasStarsForDay ? MainAxisSize.max : MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1090,7 +1090,7 @@ class _DayDetailSheetState extends State<_DayDetailSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 20),
             StaggeredEntrance(
               index: 1,
               child: AppTextField(
