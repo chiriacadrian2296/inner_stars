@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://chiriacadrian2296.github.io/inner_stars/sitemap-index.xml

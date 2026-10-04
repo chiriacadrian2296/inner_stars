@@ -1,0 +1,78 @@
+---
+import '../styles/global.css';
+import type { Copy } from '../i18n/types';
+
+interface Props {
+  copy: Copy;
+}
+const { copy } = Astro.props;
+
+const base = import.meta.env.BASE_URL; // '/inner_stars/'
+const site = Astro.site!.origin;
+const path = copy.lang === 'it' ? base : `${base}en/`;
+const canonical = site + path;
+const urlIt = site + base;
+const urlEn = `${site}${base}en/`;
+const ogImage = `${site}${base}og-image.png`;
+
+const faqLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: copy.faq.items.map((f) => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
+};
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Inner Stars',
+  applicationCategory: 'LifestyleApplication',
+  operatingSystem: 'Android, Web',
+  description: copy.description,
+  inLanguage: copy.lang,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+};
+---
+<!doctype html>
+<html lang={copy.lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{copy.title}</title>
+    <meta name="description" content={copy.description} />
+    <meta name="theme-color" content="#0d1220" />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="it" href={urlIt} />
+    <link rel="alternate" hreflang="en" href={urlEn} />
+    <link rel="alternate" hreflang="x-default" href={urlIt} />
+    <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
+    <link rel="icon" type="image/png" href={`${base}favicon.png`} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={copy.title} />
+    <meta property="og:description" content={copy.description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:locale" content={copy.lang === 'it' ? 'it_IT' : 'en_US'} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preload" href={`${base}fonts/Gloock-Regular.ttf`} as="font" type="font/ttf" crossorigin />
+    <link rel="preload" href={`${base}fonts/InstrumentSans-Variable.ttf`} as="font" type="font/ttf" crossorigin />
+    <style
+      set:html={`
+      @font-face{font-family:'Gloock';src:url('${base}fonts/Gloock-Regular.ttf');font-display:swap}
+      @font-face{font-family:'Instrument Sans';src:url('${base}fonts/InstrumentSans-Variable.ttf');font-weight:400 700;font-display:swap}
+      @font-face{font-family:'Newsreader';src:url('${base}fonts/Newsreader-Variable.ttf');font-weight:200 800;font-display:swap}
+      @font-face{font-family:'Newsreader';font-style:italic;src:url('${base}fonts/Newsreader-Italic.ttf');font-weight:200 800;font-display:swap}
+    `}
+    />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <script type="application/ld+json" set:html={JSON.stringify(faqLd)} />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

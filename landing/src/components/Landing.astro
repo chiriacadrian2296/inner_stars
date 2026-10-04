@@ -1,0 +1,196 @@
+---
+import { Image } from 'astro:assets';
+import StarField from './StarField';
+import Phone from './Phone.astro';
+import Base from '../layouts/Base.astro';
+import { AREA_KEYS, type Copy } from '../i18n/types';
+
+interface Props {
+  copy: Copy;
+}
+const { copy } = Astro.props;
+
+const base = import.meta.env.BASE_URL;
+const APK_URL = 'https://github.com/chiriacadrian2296/inner_stars/releases/latest/download/inner-stars.apk';
+// Absolute on purpose: a relative /app/ 404s under `npm run dev`, where only
+// the landing is served. With a custom domain, change this in one place.
+const WEB_URL = 'https://chiriacadrian2296.github.io/inner_stars/app/';
+const REPO_URL = 'https://github.com/chiriacadrian2296/inner_stars';
+
+const shotImages = import.meta.glob<{ default: ImageMetadata }>('../assets/shots/*.png', { eager: true });
+const shot = (name: string) => shotImages[`../assets/shots/${name}.png`].default;
+
+const areaImages = import.meta.glob<{ default: ImageMetadata }>('../assets/areas/*.jpg', { eager: true });
+const areas = AREA_KEYS.map((key, i) => ({
+  name: copy.areas.names[i],
+  img: areaImages[`../assets/areas/${key}.jpg`].default,
+}));
+---
+<Base copy={copy}>
+  <header>
+    <section class="hero">
+      <StarField client:visible />
+      <div class="wrap hero-grid">
+        <div>
+          <h1>{copy.heroTitle}</h1>
+          <p class="lead">{copy.heroLead}</p>
+          <div class="cta">
+            <a class="btn primary" href={APK_URL}>{copy.ctaApk}</a>
+            <a class="btn" href={WEB_URL}>{copy.ctaWeb}</a>
+          </div>
+        </div>
+        <Phone src={shot('constellation')} alt={copy.heroAlt} eager />
+      </div>
+    </section>
+  </header>
+
+  <main>
+    <section id="sky">
+      <div class="wrap">
+        <p class="eyebrow">{copy.metaphor.eyebrow}</p>
+        <h2>{copy.metaphor.title}</h2>
+        <p class="muted">{copy.metaphor.intro}</p>
+        <div class="levels">
+          {copy.metaphor.levels.map((l) => (
+            <article class="card">
+              <h3>{l.name}</h3>
+              <p class="muted">{l.text}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section id="how">
+      <div class="wrap">
+        <h2>{copy.how.title}</h2>
+        <p class="muted">{copy.how.intro}</p>
+        <ol class="steps">
+          {copy.how.steps.map((st) => (
+            <li class="card">
+              <h3>{st.title}</h3>
+              <p class="muted">{st.text}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    {copy.chapters.map((c, i) => (
+      <section id={`ch-${c.id}`} class={i % 2 ? 'alt' : ''}>
+        <div class="wrap">
+          <h2>{c.title}</h2>
+          <p class="muted lede">{c.text}</p>
+        </div>
+        <div class="gallery" tabindex="0" role="group" aria-label={c.title}>
+          {c.shots.map((sh) => (
+            <figure>
+              <Phone src={shot(sh.name)} alt={sh.caption} />
+              <figcaption class="muted">{sh.caption}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+    ))}
+
+    <section id="stars">
+      <div class="wrap">
+        <h2>{copy.kinds.title}</h2>
+        <p class="muted">{copy.kinds.intro}</p>
+        <div class="grid">
+          {copy.kinds.items.map((k) => (
+            <article class="card">
+              <div class="dot" style={`background:${k.color};box-shadow:0 0 12px ${k.color}66`}></div>
+              <h3>{k.name}</h3>
+              <p class="muted">{k.meaning}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="wrap">
+        <h2>{copy.features.title}</h2>
+        <p class="muted">{copy.features.intro}</p>
+        <div class="grid">
+          {copy.features.items.map((f) => (
+            <article class={`card${f.soon ? ' soon' : ''}`}>
+              {f.soon && <span class="badge">{copy.features.soon}</span>}
+              <h3>{f.title}</h3>
+              <p class="muted">{f.text}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section id="calm" class="calm">
+      <div class="wrap narrow">
+        <p class="eyebrow">{copy.calm.eyebrow}</p>
+        <h2>{copy.calm.title}</h2>
+        {copy.calm.paragraphs.map((p) => <p class="serif">{p}</p>)}
+        <ol class="calm-steps">
+          {copy.calm.steps.map((st) => <li>{st}</li>)}
+        </ol>
+      </div>
+      <div class="gallery" tabindex="0" role="group" aria-label={copy.calm.eyebrow}>
+        {copy.calmShots.map((sh) => (
+          <figure>
+            <Phone src={shot(sh.name)} alt={sh.caption} />
+            <figcaption class="muted">{sh.caption}</figcaption>
+          </figure>
+        ))}
+      </div>
+    </section>
+
+    <section id="areas">
+      <div class="wrap">
+        <h2>{copy.areas.title}</h2>
+        <p class="muted">{copy.areas.intro}</p>
+        <div class="areas">
+          {areas.map((a) => (
+            <figure class="area" style="margin:0">
+              <Image src={a.img} alt={a.name} width={360} height={360} format="webp" loading="lazy" />
+              <span>{a.name}</span>
+            </figure>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section id="faq">
+      <div class="wrap narrow">
+        <h2>{copy.faq.title}</h2>
+        {copy.faq.items.map((f) => (
+          <details class="faq">
+            <summary>{f.q}</summary>
+            <p class="muted">{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+
+    <section id="download">
+      <div class="wrap">
+        <h2>{copy.closing.title}</h2>
+        <p class="muted">{copy.closing.text}</p>
+        <div class="cta">
+          <a class="btn primary" href={APK_URL}>{copy.ctaApk}</a>
+          <a class="btn" href={WEB_URL}>{copy.ctaWeb}</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>{copy.footer.tagline}</span>
+      <span class="lang">
+        <a href={base} hreflang="it" aria-current={copy.lang === 'it'}>IT</a>
+        <a href={`${base}en/`} hreflang="en" aria-current={copy.lang === 'en'}>EN</a>
+      </span>
+      <a href={REPO_URL}>{copy.footer.github}</a>
+    </div>
+  </footer>
+</Base>
