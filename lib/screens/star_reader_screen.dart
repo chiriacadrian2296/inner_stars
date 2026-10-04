@@ -20,6 +20,7 @@ import '../models/project.dart';
 import '../models/star.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
+import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import '../tutorials/tour_intro_target.dart';
 import '../tutorials/tour_step_card.dart';
@@ -1835,7 +1836,7 @@ class _MarkAchievedSheetState extends State<MarkAchievedSheet> {
                   children: [
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: Text(strings.cancel),
+                      child: AppButtonLabel(strings.cancel),
                     ),
                     ElevatedButton(
                       onPressed: () => Navigator.of(context).pop(
@@ -1844,7 +1845,7 @@ class _MarkAchievedSheetState extends State<MarkAchievedSheet> {
                           photoPath: _photoPath,
                         ),
                       ),
-                      child: Text(strings.markAchievedConfirm),
+                      child: AppButtonLabel(strings.markAchievedConfirm),
                     ),
                   ],
                 ),

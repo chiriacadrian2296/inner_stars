@@ -62,13 +62,11 @@ class AppSheetAction extends StatelessWidget {
                 Icon(icon, size: 18, color: iconColor ?? colors.gold),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
+                  child: AppButtonLabel(
                     label,
-                    style: TextStyle(
-                      color: colors.text,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    color: colors.text,
+                    fontSize: 12,
+                    textAlign: TextAlign.start,
                   ),
                 ),
               ],
@@ -101,7 +99,7 @@ Future<bool> showAppConfirmation({
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(false),
           style: TextButton.styleFrom(foregroundColor: colors.muted),
-          child: Text(cancelLabel),
+          child: AppButtonLabel(cancelLabel),
         ),
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(true),
@@ -110,7 +108,7 @@ Future<bool> showAppConfirmation({
                 ? colors.danger
                 : colors.gold,
           ),
-          child: Text(confirmLabel),
+          child: AppButtonLabel(confirmLabel),
         ),
       ],
     ),
@@ -129,6 +127,8 @@ class AppDialog extends StatelessWidget {
     this.actions,
     this.backgroundColor,
     this.scrollable = false,
+    this.actionsAlignment = MainAxisAlignment.end,
+    this.actionsOverflowAlignment = OverflowBarAlignment.end,
   });
 
   final Widget? icon;
@@ -137,6 +137,8 @@ class AppDialog extends StatelessWidget {
   final List<Widget>? actions;
   final Color? backgroundColor;
   final bool scrollable;
+  final MainAxisAlignment actionsAlignment;
+  final OverflowBarAlignment actionsOverflowAlignment;
 
   @override
   Widget build(BuildContext context) {
@@ -153,11 +155,11 @@ class AppDialog extends StatelessWidget {
       backgroundColor: backgroundColor,
       scrollable: scrollable,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+      titlePadding: EdgeInsets.fromLTRB(24, icon == null ? 24 : 8, 24, 0),
       contentPadding: EdgeInsets.fromLTRB(24, title == null ? 24 : 16, 24, 0),
       actionsPadding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      actionsAlignment: MainAxisAlignment.end,
-      actionsOverflowAlignment: OverflowBarAlignment.end,
+      actionsAlignment: actionsAlignment,
+      actionsOverflowAlignment: actionsOverflowAlignment,
       actionsOverflowButtonSpacing: 8,
     );
   }
@@ -350,9 +352,7 @@ Future<T?> showFixedAppSheet<T>({
           position: Tween<Offset>(
             begin: const Offset(0, 1),
             end: Offset.zero,
-          ).animate(
-            CurvedAnimation(parent: animation, curve: kMotionEnter),
-          ),
+          ).animate(CurvedAnimation(parent: animation, curve: kMotionEnter)),
           child: child,
         ),
   );

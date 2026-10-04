@@ -383,13 +383,13 @@ class _NightlightBreathingScreenState extends State<NightlightBreathingScreen>
             style: nightlightOutlinedButtonStyle(colors),
             onPressed: () =>
                 Navigator.of(dialogContext).pop(_CheckInAction.redo),
-            child: Text(strings.nightlightBreathingCheckInRedo),
+            child: AppButtonLabel(strings.nightlightBreathingCheckInRedo),
           ),
           ElevatedButton(
             style: nightlightButtonStyle(colors),
             onPressed: () =>
                 Navigator.of(dialogContext).pop(_CheckInAction.proceed),
-            child: Text(strings.nightlightBreathingCheckInProceed),
+            child: AppButtonLabel(strings.nightlightBreathingCheckInProceed),
           ),
         ],
       ),
@@ -728,7 +728,9 @@ class _NightlightBreathingScreenState extends State<NightlightBreathingScreen>
                             child: TextButton(
                               style: nightlightTextButtonStyle(colors),
                               onPressed: _advanceToAdmire,
-                              child: Text(strings.nightlightBreathingSkip),
+                              child: AppButtonLabel(
+                                strings.nightlightBreathingSkip,
+                              ),
                             ),
                           ),
                         ),

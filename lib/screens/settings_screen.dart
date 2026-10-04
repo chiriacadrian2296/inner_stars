@@ -588,7 +588,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: TextButton.icon(
                       onPressed: _openSoundLab,
                       icon: const Icon(Icons.graphic_eq, size: 18),
-                      label: Text(strings.quickSettingsOpenSoundLabAction),
+                      label: AppButtonLabel(
+                        strings.quickSettingsOpenSoundLabAction,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -623,7 +625,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: TextButton.icon(
                       onPressed: () => _replayAllTours(context),
                       icon: const Icon(Icons.refresh, size: 18),
-                      label: Text(strings.replayToursAction),
+                      label: AppButtonLabel(strings.replayToursAction),
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -828,7 +830,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   child: OutlinedButton.icon(
                                     onPressed: openApkDownload,
                                     icon: const Icon(Icons.download, size: 18),
-                                    label: Text(strings.downloadApkAction),
+                                    label: AppButtonLabel(
+                                      strings.downloadApkAction,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -867,12 +871,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 size: 16,
                                 color: colors.muted,
                               ),
-                              label: Text(
+                              label: AppButtonLabel(
                                 strings.seedSampleData,
-                                style: TextStyle(
-                                  color: colors.muted,
-                                  fontSize: 12,
-                                ),
+                                color: colors.muted,
                               ),
                             ),
                           ),
@@ -890,12 +891,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 size: 16,
                                 color: colors.danger,
                               ),
-                              label: Text(
+                              label: AppButtonLabel(
                                 strings.resetAllData,
-                                style: TextStyle(
-                                  color: colors.danger,
-                                  fontSize: 12,
-                                ),
+                                color: colors.danger,
                               ),
                             ),
                           ),
@@ -919,12 +917,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               size: 16,
                               color: colors.muted,
                             ),
-                            label: Text(
+                            label: AppButtonLabel(
                               strings.menuOnboarding,
-                              style: TextStyle(
-                                color: colors.muted,
-                                fontSize: 12,
-                              ),
+                              color: colors.muted,
                             ),
                           ),
                         ),

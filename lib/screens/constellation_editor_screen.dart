@@ -366,9 +366,9 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                 await prefs.setHideHelp(hideNextTime);
                 if (dialogContext.mounted) Navigator.of(dialogContext).pop();
               },
-              child: Text(
+              child: AppButtonLabel(
                 strings.constellationEditorHelpClose,
-                style: TextStyle(color: colors.gold),
+                color: colors.gold,
               ),
             ),
           ],
@@ -711,13 +711,13 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(strings.cancel, style: TextStyle(color: colors.muted)),
+            child: AppButtonLabel(strings.cancel, color: colors.muted),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(
+            child: AppButtonLabel(
               strings.discardChangesAction,
-              style: TextStyle(color: colors.danger),
+              color: colors.danger,
             ),
           ),
         ],
@@ -1185,7 +1185,7 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                       children: [
                         TextButton(
                           onPressed: _handleBack,
-                          child: Text(strings.cancel),
+                          child: AppButtonLabel(strings.cancel),
                         ),
                         SaveActionButton(
                           label: strings.saveConstellationAction,
@@ -1831,13 +1831,13 @@ class _NameConstellationDialogState extends State<_NameConstellationDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(strings.cancel, style: TextStyle(color: colors.muted)),
+          child: AppButtonLabel(strings.cancel, color: colors.muted),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
-          child: Text(
+          child: AppButtonLabel(
             strings.saveConstellationAction,
-            style: TextStyle(color: colors.gold),
+            color: colors.gold,
           ),
         ),
       ],

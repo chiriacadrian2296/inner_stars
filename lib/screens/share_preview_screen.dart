@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_style.dart';
 import '../widgets/share_arrangement.dart';
 
 Future<void> showSharePreview({
@@ -161,7 +162,7 @@ class _SharePreviewScreenState extends State<SharePreviewScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.share_outlined),
-                  label: Text(strings.shareNowAction),
+                  label: AppButtonLabel(strings.shareNowAction),
                 ),
               ),
             ),

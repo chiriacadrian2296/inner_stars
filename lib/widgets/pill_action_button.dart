@@ -71,14 +71,7 @@ class PillActionButton extends StatelessWidget {
             children: [
               Icon(icon, color: foreground, size: iconSize),
               SizedBox(width: gap),
-              Text(
-                label.toUpperCase(),
-                style: TextStyle(
-                  color: foreground,
-                  fontWeight: FontWeight.w600,
-                  fontSize: fontSize,
-                ),
-              ),
+              AppButtonLabel(label, color: foreground, fontSize: fontSize),
             ],
           ),
         ),
@@ -145,14 +138,11 @@ class SaveActionButton extends StatelessWidget {
               children: [
                 Icon(icon, color: foreground, size: 18),
                 const SizedBox(width: 8),
-                Text(
-                  label.toUpperCase(),
+                AppButtonLabel(
+                  label,
+                  color: foreground,
+                  fontSize: 13,
                   maxLines: 1,
-                  style: TextStyle(
-                    color: foreground,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
                 ),
               ],
             ),

@@ -7,25 +7,48 @@ import 'moodboard_storage.dart';
 
 enum MoodboardKind { photo, video, quote }
 
+enum MoodboardQuoteStyle {
+  celestial,
+  aurora,
+  editorial,
+  constellation,
+  minimal,
+}
+
 class MoodboardItem {
   const MoodboardItem({
     required this.id,
     required this.kind,
     required this.content,
+    this.author = '',
+    this.quoteStyle = MoodboardQuoteStyle.celestial,
   });
   final String id;
   final MoodboardKind kind;
   final String content;
+  final String author;
+  final MoodboardQuoteStyle quoteStyle;
   Map<String, dynamic> toJson() => {
     'id': id,
     'kind': kind.name,
     'content': content,
+    if (author.isNotEmpty) 'author': author,
+    if (kind == MoodboardKind.quote) 'quoteStyle': quoteStyle.name,
   };
-  factory MoodboardItem.fromJson(Map<String, dynamic> json) => MoodboardItem(
-    id: json['id'] as String,
-    kind: MoodboardKind.values.byName(json['kind'] as String),
-    content: json['content'] as String,
-  );
+  factory MoodboardItem.fromJson(Map<String, dynamic> json) {
+    final rawStyle = json['quoteStyle'] as String?;
+    return MoodboardItem(
+      id: json['id'] as String,
+      kind: MoodboardKind.values.byName(json['kind'] as String),
+      content: json['content'] as String,
+      author: json['author'] as String? ?? '',
+      quoteStyle:
+          MoodboardQuoteStyle.values
+              .where((style) => style.name == rawStyle)
+              .firstOrNull ??
+          MoodboardQuoteStyle.celestial,
+    );
+  }
 }
 
 class MoodboardRepository {

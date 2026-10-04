@@ -438,11 +438,14 @@ class _InteractiveSpecimens extends StatelessWidget {
               danger: true,
               onTap: () {},
             ),
-            OutlinedButton(onPressed: () {}, child: const Text('SECONDARY')),
-            TextButton(onPressed: () {}, child: const Text('CANCEL')),
+            OutlinedButton(
+              onPressed: () {},
+              child: const AppButtonLabel('Secondary'),
+            ),
+            TextButton(onPressed: () {}, child: const AppButtonLabel('Cancel')),
             ElevatedButton(
               onPressed: null,
-              child: Text(loading ? 'LOADING…' : 'DISABLED'),
+              child: AppButtonLabel(loading ? 'Loading…' : 'Disabled'),
             ),
           ],
         ),
@@ -536,15 +539,13 @@ class _InteractiveSpecimens extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text('CANCEL', style: TextStyle(color: colors.muted)),
+            child: AppButtonLabel('Cancel', color: colors.muted),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text(
-              destructive ? 'DELETE' : 'OK',
-              style: TextStyle(
-                color: destructive ? colors.danger : colors.gold,
-              ),
+            child: AppButtonLabel(
+              destructive ? 'Delete' : 'OK',
+              color: destructive ? colors.danger : colors.gold,
             ),
           ),
         ],
@@ -803,7 +804,7 @@ class _EmptyAuditState extends StatelessWidget {
   Widget build(BuildContext context) => Center(
     child: TextButton(
       onPressed: onReset,
-      child: Text(context.strings.uiSandboxResetFiltersAction),
+      child: AppButtonLabel(context.strings.uiSandboxResetFiltersAction),
     ),
   );
 }

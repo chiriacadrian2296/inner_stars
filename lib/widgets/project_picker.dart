@@ -11,10 +11,9 @@ import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import '../utils/date_format.dart';
+import '../utils/icon_for_slug.dart';
 import 'area_filter_sheet.dart';
-import 'area_tag.dart';
 import 'date_range_filter_sheet.dart';
-import 'project_tag.dart';
 import 'sort_filter_sheet.dart';
 import 'staggered_entrance.dart';
 
@@ -347,36 +346,11 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
                             final project = filtered[index];
                             return StaggeredEntrance(
                               index: index + 3,
-                              child: Material(
-                                color: Colors.transparent,
-                                child: Ink(
-                                  decoration: selectableDecoration(
-                                    colors,
-                                    selected: false,
-                                  ),
-                                  child: ListTile(
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                    ),
-                                    title: ProjectTag(
-                                      project: project,
-                                      fontSize: 15,
-                                      textColor: colors.text,
-                                    ),
-                                    subtitle: Padding(
-                                      padding: const EdgeInsets.only(top: 2),
-                                      child: AreaTag(
-                                        area: project.area,
-                                        iconSize: 12,
-                                        fontSize: 12,
-                                        textColor: colors.muted,
-                                        iconColor: colors.muted,
-                                      ),
-                                    ),
-                                    onTap: () =>
-                                        Navigator.of(context).pop(project),
-                                  ),
-                                ),
+                              child: AppSheetAction(
+                                icon: iconForSlug(project.iconSlug),
+                                label: project.name,
+                                onPressed: () =>
+                                    Navigator.of(context).pop(project),
                               ),
                             );
                           },
@@ -393,12 +367,12 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
                   children: [
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: Text(strings.cancel),
+                      child: AppButtonLabel(strings.cancel),
                     ),
                     ElevatedButton(
                       onPressed: () =>
                           Navigator.of(context).pop(const _CreateNewProject()),
-                      child: Text(strings.newAction),
+                      child: AppButtonLabel(strings.newAction),
                     ),
                   ],
                 ),
@@ -482,15 +456,12 @@ class _ProjectFilterButton extends StatelessWidget {
               Icon(icon, size: 16, color: active ? colors.gold : colors.muted),
               const SizedBox(width: 8),
               Flexible(
-                child: Text(
+                child: AppButtonLabel(
                   label,
+                  color: active ? colors.text : colors.muted,
+                  fontSize: 11,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: active ? colors.text : colors.muted,
-                    fontSize: 12,
-                    fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                  ),
                 ),
               ),
             ],
@@ -542,7 +513,7 @@ class _ProjectFiltersSheet extends StatelessWidget {
             Align(
               child: ElevatedButton(
                 onPressed: canReset ? onReset : null,
-                child: Text(strings.clearFilterAction),
+                child: AppButtonLabel(strings.clearFilterAction),
               ),
             ),
           ],

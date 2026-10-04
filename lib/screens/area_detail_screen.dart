@@ -13,6 +13,7 @@ import '../models/life_area.dart';
 import '../theme/app_colors.dart';
 import '../models/star_kind.dart';
 import '../theme/app_fonts.dart';
+import '../theme/app_style.dart';
 import '../theme/life_area_theme.dart';
 import '../tutorials/tour_step_card.dart';
 import '../utils/area_hero_art.dart';
@@ -801,7 +802,7 @@ class _SectionButton extends StatelessWidget {
         ),
         onPressed: onPressed,
         icon: const Icon(Icons.edit_outlined, size: 20),
-        label: Text(label.toUpperCase()),
+        label: AppButtonLabel(label),
       ),
     ),
   );

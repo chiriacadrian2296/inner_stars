@@ -39,7 +39,7 @@ Future<ImageSource?> showPhotoSourceSheet(BuildContext context) {
               alignment: Alignment.center,
               child: ElevatedButton(
                 onPressed: () => Navigator.of(sheetContext).pop(),
-                child: Text(strings.cancel),
+                child: AppButtonLabel(strings.cancel),
               ),
             ),
           ],

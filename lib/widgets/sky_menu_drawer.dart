@@ -268,7 +268,7 @@ class SkyMenuContent extends StatelessWidget {
                   alignment: Alignment.center,
                   child: ElevatedButton(
                     onPressed: () => Navigator.of(sheetContext).pop(),
-                    child: Text(strings.cancel),
+                    child: AppButtonLabel(strings.cancel),
                   ),
                 ),
               ],
@@ -329,11 +329,12 @@ class SkyMenuContent extends StatelessWidget {
       final tile = ListTile(
         leading: Icon(icon, color: colors.gold),
         title: Text(
-          label,
+          label.toUpperCase(),
           style: TextStyle(
             color: colors.text,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
+            fontSize: 12,
+            fontWeight: kAppButtonFontWeight,
+            letterSpacing: kAppButtonLetterSpacing,
           ),
         ),
         subtitle: detailed && description != null

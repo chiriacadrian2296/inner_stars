@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../l10n/strings_scope.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import 'app_choice_chip.dart';
 import 'app_toggle_chip.dart';
@@ -106,13 +107,12 @@ class _KindFilterSheetState extends State<_KindFilterSheet> {
                         axis: Axis.horizontal,
                         child: AppChoiceChip(
                           icon: kListableStarKinds[row * 2 + col].icon,
-                          iconColor: _kinds.contains(
-                            kListableStarKinds[row * 2 + col],
-                          )
+                          iconColor:
+                              _kinds.contains(kListableStarKinds[row * 2 + col])
                               ? starKindColor(
-                                kListableStarKinds[row * 2 + col],
-                                colors,
-                              )
+                                  kListableStarKinds[row * 2 + col],
+                                  colors,
+                                )
                               : colors.muted,
                           label: kListableStarKinds[row * 2 + col].plural(
                             strings,
@@ -141,13 +141,13 @@ class _KindFilterSheetState extends State<_KindFilterSheet> {
                 children: [
                   TextButton(
                     onPressed: _allKindsSelected ? null : _clear,
-                    child: Text(strings.clearFilterAction),
+                    child: AppButtonLabel(strings.clearFilterAction),
                   ),
                   ElevatedButton(
                     onPressed: _hasChanges
                         ? () => Navigator.of(context).pop(_kinds)
                         : null,
-                    child: Text(strings.applyFilterAction),
+                    child: AppButtonLabel(strings.applyFilterAction),
                   ),
                 ],
               ),

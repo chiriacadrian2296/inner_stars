@@ -1553,6 +1553,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         message: star.isLit
             ? strings.creationSuccessLitMessage
             : strings.creationSuccessUnlitMessage,
+        onOpen: () {
+          if (placed != null) {
+            _openConstellationReader(placed.project, StarEntry(star).key);
+          }
+        },
         onTakeMeThere: () {
           if (placed != null) _flyToStarWithHoldFeedback(placed, star.id);
         },
@@ -1574,6 +1579,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         context,
         icon: StarKind.pulsar.icon,
         message: context.strings.creationSuccessPulsarMessage,
+        onOpen: () {
+          if (placed != null) {
+            _openConstellationReader(placed.project, PulsarEntry(habit).key);
+          }
+        },
         onTakeMeThere: () {
           if (placed != null) _flyToPulsarWithHoldFeedback(placed, habit.id);
         },
@@ -1601,6 +1611,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         context,
         icon: iconForSlug(project.iconSlug),
         message: context.strings.creationSuccessConstellationMessage,
+        onOpen: () {
+          if (placed != null) _viewConstellation(placed);
+        },
         onTakeMeThere: () => _flyToWithHoldFeedback(SkyProjectTarget(project)),
         onShare: _shareCreation,
       );
@@ -3357,7 +3370,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                   axis: Axis.horizontal,
                   child: TextButton(
                     onPressed: () => Navigator.of(dialogContext).pop(),
-                    child: Text(strings.closeAction),
+                    child: AppButtonLabel(strings.closeAction),
                   ),
                 ),
               ],

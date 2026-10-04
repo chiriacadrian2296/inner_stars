@@ -4,6 +4,7 @@ import '../l10n/app_strings.dart';
 import '../l10n/strings_scope.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_style.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
 import '../widgets/star_glyph.dart';
@@ -204,7 +205,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     index: 3,
                     child: ElevatedButton(
                       onPressed: () => _next(pages.length),
-                      child: Text(
+                      child: AppButtonLabel(
                         _index == pages.length - 1
                             ? strings.onboardingGetStartedAction
                             : strings.onboardingNextAction,

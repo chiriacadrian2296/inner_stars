@@ -555,7 +555,7 @@ class _StatsScreenState extends State<StatsScreen> {
             ),
             TextButton(
               onPressed: _openPulsarArchive,
-              child: Text(strings.habitStatsArchiveAction),
+              child: AppButtonLabel(strings.habitStatsArchiveAction),
             ),
           ],
         ),
@@ -1107,7 +1107,7 @@ class _DayDetailSheetState extends State<_DayDetailSheet> {
                 child: OutlinedButton.icon(
                   onPressed: widget.onAddForDay,
                   icon: const Icon(Icons.add),
-                  label: Text(strings.addStarForDayLabel),
+                  label: AppButtonLabel(strings.addStarForDayLabel),
                 ),
               ),
             ),

@@ -303,7 +303,7 @@ class _AdmireStarsScreenState extends State<AdmireStarsScreen>
                               key: _actionButtonKey,
                               onPressed: poolSize == 0 ? null : _start,
                               icon: const Icon(Icons.auto_awesome, size: 17),
-                              label: Text(strings.viewYourStars),
+                              label: AppButtonLabel(strings.viewYourStars),
                               // Same white-on-navy look as the rest of the
                               // Nightlight flow, with its own disabled fill
                               // layered on top since [nightlightButtonStyle]

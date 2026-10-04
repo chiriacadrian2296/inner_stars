@@ -620,7 +620,7 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
                             child: ElevatedButton.icon(
                               onPressed: _reignite,
                               icon: const Icon(Icons.auto_fix_high),
-                              label: Text(strings.reigniteAction),
+                              label: AppButtonLabel(strings.reigniteAction),
                             ),
                           ),
                         ),
@@ -798,14 +798,18 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
                                   ? OutlinedButton.icon(
                                       onPressed: () => _toggleToday(true),
                                       icon: const Icon(Icons.check_circle),
-                                      label: Text(strings.habitDoneTodayLabel),
+                                      label: AppButtonLabel(
+                                        strings.habitDoneTodayLabel,
+                                      ),
                                     )
                                   : ElevatedButton.icon(
                                       onPressed: () => _toggleToday(false),
                                       icon: const Icon(
                                         Icons.radio_button_unchecked,
                                       ),
-                                      label: Text(strings.markHabitDoneAction),
+                                      label: AppButtonLabel(
+                                        strings.markHabitDoneAction,
+                                      ),
                                     ),
                             ),
                           ),
@@ -817,9 +821,9 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
                               child: Center(
                                 child: TextButton(
                                   onPressed: () => _toggleToday(true),
-                                  child: Text(
+                                  child: AppButtonLabel(
                                     strings.undoHabitTodayAction,
-                                    style: TextStyle(color: colors.muted),
+                                    color: colors.muted,
                                   ),
                                 ),
                               ),

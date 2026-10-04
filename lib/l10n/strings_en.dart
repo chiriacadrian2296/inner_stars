@@ -22,6 +22,24 @@ class StringsEn implements AppStrings {
   String get moodboardQuoteDescription =>
       'Write a short quote to add to the moodboard.';
   @override
+  String get moodboardQuoteTextLabel => 'Quote';
+  @override
+  String get moodboardQuoteAuthorLabel => 'Author';
+  @override
+  String get moodboardQuoteAuthorHint => 'Optional';
+  @override
+  String get moodboardQuoteStyleLabel => 'Choose a style';
+  @override
+  String get moodboardQuoteStyleCelestial => 'Celestial';
+  @override
+  String get moodboardQuoteStyleAurora => 'Aurora';
+  @override
+  String get moodboardQuoteStyleEditorial => 'Editorial';
+  @override
+  String get moodboardQuoteStyleConstellation => 'Constellation';
+  @override
+  String get moodboardQuoteStyleMinimal => 'Minimal';
+  @override
   String get moodboardVideo => 'Video';
   @override
   String get moodboardEdit => 'Edit';
@@ -453,6 +471,8 @@ class StringsEn implements AppStrings {
   String get takeMeThereAction => 'Take me there';
   @override
   String get creationSuccessOpenAction => 'Open';
+  @override
+  String get creationSuccessFlyAction => 'Fly';
   @override
   String get searchCardMenuOpenAction => 'Open card menu';
   @override
@@ -1819,16 +1839,16 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get creationSuccessEyebrow => 'Congrats!';
   @override
-  String get creationSuccessLitMessage => 'A star is lit in your sky.';
+  String get creationSuccessLitMessage => 'A star has been lit in your sky.';
   @override
   String get creationSuccessUnlitMessage =>
-      'A new goal is set, waiting in your sky.';
+      'A new goal has been set in your sky.';
   @override
   String get creationSuccessPulsarMessage =>
-      'A new habit is alive, pulsing in your sky.';
+      'A new habit has begun pulsing in your sky.';
   @override
   String get creationSuccessConstellationMessage =>
-      'A new constellation is added to your sky.';
+      'A new constellation has been added to your sky.';
   @override
   String areaTooltipStarCount(int count) =>
       '$count star${count == 1 ? '' : 's'} lit';

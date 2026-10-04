@@ -19,11 +19,18 @@ void main() {
         id: 'a',
         kind: MoodboardKind.quote,
         content: 'A vision',
+        author: 'Anaïs Nin',
+        quoteStyle: MoodboardQuoteStyle.editorial,
       );
       await repo.save(LifeArea.physical, [item]);
       await repo.save(LifeArea.social, [item]);
       final reopened = await MoodboardRepository.create();
       expect(reopened.getItems(LifeArea.physical).single.content, 'A vision');
+      expect(reopened.getItems(LifeArea.physical).single.author, 'Anaïs Nin');
+      expect(
+        reopened.getItems(LifeArea.physical).single.quoteStyle,
+        MoodboardQuoteStyle.editorial,
+      );
       await reopened.save(LifeArea.physical, [
         const MoodboardItem(
           id: 'a',
@@ -39,6 +46,16 @@ void main() {
       expect(repo.getItems(LifeArea.social), isEmpty);
     },
   );
+  test('legacy quotes load with safe author and style defaults', () async {
+    SharedPreferences.setMockInitialValues({
+      'area-moodboard-v1:physical':
+          '[{"id":"legacy","kind":"quote","content":"Keep going"}]',
+    });
+    final repo = await MoodboardRepository.create();
+    final quote = repo.getItems(LifeArea.physical).single;
+    expect(quote.author, isEmpty);
+    expect(quote.quoteStyle, MoodboardQuoteStyle.celestial);
+  });
   test('media is copied to persistent storage and reset removes it', () async {
     final dir = await Directory.systemTemp.createTemp('moodboard-test');
     addTearDown(() => dir.delete(recursive: true));

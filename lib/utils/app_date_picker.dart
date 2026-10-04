@@ -432,12 +432,12 @@ class _PickerShell extends StatelessWidget {
                   const Spacer(),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text(material.cancelButtonLabel),
+                    child: AppButtonLabel(material.cancelButtonLabel),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: onConfirm,
-                    child: Text(material.okButtonLabel),
+                    child: AppButtonLabel(material.okButtonLabel),
                   ),
                 ],
               ),

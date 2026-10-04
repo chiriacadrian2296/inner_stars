@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
+import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import 'staggered_entrance.dart';
 
@@ -44,7 +45,7 @@ Future<LifeArea?> pickArea(BuildContext context) {
                 alignment: Alignment.center,
                 child: ElevatedButton(
                   onPressed: () => Navigator.of(sheetContext).pop(),
-                  child: Text(strings.cancel),
+                  child: AppButtonLabel(strings.cancel),
                 ),
               ),
             ],

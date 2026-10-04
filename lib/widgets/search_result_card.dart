@@ -699,16 +699,13 @@ class _SearchQuickMenuAction extends StatelessWidget {
           children: [
             Icon(action.icon, size: 17, color: foreground),
             const SizedBox(height: 2),
-            Text(
+            AppButtonLabel(
               action.label,
+              color: foreground,
+              fontSize: 9,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: foreground,
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-              ),
             ),
           ],
         ),

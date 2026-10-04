@@ -4,6 +4,7 @@ import 'package:hint_kit/hint_kit.dart';
 
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
+import '../theme/app_style.dart';
 import '../tutorials/tour_step_card.dart';
 import '../utils/app_modals.dart';
 import 'app_choice_chip.dart';
@@ -144,13 +145,13 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
                   children: [
                     TextButton(
                       onPressed: _allAreasSelected ? null : _clear,
-                      child: Text(strings.clearFilterAction),
+                      child: AppButtonLabel(strings.clearFilterAction),
                     ),
                     ElevatedButton(
                       onPressed: _hasChanges
                           ? () => Navigator.of(context).pop(_areas)
                           : null,
-                      child: Text(strings.applyFilterAction),
+                      child: AppButtonLabel(strings.applyFilterAction),
                     ),
                   ],
                 ),

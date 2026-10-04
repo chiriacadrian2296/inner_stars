@@ -45,6 +45,50 @@ const double kPageInsetCompact = 20;
 const double kPageInsetRegular = 24;
 const double kPageInsetImmersive = 28;
 
+/// One typographic voice for every control that performs an action.
+/// Button categories may differ in fill, border, color and density, but not
+/// in casing, weight or tracking. Use [AppButtonLabel] in hand-built buttons;
+/// Material buttons inherit the same values from `app_theme.dart`.
+const double kAppButtonFontSize = 12;
+const double kAppButtonLetterSpacing = 1.4;
+const FontWeight kAppButtonFontWeight = FontWeight.w700;
+
+class AppButtonLabel extends StatelessWidget {
+  const AppButtonLabel(
+    this.label, {
+    super.key,
+    this.color,
+    this.fontSize = kAppButtonFontSize,
+    this.maxLines = 1,
+    this.overflow = TextOverflow.ellipsis,
+    this.textAlign = TextAlign.center,
+  });
+
+  final String label;
+  final Color? color;
+  final double fontSize;
+  final int? maxLines;
+  final TextOverflow? overflow;
+  final TextAlign textAlign;
+
+  @override
+  Widget build(BuildContext context) {
+    final inherited = DefaultTextStyle.of(context).style;
+    return Text(
+      label.toUpperCase(),
+      maxLines: maxLines,
+      overflow: overflow,
+      textAlign: textAlign,
+      style: inherited.copyWith(
+        color: color,
+        fontSize: fontSize,
+        fontWeight: kAppButtonFontWeight,
+        letterSpacing: kAppButtonLetterSpacing,
+      ),
+    );
+  }
+}
+
 /// Border weights. Active is heavier as well as gold — the weight alone
 /// carries the state for anyone who can't easily separate the two colors.
 ///

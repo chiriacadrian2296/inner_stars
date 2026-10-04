@@ -335,15 +335,15 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
                       children: [
                         TextButton(
                           onPressed: _range == null ? null : _clear,
-                          child: Text(strings.clearFilterAction),
+                          child: AppButtonLabel(strings.clearFilterAction),
                         ),
                         ElevatedButton(
                           onPressed: _hasChanges
-                              ? () => Navigator.of(context).pop(
-                                  (range: _range, preset: _preset),
-                                )
+                              ? () =>
+                                    Navigator.of(context)
+                                        .pop((range: _range, preset: _preset))
                               : null,
-                          child: Text(strings.applyFilterAction),
+                          child: AppButtonLabel(strings.applyFilterAction),
                         ),
                       ],
                     ),

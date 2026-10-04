@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 import '../data/moodboard_repository.dart';
 import '../data/moodboard_storage.dart';
 import '../l10n/strings_scope.dart';
+import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import 'staggered_entrance.dart';
 
@@ -234,22 +235,7 @@ class _MoodboardMediaState extends State<MoodboardMedia> {
       ),
     );
     if (widget.item.kind == MoodboardKind.quote) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Text(
-            widget.item.content,
-            textAlign: TextAlign.center,
-            maxLines: widget.expanded ? null : 6,
-            overflow: widget.expanded ? null : TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontFamily: kFontStarTitle,
-              fontSize: 22,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      );
+      return MoodboardQuoteCard(item: widget.item, expanded: widget.expanded);
     }
     if (_image != null) {
       return FutureBuilder<Uint8List>(
@@ -321,6 +307,169 @@ class _MoodboardMediaState extends State<MoodboardMedia> {
             ),
           ),
       ],
+    );
+  }
+}
+
+class MoodboardQuoteCard extends StatelessWidget {
+  const MoodboardQuoteCard({
+    super.key,
+    required this.item,
+    this.expanded = false,
+  });
+
+  final MoodboardItem item;
+  final bool expanded;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final style = item.quoteStyle;
+    final isMinimal = style == MoodboardQuoteStyle.minimal;
+    final isEditorial = style == MoodboardQuoteStyle.editorial;
+    final textColor = isMinimal ? colors.night : Colors.white;
+    final alignment = isEditorial ? Alignment.bottomLeft : Alignment.center;
+    final textAlign = isEditorial ? TextAlign.left : TextAlign.center;
+    final fontFamily = switch (style) {
+      MoodboardQuoteStyle.editorial => kFontBranding,
+      MoodboardQuoteStyle.minimal => kFontBody,
+      MoodboardQuoteStyle.constellation => kFontMono,
+      _ => kFontStarTitle,
+    };
+    final decoration = BoxDecoration(
+      color: isMinimal ? const Color(0xFFF1EBDD) : colors.nightPanel,
+      gradient: switch (style) {
+        MoodboardQuoteStyle.celestial => const RadialGradient(
+          center: Alignment(-0.7, -0.8),
+          radius: 1.4,
+          colors: [Color(0xFF344A86), Color(0xFF11182D), Color(0xFF080B14)],
+        ),
+        MoodboardQuoteStyle.aurora => const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF173B46), Color(0xFF4B296A), Color(0xFF10152A)],
+        ),
+        MoodboardQuoteStyle.editorial => const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF9B4D36), Color(0xFF29151C)],
+        ),
+        MoodboardQuoteStyle.constellation => const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF07101F), Color(0xFF15294C)],
+        ),
+        MoodboardQuoteStyle.minimal => null,
+      },
+    );
+
+    return DecoratedBox(
+      decoration: decoration,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (style == MoodboardQuoteStyle.celestial ||
+              style == MoodboardQuoteStyle.constellation)
+            Positioned(
+              right: 14,
+              top: 12,
+              child: Icon(
+                style == MoodboardQuoteStyle.celestial
+                    ? Icons.auto_awesome
+                    : Icons.hub_outlined,
+                color: colors.gold.withValues(alpha: 0.7),
+                size: expanded ? 42 : 26,
+              ),
+            ),
+          if (style == MoodboardQuoteStyle.aurora)
+            Positioned(
+              left: -30,
+              bottom: -30,
+              child: Icon(
+                Icons.blur_on,
+                size: expanded ? 170 : 100,
+                color: const Color(0xFF72E5C2).withValues(alpha: 0.18),
+              ),
+            ),
+          if (isEditorial)
+            Positioned(
+              left: 18,
+              top: 16,
+              child: Text(
+                '“',
+                style: TextStyle(
+                  color: colors.gold,
+                  fontFamily: kFontStarTitle,
+                  fontSize: expanded ? 76 : 54,
+                  height: 0.8,
+                ),
+              ),
+            ),
+          Align(
+            alignment: alignment,
+            child: Padding(
+              padding: EdgeInsets.all(expanded ? 32 : 18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: isEditorial
+                    ? CrossAxisAlignment.start
+                    : CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    item.content,
+                    textAlign: textAlign,
+                    maxLines: expanded ? null : 4,
+                    overflow: expanded ? null : TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: expanded ? 34 : 16,
+                      fontStyle: style == MoodboardQuoteStyle.celestial
+                          ? FontStyle.italic
+                          : FontStyle.normal,
+                      fontWeight: isMinimal ? FontWeight.w600 : FontWeight.w500,
+                      height: 1.2,
+                      color: textColor,
+                    ),
+                  ),
+                  if (item.author.isNotEmpty) ...[
+                    SizedBox(height: expanded ? 20 : 8),
+                    Text(
+                      '— ${item.author}',
+                      textAlign: textAlign,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: textColor.withValues(alpha: 0.72),
+                        fontFamily: kFontMono,
+                        fontSize: expanded ? 16 : 11,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 8,
+            child: Text(
+              'VICTORY STARS',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: (isMinimal ? colors.night : colors.gold).withValues(
+                  alpha: 0.55,
+                ),
+                fontFamily: kFontMono,
+                fontSize: expanded ? 10 : 7,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

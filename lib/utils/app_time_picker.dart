@@ -133,13 +133,13 @@ class _AppTimePickerDialogState extends State<_AppTimePickerDialog> {
                   const Spacer(),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text(material.cancelButtonLabel),
+                    child: AppButtonLabel(material.cancelButtonLabel),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: () =>
                         Navigator.of(context).pop(_TimePickerResult(_time)),
-                    child: Text(material.okButtonLabel),
+                    child: AppButtonLabel(material.okButtonLabel),
                   ),
                 ],
               ),
@@ -297,7 +297,7 @@ class _AppTimeInputDialogState extends State<_AppTimeInputDialog> {
                   const Spacer(),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text(material.cancelButtonLabel),
+                    child: AppButtonLabel(material.cancelButtonLabel),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
@@ -307,7 +307,7 @@ class _AppTimeInputDialogState extends State<_AppTimeInputDialog> {
                         Navigator.of(context).pop(_TimePickerResult(value));
                       }
                     },
-                    child: Text(material.okButtonLabel),
+                    child: AppButtonLabel(material.okButtonLabel),
                   ),
                 ],
               ),

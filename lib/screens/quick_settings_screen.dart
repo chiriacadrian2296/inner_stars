@@ -181,9 +181,9 @@ class _QuickSettingsScreenState extends State<QuickSettingsScreen> {
                         size: 18,
                         color: colors.gold,
                       ),
-                      label: Text(
+                      label: AppButtonLabel(
                         strings.quickSettingsOpenSoundLabAction,
-                        style: TextStyle(color: colors.gold),
+                        color: colors.gold,
                       ),
                     ),
                   ),
@@ -253,9 +253,9 @@ class _QuickSettingsScreenState extends State<QuickSettingsScreen> {
                     child: TextButton.icon(
                       onPressed: () => _replayAllTours(context),
                       icon: Icon(Icons.refresh, size: 18, color: colors.gold),
-                      label: Text(
+                      label: AppButtonLabel(
                         strings.replayToursAction,
-                        style: TextStyle(color: colors.gold),
+                        color: colors.gold,
                       ),
                     ),
                   ),

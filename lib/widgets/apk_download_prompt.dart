@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../data/apk_prompt_prefs.dart';
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import 'staggered_entrance.dart';
 
@@ -54,7 +55,7 @@ Future<void> showApkDownloadPrompt(
             axis: Axis.horizontal,
             child: TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(strings.downloadApkPromptContinueAction),
+              child: AppButtonLabel(strings.downloadApkPromptContinueAction),
             ),
           ),
           StaggeredEntrance(
@@ -66,7 +67,7 @@ Future<void> showApkDownloadPrompt(
                 Navigator.of(dialogContext).pop();
               },
               icon: const Icon(Icons.download, size: 18),
-              label: Text(strings.downloadApkAction),
+              label: AppButtonLabel(strings.downloadApkAction),
             ),
           ),
         ],

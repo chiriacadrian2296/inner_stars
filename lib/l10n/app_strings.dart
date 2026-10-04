@@ -507,6 +507,7 @@ abstract class AppStrings {
   String get searchButtonLabel;
   String get takeMeThereAction;
   String get creationSuccessOpenAction;
+  String get creationSuccessFlyAction;
   String get searchCardMenuOpenAction;
   String get searchCardMenuCloseAction;
   String get searchCardOpenAction;
@@ -901,6 +902,15 @@ abstract class AppStrings {
   String get moodboardEmpty;
   String get moodboardQuote;
   String get moodboardQuoteDescription;
+  String get moodboardQuoteTextLabel;
+  String get moodboardQuoteAuthorLabel;
+  String get moodboardQuoteAuthorHint;
+  String get moodboardQuoteStyleLabel;
+  String get moodboardQuoteStyleCelestial;
+  String get moodboardQuoteStyleAurora;
+  String get moodboardQuoteStyleEditorial;
+  String get moodboardQuoteStyleConstellation;
+  String get moodboardQuoteStyleMinimal;
   String get moodboardVideo;
   String get moodboardEdit;
   String get moodboardRemove;

@@ -37,6 +37,7 @@ import '../utils/app_modals.dart';
 import '../utils/area_hero_art.dart';
 import '../utils/date_format.dart';
 import '../utils/habit_stats.dart';
+import '../utils/icon_for_slug.dart';
 import '../utils/page_settled.dart';
 import '../utils/responsive.dart';
 import 'animated_presence.dart';
@@ -44,6 +45,7 @@ import 'app_action_disc.dart';
 import 'app_field.dart';
 import 'area_filter_sheet.dart';
 import 'date_range_filter_sheet.dart';
+import 'creation_success_dialog.dart';
 import 'kind_filter_sheet.dart';
 import 'responsive_content.dart';
 import 'search_result_card.dart';
@@ -549,7 +551,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   Future<void> _openNewConstellation(LifeArea area) async {
     final shapes = await StarsShapeRepository.create();
     if (!mounted) return;
-    await Navigator.of(context).push(
+    final project = await Navigator.of(context).push<Project>(
       MaterialPageRoute(
         builder: (_) => NewProjectScreen(
           projectRepository: widget.projectRepository,
@@ -559,6 +561,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       ),
     );
     _refreshAndRebuild();
+    if (project != null && mounted) _announceConstellationCreated(project);
   }
 
   /// The search-level creation route deliberately has no area or
@@ -577,7 +580,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     if (result is! StarFormResult) return;
 
     if (result.kind == StarKind.pulsar) {
-      await widget.habitRepository.add(
+      final habit = await widget.habitRepository.add(
         title: result.title,
         description: result.description,
         projectId: result.projectId,
@@ -587,8 +590,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         reminderHour: result.reminderHour,
         reminderMinute: result.reminderMinute,
       );
+      _refreshAndRebuild();
+      if (mounted) _announcePulsarCreated(habit);
     } else {
-      await widget.starRepository.add(
+      final star = await widget.starRepository.add(
         title: result.title,
         description: result.description,
         projectId: result.projectId,
@@ -598,14 +603,15 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         intensity: result.intensity,
         photoPath: result.photoPath,
       );
+      _refreshAndRebuild();
+      if (mounted) _announceStarCreated(star);
     }
-    _refreshAndRebuild();
   }
 
   Future<void> _createConstellation() async {
     final shapes = await StarsShapeRepository.create();
     if (!mounted) return;
-    await Navigator.of(context).push(
+    final project = await Navigator.of(context).push<Project>(
       MaterialPageRoute(
         builder: (_) => NewProjectScreen(
           projectRepository: widget.projectRepository,
@@ -614,6 +620,75 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       ),
     );
     _refreshAndRebuild();
+    if (project != null && mounted) _announceConstellationCreated(project);
+  }
+
+  void _announceStarCreated(Star star) {
+    final project = _projectsById[star.projectId];
+    if (project == null) return;
+    CreationSuccessDialog.show(
+      context,
+      icon: star.isLit ? Icons.star : Icons.star_border,
+      message: star.isLit
+          ? context.strings.creationSuccessLitMessage
+          : context.strings.creationSuccessUnlitMessage,
+      onOpen: () => _openCreatedEntry(project, StarEntry(star).key),
+      onTakeMeThere: () => widget.onNavigateTo(
+        SkyStarTarget(project, starId: star.id),
+      ),
+      onShare: () => showSharePreview(
+        context: context,
+        content: star.isLit
+            ? ShareableLitStarCard(star: star, project: project)
+            : ShareableGoalCard(star: star, project: project),
+        shareText: star.title,
+        fileName: 'star_${star.id}.png',
+      ),
+    );
+  }
+
+  void _announcePulsarCreated(Habit habit) {
+    final project = _projectsById[habit.projectId];
+    if (project == null) return;
+    CreationSuccessDialog.show(
+      context,
+      icon: StarKind.pulsar.icon,
+      message: context.strings.creationSuccessPulsarMessage,
+      onOpen: () => _openCreatedEntry(project, PulsarEntry(habit).key),
+      onTakeMeThere: () => widget.onNavigateTo(
+        SkyStarTarget(project, habitId: habit.id),
+      ),
+      onShare: () => showSharePreview(
+        context: context,
+        content: ShareablePulsarCard(habit: habit, project: project),
+        shareText: habit.title,
+        fileName: 'pulsar_${habit.id}.png',
+      ),
+    );
+  }
+
+  void _announceConstellationCreated(Project project) {
+    final shape = project.starsShapeId == null
+        ? null
+        : widget.starsShapeRepository.getById(project.starsShapeId!)?.shape;
+    CreationSuccessDialog.show(
+      context,
+      icon: iconForSlug(project.iconSlug),
+      message: context.strings.creationSuccessConstellationMessage,
+      onOpen: () => _openProject(project),
+      onTakeMeThere: () => widget.onNavigateTo(SkyProjectTarget(project)),
+      onShare: shape == null
+          ? () {}
+          : () => showSharePreview(
+              context: context,
+              content: ShareableConstellationCard(
+                project: project,
+                shape: shape,
+              ),
+              shareText: project.name,
+              fileName: 'constellation_${project.id}.png',
+            ),
+    );
   }
 
   Future<void> _manageAreas() async {
@@ -681,7 +756,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         break;
       }
     }
-    await Navigator.of(context).push(
+    final result = await Navigator.of(context).push<Object>(
       MaterialPageRoute(
         builder: (_) => StarFormScreen(
           lockedProject: project,
@@ -691,7 +766,34 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         ),
       ),
     );
+    if (result is! StarFormResult) return;
+    if (result.kind == StarKind.pulsar) {
+      final habit = await widget.habitRepository.add(
+        title: result.title,
+        description: result.description,
+        projectId: project.id,
+        intensity: result.intensity ?? 3,
+        frequency: result.habitFrequency ?? HabitFrequency.daily,
+        targetPerPeriod: result.habitTargetPerPeriod ?? 1,
+        reminderHour: result.reminderHour,
+        reminderMinute: result.reminderMinute,
+      );
+      _refreshAndRebuild();
+      if (mounted) _announcePulsarCreated(habit);
+      return;
+    }
+    final star = await widget.starRepository.add(
+      title: result.title,
+      description: result.description,
+      projectId: project.id,
+      slotSequence: result.slotSequence,
+      targetDate: result.targetDate,
+      achievedDate: result.achievedDate,
+      intensity: result.intensity,
+      photoPath: result.photoPath,
+    );
     _refreshAndRebuild();
+    if (mounted) _announceStarCreated(star);
   }
 
   Future<void> _editConstellation(Project project) async {
@@ -783,6 +885,37 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           projectRepository: widget.projectRepository,
           starsShapeRepository: widget.starsShapeRepository,
           refreshEntries: _filteredReaderEntries,
+          habitRepository: widget.habitRepository,
+          habitCompletionRepository: widget.habitCompletionRepository,
+          onNavigateTo: (project, starId) =>
+              widget.onNavigateTo(SkyStarTarget(project, starId: starId)),
+        ),
+      ),
+    );
+    _refreshAndRebuild();
+  }
+
+  Future<void> _openCreatedEntry(Project project, String anchorKey) async {
+    List<ReaderEntry> load() => projectReaderEntries(
+      project: project,
+      starRepository: widget.starRepository,
+      habitRepository: widget.habitRepository,
+      starsShapeRepository: widget.starsShapeRepository,
+    );
+    final entries = load();
+    final index = entries.indexWhere((entry) => entry.key == anchorKey);
+    if (index == -1) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => StarReaderScreen(
+          repository: widget.starRepository,
+          initialEntries: entries,
+          startIndex: index,
+          allowEdit: true,
+          projectsById: {project.id: project},
+          projectRepository: widget.projectRepository,
+          starsShapeRepository: widget.starsShapeRepository,
+          refreshEntries: load,
           habitRepository: widget.habitRepository,
           habitCompletionRepository: widget.habitCompletionRepository,
           onNavigateTo: (project, starId) =>
@@ -1916,16 +2049,13 @@ class _FilterButton extends StatelessWidget {
                 ),
                 SizedBox(width: horizontal ? 8 : 0, height: horizontal ? 0 : 2),
                 Flexible(
-                  child: Text(
+                  child: AppButtonLabel(
                     label,
+                    color: active ? colors.text : colors.muted,
+                    fontSize: horizontal ? 11 : 9.5,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: horizontal ? TextAlign.start : TextAlign.center,
-                    style: TextStyle(
-                      fontSize: horizontal ? 12 : 10.5,
-                      fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                      color: active ? colors.text : colors.muted,
-                    ),
                   ),
                 ),
               ],
@@ -2042,7 +2172,7 @@ class _FiltersSheet extends StatelessWidget {
               alignment: Alignment.center,
               child: ElevatedButton(
                 onPressed: canReset ? onReset : null,
-                child: Text(resetLabel),
+                child: AppButtonLabel(resetLabel),
               ),
             ),
           ],

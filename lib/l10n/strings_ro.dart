@@ -22,6 +22,24 @@ class StringsRo implements AppStrings {
   String get moodboardQuoteDescription =>
       'Scrie un citat scurt pentru moodboard.';
   @override
+  String get moodboardQuoteTextLabel => 'Citat';
+  @override
+  String get moodboardQuoteAuthorLabel => 'Autor';
+  @override
+  String get moodboardQuoteAuthorHint => 'Opțional';
+  @override
+  String get moodboardQuoteStyleLabel => 'Alege un stil';
+  @override
+  String get moodboardQuoteStyleCelestial => 'Celest';
+  @override
+  String get moodboardQuoteStyleAurora => 'Auroră';
+  @override
+  String get moodboardQuoteStyleEditorial => 'Editorial';
+  @override
+  String get moodboardQuoteStyleConstellation => 'Constelație';
+  @override
+  String get moodboardQuoteStyleMinimal => 'Esențial';
+  @override
   String get moodboardVideo => 'Video';
   @override
   String get moodboardEdit => 'Editează';
@@ -456,6 +474,8 @@ class StringsRo implements AppStrings {
   String get takeMeThereAction => 'Du-mă acolo';
   @override
   String get creationSuccessOpenAction => 'Deschide';
+  @override
+  String get creationSuccessFlyAction => 'Zboară';
   @override
   String get searchCardMenuOpenAction => 'Deschide meniul cardului';
   @override
@@ -1847,10 +1867,10 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get creationSuccessLitMessage => 'O stea s-a aprins pe cerul tău.';
   @override
   String get creationSuccessUnlitMessage =>
-      'Un obiectiv nou e fixat, te așteaptă pe cer.';
+      'Un obiectiv nou a fost stabilit pe cerul tău.';
   @override
   String get creationSuccessPulsarMessage =>
-      'Un obicei nou e viu, pulsează pe cerul tău.';
+      'Un obicei nou a început să pulseze pe cerul tău.';
   @override
   String get creationSuccessConstellationMessage =>
       'O constelație nouă a fost adăugată pe cerul tău.';

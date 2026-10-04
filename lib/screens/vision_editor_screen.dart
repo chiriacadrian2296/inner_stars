@@ -8,6 +8,7 @@ import '../models/life_area.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
+import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import '../widgets/area_section_header.dart';
 import '../widgets/live_markdown_controller.dart';
@@ -68,11 +69,11 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: Text(strings.cancel),
+              child: AppButtonLabel(strings.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: Text(strings.discardChangesAction),
+              child: AppButtonLabel(strings.discardChangesAction),
             ),
           ],
         ),
@@ -591,7 +592,9 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                             ),
                           ),
                           icon: const Icon(Icons.share_outlined),
-                          label: Text(strings.starQuickLookShareAction),
+                          label: AppButtonLabel(
+                            strings.starQuickLookShareAction,
+                          ),
                         ),
                         ElevatedButton(
                           onPressed: _saving ? null : _save,
@@ -601,7 +604,7 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                             disabledBackgroundColor: Colors.white38,
                             disabledForegroundColor: colors.muted,
                           ),
-                          child: Text(strings.saveChanges),
+                          child: AppButtonLabel(strings.saveChanges),
                         ),
                       ],
                     ),

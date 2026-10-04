@@ -541,7 +541,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(strings.gotIt.toUpperCase()),
+            child: AppButtonLabel(strings.gotIt),
           ),
         ],
       ),

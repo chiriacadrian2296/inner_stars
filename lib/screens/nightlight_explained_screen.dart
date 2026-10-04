@@ -257,7 +257,9 @@ class _NightlightExplainedScreenState extends State<NightlightExplainedScreen>
                               ),
                             ),
                           ),
-                          child: Text(strings.nightlightExplainedContinue),
+                          child: AppButtonLabel(
+                            strings.nightlightExplainedContinue,
+                          ),
                         ),
                       ),
                     ),

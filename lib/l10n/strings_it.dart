@@ -22,6 +22,24 @@ class StringsIt implements AppStrings {
   String get moodboardQuoteDescription =>
       'Scrivi una frase breve da aggiungere al moodboard.';
   @override
+  String get moodboardQuoteTextLabel => 'Frase';
+  @override
+  String get moodboardQuoteAuthorLabel => 'Autore';
+  @override
+  String get moodboardQuoteAuthorHint => 'Opzionale';
+  @override
+  String get moodboardQuoteStyleLabel => 'Scegli uno stile';
+  @override
+  String get moodboardQuoteStyleCelestial => 'Celeste';
+  @override
+  String get moodboardQuoteStyleAurora => 'Aurora';
+  @override
+  String get moodboardQuoteStyleEditorial => 'Editoriale';
+  @override
+  String get moodboardQuoteStyleConstellation => 'Costellazione';
+  @override
+  String get moodboardQuoteStyleMinimal => 'Essenziale';
+  @override
   String get moodboardVideo => 'Video';
   @override
   String get moodboardEdit => 'Modifica';
@@ -455,7 +473,9 @@ class StringsIt implements AppStrings {
   @override
   String get takeMeThereAction => 'Portami lì';
   @override
-  String get creationSuccessOpenAction => 'Vai';
+  String get creationSuccessOpenAction => 'Apri';
+  @override
+  String get creationSuccessFlyAction => 'Vola';
   @override
   String get searchCardMenuOpenAction => 'Apri menu della card';
   @override
@@ -1848,10 +1868,10 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
       'Una stella si è accesa nel tuo cielo.';
   @override
   String get creationSuccessUnlitMessage =>
-      'Un nuovo obiettivo è fissato, ti aspetta nel cielo.';
+      'Un nuovo obiettivo è stato fissato nel tuo cielo.';
   @override
   String get creationSuccessPulsarMessage =>
-      'Una nuova abitudine è viva, pulsa nel tuo cielo.';
+      'Una nuova abitudine ha iniziato a pulsare nel tuo cielo.';
   @override
   String get creationSuccessConstellationMessage =>
       'Una nuova costellazione è stata aggiunta al tuo cielo.';

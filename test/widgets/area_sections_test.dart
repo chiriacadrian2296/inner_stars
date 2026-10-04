@@ -127,8 +127,18 @@ void main() {
     );
     await tester.tap(find.text('Frase'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'A new direction');
-    final quoteTheme = Theme.of(tester.element(find.byType(TextField)));
+    await tester.enterText(
+      find.byKey(const ValueKey('quote-text-field')),
+      'A new direction',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('quote-author-field')),
+      'Ursula K. Le Guin',
+    );
+    await tester.tap(find.byKey(const ValueKey('quote-style-aurora')));
+    final quoteTheme = Theme.of(
+      tester.element(find.byKey(const ValueKey('quote-text-field'))),
+    );
     expect(quoteTheme.textSelectionTheme.cursorColor, Colors.white);
     expect(
       quoteTheme.inputDecorationTheme.focusedBorder!.borderSide.color,
@@ -140,11 +150,19 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
     expect(repo.getItems(LifeArea.physical).single.content, 'A new direction');
+    expect(repo.getItems(LifeArea.physical).single.author, 'Ursula K. Le Guin');
+    expect(
+      repo.getItems(LifeArea.physical).single.quoteStyle,
+      MoodboardQuoteStyle.aurora,
+    );
     await tester.tap(find.text('A new direction'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Modifica'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'A clearer direction');
+    await tester.enterText(
+      find.byKey(const ValueKey('quote-text-field')),
+      'A clearer direction',
+    );
     await tester.tap(find.text(const StringsIt().saveChanges));
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 300));

@@ -160,15 +160,15 @@ class _SortFilterSheetState extends State<_SortFilterSheet> {
                   children: [
                     TextButton(
                       onPressed: _isDefault ? null : _reset,
-                      child: Text(strings.clearFilterAction),
+                      child: AppButtonLabel(strings.clearFilterAction),
                     ),
                     ElevatedButton(
                       onPressed: _hasChanges
-                          ? () => Navigator.of(context).pop(
-                              (field: _field, direction: _direction),
-                            )
+                          ? () =>
+                                Navigator.of(context)
+                                    .pop((field: _field, direction: _direction))
                           : null,
-                      child: Text(strings.applyFilterAction),
+                      child: AppButtonLabel(strings.applyFilterAction),
                     ),
                   ],
                 ),

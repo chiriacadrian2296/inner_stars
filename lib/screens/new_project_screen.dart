@@ -191,13 +191,13 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(strings.cancel, style: TextStyle(color: colors.muted)),
+            child: AppButtonLabel(strings.cancel, color: colors.muted),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(
+            child: AppButtonLabel(
               strings.discardChangesAction,
-              style: TextStyle(color: colors.danger),
+              color: colors.danger,
             ),
           ),
         ],
@@ -574,10 +574,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(
-              strings.gotIt.toUpperCase(),
-              style: TextStyle(color: colors.gold),
-            ),
+            child: AppButtonLabel(strings.gotIt, color: colors.gold),
           ),
         ],
       ),
@@ -1319,15 +1316,12 @@ class _ShapeSideButton extends StatelessWidget {
             children: [
               Icon(icon, color: foreground, size: 22),
               const SizedBox(height: 4),
-              Text(
+              AppButtonLabel(
                 label,
+                color: enabled ? colors.text : colors.muted,
+                fontSize: 11,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: enabled ? colors.text : colors.muted,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
               ),
             ],
           ),
@@ -1561,13 +1555,13 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
                     children: [
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        child: Text(strings.cancel),
+                        child: AppButtonLabel(strings.cancel),
                       ),
                       ElevatedButton(
                         onPressed: _selected == null
                             ? null
                             : () => Navigator.of(context).pop(_selected),
-                        child: Text(strings.pickerConfirmAction),
+                        child: AppButtonLabel(strings.pickerConfirmAction),
                       ),
                     ],
                   ),
