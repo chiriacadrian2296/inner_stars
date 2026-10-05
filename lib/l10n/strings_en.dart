@@ -1642,10 +1642,9 @@ My contribution meets a real need and is something I can sustain.
   String nightlightBreathingCycleLabel(int current, int total) =>
       'Cycle $current of $total';
   @override
-  String nightlightBreathingCyclesUntilSkip(int remaining) =>
-      remaining == 1
-          ? 'You can continue after 1 cycle'
-          : 'You can continue after $remaining cycles';
+  String nightlightBreathingCyclesUntilSkip(int remaining) => remaining == 1
+      ? 'You can continue after 1 cycle'
+      : 'You can continue after $remaining cycles';
   @override
   String get nightlightBreathingCheckInTitle => 'How do you feel now?';
   @override
@@ -1867,7 +1866,29 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get skyArtworkOpacityLabel => 'Opacity';
   @override
+  String get skySupernovaScaleLabel => 'Supernova size';
+  @override
+  String get skySupernovaIntensityLabel => 'Supernova brightness';
+  @override
   String get skyArtworkBlendLabel => 'Blending Mode';
+  @override
+  String get skyArtworkControlsTooltip => 'Artwork controls';
+  @override
+  String get skyArtworkScaleLabel => 'Size';
+  @override
+  String get skyArtworkColorLabel => 'Color';
+  @override
+  String get skyArtworkSaturationLabel => 'Saturation';
+  @override
+  String get skyArtworkLightnessLabel => 'Lightness';
+  @override
+  String get skyArtworkLayerLabel => 'Layer';
+  @override
+  String get skyArtworkLayerBehindSky => 'Behind the sky';
+  @override
+  String get skyArtworkLayerBehindSupernovae => 'Behind supernovae';
+  @override
+  String get skyArtworkLayerAboveStars => 'Above stars';
 
   @override
   String get appLockSection => 'App Lock';

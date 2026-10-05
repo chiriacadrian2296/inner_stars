@@ -30,10 +30,16 @@ import 'constellation_field.dart';
 /// space would sit rotated some arbitrary amount away from its own star's
 /// spikes depending on where the camera happens to be looking.
 class SkyAreaSigils extends StatefulWidget {
-  const SkyAreaSigils({super.key, required this.camera, required this.zoom});
+  const SkyAreaSigils({
+    super.key,
+    required this.camera,
+    required this.zoom,
+    this.sizeFactor = 1,
+  });
 
   final SkyCamera camera;
   final double zoom;
+  final double sizeFactor;
 
   @override
   State<SkyAreaSigils> createState() => _SkyAreaSigilsState();
@@ -64,6 +70,7 @@ class _SkyAreaSigilsState extends State<SkyAreaSigils>
       painter: _SkyAreaSigilsPainter(
         camera: widget.camera,
         zoom: widget.zoom,
+        sizeFactor: widget.sizeFactor,
         time: _elapsed.inMicroseconds / Duration.microsecondsPerSecond,
       ),
     );
@@ -246,11 +253,13 @@ class _SkyAreaSigilsPainter extends CustomPainter {
     required this.camera,
     required this.zoom,
     required this.time,
+    required this.sizeFactor,
   });
 
   final SkyCamera camera;
   final double zoom;
   final double time;
+  final double sizeFactor;
 
   // A bit bigger than an earlier pass (0.030) — still deliberately well
   // inside the supernova's own visible ring/glow, picked by eye rather
@@ -301,13 +310,14 @@ class _SkyAreaSigilsPainter extends CustomPainter {
       // rotating sigil drawn on top of it — see
       // [_lightRingCenterWorldRadius]'s own comment.
       final anchorRadius =
-          _lightRingCenterWorldRadius * zoom * size.height * scale;
+          _lightRingCenterWorldRadius * zoom * size.height * scale * sizeFactor;
       _paintAnchorRing(canvas, screenCenter, anchorRadius, i);
 
       final axisA = _axisAFor(center);
       final rotation = _rotationAngleFor(center, axisA, screenCenter, size);
 
-      final diameter = _sigilWorldRadius * 2 * zoom * size.height * scale;
+      final diameter =
+          _sigilWorldRadius * 2 * zoom * size.height * scale * sizeFactor;
       // A breathing pulse, offset per area (by its own index) so the 8
       // don't all swell and shrink in lockstep. Capped at
       // [_pulseAmplitude] — see [_sigilWorldRadius]'s own comment on why
@@ -622,5 +632,6 @@ class _SkyAreaSigilsPainter extends CustomPainter {
   bool shouldRepaint(covariant _SkyAreaSigilsPainter oldDelegate) =>
       oldDelegate.camera != camera ||
       oldDelegate.zoom != zoom ||
+      oldDelegate.sizeFactor != sizeFactor ||
       oldDelegate.time != time;
 }

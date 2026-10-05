@@ -14,6 +14,10 @@ class AreaHeroArt {
   final String skyAsset;
 }
 
+/// Switch this off to restore every original artwork without removing the
+/// temporary Royal Symbols preview assets.
+const bool kUseRoyalArtworkPreview = true;
+
 /// Every [LifeArea] with hero art of its own so far — the one shared
 /// source of truth both `area_detail_screen.dart` (which area gets a
 /// cover, and which two files it shows) and `sky_screen.dart`/
@@ -21,7 +25,7 @@ class AreaHeroArt {
 /// own backdrop, and which file that backdrop loads) read from, so the two
 /// can never drift out of sync with each other. Every other [LifeArea] has
 /// no entry and falls back to its plain, art-less treatment everywhere.
-const Map<LifeArea, AreaHeroArt> kAreaHeroArt = {
+const Map<LifeArea, AreaHeroArt> kOriginalAreaHeroArt = {
   LifeArea.physical: AreaHeroArt(
     coverAsset: 'assets/images/1. Physical.png',
     skyAsset: 'assets/images/1. Physical - CENTER CROP.jpg',
@@ -55,3 +59,42 @@ const Map<LifeArea, AreaHeroArt> kAreaHeroArt = {
     skyAsset: 'assets/images/8. Philanthropic - CENTER CROP.jpg',
   ),
 };
+
+const Map<LifeArea, AreaHeroArt> kRoyalArtworkPreview = {
+  LifeArea.physical: AreaHeroArt(
+    coverAsset: 'assets/images/royal_symbols_preview/physical.png',
+    skyAsset: 'assets/images/royal_symbols_preview/physical.png',
+  ),
+  LifeArea.psychological: AreaHeroArt(
+    coverAsset: 'assets/images/royal_symbols_preview/psychological.png',
+    skyAsset: 'assets/images/royal_symbols_preview/psychological.png',
+  ),
+  LifeArea.professional: AreaHeroArt(
+    coverAsset: 'assets/images/royal_symbols_preview/professional.png',
+    skyAsset: 'assets/images/royal_symbols_preview/professional.png',
+  ),
+  LifeArea.financial: AreaHeroArt(
+    coverAsset: 'assets/images/royal_symbols_preview/financial.png',
+    skyAsset: 'assets/images/royal_symbols_preview/financial.png',
+  ),
+  LifeArea.personal: AreaHeroArt(
+    coverAsset: 'assets/images/royal_symbols_preview/personal.png',
+    skyAsset: 'assets/images/royal_symbols_preview/personal.png',
+  ),
+  LifeArea.social: AreaHeroArt(
+    coverAsset: 'assets/images/royal_symbols_preview/social.png',
+    skyAsset: 'assets/images/royal_symbols_preview/social.png',
+  ),
+  LifeArea.spiritual: AreaHeroArt(
+    coverAsset: 'assets/images/royal_symbols_preview/spiritual.png',
+    skyAsset: 'assets/images/royal_symbols_preview/spiritual.png',
+  ),
+  LifeArea.philanthropic: AreaHeroArt(
+    coverAsset: 'assets/images/royal_symbols_preview/philanthropic.png',
+    skyAsset: 'assets/images/royal_symbols_preview/philanthropic.png',
+  ),
+};
+
+const Map<LifeArea, AreaHeroArt> kAreaHeroArt = kUseRoyalArtworkPreview
+    ? kRoyalArtworkPreview
+    : kOriginalAreaHeroArt;

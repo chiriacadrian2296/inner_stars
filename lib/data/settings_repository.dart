@@ -1,4 +1,6 @@
 import '../models/artwork_blend.dart';
+import '../models/artwork_layer.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Reads and writes user-facing app settings (language, daily reminder).
@@ -15,7 +17,13 @@ class SettingsRepository {
   static const _showGridKey = 'settings.showGrid';
   static const _artworkOpacityKey = 'settings.artworkOpacity';
   static const _artworkBlendKey = 'settings.artworkBlend';
+  static const _artworkScaleKey = 'settings.artworkScale';
+  static const _artworkColorKey = 'settings.artworkColor';
+  static const _artworkGoldMigratedKey = 'settings.artworkGoldMigrated';
+  static const _artworkLayerKey = 'settings.artworkLayer';
   static const _showSupernovaeKey = 'settings.showSupernovae';
+  static const _supernovaScaleKey = 'settings.supernovaScale';
+  static const _supernovaIntensityKey = 'settings.supernovaIntensity';
   static const _tutorialsEnabledKey = 'settings.tutorialsEnabled';
 
   final SharedPreferences _prefs;
@@ -37,7 +45,11 @@ class SettingsRepository {
 
   int get reminderMinute => _prefs.getInt(_reminderMinuteKey) ?? 0;
 
-  Future<void> setReminder({required bool enabled, required int hour, required int minute}) async {
+  Future<void> setReminder({
+    required bool enabled,
+    required int hour,
+    required int minute,
+  }) async {
     await _prefs.setBool(_reminderEnabledKey, enabled);
     await _prefs.setInt(_reminderHourKey, hour);
     await _prefs.setInt(_reminderMinuteKey, minute);
@@ -57,6 +69,17 @@ class SettingsRepository {
   Future<void> setShowSupernovae(bool value) =>
       _prefs.setBool(_showSupernovaeKey, value);
 
+  double get supernovaScale => _prefs.getDouble(_supernovaScaleKey) ?? 1.0;
+
+  Future<void> setSupernovaScale(double value) =>
+      _prefs.setDouble(_supernovaScaleKey, value);
+
+  double get supernovaIntensity =>
+      _prefs.getDouble(_supernovaIntensityKey) ?? 1.0;
+
+  Future<void> setSupernovaIntensity(double value) =>
+      _prefs.setDouble(_supernovaIntensityKey, value);
+
   /// How strongly the Cosmo's area artwork shows (0..1), and how it blends
   /// onto the sky — defaults are the original look (half strength, additive).
   double get artworkOpacity => _prefs.getDouble(_artworkOpacityKey) ?? 0.5;
@@ -69,6 +92,34 @@ class SettingsRepository {
 
   Future<void> setArtworkBlend(ArtworkBlend value) =>
       _prefs.setString(_artworkBlendKey, value.name);
+
+  double get artworkScale => _prefs.getDouble(_artworkScaleKey) ?? 1.0;
+
+  Future<void> setArtworkScale(double value) =>
+      _prefs.setDouble(_artworkScaleKey, value);
+
+  int get artworkColor {
+    const oldPreviewGold = 0xFFFFCC00;
+    const appGold = 0xFFF2B84B;
+    final saved = _prefs.getInt(_artworkColorKey);
+    if (!(_prefs.getBool(_artworkGoldMigratedKey) ?? false)) {
+      _prefs.setBool(_artworkGoldMigratedKey, true);
+      if (saved == oldPreviewGold) {
+        _prefs.setInt(_artworkColorKey, appGold);
+        return appGold;
+      }
+    }
+    return saved ?? appGold;
+  }
+
+  Future<void> setArtworkColor(int value) =>
+      _prefs.setInt(_artworkColorKey, value);
+
+  ArtworkLayer get artworkLayer =>
+      ArtworkLayer.fromName(_prefs.getString(_artworkLayerKey));
+
+  Future<void> setArtworkLayer(ArtworkLayer value) =>
+      _prefs.setString(_artworkLayerKey, value.name);
 
   /// Whether any `hint_kit` guided tour is allowed to auto-start at all. Off
   /// by default; turning it off doesn't touch which tours are individually

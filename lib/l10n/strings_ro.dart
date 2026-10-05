@@ -1661,10 +1661,9 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String nightlightBreathingCycleLabel(int current, int total) =>
       'Ciclul $current din $total';
   @override
-  String nightlightBreathingCyclesUntilSkip(int remaining) =>
-      remaining == 1
-          ? 'Poți continua peste 1 ciclu'
-          : 'Poți continua peste $remaining cicluri';
+  String nightlightBreathingCyclesUntilSkip(int remaining) => remaining == 1
+      ? 'Poți continua peste 1 ciclu'
+      : 'Poți continua peste $remaining cicluri';
   @override
   String get nightlightBreathingCheckInTitle => 'Cum te simți acum?';
   @override
@@ -1891,7 +1890,29 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get skyArtworkOpacityLabel => 'Opacitate';
   @override
+  String get skySupernovaScaleLabel => 'Dimensiune supernove';
+  @override
+  String get skySupernovaIntensityLabel => 'Luminozitate supernove';
+  @override
   String get skyArtworkBlendLabel => 'Mod de Amestecare';
+  @override
+  String get skyArtworkControlsTooltip => 'Controale artwork';
+  @override
+  String get skyArtworkScaleLabel => 'Dimensiune';
+  @override
+  String get skyArtworkColorLabel => 'Culoare';
+  @override
+  String get skyArtworkSaturationLabel => 'Saturație';
+  @override
+  String get skyArtworkLightnessLabel => 'Luminozitate';
+  @override
+  String get skyArtworkLayerLabel => 'Nivel';
+  @override
+  String get skyArtworkLayerBehindSky => 'În spatele cerului';
+  @override
+  String get skyArtworkLayerBehindSupernovae => 'În spatele supernovelor';
+  @override
+  String get skyArtworkLayerAboveStars => 'Deasupra stelelor';
 
   @override
   String get appLockSection => 'Blocare aplicație';

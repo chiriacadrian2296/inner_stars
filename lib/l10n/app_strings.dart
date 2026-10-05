@@ -1020,7 +1020,18 @@ abstract class AppStrings {
   String get skySupernovaeToggleLabel;
   String get skyArtworkSection;
   String get skyArtworkOpacityLabel;
+  String get skySupernovaScaleLabel;
+  String get skySupernovaIntensityLabel;
   String get skyArtworkBlendLabel;
+  String get skyArtworkControlsTooltip;
+  String get skyArtworkScaleLabel;
+  String get skyArtworkColorLabel;
+  String get skyArtworkSaturationLabel;
+  String get skyArtworkLightnessLabel;
+  String get skyArtworkLayerLabel;
+  String get skyArtworkLayerBehindSky;
+  String get skyArtworkLayerBehindSupernovae;
+  String get skyArtworkLayerAboveStars;
 
   // Settings — App Lock section: an optional 4-digit PIN (with a
   // fingerprint/biometric shortcut on top of it, where the device

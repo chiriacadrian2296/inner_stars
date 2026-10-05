@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'area_hero_art.dart';
+
 /// Nudges an area's own hero art (see [AreaHeroArt]/assets/images — every
 /// one so far is the same style) a little toward the app's own navy/white
 /// palette — its native, highly-saturated blue reads as too vivid next to
@@ -13,6 +15,7 @@ import 'package:flutter/material.dart';
 /// This is meant to still read as the same art, just toned down, so both
 /// adjustments are deliberately small.
 Widget tonedAreaHeroArt({required Widget child}) {
+  if (kUseRoyalArtworkPreview) return child;
   return ColorFiltered(
     colorFilter: _areaArtDesaturate,
     child: ColorFiltered(colorFilter: _areaArtHueNudge, child: child),

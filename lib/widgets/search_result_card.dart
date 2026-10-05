@@ -359,29 +359,11 @@ class SearchArtworkVisual extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     if (asset == null) return SearchMissingVisual(icon: fallbackIcon);
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Image.asset(
-          asset!,
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => SearchMissingVisual(icon: fallbackIcon),
-        ),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [
-                Colors.transparent,
-                colors.nightPanel.withValues(alpha: 0.58),
-              ],
-            ),
-          ),
-        ),
-      ],
+    return Image.asset(
+      asset!,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => SearchMissingVisual(icon: fallbackIcon),
     );
   }
 }

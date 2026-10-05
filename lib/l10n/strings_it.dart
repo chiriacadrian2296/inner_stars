@@ -1659,10 +1659,9 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String nightlightBreathingCycleLabel(int current, int total) =>
       'Ciclo $current di $total';
   @override
-  String nightlightBreathingCyclesUntilSkip(int remaining) =>
-      remaining == 1
-          ? 'Potrai continuare tra 1 ciclo'
-          : 'Potrai continuare tra $remaining cicli';
+  String nightlightBreathingCyclesUntilSkip(int remaining) => remaining == 1
+      ? 'Potrai continuare tra 1 ciclo'
+      : 'Potrai continuare tra $remaining cicli';
   @override
   String get nightlightBreathingCheckInTitle => 'Come ti senti ora?';
   @override
@@ -1892,7 +1891,29 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get skyArtworkOpacityLabel => 'Opacità';
   @override
+  String get skySupernovaScaleLabel => 'Dimensione supernove';
+  @override
+  String get skySupernovaIntensityLabel => 'Luminosità supernove';
+  @override
   String get skyArtworkBlendLabel => 'Modalità di Fusione';
+  @override
+  String get skyArtworkControlsTooltip => 'Controlli artwork';
+  @override
+  String get skyArtworkScaleLabel => 'Dimensione';
+  @override
+  String get skyArtworkColorLabel => 'Colore';
+  @override
+  String get skyArtworkSaturationLabel => 'Saturazione';
+  @override
+  String get skyArtworkLightnessLabel => 'Luminosità';
+  @override
+  String get skyArtworkLayerLabel => 'Livello';
+  @override
+  String get skyArtworkLayerBehindSky => 'Dietro il cielo';
+  @override
+  String get skyArtworkLayerBehindSupernovae => 'Dietro le supernove';
+  @override
+  String get skyArtworkLayerAboveStars => 'Sopra le stelle';
 
   @override
   String get appLockSection => 'Blocco app';

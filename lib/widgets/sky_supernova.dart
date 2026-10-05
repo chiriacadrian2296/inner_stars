@@ -33,10 +33,18 @@ import 'constellation_field.dart';
 /// near the screen edge instead of just sliding off it normally. Plain
 /// icon-on-glow, this file's very first look, never had either problem.
 class SkySupernova extends StatefulWidget {
-  const SkySupernova({super.key, required this.camera, required this.zoom});
+  const SkySupernova({
+    super.key,
+    required this.camera,
+    required this.zoom,
+    this.scale = 1,
+    this.intensity = 1,
+  });
 
   final SkyCamera camera;
   final double zoom;
+  final double scale;
+  final double intensity;
 
   @override
   State<SkySupernova> createState() => _SkySupernovaState();
@@ -83,6 +91,8 @@ class _SkySupernovaState extends State<SkySupernova>
         time: _elapsed.inMicroseconds / Duration.microsecondsPerSecond,
         camera: widget.camera,
         zoom: widget.zoom,
+        scale: widget.scale,
+        intensity: widget.intensity,
       ),
     );
   }
@@ -140,12 +150,16 @@ class _SkySupernovaPainter extends CustomPainter {
     required this.time,
     required this.camera,
     required this.zoom,
+    required this.scale,
+    required this.intensity,
   });
 
   final ui.FragmentShader shader;
   final double time;
   final SkyCamera camera;
   final double zoom;
+  final double scale;
+  final double intensity;
 
   // Roughly the on-sky radius of each star's own bright core (see
   // sky_supernova.frag's starMetric/core) — the icon is sized to sit just
@@ -168,7 +182,9 @@ class _SkySupernovaPainter extends CustomPainter {
       ..setFloat(9, camera.up.$1)
       ..setFloat(10, camera.up.$2)
       ..setFloat(11, camera.up.$3)
-      ..setFloat(12, zoom);
+      ..setFloat(12, zoom)
+      ..setFloat(13, scale)
+      ..setFloat(14, intensity);
 
     canvas.drawRect(
       Offset.zero & size,
@@ -200,7 +216,8 @@ class _SkySupernovaPainter extends CustomPainter {
         );
         if (projected == null) continue;
         final (center, scale) = projected;
-        final diameter = _iconWorldRadius * 2 * zoom * size.height * scale;
+        final diameter =
+            _iconWorldRadius * 2 * zoom * size.height * scale * this.scale;
         _paintOutlineIcon(canvas, center, diameter, areas[i].icon);
       }
     }
@@ -310,5 +327,7 @@ class _SkySupernovaPainter extends CustomPainter {
   bool shouldRepaint(covariant _SkySupernovaPainter oldDelegate) =>
       oldDelegate.time != time ||
       oldDelegate.camera != camera ||
-      oldDelegate.zoom != zoom;
+      oldDelegate.zoom != zoom ||
+      oldDelegate.scale != scale ||
+      oldDelegate.intensity != intensity;
 }

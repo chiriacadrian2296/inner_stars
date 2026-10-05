@@ -28,6 +28,8 @@ class SkyAreaBackdrop extends StatefulWidget {
     required this.zoom,
     this.opacity = 0.5,
     this.blendMode = BlendMode.plus,
+    this.scale = 1,
+    this.color = kAreaHeroArtTintHue,
   });
 
   final SkyCamera camera;
@@ -37,6 +39,8 @@ class SkyAreaBackdrop extends StatefulWidget {
   /// (see `ArtworkBlend`) — the defaults are the original fixed look.
   final double opacity;
   final BlendMode blendMode;
+  final double scale;
+  final Color color;
 
   @override
   State<SkyAreaBackdrop> createState() => _SkyAreaBackdropState();
@@ -86,6 +90,8 @@ class _SkyAreaBackdropState extends State<SkyAreaBackdrop> {
         zoom: widget.zoom,
         opacity: widget.opacity,
         blendMode: widget.blendMode,
+        scale: widget.scale,
+        color: widget.color,
       ),
     );
   }
@@ -197,6 +203,8 @@ class _SkyAreaBackdropPainter extends CustomPainter {
     required this.zoom,
     required this.opacity,
     required this.blendMode,
+    required this.scale,
+    required this.color,
   });
 
   final Map<LifeArea, ui.Image> images;
@@ -204,6 +212,8 @@ class _SkyAreaBackdropPainter extends CustomPainter {
   final double zoom;
   final double opacity;
   final BlendMode blendMode;
+  final double scale;
+  final Color color;
 
   // Well past the supernova's own light-ring (world radius 0.0405, see
   // sky_area_sigils.dart) but nowhere near the 0.42 first tried — that read
@@ -231,7 +241,7 @@ class _SkyAreaBackdropPainter extends CustomPainter {
     final projected = _projectDirection(direction, camera, zoom, size);
     if (projected == null) return;
     final (center, scale) = projected;
-    final diameter = _worldRadius * 2 * zoom * size.height * scale;
+    final diameter = _worldRadius * this.scale * 2 * zoom * size.height * scale;
 
     // The same axis a real patch of sky would keep facing as the camera
     // moves around it — see [_axisAFor]'s own doc comment. Rotating the
@@ -277,26 +287,23 @@ class _SkyAreaBackdropPainter extends CustomPainter {
       localRect,
       Paint()
         ..filterQuality = FilterQuality.medium
-        ..colorFilter = kAreaHeroArtTint,
+        ..colorFilter = areaHeroArtTint(color),
     );
 
-    // A circular fade to fully transparent (not the usual vignette's fade
-    // to black — additive blend already makes plain black invisible, so a
-    // black vignette here would do nothing) — this is what actually erases
-    // the image's own square corners rather than just dimming them, since
-    // the gradient reaches transparent at [localRect]'s inscribed circle,
-    // well inside where the corners sit.
-    canvas.drawRect(
-      localRect,
-      Paint()
-        ..blendMode = BlendMode.dstIn
-        ..shader = ui.Gradient.radial(
-          Offset.zero,
-          diameter / 2,
-          const [Colors.white, Colors.white, Colors.transparent],
-          const [0.0, _vignetteStart, 1.0],
-        ),
-    );
+    if (!kUseRoyalArtworkPreview) {
+      // Original art needs a circular fade to erase its square corners.
+      canvas.drawRect(
+        localRect,
+        Paint()
+          ..blendMode = BlendMode.dstIn
+          ..shader = ui.Gradient.radial(
+            Offset.zero,
+            diameter / 2,
+            const [Colors.white, Colors.white, Colors.transparent],
+            const [0.0, _vignetteStart, 1.0],
+          ),
+      );
+    }
     canvas.restore();
 
     canvas.restore();
@@ -308,5 +315,7 @@ class _SkyAreaBackdropPainter extends CustomPainter {
       oldDelegate.camera != camera ||
       oldDelegate.zoom != zoom ||
       oldDelegate.opacity != opacity ||
-      oldDelegate.blendMode != blendMode;
+      oldDelegate.blendMode != blendMode ||
+      oldDelegate.scale != scale ||
+      oldDelegate.color != color;
 }

@@ -10,6 +10,8 @@ uniform vec3 uForward;
 uniform vec3 uRight;
 uniform vec3 uUp;
 uniform float uZoom;
+uniform float uSize;
+uniform float uIntensity;
 
 out vec4 fragColor;
 
@@ -77,7 +79,7 @@ vec3 supernova(vec3 dir, vec3 center, vec3 midColor, vec3 outerColor) {
   // fills your view. [flicker] nudges that divisor up slightly at its own
   // peak, growing the star a little rather than just brightening it (see
   // [brightness]'s own flicker term further down).
-  uv /= 0.45 * (1.0 + flicker * 0.15);
+  uv /= 0.45 * uSize * (1.0 + flicker * 0.15);
 
   // {center, axisA, axisB} is an orthonormal basis, so any unit [dir] is
   // exactly c*center + a*axisA + b*axisB with c² + a² + b² = 1 — and [uv]
@@ -174,7 +176,7 @@ vec3 supernova(vec3 dir, vec3 center, vec3 midColor, vec3 outerColor) {
   vec3 color = mix(outerColor, midColor, smoothstep(0.0, 0.25, glow + spikes * 0.3));
   color = mix(color, colorCore, clamp(core * 1.5 + nearGlow * 0.3, 0.0, 1.0));
 
-  return color * brightness * hemisphereFade;
+  return color * brightness * hemisphereFade * uIntensity;
 }
 
 // Interleaved-gradient-noise dither, ±½ of one 8-bit step. These glows fade
@@ -218,5 +220,5 @@ void main() {
 
   // Painted with BlendMode.plus (see the SkySupernova widget) — a pure
   // glow with nothing to occlude, unlike sky_black_hole.frag.
-  fragColor = vec4(max(total + ditherNoise() / 255.0, 0.0), 1.0);
+  fragColor = vec4(max(total + ditherNoise() * uIntensity / 255.0, 0.0), 1.0);
 }
