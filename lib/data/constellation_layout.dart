@@ -103,8 +103,23 @@ Offset _seededScatter(
   final random = math.Random(seed);
   final angle = random.nextDouble() * 2 * math.pi;
   final radius = minRadius + random.nextDouble() * (maxRadius - minRadius);
-  return Offset(0.5 + radius * math.cos(angle), 0.5 + radius * math.sin(angle));
+  // The scatter radius reaches past the local 0..1 square toward its
+  // corners, where a star's glow gets cut off by the constellation's own
+  // paint bounds — so every scattered spot is kept [_kScatterPadding] clear
+  // of the square's edge.
+  return Offset(
+    (0.5 + radius * math.cos(angle)).clamp(
+      _kScatterPadding,
+      1 - _kScatterPadding,
+    ),
+    (0.5 + radius * math.sin(angle)).clamp(
+      _kScatterPadding,
+      1 - _kScatterPadding,
+    ),
+  );
 }
+
+const _kScatterPadding = 0.1;
 
 /// Deterministic placement for a star beyond [maxChainedStars] — vanishingly
 /// rare, but must never crash or lose a star. Seeded by the star's own

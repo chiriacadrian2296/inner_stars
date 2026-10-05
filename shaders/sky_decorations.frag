@@ -294,6 +294,13 @@ vec3 coloredStarLayer(vec3 dir, float density, float seed) {
   return starPalette(h) * brightness;
 }
 
+// Interleaved-gradient-noise dither, ±½ of one 8-bit step. These glows fade
+// over hundreds of pixels at high zoom, so without it the 8-bit output
+// quantizes into visible bands/grain instead of a smooth gradient.
+float ditherNoise() {
+  return fract(52.9829189 * fract(dot(FlutterFragCoord().xy, vec2(0.06711056, 0.00583715)))) - 0.5;
+}
+
 void main() {
   // Same free-orientation inverse-stereographic projection as
   // nebula_particles.frag — see that file's main() for the full
@@ -346,5 +353,5 @@ void main() {
   // Painted with BlendMode.plus (see SkyDecorations widget) — an additive
   // blend, so alpha here isn't coverage, it's just always fully "on"; a
   // pixel with total == 0 already adds nothing on its own.
-  fragColor = vec4(total, 1.0);
+  fragColor = vec4(max(total + ditherNoise() / 255.0, 0.0), 1.0);
 }

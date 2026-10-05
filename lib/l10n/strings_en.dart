@@ -316,17 +316,8 @@ class StringsEn implements AppStrings {
       'social side of the app exists.';
 
   @override
-  String get statsEyebrow => 'YOUR NUMBERS';
-  @override
   String get statsTitle => 'Statistics';
 
-  @override
-  String get homeEyebrow => 'YOUR PROGRESS';
-  @override
-  String get homeTitle => 'Your dashboard';
-  @override
-  String get homeSubtitle =>
-      'Every star is a win, lit when you needed the light.';
   @override
   String get todayStarSectionLabel => "Today's star";
   @override
@@ -653,12 +644,6 @@ My contribution meets a real need and is something I can sustain.
   String get areaCoverEnterAction => 'Manage';
   @override
   String get areaCoverVisionTitle => 'Vision';
-  @override
-  String get areaConstellationsStatLabel => 'Constellations';
-  @override
-  String get areaStarsStatLabel => 'Stars';
-  @override
-  String get areaIntensityStatLabel => 'Intensity';
 
   @override
   String get dataSection => 'Debug tools';
@@ -1485,9 +1470,13 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get habitCurrentStreakLabel => 'Current streak';
   @override
-  String get markHabitDoneAction => 'Complete';
+  String get habitCheckAction => 'Check';
   @override
-  String get habitDoneTodayLabel => 'Done today';
+  String get habitUncheckAction => 'Uncheck';
+  @override
+  String get habitStillToDoLabel => 'Still to do';
+  @override
+  String get habitDoneTodayLabel => 'Done for today';
   @override
   String get undoHabitTodayAction => 'Undo';
   @override
@@ -1531,8 +1520,6 @@ My contribution meets a real need and is something I can sustain.
   @override
   String habitStatsWeeks(int count) => count == 1 ? '1 week' : '$count weeks';
 
-  @override
-  String unlitStarsBadge(int count) => count == 1 ? '1 goal' : '$count goals';
   @override
   String activePulsarsBadge(int count) =>
       count == 1 ? '1 active habit' : '$count active habits';
@@ -1638,19 +1625,9 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get nightlightExplainedSchemeClarity => 'See Clearly';
   @override
-  String get nightlightExplainedBodyPart1 =>
-      "When you're *agitated* or feeling low, the *mind* tends to "
-      "*protect* itself by *rationalizing*: it will find *reasons* that "
-      "sound logical to *play down every victory* you're about to see, "
-      "*even the truest* ones.";
-  @override
-  String get nightlightExplainedBodyPart2 =>
-      "Not because *they don't count*, but because in that state it's "
-      'almost *impossible* to *look at them with clear eyes*.';
-  @override
-  String get nightlightExplainedBodyPart3 =>
-      "That's why we *breathe* together first: it *helps* the *body*, "
-      'and with it, the *mind* comes *out of that state*.';
+  String get nightlightExplainedBody =>
+      "Before we look at your victories, let's pause for a moment and "
+      '*breathe* to calm down. Follow the instructions on the screen.';
   @override
   String get nightlightExplainedContinue => 'Continue';
   @override
@@ -1664,6 +1641,11 @@ My contribution meets a real need and is something I can sustain.
   @override
   String nightlightBreathingCycleLabel(int current, int total) =>
       'Cycle $current of $total';
+  @override
+  String nightlightBreathingCyclesUntilSkip(int remaining) =>
+      remaining == 1
+          ? 'You can continue after 1 cycle'
+          : 'You can continue after $remaining cycles';
   @override
   String get nightlightBreathingCheckInTitle => 'How do you feel now?';
   @override
@@ -1876,6 +1858,16 @@ My contribution meets a real need and is something I can sustain.
   String get skyGridSection => 'Sky grid';
   @override
   String get skyGridToggleLabel => 'Show coordinate grid on the sky';
+  @override
+  String get skySupernovaeSection => 'Supernovae';
+  @override
+  String get skySupernovaeToggleLabel => 'Show the supernovae over the artwork';
+  @override
+  String get skyArtworkSection => 'Artwork';
+  @override
+  String get skyArtworkOpacityLabel => 'Opacity';
+  @override
+  String get skyArtworkBlendLabel => 'Blending Mode';
 
   @override
   String get appLockSection => 'App Lock';

@@ -69,6 +69,14 @@ class _AppDatePickerDialogState extends State<_AppDatePickerDialog> {
     final material = MaterialLocalizations.of(context);
     return _PickerShell(
       title: material.datePickerHelpText,
+      modeButton: IconButton(
+        tooltip: material.inputDateModeButtonLabel,
+        onPressed: () =>
+            Navigator.of(context)
+                .pop(_DatePickerResult(_selected, switchMode: true)),
+        icon: Icon(Icons.edit_outlined, color: colors.muted),
+      ),
+      onConfirm: () => Navigator.of(context).pop(_DatePickerResult(_selected)),
       child: SizedBox(
         height: 350,
         child: CalendarDatePicker(
@@ -78,14 +86,6 @@ class _AppDatePickerDialogState extends State<_AppDatePickerDialog> {
           onDateChanged: (date) => _selected = date,
         ),
       ),
-      modeButton: IconButton(
-        tooltip: material.inputDateModeButtonLabel,
-        onPressed: () =>
-            Navigator.of(context)
-                .pop(_DatePickerResult(_selected, switchMode: true)),
-        icon: Icon(Icons.edit_outlined, color: colors.muted),
-      ),
-      onConfirm: () => Navigator.of(context).pop(_DatePickerResult(_selected)),
     );
   }
 }
@@ -225,6 +225,18 @@ class _AppDateInputDialogState extends State<_AppDateInputDialog> {
     );
     return _PickerShell(
       title: material.dateInputLabel,
+      modeButton: IconButton(
+        tooltip: material.calendarModeButtonLabel,
+        onPressed: () =>
+            Navigator.of(context)
+                .pop(_DatePickerResult(_selected, switchMode: true)),
+        icon: Icon(Icons.calendar_month, color: colors.muted),
+      ),
+      onConfirm: () {
+        if (_saveInput()) {
+          Navigator.of(context).pop(_DatePickerResult(_selected));
+        }
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -267,18 +279,6 @@ class _AppDateInputDialogState extends State<_AppDateInputDialog> {
           ],
         ],
       ),
-      modeButton: IconButton(
-        tooltip: material.calendarModeButtonLabel,
-        onPressed: () =>
-            Navigator.of(context)
-                .pop(_DatePickerResult(_selected, switchMode: true)),
-        icon: Icon(Icons.calendar_month, color: colors.muted),
-      ),
-      onConfirm: () {
-        if (_saveInput()) {
-          Navigator.of(context).pop(_DatePickerResult(_selected));
-        }
-      },
     );
   }
 }

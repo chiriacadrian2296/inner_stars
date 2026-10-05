@@ -318,17 +318,8 @@ class StringsRo implements AppStrings {
       'latura socială a aplicației va exista.';
 
   @override
-  String get statsEyebrow => 'NUMERELE TALE';
-  @override
   String get statsTitle => 'Statistici';
 
-  @override
-  String get homeEyebrow => 'PROGRESUL TĂU';
-  @override
-  String get homeTitle => 'Panoul tău';
-  @override
-  String get homeSubtitle =>
-      'Fiecare stea e o victorie, aprinsă atunci când aveai nevoie de lumină.';
   @override
   String get todayStarSectionLabel => 'Steaua zilei';
   @override
@@ -656,12 +647,6 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get areaCoverEnterAction => 'Gestionează';
   @override
   String get areaCoverVisionTitle => 'Viziune';
-  @override
-  String get areaConstellationsStatLabel => 'Constelații';
-  @override
-  String get areaStarsStatLabel => 'Stele';
-  @override
-  String get areaIntensityStatLabel => 'Intensitate';
 
   @override
   String get dataSection => 'Instrumente de depanare';
@@ -1500,9 +1485,13 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get habitCurrentStreakLabel => 'Serie curentă';
   @override
-  String get markHabitDoneAction => 'Finalizează';
+  String get habitCheckAction => 'Bifează';
   @override
-  String get habitDoneTodayLabel => 'Făcut azi';
+  String get habitUncheckAction => 'Debifează';
+  @override
+  String get habitStillToDoLabel => 'Încă de făcut';
+  @override
+  String get habitDoneTodayLabel => 'Făcut pentru azi';
   @override
   String get undoHabitTodayAction => 'Anulează';
   @override
@@ -1547,9 +1536,6 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String habitStatsWeeks(int count) =>
       count == 1 ? '1 săptămână' : '$count săptămâni';
 
-  @override
-  String unlitStarsBadge(int count) =>
-      count == 1 ? '1 obiectiv' : '$count obiective';
   @override
   String activePulsarsBadge(int count) =>
       count == 1 ? '1 obicei activ' : '$count obiceiuri active';
@@ -1658,19 +1644,9 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get nightlightExplainedSchemeClarity => 'Vezi Clar';
   @override
-  String get nightlightExplainedBodyPart1 =>
-      'Când ești *agitat* sau abătut, *mintea* tinde să se *protejeze* '
-      '*raționalizând*: va găsi *motive* care par logice ca să '
-      '*minimizeze fiecare victorie* pe care ți-o vom arăta, *chiar și '
-      'pe cele mai adevărate*.';
-  @override
-  String get nightlightExplainedBodyPart2 =>
-      'Nu pentru că *nu contează*, ci pentru că în starea aceea e '
-      'aproape *imposibil* să *le privești cu ochi limpezi*.';
-  @override
-  String get nightlightExplainedBodyPart3 =>
-      'De aceea *respirăm* mai întâi împreună: *ajută* *corpul*, și '
-      'odată cu el *mintea*, să *iasă din starea aceea*.';
+  String get nightlightExplainedBody =>
+      'Înainte să vedem victoriile, ne oprim o clipă să *respirăm* ca să '
+      'ne calmăm. Urmează instrucțiunile de pe ecran.';
   @override
   String get nightlightExplainedContinue => 'Continuă';
   @override
@@ -1684,6 +1660,11 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String nightlightBreathingCycleLabel(int current, int total) =>
       'Ciclul $current din $total';
+  @override
+  String nightlightBreathingCyclesUntilSkip(int remaining) =>
+      remaining == 1
+          ? 'Poți continua peste 1 ciclu'
+          : 'Poți continua peste $remaining cicluri';
   @override
   String get nightlightBreathingCheckInTitle => 'Cum te simți acum?';
   @override
@@ -1901,6 +1882,16 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get skyGridSection => 'Grila cerului';
   @override
   String get skyGridToggleLabel => 'Arată grila de coordonate pe cer';
+  @override
+  String get skySupernovaeSection => 'Supernove';
+  @override
+  String get skySupernovaeToggleLabel => 'Arată supernovele peste artwork';
+  @override
+  String get skyArtworkSection => 'Artwork';
+  @override
+  String get skyArtworkOpacityLabel => 'Opacitate';
+  @override
+  String get skyArtworkBlendLabel => 'Mod de Amestecare';
 
   @override
   String get appLockSection => 'Blocare aplicație';

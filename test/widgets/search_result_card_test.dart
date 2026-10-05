@@ -103,12 +103,12 @@ void main() {
     final drawer = find.byKey(const Key('search-card-quick-menu'));
     expect(tester.getSize(surface), const Size(300, 138));
     expect(tester.getSize(drawer).width, 300);
-    expect(find.text('Apri'), findsOneWidget);
-    expect(find.text('Portami lì'), findsOneWidget);
+    expect(find.text('APRI'), findsOneWidget);
+    expect(find.text('PORTAMI LÌ'), findsOneWidget);
     expect(find.text('Modifica'), findsNothing);
     expect(find.text('Condividi'), findsNothing);
 
-    await tester.tap(find.text('Portami lì'));
+    await tester.tap(find.text('PORTAMI LÌ'));
     await tester.pumpAndSettle();
     expect(navigateCount, 1);
     expect(openCount, 0);

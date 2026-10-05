@@ -125,7 +125,7 @@ void main() {
         ),
       ),
     );
-    await tester.tap(find.text('Frase'));
+    await tester.tap(find.text('FRASE'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('quote-text-field')),
@@ -145,7 +145,7 @@ void main() {
       Colors.white,
     );
     expect(quoteTheme.dialogTheme.backgroundColor, Colors.black);
-    await tester.tap(find.text(const StringsIt().saveChanges));
+    await tester.tap(find.text(const StringsIt().saveChanges.toUpperCase()));
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
@@ -163,7 +163,7 @@ void main() {
       find.byKey(const ValueKey('quote-text-field')),
       'A clearer direction',
     );
-    await tester.tap(find.text(const StringsIt().saveChanges));
+    await tester.tap(find.text(const StringsIt().saveChanges.toUpperCase()));
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
@@ -179,7 +179,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Rimuovi'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Rimuovi').last);
+    await tester.tap(find.text('RIMUOVI').last);
     await tester.pumpAndSettle();
     expect(repo.getItems(LifeArea.physical), isEmpty);
     expect(tester.takeException(), isNull);

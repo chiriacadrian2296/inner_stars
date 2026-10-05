@@ -68,6 +68,8 @@ class _NightlightBreathingScreenState extends State<NightlightBreathingScreen>
   // counter and a running clock (see [_currentCycle]/[_remaining]).
   static const _totalCycles = 10;
   static const _countdownStart = 3;
+  // Cycles that must finish before the skip button appears.
+  static const _skipAfterCycles = 3;
 
   static const _totalExerciseDuration = Duration(
     milliseconds: _totalCycles * 2 * (_breathDurationMs + _holdDurationMs),
@@ -238,7 +240,7 @@ class _NightlightBreathingScreenState extends State<NightlightBreathingScreen>
       await _runPhase(_BreathPhase.exhale, 1, 0);
       if (_done) return;
       await _runPhase(_BreathPhase.holdEmpty, 0, 0);
-      if (cycle == 2 && !_done) {
+      if (cycle == _skipAfterCycles - 1 && !_done) {
         setState(() => _canSkip = true);
         // The glow fades in as its own, later step — see the skip
         // button's own build code — rather than together with the button
@@ -703,37 +705,78 @@ class _NightlightBreathingScreenState extends State<NightlightBreathingScreen>
                   ResponsiveContent(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(28, 0, 28, 24),
-                      child: AnimatedOpacity(
-                        opacity: _canSkip ? 1 : 0,
-                        duration: const Duration(milliseconds: 500),
-                        child: IgnorePointer(
-                          ignoring: !_canSkip,
-                          child: AnimatedContainer(
-                            key: _skipButtonKey,
-                            duration: const Duration(milliseconds: 500),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(kRadiusPill),
-                              boxShadow: _showSkipGlow
-                                  ? [
-                                      BoxShadow(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.5,
-                                        ),
-                                        blurRadius: 24,
-                                        spreadRadius: 1,
-                                      ),
-                                    ]
-                                  : const [],
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // The quiet counterpart to the skip button, in the
+                          // same slot: how many cycles are left before it
+                          // appears. Fades out as the button fades in.
+                          AnimatedBuilder(
+                            animation: _introOpacityController,
+                            builder: (context, child) => Opacity(
+                              opacity: _introOpacity.value,
+                              child: child,
                             ),
-                            child: TextButton(
-                              style: nightlightTextButtonStyle(colors),
-                              onPressed: _advanceToAdmire,
-                              child: AppButtonLabel(
-                                strings.nightlightBreathingSkip,
+                            child: AnimatedOpacity(
+                              opacity: _canSkip || _countingDown ? 0 : 1,
+                              duration: const Duration(milliseconds: 500),
+                              child: Text(
+                                strings.nightlightBreathingCyclesUntilSkip(
+                                  (_skipAfterCycles - _currentCycle).clamp(
+                                    1,
+                                    _skipAfterCycles,
+                                  ),
+                                ),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontFamily: kFontBranding,
+                                  fontSize: 14,
+                                  color: colors.text.withValues(alpha: 0.5),
+                                  shadows: const [
+                                    Shadow(
+                                      color: Colors.white24,
+                                      blurRadius: 8,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                          AnimatedOpacity(
+                            opacity: _canSkip ? 1 : 0,
+                            duration: const Duration(milliseconds: 500),
+                            child: IgnorePointer(
+                              ignoring: !_canSkip,
+                              child: AnimatedContainer(
+                                key: _skipButtonKey,
+                                duration: const Duration(milliseconds: 500),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(
+                                    kRadiusPill,
+                                  ),
+                                  boxShadow: _showSkipGlow
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.5,
+                                            ),
+                                            blurRadius: 24,
+                                            spreadRadius: 1,
+                                          ),
+                                        ]
+                                      : const [],
+                                ),
+                                child: TextButton(
+                                  style: nightlightTextButtonStyle(colors),
+                                  onPressed: _advanceToAdmire,
+                                  child: AppButtonLabel(
+                                    strings.nightlightBreathingSkip,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

@@ -5,6 +5,7 @@ import 'package:hint_kit/hint_kit.dart';
 
 import '../audio/audio_service.dart';
 import '../l10n/strings_scope.dart';
+import '../models/artwork_blend.dart';
 import '../settings/settings_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
@@ -212,6 +213,89 @@ class _QuickSettingsScreenState extends State<QuickSettingsScreen> {
                         ),
                       ),
                     ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                StaggeredEntrance(
+                  index: 3,
+                  child: _SectionLabel(strings.skySupernovaeSection),
+                ),
+                const SizedBox(height: 10),
+                StaggeredEntrance(
+                  index: 3,
+                  child: Container(
+                    decoration: panelDecoration(colors),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(kRadiusCard),
+                      clipBehavior: Clip.antiAlias,
+                      child: SwitchListTile(
+                        value: widget.settings.showSupernovae,
+                        onChanged: widget.settings.setShowSupernovae,
+                        title: Text(
+                          strings.skySupernovaeToggleLabel,
+                          style: TextStyle(color: colors.text, fontSize: 14),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                StaggeredEntrance(
+                  index: 3,
+                  child: _SectionLabel(strings.skyArtworkSection),
+                ),
+                const SizedBox(height: 10),
+                StaggeredEntrance(
+                  index: 3,
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+                    decoration: panelDecoration(colors),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          strings.skyArtworkOpacityLabel,
+                          style: TextStyle(fontSize: 13, color: colors.muted),
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Slider(
+                                value: widget.settings.artworkOpacity,
+                                onChanged: widget.settings.setArtworkOpacity,
+                              ),
+                            ),
+                            SizedBox(
+                              width: 40,
+                              child: Text(
+                                '${(widget.settings.artworkOpacity * 100).round()}%',
+                                textAlign: TextAlign.end,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: colors.muted,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                StaggeredEntrance(
+                  index: 3,
+                  child: SoundEffectPanel<ArtworkBlend>(
+                    label: strings.skyArtworkBlendLabel,
+                    value: widget.settings.artworkBlend,
+                    allValues: ArtworkBlend.values,
+                    displayName: (blend) => blend.label,
+                    onChanged: (blend) {
+                      if (blend != null) widget.settings.setArtworkBlend(blend);
+                    },
                   ),
                 ),
                 const SizedBox(height: 24),

@@ -1,3 +1,4 @@
+import '../models/artwork_blend.dart';
 import 'package:flutter/material.dart';
 
 import '../data/settings_repository.dart';
@@ -13,6 +14,9 @@ class SettingsController extends ChangeNotifier {
         reminderHour = _repository.reminderHour,
         reminderMinute = _repository.reminderMinute,
         showGrid = _repository.showGrid,
+        showSupernovae = _repository.showSupernovae,
+        artworkOpacity = _repository.artworkOpacity,
+        artworkBlend = _repository.artworkBlend,
         tutorialsEnabled = _repository.tutorialsEnabled;
 
   final SettingsRepository _repository;
@@ -27,6 +31,9 @@ class SettingsController extends ChangeNotifier {
   int reminderHour;
   int reminderMinute;
   bool showGrid;
+  bool showSupernovae;
+  double artworkOpacity;
+  ArtworkBlend artworkBlend;
   bool tutorialsEnabled;
 
   Future<void> setLocale(String code) async {
@@ -49,6 +56,27 @@ class SettingsController extends ChangeNotifier {
     showGrid = value;
     await _repository.setShowGrid(value);
     notifyListeners();
+  }
+
+  Future<void> setShowSupernovae(bool value) async {
+    if (value == showSupernovae) return;
+    showSupernovae = value;
+    await _repository.setShowSupernovae(value);
+    notifyListeners();
+  }
+
+  Future<void> setArtworkOpacity(double value) async {
+    if (value == artworkOpacity) return;
+    artworkOpacity = value;
+    notifyListeners();
+    await _repository.setArtworkOpacity(value);
+  }
+
+  Future<void> setArtworkBlend(ArtworkBlend value) async {
+    if (value == artworkBlend) return;
+    artworkBlend = value;
+    notifyListeners();
+    await _repository.setArtworkBlend(value);
   }
 
   Future<void> setTutorialsEnabled(bool value) async {

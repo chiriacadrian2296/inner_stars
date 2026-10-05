@@ -649,11 +649,12 @@ class _TimeDialPainter extends CustomPainter {
           : [for (var i = 0; i < 12; i++) (i == 0 ? 12 : i).toString()],
       inner: false,
     );
-    if (!minutes && use24Hours)
+    if (!minutes && use24Hours) {
       labels(0.56, [
         for (var i = 0; i < 12; i++)
           (i == 0 ? 0 : i + 12).toString().padLeft(2, '0'),
       ], inner: true);
+    }
   }
 
   @override

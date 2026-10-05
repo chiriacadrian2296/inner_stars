@@ -273,7 +273,7 @@ class _SoundLabScreenState extends State<SoundLabScreen> {
 
               StaggeredEntrance(
                 index: 2,
-                child: _SoundEffectPanel<SkySoundEffect>(
+                child: SoundEffectPanel<SkySoundEffect>(
                   label: strings.tapSoundLabel,
                   value: widget.audioService.tapSound,
                   allValues: SkySoundEffect.values,
@@ -285,7 +285,7 @@ class _SoundLabScreenState extends State<SoundLabScreen> {
 
               StaggeredEntrance(
                 index: 3,
-                child: _SoundEffectPanel<SkySoundEffect>(
+                child: SoundEffectPanel<SkySoundEffect>(
                   label: strings.holdSoundLabel,
                   value: widget.audioService.holdSound,
                   allValues: SkySoundEffect.values,
@@ -297,7 +297,7 @@ class _SoundLabScreenState extends State<SoundLabScreen> {
 
               StaggeredEntrance(
                 index: 4,
-                child: _SoundEffectPanel<SkyWhooshEffect>(
+                child: SoundEffectPanel<SkyWhooshEffect>(
                   label: strings.whooshInLabel,
                   value: widget.audioService.whooshInSound,
                   allValues: SkyWhooshEffect.values,
@@ -309,7 +309,7 @@ class _SoundLabScreenState extends State<SoundLabScreen> {
 
               StaggeredEntrance(
                 index: 5,
-                child: _SoundEffectPanel<SkyWhooshEffect>(
+                child: SoundEffectPanel<SkyWhooshEffect>(
                   label: strings.whooshOutLabel,
                   value: widget.audioService.whooshOutSound,
                   allValues: SkyWhooshEffect.values,
@@ -392,8 +392,9 @@ class _SoundLabScreenState extends State<SoundLabScreen> {
 /// sound enum type so the same panel shape serves [SkySoundEffect]
 /// (tap/hold) and [SkyWhooshEffect] (zoom in/out) without duplicating the
 /// layout four times.
-class _SoundEffectPanel<T> extends StatelessWidget {
-  const _SoundEffectPanel({
+class SoundEffectPanel<T> extends StatelessWidget {
+  const SoundEffectPanel({
+    super.key,
     required this.label,
     required this.value,
     required this.allValues,

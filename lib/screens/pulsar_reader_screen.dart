@@ -10,16 +10,18 @@ import '../models/project.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../theme/app_typography.dart';
 import '../utils/habit_stats.dart';
-import '../widgets/area_tag.dart';
 import '../widgets/intensity_bolts.dart';
 import '../widgets/logo_watermark.dart';
-import '../widgets/project_tag.dart';
+import '../widgets/reader_action_bar.dart';
+import '../widgets/reader_entry_content.dart'
+    show ReaderBreadcrumbs, ReaderEntrance;
 import '../widgets/responsive_content.dart';
 import '../widgets/shareable_pulsar_card.dart';
 import '../widgets/staggered_entrance.dart';
 import '../widgets/star_glyph.dart';
-import '../widgets/star_heatmap.dart';
+import '../widgets/stats/stats_widgets.dart';
 import 'star_form_screen.dart';
 import 'share_preview_screen.dart';
 
@@ -69,7 +71,6 @@ class _HabitAnalytics extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     final strings = context.strings;
     final streakText = habit.frequency == HabitFrequency.weekly
         ? strings.habitStatsWeeks(summary.longestStreak)
@@ -77,30 +78,23 @@ class _HabitAnalytics extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Wrap(
+        RangeChips(
+          range: range,
           alignment: WrapAlignment.center,
-          spacing: 8,
-          children: [
-            for (final value in HabitStatsRange.values)
-              ChoiceChip(
-                label: Text('${value.days}'),
-                selected: value == range,
-                onSelected: (_) => onRangeChanged(value),
-              ),
-          ],
+          onChanged: onRangeChanged,
         ),
         const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
-              child: _HabitMetric(
+              child: MetricTile(
                 label: strings.habitStatsConsistencyLabel,
                 value: '${(summary.completionRate * 100).round()}%',
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: _HabitMetric(
+              child: MetricTile(
                 label: strings.habitStatsLongestLabel,
                 value: streakText,
               ),
@@ -108,30 +102,16 @@ class _HabitAnalytics extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 10),
-        _HabitMetric(
+        MetricTile(
           label: strings.habitStatsTotalLabel,
           value: '${summary.totalCompletions}',
         ),
         const SizedBox(height: 18),
-        Text(
-          strings.habitStatsTrendLabel,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: colors.muted,
-          ),
-        ),
+        StatsSectionLabel(strings.habitStatsTrendLabel),
         const SizedBox(height: 10),
-        _HabitTrend(points: summary.trend),
+        TrendBars(points: summary.trend),
         const SizedBox(height: 18),
-        Text(
-          strings.habitStatsWeekdaysLabel,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: colors.muted,
-          ),
-        ),
+        StatsSectionLabel(strings.habitStatsWeekdaysLabel),
         const SizedBox(height: 10),
         _WeekdayBars(values: summary.weekdays),
         const SizedBox(height: 12),
@@ -139,7 +119,7 @@ class _HabitAnalytics extends StatelessWidget {
           Text(
             strings.habitStatsNotEnoughData,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: colors.muted),
+            style: context.typography.supporting,
           )
         else
           Row(
@@ -160,79 +140,6 @@ class _HabitAnalytics extends StatelessWidget {
             ],
           ),
       ],
-    );
-  }
-}
-
-class _HabitMetric extends StatelessWidget {
-  const _HabitMetric({required this.label, required this.value});
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: panelDecoration(colors),
-      child: Column(
-        children: [
-          Text(
-            value,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: colors.gold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11, color: colors.muted),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HabitTrend extends StatelessWidget {
-  const _HabitTrend({required this.points});
-  final List<HabitTrendPoint> points;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final visible = points.length > 30
-        ? points.sublist(points.length - 30)
-        : points;
-    return SizedBox(
-      height: 58,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          for (final point in visible)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 1),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  height: 6 + 52 * point.progress,
-                  decoration: BoxDecoration(
-                    color: Color.lerp(
-                      colors.muted.withValues(alpha: 0.12),
-                      colors.gold,
-                      point.progress,
-                    ),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
     );
   }
 }
@@ -270,7 +177,7 @@ class _WeekdayBars extends StatelessWidget {
                 const SizedBox(height: 5),
                 Text(
                   labels[value.weekday - 1],
-                  style: TextStyle(fontSize: 10, color: colors.muted),
+                  style: context.typography.microLabel,
                 ),
               ],
             ),
@@ -287,11 +194,10 @@ class _PatternLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     return Text(
       '$label · ${context.strings.weekdayAbbreviations[weekday - 1]}',
       textAlign: TextAlign.center,
-      style: TextStyle(fontSize: 11, color: colors.muted),
+      style: context.typography.microLabel,
     );
   }
 }
@@ -299,20 +205,10 @@ class _PatternLabel extends StatelessWidget {
 class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
   late Habit _habit = widget.habit;
   HabitStatsRange _statsRange = HabitStatsRange.days30;
-  DateTime _displayedMonth = DateTime(
-    DateTime.now().year,
-    DateTime.now().month,
-  );
 
   DateTime get _today {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day);
-  }
-
-  void _changeMonth(int delta) {
-    final current = DateTime(_today.year, _today.month);
-    final next = DateTime(_displayedMonth.year, _displayedMonth.month + delta);
-    setState(() => _displayedMonth = next.isAfter(current) ? current : next);
   }
 
   /// The binary path — a [HabitFrequency.weekly] habit's own day is still a
@@ -453,387 +349,366 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
             color: logoWatermarkColor(colors, watermarkKind, lit: doneToday),
           ),
           SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-              // The scrollable itself spans the full window width (so its
-              // auto-attached Scrollbar sits at the true page edge on wide
-              // viewports); only its content is capped/centered.
+            child: Column(
               children: [
-                ResponsiveContent(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                    // The scrollable itself spans the full window width (so its
+                    // auto-attached Scrollbar sits at the true page edge on wide
+                    // viewports); only its content is capped/centered.
                     children: [
-                      StaggeredEntrance(
-                        index: 0,
-                        child: Row(
+                      ResponsiveContent(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            IconButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              icon: Icon(Icons.arrow_back, color: colors.muted),
-                            ),
-                            Expanded(
+                            StaggeredEntrance(
+                              index: 0,
                               child: Text(
                                 _habit.title,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 18,
-                                  color: colors.text,
-                                ),
-                                overflow: TextOverflow.ellipsis,
+                                style: context.typography.utilityPageTitle,
                               ),
                             ),
-                            if (!_habit.dead)
+                            if (widget.project != null) ...[
+                              const SizedBox(height: kSpaceSm),
                               StaggeredEntrance(
-                                index: 0,
-                                axis: Axis.horizontal,
-                                child: IconButton(
-                                  tooltip: strings.starQuickLookShareAction,
-                                  onPressed: _share,
-                                  icon: Icon(
-                                    Icons.share_outlined,
-                                    color: colors.muted,
-                                  ),
-                                ),
-                              ),
-                            if (!_habit.dead)
-                              StaggeredEntrance(
-                                index: 0,
-                                axis: Axis.horizontal,
-                                child: IconButton(
-                                  onPressed: _edit,
-                                  icon: Icon(
-                                    Icons.edit_outlined,
-                                    color: colors.muted,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      if (widget.project != null) ...[
-                        const SizedBox(height: 8),
-                        StaggeredEntrance(
-                          index: 1,
-                          child: AreaTag(
-                            area: widget.project!.area,
-                            iconSize: 20,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        StaggeredEntrance(
-                          index: 1,
-                          child: ProjectTag(
-                            project: widget.project!,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                      if (_habit.description != null) ...[
-                        const SizedBox(height: 14),
-                        StaggeredEntrance(
-                          index: 1,
-                          child: Text(
-                            _habit.description!,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: colors.muted,
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
-                      ],
-                      if (_habit.dead) ...[
-                        const SizedBox(height: 36),
-                        StaggeredEntrance(
-                          index: 1,
-                          replayKey: _habit.dead,
-                          child: Center(
-                            child: StarGlyph(kind: StarKind.dead, size: 44),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        StaggeredEntrance(
-                          index: 2,
-                          replayKey: _habit.dead,
-                          child: Text(
-                            StarKind.dead.label(strings),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
-                              color: colors.text,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        StaggeredEntrance(
-                          index: 3,
-                          replayKey: _habit.dead,
-                          child: Text(
-                            strings.deadPulsarBody,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 15,
-                              height: 1.6,
-                              color: colors.muted,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        _HabitAnalytics(
-                          habit: _habit,
-                          summary: summary,
-                          range: _statsRange,
-                          onRangeChanged: (value) =>
-                              setState(() => _statsRange = value),
-                        ),
-                        const SizedBox(height: 24),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(14),
-                          clipBehavior: Clip.antiAlias,
-                          decoration: panelDecoration(colors),
-                          child: StarHeatmap(
-                            month: _displayedMonth,
-                            countsByDay: countsByDay,
-                            intensityByDay: countsByDay,
-                            progressByDay: habitProgressByDay(
-                              _habit,
-                              countsByDay,
-                            ),
-                            availableFrom: _habit.createdAt,
-                            availableThrough: _habit.deadDate,
-                            onPreviousMonth: () => _changeMonth(-1),
-                            onNextMonth:
-                                _displayedMonth.year == _today.year &&
-                                    _displayedMonth.month == _today.month
-                                ? null
-                                : () => _changeMonth(1),
-                          ),
-                        ),
-                        const SizedBox(height: 28),
-                        StaggeredEntrance(
-                          index: 4,
-                          replayKey: _habit.dead,
-                          child: Align(
-                            child: ElevatedButton.icon(
-                              onPressed: _reignite,
-                              icon: const Icon(Icons.auto_fix_high),
-                              label: AppButtonLabel(strings.reigniteAction),
-                            ),
-                          ),
-                        ),
-                      ] else ...[
-                        // Dead and alive share these positions, so each block
-                        // below replays when a reignite flips [_habit.dead].
-                        const SizedBox(height: 24),
-                        StaggeredEntrance(
-                          index: 2,
-                          replayKey: _habit.dead,
-                          child: Center(
-                            child: Column(
-                              children: [
-                                StaggeredEntrance(
-                                  index: 0,
-                                  child: Text(
-                                    '$streak',
-                                    style: TextStyle(
-                                      fontSize: 44,
-                                      fontWeight: FontWeight.w800,
-                                      color: colors.gold,
-                                      height: 1,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                StaggeredEntrance(
-                                  index: 1,
-                                  child: Text(
-                                    strings.habitCurrentStreakLabel,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: colors.muted,
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                ),
-                                if (isWeekly) ...[
-                                  const SizedBox(height: 6),
-                                  StaggeredEntrance(
-                                    index: 2,
-                                    child: Text(
-                                      strings.habitProgressThisWeek(
-                                        weekProgress,
-                                        _habit.targetPerPeriod,
-                                      ),
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: colors.muted,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                                const SizedBox(height: 16),
-                                // What keeping this up costs you on any given day —
-                                // the same 1-5 scale every other kind of star
-                                // carries, and the reason a two-minute habit and a
-                                // punishing one don't read as the same thing.
-                                StaggeredEntrance(
-                                  index: 3,
-                                  child: IntensityBolts(
-                                    intensity: _habit.intensity,
-                                    size: 20,
-                                    spacing: 4,
-                                    emphasizeLast: true,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        _HabitAnalytics(
-                          habit: _habit,
-                          summary: summary,
-                          range: _statsRange,
-                          onRangeChanged: (value) =>
-                              setState(() => _statsRange = value),
-                        ),
-                        const SizedBox(height: 24),
-                        StaggeredEntrance(
-                          index: 3,
-                          replayKey: _habit.dead,
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(14),
-                            clipBehavior: Clip.antiAlias,
-                            decoration: panelDecoration(colors),
-                            child: StarHeatmap(
-                              month: _displayedMonth,
-                              countsByDay: countsByDay,
-                              intensityByDay: countsByDay,
-                              progressByDay: habitProgressByDay(
-                                _habit,
-                                countsByDay,
-                              ),
-                              availableFrom: _habit.createdAt,
-                              availableThrough: _habit.deadDate,
-                              onPreviousMonth: () => _changeMonth(-1),
-                              onNextMonth:
-                                  _displayedMonth.year == _today.year &&
-                                      _displayedMonth.month == _today.month
-                                  ? null
-                                  : () => _changeMonth(1),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        if (isDailyStepper) ...[
-                          // A daily habit whose target is more than 1 (e.g. "3
-                          // times a day") isn't a plain done/not-done toggle —
-                          // each tap logs one more instance, with no cap on
-                          // exceeding the target.
-                          StaggeredEntrance(
-                            index: 4,
-                            replayKey: _habit.dead,
-                            child: Center(
-                              child: Text(
-                                strings.habitProgressToday(
-                                  todayCount,
-                                  _habit.targetPerPeriod,
-                                ),
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                  color: colors.text,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              StaggeredEntrance(
-                                index: 4,
-                                axis: Axis.horizontal,
-                                child: IconButton(
-                                  onPressed: todayCount > 0
-                                      ? _unlogInstance
-                                      : null,
-                                  icon: Icon(
-                                    Icons.remove_circle_outline,
-                                    color: colors.gold,
-                                    size: 32,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 24),
-                              StaggeredEntrance(
-                                index: 5,
-                                axis: Axis.horizontal,
-                                child: IconButton(
-                                  onPressed: _logInstance,
-                                  icon: Icon(
-                                    Icons.add_circle,
-                                    color: colors.gold,
-                                    size: 32,
+                                index: 1,
+                                child: Center(
+                                  child: ReaderBreadcrumbs(
+                                    project: widget.project,
                                   ),
                                 ),
                               ),
                             ],
-                          ),
-                        ] else ...[
-                          StaggeredEntrance(
-                            index: 4,
-                            replayKey: _habit.dead,
-                            child: SizedBox(
-                              width: double.infinity,
-                              // Done today reads as the secondary (outlined) form
-                              // of the same action: the pulsar is already burning,
-                              // so the button stops being the thing to reach for.
-                              child: doneToday
-                                  ? OutlinedButton.icon(
-                                      onPressed: () => _toggleToday(true),
-                                      icon: const Icon(Icons.check_circle),
-                                      label: AppButtonLabel(
-                                        strings.habitDoneTodayLabel,
-                                      ),
-                                    )
-                                  : ElevatedButton.icon(
-                                      onPressed: () => _toggleToday(false),
-                                      icon: const Icon(
-                                        Icons.radio_button_unchecked,
-                                      ),
-                                      label: AppButtonLabel(
-                                        strings.markHabitDoneAction,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                          if (doneToday) ...[
-                            const SizedBox(height: 8),
-                            StaggeredEntrance(
-                              index: 5,
-                              replayKey: _habit.dead,
-                              child: Center(
-                                child: TextButton(
-                                  onPressed: () => _toggleToday(true),
-                                  child: AppButtonLabel(
-                                    strings.undoHabitTodayAction,
+                            if (_habit.description != null) ...[
+                              const SizedBox(height: 14),
+                              StaggeredEntrance(
+                                index: 1,
+                                child: Text(
+                                  _habit.description!,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: colors.muted,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            if (_habit.dead) ...[
+                              const SizedBox(height: 36),
+                              StaggeredEntrance(
+                                index: 1,
+                                replayKey: _habit.dead,
+                                child: Center(
+                                  child: StarGlyph(
+                                    kind: StarKind.dead,
+                                    size: 44,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              StaggeredEntrance(
+                                index: 2,
+                                replayKey: _habit.dead,
+                                child: Text(
+                                  StarKind.dead.label(strings),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w700,
+                                    color: colors.text,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              StaggeredEntrance(
+                                index: 3,
+                                replayKey: _habit.dead,
+                                child: Text(
+                                  strings.deadPulsarBody,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    height: 1.6,
                                     color: colors.muted,
                                   ),
                                 ),
                               ),
-                            ),
+                              const SizedBox(height: 24),
+                              _HabitAnalytics(
+                                habit: _habit,
+                                summary: summary,
+                                range: _statsRange,
+                                onRangeChanged: (value) =>
+                                    setState(() => _statsRange = value),
+                              ),
+                              const SizedBox(height: 24),
+                              HeatmapPanel(
+                                countsByDay: countsByDay,
+                                intensityByDay: countsByDay,
+                                progressByDay: habitProgressByDay(
+                                  _habit,
+                                  countsByDay,
+                                ),
+                                availableFrom: _habit.createdAt,
+                                availableThrough: _habit.deadDate,
+                              ),
+                              const SizedBox(height: 28),
+                              StaggeredEntrance(
+                                index: 4,
+                                replayKey: _habit.dead,
+                                child: Align(
+                                  child: ElevatedButton.icon(
+                                    onPressed: _reignite,
+                                    icon: const Icon(Icons.auto_fix_high),
+                                    label: AppButtonLabel(
+                                      strings.reigniteAction,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ] else ...[
+                              // Dead and alive share these positions, so each block
+                              // below replays when a reignite flips [_habit.dead].
+                              const SizedBox(height: kSpaceLg),
+                              if (isDailyStepper) ...[
+                                // A daily habit whose target is more than 1 (e.g. "3
+                                // times a day") isn't a plain done/not-done toggle —
+                                // each tap logs one more instance, with no cap on
+                                // exceeding the target.
+                                StaggeredEntrance(
+                                  index: 4,
+                                  replayKey: _habit.dead,
+                                  child: Center(
+                                    child: Text(
+                                      strings.habitProgressToday(
+                                        todayCount,
+                                        _habit.targetPerPeriod,
+                                      ),
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w700,
+                                        color: colors.text,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    StaggeredEntrance(
+                                      index: 4,
+                                      axis: Axis.horizontal,
+                                      child: IconButton(
+                                        onPressed: todayCount > 0
+                                            ? _unlogInstance
+                                            : null,
+                                        icon: Icon(
+                                          Icons.remove_circle_outline,
+                                          color: colors.gold,
+                                          size: 32,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 24),
+                                    StaggeredEntrance(
+                                      index: 5,
+                                      axis: Axis.horizontal,
+                                      child: IconButton(
+                                        onPressed: _logInstance,
+                                        icon: Icon(
+                                          Icons.add_circle,
+                                          color: colors.gold,
+                                          size: 32,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ] else ...[
+                                // The state is information, the button is the action:
+                                // the line says where today stands, the button only
+                                // ever says what a tap will do.
+                                StaggeredEntrance(
+                                  index: 4,
+                                  replayKey: _habit.dead,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        doneToday
+                                            ? Icons.check_circle
+                                            : Icons.radio_button_unchecked,
+                                        size: 20,
+                                        color: doneToday
+                                            ? colors.gold
+                                            : colors.muted,
+                                      ),
+                                      const SizedBox(width: kSpaceSm - 2),
+                                      Text(
+                                        doneToday
+                                            ? strings.habitDoneTodayLabel
+                                            : strings.habitStillToDoLabel,
+                                        style: context.typography.body.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: doneToday
+                                              ? colors.text
+                                              : colors.muted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: kSpaceSm + 2),
+                                StaggeredEntrance(
+                                  index: 5,
+                                  replayKey: _habit.dead,
+                                  // Content-sized and centered, never full width.
+                                  child: Center(
+                                    // Checked reads as the secondary (outlined) form
+                                    // of the same action: the pulsar is already
+                                    // burning, so the button stops being the thing
+                                    // to reach for.
+                                    child: doneToday
+                                        ? OutlinedButton.icon(
+                                            onPressed: () => _toggleToday(true),
+                                            icon: const Icon(Icons.close),
+                                            label: AppButtonLabel(
+                                              strings.habitUncheckAction,
+                                            ),
+                                          )
+                                        : ElevatedButton.icon(
+                                            onPressed: () =>
+                                                _toggleToday(false),
+                                            icon: const Icon(Icons.check),
+                                            label: AppButtonLabel(
+                                              strings.habitCheckAction,
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: kSpaceLg),
+                              StaggeredEntrance(
+                                index: 2,
+                                replayKey: _habit.dead,
+                                child: Center(
+                                  child: Column(
+                                    children: [
+                                      StaggeredEntrance(
+                                        index: 0,
+                                        child: Text(
+                                          '$streak',
+                                          style: TextStyle(
+                                            fontSize: 44,
+                                            fontWeight: FontWeight.w800,
+                                            color: colors.gold,
+                                            height: 1,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      StaggeredEntrance(
+                                        index: 1,
+                                        child: Text(
+                                          strings.habitCurrentStreakLabel,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: colors.muted,
+                                            letterSpacing: 1.2,
+                                          ),
+                                        ),
+                                      ),
+                                      if (isWeekly) ...[
+                                        const SizedBox(height: 6),
+                                        StaggeredEntrance(
+                                          index: 2,
+                                          child: Text(
+                                            strings.habitProgressThisWeek(
+                                              weekProgress,
+                                              _habit.targetPerPeriod,
+                                            ),
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: colors.muted,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                      const SizedBox(height: 16),
+                                      // What keeping this up costs you on any given day —
+                                      // the same 1-5 scale every other kind of star
+                                      // carries, and the reason a two-minute habit and a
+                                      // punishing one don't read as the same thing.
+                                      StaggeredEntrance(
+                                        index: 3,
+                                        child: IntensityBolts(
+                                          intensity: _habit.intensity,
+                                          size: 20,
+                                          spacing: 4,
+                                          emphasizeLast: true,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              _HabitAnalytics(
+                                habit: _habit,
+                                summary: summary,
+                                range: _statsRange,
+                                onRangeChanged: (value) =>
+                                    setState(() => _statsRange = value),
+                              ),
+                              const SizedBox(height: 24),
+                              StaggeredEntrance(
+                                index: 3,
+                                replayKey: _habit.dead,
+                                child: HeatmapPanel(
+                                  countsByDay: countsByDay,
+                                  intensityByDay: countsByDay,
+                                  progressByDay: habitProgressByDay(
+                                    _habit,
+                                    countsByDay,
+                                  ),
+                                  availableFrom: _habit.createdAt,
+                                  availableThrough: _habit.deadDate,
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
-                      ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
+                if (!_habit.dead)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: kSpaceSm),
+                    child: ReaderActionBar(
+                      entrance: const ReaderEntrance(
+                        animate: true,
+                        axis: Axis.vertical,
+                        reverse: false,
+                        lead: 0,
+                      ),
+                      actions: [
+                        ReaderAction(
+                          icon: Icons.share_outlined,
+                          label: strings.starQuickLookShareAction,
+                          onTap: _share,
+                        ),
+                        ReaderAction(
+                          icon: Icons.edit_outlined,
+                          label: strings.starQuickLookEditAction,
+                          onTap: _edit,
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),

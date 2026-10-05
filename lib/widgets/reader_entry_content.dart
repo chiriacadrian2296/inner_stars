@@ -154,7 +154,7 @@ class ReaderPage extends StatelessWidget {
         const SizedBox(height: 18),
 
         // 2. Where it is.
-        entrance(3, _Breadcrumbs(project: project, numberLabel: numberLabel)),
+        entrance(3, ReaderBreadcrumbs(project: project, numberLabel: numberLabel)),
         const SizedBox(height: 18),
 
         // 3. Its particular data, in a slot that never changes height.
@@ -227,8 +227,12 @@ class ReaderPage extends StatelessWidget {
 /// generic icon (a supernova, a constellation, a number — the same for every
 /// area and project) with the text under it, and a name too long for its
 /// share is cut with an ellipsis rather than wrapping the row.
-class _Breadcrumbs extends StatelessWidget {
-  const _Breadcrumbs({required this.project, required this.numberLabel});
+class ReaderBreadcrumbs extends StatelessWidget {
+  const ReaderBreadcrumbs({
+    super.key,
+    required this.project,
+    this.numberLabel,
+  });
 
   final Project? project;
   final String? numberLabel;

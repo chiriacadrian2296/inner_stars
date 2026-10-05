@@ -62,3 +62,7 @@ app.*.map.json
 # Claude Code local settings and runtime state (personal, not shared)
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+
+# Local research notes and reports (personal, not part of the app)
+/reports/
+/research_notes/

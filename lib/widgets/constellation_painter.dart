@@ -266,8 +266,48 @@ class ConstellationPainter extends CustomPainter {
       burningPulsars,
       flareRadius: size.width * 0.42 * 0.55,
     );
-    // A hollow ring, not a filled twinkle: nothing has been placed here
-    // yet, so it reads as an outline waiting to be filled in.
+    // The "no light" kinds are drawn by the same shader as the burning ones,
+    // just in a calm, steady look of their own (see `constellation_flare.frag`'s
+    // `coldLook`) — a cold blue star, a faint gas cloud, a dead star's thin
+    // shell — instead of the old tiny, translucent glyphs that all but
+    // vanished against the sky. Without the shader they fall back to those.
+    final coldRadius = size.width * 0.42;
+    final hasShader = flareProgram != null;
+    if (hasShader) {
+      _drawGlowAndSparkle(
+        canvas,
+        size,
+        unlit,
+        flareRadius: coldRadius,
+        mode: _kModeUnlit,
+        tint: palette.unlit,
+      );
+      _drawGlowAndSparkle(
+        canvas,
+        size,
+        coldPulsars,
+        flareRadius: coldRadius * 0.55,
+        mode: _kModeUnlit,
+        tint: palette.unlit,
+      );
+      _drawGlowAndSparkle(
+        canvas,
+        size,
+        nascent,
+        flareRadius: coldRadius,
+        mode: _kModeNascent,
+        tint: palette.nascent,
+      );
+      _drawGlowAndSparkle(
+        canvas,
+        size,
+        dead,
+        flareRadius: coldRadius,
+        mode: _kModeDead,
+        tint: palette.dead,
+      );
+      return;
+    }
     _drawSparkleOnly(
       canvas,
       size,
@@ -300,6 +340,12 @@ class ConstellationPainter extends CustomPainter {
     );
   }
 
+  // `constellation_flare.frag`'s `uMode` values.
+  static const _kModeLit = 0.0;
+  static const _kModeUnlit = 1.0;
+  static const _kModeNascent = 2.0;
+  static const _kModeDead = 3.0;
+
   // Comfortably above any real constellation's star count — must match
   // `constellation_flare.frag`'s own `kMaxStars` exactly (positions
   // beyond however many stars actually exist are padded with (-1, -1),
@@ -322,6 +368,8 @@ class ConstellationPainter extends CustomPainter {
     // this to it keeps the ratio between the two roughly constant across
     // zoom levels instead of needing a hand-tuned multiplier per case.
     required double flareRadius,
+    double mode = _kModeLit,
+    Color tint = const Color(0xFFF2B84B),
   }) {
     if (group.isEmpty) return;
 
@@ -374,11 +422,16 @@ class ConstellationPainter extends CustomPainter {
     final shader = program.fragmentShader();
     shader.setFloat(0, time);
     shader.setFloat(1, flareRadius);
+    shader.setFloat(2, mode);
+    shader.setFloat(3, tint.r);
+    shader.setFloat(4, tint.g);
+    shader.setFloat(5, tint.b);
+    const base = 6;
     for (var i = 0; i < positions.length; i++) {
-      shader.setFloat(2 + i, positions[i]);
+      shader.setFloat(base + i, positions[i]);
     }
     for (var i = 0; i < seeds.length; i++) {
-      shader.setFloat(2 + positions.length + i, seeds[i]);
+      shader.setFloat(base + positions.length + i, seeds[i]);
     }
     // BlendMode.plus, not the default srcOver — this is the actual
     // structural difference from the bg's own flare stars, not a tuning
@@ -396,8 +449,10 @@ class ConstellationPainter extends CustomPainter {
     // beneath, the same "pure addition into something already there"
     // relationship the bg stars have with their own nebula backdrop —
     // nothing for a blend-mode mismatch to darken.
+    // Inflated past the constellation's own square so a glow sitting near
+    // its edge fades out naturally instead of being sliced off by it.
     canvas.drawRect(
-      Offset.zero & size,
+      (Offset.zero & size).inflate(size.width * 0.3),
       Paint()
         ..shader = shader
         ..blendMode = BlendMode.plus,

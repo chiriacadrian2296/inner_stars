@@ -55,11 +55,13 @@ void main() {
       isNotNull,
     );
     expect(
-      tester.getCenter(find.text(strings.clearFilterAction)).dx,
-      lessThan(tester.getCenter(find.text(strings.applyFilterAction)).dx),
+      tester.getCenter(find.text(strings.clearFilterAction.toUpperCase())).dx,
+      lessThan(
+        tester.getCenter(find.text(strings.applyFilterAction.toUpperCase())).dx,
+      ),
     );
 
-    await tester.tap(find.text(strings.clearFilterAction));
+    await tester.tap(find.text(strings.clearFilterAction.toUpperCase()));
     await tester.pump();
     expect(_textButton(tester, strings.clearFilterAction).onPressed, isNull);
     expect(
@@ -103,8 +105,10 @@ void main() {
   });
 }
 
-TextButton _textButton(WidgetTester tester, String label) =>
-    tester.widget<TextButton>(find.widgetWithText(TextButton, label));
+TextButton _textButton(WidgetTester tester, String label) => tester
+    .widget<TextButton>(find.widgetWithText(TextButton, label.toUpperCase()));
 
 ElevatedButton _elevatedButton(WidgetTester tester, String label) =>
-    tester.widget<ElevatedButton>(find.widgetWithText(ElevatedButton, label));
+    tester.widget<ElevatedButton>(
+      find.widgetWithText(ElevatedButton, label.toUpperCase()),
+    );

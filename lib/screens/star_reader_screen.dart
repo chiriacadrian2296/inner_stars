@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'dart:typed_data';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:hint_kit/hint_kit.dart';
@@ -32,6 +30,7 @@ import '../widgets/logo_watermark.dart';
 import '../widgets/marquee_title.dart';
 import '../widgets/photo_image.dart';
 import '../widgets/photo_picker.dart';
+import '../widgets/reader_action_bar.dart';
 import '../widgets/reader_entry_content.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/shareable_lit_star_card.dart';
@@ -654,17 +653,17 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
   /// Every button the bottom bar offers for [entry]: the kind's own primary
   /// action first, then whatever is common — share (a lit star), take me
   /// there, edit and delete.
-  List<_ReaderAction> _actionsFor(ReaderEntry entry, Project? project) {
+  List<ReaderAction> _actionsFor(ReaderEntry entry, Project? project) {
     final strings = context.strings;
     final canEdit = widget.allowEdit;
     final canRefresh =
         widget.refreshEntries != null || widget.refreshStars != null;
-    final actions = <_ReaderAction>[];
+    final actions = <ReaderAction>[];
 
     switch (entry) {
       case NascentEntry():
         actions.add(
-          _ReaderAction(
+          ReaderAction(
             icon: Icons.settings_suggest,
             label: strings.nascentStarQuickLookConfigureAction,
             onTap: () => _configureNascent(entry),
@@ -675,7 +674,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
         if (star.dead) {
           if (canEdit) {
             actions.add(
-              _ReaderAction(
+              ReaderAction(
                 icon: Icons.model_training,
                 label: strings.actionReignite,
                 onTap: _editOrResurrectCurrent,
@@ -687,7 +686,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
           // Lights the star. Drawn dark, like a pulsar that isn't burning:
           // the star is off, and this is what switches it on.
           actions.add(
-            _ReaderAction(
+            ReaderAction(
               icon: Icons.power_settings_new,
               label: strings.actionLight,
               onTap: _markAchieved,
@@ -697,7 +696,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
         }
         if (!star.dead) {
           actions.add(
-            _ReaderAction(
+            ReaderAction(
               icon: Icons.share_outlined,
               label: strings.starQuickLookShareAction,
               onTap: _sharing ? null : _shareCurrent,
@@ -717,7 +716,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
         if (habit.dead) {
           if (canEdit) {
             actions.add(
-              _ReaderAction(
+              ReaderAction(
                 icon: Icons.model_training,
                 label: strings.actionReignite,
                 onTap: () => _editOrResurrectPulsar(habit),
@@ -736,7 +735,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
             // A daily habit with a target above 1 steps up and down.
             final todayCount = habitDailyProgress(habit, countsByDay);
             actions.add(
-              _ReaderAction(
+              ReaderAction(
                 icon: Icons.add,
                 label: strings.habitProgressToday(
                   todayCount,
@@ -746,7 +745,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
               ),
             );
             actions.add(
-              _ReaderAction(
+              ReaderAction(
                 icon: Icons.remove,
                 label: strings.undoHabitTodayAction,
                 onTap: todayCount > 0 ? () => _unlogInstance(habit) : null,
@@ -755,7 +754,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
           } else {
             final done = countsByDay.containsKey(_today);
             actions.add(
-              _ReaderAction(
+              ReaderAction(
                 icon: Icons.local_fire_department,
                 // The flame shows the pulsar's state: gold while it's burning
                 // (done today), dark while it isn't.
@@ -767,7 +766,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
           }
         }
         actions.add(
-          _ReaderAction(
+          ReaderAction(
             icon: Icons.share_outlined,
             label: strings.starQuickLookShareAction,
             onTap: _sharing ? null : _shareCurrent,
@@ -782,7 +781,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
     return actions;
   }
 
-  _ReaderAction _takeMeThere(Project project, int starId) => _ReaderAction(
+  ReaderAction _takeMeThere(Project project, int starId) => ReaderAction(
     icon: Icons.navigation,
     label: context.strings.actionFly,
     onTap: () {
@@ -791,13 +790,13 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
     },
   );
 
-  _ReaderAction _editAction() => _ReaderAction(
+  ReaderAction _editAction() => ReaderAction(
     icon: Icons.edit_outlined,
     label: context.strings.starQuickLookEditAction,
     onTap: _editOrResurrectCurrent,
   );
 
-  _ReaderAction _deleteAction() => _ReaderAction(
+  ReaderAction _deleteAction() => ReaderAction(
     icon: Icons.delete_outline,
     label: context.strings.deleteStarAction,
     onTap: _deleteCurrent,
@@ -1193,7 +1192,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                                   animation,
                                   ValueKey(barSignature),
                                 ),
-                            child: _ReaderActionBar(
+                            child: ReaderActionBar(
                               key: ValueKey(barSignature),
                               actions: barActions,
                               entrance: entrance.risingFromBelow(),
@@ -1428,28 +1427,6 @@ class _NavCircleButton extends StatelessWidget {
   }
 }
 
-/// One button in the reader's bottom bar.
-class _ReaderAction {
-  const _ReaderAction({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.loading = false,
-    this.off = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-  final bool loading;
-
-  /// Drawn dark instead of gold: the star this belongs to is off, and this is
-  /// what switches it on (or, on a burning pulsar, off). A dark button that
-  /// can be pressed also beckons — its icon shakes and flashes gold every
-  /// couple of seconds (see [_ActionButton]).
-  final bool off;
-}
-
 /// An invisible tap target down one edge of the page — see the strips in
 /// [_StarReaderScreenState.build]. [start] is the leading edge (left in LTR).
 class _TapStrip extends StatelessWidget {
@@ -1494,211 +1471,6 @@ class _TapStrip extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-/// The reader's bottom bar between the two arrows: every action available
-/// for the page, kept icon-only so the content above remains the focus.
-class _ReaderActionBar extends StatelessWidget {
-  const _ReaderActionBar({
-    super.key,
-    required this.actions,
-    required this.entrance,
-    this.reverseOrder = false,
-  });
-
-  final List<_ReaderAction> actions;
-
-  /// Runs the cascade from the last button to the first.
-  final bool reverseOrder;
-
-  /// How each button arrives — see [ReaderEntrance].
-  final ReaderEntrance entrance;
-
-  static const _gap = 8.0;
-
-  @override
-  Widget build(BuildContext context) {
-    if (actions.isEmpty) return const SizedBox.shrink();
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: _gap,
-      runSpacing: _gap,
-      children: [
-        for (var i = 0; i < actions.length; i++)
-          entrance(
-            7 + (reverseOrder ? actions.length - 1 - i : i),
-            _ActionButton(
-              icon: actions[i].icon,
-              label: actions[i].label,
-              onTap: actions[i].onTap,
-              loading: actions[i].loading,
-              off: actions[i].off,
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-/// The gold pill every action shares — an icon and label together inside one
-/// [StadiumBorder], or just the icon when [compact].
-///
-/// An [off] button that can be pressed beckons: every [_beckonPeriod] its
-/// icon gives the same little shake as the big star above the calendar in
-/// the stats (only more often), and lights up gold for as long as it lasts.
-class _ActionButton extends StatefulWidget {
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.loading = false,
-    this.off = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-  final bool loading;
-
-  /// Dark and muted instead of gold.
-  final bool off;
-
-  static const iconSize = 20.0;
-  static const _verticalPadding = 14.0;
-
-  // The stats' big star shakes every 5 seconds; this one is meant to be
-  // noticed more, so it repeats about twice as often. The first shake comes
-  // soon after the page settles rather than a whole period later.
-  static const _beckonPeriod = Duration(milliseconds: 2500);
-  static const _firstBeckonDelay = Duration(milliseconds: 900);
-  static const _shakeDuration = Duration(milliseconds: 500);
-
-  @override
-  State<_ActionButton> createState() => _ActionButtonState();
-}
-
-class _ActionButtonState extends State<_ActionButton>
-    with SingleTickerProviderStateMixin {
-  late final _shake = AnimationController(
-    vsync: this,
-    duration: _ActionButton._shakeDuration,
-  );
-  Timer? _timer;
-  bool _reduceMotion = false;
-
-  bool get _beckons =>
-      widget.off && widget.onTap != null && !widget.loading && !_reduceMotion;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _reduceMotion = MediaQuery.disableAnimationsOf(context);
-    _syncTimer();
-  }
-
-  @override
-  void didUpdateWidget(_ActionButton oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _syncTimer();
-  }
-
-  void _syncTimer() {
-    if (_beckons) {
-      _timer ??= Timer(_ActionButton._firstBeckonDelay, _beckon);
-    } else {
-      _timer?.cancel();
-      _timer = null;
-      _shake.value = 0;
-    }
-  }
-
-  void _beckon() {
-    if (!mounted) return;
-    _shake.forward(from: 0);
-    _timer = Timer(_ActionButton._beckonPeriod, _beckon);
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _shake.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final off = widget.off;
-    final foreground = widget.onTap == null && !widget.loading
-        ? colors.muted
-        : colors.gold;
-    final Widget leading;
-    if (widget.loading) {
-      leading = SizedBox(
-        width: _ActionButton.iconSize,
-        height: _ActionButton.iconSize,
-        child: CircularProgressIndicator(strokeWidth: 2, color: foreground),
-      );
-    } else if (off) {
-      leading = AnimatedBuilder(
-        animation: _shake,
-        builder: (context, _) {
-          final t = _shake.value;
-          // The big star's own shake (sideways, fading out over three
-          // swings), scaled to an icon this small; the gold swells and
-          // fades with the same beat.
-          final dx = math.sin(t * math.pi * 6) * (1 - t) * 3;
-          final glow = math.sin(t * math.pi);
-          final icon = Icon(
-            widget.icon,
-            size: _ActionButton.iconSize,
-            color: Color.lerp(colors.muted, colors.gold, glow),
-          );
-          return Transform.translate(
-            offset: Offset(dx, 0),
-            child: glow < 0.02
-                ? icon
-                // A blurred copy of the icon behind it, so the glow follows
-                // the glyph's own outline (same trick as `IntensityBolts`),
-                // fading in and out with the gold — same size as the icon,
-                // so nothing grows.
-                : Stack(
-                    alignment: Alignment.center,
-                    clipBehavior: Clip.none,
-                    children: [
-                      ImageFiltered(
-                        imageFilter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                        child: Icon(
-                          widget.icon,
-                          size: _ActionButton.iconSize,
-                          color: colors.gold.withValues(alpha: 0.75 * glow),
-                        ),
-                      ),
-                      icon,
-                    ],
-                  ),
-          );
-        },
-      );
-    } else {
-      leading = Icon(
-        widget.icon,
-        color: foreground,
-        size: _ActionButton.iconSize,
-      );
-    }
-    final pill = Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: widget.onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(_ActionButton._verticalPadding),
-          child: leading,
-        ),
-      ),
-    );
-    return Tooltip(message: widget.label, child: pill);
   }
 }
 

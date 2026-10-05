@@ -185,6 +185,13 @@ vec3 flareStarLayer(vec3 dir, float density, float seed) {
   return (kGold * (glow + spikes) + colorCore * core * 1.5) * edgeFade;
 }
 
+// Interleaved-gradient-noise dither, ±½ of one 8-bit step. These glows fade
+// over hundreds of pixels at high zoom, so without it the 8-bit output
+// quantizes into visible bands/grain instead of a smooth gradient.
+float ditherNoise() {
+  return fract(52.9829189 * fract(dot(FlutterFragCoord().xy, vec2(0.06711056, 0.00583715)))) - 0.5;
+}
+
 void main() {
   // A free-orientation camera at the center of the sky sphere — uForward/
   // uRight/uUp are its already-orthonormal basis, straight from
@@ -343,5 +350,5 @@ void main() {
     color = mix(color, vec3(1.0, 0.98, 0.92), core * 0.95 * kGridOpacity);
   }
 
-  fragColor = vec4(color, 1.0);
+  fragColor = vec4(max(color + ditherNoise() / 255.0, 0.0), 1.0);
 }

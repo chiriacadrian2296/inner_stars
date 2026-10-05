@@ -123,13 +123,9 @@ abstract class AppStrings {
   String get socialPlaceholderBody;
 
   // Statistics tab
-  String get statsEyebrow;
   String get statsTitle;
 
   // Home dashboard
-  String get homeEyebrow;
-  String get homeTitle;
-  String get homeSubtitle;
   String get todayStarSectionLabel;
   String get litTodayTitle;
   String get litTodayTitleHighlight;
@@ -556,9 +552,6 @@ abstract class AppStrings {
   /// [areaVisionLabel]'s own fuller "your vision for this area" phrasing,
   /// which would read as too much next to art this size.
   String get areaCoverVisionTitle;
-  String get areaConstellationsStatLabel;
-  String get areaStarsStatLabel;
-  String get areaIntensityStatLabel;
 
   // Constellation
   String get constellationShapeMissing;
@@ -754,7 +747,9 @@ abstract class AppStrings {
 
   // Habit reader
   String get habitCurrentStreakLabel;
-  String get markHabitDoneAction;
+  String get habitCheckAction;
+  String get habitUncheckAction;
+  String get habitStillToDoLabel;
   String get habitDoneTodayLabel;
   String get undoHabitTodayAction;
 
@@ -787,7 +782,6 @@ abstract class AppStrings {
   String habitStatsWeeks(int count);
 
   // Constellation card badges, alongside the existing star count
-  String unlitStarsBadge(int count);
   String activePulsarsBadge(int count);
 
   // The five kinds of star (see [StarKind]) — each has a singular name for
@@ -869,9 +863,7 @@ abstract class AppStrings {
   String get nightlightExplainedSchemeAgitated;
   String get nightlightExplainedSchemeBreathe;
   String get nightlightExplainedSchemeClarity;
-  String get nightlightExplainedBodyPart1;
-  String get nightlightExplainedBodyPart2;
-  String get nightlightExplainedBodyPart3;
+  String get nightlightExplainedBody;
   String get nightlightExplainedContinue;
   String get nightlightBreathingGetReady;
   String get nightlightBreathingInhale;
@@ -881,6 +873,9 @@ abstract class AppStrings {
   // Shown once cycles start: which one this is out of the fixed total, and
   // a plain mm:ss clock counting down to the exercise's own end.
   String nightlightBreathingCycleLabel(int current, int total);
+
+  // A discreet hint shown until the skip button becomes available.
+  String nightlightBreathingCyclesUntilSkip(int remaining);
 
   // The check-in shown when the exercise finishes on its own (cycles ran
   // out) rather than the user tapping "I'm ready" themselves — asks how
@@ -1021,6 +1016,11 @@ abstract class AppStrings {
   String get reminderTimeLabel;
   String get skyGridSection;
   String get skyGridToggleLabel;
+  String get skySupernovaeSection;
+  String get skySupernovaeToggleLabel;
+  String get skyArtworkSection;
+  String get skyArtworkOpacityLabel;
+  String get skyArtworkBlendLabel;
 
   // Settings — App Lock section: an optional 4-digit PIN (with a
   // fingerprint/biometric shortcut on top of it, where the device

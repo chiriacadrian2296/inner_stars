@@ -132,23 +132,23 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.descendant(of: firstCard, matching: find.text('Vision')),
+      find.descendant(of: firstCard, matching: find.text('VISION')),
       findsOneWidget,
     );
     expect(
-      find.descendant(of: firstCard, matching: find.text('Moodboard')),
+      find.descendant(of: firstCard, matching: find.text('MOODBOARD')),
       findsOneWidget,
     );
     expect(
-      find.descendant(of: firstCard, matching: find.text('Riflessioni')),
+      find.descendant(of: firstCard, matching: find.text('RIFLESSIONI')),
       findsOneWidget,
     );
     expect(
-      find.descendant(of: firstCard, matching: find.text('+ Costellazione')),
+      find.descendant(of: firstCard, matching: find.text('+ COSTELLAZIONE')),
       findsOneWidget,
     );
     expect(
-      find.descendant(of: firstCard, matching: find.text('Vola')),
+      find.descendant(of: firstCard, matching: find.text('VOLA')),
       findsOneWidget,
     );
   });
@@ -205,11 +205,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('+ Stella'), findsOneWidget);
-    expect(find.text('Condividi'), findsOneWidget);
-    expect(find.text('Vola'), findsOneWidget);
-    expect(find.text('Modifica'), findsOneWidget);
-    expect(find.text('Elimina'), findsOneWidget);
+    expect(find.text('+ STELLA'), findsOneWidget);
+    expect(find.text('CONDIVIDI'), findsOneWidget);
+    expect(find.text('VOLA'), findsOneWidget);
+    expect(find.text('MODIFICA'), findsOneWidget);
+    expect(find.text('ELIMINA'), findsOneWidget);
 
     await tester.tap(
       find.descendant(

@@ -285,15 +285,15 @@ void main() {
       expect(DefaultTextStyle.of(titleContext).style.color, Colors.white);
 
       final cancel = tester.widget<TextButton>(
-        find.widgetWithText(TextButton, 'Annulla'),
+        find.widgetWithText(TextButton, 'ANNULLA'),
       );
       final delete = tester.widget<TextButton>(
-        find.widgetWithText(TextButton, 'Elimina'),
+        find.widgetWithText(TextButton, 'ELIMINA'),
       );
       expect(cancel.style?.foregroundColor?.resolve({}), AppColors.dark.muted);
       expect(delete.style?.foregroundColor?.resolve({}), AppColors.dark.danger);
 
-      await tester.tap(find.text('Elimina'));
+      await tester.tap(find.text('ELIMINA'));
       await tester.pumpAndSettle();
       expect(result, isTrue);
     });

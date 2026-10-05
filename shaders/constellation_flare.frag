@@ -6,6 +6,13 @@ precision highp float;
 
 uniform float uTime;
 uniform float uFlareRadius;
+// Which look to draw this whole group in: 0 = the gold lit-star flare (the
+// recipe below), 1 = unlit (a cold, steady blue star), 2 = nascent (a faint
+// gas cloud a star hasn't condensed out of yet), 3 = dead (the thin shell a
+// spent star shed, around a dim remnant). The non-gold looks take their tint
+// from [uColor] (the palette's own unlit/nascent/dead color).
+uniform float uMode;
+uniform vec3 uColor;
 uniform vec2 uPositions[24];
 // A star's own *normalized* (0..1, within its constellation's own local
 // shape space) position — stable across pan/zoom, unlike [uPositions]
@@ -52,6 +59,68 @@ float starHash(vec2 pos, float salt) {
   return fract(sin(dot(pos, vec2(12.9898, 78.233)) + salt * 37.719) * 43758.5453);
 }
 
+const float kTau = 6.28318530718;
+
+// The three "no light" looks, returned as (premultiplied-ready color, alpha).
+// [r] is the distance from the star in units of [uFlareRadius], so every
+// profile scales with zoom exactly like the gold flare does. All of them are
+// steady (a slow breath, never the lit stars' flare-ups) — that calm is what
+// separates "not burning" from "burning" at a glance, while the soft glow
+// keeps them readable against the sky instead of vanishing into it.
+vec4 coldLook(float mode, vec2 diff, vec2 rotated, float r, float h, float t) {
+  vec3 tint = uColor;
+  if (mode < 1.5) {
+    // Unlit: a cold blue star — soft halo, a short faint cross (kin to the
+    // lit flare's rays, but stunted), and a pale blue-white pinpoint.
+    float breath = 0.9 + 0.1 * sin(t * 0.7 + h * kTau);
+    float halo = exp(-r * 11.0) * 0.6 * breath + exp(-r * 4.0) * 0.14;
+    vec2 uv = (rotated / uFlareRadius) * 2.2;
+    float w = 0.04 * exp(-abs(uv.x) * 7.0);
+    float wy = 0.04 * exp(-abs(uv.y) * 7.0);
+    float spikes = (smoothstep(w, 0.0, abs(uv.y)) * exp(-abs(uv.x) * 8.0) +
+                    smoothstep(wy, 0.0, abs(uv.x)) * exp(-abs(uv.y) * 8.0)) * 0.45;
+    float core = smoothstep(0.05, 0.0, r);
+    vec3 color = tint * (halo + spikes) + vec3(0.85, 0.9, 1.0) * core * 0.9;
+    return vec4(color, clamp(halo + spikes + core, 0.0, 1.0));
+  }
+  if (mode < 2.5) {
+    // Nascent: a lumpy, drifting gas cloud (three overlapping soft blobs
+    // placed from the star's own hash) over a thin veil, with a faint
+    // pinprick at the heart — the star that has yet to form.
+    float breath = 0.85 + 0.15 * sin(t * 0.5 + h * kTau);
+    vec2 p = diff / uFlareRadius;
+    vec2 p1 = p - (vec2(starHash(vec2(h, 1.0), 4.0), starHash(vec2(h, 2.0), 5.0)) - 0.5) * 0.03;
+    vec2 p2 = p - (vec2(starHash(vec2(h, 3.0), 6.0), starHash(vec2(h, 4.0), 7.0)) - 0.5) * 0.03;
+    vec2 p3 = p - (vec2(starHash(vec2(h, 5.0), 8.0), starHash(vec2(h, 6.0), 9.0)) - 0.5) * 0.03;
+    float cloud = 0.34 * exp(-dot(p1, p1) * 380.0) +
+                  0.26 * exp(-dot(p2, p2) * 800.0) +
+                  0.22 * exp(-dot(p3, p3) * 1400.0) +
+                  0.12 * exp(-r * 7.0);
+    cloud *= breath;
+    float core = smoothstep(0.03, 0.0, r) * 0.6;
+    vec3 color = tint * cloud + vec3(1.0) * core;
+    return vec4(color, clamp(cloud + core, 0.0, 1.0));
+  }
+  // Dead: a thin, slightly uneven shell (like a planetary nebula) breathing
+  // out around a small dim remnant.
+  float r0 = 0.075 + 0.004 * sin(t * 0.3 + h * kTau);
+  float ang = atan(diff.y, diff.x);
+  float unevenness = 0.65 + 0.35 * sin(ang * 2.0 + h * kTau);
+  float x = (r - r0) / 0.013;
+  float ring = exp(-x * x) * 0.6 * unevenness;
+  float haze = exp(-r * 16.0) * 0.16;
+  float core = smoothstep(0.028, 0.0, r) * 0.5;
+  vec3 color = tint * (ring + haze) + vec3(0.8, 0.86, 1.0) * core;
+  return vec4(color, clamp(ring + haze + core, 0.0, 1.0));
+}
+
+// Interleaved-gradient-noise dither, ±½ of one 8-bit step. These glows fade
+// over hundreds of pixels at high zoom, so without it the 8-bit output
+// quantizes into visible bands/grain instead of a smooth gradient.
+float ditherNoise() {
+  return fract(52.9829189 * fract(dot(FlutterFragCoord().xy, vec2(0.06711056, 0.00583715)))) - 0.5;
+}
+
 void main() {
   vec2 fragPos = FlutterFragCoord().xy;
   vec3 total = vec3(0.0);
@@ -77,6 +146,19 @@ void main() {
     float cosR = cos(-rotation);
     float sinR = sin(-rotation);
     vec2 diff = fragPos - pos;
+    if (uMode > 0.5) {
+      vec4 cold = coldLook(
+        uMode,
+        diff,
+        vec2(diff.x * cosR - diff.y * sinR, diff.x * sinR + diff.y * cosR),
+        length(diff) / uFlareRadius,
+        h,
+        uTime
+      );
+      total += cold.rgb * cold.a;
+      totalAlpha = max(totalAlpha, cold.a);
+      continue;
+    }
     vec2 rotated = vec2(
       diff.x * cosR - diff.y * sinR,
       diff.x * sinR + diff.y * cosR
@@ -111,5 +193,8 @@ void main() {
     totalAlpha = max(totalAlpha, alpha);
   }
 
+  // Masked by alpha: this layer is added over the sky across a rect much
+  // larger than any glow, so noise outside the glow would show as a square.
+  total = max(total + ditherNoise() / 255.0 * smoothstep(0.0, 0.03, totalAlpha), 0.0);
   fragColor = vec4(total, totalAlpha);
 }

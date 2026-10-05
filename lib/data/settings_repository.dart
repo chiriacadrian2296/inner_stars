@@ -1,3 +1,4 @@
+import '../models/artwork_blend.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Reads and writes user-facing app settings (language, daily reminder).
@@ -12,6 +13,9 @@ class SettingsRepository {
   static const _reminderHourKey = 'settings.reminderHour';
   static const _reminderMinuteKey = 'settings.reminderMinute';
   static const _showGridKey = 'settings.showGrid';
+  static const _artworkOpacityKey = 'settings.artworkOpacity';
+  static const _artworkBlendKey = 'settings.artworkBlend';
+  static const _showSupernovaeKey = 'settings.showSupernovae';
   static const _tutorialsEnabledKey = 'settings.tutorialsEnabled';
 
   final SharedPreferences _prefs;
@@ -45,6 +49,26 @@ class SettingsRepository {
   bool get showGrid => _prefs.getBool(_showGridKey) ?? false;
 
   Future<void> setShowGrid(bool value) => _prefs.setBool(_showGridKey, value);
+
+  /// Whether the Cosmo draws each life area's supernova (the giant star over
+  /// its artwork, and the sigil around it) — on by default.
+  bool get showSupernovae => _prefs.getBool(_showSupernovaeKey) ?? true;
+
+  Future<void> setShowSupernovae(bool value) =>
+      _prefs.setBool(_showSupernovaeKey, value);
+
+  /// How strongly the Cosmo's area artwork shows (0..1), and how it blends
+  /// onto the sky — defaults are the original look (half strength, additive).
+  double get artworkOpacity => _prefs.getDouble(_artworkOpacityKey) ?? 0.5;
+
+  Future<void> setArtworkOpacity(double value) =>
+      _prefs.setDouble(_artworkOpacityKey, value);
+
+  ArtworkBlend get artworkBlend =>
+      ArtworkBlend.fromName(_prefs.getString(_artworkBlendKey));
+
+  Future<void> setArtworkBlend(ArtworkBlend value) =>
+      _prefs.setString(_artworkBlendKey, value.name);
 
   /// Whether any `hint_kit` guided tour is allowed to auto-start at all. Off
   /// by default; turning it off doesn't touch which tours are individually

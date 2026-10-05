@@ -18,28 +18,42 @@ import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
+import '../theme/app_typography.dart';
 import '../utils/app_modals.dart';
 import '../utils/date_format.dart';
+import '../utils/date_math.dart';
 import '../utils/habit_stats.dart';
+import '../utils/habit_stats_snapshot.dart';
 import '../utils/star_stats.dart';
 import '../widgets/app_field.dart';
+import '../widgets/area_filter_sheet.dart';
+import '../widgets/date_range_filter_sheet.dart';
+import '../widgets/filter_button.dart';
 import '../widgets/lit_star_card.dart';
+import '../widgets/pill_action_button.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
-import '../widgets/star_heatmap.dart';
+import '../widgets/stats/stats_widgets.dart';
 import 'pulsar_reader_screen.dart';
 import 'star_form_screen.dart';
 import 'star_reader_screen.dart';
 import 'stat_detail_screen.dart';
 
-/// Today's star, the activity calendar, total stars, and the current/
-/// longest streak — everything the old separate Home dashboard and
-/// Statistics tab each showed, now one page reached straight from the
-/// menu. They used to be two screens (Home ending with the calendar,
-/// Statistics starting with the cumulative numbers) linked by a "your
-/// dashboard" button; once the Sky became the app's only real screen,
-/// that extra tap in between stopped earning its keep, so this page just
-/// shows all of it, top (today) to bottom (all-time).
+/// In-memory working context of the Statistics page. Owned by Cosmo (like
+/// [SkyExplorerSession] for the Sky) so leaving the page and coming back
+/// restores the range, filters, calendar month and scroll position instead
+/// of starting over.
+class StatsSession {
+  HabitStatsRange habitRange = HabitStatsRange.days30;
+  StarFilter filter = StarFilter.all();
+  DateRangePreset datePreset = DateRangePreset.allTime;
+  DateTime? displayedMonth;
+  double scrollOffset = 0;
+}
+
+/// The Statistics page: pulsar overview (with the 7/30/90 range), today's
+/// star, the activity calendar, total stars and the current/longest streak,
+/// top (habits, today) to bottom (all-time).
 class StatsScreen extends StatefulWidget {
   const StatsScreen({
     super.key,
@@ -48,8 +62,11 @@ class StatsScreen extends StatefulWidget {
     required this.habitRepository,
     required this.habitCompletionRepository,
     required this.starsShapeRepository,
+    this.session,
   });
 
+  /// Pass the same session across visits to remember where the user was.
+  final StatsSession? session;
   final StarRepository starRepository;
   final ProjectRepository projectRepository;
   final HabitRepository habitRepository;
@@ -61,30 +78,69 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
-  HabitStatsRange _habitRange = HabitStatsRange.days30;
+  late final StatsSession _session = widget.session ?? StatsSession();
+  late final ScrollController _scrollController = ScrollController(
+    initialScrollOffset: _session.scrollOffset,
+  )..addListener(_rememberScroll);
 
-  /// The month the activity calendar is currently showing — always the 1st,
-  /// so it can be compared/offset by month without caring what day it was
-  /// created on. Defaults to the current month; [_changeDisplayedMonth]
-  /// moves it, capped so the user can never page past the present month.
-  DateTime _displayedMonth = DateTime(
-    DateTime.now().year,
-    DateTime.now().month,
-  );
-
-  bool get _isCurrentMonthDisplayed {
-    final now = DateTime.now();
-    return _displayedMonth.year == now.year &&
-        _displayedMonth.month == now.month;
+  void _rememberScroll() {
+    if (_scrollController.hasClients) {
+      _session.scrollOffset = _scrollController.offset;
+    }
   }
 
-  void _changeDisplayedMonth(int delta) {
-    final now = DateTime.now();
-    final currentMonth = DateTime(now.year, now.month);
-    final next = DateTime(_displayedMonth.year, _displayedMonth.month + delta);
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_rememberScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  HabitStatsRange get _habitRange => _session.habitRange;
+  set _habitRange(HabitStatsRange value) => _session.habitRange = value;
+
+  /// Narrows the Stars section (calendar, total, area split, streaks) to
+  /// some areas and/or a period. Today's star and the pulsars above are
+  /// never filtered: they describe right now, not a slice of history.
+  StarFilter get _filter => _session.filter;
+  set _filter(StarFilter value) => _session.filter = value;
+
+  DateRangePreset get _datePreset => _session.datePreset;
+  set _datePreset(DateRangePreset value) => _session.datePreset = value;
+
+  Future<void> _openAreaFilter() async {
+    final result = await showAreaFilterSheet(
+      context,
+      selectedAreas: _filter.areas,
+    );
+    if (result == null) return;
+    setState(() => _filter = _filter.copyWith(areas: result));
+  }
+
+  Future<void> _openDateRangeFilter() async {
+    final result = await showDateRangeFilterSheet(
+      context,
+      initialRange: _filter.hasDateRange
+          ? DateTimeRange(start: _filter.from!, end: _filter.to!)
+          : null,
+      initialPreset: _datePreset,
+    );
+    if (result == null) return;
     setState(() {
-      _displayedMonth = next.isAfter(currentMonth) ? currentMonth : next;
+      _datePreset = result.preset;
+      _filter = result.range == null
+          ? _filter.copyWith(clearDates: true)
+          : _filter.copyWith(from: result.range!.start, to: result.range!.end);
     });
+  }
+
+  String _dateRangeButtonLabel(AppStrings strings) {
+    if (!_filter.hasDateRange) return strings.dateRangeFilterSectionTitle;
+    final year = DateTime.now().year;
+    final needsYear = _filter.from!.year != year || _filter.to!.year != year;
+    final format = needsYear ? formatShortDateWithYear : formatShortDate;
+    return '${format(_filter.from!)} - ${format(_filter.to!)}';
   }
 
   /// A pulsar's own dashboard — its streak, the history calendar and the
@@ -106,11 +162,33 @@ class _StatsScreenState extends State<StatsScreen> {
     if (mounted) setState(() {});
   }
 
+  /// Checks (or unchecks) today for a pulsar straight from the list. A daily
+  /// pulsar with a target above 1 can't be a yes/no: there a tap logs one
+  /// more instance, and the pulsar's own page does the undoing.
+  Future<void> _toggleHabitToday(HabitStatsEntry entry) async {
+    final habit = entry.habit;
+    final completions = widget.habitCompletionRepository;
+    final today = dateOnly(DateTime.now());
+    if (_isStepper(habit)) {
+      await completions.logInstance(habit.id);
+    } else if (_isDoneToday(entry, today)) {
+      await completions.unmarkDone(habit.id, today);
+    } else {
+      await completions.markDone(habit.id);
+    }
+    if (mounted) setState(() {});
+  }
+
   Future<void> _openPulsarArchive() async {
     final dead = widget.habitRepository
         .getAll()
         .where((habit) => habit.dead)
         .toList();
+    final deadSnapshot = HabitStatsSnapshot.build(
+      habits: dead,
+      allCompletions: widget.habitCompletionRepository.getAll(),
+      range: _habitRange,
+    );
     await showAppSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -123,39 +201,24 @@ class _StatsScreenState extends State<StatsScreen> {
             children: [
               Text(
                 context.strings.habitStatsArchiveTitle,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: context.colors.text,
-                ),
+                style: context.typography.sectionHeading,
               ),
               const SizedBox(height: 20),
               if (dead.isEmpty)
-                Text(
-                  context.strings.habitStatsArchiveEmpty,
-                  style: TextStyle(color: context.colors.muted),
-                )
+                StatsEmptyState(context.strings.habitStatsArchiveEmpty)
               else
                 Flexible(
                   child: ListView.separated(
                     shrinkWrap: true,
-                    itemCount: dead.length,
+                    itemCount: deadSnapshot.entries.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 10),
                     itemBuilder: (_, index) {
-                      final habit = dead[index];
-                      final summary = habitStatsSummary(
-                        habit,
-                        widget.habitCompletionRepository.getAllForHabit(
-                          habit.id,
-                        ),
-                        range: _habitRange,
-                      );
+                      final entry = deadSnapshot.entries[index];
                       return _PulsarTile(
-                        habit: habit,
-                        summary: summary,
+                        entry: entry,
                         onTap: () {
                           Navigator.of(sheetContext).pop();
-                          _openPulsarDashboard(habit);
+                          _openPulsarDashboard(entry.habit);
                         },
                       );
                     },
@@ -221,8 +284,9 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   List<Star> _achievedStarsOnDay(DateTime day) {
+    final projects = _projectsById();
     return widget.starRepository.getAll().where((s) {
-      if (!s.isLit) return false;
+      if (!s.isLit || !_filter.matches(s, projects)) return false;
       final date = s.achievedDate!;
       return date.year == day.year &&
           date.month == day.month &&
@@ -287,6 +351,7 @@ class _StatsScreenState extends State<StatsScreen> {
         builder: (_) => TotalStarsDetailScreen(
           starRepository: widget.starRepository,
           projectRepository: widget.projectRepository,
+          filter: _filter,
         ),
       ),
     );
@@ -296,7 +361,11 @@ class _StatsScreenState extends State<StatsScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) =>
-            CurrentStreakDetailScreen(starRepository: widget.starRepository),
+            CurrentStreakDetailScreen(
+              starRepository: widget.starRepository,
+              projectRepository: widget.projectRepository,
+              filter: _filter,
+            ),
       ),
     );
   }
@@ -305,29 +374,42 @@ class _StatsScreenState extends State<StatsScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) =>
-            LongestStreakDetailScreen(starRepository: widget.starRepository),
+            LongestStreakDetailScreen(
+              starRepository: widget.starRepository,
+              projectRepository: widget.projectRepository,
+              filter: _filter,
+            ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     final strings = context.strings;
-    final achievedStars = widget.starRepository
+    final projects = _projectsById();
+    final litStars = widget.starRepository
         .getAll()
         .where((s) => s.isLit)
         .toList();
+    final achievedStars = litStars
+        .where((s) => _filter.matches(s, projects))
+        .toList();
     final dayCounts = starCountsByDay(achievedStars);
     final dayIntensities = starIntensityByDay(achievedStars);
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final litToday = (dayCounts[today] ?? 0) > 0;
+    final today = dateOnly(DateTime.now());
+    final litToday = (starCountsByDay(litStars)[today] ?? 0) > 0;
+    final areaCounts = starCountsByArea(achievedStars, projects);
 
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 32, 20, 100),
+          controller: _scrollController,
+          padding: const EdgeInsets.fromLTRB(
+            kPageInsetCompact,
+            kSpaceMd,
+            kPageInsetCompact,
+            kSpaceXxl,
+          ),
           // The scrollable itself spans the full window width (so its
           // auto-attached Scrollbar sits at the true page edge on wide
           // viewports); only its content is capped/centered.
@@ -340,37 +422,22 @@ class _StatsScreenState extends State<StatsScreen> {
                     index: 0,
                     child: Text(
                       strings.statsTitle,
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w700,
-                        color: colors.text,
-                      ),
+                      style: context.typography.utilityPageTitle,
                     ),
                   ),
                   ..._pulsarSection(context),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: kSpaceXl),
                   StaggeredEntrance(
                     index: 1,
                     child: Text(
                       strings.starsStatsSectionTitle,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: colors.text,
-                      ),
+                      style: context.typography.sectionHeading,
                     ),
                   ),
                   const SizedBox(height: 24),
                   StaggeredEntrance(
                     index: 1,
-                    child: Text(
-                      strings.todayStarSectionLabel,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: colors.muted,
-                      ),
-                    ),
+                    child: StatsSectionLabel(strings.todayStarSectionLabel),
                   ),
                   const SizedBox(height: 10),
                   StaggeredEntrance(
@@ -385,46 +452,55 @@ class _StatsScreenState extends State<StatsScreen> {
                   const SizedBox(height: 24),
                   StaggeredEntrance(
                     index: 2,
-                    child: Text(
-                      strings.activityLabel,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: colors.muted,
-                      ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: FilterButton(
+                            icon: Icons.tune,
+                            active: _filter.isAreaNarrowed,
+                            horizontal: true,
+                            label: _filter.isAreaNarrowed
+                                ? strings.activeAreasCount(_filter.areas.length)
+                                : strings.areaFilterDefaultLabel,
+                            tooltip: strings.filterAreasAction,
+                            onTap: _openAreaFilter,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: FilterButton(
+                            icon: Icons.calendar_month,
+                            active: _filter.hasDateRange,
+                            horizontal: true,
+                            label: _dateRangeButtonLabel(strings),
+                            tooltip: strings.filterDateRangeAction,
+                            onTap: _openDateRangeFilter,
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                  const SizedBox(height: 24),
+                  StaggeredEntrance(
+                    index: 2,
+                    child: StatsSectionLabel(strings.activityLabel),
                   ),
                   const SizedBox(height: 10),
                   StaggeredEntrance(
                     index: 2,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      clipBehavior: Clip.antiAlias,
-                      decoration: panelDecoration(colors),
-                      child: StarHeatmap(
-                        month: _displayedMonth,
-                        countsByDay: dayCounts,
-                        intensityByDay: dayIntensities,
-                        onDayTap: _openDayDetail,
-                        onPreviousMonth: () => _changeDisplayedMonth(-1),
-                        onNextMonth: _isCurrentMonthDisplayed
-                            ? null
-                            : () => _changeDisplayedMonth(1),
-                      ),
+                    child: HeatmapPanel(
+                      countsByDay: dayCounts,
+                      intensityByDay: dayIntensities,
+                      onDayTap: _openDayDetail,
+                      initialMonth: _session.displayedMonth,
+                      onMonthChanged: (month) =>
+                          _session.displayedMonth = month,
                     ),
                   ),
                   const SizedBox(height: 24),
                   StaggeredEntrance(
                     index: 3,
-                    child: Text(
-                      strings.totalStarsLabel,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: colors.muted,
-                      ),
-                    ),
+                    child: StatsSectionLabel(strings.totalStarsLabel),
                   ),
                   const SizedBox(height: 10),
                   StaggeredEntrance(
@@ -434,17 +510,22 @@ class _StatsScreenState extends State<StatsScreen> {
                       onTap: _openTotalStarsDetail,
                     ),
                   ),
+                  if (areaCounts.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    StaggeredEntrance(
+                      index: 3,
+                      child: StatsSectionLabel(strings.starsByAreaLabel),
+                    ),
+                    const SizedBox(height: 10),
+                    StaggeredEntrance(
+                      index: 3,
+                      child: AreaDistribution(counts: areaCounts),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   StaggeredEntrance(
                     index: 4,
-                    child: Text(
-                      strings.streaksSectionLabel,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: colors.muted,
-                      ),
-                    ),
+                    child: StatsSectionLabel(strings.streaksSectionLabel),
                   ),
                   const SizedBox(height: 10),
                   Row(
@@ -453,7 +534,9 @@ class _StatsScreenState extends State<StatsScreen> {
                         child: StaggeredEntrance(
                           index: 4,
                           axis: Axis.horizontal,
-                          child: _StatCard(
+                          child: MetricTile(
+                            mono: true,
+                            highlight: true,
                             label: strings.currentStreakLabel,
                             value: '${currentStreak(dayCounts)}',
                             onTap: _openCurrentStreakDetail,
@@ -465,7 +548,8 @@ class _StatsScreenState extends State<StatsScreen> {
                         child: StaggeredEntrance(
                           index: 5,
                           axis: Axis.horizontal,
-                          child: _StatCard(
+                          child: MetricTile(
+                            mono: true,
                             label: strings.longestStreakLabel,
                             value: '${longestStreak(dayCounts)}',
                             onTap: _openLongestStreakDetail,
@@ -485,58 +569,13 @@ class _StatsScreenState extends State<StatsScreen> {
 
   /// Motivational overview of every living pulsar.
   List<Widget> _pulsarSection(BuildContext context) {
-    final colors = context.colors;
     final strings = context.strings;
-    final habits = widget.habitRepository
-        .getAll()
-        .where((h) => h.isActive)
-        .toList();
-    final summaries = {
-      for (final habit in habits)
-        habit.id: habitStatsSummary(
-          habit,
-          widget.habitCompletionRepository.getAllForHabit(habit.id),
-          range: _habitRange,
-        ),
-    };
-    final thirtyDaySummaries = {
-      for (final habit in habits)
-        habit.id: habitStatsSummary(
-          habit,
-          widget.habitCompletionRepository.getAllForHabit(habit.id),
-          range: HabitStatsRange.days30,
-        ),
-    };
-    habits.sort((a, b) {
-      final aCounts = habitCompletionCountsByDay(
-        widget.habitCompletionRepository.getAllForHabit(a.id),
-      );
-      final bCounts = habitCompletionCountsByDay(
-        widget.habitCompletionRepository.getAllForHabit(b.id),
-      );
-      final attention = isHabitLit(a, aCounts) ? 1 : 0;
-      final otherAttention = isHabitLit(b, bCounts) ? 1 : 0;
-      return attention.compareTo(otherAttention);
-    });
-    final onTrack = habits
-        .where(
-          (habit) => isHabitLit(
-            habit,
-            habitCompletionCountsByDay(
-              widget.habitCompletionRepository.getAllForHabit(habit.id),
-            ),
-          ),
-        )
-        .length;
-    final consistency = habits.isEmpty
-        ? 0
-        : (thirtyDaySummaries.values.fold<double>(
-                    0,
-                    (sum, item) => sum + item.completionRate,
-                  ) /
-                  habits.length *
-                  100)
-              .round();
+    final snapshot = HabitStatsSnapshot.build(
+      habits: widget.habitRepository.getAll().where((h) => h.isActive).toList(),
+      allCompletions: widget.habitCompletionRepository.getAll(),
+      range: _habitRange,
+    );
+    final consistency = (snapshot.overallRate * 100).round();
     return [
       const SizedBox(height: 24),
       StaggeredEntrance(
@@ -546,11 +585,7 @@ class _StatsScreenState extends State<StatsScreen> {
             Expanded(
               child: Text(
                 strings.habitStatsSectionTitle,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: colors.text,
-                ),
+                style: context.typography.sectionHeading,
               ),
             ),
             TextButton(
@@ -564,21 +599,25 @@ class _StatsScreenState extends State<StatsScreen> {
       Row(
         children: [
           Expanded(
-            child: _OverviewMetric(
-              value: '${habits.length}',
+            child: MetricTile(
+              compact: true,
+              value: '${snapshot.entries.length}',
               label: strings.habitStatsActiveLabel,
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: _OverviewMetric(
-              value: '$onTrack',
+            child: MetricTile(
+              compact: true,
+              value: '${snapshot.onTrackCount}',
               label: strings.habitStatsOnTrackLabel,
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: _OverviewMetric(
+            child: MetricTile(
+              compact: true,
+              highlight: true,
               value: '$consistency%',
               label: strings.habitStatsConsistencyLabel,
             ),
@@ -586,33 +625,22 @@ class _StatsScreenState extends State<StatsScreen> {
         ],
       ),
       const SizedBox(height: 12),
-      Wrap(
-        spacing: 8,
-        children: [
-          for (final range in HabitStatsRange.values)
-            ChoiceChip(
-              label: Text('${range.days}'),
-              selected: range == _habitRange,
-              onSelected: (_) => setState(() => _habitRange = range),
-            ),
-        ],
+      RangeChips(
+        range: _habitRange,
+        onChanged: (range) => setState(() => _habitRange = range),
       ),
-      if (habits.isEmpty) ...[
+      if (snapshot.entries.isEmpty) ...[
         const SizedBox(height: 14),
-        Text(
-          strings.habitStatsNotEnoughData,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: colors.muted),
-        ),
-      ],
-      if (habits.isNotEmpty) const SizedBox(height: 10),
-      for (final habit in habits) ...[
+        StatsEmptyState(strings.habitStatsNotEnoughData),
+      ] else
+        const SizedBox(height: 10),
+      for (final entry in snapshot.entries) ...[
         StaggeredEntrance(
           index: 2,
           child: _PulsarTile(
-            habit: habit,
-            summary: summaries[habit.id]!,
-            onTap: () => _openPulsarDashboard(habit),
+            entry: entry,
+            onTap: () => _openPulsarDashboard(entry.habit),
+            onToggleToday: () => _toggleHabitToday(entry),
           ),
         ),
         const SizedBox(height: 10),
@@ -621,54 +649,45 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 }
 
-class _OverviewMetric extends StatelessWidget {
-  const _OverviewMetric({required this.value, required this.label});
-  final String value;
-  final String label;
+/// A daily pulsar that wants several instances a day ("3 times a day").
+bool _isStepper(Habit habit) =>
+    habit.frequency == HabitFrequency.daily && habit.targetPerPeriod > 1;
 
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 6),
-      decoration: panelDecoration(colors),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: colors.gold,
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 10, color: colors.muted),
-          ),
-        ],
-      ),
-    );
-  }
+/// Whether today is already checked: its target reached for a stepper,
+/// otherwise simply any completion today.
+bool _isDoneToday(HabitStatsEntry entry, DateTime today) {
+  final count = entry.countsByDay[today] ?? 0;
+  return _isStepper(entry.habit)
+      ? count >= entry.habit.targetPerPeriod
+      : count > 0;
 }
 
 /// One pulsar in the stats list: its icon, title and key figures.
 class _PulsarTile extends StatelessWidget {
   const _PulsarTile({
-    required this.habit,
-    required this.summary,
+    required this.entry,
     required this.onTap,
+    this.onToggleToday,
   });
 
-  final Habit habit;
-  final HabitStatsSummary summary;
+  final HabitStatsEntry entry;
   final VoidCallback onTap;
+
+  /// Checks or unchecks today without opening the pulsar. Null for pulsars
+  /// that can no longer be checked (the archive's dead ones).
+  final VoidCallback? onToggleToday;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final strings = context.strings;
+    final habit = entry.habit;
+    final summary = entry.summary;
+    final weekly = habit.frequency == HabitFrequency.weekly;
+    final doneToday = _isDoneToday(entry, dateOnly(DateTime.now()));
+    final best = weekly
+        ? strings.habitStatsWeeks(summary.longestStreak)
+        : strings.habitStatsDays(summary.longestStreak);
     return Container(
       decoration: panelDecoration(colors),
       clipBehavior: Clip.antiAlias,
@@ -677,44 +696,73 @@ class _PulsarTile extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(
+              horizontal: kSpaceMd,
+              vertical: kSpaceMd - 2,
+            ),
             child: Row(
               children: [
-                Icon(StarKind.pulsar.icon, color: colors.gold, size: 22),
-                const SizedBox(width: 12),
+                // Lit (on track) pulsars burn gold; one that needs attention
+                // stays dark and muted — the same lit/dark reading the Sky uses.
+                Icon(
+                  StarKind.pulsar.icon,
+                  color: entry.isLit ? colors.gold : colors.muted,
+                  size: 22,
+                ),
+                const SizedBox(width: kSpaceSm + 2),
                 Expanded(
                   child: Text(
                     habit.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 16,
+                    style: context.typography.body.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: colors.text,
+                      color: entry.isLit ? colors.text : colors.muted,
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: kSpaceSm + 2),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
                       '${(summary.completionRate * 100).round()}%',
-                      style: TextStyle(
-                        fontSize: 16,
+                      style: context.typography.body.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: colors.gold,
+                        color: entry.isLit ? colors.gold : colors.muted,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${summary.currentStreak} / ${summary.longestStreak}',
-                      style: TextStyle(fontSize: 11, color: colors.muted),
+                      '${summary.currentStreak} / $best',
+                      style: context.typography.supporting.copyWith(
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(width: 4),
-                Icon(Icons.chevron_right, color: colors.muted),
+                if (onToggleToday != null) ...[
+                  const SizedBox(width: 4),
+                  Tooltip(
+                    message: doneToday
+                        ? strings.habitUncheckAction
+                        : strings.habitCheckAction,
+                    child: IconButton(
+                      onPressed: onToggleToday,
+                      icon: Icon(
+                        _isStepper(habit)
+                            ? Icons.add_circle_outline
+                            : (doneToday
+                                  ? Icons.check_circle
+                                  : Icons.radio_button_unchecked),
+                        color: doneToday ? colors.gold : colors.muted,
+                      ),
+                    ),
+                  ),
+                ] else ...[
+                  const SizedBox(width: 4),
+                  Icon(Icons.chevron_right, color: colors.muted),
+                ],
               ],
             ),
           ),
@@ -747,7 +795,7 @@ class _TodayStarHeroState extends State<_TodayStarHero>
   late final _glowController = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2200),
-  )..repeat(reverse: true);
+  );
   late final _spinController = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 18),
@@ -760,21 +808,32 @@ class _TodayStarHeroState extends State<_TodayStarHero>
   Timer? _shakeTimer;
 
   @override
-  void initState() {
-    super.initState();
-    if (widget.litToday) {
-      _spinController.repeat();
-    } else {
-      _startShakeTimer();
-    }
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _applyMotion();
   }
 
   @override
   void didUpdateWidget(_TodayStarHero oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.litToday == oldWidget.litToday) return;
+    if (widget.litToday != oldWidget.litToday) _applyMotion();
+  }
+
+  /// Starts or stops the ambient animations for the current state. With the
+  /// system's reduce-motion setting on, the star stays still at a mid glow.
+  void _applyMotion() {
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _glowController
+        ..stop()
+        ..value = 0.5;
+      _spinController.stop();
+      _shakeTimer?.cancel();
+      _shakeTimer = null;
+      return;
+    }
+    if (!_glowController.isAnimating) _glowController.repeat(reverse: true);
     if (widget.litToday) {
-      _spinController.repeat();
+      if (!_spinController.isAnimating) _spinController.repeat();
       _shakeTimer?.cancel();
       _shakeTimer = null;
     } else {
@@ -815,16 +874,22 @@ class _TodayStarHeroState extends State<_TodayStarHero>
     final strings = context.strings;
     final width = MediaQuery.sizeOf(context).width;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: widget.onTap,
-        borderRadius: BorderRadius.circular(kRadiusCard),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: widget.litToday
-              ? _buildLit(colors, strings, width)
-              : _buildUnlit(colors, strings, width),
+    return Semantics(
+      button: true,
+      label: widget.litToday ? strings.litTodayTitle : strings.notLitTodayLabel,
+      excludeSemantics: true,
+      onTap: widget.onTap,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.onTap,
+          borderRadius: BorderRadius.circular(kRadiusCard),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: widget.litToday
+                ? _buildLit(colors, strings, width)
+                : _buildUnlit(colors, strings, width),
+          ),
         ),
       ),
     );
@@ -953,31 +1018,20 @@ class _TodayStarHeroState extends State<_TodayStarHero>
           index: 2,
           child: AnimatedBuilder(
             animation: _glowController,
-            builder: (context, child) {
-              return Container(
-                decoration: BoxDecoration(
-                  color: colors.gold,
-                  borderRadius: BorderRadius.circular(kRadiusPill),
-                  boxShadow: [
-                    ...goldGlow(colors, strength: 1.1, size: 56),
-                    ..._glow(colors.gold, 44),
-                  ],
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                child: child,
-              );
-            },
-            child: Text(
-              strings.lightStarCta,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: colors.night,
+            builder: (context, child) => DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(kRadiusPill),
+                boxShadow: [
+                  ...goldGlow(colors, strength: 1.1, size: 56),
+                  ..._glow(colors.gold, 44),
+                ],
               ),
+              child: child,
+            ),
+            child: PillActionButton(
+              icon: Icons.star,
+              label: strings.lightStarCta,
+              onTap: widget.onTap,
             ),
           ),
         ),
@@ -1153,78 +1207,6 @@ class _DayDetailSheetState extends State<_DayDetailSheet> {
   }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.onTap,
-  });
-
-  final String label;
-  final String value;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final borderRadius = BorderRadius.circular(kRadiusCard);
-    return Material(
-      color: colors.nightPanel,
-      borderRadius: borderRadius,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: borderRadius,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
-          decoration: BoxDecoration(
-            border: Border.all(color: colors.nightBorder),
-            borderRadius: borderRadius,
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  StaggeredEntrance(
-                    index: 0,
-                    child: Text(
-                      value,
-                      style: TextStyle(
-                        fontFamily: kFontMono,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: colors.gold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  StaggeredEntrance(
-                    index: 1,
-                    child: Text(
-                      label,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 11, color: colors.muted),
-                    ),
-                  ),
-                ],
-              ),
-              Positioned(
-                top: -2,
-                right: -2,
-                child: StaggeredEntrance(
-                  index: 1,
-                  child: Icon(Icons.info_outline, size: 14, color: colors.gold),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// A wider, more eye-catching presentation for the total-star count — its
 /// own row above the streak cards, rather than squeezed into an equal-width
 /// slot alongside them, since it's the headline number on this tab.
@@ -1247,19 +1229,11 @@ class _TotalStarsBanner extends StatelessWidget {
         borderRadius: borderRadius,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                colors.gold.withValues(alpha: 0.22),
-                colors.gold.withValues(alpha: 0.05),
-              ],
-            ),
-            border: Border.all(color: colors.gold.withValues(alpha: 0.45)),
-            borderRadius: borderRadius,
+          padding: const EdgeInsets.symmetric(
+            vertical: kSpaceLg - 4,
+            horizontal: kSpaceLg - 4,
           ),
+          decoration: panelDecoration(colors),
           child: Stack(
             children: [
               Center(
@@ -1275,12 +1249,9 @@ class _TotalStarsBanner extends StatelessWidget {
                       index: 1,
                       child: Text(
                         '$value',
-                        style: TextStyle(
+                        style: context.typography.immersivePageTitle.copyWith(
                           fontFamily: kFontMono,
                           fontSize: 38,
-                          fontWeight: FontWeight.w800,
-                          color: colors.text,
-                          height: 1,
                         ),
                       ),
                     ),
@@ -1292,7 +1263,7 @@ class _TotalStarsBanner extends StatelessWidget {
                 right: -2,
                 child: StaggeredEntrance(
                   index: 2,
-                  child: Icon(Icons.info_outline, size: 16, color: colors.gold),
+                  child: Icon(Icons.chevron_right, size: 18, color: colors.muted),
                 ),
               ),
             ],

@@ -3,7 +3,9 @@ import '../data/habit_repository.dart';
 import '../data/project_repository.dart';
 import '../data/star_repository.dart';
 import '../models/life_area.dart';
+import '../models/habit.dart';
 import '../models/project.dart';
+import '../utils/date_math.dart';
 
 /// How many wins each seed project gains every time [seedSampleData] runs.
 const winsPerSeedTap = 12;
@@ -77,6 +79,7 @@ Future<void> seedSampleData({
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
   var globalIndex = 0;
+  final projectsBySpec = <Project>[];
 
   for (var specIndex = 0; specIndex < specs.length; specIndex++) {
     final spec = specs[specIndex];
@@ -107,6 +110,15 @@ Future<void> seedSampleData({
       iconSlug: spec.iconSlug,
     );
 
+    projectsBySpec.add(project);
+    final hasHistory = starRepository
+        .getAllForProject(project.id)
+        .any(
+          (s) =>
+              s.achievedDate != null &&
+              s.achievedDate!.isBefore(addDays(today, -_historyStartDays + 1)),
+        );
+
     final startingCount = starRepository.getAllForProject(project.id).length;
 
     for (var i = 0; i < winsPerSeedTap; i++) {
@@ -131,6 +143,16 @@ Future<void> seedSampleData({
       // mint duplicate ids, which every id-based lookup in the app assumes
       // can't happen.
       await Future.delayed(const Duration(milliseconds: 2));
+    }
+
+    if (!hasHistory) {
+      await _seedStarHistory(
+        starRepository: starRepository,
+        project: project,
+        spec: spec,
+        specIndex: specIndex,
+        today: today,
+      );
     }
 
     if (!isNewProject) continue;
@@ -166,6 +188,241 @@ Future<void> seedSampleData({
         );
       }
     }
+  }
+
+  await _seedHabitHistory(
+    habitRepository: habitRepository,
+    habitCompletionRepository: habitCompletionRepository,
+    projects: projectsBySpec,
+    languageCode: languageCode,
+    today: today,
+  );
+}
+
+/// Wins older than this many days mark a project as already holding seeded
+/// history, so tapping the seed button again doesn't pile it up a second time.
+const _historyStartDays = 36;
+
+/// How many extra backdated wins each project (by spec index) gets, spread
+/// over the ~5 months before the recent pattern — deliberately uneven, so
+/// the area split, the date-range and area filters and the month paging on
+/// the Statistics page all have something to show: Physical and Professional
+/// dominate, Philanthropic is almost empty.
+const _historyWinsPerProject = [30, 14, 26, 34, 8, 10, 12, 9, 5];
+
+/// Project index that also receives an unbroken run of wins on the days
+/// 50..63 ago — an old streak longer than the live one, so "longest streak"
+/// and "current streak" read as two different things.
+const _oldStreakProject = 3;
+const _oldStreakFromDay = 50;
+const _oldStreakLength = 14;
+
+Future<void> _seedStarHistory({
+  required StarRepository starRepository,
+  required Project project,
+  required _ProjectSeed spec,
+  required int specIndex,
+  required DateTime today,
+}) async {
+  final count = specIndex < _historyWinsPerProject.length
+      ? _historyWinsPerProject[specIndex]
+      : 0;
+  final offsets = <int>[
+    for (var k = 0; k < count; k++)
+      // 36..175 days ago, scattered but deterministic.
+      _historyStartDays + (k * 53 + specIndex * 29) % 140,
+    if (specIndex == _oldStreakProject)
+      for (var k = 0; k < _oldStreakLength; k++) _oldStreakFromDay + k,
+  ];
+  final startingCount = starRepository.getAllForProject(project.id).length;
+  for (var k = 0; k < offsets.length; k++) {
+    final position = startingCount + k;
+    final phrase = spec.wins[position % spec.wins.length];
+    final date = addDays(today, -offsets[k]).add(
+      Duration(hours: 7 + (k * 5 + specIndex) % 15, minutes: (k * 13) % 60),
+    );
+    await starRepository.add(
+      title: phrase.title,
+      description: phrase.description,
+      projectId: project.id,
+      achievedDate: date,
+      intensity: 1 + (position * 3 + specIndex) % 5,
+    );
+    await Future.delayed(const Duration(milliseconds: 2));
+  }
+}
+
+/// Cheap deterministic "randomness" 0..100 from two small ints — pure
+/// arithmetic, so it gives the same history on every platform (web ints
+/// don't behave like native ones under bit operations).
+int _roll(int a, int b) => (a * 7919 + b * 104729 + a * b * 31) % 101;
+
+/// One backdated pulsar for exercising the Statistics page: what it is, how
+/// long ago it started, and how many times it was done on each past day.
+/// [countOn] gets the number of days ago (0 = today) and that day's weekday
+/// (1 = Monday) and returns how many completions to log.
+class _HabitHistorySeed {
+  const _HabitHistorySeed({
+    required this.en,
+    required this.it,
+    required this.ro,
+    required this.projectIndex,
+    required this.startedDaysAgo,
+    required this.countOn,
+    this.frequency = HabitFrequency.daily,
+    this.target = 1,
+    this.intensity = 3,
+    this.endedDaysAgo,
+  });
+
+  final String en;
+  final String it;
+  final String ro;
+  final int projectIndex;
+  final int startedDaysAgo;
+  final int Function(int daysAgo, int weekday) countOn;
+  final HabitFrequency frequency;
+  final int target;
+  final int intensity;
+
+  /// When set, the pulsar is deleted (a dead star in the archive) after its
+  /// last completion this many days ago.
+  final int? endedDaysAgo;
+
+  Set<String> get allTitles => {en, it, ro};
+  String titleFor(String languageCode) => switch (languageCode) {
+    'it' => it,
+    'ro' => ro,
+    _ => en,
+  };
+}
+
+/// Covers what the pulsar section and pulsar dashboard need to be checked
+/// against, one habit each:
+/// - a long, mostly-done daily habit that is lit with a live streak
+///   (weekends weaker, so the weekday insight has a real best/weakest day);
+/// - a daily "3 times a day" habit with partial days (multi-instance counts);
+/// - weekly habits: target 3 with some missed weeks, target 1 with a long
+///   streak;
+/// - a once-great habit that broke 5 days ago (unlit, needs attention);
+/// - a brand-new habit (too little history for any pattern);
+/// - a deleted habit with history (the archive sheet).
+final _habitHistory = <_HabitHistorySeed>[
+  _HabitHistorySeed(
+    en: 'Evening walk',
+    it: 'Passeggiata serale',
+    ro: 'Plimbare de seară',
+    projectIndex: 0,
+    startedDaysAgo: 110,
+    countOn: (d, wd) {
+      if (d >= 30 && d <= 38) return 0; // a 9-day gap a month ago
+      final chance = wd >= 6 ? 45 : (wd == 3 ? 95 : 82);
+      return d < 6 || _roll(d, 1) < chance ? 1 : 0;
+    },
+  ),
+  _HabitHistorySeed(
+    en: 'Drink water',
+    it: 'Bere acqua',
+    ro: 'Beau apă',
+    projectIndex: 0,
+    startedDaysAgo: 60,
+    target: 3,
+    intensity: 1,
+    countOn: (d, wd) => d == 0 ? 2 : (_roll(d, 2) % 5).clamp(0, 4),
+  ),
+  _HabitHistorySeed(
+    en: 'Swim session',
+    it: 'Sessione di nuoto',
+    ro: 'Sesiune de înot',
+    projectIndex: 1,
+    startedDaysAgo: 84,
+    frequency: HabitFrequency.weekly,
+    target: 3,
+    intensity: 4,
+    countOn: (d, wd) {
+      final chance = switch (wd) {
+        1 => 70,
+        3 => 60,
+        6 => 65,
+        _ => 0,
+      };
+      return _roll(d, 3) < chance ? 1 : 0;
+    },
+  ),
+  _HabitHistorySeed(
+    en: 'Call family',
+    it: 'Chiamare la famiglia',
+    ro: 'Sun familia',
+    projectIndex: 7,
+    startedDaysAgo: 70,
+    frequency: HabitFrequency.weekly,
+    intensity: 2,
+    countOn: (d, wd) => wd == 7 && _roll(d, 4) < 92 ? 1 : 0,
+  ),
+  _HabitHistorySeed(
+    en: 'Journaling',
+    it: 'Scrivere il diario',
+    ro: 'Scris jurnal',
+    projectIndex: 2,
+    startedDaysAgo: 45,
+    // Done every day until 5 days ago, then nothing: a broken streak.
+    countOn: (d, wd) => d >= 5 ? 1 : 0,
+  ),
+  _HabitHistorySeed(
+    en: 'Cold shower',
+    it: 'Doccia fredda',
+    ro: 'Duș rece',
+    projectIndex: 0,
+    startedDaysAgo: 2,
+    intensity: 5,
+    countOn: (d, wd) => d <= 2 ? 1 : 0,
+  ),
+  _HabitHistorySeed(
+    en: 'Learn Spanish',
+    it: 'Imparare lo spagnolo',
+    ro: 'Învăț spaniola',
+    projectIndex: 6,
+    startedDaysAgo: 120,
+    endedDaysAgo: 40,
+    intensity: 2,
+    countOn: (d, wd) => d >= 40 && _roll(d, 5) < 70 ? 1 : 0,
+  ),
+];
+
+Future<void> _seedHabitHistory({
+  required HabitRepository habitRepository,
+  required HabitCompletionRepository habitCompletionRepository,
+  required List<Project> projects,
+  required String languageCode,
+  required DateTime today,
+}) async {
+  final existingTitles = {
+    for (final habit in habitRepository.getAll()) habit.title,
+  };
+  for (final seed in _habitHistory) {
+    if (seed.allTitles.any(existingTitles.contains)) continue;
+    if (seed.projectIndex >= projects.length) continue;
+
+    final habit = await habitRepository.add(
+      title: seed.titleFor(languageCode),
+      projectId: projects[seed.projectIndex].id,
+      intensity: seed.intensity,
+      frequency: seed.frequency,
+      targetPerPeriod: seed.target,
+      createdAt: addDays(today, -seed.startedDaysAgo),
+    );
+    final days = <DateTime>[];
+    final lastDay = seed.endedDaysAgo ?? 0;
+    for (var d = seed.startedDaysAgo; d >= lastDay; d--) {
+      final day = addDays(today, -d);
+      final count = seed.countOn(d, day.weekday);
+      for (var i = 0; i < count; i++) {
+        days.add(day);
+      }
+    }
+    await habitCompletionRepository.addMany(habit.id, days);
+    await Future.delayed(const Duration(milliseconds: 2));
+    if (seed.endedDaysAgo != null) await habitRepository.delete(habit.id);
   }
 }
 

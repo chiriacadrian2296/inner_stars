@@ -6,10 +6,10 @@ import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import 'staggered_entrance.dart';
 
-/// Shown right after creating any star (lit, unlit, or a pulsar) or a
-/// whole new constellation — a small, deliberate "that worked" moment
-/// rather than just dropping the user back on the sky with no
-/// acknowledgement. [message] is the one thing that changes per kind
+/// Shown right after creating or reigniting any star (lit, unlit, or a
+/// pulsar), or creating a whole new constellation — a small, deliberate
+/// "that worked" moment rather than just dropping the user back on the sky
+/// with no acknowledgement. [message] is the one thing that changes per kind
 /// (see `SkyScreen`'s own call sites); everything else about this popup —
 /// the eyebrow and the three actions stay the same
 /// regardless of what was just made.
@@ -25,6 +25,7 @@ class CreationSuccessDialog extends StatelessWidget {
   const CreationSuccessDialog({
     super.key,
     required this.icon,
+    required this.iconColor,
     required this.message,
     required this.onOpen,
     required this.onTakeMeThere,
@@ -32,6 +33,7 @@ class CreationSuccessDialog extends StatelessWidget {
   });
 
   final IconData icon;
+  final Color iconColor;
   final String message;
   final VoidCallback onOpen;
   final VoidCallback onTakeMeThere;
@@ -40,6 +42,7 @@ class CreationSuccessDialog extends StatelessWidget {
   static Future<void> show(
     BuildContext context, {
     required IconData icon,
+    required Color iconColor,
     required String message,
     required VoidCallback onOpen,
     required VoidCallback onTakeMeThere,
@@ -49,6 +52,7 @@ class CreationSuccessDialog extends StatelessWidget {
       context: context,
       builder: (_) => CreationSuccessDialog(
         icon: icon,
+        iconColor: iconColor,
         message: message,
         onOpen: onOpen,
         onTakeMeThere: onTakeMeThere,
@@ -69,23 +73,29 @@ class CreationSuccessDialog extends StatelessWidget {
 
     return AppDialog(
       backgroundColor: colors.night,
-      icon: StaggeredEntrance(
-        index: 0,
-        child: Icon(icon, color: colors.gold, size: 32),
-      ),
       title: StaggeredEntrance(
-        index: 1,
-        child: Text(strings.creationSuccessEyebrow),
+        index: 0,
+        child: Align(
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(strings.creationSuccessEyebrow),
+              const SizedBox(width: 8),
+              Icon(icon, color: iconColor, size: 22),
+            ],
+          ),
+        ),
       ),
       content: StaggeredEntrance(
-        index: 2,
+        index: 1,
         child: Text(message),
       ),
       actionsAlignment: MainAxisAlignment.center,
       actionsOverflowAlignment: OverflowBarAlignment.center,
       actions: [
         StaggeredEntrance(
-          index: 3,
+          index: 2,
           axis: Axis.horizontal,
           child: TextButton.icon(
             onPressed: () => closeThen(onOpen),
@@ -97,7 +107,7 @@ class CreationSuccessDialog extends StatelessWidget {
           ),
         ),
         StaggeredEntrance(
-          index: 4,
+          index: 3,
           axis: Axis.horizontal,
           child: TextButton.icon(
             onPressed: () => closeThen(onTakeMeThere),
@@ -109,7 +119,7 @@ class CreationSuccessDialog extends StatelessWidget {
           ),
         ),
         StaggeredEntrance(
-          index: 5,
+          index: 4,
           axis: Axis.horizontal,
           child: TextButton.icon(
             onPressed: () => closeThen(onShare),

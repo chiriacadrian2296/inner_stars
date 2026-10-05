@@ -76,6 +76,7 @@ import '../widgets/sky_pulsar_tooltip.dart';
 import '../widgets/sky_star_tooltip.dart';
 import '../widgets/sky_supernova.dart';
 import '../widgets/staggered_entrance.dart';
+import '../widgets/star_glyph.dart';
 import 'area_detail_screen.dart';
 import 'friends_screen.dart';
 import 'sky_search_screen.dart';
@@ -261,6 +262,7 @@ class _ConstellationShare extends _CreationShareSubject {
 
 class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   final _skySession = SkyExplorerSession();
+  final _statsSession = StatsSession();
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   // See kSkyMaxZoom's own doc comment (constellation_field.dart) for why
   // this value, and why it's shared rather than private to this class.
@@ -1341,7 +1343,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         ),
       );
       if (result is! StarFormResult) return;
-      await widget.starRepository.resurrect(
+      final resurrected = await widget.starRepository.resurrect(
         star.id,
         title: result.title,
         description: result.description,
@@ -1352,6 +1354,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         photoPath: result.photoPath,
       );
       _refresh();
+      _announceStarCreated(resurrected);
       return;
     }
 
@@ -1550,6 +1553,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       CreationSuccessDialog.show(
         context,
         icon: star.isLit ? Icons.star : Icons.star_border,
+        iconColor: starKindColor(star.kind, context.colors),
         message: star.isLit
             ? strings.creationSuccessLitMessage
             : strings.creationSuccessUnlitMessage,
@@ -1578,6 +1582,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       CreationSuccessDialog.show(
         context,
         icon: StarKind.pulsar.icon,
+        iconColor: starKindColor(StarKind.pulsar, context.colors),
         message: context.strings.creationSuccessPulsarMessage,
         onOpen: () {
           if (placed != null) {
@@ -1610,6 +1615,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       CreationSuccessDialog.show(
         context,
         icon: iconForSlug(project.iconSlug),
+        iconColor: context.colors.gold,
         message: context.strings.creationSuccessConstellationMessage,
         onOpen: () {
           if (placed != null) _viewConstellation(placed);
@@ -1750,6 +1756,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
           habitRepository: widget.habitRepository,
           habitCompletionRepository: widget.habitCompletionRepository,
           starsShapeRepository: widget.starsShapeRepository,
+          session: _statsSession,
         ),
       ),
     );
@@ -3443,7 +3450,12 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                     // completely. Revert by swapping the two back and
                     // dropping NebulaBackground's blendMode if this doesn't
                     // end up being kept.
-                    SkyAreaBackdrop(camera: _camera, zoom: _zoom),
+                    SkyAreaBackdrop(
+                      camera: _camera,
+                      zoom: _zoom,
+                      opacity: widget.settings.artworkOpacity,
+                      blendMode: widget.settings.artworkBlend.blendMode,
+                    ),
                     NebulaBackground(
                       camera: _camera,
                       zoom: _zoom,
@@ -3453,7 +3465,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                     // sky_area_sigils.dart. Painted before SkySupernova so that
                     // widget's own glow/icon sit on top of it, not the other
                     // way round.
-                    SkyAreaSigils(camera: _camera, zoom: _zoom),
+                    if (widget.settings.showSupernovae)
+                      SkyAreaSigils(camera: _camera, zoom: _zoom),
                     // Alternative takes on this slot, tried in order —
                     // SkyDecorations (spiral nebula + supernova per area),
                     // SkyWisps (wispy Hubble-style filaments), SkyBlackHole (a
@@ -3461,7 +3474,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                     // (one simple lens-flare-style star) while the visual style
                     // is explored; swap which one's active here to compare, none
                     // of the files are deleted.
-                    SkySupernova(camera: _camera, zoom: _zoom),
+                    if (widget.settings.showSupernovae)
+                      SkySupernova(camera: _camera, zoom: _zoom),
                     AnimatedConstellationField(
                       placed: _placed,
                       camera: _camera,
@@ -4541,7 +4555,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     );
     if (result is! StarFormResult) return;
     if (habit.dead) {
-      await widget.habitRepository.resurrect(
+      final resurrected = await widget.habitRepository.resurrect(
         habit.id,
         title: result.title,
         description: result.description,
@@ -4553,6 +4567,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         reminderMinute: result.reminderMinute,
         completionRepository: widget.habitCompletionRepository,
       );
+      _refresh();
+      _announcePulsarCreated(resurrected);
+      return;
     } else {
       await widget.habitRepository.update(
         id: habit.id,

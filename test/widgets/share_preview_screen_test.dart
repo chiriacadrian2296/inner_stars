@@ -37,7 +37,7 @@ void main() {
     expect(find.text('Editoriale'), findsOneWidget);
     expect(find.text('Fotografica'), findsOneWidget);
     expect(find.text('Frase'), findsOneWidget);
-    expect(find.text('Condividi'), findsOneWidget);
+    expect(find.text('CONDIVIDI'), findsOneWidget);
     expect(find.text('editorial'), findsOneWidget);
 
     await tester.tap(find.text('Fotografica'));

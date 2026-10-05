@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inner_stars/widgets/app_choice_chip.dart';
 import 'package:inner_stars/data/custom_constellation_repository.dart';
 import 'package:inner_stars/data/habit_completion_repository.dart';
 import 'package:inner_stars/data/habit_repository.dart';
@@ -41,11 +42,11 @@ void main() {
 
     expect(find.text('Pulsars'), findsOneWidget);
     expect(find.text('Stars'), findsOneWidget);
-    expect(find.widgetWithText(ChoiceChip, '7'), findsOneWidget);
-    expect(find.widgetWithText(ChoiceChip, '30'), findsOneWidget);
-    expect(find.widgetWithText(ChoiceChip, '90'), findsOneWidget);
+    expect(find.widgetWithText(AppChoiceChip, '7 days'), findsOneWidget);
+    expect(find.widgetWithText(AppChoiceChip, '30 days'), findsOneWidget);
+    expect(find.widgetWithText(AppChoiceChip, '90 days'), findsOneWidget);
 
-    await tester.tap(find.text('Archive'));
+    await tester.tap(find.text('ARCHIVE'));
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('No past pulsars yet.'), findsOneWidget);
   });

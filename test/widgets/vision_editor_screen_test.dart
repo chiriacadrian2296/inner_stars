@@ -90,7 +90,7 @@ void main() {
     expect(find.byType(SegmentedButton<bool>), findsNothing);
     expect(controller, isA<LiveMarkdownController>());
     expect(controller.text, '**La mia visione**');
-    await tester.tap(find.text(const StringsIt().saveChanges));
+    await tester.tap(find.text(const StringsIt().saveChanges.toUpperCase()));
     await tester.pumpAndSettle();
     expect(find.text('Apri'), findsOneWidget);
     expect(repository.getVision(LifeArea.physical), '**La mia visione**');
@@ -104,7 +104,7 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(find.byType(AlertDialog), findsOneWidget);
-    await tester.tap(find.text(const StringsIt().cancel));
+    await tester.tap(find.text(const StringsIt().cancel.toUpperCase()));
     await tester.pumpAndSettle();
     expect(
       tester.widget<TextField>(find.byType(TextField)).controller!.text,
@@ -112,7 +112,7 @@ void main() {
     );
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
-    await tester.tap(find.text(const StringsIt().discardChangesAction));
+    await tester.tap(find.text(const StringsIt().discardChangesAction.toUpperCase()));
     await tester.pumpAndSettle();
     expect(repository.getVision(LifeArea.physical), 'La mia visione');
     expect(find.text('Apri'), findsOneWidget);
@@ -198,7 +198,7 @@ void main() {
     await tester.pump();
     expect(controller.text, '### <u>Vision</u>\n\n---\n\n');
     expect(controller.selection.baseOffset, controller.text.length);
-    await tester.tap(find.text(const StringsIt().saveChanges));
+    await tester.tap(find.text(const StringsIt().saveChanges.toUpperCase()));
     await tester.pumpAndSettle();
     expect(repository.getVision(LifeArea.physical), '### <u>Vision</u>\n\n---');
     expect(tester.takeException(), isNull);

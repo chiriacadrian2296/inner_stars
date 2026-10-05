@@ -87,9 +87,7 @@ class _NightlightExplainedScreenState extends State<NightlightExplainedScreen>
     with NightlightZoneMeasuring {
   final _titleKey = GlobalKey();
   final _schemeKey = GlobalKey();
-  final _paragraph1Key = GlobalKey();
-  final _paragraph2Key = GlobalKey();
-  final _paragraph3Key = GlobalKey();
+  final _bodyKey = GlobalKey();
   final _continueButtonKey = GlobalKey();
 
   @override
@@ -104,9 +102,7 @@ class _NightlightExplainedScreenState extends State<NightlightExplainedScreen>
     scheduleZoneMeasurement([
       _titleKey,
       _schemeKey,
-      _paragraph1Key,
-      _paragraph2Key,
-      _paragraph3Key,
+      _bodyKey,
       _continueButtonKey,
     ]);
 
@@ -189,45 +185,13 @@ class _NightlightExplainedScreenState extends State<NightlightExplainedScreen>
                                         ),
                                       ),
                                       _ExplainedScheme(key: _schemeKey),
-                                      // The 3 paragraphs are one section —
-                                      // their own 18px gaps are between
-                                      // paragraphs *within* it, separate
-                                      // from the spacing the outer
-                                      // `spaceEvenly` puts between this
-                                      // whole block and its neighbors.
-                                      Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          StaggeredEntrance(
-                                            index: 7,
-                                            child: _ExplainedParagraph(
-                                              key: _paragraph1Key,
-                                              text: strings
-                                                  .nightlightExplainedBodyPart1,
-                                              style: bodyStyle,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 18),
-                                          StaggeredEntrance(
-                                            index: 8,
-                                            child: _ExplainedParagraph(
-                                              key: _paragraph2Key,
-                                              text: strings
-                                                  .nightlightExplainedBodyPart2,
-                                              style: bodyStyle,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 18),
-                                          StaggeredEntrance(
-                                            index: 9,
-                                            child: _ExplainedParagraph(
-                                              key: _paragraph3Key,
-                                              text: strings
-                                                  .nightlightExplainedBodyPart3,
-                                              style: bodyStyle,
-                                            ),
-                                          ),
-                                        ],
+                                      StaggeredEntrance(
+                                        index: 7,
+                                        child: _ExplainedParagraph(
+                                          key: _bodyKey,
+                                          text: strings.nightlightExplainedBody,
+                                          style: bodyStyle,
+                                        ),
                                       ),
                                     ],
                                   ),

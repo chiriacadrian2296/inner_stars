@@ -193,6 +193,13 @@ vec3 heroStars(vec3 dir, float density, float seed) {
       (core * 1.6 + glow + spike * 1.1 + diagSpike);
 }
 
+// Interleaved-gradient-noise dither, ±½ of one 8-bit step. These glows fade
+// over hundreds of pixels at high zoom, so without it the 8-bit output
+// quantizes into visible bands/grain instead of a smooth gradient.
+float ditherNoise() {
+  return fract(52.9829189 * fract(dot(FlutterFragCoord().xy, vec2(0.06711056, 0.00583715)))) - 0.5;
+}
+
 void main() {
   // Same free-orientation inverse-stereographic projection as
   // nebula_particles.frag — see that file's main() for the full
@@ -294,5 +301,5 @@ void main() {
   // Painted with BlendMode.plus (see the SkyWisps widget) — additive, so
   // alpha here isn't coverage, it's just always fully "on"; a pixel with
   // cloud+stars == 0 already adds nothing on its own.
-  fragColor = vec4(cloud + stars, 1.0);
+  fragColor = vec4(max(cloud + stars + ditherNoise() / 255.0, 0.0), 1.0);
 }

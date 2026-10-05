@@ -3,16 +3,17 @@ import 'package:flutter/material.dart';
 import '../data/project_repository.dart';
 import '../data/star_repository.dart';
 import '../l10n/strings_scope.dart';
-import '../models/life_area.dart';
+import '../models/project.dart';
 import '../models/star.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
+import '../theme/app_typography.dart';
 import '../utils/date_format.dart';
 import '../utils/star_stats.dart';
-import '../widgets/area_tag.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
+import '../widgets/stats/stats_widgets.dart';
 
 /// The dashboard's three stat cards (Total Stars, Current Streak, Longest
 /// Streak) each open one of these — a closer look, in the same reflective,
@@ -23,16 +24,20 @@ class TotalStarsDetailScreen extends StatelessWidget {
     super.key,
     required this.starRepository,
     required this.projectRepository,
+    this.filter,
   });
 
   final StarRepository starRepository;
   final ProjectRepository projectRepository;
 
+  /// Narrows which achieved stars count; null means all of them.
+  final StarFilter? filter;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final strings = context.strings;
-    final stars = starRepository.getAll().where((s) => s.isLit).toList();
+    final stars = _litStars(starRepository, projectRepository, filter);
 
     if (stars.isEmpty) {
       return _StatDetailScaffold(
@@ -47,20 +52,13 @@ class TotalStarsDetailScreen extends StatelessWidget {
       ..sort((a, b) => a.achievedDate!.compareTo(b.achievedDate!));
     final combinedIntensity = stars.fold<int>(
       0,
-      (sum, s) => sum + s.intensity!,
+      (sum, s) => sum + (s.intensity ?? 0),
     );
 
     final projectsById = {
       for (final project in projectRepository.getAll()) project.id: project,
     };
-    final countByArea = <LifeArea, int>{};
-    for (final star in stars) {
-      final area = projectsById[star.projectId]?.area;
-      if (area == null) continue;
-      countByArea[area] = (countByArea[area] ?? 0) + 1;
-    }
-    final areasByCount = countByArea.keys.toList()
-      ..sort((a, b) => countByArea[b]!.compareTo(countByArea[a]!));
+    final areaCounts = starCountsByArea(stars, projectsById);
 
     return _StatDetailScaffold(
       icon: Icons.star,
@@ -91,7 +89,7 @@ class TotalStarsDetailScreen extends StatelessWidget {
               ),
             ],
           ),
-          if (areasByCount.isNotEmpty) ...[
+          if (areaCounts.isNotEmpty) ...[
             const SizedBox(height: 24),
             StaggeredEntrance(
               index: 3,
@@ -109,31 +107,9 @@ class TotalStarsDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            _DetailCard(
-              divideRows: true,
-              startIndex: 3,
-              children: [
-                for (var i = 0; i < areasByCount.length; i++)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: AreaTag(
-                            area: areasByCount[i],
-                            iconSize: 16,
-                            fontSize: 14,
-                            textColor: colors.text,
-                          ),
-                        ),
-                        Text(
-                          strings.starsCount(countByArea[areasByCount[i]]!),
-                          style: TextStyle(fontSize: 13, color: colors.muted),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
+            StaggeredEntrance(
+              index: 3,
+              child: AreaDistribution(counts: areaCounts),
             ),
           ],
         ],
@@ -143,14 +119,21 @@ class TotalStarsDetailScreen extends StatelessWidget {
 }
 
 class CurrentStreakDetailScreen extends StatelessWidget {
-  const CurrentStreakDetailScreen({super.key, required this.starRepository});
+  const CurrentStreakDetailScreen({
+    super.key,
+    required this.starRepository,
+    this.projectRepository,
+    this.filter,
+  });
 
   final StarRepository starRepository;
+  final ProjectRepository? projectRepository;
+  final StarFilter? filter;
 
   @override
   Widget build(BuildContext context) {
     final strings = context.strings;
-    final stars = starRepository.getAll().where((s) => s.isLit).toList();
+    final stars = _litStars(starRepository, projectRepository, filter);
     final dayCounts = starCountsByDay(stars);
     final range = currentStreakRange(dayCounts);
 
@@ -194,14 +177,21 @@ class CurrentStreakDetailScreen extends StatelessWidget {
 }
 
 class LongestStreakDetailScreen extends StatelessWidget {
-  const LongestStreakDetailScreen({super.key, required this.starRepository});
+  const LongestStreakDetailScreen({
+    super.key,
+    required this.starRepository,
+    this.projectRepository,
+    this.filter,
+  });
 
   final StarRepository starRepository;
+  final ProjectRepository? projectRepository;
+  final StarFilter? filter;
 
   @override
   Widget build(BuildContext context) {
     final strings = context.strings;
-    final stars = starRepository.getAll().where((s) => s.isLit).toList();
+    final stars = _litStars(starRepository, projectRepository, filter);
     final dayCounts = starCountsByDay(stars);
     final range = longestStreakRange(dayCounts);
 
@@ -243,6 +233,23 @@ class LongestStreakDetailScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Every achieved star, narrowed by [filter] when one is given. Streak
+/// screens opened without a [projectRepository] can't resolve areas, so they
+/// only ever receive a filter that doesn't depend on them.
+List<Star> _litStars(
+  StarRepository starRepository,
+  ProjectRepository? projectRepository,
+  StarFilter? filter,
+) {
+  final lit = starRepository.getAll().where((s) => s.isLit);
+  if (filter == null || !filter.isActive) return lit.toList();
+  final projects = <int, Project>{
+    if (projectRepository != null)
+      for (final p in projectRepository.getAll()) p.id: p,
+  };
+  return lit.where((s) => filter.matches(s, projects)).toList();
 }
 
 /// How many achieved stars fall within [range]'s inclusive day span — the
@@ -336,12 +343,8 @@ class _StatDetailScaffold extends StatelessWidget {
                           index: 1,
                           child: Text(
                             caption.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 12,
-                              letterSpacing: 2,
-                              fontWeight: FontWeight.w600,
-                              color: colors.accentDim,
-                            ),
+                            style: context.typography.compactSectionLabel
+                                .copyWith(color: colors.accentDim),
                           ),
                         ),
                         const SizedBox(height: 28),
@@ -362,42 +365,22 @@ class _StatDetailScaffold extends StatelessWidget {
 class _DetailCard extends StatelessWidget {
   const _DetailCard({
     required this.children,
-    this.divideRows = false,
-    this.startIndex = 0,
   });
 
   final List<Widget> children;
-  final bool divideRows;
-
-  /// Entrance index of the first row; each following row arrives one step
-  /// later, so the facts in a card appear one after another.
-  final int startIndex;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 18),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        border: Border.all(color: colors.nightBorder),
-        borderRadius: BorderRadius.circular(kRadiusCard),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: kSpaceMd + 2),
+      decoration: panelDecoration(colors),
       child: Column(
         children: [
           for (var i = 0; i < children.length; i++)
-            StaggeredEntrance(
-              index: startIndex + i,
-              child: divideRows && i > 0
-                  ? Column(
-                      children: [
-                        Divider(color: colors.nightBorder, height: 1),
-                        children[i],
-                      ],
-                    )
-                  : children[i],
-            ),
+            // Each fact arrives one step after the previous one.
+            StaggeredEntrance(index: i, child: children[i]),
         ],
       ),
     );
@@ -428,18 +411,14 @@ class _DetailRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              label,
-              style: TextStyle(fontSize: 14, color: colors.muted),
-            ),
+            child: Text(label, style: context.typography.supporting),
           ),
           Text(
             value,
-            style: TextStyle(
+            style: context.typography.body.copyWith(
               fontFamily: kFontMono,
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: colors.text,
             ),
           ),
         ],
@@ -458,7 +437,7 @@ class _EmptyBody extends StatelessWidget {
     return Text(
       text,
       textAlign: TextAlign.center,
-      style: TextStyle(fontSize: 14, height: 1.5, color: context.colors.muted),
+      style: context.typography.supporting,
     );
   }
 }

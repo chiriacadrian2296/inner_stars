@@ -43,6 +43,7 @@ import '../utils/responsive.dart';
 import 'animated_presence.dart';
 import 'app_action_disc.dart';
 import 'app_field.dart';
+import 'filter_button.dart';
 import 'area_filter_sheet.dart';
 import 'date_range_filter_sheet.dart';
 import 'creation_success_dialog.dart';
@@ -629,6 +630,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     CreationSuccessDialog.show(
       context,
       icon: star.isLit ? Icons.star : Icons.star_border,
+      iconColor: starKindColor(star.kind, context.colors),
       message: star.isLit
           ? context.strings.creationSuccessLitMessage
           : context.strings.creationSuccessUnlitMessage,
@@ -653,6 +655,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     CreationSuccessDialog.show(
       context,
       icon: StarKind.pulsar.icon,
+      iconColor: starKindColor(StarKind.pulsar, context.colors),
       message: context.strings.creationSuccessPulsarMessage,
       onOpen: () => _openCreatedEntry(project, PulsarEntry(habit).key),
       onTakeMeThere: () => widget.onNavigateTo(
@@ -674,6 +677,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     CreationSuccessDialog.show(
       context,
       icon: iconForSlug(project.iconSlug),
+      iconColor: context.colors.gold,
       message: context.strings.creationSuccessConstellationMessage,
       onOpen: () => _openProject(project),
       onTakeMeThere: () => widget.onNavigateTo(SkyProjectTarget(project)),
@@ -945,7 +949,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         ),
       );
       if (result is! StarFormResult) return;
-      await widget.starRepository.resurrect(
+      final resurrected = await widget.starRepository.resurrect(
         star.id,
         title: result.title,
         description: result.description,
@@ -956,6 +960,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         photoPath: result.photoPath,
       );
       _refreshAndRebuild();
+      if (mounted) _announceStarCreated(resurrected);
       return;
     }
 
@@ -1039,7 +1044,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         ),
       );
       if (result is! StarFormResult) return;
-      await widget.habitRepository.resurrect(
+      final resurrected = await widget.habitRepository.resurrect(
         habit.id,
         title: result.title,
         description: result.description,
@@ -1052,6 +1057,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         completionRepository: widget.habitCompletionRepository,
       );
       _refreshAndRebuild();
+      if (mounted) _announcePulsarCreated(resurrected);
       return;
     }
 
@@ -1390,7 +1396,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     }
 
     return [
-      _FilterButton(
+      FilterButton(
         icon: Icons.tune,
         active: _isAreaFilterNarrowed,
         label: _areaFilterButtonLabel(strings),
@@ -1399,7 +1405,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         onTap: () => wrap(_openAreaFilter),
       ),
       if (_mode == _SkyMode.stars)
-        _FilterButton(
+        FilterButton(
           icon: Icons.auto_awesome,
           active: _isKindFilterNarrowed,
           label: _kindFilterButtonLabel(strings),
@@ -1407,7 +1413,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           horizontal: horizontal,
           onTap: () => wrap(_openKindFilter),
         ),
-      _FilterButton(
+      FilterButton(
         icon: Icons.calendar_month,
         active: _dateRangeFilter != null,
         label: _dateRangeButtonLabel(strings),
@@ -1415,7 +1421,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         horizontal: horizontal,
         onTap: () => wrap(_openDateRangeFilter),
       ),
-      _FilterButton(
+      FilterButton(
         icon: Icons.sort,
         active: _isSortNonDefault,
         label: _sortButtonLabel(strings),
@@ -1994,80 +2000,7 @@ class _AreaCard extends StatelessWidget {
   }
 }
 
-/// A filter trigger for the Constellations/Stars views — inline beside the
-/// search field on a wide layout, or collected onto [_FiltersSheet] behind
-/// [_FiltersTriggerButton] on a narrow one. Opens [showAreaFilterSheet],
-/// [showKindFilterSheet], [showDateRangeFilterSheet], or
-/// [showSortFilterSheet] depending on [icon]/[onTap]. [label] carries the
-/// current state right on the button's
-/// own face (a neutral prompt while nothing's narrowed, a summary like "2
-/// areas", the actual span "15/06 - 03/07", or "Intensity ↓" once something
-/// is), so there's no need to open the sheet just to
-/// see what's already set. Gold-highlighted whenever [active], same "lit vs
-/// dark" rule as everywhere else that state is shown this way.
-class _FilterButton extends StatelessWidget {
-  const _FilterButton({
-    required this.icon,
-    required this.active,
-    required this.label,
-    required this.tooltip,
-    required this.onTap,
-    this.horizontal = false,
-  });
-
-  final IconData icon;
-  final bool active;
-  final String label;
-  final String tooltip;
-  final bool horizontal;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(kRadiusField),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(kRadiusField),
-          child: Container(
-            height: 48,
-            padding: EdgeInsets.symmetric(horizontal: horizontal ? 12 : 4),
-            decoration: selectableDecoration(colors, selected: active),
-            child: Flex(
-              direction: horizontal ? Axis.horizontal : Axis.vertical,
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  icon,
-                  size: 16,
-                  color: active ? colors.gold : colors.muted,
-                ),
-                SizedBox(width: horizontal ? 8 : 0, height: horizontal ? 0 : 2),
-                Flexible(
-                  child: AppButtonLabel(
-                    label,
-                    color: active ? colors.text : colors.muted,
-                    fontSize: horizontal ? 11 : 9.5,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: horizontal ? TextAlign.start : TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The narrow-layout stand-in for the whole row of [_FilterButton]s — one
+/// The narrow-layout stand-in for the whole row of [FilterButton]s — one
 /// icon button beside the search field that opens [_FiltersSheet] instead,
 /// so a phone doesn't carry a second permanent row under the search field on
 /// every single visit to this view. Same "lit vs dark" gold ring as every
@@ -2113,7 +2046,7 @@ class _FiltersTriggerButton extends StatelessWidget {
   }
 }
 
-/// [_FiltersTriggerButton]'s own destination — every [_FilterButton] that
+/// [_FiltersTriggerButton]'s own destination — every [FilterButton] that
 /// applies to the current mode, two to a row (the same shape they'd have had
 /// paired up in the old wide-layout row), on a modal sheet instead of inline.
 class _FiltersSheet extends StatelessWidget {

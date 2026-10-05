@@ -62,6 +62,25 @@ class HabitCompletionRepository {
     await _saveAll([completion, ...completions]);
   }
 
+  /// Writes many completions in one pass — one record per entry of [days]
+  /// (a day listed twice logs two instances, like [logInstance]) — with
+  /// guaranteed-unique ids. For sample data, where hundreds of one-at-a-time
+  /// writes would be slow and could mint colliding ids.
+  Future<void> addMany(int habitId, Iterable<DateTime> days) async {
+    final base = DateTime.now().microsecondsSinceEpoch;
+    var offset = 0;
+    final added = [
+      for (final day in days)
+        HabitCompletion(
+          id: base + offset++,
+          habitId: habitId,
+          date: _dateOnly(day),
+        ),
+    ];
+    if (added.isEmpty) return;
+    await _saveAll([...added, ...getAll()]);
+  }
+
   /// Undoes a mis-tap: removes [habitId]'s completion record for [date] (day
   /// granularity), if any.
   Future<void> unmarkDone(int habitId, DateTime date) async {

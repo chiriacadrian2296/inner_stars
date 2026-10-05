@@ -318,17 +318,8 @@ class StringsIt implements AppStrings {
       "appena il lato social dell'app esisterà.";
 
   @override
-  String get statsEyebrow => 'I TUOI NUMERI';
-  @override
   String get statsTitle => 'Statistiche';
 
-  @override
-  String get homeEyebrow => 'I TUOI PROGRESSI';
-  @override
-  String get homeTitle => 'La tua dashboard';
-  @override
-  String get homeSubtitle =>
-      'Ogni stella è una vittoria, accesa quando ne avevi bisogno.';
   @override
   String get todayStarSectionLabel => 'Stella di oggi';
   @override
@@ -656,12 +647,6 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get areaCoverEnterAction => 'Gestisci';
   @override
   String get areaCoverVisionTitle => 'Visione';
-  @override
-  String get areaConstellationsStatLabel => 'Costellazioni';
-  @override
-  String get areaStarsStatLabel => 'Stelle';
-  @override
-  String get areaIntensityStatLabel => 'Intensità';
 
   @override
   String get dataSection => 'Strumenti di debug';
@@ -1499,9 +1484,13 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get habitCurrentStreakLabel => 'Serie attuale';
   @override
-  String get markHabitDoneAction => 'Completa';
+  String get habitCheckAction => 'Spunta';
   @override
-  String get habitDoneTodayLabel => 'Fatto oggi';
+  String get habitUncheckAction => 'Togli Spunta';
+  @override
+  String get habitStillToDoLabel => 'Ancora da fare';
+  @override
+  String get habitDoneTodayLabel => 'Fatto per oggi';
   @override
   String get undoHabitTodayAction => 'Annulla';
   @override
@@ -1546,9 +1535,6 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String habitStatsWeeks(int count) =>
       count == 1 ? '1 settimana' : '$count settimane';
 
-  @override
-  String unlitStarsBadge(int count) =>
-      count == 1 ? '1 obiettivo' : '$count obiettivi';
   @override
   String activePulsarsBadge(int count) =>
       count == 1 ? '1 abitudine attiva' : '$count abitudini attive';
@@ -1656,19 +1642,9 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get nightlightExplainedSchemeClarity => 'Vedi Chiaro';
   @override
-  String get nightlightExplainedBodyPart1 =>
-      'Quando sei *agitato* o giù, la *mente* tende a *proteggersi* '
-      '*razionalizzando*: troverà *motivi* che sembrano logici per '
-      '*sminuire ogni vittoria* che ti mostreremo, *anche quelle più '
-      'vere*.';
-  @override
-  String get nightlightExplainedBodyPart2 =>
-      'Non perché *non contino*, ma perché in quello stato è quasi '
-      '*impossibile* *guardarle con occhi giusti*.';
-  @override
-  String get nightlightExplainedBodyPart3 =>
-      'Per questo, prima, *respiriamo* insieme: *aiuta* il *corpo*, e con '
-      'lui la *mente*, a *uscire da quello stato*.';
+  String get nightlightExplainedBody =>
+      'Prima di vedere le vittorie, fermiamoci un momento a *respirare* '
+      'per calmarci. Segui le istruzioni sullo schermo.';
   @override
   String get nightlightExplainedContinue => 'Continua';
   @override
@@ -1682,6 +1658,11 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String nightlightBreathingCycleLabel(int current, int total) =>
       'Ciclo $current di $total';
+  @override
+  String nightlightBreathingCyclesUntilSkip(int remaining) =>
+      remaining == 1
+          ? 'Potrai continuare tra 1 ciclo'
+          : 'Potrai continuare tra $remaining cicli';
   @override
   String get nightlightBreathingCheckInTitle => 'Come ti senti ora?';
   @override
@@ -1902,6 +1883,16 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get skyGridSection => 'Griglia del cielo';
   @override
   String get skyGridToggleLabel => 'Mostra la griglia di coordinate sul cielo';
+  @override
+  String get skySupernovaeSection => 'Supernove';
+  @override
+  String get skySupernovaeToggleLabel => 'Mostra le supernove sopra le artwork';
+  @override
+  String get skyArtworkSection => 'Artwork';
+  @override
+  String get skyArtworkOpacityLabel => 'Opacità';
+  @override
+  String get skyArtworkBlendLabel => 'Modalità di Fusione';
 
   @override
   String get appLockSection => 'Blocco app';

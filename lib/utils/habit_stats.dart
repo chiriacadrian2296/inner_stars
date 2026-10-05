@@ -1,5 +1,6 @@
 import '../models/habit.dart';
 import '../models/habit_completion.dart';
+import 'date_math.dart';
 
 enum HabitStatsRange {
   days7(7),
@@ -56,13 +57,11 @@ class HabitStatsSummary {
   final HabitWeekdayStat? weakestWeekday;
 }
 
-DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
-
 /// Monday of the calendar week containing [day] — [HabitFrequency.weekly]'s
 /// own period boundary, a hard reset every Monday rather than a rolling
 /// 7-day window (`DateTime.weekday` is 1 for Monday..7 for Sunday).
 DateTime _weekStart(DateTime day) =>
-    day.subtract(Duration(days: day.weekday - 1));
+    addDays(day, -(day.weekday - 1));
 
 /// Groups [completions] by calendar day, counting how many were logged on
 /// each day — 0 or 1 for a [HabitFrequency.daily] habit whose target is 1
@@ -75,7 +74,7 @@ Map<DateTime, int> habitCompletionCountsByDay(
 ) {
   final counts = <DateTime, int>{};
   for (final completion in completions) {
-    final day = _dateOnly(completion.date);
+    final day = dateOnly(completion.date);
     counts[day] = (counts[day] ?? 0) + 1;
   }
   return counts;
@@ -117,7 +116,7 @@ int _weekMetDays(
 ) {
   var count = 0;
   for (var i = 0; i < 7; i++) {
-    if (_dayMet(habit, countsByDay, weekStart.add(Duration(days: i)))) {
+    if (_dayMet(habit, countsByDay, addDays(weekStart, i))) {
       count++;
     }
   }
@@ -142,9 +141,9 @@ int _weekMetDays(
 /// up to at least the target. It only goes dark the moment that stops being
 /// true, not the instant a single day is skipped.
 bool isHabitLit(Habit habit, Map<DateTime, int> countsByDay, {DateTime? now}) {
-  final today = _dateOnly(now ?? DateTime.now());
+  final today = dateOnly(now ?? DateTime.now());
   if (habit.frequency == HabitFrequency.daily) {
-    final yesterday = today.subtract(const Duration(days: 1));
+    final yesterday = addDays(today, -1);
     return _dayMet(habit, countsByDay, today) ||
         _dayMet(habit, countsByDay, yesterday);
   }
@@ -152,7 +151,7 @@ bool isHabitLit(Habit habit, Map<DateTime, int> countsByDay, {DateTime? now}) {
   final weekStart = _weekStart(today);
   final doneDays = _weekMetDays(habit, countsByDay, weekStart);
   if (doneDays >= habit.targetPerPeriod) return true;
-  final daysElapsed = today.difference(weekStart).inDays + 1;
+  final daysElapsed = dayDiff(weekStart, today) + 1;
   final daysRemaining = 7 - daysElapsed;
   return doneDays + daysRemaining >= habit.targetPerPeriod;
 }
@@ -166,7 +165,7 @@ int habitDailyProgress(
   Map<DateTime, int> countsByDay, {
   DateTime? now,
 }) {
-  final today = _dateOnly(now ?? DateTime.now());
+  final today = dateOnly(now ?? DateTime.now());
   return countsByDay[today] ?? 0;
 }
 
@@ -177,7 +176,7 @@ int habitWeeklyProgress(
   Map<DateTime, int> countsByDay, {
   DateTime? now,
 }) {
-  final today = _dateOnly(now ?? DateTime.now());
+  final today = dateOnly(now ?? DateTime.now());
   return _weekMetDays(habit, countsByDay, _weekStart(today));
 }
 
@@ -193,17 +192,17 @@ int habitCurrentStreak(
   Map<DateTime, int> countsByDay, {
   DateTime? now,
 }) {
-  final today = _dateOnly(now ?? DateTime.now());
+  final today = dateOnly(now ?? DateTime.now());
   if (!isHabitLit(habit, countsByDay, now: today)) return 0;
 
   if (habit.frequency == HabitFrequency.daily) {
     var day = _dayMet(habit, countsByDay, today)
         ? today
-        : today.subtract(const Duration(days: 1));
+        : addDays(today, -1);
     var streak = 0;
     while (_dayMet(habit, countsByDay, day)) {
       streak++;
-      day = day.subtract(const Duration(days: 1));
+      day = addDays(day, -1);
     }
     return streak;
   }
@@ -213,20 +212,20 @@ int habitCurrentStreak(
   // by Sunday is still *possible*, which isn't the same as having done it.
   var weekStart = _weekStart(today);
   if (_weekMetDays(habit, countsByDay, weekStart) < habit.targetPerPeriod) {
-    weekStart = weekStart.subtract(const Duration(days: 7));
+    weekStart = addDays(weekStart, -7);
   }
   var streak = 0;
   while (_weekMetDays(habit, countsByDay, weekStart) >= habit.targetPerPeriod) {
     streak++;
-    weekStart = weekStart.subtract(const Duration(days: 7));
+    weekStart = addDays(weekStart, -7);
   }
   return streak;
 }
 
 DateTime _habitEnd(Habit habit, DateTime now) {
-  final today = _dateOnly(now);
+  final today = dateOnly(now);
   if (habit.deadDate == null) return today;
-  final deadDay = _dateOnly(habit.deadDate!);
+  final deadDay = dateOnly(habit.deadDate!);
   return deadDay.isBefore(today) ? deadDay : today;
 }
 
@@ -240,7 +239,7 @@ int habitLongestStreak(
   DateTime? now,
 }) {
   final end = _habitEnd(habit, now ?? DateTime.now());
-  final start = _dateOnly(habit.createdAt);
+  final start = dateOnly(habit.createdAt);
   if (end.isBefore(start)) return 0;
 
   var longest = 0;
@@ -249,7 +248,7 @@ int habitLongestStreak(
     for (
       var day = start;
       !day.isAfter(end);
-      day = day.add(const Duration(days: 1))
+      day = addDays(day, 1)
     ) {
       if (_dayMet(habit, countsByDay, day)) {
         running++;
@@ -264,7 +263,7 @@ int habitLongestStreak(
   for (
     var week = _weekStart(start);
     !week.isAfter(_weekStart(end));
-    week = week.add(const Duration(days: 7))
+    week = addDays(week, 7)
   ) {
     if (_weekMetDays(habit, countsByDay, week) >= habit.targetPerPeriod) {
       running++;
@@ -287,8 +286,8 @@ HabitStatsSummary habitStatsSummary(
 }) {
   final effectiveNow = now ?? DateTime.now();
   final end = _habitEnd(habit, effectiveNow);
-  final lifetimeStart = _dateOnly(habit.createdAt);
-  final requestedStart = end.subtract(Duration(days: range.days - 1));
+  final lifetimeStart = dateOnly(habit.createdAt);
+  final requestedStart = addDays(end, -(range.days - 1));
   final start = _maxDay(lifetimeStart, requestedStart);
   final counts = habitCompletionCountsByDay(completions);
   final progress = <DateTime, double>{};
@@ -302,7 +301,7 @@ HabitStatsSummary habitStatsSummary(
     for (
       var day = start;
       !day.isAfter(end);
-      day = day.add(const Duration(days: 1))
+      day = addDays(day, 1)
     ) {
       final raw = counts[day] ?? 0;
       final dayProgress = habit.frequency == HabitFrequency.daily
@@ -321,12 +320,12 @@ HabitStatsSummary habitStatsSummary(
       for (
         var week = _weekStart(start);
         !week.isAfter(_weekStart(end));
-        week = week.add(const Duration(days: 7))
+        week = addDays(week, 7)
       ) {
         final segmentStart = _maxDay(week, start);
-        final weekEnd = week.add(const Duration(days: 6));
+        final weekEnd = addDays(week, 6);
         final segmentEnd = weekEnd.isBefore(end) ? weekEnd : end;
-        final availableDays = segmentEnd.difference(segmentStart).inDays + 1;
+        final availableDays = dayDiff(segmentStart, segmentEnd) + 1;
         final expected = availableDays < habit.targetPerPeriod
             ? availableDays
             : habit.targetPerPeriod;
@@ -334,7 +333,7 @@ HabitStatsSummary habitStatsSummary(
         for (
           var day = segmentStart;
           !day.isAfter(segmentEnd);
-          day = day.add(const Duration(days: 1))
+          day = addDays(day, 1)
         ) {
           if (_dayMet(habit, counts, day)) completedDays++;
         }
@@ -370,7 +369,7 @@ HabitStatsSummary habitStatsSummary(
     longestStreak: habitLongestStreak(habit, counts, now: effectiveNow),
     completionRate: possible == 0 ? 0 : earned / possible,
     totalCompletions: completions.where((completion) {
-      final day = _dateOnly(completion.date);
+      final day = dateOnly(completion.date);
       return !day.isBefore(lifetimeStart) && !day.isAfter(end);
     }).length,
     trend: List.unmodifiable(trend),

@@ -55,6 +55,10 @@ class HabitRepository {
     int targetPerPeriod = 1,
     int? reminderHour,
     int? reminderMinute,
+
+    /// Backdates the habit's start — only for sample data, so its history
+    /// can reach back further than the moment it was seeded.
+    DateTime? createdAt,
   }) async {
     final habits = getAll();
     final trimmedDescription = description?.trim();
@@ -65,7 +69,7 @@ class HabitRepository {
       description: (trimmedDescription == null || trimmedDescription.isEmpty)
           ? null
           : trimmedDescription,
-      createdAt: DateTime.now(),
+      createdAt: createdAt ?? DateTime.now(),
       intensity: intensity,
       frequency: frequency,
       targetPerPeriod: targetPerPeriod,

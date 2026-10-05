@@ -1,7 +1,9 @@
 import '../data/project_repository.dart';
 import '../data/star_repository.dart';
 import '../models/life_area.dart';
+import '../models/project.dart';
 import '../models/star.dart';
+import 'date_math.dart';
 
 /// Total victories logged across every project in [area], summed over that
 /// area's projects — used by both Sky's aggregate area counts and the
@@ -18,23 +20,6 @@ int starsInArea(
         .getAllForProject(project.id)
         .where((s) => s.isLit)
         .length;
-  }
-  return total;
-}
-
-/// Total intensity of every achieved victory across every project in
-/// [area], summed the same way [starsInArea] sums counts — used by the
-/// Supernova detail screen's big stat row.
-int totalIntensityInArea(
-  LifeArea area,
-  ProjectRepository projectRepository,
-  StarRepository starRepository,
-) {
-  var total = 0;
-  for (final project in projectRepository.getProjectsForArea(area)) {
-    for (final star in starRepository.getAllForProject(project.id)) {
-      if (star.isLit) total += star.intensity ?? 0;
-    }
   }
   return total;
 }
@@ -106,12 +91,12 @@ StreakRange currentStreakRange(
   var streak = 0;
   while ((countsByDay[day] ?? 0) > 0) {
     streak++;
-    day = day.subtract(const Duration(days: 1));
+    day = addDays(day, -1);
   }
   if (streak == 0) return const StreakRange(length: 0);
   return StreakRange(
     length: streak,
-    start: end.subtract(Duration(days: streak - 1)),
+    start: addDays(end, -(streak - 1)),
     end: end,
   );
 }
@@ -134,7 +119,7 @@ StreakRange longestStreakRange(Map<DateTime, int> countsByDay) {
   var currentLength = 1;
   var currentStart = days.first;
   for (var i = 1; i < days.length; i++) {
-    final gap = days[i].difference(days[i - 1]).inDays;
+    final gap = dayDiff(days[i - 1], days[i]);
     if (gap == 1) {
       currentLength++;
     } else {
@@ -148,4 +133,66 @@ StreakRange longestStreakRange(Map<DateTime, int> countsByDay) {
     }
   }
   return StreakRange(length: longest, start: longestStart, end: longestEnd);
+}
+
+/// Which achieved stars the Statistics page counts: those in one of [areas]
+/// (an empty set matches nothing, mirroring the Sky's area filter) and, when
+/// [from]/[to] are set, achieved on or between those calendar days.
+class StarFilter {
+  const StarFilter({required this.areas, this.from, this.to});
+
+  /// Everything: every area, any date.
+  factory StarFilter.all() => StarFilter(areas: {...LifeArea.values});
+
+  final Set<LifeArea> areas;
+  final DateTime? from;
+  final DateTime? to;
+
+  bool get isAreaNarrowed => areas.length != LifeArea.values.length;
+  bool get hasDateRange => from != null && to != null;
+  bool get isActive => isAreaNarrowed || hasDateRange;
+
+  StarFilter copyWith({
+    Set<LifeArea>? areas,
+    DateTime? from,
+    DateTime? to,
+    bool clearDates = false,
+  }) => StarFilter(
+    areas: areas ?? this.areas,
+    from: clearDates ? null : (from ?? this.from),
+    to: clearDates ? null : (to ?? this.to),
+  );
+
+  /// Whether [star] passes. A star whose project no longer exists has no
+  /// area, so it only passes while the area filter is untouched.
+  bool matches(Star star, Map<int, Project> projectsById) {
+    final achieved = star.achievedDate;
+    if (achieved == null) return false;
+    if (isAreaNarrowed) {
+      final area = projectsById[star.projectId]?.area;
+      if (area == null || !areas.contains(area)) return false;
+    }
+    if (hasDateRange) {
+      final day = dateOnly(achieved);
+      if (day.isBefore(dateOnly(from!)) || day.isAfter(dateOnly(to!))) {
+        return false;
+      }
+    }
+    return true;
+  }
+}
+
+/// Achieved-star counts per life area, largest first; areas with none are
+/// left out.
+List<MapEntry<LifeArea, int>> starCountsByArea(
+  Iterable<Star> stars,
+  Map<int, Project> projectsById,
+) {
+  final counts = <LifeArea, int>{};
+  for (final star in stars) {
+    final area = projectsById[star.projectId]?.area;
+    if (area == null) continue;
+    counts[area] = (counts[area] ?? 0) + 1;
+  }
+  return counts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
 }

@@ -22,10 +22,21 @@ import 'constellation_field.dart';
 /// Only areas listed in [kAreaHeroArt] have art of their own so far, so
 /// this paints nothing for any other area.
 class SkyAreaBackdrop extends StatefulWidget {
-  const SkyAreaBackdrop({super.key, required this.camera, required this.zoom});
+  const SkyAreaBackdrop({
+    super.key,
+    required this.camera,
+    required this.zoom,
+    this.opacity = 0.5,
+    this.blendMode = BlendMode.plus,
+  });
 
   final SkyCamera camera;
   final double zoom;
+
+  /// 0..1 strength of the artwork wash, and how it composites onto the sky
+  /// (see `ArtworkBlend`) — the defaults are the original fixed look.
+  final double opacity;
+  final BlendMode blendMode;
 
   @override
   State<SkyAreaBackdrop> createState() => _SkyAreaBackdropState();
@@ -73,6 +84,8 @@ class _SkyAreaBackdropState extends State<SkyAreaBackdrop> {
         images: images,
         camera: widget.camera,
         zoom: widget.zoom,
+        opacity: widget.opacity,
+        blendMode: widget.blendMode,
       ),
     );
   }
@@ -182,21 +195,20 @@ class _SkyAreaBackdropPainter extends CustomPainter {
     required this.images,
     required this.camera,
     required this.zoom,
+    required this.opacity,
+    required this.blendMode,
   });
 
   final Map<LifeArea, ui.Image> images;
   final SkyCamera camera;
   final double zoom;
+  final double opacity;
+  final BlendMode blendMode;
 
   // Well past the supernova's own light-ring (world radius 0.0405, see
   // sky_area_sigils.dart) but nowhere near the 0.42 first tried — that read
   // as far too large on screen. 0.1, then 0.2, both read a little small.
   static const _worldRadius = 0.15;
-
-  // Additive blend already turns each image's black background invisible;
-  // this on top of it is the "un po' trasparente" ask — a faint wash
-  // rather than the image at full strength.
-  static const _opacity = 0.5;
 
   // Where the circular vignette (see [_paintOne]) starts fading from fully
   // visible toward transparent, as a fraction of the image's own radius —
@@ -256,8 +268,8 @@ class _SkyAreaBackdropPainter extends CustomPainter {
     canvas.saveLayer(
       localRect,
       Paint()
-        ..blendMode = BlendMode.plus
-        ..color = const Color.fromRGBO(255, 255, 255, _opacity),
+        ..blendMode = blendMode
+        ..color = Color.fromRGBO(255, 255, 255, opacity),
     );
     canvas.drawImageRect(
       image,
@@ -294,5 +306,7 @@ class _SkyAreaBackdropPainter extends CustomPainter {
   bool shouldRepaint(covariant _SkyAreaBackdropPainter oldDelegate) =>
       !identical(oldDelegate.images, images) ||
       oldDelegate.camera != camera ||
-      oldDelegate.zoom != zoom;
+      oldDelegate.zoom != zoom ||
+      oldDelegate.opacity != opacity ||
+      oldDelegate.blendMode != blendMode;
 }
