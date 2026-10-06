@@ -1346,6 +1346,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         achievedDate: result.achievedDate,
         intensity: result.intensity,
         photoPath: result.photoPath,
+        media: result.media,
       );
       _refresh();
       _announceStarCreated(resurrected);
@@ -1380,6 +1381,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       achievedDate: addResult.achievedDate,
       intensity: addResult.intensity,
       photoPath: addResult.photoPath,
+      media: addResult.media,
     );
     _refresh();
   }
@@ -1655,6 +1657,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       achievedDate: result.achievedDate,
       intensity: result.intensity,
       photoPath: result.photoPath,
+      media: result.media,
     );
     _refresh();
     _announceStarCreated(created);
@@ -1695,6 +1698,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         achievedDate: result.achievedDate,
         intensity: result.intensity,
         photoPath: result.photoPath,
+        media: result.media,
       );
       _refresh();
       _announceStarCreated(created);
@@ -4678,6 +4682,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         achievedDate: result.achievedDate,
         intensity: result.intensity,
         photoPath: result.photoPath,
+        media: result.media,
       );
       _refresh();
       _announceStarCreated(created);

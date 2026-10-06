@@ -1,4 +1,7 @@
+import 'package:flutter/foundation.dart' show listEquals;
+
 import 'star_kind.dart';
+import 'star_media.dart';
 
 /// A single star on a constellation's shape: one *effort*, either still
 /// ahead of you (unlit — a goal) or already made (lit — a victory). The same
@@ -31,6 +34,7 @@ class Star {
     this.achievedDate,
     this.intensity,
     this.photoPath,
+    this.media = const [],
     this.dead = false,
     this.deadDate,
   }) : assert(
@@ -66,6 +70,10 @@ class Star {
   final int? intensity;
 
   final String? photoPath;
+
+  /// Optional extras on a victory (voice notes, secondary photos, videos,
+  /// links), on top of the cover [photoPath]. Empty for anything not lit.
+  final List<StarMedia> media;
 
   /// Tombstone: true once this star has been "deleted" — its slot is kept
   /// forever, but it stops counting as lit or unlit anywhere. What it can
@@ -103,6 +111,7 @@ class Star {
     DateTime? achievedDate,
     int? intensity,
     String? photoPath,
+    List<StarMedia>? media,
     bool? dead,
     DateTime? deadDate,
   }) {
@@ -118,6 +127,7 @@ class Star {
       achievedDate: achievedDate ?? this.achievedDate,
       intensity: intensity ?? this.intensity,
       photoPath: photoPath ?? this.photoPath,
+      media: media ?? this.media,
       dead: dead ?? this.dead,
       deadDate: deadDate ?? this.deadDate,
     );
@@ -136,6 +146,10 @@ class Star {
       achievedDate: (json['achievedDate'] as String?).let(DateTime.parse),
       intensity: json['intensity'] as int?,
       photoPath: json['photoPath'] as String?,
+      media: [
+        for (final m in (json['media'] as List?) ?? const [])
+          StarMedia.fromJson(Map<String, dynamic>.from(m as Map)),
+      ],
       dead: json['dead'] as bool? ?? false,
       deadDate: (json['deadDate'] as String?).let(DateTime.parse),
     );
@@ -154,6 +168,7 @@ class Star {
       'achievedDate': achievedDate?.toIso8601String(),
       'intensity': intensity,
       'photoPath': photoPath,
+      'media': [for (final m in media) m.toJson()],
       'dead': dead,
       'deadDate': deadDate?.toIso8601String(),
     };
@@ -173,6 +188,7 @@ class Star {
         other.achievedDate == achievedDate &&
         other.intensity == intensity &&
         other.photoPath == photoPath &&
+        listEquals(other.media, media) &&
         other.dead == dead &&
         other.deadDate == deadDate;
   }
@@ -190,6 +206,7 @@ class Star {
     achievedDate,
     intensity,
     photoPath,
+    Object.hashAll(media),
     dead,
     deadDate,
   );

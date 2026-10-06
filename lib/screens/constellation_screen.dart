@@ -379,6 +379,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
           achievedDate: result.achievedDate,
           intensity: result.intensity,
           photoPath: result.photoPath,
+          media: result.media,
         );
       }
       _refresh();

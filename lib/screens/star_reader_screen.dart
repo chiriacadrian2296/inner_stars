@@ -389,6 +389,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
       achievedDate: result.achievedDate,
       intensity: result.intensity,
       photoPath: result.photoPath,
+      media: result.media,
     );
     _refreshFrom(entry);
   }
@@ -529,6 +530,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
         achievedDate: result.achievedDate,
         intensity: result.intensity,
         photoPath: result.photoPath,
+        media: result.media,
       );
       _refreshFrom(StarEntry(current));
       return;
@@ -562,6 +564,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
       achievedDate: addResult.achievedDate,
       intensity: addResult.intensity,
       photoPath: addResult.photoPath,
+      media: addResult.media,
     );
     _refreshFrom(StarEntry(current));
   }
@@ -1211,10 +1214,15 @@ class _ZoomablePhotoLayerState extends State<_ZoomablePhotoLayer>
   Matrix4? _resetFrom;
   Matrix4? _resetTo;
   Offset _doubleTapPosition = Offset.zero;
+  Timer? _singleTapTimer;
+  DateTime? _lastTapTime;
+  Offset? _lastTapPosition;
 
   static const _doubleTapZoom = 2.5;
   static const _zoomOutThreshold = 1.5;
   static const _minimumScaleTolerance = 0.001;
+  static const _singleTapRevealDelay = Duration(milliseconds: 180);
+  static const _doubleTapMaxDistance = 40.0;
 
   @override
   void initState() {
@@ -1265,13 +1273,43 @@ class _ZoomablePhotoLayerState extends State<_ZoomablePhotoLayer>
     );
   }
 
-  void _onTap() {
+  void _revealDataAtMinimumZoom() {
     final currentScale = _controller.value.getMaxScaleOnAxis();
     if (currentScale <= 1 + _minimumScaleTolerance) widget.onZoomOut();
   }
 
+  void _onTapUp(TapUpDetails details) {
+    final now = DateTime.now();
+    final lastTime = _lastTapTime;
+    final lastPosition = _lastTapPosition;
+    if (lastTime != null &&
+        lastPosition != null &&
+        now.difference(lastTime) <= _singleTapRevealDelay &&
+        (details.localPosition - lastPosition).distance <=
+            _doubleTapMaxDistance) {
+      _singleTapTimer?.cancel();
+      _singleTapTimer = null;
+      _lastTapTime = null;
+      _lastTapPosition = null;
+      _doubleTapPosition = details.localPosition;
+      _onDoubleTap();
+      return;
+    }
+
+    _singleTapTimer?.cancel();
+    _lastTapTime = now;
+    _lastTapPosition = details.localPosition;
+    _singleTapTimer = Timer(_singleTapRevealDelay, () {
+      _singleTapTimer = null;
+      _lastTapTime = null;
+      _lastTapPosition = null;
+      if (mounted && widget.enabled) _revealDataAtMinimumZoom();
+    });
+  }
+
   @override
   void dispose() {
+    _singleTapTimer?.cancel();
     _resetAnimation.dispose();
     _controller.dispose();
     super.dispose();
@@ -1283,12 +1321,9 @@ class _ZoomablePhotoLayerState extends State<_ZoomablePhotoLayer>
       behavior: HitTestBehavior.opaque,
       // At the cover framing, another tap restores the reader data. While
       // zoomed in it remains inert, leaving pan and double-tap zoom local to
-      // the photo.
-      onTap: widget.enabled ? _onTap : null,
-      onDoubleTapDown: widget.enabled
-          ? (details) => _doubleTapPosition = details.localPosition
-          : null,
-      onDoubleTap: widget.enabled ? _onDoubleTap : null,
+      // the photo. Tracking the pair manually makes the single-tap delay
+      // tunable instead of inheriting Flutter's longer system timeout.
+      onTapUp: widget.enabled ? _onTapUp : null,
       child: InteractiveViewer(
         transformationController: _controller,
         panEnabled: widget.enabled,

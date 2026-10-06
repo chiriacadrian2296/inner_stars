@@ -1294,6 +1294,72 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get photoPickError =>
       'Nu am putut obține fotografia. Încerci din nou?';
   @override
+  String get extrasLabel => 'Amintiri';
+  @override
+  String get extrasHint =>
+      'Adaugă o notă vocală, fotografii, un video sau un link pentru a-ți aminti această victorie.';
+  @override
+  String get extraVoiceNote => 'Notă Vocală';
+  @override
+  String get extraPhoto => 'Fotografie';
+  @override
+  String get extraVideo => 'Video';
+  @override
+  String get extraLink => 'Link';
+  @override
+  String get recordVoiceTitle => 'Înregistrează O Notă Vocală';
+  @override
+  String get recordStart => 'Înregistrează';
+  @override
+  String get recordStop => 'Oprește';
+  @override
+  String get recordKeep => 'Păstrează';
+  @override
+  String get micPermissionDenied =>
+      'Accesul la microfon este dezactivat. Activează-l din setările telefonului pentru a înregistra.';
+  @override
+  String get linkTitle => 'Adaugă Un Link';
+  @override
+  String get linkUrlHint => 'https://exemplu.ro';
+  @override
+  String get linkLabelHint => 'Etichetă (opțional)';
+  @override
+  String get linkInvalid => 'Nu pare un link valid.';
+  @override
+  String get linkAdd => 'Adaugă';
+  @override
+  String get mediaError => 'Nu am putut adăuga. Încerci din nou?';
+  @override
+  String get linkOpenError => 'Nu am putut deschide linkul.';
+  @override
+  String get removeExtraTooltip => 'Elimină';
+  @override
+  String mediaLimitReached(int max) => 'Poți adăuga până la $max elemente.';
+  @override
+  String voiceNoteLabel(String duration) => 'Notă vocală · $duration';
+  @override
+  String get voiceNotesLabel => 'Note Vocale';
+  @override
+  String get extraPhotosLabel => 'Alte Fotografii';
+  @override
+  String get videosLabel => 'Videoclipuri';
+  @override
+  String get linksLabel => 'Linkuri';
+  @override
+  String get documentsLabel => 'Documente';
+  @override
+  String get addVoiceNoteHint => 'Înregistrează o notă vocală';
+  @override
+  String get addExtraPhotosHint => 'Adaugă fotografii';
+  @override
+  String get addVideoHint => 'Adaugă un video';
+  @override
+  String get addLinkHint => 'Adaugă un link';
+  @override
+  String get addDocumentHint => 'Adaugă un document';
+  @override
+  String get documentOpenError => 'Nu am putut deschide documentul.';
+  @override
   String get cropPhotoTitle => 'Ajustează fotografia';
   @override
   String get cropPhotoConfirm => 'Gata';

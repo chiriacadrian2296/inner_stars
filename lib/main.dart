@@ -272,6 +272,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
       achievedDate: result.achievedDate,
       intensity: result.intensity,
       photoPath: result.photoPath,
+      media: result.media,
     );
   }
 

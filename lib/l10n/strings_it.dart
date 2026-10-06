@@ -1298,6 +1298,72 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get photoPickError =>
       'Non è stato possibile ottenere la foto. Riprova?';
   @override
+  String get extrasLabel => 'Ricordi';
+  @override
+  String get extrasHint =>
+      'Aggiungi una nota vocale, foto, un video o un link per ricordare questa vittoria.';
+  @override
+  String get extraVoiceNote => 'Nota Vocale';
+  @override
+  String get extraPhoto => 'Foto';
+  @override
+  String get extraVideo => 'Video';
+  @override
+  String get extraLink => 'Link';
+  @override
+  String get recordVoiceTitle => 'Registra Una Nota Vocale';
+  @override
+  String get recordStart => 'Registra';
+  @override
+  String get recordStop => 'Stop';
+  @override
+  String get recordKeep => 'Conserva';
+  @override
+  String get micPermissionDenied =>
+      "L'accesso al microfono è disattivato. Attivalo nelle impostazioni del telefono per registrare.";
+  @override
+  String get linkTitle => 'Aggiungi Un Link';
+  @override
+  String get linkUrlHint => 'https://esempio.it';
+  @override
+  String get linkLabelHint => 'Etichetta (facoltativa)';
+  @override
+  String get linkInvalid => 'Questo non sembra un link valido.';
+  @override
+  String get linkAdd => 'Aggiungi';
+  @override
+  String get mediaError => 'Impossibile aggiungerlo. Riprovare?';
+  @override
+  String get linkOpenError => 'Impossibile aprire il link.';
+  @override
+  String get removeExtraTooltip => 'Rimuovi';
+  @override
+  String mediaLimitReached(int max) => 'Puoi aggiungere fino a $max extra.';
+  @override
+  String voiceNoteLabel(String duration) => 'Nota vocale · $duration';
+  @override
+  String get voiceNotesLabel => 'Note Vocali';
+  @override
+  String get extraPhotosLabel => 'Altre Foto';
+  @override
+  String get videosLabel => 'Video';
+  @override
+  String get linksLabel => 'Link';
+  @override
+  String get documentsLabel => 'Documenti';
+  @override
+  String get addVoiceNoteHint => 'Registra una nota vocale';
+  @override
+  String get addExtraPhotosHint => 'Aggiungi foto';
+  @override
+  String get addVideoHint => 'Aggiungi un video';
+  @override
+  String get addLinkHint => 'Aggiungi un link';
+  @override
+  String get addDocumentHint => 'Aggiungi un documento';
+  @override
+  String get documentOpenError => 'Impossibile aprire il documento.';
+  @override
   String get cropPhotoTitle => 'Modifica la foto';
   @override
   String get cropPhotoConfirm => 'Fatto';

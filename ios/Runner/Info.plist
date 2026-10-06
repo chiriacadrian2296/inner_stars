@@ -28,6 +28,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Used so you can take a photo to attach to a star.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Used so you can record a voice note on a victory.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Used so you can choose a photo to attach to a star.</string>
 	<key>NSFaceIDUsageDescription</key>

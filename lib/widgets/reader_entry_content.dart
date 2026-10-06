@@ -12,6 +12,7 @@ import '../utils/date_format.dart';
 import 'intensity_bolts.dart';
 import 'staggered_entrance.dart';
 import 'star_glyph.dart';
+import 'star_media_views.dart';
 
 /// How a reader page's blocks arrive — see `StarReaderScreen`: the same
 /// staggered cascade for every kind of page, half as spread out (and held
@@ -81,6 +82,7 @@ class ReaderPage extends StatelessWidget {
     this.titleColor,
     this.description,
     this.note,
+    this.footer,
   });
 
   final StarKind kind;
@@ -105,6 +107,10 @@ class ReaderPage extends StatelessWidget {
   final String? description;
 
   final String? note;
+
+  /// Optional block under the texts — a victory's extras (voice notes,
+  /// photos, links).
+  final Widget? footer;
 
   /// Tall enough for the biggest thing that goes in the data slot.
   static const extraHeight = 76.0;
@@ -218,6 +224,16 @@ class ReaderPage extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 color: Color(0xFFFFFFFF),
               ),
+            ),
+          ),
+        ],
+        if (footer != null) ...[
+          const SizedBox(height: 24),
+          entrance(
+            6,
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: footer!,
             ),
           ),
         ],
@@ -400,6 +416,9 @@ class StarReaderContent extends StatelessWidget {
       extra: extra,
       description: star.dead ? null : star.description,
       note: star.dead ? strings.deadStarBody : null,
+      footer: star.isLit && star.media.isNotEmpty
+          ? StarMediaSection(media: star.media)
+          : null,
     );
   }
 }

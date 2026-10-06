@@ -10,6 +10,7 @@ import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import '../widgets/app_field.dart';
 import '../widgets/app_toggle_chip.dart';
+import '../widgets/moon_mascot.dart';
 import '../widgets/pill_action_button.dart';
 
 /// Debug-only, data-isolated catalogue for reviewing the app's current UI
@@ -22,6 +23,7 @@ class UiSandboxScreen extends StatefulWidget {
 }
 
 class _UiSandboxScreenState extends State<UiSandboxScreen> {
+  bool _showParkedStudies = false;
   UiAuditCategory? _category;
   UiAuditKind? _kind;
   UiAuditDecision? _decision;
@@ -29,6 +31,9 @@ class _UiSandboxScreenState extends State<UiSandboxScreen> {
   bool _toggle = false;
   bool _selected = false;
   bool _loading = false;
+  bool _moonAnimated = true;
+  MoonExpression _moonExpression = MoonExpression.neutral;
+  final _moonController = MoonMascotController();
   final _emptyController = TextEditingController();
   final _filledController = TextEditingController(text: 'A completed value');
 
@@ -54,16 +59,73 @@ class _UiSandboxScreenState extends State<UiSandboxScreen> {
     final strings = context.strings;
     final items = _visibleItems;
 
+    if (_showParkedStudies) {
+      return _buildParkedStudies(context, colors, strings, items);
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(strings.uiSandboxTitle),
+        title: const Text('Moon motion lab'),
+        backgroundColor: colors.night,
+        surfaceTintColor: Colors.transparent,
+        actions: [
+          IconButton(
+            key: const Key('moon-sandbox-open-parked'),
+            tooltip: 'Parked UI studies',
+            onPressed: () => setState(() => _showParkedStudies = true),
+            icon: const Icon(Icons.inventory_2_outlined),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: SelectionArea(
+          child: ListView(
+            key: const Key('ui-sandbox-list'),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+            children: [
+              Text(
+                'A focused playground for Moon expressions, reactions, and ambient motion.',
+                style: TextStyle(color: colors.muted, height: 1.45),
+              ),
+              const SizedBox(height: 18),
+              _MoonMascotPreview(
+                expression: _moonExpression,
+                animate: _moonAnimated,
+                controller: _moonController,
+                onExpressionChanged: (value) =>
+                    setState(() => _moonExpression = value),
+                onAnimateChanged: (value) =>
+                    setState(() => _moonAnimated = value),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildParkedStudies(
+    BuildContext context,
+    AppColors colors,
+    AppStrings strings,
+    List<UiAuditItem> items,
+  ) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${strings.uiSandboxTitle} · parked'),
+        leading: IconButton(
+          key: const Key('moon-sandbox-close-parked'),
+          tooltip: 'Back to Moon',
+          onPressed: () => setState(() => _showParkedStudies = false),
+          icon: const Icon(Icons.arrow_back_rounded),
+        ),
         backgroundColor: colors.night,
         surfaceTintColor: Colors.transparent,
       ),
       body: SafeArea(
         child: SelectionArea(
           child: ListView(
-            key: const Key('ui-sandbox-list'),
+            key: const Key('ui-sandbox-parked-list'),
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
             children: [
               Text(
@@ -364,6 +426,177 @@ class _ViewportFrame extends StatelessWidget {
           child: child,
         ),
       ),
+    );
+  }
+}
+
+class _MoonMascotPreview extends StatelessWidget {
+  const _MoonMascotPreview({
+    required this.expression,
+    required this.animate,
+    required this.controller,
+    required this.onExpressionChanged,
+    required this.onAnimateChanged,
+  });
+
+  final MoonExpression expression;
+  final bool animate;
+  final MoonMascotController controller;
+  final ValueChanged<MoonExpression> onExpressionChanged;
+  final ValueChanged<bool> onAnimateChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Container(
+      key: const Key('moon-mascot-preview'),
+      padding: const EdgeInsets.all(16),
+      decoration: panelDecoration(colors),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            key: const Key('moon-expression-picker'),
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final value in MoonExpression.values)
+                ChoiceChip(
+                  key: ValueKey('moon-expression-${value.name}'),
+                  label: Text(_expressionLabel(value)),
+                  selected: expression == value,
+                  selectedColor: colors.gold,
+                  checkmarkColor: colors.onGold,
+                  labelStyle: TextStyle(
+                    color: expression == value ? colors.onGold : colors.text,
+                    fontWeight: expression == value
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                  ),
+                  side: BorderSide(
+                    color: expression == value
+                        ? colors.gold
+                        : colors.nightBorder,
+                  ),
+                  onSelected: (_) => onExpressionChanged(value),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Material(
+            color: Colors.transparent,
+            child: SwitchListTile.adaptive(
+              key: const Key('moon-animation-toggle'),
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Ambient motion'),
+              subtitle: const Text('Blink, breath, glow, and gentle floating'),
+              value: animate,
+              onChanged: onAnimateChanged,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              OutlinedButton.icon(
+                key: const Key('moon-reaction-acknowledge'),
+                onPressed: animate
+                    ? () async {
+                        await controller.play(MoonReaction.acknowledge);
+                      }
+                    : null,
+                icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                label: const Text('ACKNOWLEDGE'),
+              ),
+              OutlinedButton.icon(
+                key: const Key('moon-reaction-celebrate'),
+                onPressed: animate
+                    ? () async {
+                        await controller.play(MoonReaction.celebrate);
+                      }
+                    : null,
+                icon: const Icon(Icons.auto_awesome),
+                label: const Text('CELEBRATE'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Center(
+            child: Wrap(
+              spacing: 24,
+              runSpacing: 20,
+              crossAxisAlignment: WrapCrossAlignment.end,
+              alignment: WrapAlignment.center,
+              children: [
+                _MoonSizeSample(
+                  label: 'Icon · 56',
+                  size: 56,
+                  expression: expression,
+                  animate: animate,
+                ),
+                _MoonSizeSample(
+                  label: 'Card · 112',
+                  size: 112,
+                  expression: expression,
+                  animate: animate,
+                ),
+                _MoonSizeSample(
+                  label: 'Hero · 220',
+                  size: 220,
+                  expression: expression,
+                  animate: animate,
+                  controller: controller,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _expressionLabel(MoonExpression value) => switch (value) {
+    MoonExpression.neutral => 'Neutral',
+    MoonExpression.happy => 'Happy',
+    MoonExpression.sleepy => 'Sleepy',
+    MoonExpression.curious => 'Curious',
+    MoonExpression.concerned => 'Concerned',
+    MoonExpression.surprised => 'Surprised',
+  };
+}
+
+class _MoonSizeSample extends StatelessWidget {
+  const _MoonSizeSample({
+    required this.label,
+    required this.size,
+    required this.expression,
+    required this.animate,
+    this.controller,
+  });
+
+  final String label;
+  final double size;
+  final MoonExpression expression;
+  final bool animate;
+  final MoonMascotController? controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        MoonMascot(
+          key: ValueKey('moon-${size.round()}'),
+          size: size,
+          expression: expression,
+          animate: animate,
+          controller: controller,
+        ),
+        const SizedBox(height: 8),
+        Text(label, style: TextStyle(color: colors.muted, fontSize: 12)),
+      ],
     );
   }
 }

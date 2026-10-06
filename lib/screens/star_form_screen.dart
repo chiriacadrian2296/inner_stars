@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb, listEquals;
 import 'package:flutter/material.dart';
 import 'package:hint_kit/hint_kit.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../data/custom_constellation_repository.dart';
 import '../data/photo_storage.dart';
+import '../data/star_media_storage.dart';
 import '../data/project_repository.dart';
 import '../l10n/app_strings.dart';
 import '../l10n/strings_scope.dart';
@@ -15,6 +17,7 @@ import '../models/life_area.dart';
 import '../models/project.dart';
 import '../models/star.dart';
 import '../models/star_kind.dart';
+import '../models/star_media.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../tutorials/tour_step_card.dart';
@@ -35,6 +38,7 @@ import '../widgets/responsive_content.dart';
 import '../widgets/search_result_card.dart' show SearchStarVisual;
 import '../widgets/staggered_entrance.dart';
 import '../widgets/star_glyph.dart';
+import '../widgets/star_media_editor.dart';
 import 'photo_crop_screen.dart';
 
 /// What the user entered, handed back to whoever pushed this screen.
@@ -52,6 +56,7 @@ class StarFormResult {
     this.achievedDate,
     this.intensity,
     this.photoPath,
+    this.media = const [],
     this.reminderHour,
     this.reminderMinute,
     this.habitFrequency,
@@ -87,6 +92,10 @@ class StarFormResult {
   /// Already-saved app-private path (see [PhotoStorage]), or null for no
   /// photo — never a raw picker path. [StarKind.lit] only.
   final String? photoPath;
+
+  /// Optional extras (voice notes, photos, videos, links), already stored
+  /// by [StarMediaStorage]. [StarKind.lit] only.
+  final List<StarMedia> media;
 
   /// [StarKind.pulsar] only. Both null = inherits the app's single global
   /// reminder time.
@@ -230,6 +239,9 @@ class _StarFormScreenState extends State<StarFormScreen> {
       (_kind == StarKind.lit ? widget.initialDate : null);
   late DateTime? _targetDate = widget.existingStar?.targetDate;
   late String? _photoPath = widget.existingStar?.photoPath;
+  late List<StarMedia> _media = widget.existingStar?.media ?? const [];
+  late final List<StarMedia> _initialMedia = _media;
+  bool _saved = false;
   late bool _customReminder = widget.existingHabit?.reminderHour != null;
   late int _reminderHour = widget.existingHabit?.reminderHour ?? 9;
   late int _reminderMinute = widget.existingHabit?.reminderMinute ?? 0;
@@ -399,6 +411,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
 
   @override
   void dispose() {
+    if (!_saved) _discardUnsavedMedia();
     _tourBeingWatched?.removeListener(_handleTourChanged);
     _titleController.dispose();
     _descriptionController.dispose();
@@ -423,7 +436,9 @@ class _StarFormScreenState extends State<StarFormScreen> {
         _kind != _initialKind ||
         (_kind != StarKind.unlit && _intensity != _initialIntensity) ||
         (_kind == StarKind.lit &&
-            (_date != _initialDateValue || _photoPath != _initialPhotoPath)) ||
+            (_date != _initialDateValue ||
+                _photoPath != _initialPhotoPath ||
+                !listEquals(_media, _initialMedia))) ||
         (_kind == StarKind.unlit && _targetDate != _initialTargetDate) ||
         (_kind == StarKind.pulsar &&
             (_habitFrequency != _initialHabitFrequency ||
@@ -495,6 +510,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
     final project = _selectedProject;
     if (title.isEmpty || project == null) return;
 
+    _saved = true;
     Navigator.of(context).pop(
       StarFormResult(
         kind: _kind,
@@ -506,6 +522,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
         achievedDate: _kind == StarKind.lit ? (_date ?? DateTime.now()) : null,
         intensity: _kind == StarKind.unlit ? null : _intensity,
         photoPath: _kind == StarKind.lit ? _photoPath : null,
+        media: _kind == StarKind.lit ? _media : const [],
         reminderHour: _kind == StarKind.pulsar && _customReminder
             ? _reminderHour
             : null,
@@ -574,6 +591,29 @@ class _StarFormScreenState extends State<StarFormScreen> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(strings.photoPickError)));
     }
+  }
+
+  /// Extras picked during this form session live on disk straight away, so
+  /// leaving without saving has to clean them up (the ones the star already
+  /// owned stay).
+  void _discardUnsavedMedia() {
+    final keptIds = {for (final m in _initialMedia) m.id};
+    unawaited(
+      StarMediaStorage.deleteAll(_media.where((m) => !keptIds.contains(m.id))),
+    );
+  }
+
+  void _onMediaChanged(List<StarMedia> next) {
+    // An item added in this session and removed again is on disk but was
+    // never saved anywhere — free it now.
+    final keptIds = {for (final m in _initialMedia) m.id};
+    final nextIds = {for (final m in next) m.id};
+    unawaited(
+      StarMediaStorage.deleteAll(
+        _media.where((m) => !keptIds.contains(m.id) && !nextIds.contains(m.id)),
+      ),
+    );
+    setState(() => _media = next);
   }
 
   void _removePhoto() {
@@ -1247,6 +1287,27 @@ class _StarFormScreenState extends State<StarFormScreen> {
                         ],
                       ),
                     ),
+                    if (!kIsWeb) ...[
+                      const SizedBox(height: 20),
+                      StaggeredEntrance(
+                        index: 13,
+                        replayKey: _kindEpoch,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            AppFieldLabel(
+                              strings.extrasLabel,
+                              requirement: FieldRequirement.optional,
+                            ),
+                            const SizedBox(height: 6),
+                            StarMediaEditor(
+                              media: _media,
+                              onChanged: _onMediaChanged,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                   // Wider than the standard 20 between fields — this is the
                   // form's own action row, not one more field, and reads as
@@ -1254,7 +1315,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                   // whatever field happens to be last above it.
                   const SizedBox(height: 44),
                   StaggeredEntrance(
-                    index: 13,
+                    index: 14,
                     replayKey: _kindEpoch,
                     child: Center(
                       child: Wrap(

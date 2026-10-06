@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:inner_stars/data/star_repository.dart';
+import 'package:inner_stars/models/star_media.dart';
 
 void main() {
   setUp(() {
@@ -334,5 +335,53 @@ void main() {
     );
 
     expect(second.slotSequence, first.slotSequence + 1);
+  });
+
+  group('extras', () {
+    final link = StarMedia(
+      id: 'l1',
+      kind: StarMediaKind.link,
+      url: 'https://example.com',
+      createdAt: DateTime(2024, 1, 1),
+    );
+
+    test('a victory keeps its media, an unlit goal never has any', () async {
+      final repo = await StarRepository.create();
+
+      final victory = await repo.add(
+        title: 'Won',
+        projectId: 1,
+        achievedDate: DateTime(2024, 1, 1),
+        intensity: 3,
+        media: [link],
+      );
+      final goal = await repo.add(title: 'Later', projectId: 1, media: [link]);
+
+      expect(repo.getAll().firstWhere((s) => s.id == victory.id).media, [link]);
+      expect(goal.media, isEmpty);
+    });
+
+    test('update() replaces media and markNotAchieved() keeps it', () async {
+      final repo = await StarRepository.create();
+      final victory = await repo.add(
+        title: 'Won',
+        projectId: 1,
+        achievedDate: DateTime(2024, 1, 1),
+        intensity: 3,
+      );
+
+      final updated = await repo.update(
+        id: victory.id,
+        title: 'Won',
+        projectId: 1,
+        achievedDate: DateTime(2024, 1, 1),
+        intensity: 3,
+        media: [link],
+      );
+      final reopened = await repo.markNotAchieved(victory.id);
+
+      expect(updated.media, [link]);
+      expect(reopened.media, [link]);
+    });
   });
 }

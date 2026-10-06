@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/star.dart';
+import '../models/star_media.dart';
 import 'photo_storage.dart';
+import 'star_media_storage.dart';
 
 /// Reads and writes the user's stars — lit, unlit and dead all together,
 /// see [Star] — as a single JSON-encoded list under one [SharedPreferences]
@@ -86,6 +88,7 @@ class StarRepository {
     DateTime? achievedDate,
     int? intensity,
     String? photoPath,
+    List<StarMedia> media = const [],
   }) async {
     final stars = getAll();
     final projectStars = stars.where((s) => s.projectId == projectId);
@@ -118,6 +121,7 @@ class StarRepository {
       achievedDate: achievedDate,
       intensity: achievedDate == null ? null : intensity,
       photoPath: photoPath,
+      media: achievedDate == null ? const [] : media,
     );
 
     await _saveAll([star, ...stars]);
@@ -142,6 +146,7 @@ class StarRepository {
     DateTime? achievedDate,
     int? intensity,
     String? photoPath,
+    List<StarMedia> media = const [],
   }) async {
     final stars = getAll();
     final index = stars.indexWhere((s) => s.id == id);
@@ -150,6 +155,7 @@ class StarRepository {
     }
     final existing = stars[index];
     final trimmedDescription = description?.trim();
+    final nextMedia = achievedDate == null ? const <StarMedia>[] : media;
 
     int? number;
     if (achievedDate != null && existing.achievedDate == null) {
@@ -172,12 +178,14 @@ class StarRepository {
       achievedDate: achievedDate,
       intensity: achievedDate == null ? null : intensity,
       photoPath: photoPath,
+      media: nextMedia,
       dead: existing.dead,
       deadDate: existing.deadDate,
     );
 
     final nextStars = [...stars]..[index] = updated;
     await _saveAll(nextStars);
+    await _deleteDroppedMedia(existing.media, nextMedia);
 
     final previousPhotoPath = existing.photoPath;
     if (previousPhotoPath != null && previousPhotoPath != photoPath) {
@@ -195,6 +203,7 @@ class StarRepository {
     DateTime? achievedDate,
     required int intensity,
     String? photoPath,
+    List<StarMedia> media = const [],
   }) async {
     final stars = getAll();
     final index = stars.indexWhere((s) => s.id == id);
@@ -214,6 +223,7 @@ class StarRepository {
       achievedDate: achievedDate ?? DateTime.now(),
       intensity: intensity,
       photoPath: photoPath ?? existing.photoPath,
+      media: existing.media,
       dead: existing.dead,
       deadDate: existing.deadDate,
     );
@@ -243,6 +253,7 @@ class StarRepository {
       createdAt: existing.createdAt,
       targetDate: existing.targetDate,
       photoPath: existing.photoPath,
+      media: existing.media,
       dead: existing.dead,
       deadDate: existing.deadDate,
     );
@@ -284,6 +295,7 @@ class StarRepository {
     DateTime? achievedDate,
     int? intensity,
     String? photoPath,
+    List<StarMedia> media = const [],
   }) async {
     final stars = getAll();
     final index = stars.indexWhere((s) => s.id == id);
@@ -292,6 +304,7 @@ class StarRepository {
     }
     final existing = stars[index];
     final trimmedDescription = description?.trim();
+    final nextMedia = achievedDate == null ? const <StarMedia>[] : media;
 
     final updated = Star(
       id: existing.id,
@@ -307,10 +320,12 @@ class StarRepository {
       achievedDate: achievedDate,
       intensity: achievedDate == null ? null : intensity,
       photoPath: photoPath,
+      media: nextMedia,
     );
 
     final nextStars = [...stars]..[index] = updated;
     await _saveAll(nextStars);
+    await _deleteDroppedMedia(existing.media, nextMedia);
 
     if (existing.photoPath != null && existing.photoPath != photoPath) {
       await PhotoStorage.delete(existing.photoPath!);
@@ -324,6 +339,7 @@ class StarRepository {
   /// tombstoning has no purpose once the whole archive is being wiped.
   Future<void> clear() async {
     await _prefs.remove(_storageKey);
+    await StarMediaStorage.clear();
   }
 
   /// Physically removes every star in one deleted constellation, including
@@ -334,7 +350,20 @@ class StarRepository {
     await _saveAll(stars.where((star) => star.projectId != projectId).toList());
     for (final star in removed) {
       if (star.photoPath != null) await PhotoStorage.delete(star.photoPath!);
+      await StarMediaStorage.deleteAll(star.media);
     }
+  }
+
+  /// Deletes the files of extras that were in [before] but are gone from
+  /// [after] (matched by id), so removing one in the form frees its file.
+  Future<void> _deleteDroppedMedia(
+    List<StarMedia> before,
+    List<StarMedia> after,
+  ) async {
+    final keptIds = {for (final m in after) m.id};
+    await StarMediaStorage.deleteAll(
+      before.where((m) => !keptIds.contains(m.id)),
+    );
   }
 
   int _nextNumber(List<Star> stars) {

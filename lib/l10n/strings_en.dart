@@ -1287,6 +1287,72 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get photoPickError => "Couldn't get that photo. Try again?";
   @override
+  String get extrasLabel => 'Memories';
+  @override
+  String get extrasHint =>
+      'Add a voice note, photos, a video or a link to remember this victory.';
+  @override
+  String get extraVoiceNote => 'Voice Note';
+  @override
+  String get extraPhoto => 'Photo';
+  @override
+  String get extraVideo => 'Video';
+  @override
+  String get extraLink => 'Link';
+  @override
+  String get recordVoiceTitle => 'Record a Voice Note';
+  @override
+  String get recordStart => 'Record';
+  @override
+  String get recordStop => 'Stop';
+  @override
+  String get recordKeep => 'Keep It';
+  @override
+  String get micPermissionDenied =>
+      "Microphone access is off. Enable it in your phone's settings to record.";
+  @override
+  String get linkTitle => 'Add a Link';
+  @override
+  String get linkUrlHint => 'https://example.com';
+  @override
+  String get linkLabelHint => 'Label (optional)';
+  @override
+  String get linkInvalid => "That doesn't look like a valid link.";
+  @override
+  String get linkAdd => 'Add';
+  @override
+  String get mediaError => "Couldn't add that. Try again?";
+  @override
+  String get linkOpenError => "Couldn't open that link.";
+  @override
+  String get removeExtraTooltip => 'Remove';
+  @override
+  String mediaLimitReached(int max) => 'You can add up to $max extras.';
+  @override
+  String voiceNoteLabel(String duration) => 'Voice note · $duration';
+  @override
+  String get voiceNotesLabel => 'Voice Notes';
+  @override
+  String get extraPhotosLabel => 'More Photos';
+  @override
+  String get videosLabel => 'Videos';
+  @override
+  String get linksLabel => 'Links';
+  @override
+  String get documentsLabel => 'Documents';
+  @override
+  String get addVoiceNoteHint => 'Record a voice note';
+  @override
+  String get addExtraPhotosHint => 'Add photos';
+  @override
+  String get addVideoHint => 'Add a video';
+  @override
+  String get addLinkHint => 'Add a link';
+  @override
+  String get addDocumentHint => 'Add a document';
+  @override
+  String get documentOpenError => "Couldn't open that document.";
+  @override
   String get cropPhotoTitle => 'Adjust photo';
   @override
   String get cropPhotoConfirm => 'Done';

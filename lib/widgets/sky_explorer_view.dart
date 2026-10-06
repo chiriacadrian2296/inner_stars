@@ -822,6 +822,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         achievedDate: result.achievedDate,
         intensity: result.intensity,
         photoPath: result.photoPath,
+        media: result.media,
       );
       _refreshAndRebuild();
       if (mounted) _announceStarCreated(star);
@@ -1012,6 +1013,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       achievedDate: result.achievedDate,
       intensity: result.intensity,
       photoPath: result.photoPath,
+      media: result.media,
     );
     _refreshAndRebuild();
     if (mounted) _announceStarCreated(star);
@@ -1164,6 +1166,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         achievedDate: result.achievedDate,
         intensity: result.intensity,
         photoPath: result.photoPath,
+        media: result.media,
       );
       _refreshAndRebuild();
       if (mounted) _announceStarCreated(resurrected);
@@ -1198,6 +1201,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       achievedDate: edited.achievedDate,
       intensity: edited.intensity,
       photoPath: edited.photoPath,
+      media: edited.media,
     );
     _refreshAndRebuild();
   }

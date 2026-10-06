@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="bodyGradient" cx="47%" cy="39%" r="61%">
+      <stop offset="0%" stop-color="#E9FEFF"/>
+      <stop offset="30%" stop-color="#9DEEFF"/>
+      <stop offset="62%" stop-color="#4B9EF4"/>
+      <stop offset="84%" stop-color="#2860CF"/>
+      <stop offset="100%" stop-color="#173982"/>
+    </radialGradient>
+    <linearGradient id="rimGradient" x1="18%" y1="10%" x2="82%" y2="91%">
+      <stop offset="0%" stop-color="#C9FAFF"/>
+      <stop offset="38%" stop-color="#51CFFF"/>
+      <stop offset="75%" stop-color="#386FE2"/>
+      <stop offset="100%" stop-color="#162F73"/>
+    </linearGradient>
+    <linearGradient id="shineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.78"/>
+      <stop offset="100%" stop-color="#C4F9FF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <circle cx="512" cy="512" r="424" fill="url(#rimGradient)"/>
+  <circle cx="512" cy="512" r="411" fill="url(#bodyGradient)"/>
+  <ellipse cx="649" cy="231" rx="151" ry="75" fill="url(#shineGradient)" transform="rotate(19 649 231)"/>
+</svg>

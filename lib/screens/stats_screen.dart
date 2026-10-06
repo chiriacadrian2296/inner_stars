@@ -278,6 +278,7 @@ class _StatsScreenState extends State<StatsScreen> {
         achievedDate: result.achievedDate,
         intensity: result.intensity,
         photoPath: result.photoPath,
+        media: result.media,
       );
     }
     setState(() {});
