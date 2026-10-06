@@ -8,10 +8,12 @@ import 'package:inner_stars/data/habit_completion_repository.dart';
 import 'package:inner_stars/data/habit_repository.dart';
 import 'package:inner_stars/data/project_repository.dart';
 import 'package:inner_stars/data/reflection_answer_repository.dart';
+import 'package:inner_stars/data/settings_repository.dart';
 import 'package:inner_stars/data/star_repository.dart';
 import 'package:inner_stars/l10n/strings_it.dart';
 import 'package:inner_stars/l10n/strings_scope.dart';
 import 'package:inner_stars/models/life_area.dart';
+import 'package:inner_stars/settings/settings_controller.dart';
 import 'package:inner_stars/theme/app_theme.dart';
 import 'package:inner_stars/widgets/constellation_editor_painter.dart';
 import 'package:inner_stars/widgets/search_result_card.dart';
@@ -61,6 +63,9 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+    final settings = SettingsController(
+      SettingsRepository(await SharedPreferences.getInstance()),
+    );
     final tourStorage = InMemoryTourStorage();
     await tourStorage.markCompleted('search-stars');
     await tester.pumpWidget(
@@ -79,6 +84,7 @@ void main() {
                 starsShapeRepository: repositories.shapes,
                 areaVisionRepository: repositories.visions,
                 reflectionAnswerRepository: repositories.reflections,
+                settings: settings,
                 onNavigateTo: (_) {},
               ),
             ),

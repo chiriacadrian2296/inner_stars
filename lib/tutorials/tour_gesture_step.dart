@@ -101,8 +101,9 @@ class TourGestureBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isActiveTourStep(context, tour, order))
+    if (!_isActiveTourStep(context, tour, order)) {
       return const SizedBox.shrink();
+    }
     final colors = context.colors;
     return Positioned(
       top: 0,

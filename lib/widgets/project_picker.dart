@@ -22,7 +22,8 @@ class _CreateNewProject {
 }
 
 /// Picks an existing constellation, or creates a new one inline via
-/// [NewProjectScreen].
+/// [NewProjectScreen]. With [allowCreate] off (the Sky's constellation
+/// filter) it only lists what exists: no "New" button.
 ///
 /// Always lists every constellation across every area. [area] is only an
 /// optional initial value for the complete editor opened by "New"; it never
@@ -33,11 +34,13 @@ Future<Project?> pickProject(
   ProjectRepository repository,
   StarsShapeRepository starsShapeRepository, {
   LifeArea? area,
+  bool allowCreate = true,
 }) async {
   final result = await _pickProjectFlat(
     context,
     repository,
     starsShapeRepository,
+    allowCreate: allowCreate,
   );
   if (!context.mounted) return null;
   if (result is Project) return result;
@@ -58,8 +61,9 @@ Future<Project?> pickProject(
 Future<Object?> _pickProjectFlat(
   BuildContext context,
   ProjectRepository repository,
-  StarsShapeRepository starsShapeRepository,
-) {
+  StarsShapeRepository starsShapeRepository, {
+  required bool allowCreate,
+}) {
   final sheetHeight = MediaQuery.sizeOf(context).height * 0.85;
   return showFixedAppSheet<Object>(
     context: context,
@@ -68,6 +72,7 @@ Future<Object?> _pickProjectFlat(
         projects: repository.getAll(),
         starsShapeRepository: starsShapeRepository,
         sheetHeight: sheetHeight,
+        allowCreate: allowCreate,
       );
     },
   );
@@ -81,11 +86,13 @@ class _FlatProjectPickerSheet extends StatefulWidget {
     required this.projects,
     required this.starsShapeRepository,
     required this.sheetHeight,
+    required this.allowCreate,
   });
 
   final List<Project> projects;
   final StarsShapeRepository starsShapeRepository;
   final double sheetHeight;
+  final bool allowCreate;
 
   @override
   State<_FlatProjectPickerSheet> createState() =>
@@ -230,7 +237,7 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
         builder: (context, refresh) => _ProjectFiltersSheet(
           buttons: [
             _ProjectFilterButton(
-              icon: Icons.tune,
+              icon: Icons.flare,
               active: _isAreaFilterNarrowed,
               label: _isAreaFilterNarrowed
                   ? strings.activeAreasCount(_areaFilter.length)
@@ -369,11 +376,13 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
                       onPressed: () => Navigator.of(context).pop(),
                       child: AppButtonLabel(strings.cancel),
                     ),
-                    ElevatedButton(
-                      onPressed: () =>
-                          Navigator.of(context).pop(const _CreateNewProject()),
-                      child: AppButtonLabel(strings.newAction),
-                    ),
+                    if (widget.allowCreate)
+                      ElevatedButton(
+                        onPressed: () =>
+                            Navigator.of(context)
+                                .pop(const _CreateNewProject()),
+                        child: AppButtonLabel(strings.newAction),
+                      ),
                   ],
                 ),
               ),

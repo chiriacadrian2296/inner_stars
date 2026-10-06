@@ -315,9 +315,23 @@ Future<T?> showFixedAppSheet<T>({
   bool isDismissible = true,
 }) {
   final openingMediaQuery = MediaQuery.of(context);
+  // A caller below a SafeArea can expose zero bottom padding even though the
+  // device navigation area still exists. Fixed sheets live at the root of the
+  // route, so restore that physical inset before their own SafeArea is built.
+  final viewMediaQuery = MediaQueryData.fromView(
+    View.of(context),
+    platformData: openingMediaQuery,
+  );
+  final bottomViewPadding = viewMediaQuery.viewPadding.bottom;
   final mediaQuery = openingMediaQuery.copyWith(
-    padding: openingMediaQuery.padding.copyWith(top: 0),
-    viewPadding: openingMediaQuery.viewPadding.copyWith(top: 0),
+    padding: openingMediaQuery.padding.copyWith(
+      top: 0,
+      bottom: bottomViewPadding,
+    ),
+    viewPadding: openingMediaQuery.viewPadding.copyWith(
+      top: 0,
+      bottom: bottomViewPadding,
+    ),
     viewInsets: EdgeInsets.zero,
     disableAnimations: true,
   );

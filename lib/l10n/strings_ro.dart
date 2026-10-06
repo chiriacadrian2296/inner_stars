@@ -271,6 +271,24 @@ class StringsRo implements AppStrings {
   String get menuSearchDescription =>
       'Găsește orice stea, constelație sau supernovă.';
   @override
+  String get skyViewModeTooltip => 'Vizualizare';
+  @override
+  String get skyViewModeTitle => 'Vizualizare';
+  @override
+  String get skyViewList => 'Listă';
+  @override
+  String get skyViewGrid => 'Grilă';
+  @override
+  String get skyViewCardSize => 'Dimensiune Card';
+  @override
+  String get skyViewSizeCompact => 'Compact';
+  @override
+  String get skyViewSizeMedium => 'Mediu';
+  @override
+  String get skyViewSizeLarge => 'Mare';
+  @override
+  String get skyViewSizeExtraLarge => 'Foarte Mare';
+  @override
   String get menuStatisticsDescription =>
       'Steaua de azi, calendarul tău și numerele tale de-a lungul timpului.';
   @override
@@ -787,21 +805,10 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get skyTourWelcomeStartAction => 'Începe';
   @override
-  String get skyTourTapSupernovaTitle => 'Atinge o supernovă';
-  @override
-  String get skyTourTapSupernovaBody =>
-      'Încearcă — atinge orice supernovă pentru a zbura acolo.';
-  @override
-  String get skyTourTapConstellationTitle => 'Atinge o constelație';
+  String get skyTourTapConstellationTitle => 'Atinge ca să zbori acolo';
   @override
   String get skyTourTapConstellationBody =>
-      'Acum atinge o constelație din interiorul ei pentru a te apropia '
-      'și mai mult.';
-  @override
-  String get skyTourTapStarTitle => 'Atinge o stea';
-  @override
-  String get skyTourTapStarBody =>
-      'Atinge orice stea pentru a zbura chiar lângă ea.';
+      'Atinge o supernovă, o constelație sau o stea ca să zbori până la ea. Încearcă cu această constelație.';
   @override
   String get skyTourDoubleTapTitle => 'Atinge de două ori pentru a micșora';
   @override
@@ -841,16 +848,6 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
       'O simplă atingere pe această stea — fără să o ții apăsată — '
       'deschide un meniu rapid în loc de cel complet.';
   @override
-  String get skyTourQuickSettingsHintTitle => 'Setări rapide';
-  @override
-  String get skyTourQuickSettingsHintBody =>
-      'Te duce direct la setările de sunet și afișaj.';
-  @override
-  String get skyTourStatisticsHintTitle => 'Statistici';
-  @override
-  String get skyTourStatisticsHintBody =>
-      'Te duce la cifrele și progresul cerului tău.';
-  @override
   String get skyTourNightlightHintTitle => 'Nightlight';
   @override
   String get skyTourNightlightHintBody =>
@@ -861,56 +858,10 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get skyTourSkyHintBody =>
       'Găsește și adaugă supernove, constelații și stele.';
   @override
-  String get starTourIntroTitle => 'Înregistrarea unei victorii';
-  @override
-  String get starTourIntroBody =>
-      'Acest formular acoperă toate cele trei tipuri de stele — o '
-      'victorie deja obținută, un obiectiv spre care lucrezi, și un '
-      'obicei pe care îl construiești. Iată o privire rapidă asupra '
-      'fiecărui câmp.';
-  @override
-  String get starTourKindTitle => 'Obiectivele sunt stele încă neaprinse';
+  String get starTourKindTitle => 'Trei tipuri de stele';
   @override
   String get starTourKindBody =>
-      'Atinge aici pentru a stabili un obiectiv — te așteaptă pe cer, '
-      'neaprins, până îl atingi.';
-  @override
-  String get starTourLegendTitle => 'Obligatoriu sau opțional';
-  @override
-  String get starTourLegendBody =>
-      'Un punct plin înseamnă că un câmp e obligatoriu; unul conturat '
-      'înseamnă opțional. Fiecare câmp de mai jos arată unul dintre ele.';
-  @override
-  String get starTourSupernovaFieldTitle => 'Ce zonă a vieții';
-  @override
-  String get starTourSupernovaFieldBody =>
-      'Fiecare stea aparține uneia dintre cele opt supernove — alege-o pe '
-      'cea potrivită.';
-  @override
-  String get starTourConstellationFieldTitle => 'Ce constelație';
-  @override
-  String get starTourConstellationFieldBody =>
-      'Stelele se grupează în constelații — alege-o pe cea căreia îi '
-      'aparține.';
-  @override
-  String get starTourTitleFieldTitle => 'Dă un nume obiectivului tău';
-  @override
-  String get starTourTitleFieldBody => 'Ce vrei să realizezi?';
-  @override
-  String get starTourDetailsFieldTitle => 'Adaugă detalii';
-  @override
-  String get starTourDetailsFieldBody =>
-      'Spune mai mult dacă te ajută — această parte este opțională.';
-  @override
-  String get starTourDateFieldTitle => 'Când s-a întâmplat';
-  @override
-  String get starTourDateFieldBody =>
-      'Data și ora la care această victorie s-a întâmplat cu adevărat.';
-  @override
-  String get starTourTargetDateFieldTitle => 'O dată țintă';
-  @override
-  String get starTourTargetDateFieldBody =>
-      'Opțional — până când vrei să-l atingi, dacă știi deja.';
+      'Alege între o Victorie (deja făcută), un Obiectiv (de făcut, o stea stinsă) și un Obicei (un pulsar pe care îl repeți). Fiecare cere detalii diferite.';
   @override
   String get starTourIntensityTitle => 'Cât te-a costat';
   @override
@@ -918,141 +869,25 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
       'Evaluează efortul, de la 1 la 5 — nu cât de mare pare rezultatul, '
       'ci cât te-a costat cu adevărat.';
   @override
-  String get starTourHabitFrequencyTitle => 'Stabilește ritmul';
-  @override
-  String get starTourHabitFrequencyBody =>
-      'Cât de des vrei să faci asta — zilnic sau săptămânal, și de câte '
-      'ori.';
-  @override
-  String get starTourReminderTitle => 'Un memento';
-  @override
-  String get starTourReminderBody =>
-      'Opțional — activează-l pentru un memento la ora pe care o alegi.';
-  @override
-  String get starTourPhotoTitle => 'Adaugă o fotografie';
-  @override
-  String get starTourPhotoBody =>
-      'Opțional — o imagine a momentului, decupată pentru cerul tău.';
-  @override
-  String get starTourSaveTitle => 'Pune-l pe cerul tău';
-  @override
-  String get starTourSaveBody =>
-      'Când ești gata, salvează-l — va aștepta acolo, neaprins, până îl '
-      'atingi.';
-  @override
-  String get searchTourIntroTitle => 'Găsește orice pe cerul tău';
-  @override
-  String get searchTourIntroBody =>
-      'Caută și filtrează supernovele, constelațiile și stelele tale de '
-      'aici.';
-  @override
-  String get searchTourModeTitle => 'Trei moduri de a privi';
+  String get searchTourModeTitle => 'Trei niveluri';
   @override
   String get searchTourModeBody =>
-      'Comută între Supernove, Constelații și Stele.';
+      'Treci între Supernove (zonele tale de viață), Constelații (proiectele tale) și Stele (eforturi individuale).';
   @override
-  String get searchTourFieldTitle => 'Caută';
-  @override
-  String get searchTourFieldBody => 'Scrie pentru a filtra după nume.';
-  @override
-  String get searchTourFilterButtonTitle => 'Filtrează după arie';
+  String get searchTourFilterButtonTitle => 'Vizualizare, filtre și ordine';
   @override
   String get searchTourFilterButtonBody =>
-      'Restrânge la ariile care contează pentru tine acum.';
-  @override
-  String get searchTourAllAreasTitle => 'Toate ariile';
-  @override
-  String get searchTourAllAreasBody =>
-      'Activează pentru a le include pe toate, sau selectează doar cele '
-      'care contează pentru tine.';
-  @override
-  String get searchTourApplyTitle => 'Aplică';
-  @override
-  String get searchTourApplyBody => 'Salvează filtrul și vezi rezultatele.';
+      'Treci de la grilă la listă, restrânge după zonă, tip sau dată și schimbă ordinea.';
   @override
   String get lightYourSkyTourIntroTitle => 'Trei moduri de a-ți aprinde cerul';
   @override
   String get lightYourSkyTourIntroBody =>
-      'Fiecare stea pornește de aici — alege-o pe cea care se potrivește '
-      'cu ce vrei să înregistrezi.';
-  @override
-  String get lightYourSkyTourSupernovaTitle => 'Supernove';
-  @override
-  String get lightYourSkyTourSupernovaBody =>
-      'Revizuiește și editează viziunea pentru una dintre ariile tale de viață.';
-  @override
-  String get lightYourSkyTourConstellationTitle => 'Constelații';
-  @override
-  String get lightYourSkyTourConstellationBody =>
-      'Începe un proiect nou — o formă pe care stelele tale o vor umple.';
-  @override
-  String get lightYourSkyTourStarTitle => 'Stele';
-  @override
-  String get lightYourSkyTourStarBody =>
-      'Înregistrează un efort: o victorie, un obiectiv sau un obicei nou.';
-  @override
-  String get constellationTourIntroTitle => 'Pornirea unui proiect nou';
-  @override
-  String get constellationTourIntroBody =>
-      'O privire rapidă asupra fiecărui câmp înainte de a le completa.';
-  @override
-  String get constellationTourLegendTitle => 'Obligatoriu sau opțional';
-  @override
-  String get constellationTourLegendBody =>
-      'Un punct plin înseamnă că un câmp e obligatoriu; unul conturat '
-      'înseamnă opțional. Fiecare câmp de mai jos arată unul dintre ele.';
-  @override
-  String get constellationTourAreaTitle => 'Alege o arie';
-  @override
-  String get constellationTourAreaBody =>
-      'Pentru ce parte din viața ta este acest proiect?';
-  @override
-  String get constellationTourIconFieldTitle => 'Alege o pictogramă';
-  @override
-  String get constellationTourIconFieldBody =>
-      'Pictograma mică ce marchează această constelație în liste.';
-  @override
-  String get constellationTourNameTitle => 'Dă-i un nume';
-  @override
-  String get constellationTourNameBody => 'Cum se numește acest proiect?';
-  @override
-  String get constellationTourDescriptionTitle => 'Adaugă o descriere';
-  @override
-  String get constellationTourDescriptionBody =>
-      'Opțional — spune mai multe despre rostul lui.';
+      'Supernovele sunt zonele tale de viață și viziunile lor. Constelațiile sunt proiecte: forme pe care stelele tale le umplu. Stelele sunt eforturi individuale: o victorie, un obiectiv sau un obicei.';
   @override
   String get constellationTourCanvasTitle => 'Dă-i o formă';
   @override
   String get constellationTourCanvasBody =>
-      'Fiecare proiect are nevoie de o formă pe care stelele lui o vor '
-      'umple — aceasta e ce ai ales până acum. Atinge-o oricând pentru a '
-      'o schimba.';
-  @override
-  String get constellationTourDrawButtonTitle => 'Desenează-ți propria formă';
-  @override
-  String get constellationTourDrawButtonBody =>
-      'Desenează o formă personalizată de la zero.';
-  @override
-  String get constellationTourLibraryButtonTitle => 'Alege din bibliotecă';
-  @override
-  String get constellationTourLibraryButtonBody =>
-      'Alege o formă deja gata în loc să desenezi una a ta.';
-  @override
-  String get constellationTourResetButtonTitle => 'Ia-o de la capăt';
-  @override
-  String get constellationTourResetButtonBody =>
-      'Șterge forma aleasă până acum.';
-  @override
-  String get constellationTourSaveTitle => 'Creează-l';
-  @override
-  String get constellationTourSaveBody => 'Salvează noua ta constelație.';
-  @override
-  String get supernovaTourIntroTitle =>
-      'Reflectând asupra ariilor tale de viață';
-  @override
-  String get supernovaTourIntroBody =>
-      'Fiecare dintre cele opt arii ale tale își păstrează propriile '
-      'reflecții — iată cum ajungi la ele.';
+      'Fiecare proiect are nevoie de o formă pe care stelele lui o vor umple. Atinge previzualizarea sau Desenează ca să creezi una proprie, alege una din bibliotecă sau începe din nou.';
   @override
   String get supernovaTourListTitle => 'Cele opt arii ale tale';
   @override
@@ -1083,6 +918,67 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get tutorialsEnabledDescription =>
       'Indiciile ghidate apar prima dată când deschizi un ecran care are unul.';
+  @override
+  String get tutorialsScreenIntro =>
+      'Ai uitat cum funcționează ceva sau vrei să-i arăți unui prieten? Revezi aici orice tutorial.';
+  @override
+  String get tutorialDemoProjectName => 'Să revin în formă';
+  @override
+  String get tutorialDemoStarTitle => 'Prima mea alergare de 5 km';
+  @override
+  String get tutorialDemoStarDescription =>
+      'Am trecut linia fără să mă opresc. Mai încet decât speram, dar am reușit.';
+  @override
+  String get resetToursAction => 'Resetează Toate Tutorialele';
+  @override
+  String get tutorialsOpenAction => 'Deschide Tutorialele';
+  @override
+  String get tutorialReplayConfirmTitle => 'Îl revezi?';
+  @override
+  String get tutorialReplayConfirmBody =>
+      'Vrei să revezi tutorialul live pentru această funcționalitate? Te duc la locul potrivit, iar la final te întorci aici.';
+  @override
+  String get tutorialReplayConfirmAction => 'Da, Arată-mi';
+  @override
+  String get tutorialEntrySkyNavigationTitle => 'Navigarea prin Cosmo';
+  @override
+  String get tutorialEntrySkyNavigationBody =>
+      'Mișcă-te prin cer, fă zoom și deschide meniul.';
+  @override
+  String get tutorialEntryLightYourSkyTitle => 'Aprinde-ți Cerul';
+  @override
+  String get tutorialEntryLightYourSkyBody =>
+      'Supernove, constelații și stele: ce poți crea.';
+  @override
+  String get tutorialEntryStarFormTitle => 'Înregistrarea unei Stele';
+  @override
+  String get tutorialEntryStarFormBody =>
+      'Victorii, obiective și obiceiuri: alegerea tipului potrivit.';
+  @override
+  String get tutorialEntryShapeEditorTitle => 'Desenarea unei Forme';
+  @override
+  String get tutorialEntryShapeEditorBody =>
+      'Așază, conectează și mută stelele în editorul de forme.';
+  @override
+  String get tutorialEntryConstellationFormTitle => 'Crearea unei Constelații';
+  @override
+  String get tutorialEntryConstellationFormBody =>
+      'Alege o zonă și dă o formă proiectului tău.';
+  @override
+  String get tutorialEntrySearchStarsTitle => 'Explorarea Cerului';
+  @override
+  String get tutorialEntrySearchStarsBody =>
+      'Caută, filtrează și treci între cele trei niveluri.';
+  @override
+  String get tutorialEntrySupernovaVisionTitle => 'Viziunile Zonelor de Viață';
+  @override
+  String get tutorialEntrySupernovaVisionBody =>
+      'Reflectează la fiecare zonă și scrie-ți viziunea.';
+  @override
+  String get tutorialEntryStarReaderTitle => 'Citirea unei Stele';
+  @override
+  String get tutorialEntryStarReaderBody =>
+      'Răsfoiește stelele și vezi ce poți face cu ele.';
   @override
   String get quickSettingsButtonTooltip => 'Setări rapide';
   @override
@@ -1799,31 +1695,10 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get shareNowAction => 'Distribuie';
   @override
-  String get starReaderTourIntroTitle => 'Răsfoiește stelele tale';
+  String get starReaderTourIntroTitle => 'Mișcarea între stele';
   @override
   String get starReaderTourIntroBody =>
-      'Toate stelele acestei constelații sunt aici, una după alta: victorii, obiective, obiceiuri și chiar oportunitățile.';
-  @override
-  String get starReaderTourPrevTitle => 'Steaua anterioară';
-  @override
-  String get starReaderTourPrevBody =>
-      'Atinge marginea din stânga a ecranului ca să te întorci. Merge și glisarea spre dreapta.';
-  @override
-  String get starReaderTourPrevArrowBody =>
-      'Folosește această săgeată ca să te întorci.';
-  @override
-  String get starReaderTourNextTitle => 'Steaua următoare';
-  @override
-  String get starReaderTourNextBody =>
-      'Atinge marginea din dreapta ca să mergi mai departe. Merge și glisarea spre stânga.';
-  @override
-  String get starReaderTourNextArrowBody =>
-      'Folosește această săgeată ca să mergi mai departe.';
-  @override
-  String get starReaderTourCenterTitle => 'Mijlocul paginii';
-  @override
-  String get starReaderTourCenterBody =>
-      'La o stea cu poză, atinge mijlocul ca să ascunzi tot și să vezi doar poza. Atinge din nou ca să revii la detalii.';
+      'Glisează lateral sau atinge marginile stângă și dreaptă pentru a merge la steaua anterioară sau următoare. La o stea cu fotografie, atinge mijlocul ca să vezi doar fotografia.';
   @override
   String get starReaderTourDockTitle => 'Tot ce poți face';
   @override
@@ -1836,6 +1711,15 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get starQuickLookEditAction => 'Editează';
   @override
   String get starQuickLookShareAction => 'Distribuie';
+
+  @override
+  String get constellationQuickLookAddStarAction => '+ Stea';
+
+  @override
+  String get areaQuickLookReflectionsAction => 'Reflecții';
+
+  @override
+  String get areaQuickLookNewConstellationAction => '+ Constelație';
   @override
   String get nascentStarQuickLookConfigureAction => 'Configurează';
   @override
@@ -1895,6 +1779,8 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get skySupernovaIntensityLabel => 'Luminozitate supernove';
   @override
   String get skyArtworkBlendLabel => 'Mod de Amestecare';
+  @override
+  String get skyArtworkResetDefaultsLabel => 'Resetează la valorile implicite';
   @override
   String get skyArtworkControlsTooltip => 'Controale artwork';
   @override

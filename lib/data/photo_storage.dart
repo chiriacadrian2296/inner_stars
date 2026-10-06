@@ -31,6 +31,14 @@ class PhotoStorage {
   /// display switched to this class to support web too.
   static final Map<String, Uint8List> _cache = {};
 
+  /// Sample data can point at a remote placeholder instead of owning a local
+  /// photo. User-picked photos still use the persistent storage paths/keys
+  /// documented above.
+  static bool isRemote(String id) {
+    final uri = Uri.tryParse(id);
+    return uri != null && (uri.scheme == 'http' || uri.scheme == 'https');
+  }
+
   /// The synchronous fast path for a photo already read this session — see
   /// [_cache]. Null just means "not cached yet", not "doesn't exist".
   static Uint8List? cachedBytes(String id) => _cache[id];
@@ -106,6 +114,7 @@ class PhotoStorage {
   /// error for on what's already a best-effort cleanup step.
   static Future<void> delete(String id) async {
     _cache.remove(id);
+    if (isRemote(id)) return;
     try {
       if (kIsWeb) {
         final prefs = await SharedPreferences.getInstance();

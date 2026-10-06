@@ -57,22 +57,22 @@ class SkyConstellationTooltip extends StatelessWidget {
       actions: [
         SearchCardAction(
           icon: Icons.star_rounded,
-          label: '+ Stella',
+          label: strings.constellationQuickLookAddStarAction,
           onTap: onAddStar,
         ),
         SearchCardAction(
           icon: Icons.share_outlined,
-          label: 'Condividi',
+          label: strings.starQuickLookShareAction,
           onTap: onShare,
         ),
         SearchCardAction(
           icon: Icons.edit_outlined,
-          label: 'Modifica',
+          label: strings.starQuickLookEditAction,
           onTap: onEdit,
         ),
         SearchCardAction(
           icon: Icons.delete_outline_rounded,
-          label: 'Elimina',
+          label: strings.deleteStarAction,
           onTap: onDelete,
         ),
       ],

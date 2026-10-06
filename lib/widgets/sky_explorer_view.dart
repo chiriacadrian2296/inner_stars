@@ -19,6 +19,8 @@ import '../models/life_area.dart';
 import '../models/project.dart';
 import '../models/star.dart';
 import '../models/star_kind.dart';
+import '../settings/settings_controller.dart';
+import '../settings/sky_grid_size.dart';
 import '../screens/area_detail_screen.dart';
 import '../screens/constellation_screen.dart';
 import '../screens/moodboard_screen.dart';
@@ -31,19 +33,20 @@ import '../screens/visions_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../theme/life_area_theme.dart';
-import '../tutorials/tour_intro_target.dart';
 import '../tutorials/tour_step_card.dart';
+import '../tutorials/tutorial_replay.dart';
 import '../utils/app_modals.dart';
 import '../utils/area_hero_art.dart';
 import '../utils/date_format.dart';
 import '../utils/habit_stats.dart';
 import '../utils/icon_for_slug.dart';
 import '../utils/page_settled.dart';
-import '../utils/responsive.dart';
-import 'animated_presence.dart';
 import 'app_action_disc.dart';
 import 'app_field.dart';
 import 'filter_button.dart';
+import 'project_picker.dart';
+import 'gallery/gallery_cards.dart';
+import 'gallery/gallery_pager.dart';
 import 'area_filter_sheet.dart';
 import 'date_range_filter_sheet.dart';
 import 'creation_success_dialog.dart';
@@ -55,6 +58,7 @@ import 'shareable_constellation_card.dart';
 import 'shareable_goal_card.dart';
 import 'shareable_pulsar_card.dart';
 import 'sky_navigation_target.dart';
+import 'sky_view_mode_button.dart';
 import 'sort_filter_sheet.dart';
 import 'staggered_entrance.dart';
 import 'star_glyph.dart';
@@ -69,6 +73,9 @@ class SkyExplorerSession {
   String query = '';
   Set<StarKind> kindFilter = {...kListableStarKinds};
   Set<LifeArea> areaFilter = {...LifeArea.values};
+
+  /// Stars only: the one constellation to show stars from (null = all).
+  int? projectFilterId;
   DateTimeRange? dateRangeFilter;
   DateRangePreset dateRangePreset = DateRangePreset.allTime;
   SortField sortField = SortField.date;
@@ -121,8 +128,8 @@ class _SkyEntry {
 /// [_filteredSupernovaAreas]), area + date + sort in Constellations, area +
 /// kind + date + sort in Stars. On a wide layout each filter is its own
 /// button/sheet beside the search field; on a narrow one they're all
-/// collected behind a single trigger instead (see [_FiltersTriggerButton]/
-/// [_FiltersSheet]) so a phone doesn't carry a second permanent row under
+/// collected behind a single trigger instead (see [_ControlsTriggerButton]/
+/// [_ControlsSheet]) so a phone doesn't carry a second permanent row under
 /// the search field on every visit. Either way, each filter is its own
 /// sheet — area
 /// ([showAreaFilterSheet], default: empty, meaning no restriction — see
@@ -153,6 +160,7 @@ class SkyExplorerView extends StatefulWidget {
     required this.starsShapeRepository,
     required this.areaVisionRepository,
     required this.reflectionAnswerRepository,
+    required this.settings,
     this.session,
     required this.onNavigateTo,
   });
@@ -164,6 +172,10 @@ class SkyExplorerView extends StatefulWidget {
   final StarsShapeRepository starsShapeRepository;
   final AreaVisionRepository areaVisionRepository;
   final ReflectionAnswerRepository reflectionAnswerRepository;
+
+  /// Holds the list/grid choice and the grid's card size — listened to, so
+  /// changing either from the view-mode sheet shows up here live.
+  final SettingsController settings;
   final SkyExplorerSession? session;
 
   /// See [SkyNavigationTarget] — called when a card's "take me there" button
@@ -190,7 +202,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     setState(() {
       _modeReverse = mode.index < _mode.index;
       _mode = mode;
-      _modeEpoch++;
     });
     _saveSession();
     _modeAnimation.forward(from: 0);
@@ -208,10 +219,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     _selectMode(_SkyMode.values[nextIndex]);
   }
 
-  /// Bumped only when the person picks a mode themselves (never by
-  /// [_syncModeToTour]), so the filter buttons that swap in place replay
-  /// their entrance for that switch and not under a tour's spotlight.
-  int _modeEpoch = 0;
   late final SearchCardMenuController _cardMenuController;
   late final List<ScrollController> _scrollControllers;
   late final SkyExplorerSession _session;
@@ -227,6 +234,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   // and an empty set really means that nothing matches.
   late Set<StarKind> _kindFilter;
   late Set<LifeArea> _areaFilter;
+  int? _projectFilterId;
   DateTimeRange? _dateRangeFilter;
 
   /// Which chip (if any) produced [_dateRangeFilter] — kept alongside it
@@ -253,6 +261,11 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
 
   void _refreshDataCache() {
     _projectsCache = widget.projectRepository.getAll();
+    // A constellation deleted since the filter was set can't match anything.
+    if (_projectFilterId != null &&
+        !_projectsCache.any((p) => p.id == _projectFilterId)) {
+      _projectFilterId = null;
+    }
     _starsCache = widget.starRepository.getAll();
     _habitsCache = widget.habitRepository.getAll();
     _shapesByIdCache = {
@@ -287,6 +300,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       ..query = _query
       ..kindFilter = {..._kindFilter}
       ..areaFilter = {..._areaFilter}
+      ..projectFilterId = _projectFilterId
       ..dateRangeFilter = _dateRangeFilter
       ..dateRangePreset = _dateRangePreset
       ..sortField = _sortField
@@ -422,6 +436,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       if (!_kindFilter.contains(e.kind)) {
         return false;
       }
+      if (_projectFilterId != null &&
+          (e.star?.projectId ?? e.habit!.projectId) != _projectFilterId) {
+        return false;
+      }
       if (range != null && !_isWithinRange(e.sortKey, range)) return false;
       if (query.isEmpty) return true;
       return e.title.toLowerCase().contains(query) ||
@@ -444,6 +462,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
 
   @override
   void dispose() {
+    widget.settings.removeListener(_onSettingsChanged);
     _saveSession();
     _modeAnimation.dispose();
     _queryController.dispose();
@@ -457,6 +476,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   @override
   void initState() {
     super.initState();
+    widget.settings.addListener(_onSettingsChanged);
     final session = _session = widget.session ?? SkyExplorerSession();
     final modeIndex = session.modeIndex < 0
         ? 0
@@ -468,6 +488,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     _queryController = TextEditingController(text: _query);
     _kindFilter = {...session.kindFilter};
     _areaFilter = {...session.areaFilter};
+    _projectFilterId = session.projectFilterId;
     _dateRangeFilter = session.dateRangeFilter;
     _dateRangePreset = session.dateRangePreset;
     _sortField = session.sortField;
@@ -488,23 +509,221 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       whenPageSettled(context, () {
-        Tour.read(context).start('search-stars');
+        startTourAuto(Tour.read(context), 'search-stars');
       });
     });
   }
 
-  Future<void> _openArea(LifeArea area) async {
-    final result = await Navigator.of(context).push<LifeArea>(
-      MaterialPageRoute(
-        builder: (_) => AreaDetailScreen(
-          area: area,
-          areaVisionRepository: widget.areaVisionRepository,
-          reflectionAnswerRepository: widget.reflectionAnswerRepository,
-          projectRepository: widget.projectRepository,
-          starRepository: widget.starRepository,
+  /// The list/grid choice or the grid's card size changed (from the view-mode
+  /// sheet): rebuild with the new view, closing any quick menu that belonged
+  /// to the old one.
+  void _onSettingsChanged() {
+    _cardMenuController.closeAll();
+    if (mounted) setState(() {});
+  }
+
+  // -- Grid view ------------------------------------------------------------
+
+  GalleryAreaData _areaGridData(LifeArea area) {
+    final projects = _projectsCache.where((p) => p.area == area).toList();
+    final starCount = projects.fold<int>(
+      0,
+      (count, project) =>
+          count +
+          _starsForProject(project.id).length +
+          _habitsCache.where((h) => h.projectId == project.id).length,
+    );
+    return GalleryAreaData(
+      area: area,
+      constellationCount: projects.length,
+      starCount: starCount,
+    );
+  }
+
+  GalleryProjectData _projectGridData(Project project) {
+    final stars = _starsForProject(project.id);
+    final shape = _shapesByIdCache[project.starsShapeId];
+    final lit = stars.where((s) => s.isLit).toList();
+    return GalleryProjectData(
+      project: project,
+      shape: shape,
+      litSlots: {for (final s in lit) s.slotSequence - 1},
+      totalStars: shape?.points.length ?? stars.length,
+      litStars: lit.length,
+    );
+  }
+
+  GalleryStarData _starGridData(_SkyEntry entry) {
+    final habit = entry.habit;
+    if (habit == null) {
+      return GalleryStarData.fromStar(
+        entry.star!,
+        _projectsById[entry.star!.projectId],
+      );
+    }
+    final counts = _countsByDayFor(habit.id);
+    return GalleryStarData.fromHabit(
+      habit,
+      _projectsById[habit.projectId],
+      streak: habitCurrentStreak(habit, counts),
+      pulsarLit: isHabitLit(habit, counts),
+    );
+  }
+
+  /// Every level's grid body: [items] as miniature pages, as big as the
+  /// grid card size setting allows. Tapping one calls [onTap] with its index.
+  Widget _gridBody<T>({
+    required ScrollController controller,
+    required List<T> items,
+    required String emptyText,
+    required Widget Function(T item, VoidCallback onTap) tile,
+    required void Function(int index) onTap,
+  }) {
+    final colors = context.colors;
+    if (items.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Center(
+          child: StaggeredEntrance(
+            index: 0,
+            child: Text(
+              emptyText,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: colors.muted),
+            ),
+          ),
+        ),
+      );
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) => GridView.builder(
+        controller: controller,
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: skyGridColumnsFor(
+            widget.settings.skyGridSizeStep,
+            constraints.maxWidth - 40,
+          ),
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: kGalleryTileAspectRatio,
+        ),
+        itemCount: items.length,
+        itemBuilder: (context, index) => StaggeredEntrance(
+          index: index % 12,
+          child: tile(items[index], () => onTap(index)),
         ),
       ),
     );
+  }
+
+  /// One-at-a-time view for areas and constellations, opened from the grid.
+  /// [open] pushes the real detail page and returns where it asked to fly
+  /// to, which closes the pager and is handed to the Sky here.
+  Future<void> _openGridPager<T>({
+    required List<T> items,
+    required int index,
+    required Widget Function(T item) tileBuilder,
+    required Future<SkyNavigationTarget?> Function(T item) open,
+  }) async {
+    final result = await Navigator.of(context).push<Object>(
+      MaterialPageRoute(
+        builder: (_) => GalleryPager<T>(
+          items: items,
+          initialIndex: index,
+          tileBuilder: tileBuilder,
+          onOpen: (i) => open(items[i]),
+        ),
+      ),
+    );
+    _refreshAndRebuild();
+    if (result is SkyNavigationTarget && mounted) {
+      widget.onNavigateTo(result);
+    }
+  }
+
+  Widget _areasGrid(AppStrings strings) {
+    final areas = [
+      for (final area in _filteredSupernovaAreas(strings)) _areaGridData(area),
+    ];
+    return _gridBody<GalleryAreaData>(
+      controller: _scrollControllers[0],
+      items: areas,
+      emptyText: strings.noSearchResultsSupernovas,
+      tile: (item, onTap) => GalleryAreaTile(data: item, onTap: onTap),
+      onTap: (index) => _openGridPager<GalleryAreaData>(
+        items: areas,
+        index: index,
+        tileBuilder: (d) => GalleryAreaTile(data: d),
+        open: (d) async {
+          final result = await _pushArea(d.area);
+          return result == null ? null : SkyAreaTarget(result);
+        },
+      ),
+    );
+  }
+
+  Widget _constellationsGrid(AppStrings strings) {
+    final projects = [
+      for (final project in _filteredProjects) _projectGridData(project),
+    ];
+    return _gridBody<GalleryProjectData>(
+      controller: _scrollControllers[1],
+      items: projects,
+      emptyText: strings.noSearchResultsConstellations,
+      tile: (item, onTap) => GalleryProjectTile(data: item, onTap: onTap),
+      onTap: (index) => _openGridPager<GalleryProjectData>(
+        items: projects,
+        index: index,
+        tileBuilder: (d) => GalleryProjectTile(data: d),
+        open: (d) async {
+          final result = await _pushProject(d.project);
+          return result == null ? null : SkyProjectTarget(result);
+        },
+      ),
+    );
+  }
+
+  Widget _starsGrid(AppStrings strings) {
+    final stars = [for (final entry in _filteredEntries) _starGridData(entry)];
+    return _gridBody<GalleryStarData>(
+      controller: _scrollControllers[2],
+      items: stars,
+      emptyText: strings.noSearchResultsStars,
+      tile: (item, onTap) => GalleryStarTile(data: item, onTap: onTap),
+      onTap: (index) => _openStarReader(stars[index].key),
+    );
+  }
+
+  Future<LifeArea?> _pushArea(LifeArea area) =>
+      Navigator.of(context).push<LifeArea>(
+        MaterialPageRoute(
+          builder: (_) => AreaDetailScreen(
+            area: area,
+            areaVisionRepository: widget.areaVisionRepository,
+            reflectionAnswerRepository: widget.reflectionAnswerRepository,
+            projectRepository: widget.projectRepository,
+            starRepository: widget.starRepository,
+          ),
+        ),
+      );
+
+  Future<Project?> _pushProject(Project project) =>
+      Navigator.of(context).push<Project>(
+        MaterialPageRoute(
+          builder: (_) => ConstellationScreen(
+            project: project,
+            starRepository: widget.starRepository,
+            projectRepository: widget.projectRepository,
+            habitRepository: widget.habitRepository,
+            habitCompletionRepository: widget.habitCompletionRepository,
+            starsShapeRepository: widget.starsShapeRepository,
+          ),
+        ),
+      );
+
+  Future<void> _openArea(LifeArea area) async {
+    final result = await _pushArea(area);
     _refreshAndRebuild();
     if (result != null && mounted) {
       widget.onNavigateTo(SkyAreaTarget(result));
@@ -854,18 +1073,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   }
 
   Future<void> _openProject(Project project) async {
-    final result = await Navigator.of(context).push<Project>(
-      MaterialPageRoute(
-        builder: (_) => ConstellationScreen(
-          project: project,
-          starRepository: widget.starRepository,
-          projectRepository: widget.projectRepository,
-          habitRepository: widget.habitRepository,
-          habitCompletionRepository: widget.habitCompletionRepository,
-          starsShapeRepository: widget.starsShapeRepository,
-        ),
-      ),
-    );
+    final result = await _pushProject(project);
     _refreshAndRebuild();
     if (result != null && mounted) {
       widget.onNavigateTo(SkyProjectTarget(result));
@@ -1174,6 +1382,18 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     _saveSession();
   }
 
+  Future<void> _openProjectFilter() async {
+    final picked = await pickProject(
+      context,
+      widget.projectRepository,
+      widget.starsShapeRepository,
+      allowCreate: false,
+    );
+    if (picked == null) return;
+    setState(() => _projectFilterId = picked.id);
+    _saveSession();
+  }
+
   Future<void> _openKindFilter() async {
     final result = await showKindFilterSheet(
       context,
@@ -1240,30 +1460,46 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   bool get _isAreaFilterNarrowed =>
       _areaFilter.length != LifeArea.values.length;
 
+  bool get _isProjectFilterActive => _projectFilterId != null;
+
+  /// The constellation button's own label — the picked constellation's name,
+  /// or the neutral "Constellation" while none is picked.
+  String _projectFilterButtonLabel(AppStrings strings) {
+    final id = _projectFilterId;
+    if (id == null) return strings.projectLabel;
+    for (final project in _projectsCache) {
+      if (project.id == id) return project.name;
+    }
+    return strings.projectLabel;
+  }
+
   /// Same idea as [_isAreaFilterNarrowed], for [_kindFilter].
   bool get _isKindFilterNarrowed =>
       _kindFilter.length != kListableStarKinds.length;
 
   /// Whether any of the filters that actually apply to [_mode] right now is
   /// narrowed/non-default — lights up the mobile "Filtri" trigger button
-  /// (see [_FiltersTriggerButton]) exactly when opening it would reveal at
+  /// (see [_ControlsTriggerButton]) exactly when opening it would reveal at
   /// least one button already lit, same "lit vs dark" rule each of those
   /// buttons already follows on its own.
   bool get _isAnyFilterActive =>
       _isAreaFilterNarrowed ||
-      (_mode == _SkyMode.stars && _isKindFilterNarrowed) ||
+      (_mode == _SkyMode.stars &&
+          (_isKindFilterNarrowed || _isProjectFilterActive)) ||
       _dateRangeFilter != null ||
       _isSortNonDefault;
 
   bool get _hasAnyConfiguredFilter =>
       _isAreaFilterNarrowed ||
       _isKindFilterNarrowed ||
+      _isProjectFilterActive ||
       _dateRangeFilter != null ||
       _isSortNonDefault;
 
   void _resetAllFilters() {
     setState(() {
       _areaFilter = {...LifeArea.values};
+      _projectFilterId = null;
       _kindFilter = {...kListableStarKinds};
       _dateRangeFilter = null;
       _dateRangePreset = DateRangePreset.allTime;
@@ -1375,7 +1611,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   /// otherwise area, + kind in Stars only, + date, + sort, in that order).
   /// Each button reads live state directly (not a value captured at some
   /// earlier build), so calling this again after [onChanged] fires — see
-  /// [_openFiltersSheet] — always reflects whatever just changed. No
+  /// [_openControlsSheet] — always reflects whatever just changed. No
   /// [HintTarget] wrapping here: the two call sites that need the
   /// "search-stars" tour's order-4 step wrap whichever of their own widgets
   /// is the one actually tappable before anything else opens (the area
@@ -1395,13 +1631,22 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
 
     return [
       FilterButton(
-        icon: Icons.tune,
+        icon: Icons.flare,
         active: _isAreaFilterNarrowed,
         label: _areaFilterButtonLabel(strings),
         tooltip: strings.filterAreasAction,
         horizontal: horizontal,
         onTap: () => wrap(_openAreaFilter),
       ),
+      if (_mode == _SkyMode.stars)
+        FilterButton(
+          icon: Icons.insights,
+          active: _isProjectFilterActive,
+          label: _projectFilterButtonLabel(strings),
+          tooltip: strings.selectAProject,
+          horizontal: horizontal,
+          onTap: () => wrap(_openProjectFilter),
+        ),
       if (_mode == _SkyMode.stars)
         FilterButton(
           icon: Icons.auto_awesome,
@@ -1430,32 +1675,40 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     ];
   }
 
-  /// The mobile trigger's own destination — every filter button that
-  /// applies to [_mode], collected onto one sheet instead of the row that
-  /// used to sit permanently under the search field on every visit. A
-  /// [StatefulBuilder] so tapping a button in here (e.g. Area) and coming
-  /// back from its own sheet refreshes this one's labels/active state in
-  /// place, rather than leaving it showing what was true when it opened.
-  Future<void> _openFiltersSheet(BuildContext context) async {
+  /// The trigger's destination: the view (list/grid + card size), every
+  /// filter that applies to [_mode], and sort, as three sections of one sheet.
+  /// A [StatefulBuilder] so coming back from a filter's own sheet refreshes
+  /// this one's labels/active state in place, rather than leaving it showing
+  /// what was true when it opened. The barrier is light so the list/grid
+  /// behind stays easy to judge while the view settings change.
+  Future<void> _openControlsSheet(BuildContext context) async {
     final strings = context.strings;
     await showAppSheet<void>(
       context: context,
       isScrollControlled: true,
+      barrierColor: kSkyViewSheetBarrier,
       builder: (_) => StatefulBuilder(
-        builder: (context, setSheetState) => _FiltersSheet(
-          title: strings.filtersAction,
-          buttons: _buildFilterButtons(
+        builder: (context, setSheetState) {
+          // Sort is always the last button; the rest are filters.
+          final buttons = _buildFilterButtons(
             strings,
             onChanged: () => setSheetState(() {}),
             horizontal: true,
-          ),
-          canReset: _hasAnyConfiguredFilter,
-          resetLabel: strings.clearFilterAction,
-          onReset: () {
-            _resetAllFilters();
-            setSheetState(() {});
-          },
-        ),
+          );
+          return _ControlsSheet(
+            settings: widget.settings,
+            filterButtons: buttons.isEmpty
+                ? const <Widget>[]
+                : buttons.sublist(0, buttons.length - 1),
+            sortButton: buttons.isEmpty ? null : buttons.last,
+            canReset: _hasAnyConfiguredFilter,
+            resetLabel: strings.clearFilterAction,
+            onReset: () {
+              _resetAllFilters();
+              setSheetState(() {});
+            },
+          );
+        },
       ),
     );
   }
@@ -1486,12 +1739,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                 // Expanded list below stays full width so its own scrollbar
                 // sits at the true page edge on wide viewports rather than
                 // hugging a centered column (see ResponsiveContent's doc).
-                TourIntroTarget(
-                  tour: 'search-stars',
-                  order: 1,
-                  title: strings.searchTourIntroTitle,
-                  description: strings.searchTourIntroBody,
-                ),
                 ResponsiveContent(
                   child: Column(
                     children: [
@@ -1499,7 +1746,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                         padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
                         child: HintTarget(
                           tour: 'search-stars',
-                          order: 2,
+                          order: 1,
                           showArrow: true,
                           spotlightPadding: const EdgeInsets.all(8),
                           contentBuilder: appTourStepCard,
@@ -1507,30 +1754,44 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                           description: strings.searchTourModeBody,
                           child: StaggeredEntrance(
                             index: 1,
-                            child: AnimatedToggleSwitch<_SkyMode>.rolling(
-                              current: _mode,
-                              values: _SkyMode.values,
-                              onChanged: _selectMode,
-                              iconBuilder: (value, size) => Icon(
-                                switch (value) {
-                                  _SkyMode.supernovas => Icons.flare,
-                                  _SkyMode.constellations => Icons.insights,
-                                  _SkyMode.stars => Icons.star,
-                                },
-                                size: 20,
-                                color: value == _mode
-                                    ? colors.night
-                                    : colors.muted,
-                              ),
-                              style: ToggleStyle(
-                                backgroundColor: colors.nightPanel,
-                                indicatorColor: colors.gold,
-                                borderColor: colors.nightBorder,
-                                borderRadius: BorderRadius.circular(
-                                  kRadiusField,
+                            child: Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 220,
                                 ),
-                                indicatorBorderRadius: BorderRadius.circular(
-                                  kRadiusField,
+                                child: AnimatedToggleSwitch<_SkyMode>.rolling(
+                                  height: 40,
+                                  current: _mode,
+                                  values: _SkyMode.values,
+                                  onChanged: _selectMode,
+                                  // The package default is 2; every other
+                                  // control on this row draws kBorderWidth.
+                                  borderWidth: kBorderWidth,
+                                  // The package dims inactive icons to
+                                  // half on top of their own color; the
+                                  // search field's icon isn't dimmed.
+                                  iconOpacity: 1.0,
+                                  iconBuilder: (value, size) => Icon(
+                                    switch (value) {
+                                      _SkyMode.supernovas => Icons.flare,
+                                      _SkyMode.constellations => Icons.insights,
+                                      _SkyMode.stars => Icons.star,
+                                    },
+                                    size: 20,
+                                    color: value == _mode
+                                        ? colors.night
+                                        : colors.muted,
+                                  ),
+                                  style: ToggleStyle(
+                                    backgroundColor: colors.nightPanel,
+                                    indicatorColor: colors.gold,
+                                    borderColor: colors.nightBorder,
+                                    borderRadius: BorderRadius.circular(
+                                      kRadiusField,
+                                    ),
+                                    indicatorBorderRadius:
+                                        BorderRadius.circular(kRadiusField),
+                                  ),
                                 ),
                               ),
                             ),
@@ -1539,155 +1800,61 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                       ),
                       Builder(
                         builder: (context) {
-                          final searchField = HintTarget(
-                            tour: 'search-stars',
-                            order: 3,
-                            showArrow: true,
-                            contentBuilder: appTourStepCard,
-                            title: strings.searchTourFieldTitle,
-                            description: strings.searchTourFieldBody,
-                            child: StaggeredEntrance(
-                              index: 2,
-                              child: AppTextField(
-                                controller: _queryController,
-                                hintText: strings.searchHint,
-                                onChanged: (value) {
-                                  _cardMenuController.closeAll();
-                                  setState(() => _query = value);
-                                  _saveSession();
-                                },
-                                prefixIcon: Icon(
-                                  Icons.search,
-                                  color: colors.muted,
-                                  size: 20,
-                                ),
-                                suffixIcon: _query.isEmpty
-                                    ? null
-                                    : IconButton(
-                                        tooltip: strings.clearSearchTooltip,
-                                        onPressed: () {
-                                          _queryController.clear();
-                                          _cardMenuController.closeAll();
-                                          setState(() => _query = '');
-                                          _saveSession();
-                                        },
-                                        icon: Icon(
-                                          Icons.close,
-                                          color: colors.muted,
-                                          size: 20,
-                                        ),
-                                      ),
+                          final searchField = StaggeredEntrance(
+                            index: 2,
+                            child: AppTextField(
+                              controller: _queryController,
+                              hintText: strings.searchHint,
+                              onChanged: (value) {
+                                _cardMenuController.closeAll();
+                                setState(() => _query = value);
+                                _saveSession();
+                              },
+                              prefixIcon: Icon(
+                                Icons.search,
+                                color: colors.muted,
+                                size: 20,
                               ),
+                              suffixIcon: _query.isEmpty
+                                  ? null
+                                  : IconButton(
+                                      tooltip: strings.clearSearchTooltip,
+                                      onPressed: () {
+                                        _queryController.clear();
+                                        _cardMenuController.closeAll();
+                                        setState(() => _query = '');
+                                        _saveSession();
+                                      },
+                                      icon: Icon(
+                                        Icons.close,
+                                        color: colors.muted,
+                                        size: 20,
+                                      ),
+                                    ),
                             ),
                           );
 
-                          // Wide layouts keep room for every filter button right
-                          // beside the search field (search always exactly half;
-                          // the buttons split the other half evenly, so the
-                          // field's own flex matches their combined count). A real
-                          // phone width doesn't have that room — narrow layouts
-                          // get one "Filtri" trigger beside the field instead,
-                          // opening every filter (area/kind/date/sort) on a sheet
-                          // of its own rather than a second permanent row eating
-                          // vertical space on every visit.
-                          if (isWideLayout(context)) {
-                            final filterButtons = _buildFilterButtons(strings);
-                            // Search takes exactly half once the filter buttons
-                            // are there and the whole row when they aren't; the
-                            // buttons slide away and back with the mode.
-                            return Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                20,
-                                10,
-                                20,
-                                12,
-                              ),
-                              child: LayoutBuilder(
-                                builder: (context, constraints) => Row(
-                                  children: [
-                                    Expanded(child: searchField),
-                                    AnimatedPresence(
-                                      visible: filterButtons.isNotEmpty,
-                                      entranceIndex: 3,
-                                      child: SizedBox(
-                                        width: constraints.maxWidth / 2,
-                                        child: Row(
-                                          children: [
-                                            for (
-                                              var i = 0;
-                                              i < filterButtons.length;
-                                              i++
-                                            ) ...[
-                                              const SizedBox(width: 10),
-                                              Expanded(
-                                                child: i == 0
-                                                    ? HintTarget(
-                                                        tour: 'search-stars',
-                                                        order: 4,
-                                                        showArrow: true,
-                                                        contentBuilder:
-                                                            appTourStepCard,
-                                                        title: strings
-                                                            .searchTourFilterButtonTitle,
-                                                        description: strings
-                                                            .searchTourFilterButtonBody,
-                                                        child: StaggeredEntrance(
-                                                          index: 3 + i,
-                                                          axis: Axis.horizontal,
-                                                          replayKey: _modeEpoch,
-                                                          child:
-                                                              filterButtons[i],
-                                                        ),
-                                                      )
-                                                    : StaggeredEntrance(
-                                                        index: 3 + i,
-                                                        axis: Axis.horizontal,
-                                                        replayKey: _modeEpoch,
-                                                        child: filterButtons[i],
-                                                      ),
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }
-                          final hasFilters = _mode != _SkyMode.supernovas;
+                          // One trigger beside the field, at every width: it opens
+                          // the controls sheet (view, filters, sort) rather than
+                          // a permanent row of buttons eating space on each visit.
                           return Padding(
                             padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
                             child: Row(
                               children: [
                                 Expanded(child: searchField),
-                                // Comes and goes with the mode, so it animates both
-                                // ways instead of popping out on Supernovas.
-                                AnimatedPresence(
-                                  visible: hasFilters,
-                                  entranceIndex: 3,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const SizedBox(width: 10),
-                                      HintTarget(
-                                        tour: 'search-stars',
-                                        order: 4,
-                                        showArrow: true,
-                                        contentBuilder: appTourStepCard,
-                                        title:
-                                            strings.searchTourFilterButtonTitle,
-                                        description:
-                                            strings.searchTourFilterButtonBody,
-                                        child: _FiltersTriggerButton(
-                                          active: _isAnyFilterActive,
-                                          tooltip: strings.filtersAction,
-                                          onTap: () =>
-                                              _openFiltersSheet(context),
-                                        ),
-                                      ),
-                                    ],
+                                const SizedBox(width: 10),
+                                HintTarget(
+                                  tour: 'search-stars',
+                                  order: 2,
+                                  showArrow: true,
+                                  contentBuilder: appTourStepCard,
+                                  title: strings.searchTourFilterButtonTitle,
+                                  description:
+                                      strings.searchTourFilterButtonBody,
+                                  child: _ControlsTriggerButton(
+                                    active: _isAnyFilterActive,
+                                    tooltip: strings.filtersAction,
+                                    onTap: () => _openControlsSheet(context),
                                   ),
                                 ),
                               ],
@@ -1737,122 +1904,154 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                           // needed on any normal phone, and a search narrowed down to
                           // one or two cards now sits right under the search row
                           // instead of floating mid-screen.
-                          _SkyMode.supernovas => Builder(
-                            builder: (context) {
-                              final areas = _filteredSupernovaAreas(strings);
-                              if (areas.isEmpty) {
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 32,
-                                  ),
-                                  child: Center(
-                                    child: StaggeredEntrance(
-                                      index: 0,
-                                      child: Text(
-                                        strings.noSearchResultsSupernovas,
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: colors.muted,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }
-                              return ListView.separated(
-                                controller: _scrollControllers[0],
-                                padding: const EdgeInsets.fromLTRB(0, 4, 0, 16),
-                                itemCount: areas.length,
-                                separatorBuilder: (_, _) =>
-                                    const SizedBox(height: 10),
-                                itemBuilder: (context, index) {
-                                  final area = areas[index];
-                                  final projects = _projectsCache
-                                      .where((project) => project.area == area)
-                                      .toList();
-                                  final starCount = projects.fold<int>(
-                                    0,
-                                    (count, project) =>
-                                        count +
-                                        (_starsByProjectCache[project.id]
-                                                ?.length ??
-                                            0) +
-                                        _habitsCache
-                                            .where(
-                                              (habit) =>
-                                                  habit.projectId == project.id,
-                                            )
-                                            .length,
-                                  );
-                                  return StaggeredEntrance(
-                                    index: index,
-                                    child: ResponsiveContent(
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 20,
-                                        ),
-                                        child: _AreaCard(
-                                          area: area,
-                                          constellationCount: projects.length,
-                                          starCount: starCount,
-                                          menuController: _cardMenuController,
-                                          onTap: () => _openArea(area),
-                                          onVision: () => _openAreaVision(area),
-                                          onMoodboard: () =>
-                                              _openAreaMoodboard(area),
-                                          onReflections: () =>
-                                              _openAreaReflections(area),
-                                          onNewConstellation: () =>
-                                              _openNewConstellation(area),
-                                          onNavigateTo: () =>
-                                              widget.onNavigateTo(
-                                                SkyAreaTarget(area),
+                          _SkyMode.supernovas =>
+                            widget.settings.skyGridView
+                                ? _areasGrid(strings)
+                                : Builder(
+                                    builder: (context) {
+                                      final areas = _filteredSupernovaAreas(
+                                        strings,
+                                      );
+                                      if (areas.isEmpty) {
+                                        return Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 32,
+                                          ),
+                                          child: Center(
+                                            child: StaggeredEntrance(
+                                              index: 0,
+                                              child: Text(
+                                                strings
+                                                    .noSearchResultsSupernovas,
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: colors.muted,
+                                                ),
                                               ),
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                      return ListView.separated(
+                                        controller: _scrollControllers[0],
+                                        padding: const EdgeInsets.fromLTRB(
+                                          0,
+                                          4,
+                                          0,
+                                          16,
                                         ),
-                                      ),
+                                        itemCount: areas.length,
+                                        separatorBuilder: (_, _) =>
+                                            const SizedBox(height: 10),
+                                        itemBuilder: (context, index) {
+                                          final area = areas[index];
+                                          final projects = _projectsCache
+                                              .where(
+                                                (project) =>
+                                                    project.area == area,
+                                              )
+                                              .toList();
+                                          final starCount = projects.fold<int>(
+                                            0,
+                                            (count, project) =>
+                                                count +
+                                                (_starsByProjectCache[project
+                                                            .id]
+                                                        ?.length ??
+                                                    0) +
+                                                _habitsCache
+                                                    .where(
+                                                      (habit) =>
+                                                          habit.projectId ==
+                                                          project.id,
+                                                    )
+                                                    .length,
+                                          );
+                                          return StaggeredEntrance(
+                                            index: index,
+                                            child: ResponsiveContent(
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 20,
+                                                    ),
+                                                child: _AreaCard(
+                                                  area: area,
+                                                  constellationCount:
+                                                      projects.length,
+                                                  starCount: starCount,
+                                                  menuController:
+                                                      _cardMenuController,
+                                                  onTap: () => _openArea(area),
+                                                  onVision: () =>
+                                                      _openAreaVision(area),
+                                                  onMoodboard: () =>
+                                                      _openAreaMoodboard(area),
+                                                  onReflections: () =>
+                                                      _openAreaReflections(
+                                                        area,
+                                                      ),
+                                                  onNewConstellation: () =>
+                                                      _openNewConstellation(
+                                                        area,
+                                                      ),
+                                                  onNavigateTo: () =>
+                                                      widget.onNavigateTo(
+                                                        SkyAreaTarget(area),
+                                                      ),
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+                          _SkyMode.constellations =>
+                            widget.settings.skyGridView
+                                ? _constellationsGrid(strings)
+                                : _ConstellationsList(
+                                    scrollController: _scrollControllers[1],
+                                    hasAnyProjects:
+                                        _filteredAreaProjects.isNotEmpty,
+                                    filteredProjects: _filteredProjects,
+                                    starsForProject: _starsForProject,
+                                    shapeForProject: (project) =>
+                                        _shapesByIdCache[project.starsShapeId],
+                                    menuController: _cardMenuController,
+                                    onTap: _openProject,
+                                    onNavigateTo: widget.onNavigateTo,
+                                    onAddStar: _addStarToConstellation,
+                                    onShare: _shareConstellation,
+                                    onEdit: _editConstellation,
+                                    onDelete: _deleteConstellation,
+                                  ),
+                          _SkyMode.stars =>
+                            widget.settings.skyGridView
+                                ? _starsGrid(strings)
+                                : _FlatList(
+                                    scrollController: _scrollControllers[2],
+                                    hasAnyEntries: allEntries.isNotEmpty,
+                                    entries: filteredEntries,
+                                    projectsById: _projectsById,
+                                    countsByDayFor: _countsByDayFor,
+                                    query: _query,
+                                    menuController: _cardMenuController,
+                                    onOpenStar: (entry) => _openStarReader(
+                                      StarEntry(entry.star!).key,
                                     ),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                          _SkyMode.constellations => _ConstellationsList(
-                            scrollController: _scrollControllers[1],
-                            hasAnyProjects: _filteredAreaProjects.isNotEmpty,
-                            filteredProjects: _filteredProjects,
-                            starsForProject: _starsForProject,
-                            shapeForProject: (project) =>
-                                _shapesByIdCache[project.starsShapeId],
-                            menuController: _cardMenuController,
-                            onTap: _openProject,
-                            onNavigateTo: widget.onNavigateTo,
-                            onAddStar: _addStarToConstellation,
-                            onShare: _shareConstellation,
-                            onEdit: _editConstellation,
-                            onDelete: _deleteConstellation,
-                          ),
-                          _SkyMode.stars => _FlatList(
-                            scrollController: _scrollControllers[2],
-                            hasAnyEntries: allEntries.isNotEmpty,
-                            entries: filteredEntries,
-                            projectsById: _projectsById,
-                            countsByDayFor: _countsByDayFor,
-                            query: _query,
-                            menuController: _cardMenuController,
-                            onOpenStar: (entry) =>
-                                _openStarReader(StarEntry(entry.star!).key),
-                            onOpenHabit: (habit) =>
-                                _openStarReader(PulsarEntry(habit).key),
-                            onNavigateTo: widget.onNavigateTo,
-                            onShareEntry: _shareEntry,
-                            onEditStar: _editStar,
-                            onDeleteStar: _deleteStar,
-                            onLightStar: _lightStar,
-                            onHabitToday: _habitTodayAction,
-                            onEditHabit: _editHabit,
-                            onDeleteHabit: _deleteHabit,
-                          ),
+                                    onOpenHabit: (habit) =>
+                                        _openStarReader(PulsarEntry(habit).key),
+                                    onNavigateTo: widget.onNavigateTo,
+                                    onShareEntry: _shareEntry,
+                                    onEditStar: _editStar,
+                                    onDeleteStar: _deleteStar,
+                                    onLightStar: _lightStar,
+                                    onHabitToday: _habitTodayAction,
+                                    onEditHabit: _editHabit,
+                                    onDeleteHabit: _deleteHabit,
+                                  ),
                         },
                       ),
                     ),
@@ -1998,15 +2197,13 @@ class _AreaCard extends StatelessWidget {
   }
 }
 
-/// The narrow-layout stand-in for the whole row of [FilterButton]s — one
-/// icon button beside the search field that opens [_FiltersSheet] instead,
-/// so a phone doesn't carry a second permanent row under the search field on
-/// every single visit to this view. Same "lit vs dark" gold ring as every
-/// other filter button ([selectableDecoration]/[active]), just icon-only:
-/// there's no one label that could stand in for four different filters at
-/// once.
-class _FiltersTriggerButton extends StatelessWidget {
-  const _FiltersTriggerButton({
+/// The one icon button beside the search field. It opens [_ControlsSheet],
+/// and lights up (gold ring, same "lit vs dark" rule as every other filter
+/// button via [selectableDecoration]) whenever a real filter is applied or the
+/// sort differs from its default. The list/grid choice never lights it: that
+/// is a way of looking, not a narrowing of what's shown.
+class _ControlsTriggerButton extends StatelessWidget {
+  const _ControlsTriggerButton({
     required this.active,
     required this.tooltip,
     required this.onTap,
@@ -2044,68 +2241,95 @@ class _FiltersTriggerButton extends StatelessWidget {
   }
 }
 
-/// [_FiltersTriggerButton]'s own destination — every [FilterButton] that
-/// applies to the current mode, two to a row (the same shape they'd have had
-/// paired up in the old wide-layout row), on a modal sheet instead of inline.
-class _FiltersSheet extends StatelessWidget {
-  const _FiltersSheet({
-    required this.title,
-    required this.buttons,
+/// [_ControlsTriggerButton]'s own destination, in three sections: View
+/// ([SkyViewModeSection]), Filters (every [FilterButton] that applies to the
+/// current mode, two to a row) and Sort. Aree has no filters or sort, so it
+/// shows the view section alone.
+class _ControlsSheet extends StatelessWidget {
+  const _ControlsSheet({
+    required this.settings,
+    required this.filterButtons,
+    required this.sortButton,
     required this.canReset,
     required this.resetLabel,
     required this.onReset,
   });
 
-  final String title;
-  final List<Widget> buttons;
+  final SettingsController settings;
+  final List<Widget> filterButtons;
+  final Widget? sortButton;
   final bool canReset;
   final String resetLabel;
   final VoidCallback onReset;
 
   @override
   Widget build(BuildContext context) {
+    final strings = context.strings;
+    final hasFilterSections = filterButtons.isNotEmpty || sortButton != null;
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            StaggeredEntrance(index: 0, child: AppSheetTitle(title)),
-            const SizedBox(height: 20),
-            for (var i = 0; i < buttons.length; i += 2) ...[
-              if (i > 0) const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: StaggeredEntrance(
-                      index: 1 + i,
-                      axis: Axis.horizontal,
-                      child: buttons[i],
-                    ),
-                  ),
-                  if (i + 1 < buttons.length) ...[
-                    const SizedBox(width: 10),
+            StaggeredEntrance(
+              index: 0,
+              child: AppSheetTitle(strings.skyViewModeTitle),
+            ),
+            const SizedBox(height: 14),
+            SkyViewModeSection(settings: settings),
+            if (filterButtons.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              AppSheetTitle(strings.filtersAction),
+              const SizedBox(height: 14),
+              for (var i = 0; i < filterButtons.length; i += 2) ...[
+                if (i > 0) const SizedBox(height: 10),
+                Row(
+                  children: [
                     Expanded(
                       child: StaggeredEntrance(
-                        index: 2 + i,
+                        index: 1 + i,
                         axis: Axis.horizontal,
-                        child: buttons[i + 1],
+                        child: filterButtons[i],
                       ),
                     ),
-                  ] else
-                    const Spacer(),
+                    if (i + 1 < filterButtons.length) ...[
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: StaggeredEntrance(
+                          index: 2 + i,
+                          axis: Axis.horizontal,
+                          child: filterButtons[i + 1],
+                        ),
+                      ),
+                    ] else
+                      const Spacer(),
+                  ],
+                ),
+              ],
+            ],
+            if (sortButton != null) ...[
+              const SizedBox(height: 24),
+              AppSheetTitle(strings.sortAction),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(child: sortButton!),
+                  const Spacer(),
                 ],
               ),
             ],
-            const SizedBox(height: 24),
-            Align(
-              alignment: Alignment.center,
-              child: ElevatedButton(
-                onPressed: canReset ? onReset : null,
-                child: AppButtonLabel(resetLabel),
+            if (hasFilterSections) ...[
+              const SizedBox(height: 24),
+              Align(
+                alignment: Alignment.center,
+                child: ElevatedButton(
+                  onPressed: canReset ? onReset : null,
+                  child: AppButtonLabel(resetLabel),
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),

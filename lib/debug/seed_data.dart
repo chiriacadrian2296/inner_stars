@@ -10,6 +10,15 @@ import '../utils/date_math.dart';
 /// How many wins each seed project gains every time [seedSampleData] runs.
 const winsPerSeedTap = 12;
 
+/// Picsum-backed photos are attached to four out of every five sample wins.
+/// The remaining fifth deliberately stays photo-less so both UI states are
+/// represented in the generated data.
+String? _samplePhotoUrl(int projectIndex, int winPosition) {
+  if ((projectIndex + winPosition) % 5 == 0) return null;
+  return 'https://picsum.photos/seed/inner-stars-$projectIndex-$winPosition/'
+      '720/1280';
+}
+
 /// Backdates seeded wins so the dashboard has something to show: day
 /// offsets from today (0 = today), hand-chosen — not random — to exercise
 /// specific things at a glance once seeded:
@@ -138,6 +147,7 @@ Future<void> seedSampleData({
         projectId: project.id,
         achievedDate: date,
         intensity: 1 + position % 5,
+        photoPath: _samplePhotoUrl(specIndex, position),
       );
       // Star ids are millisecondsSinceEpoch; a tight loop without this could
       // mint duplicate ids, which every id-based lookup in the app assumes
@@ -247,6 +257,7 @@ Future<void> _seedStarHistory({
       projectId: project.id,
       achievedDate: date,
       intensity: 1 + (position * 3 + specIndex) % 5,
+      photoPath: _samplePhotoUrl(specIndex, position),
     );
     await Future.delayed(const Duration(milliseconds: 2));
   }

@@ -98,6 +98,44 @@ const double kSkyConstellationAngularSpan = 0.10;
   return (math.cos(theta) * radius, y, math.sin(theta) * radius);
 }
 
+/// Vertical placement of the Cosmo supernova inside each area's artwork,
+/// expressed as a small angular displacement in the artwork's own local
+/// coordinate system. Positive values move the light downward in the image.
+/// Keep this separate from [areaWorldPosition]: the artwork and the area's
+/// constellations stay anchored to their original sky position.
+double supernovaArtworkVerticalOffset(LifeArea area) => switch (area) {
+  // Lantern: center the light on the flame.
+  LifeArea.psychological => 0.034,
+  // Medal: center the light on the medal's disc.
+  LifeArea.professional => 0.0225,
+  // Anchor: center the light in the small central diamond.
+  LifeArea.personal => 0.0095,
+  // Heart: center the light on the star inside the heart.
+  LifeArea.philanthropic => 0.045,
+  _ => 0.0,
+};
+
+/// The visual center of [area]'s supernova after its artwork-specific
+/// vertical adjustment. The sky frame's second axis follows image-down once
+/// the artwork's own rotation is applied in the Cosmo painter.
+(double x, double y, double z) supernovaVisualDirection(LifeArea area) {
+  final center = supernovaDirection(area.index, LifeArea.values.length);
+  final reference = center.$2.abs() < 0.99 ? (0.0, 1.0, 0.0) : (1.0, 0.0, 0.0);
+  final axisA = _normalized(_cross(reference, center));
+  final axisB = _cross(center, axisA);
+  return _normalized(
+    _add(center, _scaled(axisB, supernovaArtworkVerticalOffset(area))),
+  );
+}
+
+Offset supernovaVisualWorldPosition(LifeArea area) {
+  final (x, y, z) = supernovaVisualDirection(area);
+  return Offset(
+    math.atan2(z, x) / _twoPi,
+    math.asin(y.clamp(-1.0, 1.0)) / _twoPi,
+  );
+}
+
 /// Where [area]'s own supernova sits on the sky sphere, in the same
 /// (azimuthTurns, elevationTurns) space every other piece of sky content
 /// uses — the inverse of [_directionOn] applied to [supernovaDirection],
@@ -1083,7 +1121,7 @@ LifeArea? hitTestSupernovas(
 ) {
   for (final area in LifeArea.values) {
     final projection = worldToScreen(
-      areaWorldPosition(area),
+      supernovaVisualWorldPosition(area),
       camera,
       zoom,
       screenSize,

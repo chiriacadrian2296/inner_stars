@@ -1,11 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:hint_kit/hint_kit.dart';
 
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
 import '../theme/app_style.dart';
-import '../tutorials/tour_step_card.dart';
 import '../utils/app_modals.dart';
 import 'app_choice_chip.dart';
 import 'app_toggle_chip.dart';
@@ -80,20 +78,12 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
               ),
             ),
             const SizedBox(height: 20),
-            HintTarget(
-              tour: 'search-stars',
-              order: 5,
-              showArrow: true,
-              contentBuilder: appTourStepCard,
-              title: strings.searchTourAllAreasTitle,
-              description: strings.searchTourAllAreasBody,
-              child: StaggeredEntrance(
-                index: 1,
-                child: AppToggleChip(
-                  label: strings.allAreasLabel,
-                  value: _allAreasSelected,
-                  onChanged: (_) => _toggleAllAreas(),
-                ),
+            StaggeredEntrance(
+              index: 1,
+              child: AppToggleChip(
+                label: strings.allAreasLabel,
+                value: _allAreasSelected,
+                onChanged: (_) => _toggleAllAreas(),
               ),
             ),
             const SizedBox(height: 16),
@@ -129,32 +119,24 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
               ),
             ],
             const SizedBox(height: 24),
-            HintTarget(
-              tour: 'search-stars',
-              order: 7,
-              showArrow: true,
-              contentBuilder: appTourStepCard,
-              title: strings.searchTourApplyTitle,
-              description: strings.searchTourApplyBody,
-              child: StaggeredEntrance(
-                index: 2 + (LifeArea.values.length + 1) ~/ 2 + 1,
-                child: Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 12,
-                  runSpacing: 8,
-                  children: [
-                    TextButton(
-                      onPressed: _allAreasSelected ? null : _clear,
-                      child: AppButtonLabel(strings.clearFilterAction),
-                    ),
-                    ElevatedButton(
-                      onPressed: _hasChanges
-                          ? () => Navigator.of(context).pop(_areas)
-                          : null,
-                      child: AppButtonLabel(strings.applyFilterAction),
-                    ),
-                  ],
-                ),
+            StaggeredEntrance(
+              index: 2 + (LifeArea.values.length + 1) ~/ 2 + 1,
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 12,
+                runSpacing: 8,
+                children: [
+                  TextButton(
+                    onPressed: _allAreasSelected ? null : _clear,
+                    child: AppButtonLabel(strings.clearFilterAction),
+                  ),
+                  ElevatedButton(
+                    onPressed: _hasChanges
+                        ? () => Navigator.of(context).pop(_areas)
+                        : null,
+                    child: AppButtonLabel(strings.applyFilterAction),
+                  ),
+                ],
               ),
             ),
           ],

@@ -12,6 +12,8 @@ uniform vec3 uUp;
 uniform float uZoom;
 uniform float uSize;
 uniform float uIntensity;
+uniform vec4 uVerticalOffsets0;
+uniform vec4 uVerticalOffsets1;
 
 out vec4 fragColor;
 
@@ -46,6 +48,27 @@ vec3 supernovaDirection(float index) {
   float radius = sqrt(max(0.0, 1.0 - y * y));
   float theta = goldenAngle * index;
   return vec3(cos(theta) * radius, y, sin(theta) * radius);
+}
+
+float supernovaVerticalOffset(int index) {
+  if (index == 0) return uVerticalOffsets0.x;
+  if (index == 1) return uVerticalOffsets0.y;
+  if (index == 2) return uVerticalOffsets0.z;
+  if (index == 3) return uVerticalOffsets0.w;
+  if (index == 4) return uVerticalOffsets1.x;
+  if (index == 5) return uVerticalOffsets1.y;
+  if (index == 6) return uVerticalOffsets1.z;
+  return uVerticalOffsets1.w;
+}
+
+vec3 adjustedSupernovaDirection(int index) {
+  vec3 center = supernovaDirection(float(index));
+  vec3 reference = abs(center.y) < 0.99
+      ? vec3(0.0, 1.0, 0.0)
+      : vec3(1.0, 0.0, 0.0);
+  vec3 axisA = normalize(cross(reference, center));
+  vec3 axisB = cross(center, axisA);
+  return normalize(center + axisB * supernovaVerticalOffset(index));
 }
 
 // One star's full color contribution — [midColor]/[outerColor] are the
@@ -214,7 +237,7 @@ void main() {
 
   vec3 total = vec3(0.0);
   for (int i = 0; i < 8; i++) {
-    vec3 center = supernovaDirection(float(i));
+    vec3 center = adjustedSupernovaDirection(i);
     total += supernova(dir, center, midColor, outerColor);
   }
 

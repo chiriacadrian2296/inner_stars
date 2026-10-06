@@ -30,6 +30,18 @@ void main() {
     final today = dateOnly(DateTime.now());
     final lit = stars.getAll().where((s) => s.isLit).toList();
 
+    // Most sample victories exercise photo layouts, while a minority still
+    // covers the no-photo state.
+    final withPhotos = lit.where((s) => s.photoPath != null).toList();
+    expect(withPhotos.length, greaterThan(lit.length * .7));
+    expect(withPhotos.length, lessThan(lit.length));
+    expect(
+      withPhotos.every(
+        (s) => s.photoPath!.startsWith('https://picsum.photos/seed/'),
+      ),
+      isTrue,
+    );
+
     // Months of history, not just the last 30 days.
     final oldest = lit
         .map((s) => dateOnly(s.achievedDate!))

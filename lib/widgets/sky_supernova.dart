@@ -186,6 +186,13 @@ class _SkySupernovaPainter extends CustomPainter {
       ..setFloat(13, scale)
       ..setFloat(14, intensity);
 
+    for (var i = 0; i < LifeArea.values.length; i++) {
+      shader.setFloat(
+        15 + i,
+        supernovaArtworkVerticalOffset(LifeArea.values[i]),
+      );
+    }
+
     canvas.drawRect(
       Offset.zero & size,
       Paint()
@@ -209,7 +216,7 @@ class _SkySupernovaPainter extends CustomPainter {
       final areas = LifeArea.values;
       for (var i = 0; i < areas.length; i++) {
         final projected = _projectDirection(
-          supernovaDirection(i, areas.length),
+          supernovaVisualDirection(areas[i]),
           camera,
           zoom,
           size,

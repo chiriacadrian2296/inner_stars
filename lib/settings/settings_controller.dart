@@ -4,6 +4,7 @@ import '../models/artwork_layer.dart';
 import 'package:flutter/material.dart';
 
 import '../data/settings_repository.dart';
+import 'sky_grid_size.dart';
 
 /// In-memory, listenable view over [SettingsRepository] — the single
 /// instance created in `main.dart` and threaded down to [MaterialApp] (for
@@ -24,7 +25,9 @@ class SettingsController extends ChangeNotifier {
       artworkScale = _repository.artworkScale,
       artworkColor = Color(_repository.artworkColor),
       artworkLayer = _repository.artworkLayer,
-      tutorialsEnabled = _repository.tutorialsEnabled;
+      tutorialsEnabled = _repository.tutorialsEnabled,
+      skyGridView = _repository.skyGridView,
+      skyGridSizeStep = _repository.skyGridSizeStep;
 
   final SettingsRepository _repository;
 
@@ -47,6 +50,26 @@ class SettingsController extends ChangeNotifier {
   Color artworkColor;
   ArtworkLayer artworkLayer;
   bool tutorialsEnabled;
+
+  /// The Sky browser's list/grid choice and the grid's card size (an index
+  /// into [kSkyGridTileExtents]) — one pair shared by all three levels.
+  bool skyGridView;
+  int skyGridSizeStep;
+
+  Future<void> setSkyGridView(bool value) async {
+    if (value == skyGridView) return;
+    skyGridView = value;
+    notifyListeners();
+    await _repository.setSkyGridView(value);
+  }
+
+  Future<void> setSkyGridSizeStep(int value) async {
+    final step = clampSkyGridSizeStep(value);
+    if (step == skyGridSizeStep) return;
+    skyGridSizeStep = step;
+    notifyListeners();
+    await _repository.setSkyGridSizeStep(step);
+  }
 
   Future<void> setLocale(String code) async {
     if (code == locale) return;
@@ -128,6 +151,19 @@ class SettingsController extends ChangeNotifier {
     artworkLayer = value;
     notifyListeners();
     await _repository.setArtworkLayer(value);
+  }
+
+  Future<void> resetCosmoVisuals() async {
+    showSupernovae = SettingsRepository.defaultShowSupernovae;
+    supernovaScale = SettingsRepository.defaultSupernovaScale;
+    supernovaIntensity = SettingsRepository.defaultSupernovaIntensity;
+    artworkOpacity = SettingsRepository.defaultArtworkOpacity;
+    artworkScale = SettingsRepository.defaultArtworkScale;
+    artworkColor = const Color(SettingsRepository.defaultArtworkColor);
+    artworkLayer = SettingsRepository.defaultArtworkLayer;
+    artworkBlend = SettingsRepository.defaultArtworkBlend;
+    notifyListeners();
+    await _repository.resetCosmoVisuals();
   }
 
   Future<void> setTutorialsEnabled(bool value) async {

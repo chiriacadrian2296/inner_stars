@@ -85,7 +85,12 @@ class AppChoiceChip extends StatelessWidget {
       label,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      textAlign: expand ? TextAlign.start : TextAlign.center,
+      // An expanded text-only choice still reads as a centered button.
+      // Choices with a leading/trailing affordance keep their label aligned
+      // beside that affordance instead.
+      textAlign: expand && (icon != null || showCheck)
+          ? TextAlign.start
+          : TextAlign.center,
       style: context.typography.controlLabel.copyWith(
         color: selected ? colors.text : colors.muted,
         fontWeight: selected ? FontWeight.w600 : FontWeight.w400,

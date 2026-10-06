@@ -62,36 +62,39 @@ const Map<LifeArea, AreaHeroArt> kOriginalAreaHeroArt = {
 
 const Map<LifeArea, AreaHeroArt> kRoyalArtworkPreview = {
   LifeArea.physical: AreaHeroArt(
-    coverAsset: 'assets/images/royal_symbols_preview/physical.png',
-    skyAsset: 'assets/images/royal_symbols_preview/physical.png',
+    coverAsset: 'assets/images/royal_symbols_negative_final/01-physical.png',
+    skyAsset: 'assets/images/royal_symbols_negative_final/01-physical.png',
   ),
   LifeArea.psychological: AreaHeroArt(
-    coverAsset: 'assets/images/royal_symbols_preview/psychological.png',
-    skyAsset: 'assets/images/royal_symbols_preview/psychological.png',
+    coverAsset:
+        'assets/images/royal_symbols_negative_final/02-psychological.png',
+    skyAsset: 'assets/images/royal_symbols_negative_final/02-psychological.png',
   ),
   LifeArea.professional: AreaHeroArt(
-    coverAsset: 'assets/images/royal_symbols_preview/professional.png',
-    skyAsset: 'assets/images/royal_symbols_preview/professional.png',
+    coverAsset:
+        'assets/images/royal_symbols_negative_final/03-professional.png',
+    skyAsset: 'assets/images/royal_symbols_negative_final/03-professional.png',
   ),
   LifeArea.financial: AreaHeroArt(
-    coverAsset: 'assets/images/royal_symbols_preview/financial.png',
-    skyAsset: 'assets/images/royal_symbols_preview/financial.png',
+    coverAsset: 'assets/images/royal_symbols_negative_final/04-financial.png',
+    skyAsset: 'assets/images/royal_symbols_negative_final/04-financial.png',
   ),
   LifeArea.personal: AreaHeroArt(
-    coverAsset: 'assets/images/royal_symbols_preview/personal.png',
-    skyAsset: 'assets/images/royal_symbols_preview/personal.png',
+    coverAsset: 'assets/images/royal_symbols_negative_final/05-personal.png',
+    skyAsset: 'assets/images/royal_symbols_negative_final/05-personal.png',
   ),
   LifeArea.social: AreaHeroArt(
-    coverAsset: 'assets/images/royal_symbols_preview/social.png',
-    skyAsset: 'assets/images/royal_symbols_preview/social.png',
+    coverAsset: 'assets/images/royal_symbols_negative_final/06-social.png',
+    skyAsset: 'assets/images/royal_symbols_negative_final/06-social.png',
   ),
   LifeArea.spiritual: AreaHeroArt(
-    coverAsset: 'assets/images/royal_symbols_preview/spiritual.png',
-    skyAsset: 'assets/images/royal_symbols_preview/spiritual.png',
+    coverAsset: 'assets/images/royal_symbols_negative_final/07-spiritual.png',
+    skyAsset: 'assets/images/royal_symbols_negative_final/07-spiritual.png',
   ),
   LifeArea.philanthropic: AreaHeroArt(
-    coverAsset: 'assets/images/royal_symbols_preview/philanthropic.png',
-    skyAsset: 'assets/images/royal_symbols_preview/philanthropic.png',
+    coverAsset:
+        'assets/images/royal_symbols_negative_final/08-philanthropic.png',
+    skyAsset: 'assets/images/royal_symbols_negative_final/08-philanthropic.png',
   ),
 };
 

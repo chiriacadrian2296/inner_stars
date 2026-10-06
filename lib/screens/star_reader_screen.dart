@@ -22,6 +22,7 @@ import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import '../tutorials/tour_intro_target.dart';
 import '../tutorials/tour_step_card.dart';
+import '../tutorials/tutorial_replay.dart';
 import '../utils/habit_stats.dart';
 import '../utils/page_settled.dart';
 import '../utils/responsive.dart';
@@ -139,7 +140,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         whenPageSettled(context, () {
-          Tour.read(context).start('star-reader');
+          startTourAuto(Tour.read(context), 'star-reader');
         });
       });
     }
@@ -1081,50 +1082,9 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                               // so a scroll that starts on one still scrolls
                               // the page beneath it.
                               if (!isWideLayout(context)) ...[
-                                _TapStrip(
-                                  onTap: _showPrevious,
-                                  start: true,
-                                  tourOrder: 2,
-                                  title: strings.starReaderTourPrevTitle,
-                                  description: strings.starReaderTourPrevBody,
-                                ),
-                                _TapStrip(
-                                  onTap: _showNext,
-                                  start: false,
-                                  tourOrder: 3,
-                                  title: strings.starReaderTourNextTitle,
-                                  description: strings.starReaderTourNextBody,
-                                ),
+                                _TapStrip(onTap: _showPrevious, start: true),
+                                _TapStrip(onTap: _showNext, start: false),
                               ],
-                              // The tour's "middle of the page" step (order
-                              // 4): an invisible target over the space
-                              // between the two strips (the whole page when
-                              // there are none).
-                              PositionedDirectional(
-                                top: 0,
-                                bottom: 0,
-                                start: isWideLayout(context)
-                                    ? 0
-                                    : MediaQuery.sizeOf(context).width *
-                                          _TapStrip.widthFraction,
-                                end: isWideLayout(context)
-                                    ? 0
-                                    : MediaQuery.sizeOf(context).width *
-                                          _TapStrip.widthFraction,
-                                child: IgnorePointer(
-                                  child: HintTarget(
-                                    tour: 'star-reader',
-                                    order: 4,
-                                    showArrow: false,
-                                    pulse: false,
-                                    contentBuilder: appTourStepCard,
-                                    title: strings.starReaderTourCenterTitle,
-                                    description:
-                                        strings.starReaderTourCenterBody,
-                                    child: const SizedBox.expand(),
-                                  ),
-                                ),
-                              ),
                             ],
                           ),
                         ),
@@ -1153,17 +1113,9 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                     StaggeredEntrance(
                       index: 6,
                       axis: Axis.horizontal,
-                      child: HintTarget(
-                        tour: 'star-reader',
-                        order: 2,
-                        showArrow: true,
-                        contentBuilder: appTourStepCard,
-                        title: strings.starReaderTourPrevTitle,
-                        description: strings.starReaderTourPrevArrowBody,
-                        child: _NavCircleButton(
-                          icon: Icons.chevron_left,
-                          onTap: _showPrevious,
-                        ),
+                      child: _NavCircleButton(
+                        icon: Icons.chevron_left,
+                        onTap: _showPrevious,
                       ),
                     ),
                   Expanded(
@@ -1171,7 +1123,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: HintTarget(
                         tour: 'star-reader',
-                        order: 5,
+                        order: 2,
                         showArrow: true,
                         direction: HintDirection.top,
                         contentBuilder: appTourStepCard,
@@ -1215,17 +1167,9 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                     StaggeredEntrance(
                       index: 8,
                       axis: Axis.horizontal,
-                      child: HintTarget(
-                        tour: 'star-reader',
-                        order: 3,
-                        showArrow: true,
-                        contentBuilder: appTourStepCard,
-                        title: strings.starReaderTourNextTitle,
-                        description: strings.starReaderTourNextArrowBody,
-                        child: _NavCircleButton(
-                          icon: Icons.chevron_right,
-                          onTap: _showNext,
-                        ),
+                      child: _NavCircleButton(
+                        icon: Icons.chevron_right,
+                        onTap: _showNext,
                       ),
                     ),
                 ],
@@ -1270,6 +1214,7 @@ class _ZoomablePhotoLayerState extends State<_ZoomablePhotoLayer>
 
   static const _doubleTapZoom = 2.5;
   static const _zoomOutThreshold = 1.5;
+  static const _minimumScaleTolerance = 0.001;
 
   @override
   void initState() {
@@ -1320,6 +1265,11 @@ class _ZoomablePhotoLayerState extends State<_ZoomablePhotoLayer>
     );
   }
 
+  void _onTap() {
+    final currentScale = _controller.value.getMaxScaleOnAxis();
+    if (currentScale <= 1 + _minimumScaleTolerance) widget.onZoomOut();
+  }
+
   @override
   void dispose() {
     _resetAnimation.dispose();
@@ -1331,9 +1281,10 @@ class _ZoomablePhotoLayerState extends State<_ZoomablePhotoLayer>
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      // A regular tap intentionally has no effect in photo-only mode. The
-      // detector waits for the double-tap timeout so it can decide whether
-      // to come closer or to reset and reveal the data.
+      // At the cover framing, another tap restores the reader data. While
+      // zoomed in it remains inert, leaving pan and double-tap zoom local to
+      // the photo.
+      onTap: widget.enabled ? _onTap : null,
       onDoubleTapDown: widget.enabled
           ? (details) => _doubleTapPosition = details.localPosition
           : null,
@@ -1430,21 +1381,10 @@ class _NavCircleButton extends StatelessWidget {
 /// An invisible tap target down one edge of the page — see the strips in
 /// [_StarReaderScreenState.build]. [start] is the leading edge (left in LTR).
 class _TapStrip extends StatelessWidget {
-  const _TapStrip({
-    required this.onTap,
-    required this.start,
-    required this.tourOrder,
-    required this.title,
-    required this.description,
-  });
+  const _TapStrip({required this.onTap, required this.start});
 
   final VoidCallback onTap;
   final bool start;
-
-  /// This strip's step in the "star-reader" tour.
-  final int tourOrder;
-  final String title;
-  final String description;
 
   /// How much of the width each strip covers.
   static const widthFraction = 0.25;
@@ -1457,18 +1397,9 @@ class _TapStrip extends StatelessWidget {
       start: start ? 0 : null,
       end: start ? null : 0,
       width: MediaQuery.sizeOf(context).width * widthFraction,
-      child: HintTarget(
-        tour: 'star-reader',
-        order: tourOrder,
-        showArrow: false,
-        pulse: false,
-        contentBuilder: appTourStepCard,
-        title: title,
-        description: description,
-        child: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onTap: onTap,
-        ),
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: onTap,
       ),
     );
   }

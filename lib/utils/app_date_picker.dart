@@ -121,6 +121,28 @@ class _AppDateInputDialogState extends State<_AppDateInputDialog> {
   final _yearFocus = FocusNode();
   String? _error;
   Set<_DatePart> _invalidParts = const {};
+  bool _switchingMode = false;
+
+  Future<void> _switchToCalendar() async {
+    if (_switchingMode) return;
+    setState(() => _switchingMode = true);
+    FocusManager.instance.primaryFocus?.unfocus();
+    await SystemChannels.textInput.invokeMethod<void>('TextInput.hide');
+
+    // The two modes are separate dialogs. Do not construct the taller
+    // calendar while Android is still reporting the IME-constrained height.
+    final stopwatch = Stopwatch()..start();
+    while (mounted &&
+        MediaQuery.viewInsetsOf(context).bottom > 0 &&
+        stopwatch.elapsed < const Duration(seconds: 2)) {
+      await Future.any<void>([
+        WidgetsBinding.instance.endOfFrame,
+        Future<void>.delayed(const Duration(milliseconds: 16)),
+      ]);
+    }
+    if (!mounted) return;
+    Navigator.of(context).pop(_DatePickerResult(_selected, switchMode: true));
+  }
 
   bool _saveInput() {
     final strings = context.strings;
@@ -227,9 +249,7 @@ class _AppDateInputDialogState extends State<_AppDateInputDialog> {
       title: material.dateInputLabel,
       modeButton: IconButton(
         tooltip: material.calendarModeButtonLabel,
-        onPressed: () =>
-            Navigator.of(context)
-                .pop(_DatePickerResult(_selected, switchMode: true)),
+        onPressed: _switchingMode ? null : _switchToCalendar,
         icon: Icon(Icons.calendar_month, color: colors.muted),
       ),
       onConfirm: () {

@@ -13,8 +13,8 @@ import '../utils/page_settled.dart';
 import '../theme/app_fonts.dart';
 import '../utils/area_hero_art.dart';
 import '../utils/area_hero_art_tone.dart';
-import '../tutorials/tour_intro_target.dart';
 import '../tutorials/tour_step_card.dart';
+import '../tutorials/tutorial_replay.dart';
 
 import '../widgets/responsive_content.dart';
 import '../widgets/looping_hero_carousel.dart';
@@ -59,7 +59,7 @@ class _VisionsScreenState extends State<VisionsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       whenPageSettled(context, () {
-        Tour.read(context).start('supernova-vision');
+        startTourAuto(Tour.read(context), 'supernova-vision');
       });
     });
   }
@@ -125,12 +125,6 @@ class _VisionsScreenState extends State<VisionsScreen> {
                           ),
                         ),
                         const SizedBox(height: 22),
-                        TourIntroTarget(
-                          tour: 'supernova-vision',
-                          order: 1,
-                          title: strings.supernovaTourIntroTitle,
-                          description: strings.supernovaTourIntroBody,
-                        ),
                       ],
                     ),
                   ),
@@ -138,7 +132,7 @@ class _VisionsScreenState extends State<VisionsScreen> {
                 ResponsiveContent(
                   child: HintTarget(
                     tour: 'supernova-vision',
-                    order: 2,
+                    order: 1,
                     showArrow: true,
                     contentBuilder: appTourStepCard,
                     title: strings.supernovaTourListTitle,

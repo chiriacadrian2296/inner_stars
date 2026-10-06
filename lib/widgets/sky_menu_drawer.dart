@@ -7,7 +7,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
 import '../tutorials/tour_intro_target.dart';
-import '../tutorials/tour_step_card.dart';
+import '../tutorials/tutorial_replay.dart';
 import '../utils/app_modals.dart';
 import 'staggered_entrance.dart';
 
@@ -172,7 +172,21 @@ class SkyMenuContent extends StatelessWidget {
   /// "Light Your Sky" covers both of the app's two creation flows, so
   /// tapping it offers the choice rather than picking one — a standard
   /// functional sheet, matching the filters rather than a blocking popup.
-  void _openLightYourSkyChooser(BuildContext context) {
+  void _openLightYourSkyChooser(BuildContext context) => showChooser(
+    context,
+    onVisions: onVisions,
+    onNewConstellation: onNewConstellation,
+    onLightAStar: onLightAStar,
+  );
+
+  /// Static so the Tutorials screen can open the very same sheet to replay
+  /// its tour, with inert callbacks.
+  static Future<void> showChooser(
+    BuildContext context, {
+    required VoidCallback onVisions,
+    required VoidCallback onNewConstellation,
+    required VoidCallback onLightAStar,
+  }) {
     final strings = context.strings;
 
     // Fired here, not inside the sheet's own builder — by the time
@@ -180,9 +194,9 @@ class SkyMenuContent extends StatelessWidget {
     // already reached `Tour.start`'s async storage check, so the "waits
     // for its target" behavior (see `HintTarget`'s own doc comment) is
     // what actually bridges the two rather than any ordering guarantee.
-    Tour.read(context).start('light-your-sky');
+    startTourAuto(Tour.read(context), 'light-your-sky');
 
-    showAppSheet<void>(
+    return showAppSheet<void>(
       context: context,
       builder: (sheetContext) {
         Widget choice({
@@ -190,27 +204,16 @@ class SkyMenuContent extends StatelessWidget {
           required String label,
           required VoidCallback onTap,
           required int index,
-          int? tourOrder,
-          String? tourTitle,
-          String? tourBody,
         }) {
-          final inkTile = AppSheetAction(
-            icon: icon,
-            label: label,
-            onPressed: () {
-              onTap();
-            },
-          );
-          final tile = StaggeredEntrance(index: index, child: inkTile);
-          if (tourOrder == null) return tile;
-          return HintTarget(
-            tour: 'light-your-sky',
-            order: tourOrder,
-            showArrow: true,
-            contentBuilder: appTourStepCard,
-            title: tourTitle,
-            description: tourBody,
-            child: tile,
+          return StaggeredEntrance(
+            index: index,
+            child: AppSheetAction(
+              icon: icon,
+              label: label,
+              onPressed: () {
+                onTap();
+              },
+            ),
           );
         }
 
@@ -237,9 +240,6 @@ class SkyMenuContent extends StatelessWidget {
                       label: strings.lightYourSkyChooserSupernovaOption,
                       onTap: onVisions,
                       index: 0,
-                      tourOrder: 2,
-                      tourTitle: strings.lightYourSkyTourSupernovaTitle,
-                      tourBody: strings.lightYourSkyTourSupernovaBody,
                     ),
                     const SizedBox(height: 10),
                     choice(
@@ -247,9 +247,6 @@ class SkyMenuContent extends StatelessWidget {
                       label: strings.menuNewConstellation,
                       onTap: onNewConstellation,
                       index: 1,
-                      tourOrder: 3,
-                      tourTitle: strings.lightYourSkyTourConstellationTitle,
-                      tourBody: strings.lightYourSkyTourConstellationBody,
                     ),
                     const SizedBox(height: 10),
                     choice(
@@ -257,9 +254,6 @@ class SkyMenuContent extends StatelessWidget {
                       label: strings.menuLightAStar,
                       onTap: onLightAStar,
                       index: 2,
-                      tourOrder: 4,
-                      tourTitle: strings.lightYourSkyTourStarTitle,
-                      tourBody: strings.lightYourSkyTourStarBody,
                     ),
                   ],
                 ),

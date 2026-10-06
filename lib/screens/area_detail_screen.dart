@@ -263,7 +263,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                             ),
                                             action: HintTarget(
                                               tour: 'supernova-vision',
-                                              order: 3,
+                                              order: 2,
                                               showArrow: true,
                                               contentBuilder: appTourStepCard,
                                               title: strings
@@ -380,7 +380,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                             ),
                                             action: HintTarget(
                                               tour: 'supernova-vision',
-                                              order: 4,
+                                              order: 3,
                                               showArrow: true,
                                               contentBuilder: appTourStepCard,
                                               title: strings

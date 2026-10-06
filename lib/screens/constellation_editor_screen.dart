@@ -41,6 +41,7 @@ class StarsShapeEditorScreen extends StatefulWidget {
     this.existing,
     this.initialShape,
     this.initialShapeName,
+    this.replayHelp = false,
   }) : assert(
          existing == null || initialShape == null,
          'Pass at most one of existing/initialShape — existing already '
@@ -54,6 +55,12 @@ class StarsShapeEditorScreen extends StatefulWidget {
 
   final StarsShapeRepository starsShapeRepository;
   final StarsShape? existing;
+
+  /// Opened only to replay the "how this works" help from the Tutorials
+  /// screen: shows the help right away whatever the "don't show again"
+  /// preference says, leaves that preference untouched, and closes the
+  /// editor once the help is dismissed.
+  final bool replayHelp;
 
   /// Starts the canvas pre-filled with these points/edges, same as
   /// [existing] would, but *without* tying [_save] to updating some
@@ -243,6 +250,14 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
     final prefs = await ConstellationEditorPrefs.create();
     if (!mounted) return;
     _prefs = prefs;
+    if (widget.replayHelp) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await _showHelp();
+        if (mounted) Navigator.of(context).pop();
+      });
+      return;
+    }
     if (prefs.hideHelp) return;
     // Editing an already-saved shape means the user has already been
     // through the "how this works" tutorial once (they had to draw it in
@@ -363,7 +378,7 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
           actions: [
             TextButton(
               onPressed: () async {
-                await prefs.setHideHelp(hideNextTime);
+                if (!widget.replayHelp) await prefs.setHideHelp(hideNextTime);
                 if (dialogContext.mounted) Navigator.of(dialogContext).pop();
               },
               child: AppButtonLabel(

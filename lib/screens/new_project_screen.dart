@@ -12,8 +12,8 @@ import '../models/life_area.dart';
 import '../models/project.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
-import '../tutorials/tour_intro_target.dart';
 import '../tutorials/tour_step_card.dart';
+import '../tutorials/tutorial_replay.dart';
 import '../utils/app_modals.dart';
 import '../utils/page_settled.dart';
 import '../widgets/app_field.dart';
@@ -136,7 +136,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       whenPageSettled(context, () {
-        Tour.read(context).start('constellation-form');
+        startTourAuto(Tour.read(context), 'constellation-form');
       });
     });
   }
@@ -608,102 +608,64 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                TourIntroTarget(
-                  tour: 'constellation-form',
-                  order: 1,
-                  title: strings.constellationTourIntroTitle,
-                  description: strings.constellationTourIntroBody,
-                ),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       flex: 3,
-                      child: HintTarget(
-                        tour: 'constellation-form',
-                        order: 3,
-                        showArrow: true,
-                        contentBuilder: appTourStepCard,
-                        title: strings.constellationTourAreaTitle,
-                        description: strings.constellationTourAreaBody,
-                        child: StaggeredEntrance(
-                          index: 2,
-                          axis: Axis.horizontal,
-                          child: _buildAreaField(colors, strings),
-                        ),
+                      child: StaggeredEntrance(
+                        index: 2,
+                        axis: Axis.horizontal,
+                        child: _buildAreaField(colors, strings),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       flex: 1,
-                      child: HintTarget(
-                        tour: 'constellation-form',
-                        order: 4,
-                        showArrow: true,
-                        contentBuilder: appTourStepCard,
-                        title: strings.constellationTourIconFieldTitle,
-                        description: strings.constellationTourIconFieldBody,
-                        child: StaggeredEntrance(
-                          index: 3,
-                          axis: Axis.horizontal,
-                          child: _buildIconField(colors, strings),
-                        ),
+                      child: StaggeredEntrance(
+                        index: 3,
+                        axis: Axis.horizontal,
+                        child: _buildIconField(colors, strings),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 20),
-                HintTarget(
-                  tour: 'constellation-form',
-                  order: 5,
-                  showArrow: true,
-                  contentBuilder: appTourStepCard,
-                  title: strings.constellationTourNameTitle,
-                  description: strings.constellationTourNameBody,
-                  child: StaggeredEntrance(
-                    index: 4,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppFieldLabel(
-                          strings.nameLabel,
-                          requirement: FieldRequirement.required,
-                        ),
-                        const SizedBox(height: 6),
-                        AppTextField(
-                          controller: _nameController,
-                          autofocus: widget.presetArea != null,
-                          hintText: strings.newProjectNameHint,
-                        ),
-                      ],
-                    ),
+                StaggeredEntrance(
+                  index: 4,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppFieldLabel(
+                        strings.nameLabel,
+                        requirement: FieldRequirement.required,
+                      ),
+                      const SizedBox(height: 6),
+                      AppTextField(
+                        controller: _nameController,
+                        autofocus: widget.presetArea != null,
+                        hintText: strings.newProjectNameHint,
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 20),
-                HintTarget(
-                  tour: 'constellation-form',
-                  order: 6,
-                  showArrow: true,
-                  contentBuilder: appTourStepCard,
-                  title: strings.constellationTourDescriptionTitle,
-                  description: strings.constellationTourDescriptionBody,
-                  child: StaggeredEntrance(
-                    index: 5,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppFieldLabel(
-                          strings.projectDescriptionLabel,
-                          requirement: FieldRequirement.optional,
-                        ),
-                        const SizedBox(height: 6),
-                        AppTextField(
-                          controller: _descriptionController,
-                          maxLines: 3,
-                          hintText: strings.projectDescriptionHint,
-                        ),
-                      ],
-                    ),
+                StaggeredEntrance(
+                  index: 5,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppFieldLabel(
+                        strings.projectDescriptionLabel,
+                        requirement: FieldRequirement.optional,
+                      ),
+                      const SizedBox(height: 6),
+                      AppTextField(
+                        controller: _descriptionController,
+                        maxLines: 3,
+                        hintText: strings.projectDescriptionHint,
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -732,7 +694,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                           // highlight over the whole section.
                           HintTarget(
                             tour: 'constellation-form',
-                            order: 7,
+                            order: 1,
                             showArrow: true,
                             contentBuilder: appTourStepCard,
                             title: strings.constellationTourCanvasTitle,
@@ -802,64 +764,34 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 Expanded(
-                                  child: HintTarget(
-                                    tour: 'constellation-form',
-                                    order: 8,
-                                    showArrow: true,
-                                    contentBuilder: appTourStepCard,
-                                    title: strings
-                                        .constellationTourDrawButtonTitle,
-                                    description:
-                                        strings.constellationTourDrawButtonBody,
-                                    child: StaggeredEntrance(
-                                      index: 6,
-                                      child: _ShapeSideButton(
-                                        icon: Icons.edit_outlined,
-                                        label: strings.drawShapeShort,
-                                        onTap: _editSelectedShape,
-                                      ),
+                                  child: StaggeredEntrance(
+                                    index: 6,
+                                    child: _ShapeSideButton(
+                                      icon: Icons.edit_outlined,
+                                      label: strings.drawShapeShort,
+                                      onTap: _editSelectedShape,
                                     ),
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 Expanded(
-                                  child: HintTarget(
-                                    tour: 'constellation-form',
-                                    order: 9,
-                                    showArrow: true,
-                                    contentBuilder: appTourStepCard,
-                                    title: strings
-                                        .constellationTourLibraryButtonTitle,
-                                    description: strings
-                                        .constellationTourLibraryButtonBody,
-                                    child: StaggeredEntrance(
-                                      index: 7,
-                                      child: _ShapeSideButton(
-                                        icon: Icons.insights,
-                                        label: strings.pickFromLibraryShort,
-                                        onTap: _openLibrary,
-                                      ),
+                                  child: StaggeredEntrance(
+                                    index: 7,
+                                    child: _ShapeSideButton(
+                                      icon: Icons.insights,
+                                      label: strings.pickFromLibraryShort,
+                                      onTap: _openLibrary,
                                     ),
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 Expanded(
-                                  child: HintTarget(
-                                    tour: 'constellation-form',
-                                    order: 10,
-                                    showArrow: true,
-                                    contentBuilder: appTourStepCard,
-                                    title: strings
-                                        .constellationTourResetButtonTitle,
-                                    description: strings
-                                        .constellationTourResetButtonBody,
-                                    child: StaggeredEntrance(
-                                      index: 8,
-                                      child: _ShapeSideButton(
-                                        icon: Icons.refresh,
-                                        label: strings.resetShapeShort,
-                                        onTap: _hasShape ? _resetShape : null,
-                                      ),
+                                  child: StaggeredEntrance(
+                                    index: 8,
+                                    child: _ShapeSideButton(
+                                      icon: Icons.refresh,
+                                      label: strings.resetShapeShort,
+                                      onTap: _hasShape ? _resetShape : null,
                                     ),
                                   ),
                                 ),
@@ -883,18 +815,10 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                             _selectedArea != null &&
                             _selectedIconSlug != null &&
                             _hasShape;
-                        return HintTarget(
-                          tour: 'constellation-form',
-                          order: 11,
-                          showArrow: true,
-                          contentBuilder: appTourStepCard,
-                          title: strings.constellationTourSaveTitle,
-                          description: strings.constellationTourSaveBody,
-                          child: SaveActionButton(
-                            label: strings.saveChanges,
-                            lit: canSave,
-                            onPressed: canSave ? _save : _showCannotSaveMessage,
-                          ),
+                        return SaveActionButton(
+                          label: strings.saveChanges,
+                          lit: canSave,
+                          onPressed: canSave ? _save : _showCannotSaveMessage,
                         );
                       },
                     ),

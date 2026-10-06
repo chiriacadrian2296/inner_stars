@@ -7,6 +7,7 @@ import '../data/habit_repository.dart';
 import '../data/project_repository.dart';
 import '../data/reflection_answer_repository.dart';
 import '../data/star_repository.dart';
+import '../settings/settings_controller.dart';
 import '../theme/app_colors.dart';
 import '../widgets/sky_explorer_view.dart';
 
@@ -24,6 +25,7 @@ class SkySearchScreen extends StatefulWidget {
     required this.starsShapeRepository,
     required this.areaVisionRepository,
     required this.reflectionAnswerRepository,
+    required this.settings,
     required this.session,
   });
 
@@ -34,6 +36,7 @@ class SkySearchScreen extends StatefulWidget {
   final StarsShapeRepository starsShapeRepository;
   final AreaVisionRepository areaVisionRepository;
   final ReflectionAnswerRepository reflectionAnswerRepository;
+  final SettingsController settings;
   final SkyExplorerSession session;
 
   @override
@@ -64,6 +67,7 @@ class _SkySearchScreenState extends State<SkySearchScreen> {
             starsShapeRepository: widget.starsShapeRepository,
             areaVisionRepository: widget.areaVisionRepository,
             reflectionAnswerRepository: widget.reflectionAnswerRepository,
+            settings: widget.settings,
             session: widget.session,
             onNavigateTo: (target) => Navigator.of(context).pop(target),
           ),

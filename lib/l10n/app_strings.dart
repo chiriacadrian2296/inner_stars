@@ -98,6 +98,16 @@ abstract class AppStrings {
   String get menuShootingStarsDescription;
   String get menuFindYourLightDescription;
   String get menuSearchDescription;
+  // Sky view mode — list/grid switch and the grid's card size.
+  String get skyViewModeTooltip;
+  String get skyViewModeTitle;
+  String get skyViewList;
+  String get skyViewGrid;
+  String get skyViewCardSize;
+  String get skyViewSizeCompact;
+  String get skyViewSizeMedium;
+  String get skyViewSizeLarge;
+  String get skyViewSizeExtraLarge;
   String get menuStatisticsDescription;
   String get menuFriendsDescription;
   String get menuMetaphorDescription;
@@ -258,12 +268,8 @@ abstract class AppStrings {
   String get skyTourWelcomeTitle;
   String get skyTourWelcomeBody;
   String get skyTourWelcomeStartAction;
-  String get skyTourTapSupernovaTitle;
-  String get skyTourTapSupernovaBody;
   String get skyTourTapConstellationTitle;
   String get skyTourTapConstellationBody;
-  String get skyTourTapStarTitle;
-  String get skyTourTapStarBody;
   String get skyTourDoubleTapTitle;
   String get skyTourDoubleTapBody;
   String get skyTourHoldTitle;
@@ -286,10 +292,6 @@ abstract class AppStrings {
   String get skyTourMenuCloseTryAction;
   String get skyTourQuickMenuTapTitle;
   String get skyTourQuickMenuTapBody;
-  String get skyTourQuickSettingsHintTitle;
-  String get skyTourQuickSettingsHintBody;
-  String get skyTourStatisticsHintTitle;
-  String get skyTourStatisticsHintBody;
   String get skyTourNightlightHintTitle;
   String get skyTourNightlightHintBody;
   String get skyTourSkyHintTitle;
@@ -297,88 +299,28 @@ abstract class AppStrings {
 
   // "star-form" tour (`lib/tutorials/`) — the whole star form, every
   // creatable kind (lit victory, unlit goal, pulsar habit).
-  String get starTourIntroTitle;
-  String get starTourIntroBody;
   String get starTourKindTitle;
   String get starTourKindBody;
-  String get starTourLegendTitle;
-  String get starTourLegendBody;
-  String get starTourSupernovaFieldTitle;
-  String get starTourSupernovaFieldBody;
-  String get starTourConstellationFieldTitle;
-  String get starTourConstellationFieldBody;
-  String get starTourTitleFieldTitle;
-  String get starTourTitleFieldBody;
-  String get starTourDetailsFieldTitle;
-  String get starTourDetailsFieldBody;
-  String get starTourDateFieldTitle;
-  String get starTourDateFieldBody;
-  String get starTourTargetDateFieldTitle;
-  String get starTourTargetDateFieldBody;
   String get starTourIntensityTitle;
   String get starTourIntensityBody;
-  String get starTourHabitFrequencyTitle;
-  String get starTourHabitFrequencyBody;
-  String get starTourReminderTitle;
-  String get starTourReminderBody;
-  String get starTourPhotoTitle;
-  String get starTourPhotoBody;
-  String get starTourSaveTitle;
-  String get starTourSaveBody;
 
   // "search-stars" tour — the Sky's search/filter popup
   // (`SkyExplorerView`/`area_filter_sheet.dart`).
-  String get searchTourIntroTitle;
-  String get searchTourIntroBody;
   String get searchTourModeTitle;
   String get searchTourModeBody;
-  String get searchTourFieldTitle;
-  String get searchTourFieldBody;
   String get searchTourFilterButtonTitle;
   String get searchTourFilterButtonBody;
-  String get searchTourAllAreasTitle;
-  String get searchTourAllAreasBody;
-  String get searchTourApplyTitle;
-  String get searchTourApplyBody;
 
   // "light-your-sky" tour — the Supernovas/Constellations/Stars chooser
   // popup opened from the Sky's own menu (`sky_menu_drawer.dart`).
   String get lightYourSkyTourIntroTitle;
   String get lightYourSkyTourIntroBody;
-  String get lightYourSkyTourSupernovaTitle;
-  String get lightYourSkyTourSupernovaBody;
-  String get lightYourSkyTourConstellationTitle;
-  String get lightYourSkyTourConstellationBody;
-  String get lightYourSkyTourStarTitle;
-  String get lightYourSkyTourStarBody;
 
   // "constellation-form" tour — `NewProjectScreen`.
-  String get constellationTourIntroTitle;
-  String get constellationTourIntroBody;
-  String get constellationTourLegendTitle;
-  String get constellationTourLegendBody;
-  String get constellationTourAreaTitle;
-  String get constellationTourAreaBody;
-  String get constellationTourIconFieldTitle;
-  String get constellationTourIconFieldBody;
-  String get constellationTourNameTitle;
-  String get constellationTourNameBody;
-  String get constellationTourDescriptionTitle;
-  String get constellationTourDescriptionBody;
   String get constellationTourCanvasTitle;
   String get constellationTourCanvasBody;
-  String get constellationTourDrawButtonTitle;
-  String get constellationTourDrawButtonBody;
-  String get constellationTourLibraryButtonTitle;
-  String get constellationTourLibraryButtonBody;
-  String get constellationTourResetButtonTitle;
-  String get constellationTourResetButtonBody;
-  String get constellationTourSaveTitle;
-  String get constellationTourSaveBody;
 
   // "supernova-vision" tour — `VisionsScreen` into `AreaDetailScreen`.
-  String get supernovaTourIntroTitle;
-  String get supernovaTourIntroBody;
   String get supernovaTourListTitle;
   String get supernovaTourListBody;
   String get supernovaTourEditTitle;
@@ -392,6 +334,31 @@ abstract class AppStrings {
   String get tutorialsManagementTitle;
   String get tutorialsEnabledLabel;
   String get tutorialsEnabledDescription;
+  String get tutorialsScreenIntro;
+  String get tutorialsOpenAction;
+  String get tutorialDemoProjectName;
+  String get tutorialDemoStarTitle;
+  String get tutorialDemoStarDescription;
+  String get resetToursAction;
+  String get tutorialReplayConfirmTitle;
+  String get tutorialReplayConfirmBody;
+  String get tutorialReplayConfirmAction;
+  String get tutorialEntrySkyNavigationTitle;
+  String get tutorialEntrySkyNavigationBody;
+  String get tutorialEntryLightYourSkyTitle;
+  String get tutorialEntryLightYourSkyBody;
+  String get tutorialEntryStarFormTitle;
+  String get tutorialEntryStarFormBody;
+  String get tutorialEntryShapeEditorTitle;
+  String get tutorialEntryShapeEditorBody;
+  String get tutorialEntryConstellationFormTitle;
+  String get tutorialEntryConstellationFormBody;
+  String get tutorialEntrySearchStarsTitle;
+  String get tutorialEntrySearchStarsBody;
+  String get tutorialEntrySupernovaVisionTitle;
+  String get tutorialEntrySupernovaVisionBody;
+  String get tutorialEntryStarReaderTitle;
+  String get tutorialEntryStarReaderBody;
 
   // "Quick Settings" — one of the quick-access mini menu's five entries
   // (see `_QuickAccessFan` in `sky_screen.dart`, opened by a plain tap on
@@ -968,14 +935,6 @@ abstract class AppStrings {
   // wide-layout variants (arrows instead of tap strips).
   String get starReaderTourIntroTitle;
   String get starReaderTourIntroBody;
-  String get starReaderTourPrevTitle;
-  String get starReaderTourPrevBody;
-  String get starReaderTourPrevArrowBody;
-  String get starReaderTourNextTitle;
-  String get starReaderTourNextBody;
-  String get starReaderTourNextArrowBody;
-  String get starReaderTourCenterTitle;
-  String get starReaderTourCenterBody;
   String get starReaderTourDockTitle;
   String get starReaderTourDockBody;
 
@@ -988,6 +947,9 @@ abstract class AppStrings {
   /// compact action row — [shareStarLabel] is a full sentence-length label
   /// meant for a full-width button elsewhere, too long for this one.
   String get starQuickLookShareAction;
+  String get constellationQuickLookAddStarAction;
+  String get areaQuickLookReflectionsAction;
+  String get areaQuickLookNewConstellationAction;
 
   /// [SkyNascentStarTooltip]'s own single action — opens the star form on
   /// that exact slot, same as tapping the nascent star directly would.
@@ -1023,6 +985,7 @@ abstract class AppStrings {
   String get skySupernovaScaleLabel;
   String get skySupernovaIntensityLabel;
   String get skyArtworkBlendLabel;
+  String get skyArtworkResetDefaultsLabel;
   String get skyArtworkControlsTooltip;
   String get skyArtworkScaleLabel;
   String get skyArtworkColorLabel;

@@ -301,7 +301,7 @@ class _SkyAreaSigilsPainter extends CustomPainter {
 
     final areas = LifeArea.values;
     for (var i = 0; i < areas.length; i++) {
-      final center = supernovaDirection(i, areas.length);
+      final center = supernovaVisualDirection(areas[i]);
       final projected = _projectDirection(center, camera, zoom, size);
       if (projected == null) continue;
       final (screenCenter, scale) = projected;

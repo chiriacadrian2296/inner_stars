@@ -50,22 +50,22 @@ class SkyAreaTooltip extends StatelessWidget {
       actions: [
         SearchCardAction(
           icon: Icons.edit_outlined,
-          label: 'Vision',
+          label: strings.visionPageTitle,
           onTap: onVision,
         ),
         SearchCardAction(
           icon: Icons.photo_library_outlined,
-          label: 'Moodboard',
+          label: strings.moodboardTitle,
           onTap: onMoodboard,
         ),
         SearchCardAction(
           icon: Icons.auto_stories_outlined,
-          label: 'Riflessioni',
+          label: strings.areaQuickLookReflectionsAction,
           onTap: onReflections,
         ),
         SearchCardAction(
           icon: Icons.insights,
-          label: '+ Costellazione',
+          label: strings.areaQuickLookNewConstellationAction,
           onTap: onNewConstellation,
         ),
       ],

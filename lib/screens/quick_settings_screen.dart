@@ -1,7 +1,4 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:hint_kit/hint_kit.dart';
 
 import '../audio/audio_service.dart';
 import '../l10n/strings_scope.dart';
@@ -9,7 +6,6 @@ import '../settings/settings_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../theme/app_typography.dart';
-import '../tutorials/tutorial_management.dart' show kAllTourNames;
 import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
 import 'sound_lab_screen.dart';
@@ -53,27 +49,6 @@ class _QuickSettingsScreenState extends State<QuickSettingsScreen> {
 
   Future<void> _setShowGrid(bool value) async {
     await widget.settings.setShowGrid(value);
-  }
-
-  // Same as `_TutorialManagementDialog._replayAllTours` — resets every
-  // tour's own completion so it fires again next time its screen opens,
-  // then immediately replays `sky-navigation` (the one tour that can't be
-  // previewed just by reopening a screen, since `SkyScreen` never gets
-  // pushed again). Kept as its own small copy rather than a shared
-  // function: nothing else here needs it, and the whole body is a handful
-  // of lines built on `kAllTourNames`, already public for exactly this.
-  Future<void> _replayAllTours(BuildContext context) async {
-    final strings = context.strings;
-    final tour = Tour.read(context);
-    final storage = tour.storage;
-    for (final name in kAllTourNames) {
-      await storage.reset(name);
-    }
-    unawaited(tour.start('sky-navigation', force: true));
-    if (context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(strings.replayToursResult)));
-    }
   }
 
   void _openSoundLab() {
@@ -241,21 +216,6 @@ class _QuickSettingsScreenState extends State<QuickSettingsScreen> {
                           strings.tutorialsEnabledDescription,
                           style: TextStyle(color: colors.muted, fontSize: 12.5),
                         ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                StaggeredEntrance(
-                  index: 3,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: () => _replayAllTours(context),
-                      icon: Icon(Icons.refresh, size: 18, color: colors.gold),
-                      label: AppButtonLabel(
-                        strings.replayToursAction,
-                        color: colors.gold,
                       ),
                     ),
                   ),

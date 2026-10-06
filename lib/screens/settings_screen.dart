@@ -4,7 +4,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:hint_kit/hint_kit.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../data/app_lock_repository.dart';
@@ -27,7 +26,6 @@ import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
 import '../theme/app_typography.dart';
-import '../tutorials/tutorial_management.dart' show kAllTourNames;
 import '../utils/app_modals.dart';
 import '../utils/app_time_picker.dart';
 import '../widgets/apk_download_prompt.dart';
@@ -36,6 +34,7 @@ import '../widgets/staggered_entrance.dart';
 import 'onboarding_screen.dart';
 import 'pin_setup_screen.dart';
 import 'sound_lab_screen.dart';
+import 'tutorials_screen.dart';
 
 /// Parks this screen's "Replay onboarding" debug button — see
 /// `main.dart`'s own `_kShowOnboarding` doc comment for why. Left wired up
@@ -110,17 +109,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _replayAllTours(BuildContext context) async {
-    final tour = Tour.read(context);
-    for (final name in kAllTourNames) {
-      await tour.storage.reset(name);
-    }
-    unawaited(tour.start('sky-navigation', force: true));
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.strings.replayToursResult)),
-      );
-    }
+  /// Opens the Tutorials screen. Its Cosmo replay has to tear down every
+  /// page above the Cosmo, so it's handed a way to push Settings → Tutorials
+  /// back afterwards: both screens are plain widget instances, reusable as-is.
+  void _openTutorials() {
+    final settingsScreen = widget;
+    late final TutorialsScreen tutorials;
+    tutorials = TutorialsScreen(
+      settings: widget.settings,
+      projectRepository: widget.projectRepository,
+      starRepository: widget.starRepository,
+      habitRepository: widget.habitRepository,
+      habitCompletionRepository: widget.habitCompletionRepository,
+      starsShapeRepository: widget.starsShapeRepository,
+      areaVisionRepository: widget.areaVisionRepository,
+      reflectionAnswerRepository: widget.reflectionAnswerRepository,
+      reopen: (navigator) {
+        navigator.push(MaterialPageRoute<void>(builder: (_) => settingsScreen));
+        navigator.push(MaterialPageRoute<void>(builder: (_) => tutorials));
+      },
+    );
+    Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => tutorials));
   }
 
   void _openSoundLab() => Navigator.of(context).push(
@@ -623,9 +633,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton.icon(
-                      onPressed: () => _replayAllTours(context),
-                      icon: const Icon(Icons.refresh, size: 18),
-                      label: AppButtonLabel(strings.replayToursAction),
+                      onPressed: _openTutorials,
+                      icon: const Icon(Icons.school_outlined, size: 18),
+                      label: AppButtonLabel(strings.tutorialsOpenAction),
                     ),
                   ),
                   const SizedBox(height: 28),

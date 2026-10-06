@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:video_player/video_player.dart';
 
 import '../data/moodboard_repository.dart';
@@ -8,6 +9,7 @@ import '../data/moodboard_storage.dart';
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
+import 'logo_watermark.dart';
 import 'staggered_entrance.dart';
 
 class MoodboardGrid extends StatelessWidget {
@@ -362,12 +364,34 @@ class MoodboardQuoteCard extends StatelessWidget {
         MoodboardQuoteStyle.minimal => null,
       },
     );
+    final watermarkColor = switch (style) {
+      MoodboardQuoteStyle.celestial => Colors.white.withValues(alpha: 0.07),
+      MoodboardQuoteStyle.aurora => const Color(
+        0xFF72E5C2,
+      ).withValues(alpha: 0.09),
+      MoodboardQuoteStyle.editorial => colors.gold.withValues(alpha: 0.09),
+      MoodboardQuoteStyle.constellation => colors.starUnlit.withValues(
+        alpha: 0.12,
+      ),
+      MoodboardQuoteStyle.minimal => colors.night.withValues(alpha: 0.055),
+    };
+    final brandColor = isMinimal ? colors.night : colors.gold;
 
     return DecoratedBox(
       decoration: decoration,
       child: Stack(
         fit: StackFit.expand,
         children: [
+          LogoWatermark(
+            color: watermarkColor,
+            scale: switch (style) {
+              MoodboardQuoteStyle.editorial => 1.05,
+              MoodboardQuoteStyle.minimal => 0.72,
+              MoodboardQuoteStyle.constellation => 0.82,
+              _ => 0.9,
+            },
+            duration: Duration.zero,
+          ),
           if (style == MoodboardQuoteStyle.celestial ||
               style == MoodboardQuoteStyle.constellation)
             Positioned(
@@ -454,18 +478,54 @@ class MoodboardQuoteCard extends StatelessWidget {
             left: 0,
             right: 0,
             bottom: 8,
-            child: Text(
-              'VICTORY STARS',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: (isMinimal ? colors.night : colors.gold).withValues(
-                  alpha: 0.55,
-                ),
-                fontFamily: kFontMono,
-                fontSize: expanded ? 10 : 7,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.5,
+            child: _QuoteBrand(
+              color: brandColor.withValues(alpha: 0.62),
+              expanded: expanded,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuoteBrand extends StatelessWidget {
+  const _QuoteBrand({required this.color, required this.expanded});
+
+  final Color color;
+  final bool expanded;
+
+  @override
+  Widget build(BuildContext context) {
+    final markSize = expanded ? 15.0 : 10.0;
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox.square(
+            dimension: markSize,
+            child: OverflowBox(
+              maxWidth: markSize * 1.9,
+              maxHeight: markSize * 1.9,
+              child: SvgPicture.asset(
+                'assets/icon/Logo.svg',
+                width: markSize * 1.9,
+                height: markSize * 1.9,
+                colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
               ),
+            ),
+          ),
+          SizedBox(width: expanded ? 7 : 4),
+          Text(
+            'VICTORY STARS',
+            style: TextStyle(
+              color: color,
+              fontFamily: kFontBranding,
+              fontSize: expanded ? 11 : 7,
+              fontWeight: FontWeight.w600,
+              letterSpacing: expanded ? 1.6 : 0.8,
             ),
           ),
         ],

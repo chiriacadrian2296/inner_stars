@@ -17,8 +17,8 @@ import '../models/star.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
-import '../tutorials/tour_intro_target.dart';
 import '../tutorials/tour_step_card.dart';
+import '../tutorials/tutorial_replay.dart';
 import '../utils/app_modals.dart';
 import '../utils/app_date_picker.dart';
 import '../utils/app_time_picker.dart';
@@ -319,14 +319,14 @@ class _StarFormScreenState extends State<StarFormScreen> {
     await _primeKindDependentTourSteps();
     if (!mounted) return;
     _tourBeingWatched = tour..addListener(_handleTourChanged);
-    unawaited(tour.start('star-form'));
+    unawaited(startTourAuto(tour, 'star-form'));
   }
 
   /// Briefly visits every kind (Pulsar, Unlit, then back to Lit) before the
   /// tour's first step ever shows, so every kind-gated step's `HintTarget`
   /// mounts — and registers its `order` with `hint_kit`'s `TourScope` — at
   /// least once, landing on Lit specifically because that's where the tour
-  /// itself always starts (see [_syncKindToTour]'s order-2 case) regardless
+  /// itself always starts (see [_syncKindToTour]) regardless
   /// of which kind the screen actually opened on.
   ///
   /// Without this, an order that has never registered doesn't just get
@@ -372,10 +372,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
     final int? order = TourScope.of(context)
         .orderAt('star-form', controller.index);
     final StarKind? needed = switch (order) {
-      2 || 8 || 9 || 10 => StarKind.lit,
-      11 || 12 => StarKind.pulsar,
-      13 => StarKind.unlit,
-      14 => _kindBeforeTour,
+      1 || 2 => StarKind.lit,
       _ => null,
     };
     if (needed == null || needed == _kind) return;
@@ -745,12 +742,6 @@ class _StarFormScreenState extends State<StarFormScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TourIntroTarget(
-                    tour: 'star-form',
-                    order: 1,
-                    title: strings.starTourIntroTitle,
-                    description: strings.starTourIntroBody,
-                  ),
                   const SizedBox(height: 16),
                   // The one control that decides which half of the form
                   // below shows. Omitted entirely when there's nothing to
@@ -760,7 +751,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     HintTarget(
                       key: const ValueKey('star-form-kind'),
                       tour: 'star-form',
-                      order: 2,
+                      order: 1,
                       showArrow: true,
                       contentBuilder: appTourStepCard,
                       title: strings.starTourKindTitle,
@@ -805,234 +796,147 @@ class _StarFormScreenState extends State<StarFormScreen> {
                   ),
                   const SizedBox(height: 24),
                   if (widget.lockedProject == null) ...[
-                    HintTarget(
-                      // Explicit keys on every HintTarget in this form: with
-                      // several of these steps only conditionally present
-                      // (branching on `_kind`), switching kind changes how
-                      // many widgets sit ahead of a given step in this
-                      // Column's children — without a stable key, Flutter's
-                      // positional reconciliation can match a step's old
-                      // Element to a *different* step's new widget for one
-                      // frame, which briefly registers two HintTargets under
-                      // the same order and crashes
-                      // (`hint_kit`'s own "Orders must be unique" assertion).
-                      // Confirmed live: switching Lit -> Pulsar crashed here
-                      // before every step in this file got its own key.
-                      key: const ValueKey('star-form-supernova'),
-                      tour: 'star-form',
-                      order: 4,
-                      showArrow: true,
-                      contentBuilder: appTourStepCard,
-                      title: strings.starTourSupernovaFieldTitle,
-                      description: strings.starTourSupernovaFieldBody,
-                      child: StaggeredEntrance(
-                        index: 3,
-                        replayKey: _kindEpoch,
-                        child: AppPickerField(
-                          label: strings.areaLabel,
-                          // Not itself checked by [_save]/`canSave` — picking a
-                          // Constellation fills it in on its own (see
-                          // [_openProjectPicker]) — but there's no real path to
-                          // saving a star without one ending up set, so it reads
-                          // as required same as the field that actually is.
-                          requirement: FieldRequirement.required,
-                          hint: strings.selectASupernova,
-                          icon:
-                              _selectedArea?.icon ??
-                              Icons.auto_awesome_outlined,
-                          text: _selectedArea?.displayName(strings),
-                          onTap: _openAreaPicker,
-                          trailing: Icon(
-                            Icons.expand_more,
-                            color: colors.muted,
-                          ),
-                        ),
+                    StaggeredEntrance(
+                      index: 3,
+                      replayKey: _kindEpoch,
+                      child: AppPickerField(
+                        label: strings.areaLabel,
+                        // Not itself checked by [_save]/`canSave` — picking a
+                        // Constellation fills it in on its own (see
+                        // [_openProjectPicker]) — but there's no real path to
+                        // saving a star without one ending up set, so it reads
+                        // as required same as the field that actually is.
+                        requirement: FieldRequirement.required,
+                        hint: strings.selectASupernova,
+                        icon:
+                            _selectedArea?.icon ?? Icons.auto_awesome_outlined,
+                        text: _selectedArea?.displayName(strings),
+                        onTap: _openAreaPicker,
+                        trailing: Icon(Icons.expand_more, color: colors.muted),
                       ),
                     ),
                     const SizedBox(height: 20),
-                    HintTarget(
-                      // Keyed — see the Supernova field's own HintTarget
-                      // above for why.
-                      key: const ValueKey('star-form-constellation'),
-                      tour: 'star-form',
-                      order: 5,
-                      showArrow: true,
-                      contentBuilder: appTourStepCard,
-                      title: strings.starTourConstellationFieldTitle,
-                      description: strings.starTourConstellationFieldBody,
-                      child: StaggeredEntrance(
-                        index: 4,
-                        replayKey: _kindEpoch,
-                        child: AppPickerField(
-                          label: strings.projectLabel,
-                          requirement: FieldRequirement.required,
-                          hint: strings.selectAProject,
-                          icon: _selectedProject == null
-                              ? Icons.insights
-                              : iconForSlug(_selectedProject!.iconSlug),
-                          text: _selectedProject?.name,
-                          onTap: _openProjectPicker,
-                          trailing: Icon(
-                            Icons.expand_more,
-                            color: colors.muted,
-                          ),
-                        ),
+                    StaggeredEntrance(
+                      index: 4,
+                      replayKey: _kindEpoch,
+                      child: AppPickerField(
+                        label: strings.projectLabel,
+                        requirement: FieldRequirement.required,
+                        hint: strings.selectAProject,
+                        icon: _selectedProject == null
+                            ? Icons.insights
+                            : iconForSlug(_selectedProject!.iconSlug),
+                        text: _selectedProject?.name,
+                        onTap: _openProjectPicker,
+                        trailing: Icon(Icons.expand_more, color: colors.muted),
                       ),
                     ),
                     const SizedBox(height: 20),
                   ],
-                  HintTarget(
-                    // Keyed — see the Supernova field's own HintTarget above
-                    // for why.
-                    key: const ValueKey('star-form-title'),
-                    tour: 'star-form',
-                    order: 6,
-                    showArrow: true,
-                    contentBuilder: appTourStepCard,
-                    title: strings.starTourTitleFieldTitle,
-                    description: strings.starTourTitleFieldBody,
-                    // The section label lives inside the target now (was a
-                    // sibling above it) — every field's own tour step
-                    // highlights its label along with its actual control, not
-                    // just the control alone.
-                    child: StaggeredEntrance(
-                      index: 5,
-                      replayKey: _kindEpoch,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AppFieldLabel(
-                            strings.titleFieldLabel,
-                            requirement: FieldRequirement.required,
-                          ),
-                          const SizedBox(height: 6),
-                          AppTextField(
-                            controller: _titleController,
-                            textInputAction: TextInputAction.next,
-                            hintText: _titleHint(strings),
-                            onChanged: (_) => setState(() {}),
-                          ),
-                        ],
-                      ),
+                  StaggeredEntrance(
+                    index: 5,
+                    replayKey: _kindEpoch,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppFieldLabel(
+                          strings.titleFieldLabel,
+                          requirement: FieldRequirement.required,
+                        ),
+                        const SizedBox(height: 6),
+                        AppTextField(
+                          controller: _titleController,
+                          textInputAction: TextInputAction.next,
+                          hintText: _titleHint(strings),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 20),
-                  HintTarget(
-                    // Keyed — see the Supernova field's own HintTarget above
-                    // for why.
-                    key: const ValueKey('star-form-details'),
-                    tour: 'star-form',
-                    order: 7,
-                    showArrow: true,
-                    contentBuilder: appTourStepCard,
-                    title: strings.starTourDetailsFieldTitle,
-                    description: strings.starTourDetailsFieldBody,
-                    child: StaggeredEntrance(
-                      index: 6,
-                      replayKey: _kindEpoch,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AppFieldLabel(
-                            strings.detailsLabel,
-                            requirement: FieldRequirement.optional,
-                          ),
-                          const SizedBox(height: 6),
-                          AppTextField(
-                            controller: _descriptionController,
-                            minLines: 4,
-                            maxLines: 6,
-                            hintText: _detailsHint(strings),
-                            onChanged: (_) => setState(() {}),
-                          ),
-                        ],
-                      ),
+                  StaggeredEntrance(
+                    index: 6,
+                    replayKey: _kindEpoch,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppFieldLabel(
+                          strings.detailsLabel,
+                          requirement: FieldRequirement.optional,
+                        ),
+                        const SizedBox(height: 6),
+                        AppTextField(
+                          controller: _descriptionController,
+                          minLines: 4,
+                          maxLines: 6,
+                          hintText: _detailsHint(strings),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ],
                     ),
                   ),
                   if (_kind == StarKind.lit) ...[
                     const SizedBox(height: 20),
-                    HintTarget(
-                      // Keyed — see the Supernova field's own HintTarget
-                      // above for why.
-                      key: const ValueKey('star-form-date'),
-                      tour: 'star-form',
-                      order: 8,
-                      showArrow: true,
-                      contentBuilder: appTourStepCard,
-                      title: strings.starTourDateFieldTitle,
-                      description: strings.starTourDateFieldBody,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: StaggeredEntrance(
-                              index: 7,
-                              replayKey: _kindEpoch,
-                              axis: Axis.horizontal,
-                              child: AppPickerField(
-                                label: strings.dateLabel,
-                                // Not checked by [_save] either — an unset
-                                // date silently becomes `DateTime.now()`
-                                // rather than blocking save — but a lit
-                                // star's whole point is recording *when* the
-                                // victory happened, so this reads as
-                                // required same as Supernova above.
-                                requirement: FieldRequirement.required,
-                                hint: strings.selectADateHint,
-                                icon: Icons.calendar_today,
-                                text: _date == null
-                                    ? null
-                                    : formatDisplayDate(_date!, strings),
-                                onTap: _pickDate,
-                              ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: StaggeredEntrance(
+                            index: 7,
+                            replayKey: _kindEpoch,
+                            axis: Axis.horizontal,
+                            child: AppPickerField(
+                              label: strings.dateLabel,
+                              // Not checked by [_save] either — an unset
+                              // date silently becomes `DateTime.now()`
+                              // rather than blocking save — but a lit
+                              // star's whole point is recording *when* the
+                              // victory happened, so this reads as
+                              // required same as Supernova above.
+                              requirement: FieldRequirement.required,
+                              hint: strings.selectADateHint,
+                              icon: Icons.calendar_today,
+                              text: _date == null
+                                  ? null
+                                  : formatDisplayDate(_date!, strings),
+                              onTap: _pickDate,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: StaggeredEntrance(
-                              index: 8,
-                              replayKey: _kindEpoch,
-                              axis: Axis.horizontal,
-                              child: AppPickerField(
-                                label: strings.timeLabel,
-                                requirement: FieldRequirement.required,
-                                hint: strings.selectATimeHint,
-                                icon: Icons.access_time,
-                                text: _date == null
-                                    ? null
-                                    : formatDisplayTime(_date!),
-                                onTap: _pickTime,
-                              ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: StaggeredEntrance(
+                            index: 8,
+                            replayKey: _kindEpoch,
+                            axis: Axis.horizontal,
+                            child: AppPickerField(
+                              label: strings.timeLabel,
+                              requirement: FieldRequirement.required,
+                              hint: strings.selectATimeHint,
+                              icon: Icons.access_time,
+                              text: _date == null
+                                  ? null
+                                  : formatDisplayTime(_date!),
+                              onTap: _pickTime,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ] else if (_kind == StarKind.unlit) ...[
                     const SizedBox(height: 20),
-                    HintTarget(
-                      // Keyed — see the Supernova field's own HintTarget
-                      // above for why.
-                      key: const ValueKey('star-form-target-date'),
-                      tour: 'star-form',
-                      order: 13,
-                      showArrow: true,
-                      contentBuilder: appTourStepCard,
-                      title: strings.starTourTargetDateFieldTitle,
-                      description: strings.starTourTargetDateFieldBody,
-                      child: StaggeredEntrance(
-                        index: 7,
-                        replayKey: _kindEpoch,
-                        child: AppPickerField(
-                          label: strings.targetDateLabel,
-                          requirement: FieldRequirement.optional,
-                          hint: strings.selectATargetDateHint,
-                          icon: Icons.flag_outlined,
-                          text: _targetDate == null
-                              ? null
-                              : formatDisplayDate(_targetDate!, strings),
-                          onTap: _pickTargetDate,
-                        ),
+                    StaggeredEntrance(
+                      index: 7,
+                      replayKey: _kindEpoch,
+                      child: AppPickerField(
+                        label: strings.targetDateLabel,
+                        requirement: FieldRequirement.optional,
+                        hint: strings.selectATargetDateHint,
+                        icon: Icons.flag_outlined,
+                        text: _targetDate == null
+                            ? null
+                            : formatDisplayDate(_targetDate!, strings),
+                        onTap: _pickTargetDate,
                       ),
                     ),
                   ],
@@ -1047,7 +951,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                       // above for why.
                       key: const ValueKey('star-form-intensity'),
                       tour: 'star-form',
-                      order: 9,
+                      order: 2,
                       showArrow: true,
                       contentBuilder: appTourStepCard,
                       title: strings.starTourIntensityTitle,
@@ -1113,233 +1017,202 @@ class _StarFormScreenState extends State<StarFormScreen> {
                   ],
                   if (_kind == StarKind.pulsar) ...[
                     const SizedBox(height: 20),
-                    HintTarget(
-                      // Keyed — see the Supernova field's own HintTarget
-                      // above for why.
-                      key: const ValueKey('star-form-habit-frequency'),
-                      tour: 'star-form',
-                      order: 11,
-                      showArrow: true,
-                      // Closer to the top of the viewport than the 0.5
-                      // default — this section (and Reminder/Photo below it)
-                      // sits low enough in a long form that centering left
-                      // its own step card fighting the system nav bar for
-                      // room underneath.
-                      scrollAlignment: 0.2,
-                      contentBuilder: appTourStepCard,
-                      title: strings.starTourHabitFrequencyTitle,
-                      description: strings.starTourHabitFrequencyBody,
-                      child: StaggeredEntrance(
-                        index: 10,
-                        replayKey: _kindEpoch,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            StaggeredEntrance(
-                              index: 0,
-                              replayKey: _kindEpoch,
-                              child: AppFieldLabel(
-                                strings.habitFrequencyLabel,
-                                requirement: FieldRequirement.required,
+                    StaggeredEntrance(
+                      index: 10,
+                      replayKey: _kindEpoch,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          StaggeredEntrance(
+                            index: 0,
+                            replayKey: _kindEpoch,
+                            child: AppFieldLabel(
+                              strings.habitFrequencyLabel,
+                              requirement: FieldRequirement.required,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: StaggeredEntrance(
+                                  index: 1,
+                                  replayKey: _kindEpoch,
+                                  axis: Axis.horizontal,
+                                  child: _HabitFrequencyChip(
+                                    label: strings.habitFrequencyDaily,
+                                    selected:
+                                        _habitFrequency == HabitFrequency.daily,
+                                    onTap: () => setState(() {
+                                      _habitFrequency = HabitFrequency.daily;
+                                      if (_habitTargetPerPeriod > 50) {
+                                        _habitTargetPerPeriod = 50;
+                                      }
+                                    }),
+                                  ),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: StaggeredEntrance(
-                                    index: 1,
-                                    replayKey: _kindEpoch,
-                                    axis: Axis.horizontal,
-                                    child: _HabitFrequencyChip(
-                                      label: strings.habitFrequencyDaily,
-                                      selected:
-                                          _habitFrequency ==
-                                          HabitFrequency.daily,
-                                      onTap: () => setState(() {
-                                        _habitFrequency = HabitFrequency.daily;
-                                        if (_habitTargetPerPeriod > 50) {
-                                          _habitTargetPerPeriod = 50;
-                                        }
-                                      }),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: StaggeredEntrance(
-                                    index: 2,
-                                    replayKey: _kindEpoch,
-                                    axis: Axis.horizontal,
-                                    child: _HabitFrequencyChip(
-                                      label: strings.habitFrequencyWeekly,
-                                      selected:
-                                          _habitFrequency ==
-                                          HabitFrequency.weekly,
-                                      onTap: () => setState(() {
-                                        _habitFrequency = HabitFrequency.weekly;
-                                        if (_habitTargetPerPeriod > 7) {
-                                          _habitTargetPerPeriod = 7;
-                                        }
-                                      }),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                StaggeredEntrance(
-                                  index: 3,
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: StaggeredEntrance(
+                                  index: 2,
                                   replayKey: _kindEpoch,
                                   axis: Axis.horizontal,
-                                  child: IconButton(
-                                    onPressed: _habitTargetPerPeriod > 1
-                                        ? () => setState(
-                                            () => _habitTargetPerPeriod--,
-                                          )
-                                        : null,
-                                    icon: Icon(
-                                      Icons.remove_circle_outline,
-                                      color: colors.gold,
-                                    ),
+                                  child: _HabitFrequencyChip(
+                                    label: strings.habitFrequencyWeekly,
+                                    selected:
+                                        _habitFrequency ==
+                                        HabitFrequency.weekly,
+                                    onTap: () => setState(() {
+                                      _habitFrequency = HabitFrequency.weekly;
+                                      if (_habitTargetPerPeriod > 7) {
+                                        _habitTargetPerPeriod = 7;
+                                      }
+                                    }),
                                   ),
                                 ),
-                                StaggeredEntrance(
-                                  index: 4,
-                                  replayKey: _kindEpoch,
-                                  axis: Axis.horizontal,
-                                  child: SizedBox(
-                                    width: 48,
-                                    child: Text(
-                                      '$_habitTargetPerPeriod',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w700,
-                                        color: colors.text,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                StaggeredEntrance(
-                                  index: 5,
-                                  replayKey: _kindEpoch,
-                                  axis: Axis.horizontal,
-                                  child: IconButton(
-                                    onPressed:
-                                        _habitTargetPerPeriod <
-                                            (_habitFrequency ==
-                                                    HabitFrequency.weekly
-                                                ? 7
-                                                : 50)
-                                        ? () => setState(
-                                            () => _habitTargetPerPeriod++,
-                                          )
-                                        : null,
-                                    icon: Icon(
-                                      Icons.add_circle_outline,
-                                      color: colors.gold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Center(
-                              child: StaggeredEntrance(
-                                index: 6,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              StaggeredEntrance(
+                                index: 3,
                                 replayKey: _kindEpoch,
-                                child: Text(
-                                  _habitFrequency == HabitFrequency.daily
-                                      ? strings.habitFrequencySummaryDaily(
-                                          _habitTargetPerPeriod,
+                                axis: Axis.horizontal,
+                                child: IconButton(
+                                  onPressed: _habitTargetPerPeriod > 1
+                                      ? () => setState(
+                                          () => _habitTargetPerPeriod--,
                                         )
-                                      : strings.habitFrequencySummaryWeekly(
-                                          _habitTargetPerPeriod,
-                                        ),
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: colors.muted,
+                                      : null,
+                                  icon: Icon(
+                                    Icons.remove_circle_outline,
+                                    color: colors.gold,
                                   ),
                                 ),
                               ),
+                              StaggeredEntrance(
+                                index: 4,
+                                replayKey: _kindEpoch,
+                                axis: Axis.horizontal,
+                                child: SizedBox(
+                                  width: 48,
+                                  child: Text(
+                                    '$_habitTargetPerPeriod',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w700,
+                                      color: colors.text,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              StaggeredEntrance(
+                                index: 5,
+                                replayKey: _kindEpoch,
+                                axis: Axis.horizontal,
+                                child: IconButton(
+                                  onPressed:
+                                      _habitTargetPerPeriod <
+                                          (_habitFrequency ==
+                                                  HabitFrequency.weekly
+                                              ? 7
+                                              : 50)
+                                      ? () => setState(
+                                          () => _habitTargetPerPeriod++,
+                                        )
+                                      : null,
+                                  icon: Icon(
+                                    Icons.add_circle_outline,
+                                    color: colors.gold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Center(
+                            child: StaggeredEntrance(
+                              index: 6,
+                              replayKey: _kindEpoch,
+                              child: Text(
+                                _habitFrequency == HabitFrequency.daily
+                                    ? strings.habitFrequencySummaryDaily(
+                                        _habitTargetPerPeriod,
+                                      )
+                                    : strings.habitFrequencySummaryWeekly(
+                                        _habitTargetPerPeriod,
+                                      ),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: colors.muted,
+                                ),
+                              ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 20),
-                    HintTarget(
-                      // Keyed — see the Supernova field's own HintTarget
-                      // above for why.
-                      key: const ValueKey('star-form-reminder'),
-                      tour: 'star-form',
-                      order: 12,
-                      showArrow: true,
-                      // See the Habit Frequency step just above for why.
-                      scrollAlignment: 0.2,
-                      contentBuilder: appTourStepCard,
-                      title: strings.starTourReminderTitle,
-                      description: strings.starTourReminderBody,
-                      child: StaggeredEntrance(
-                        index: 11,
-                        replayKey: _kindEpoch,
-                        child: Container(
-                          decoration: panelDecoration(colors),
-                          child: Material(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(kRadiusCard),
-                            clipBehavior: Clip.antiAlias,
-                            child: Column(
-                              children: [
+                    StaggeredEntrance(
+                      index: 11,
+                      replayKey: _kindEpoch,
+                      child: Container(
+                        decoration: panelDecoration(colors),
+                        child: Material(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(kRadiusCard),
+                          clipBehavior: Clip.antiAlias,
+                          child: Column(
+                            children: [
+                              StaggeredEntrance(
+                                index: 0,
+                                replayKey: _kindEpoch,
+                                child: SwitchListTile(
+                                  value: _customReminder,
+                                  onChanged: (value) =>
+                                      setState(() => _customReminder = value),
+                                  title: Text(
+                                    strings.customReminderToggleLabel,
+                                    style: TextStyle(
+                                      color: colors.text,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (_customReminder)
                                 StaggeredEntrance(
                                   index: 0,
                                   replayKey: _kindEpoch,
-                                  child: SwitchListTile(
-                                    value: _customReminder,
-                                    onChanged: (value) =>
-                                        setState(() => _customReminder = value),
+                                  child: ListTile(
+                                    onTap: _pickReminderTime,
                                     title: Text(
-                                      strings.customReminderToggleLabel,
+                                      strings.reminderTimeLabel,
                                       style: TextStyle(
-                                        color: colors.text,
-                                        fontSize: 14,
+                                        color: colors.muted,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    trailing: Text(
+                                      TimeOfDay(
+                                        hour: _reminderHour,
+                                        minute: _reminderMinute,
+                                      ).format(context),
+                                      style: TextStyle(
+                                        color: colors.gold,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 15,
                                       ),
                                     ),
                                   ),
                                 ),
-                                if (_customReminder)
-                                  StaggeredEntrance(
-                                    index: 0,
-                                    replayKey: _kindEpoch,
-                                    child: ListTile(
-                                      onTap: _pickReminderTime,
-                                      title: Text(
-                                        strings.reminderTimeLabel,
-                                        style: TextStyle(
-                                          color: colors.muted,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                      trailing: Text(
-                                        TimeOfDay(
-                                          hour: _reminderHour,
-                                          minute: _reminderMinute,
-                                        ).format(context),
-                                        style: TextStyle(
-                                          color: colors.gold,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 15,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
+                            ],
                           ),
                         ),
                       ),
@@ -1347,44 +1220,31 @@ class _StarFormScreenState extends State<StarFormScreen> {
                   ],
                   if (_kind == StarKind.lit) ...[
                     const SizedBox(height: 20),
-                    HintTarget(
-                      // Keyed — see the Supernova field's own HintTarget
-                      // above for why.
-                      key: const ValueKey('star-form-photo'),
-                      tour: 'star-form',
-                      order: 10,
-                      showArrow: true,
-                      // See the Habit Frequency step for why.
-                      scrollAlignment: 0.2,
-                      contentBuilder: appTourStepCard,
-                      title: strings.starTourPhotoTitle,
-                      description: strings.starTourPhotoBody,
-                      child: StaggeredEntrance(
-                        index: 12,
-                        replayKey: _kindEpoch,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            StaggeredEntrance(
-                              index: 0,
-                              replayKey: _kindEpoch,
-                              child: AppFieldLabel(
-                                strings.photoLabel,
-                                requirement: FieldRequirement.optional,
-                              ),
+                    StaggeredEntrance(
+                      index: 12,
+                      replayKey: _kindEpoch,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          StaggeredEntrance(
+                            index: 0,
+                            replayKey: _kindEpoch,
+                            child: AppFieldLabel(
+                              strings.photoLabel,
+                              requirement: FieldRequirement.optional,
                             ),
-                            const SizedBox(height: 6),
-                            StaggeredEntrance(
-                              index: 1,
-                              replayKey: _kindEpoch,
-                              child: PhotoPicker(
-                                photoPath: _photoPath,
-                                onPick: _pickPhoto,
-                                onRemove: _removePhoto,
-                              ),
+                          ),
+                          const SizedBox(height: 6),
+                          StaggeredEntrance(
+                            index: 1,
+                            replayKey: _kindEpoch,
+                            child: PhotoPicker(
+                              photoPath: _photoPath,
+                              onPick: _pickPhoto,
+                              onRemove: _removePhoto,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -1421,30 +1281,19 @@ class _StarFormScreenState extends State<StarFormScreen> {
                                   value.text.trim().isNotEmpty &&
                                   _selectedProject != null &&
                                   (!widget.isEditing || _hasUnsavedChanges);
-                              return HintTarget(
-                                // Keyed — see the Supernova field's own
-                                // HintTarget above for why.
-                                key: const ValueKey('star-form-save'),
-                                tour: 'star-form',
-                                order: 14,
-                                showArrow: true,
-                                contentBuilder: appTourStepCard,
-                                title: strings.starTourSaveTitle,
-                                description: strings.starTourSaveBody,
-                                child: StaggeredEntrance(
-                                  index: 1,
-                                  axis: Axis.horizontal,
-                                  child: SaveActionButton(
-                                    label: widget.isEditing
-                                        ? strings.saveChanges
-                                        : (_kind == StarKind.lit
-                                              ? strings.lightThisStar
-                                              : strings.placeThisStarAction),
-                                    lit: canSave,
-                                    onPressed: canSave
-                                        ? _save
-                                        : _showCannotSaveMessage,
-                                  ),
+                              return StaggeredEntrance(
+                                index: 1,
+                                axis: Axis.horizontal,
+                                child: SaveActionButton(
+                                  label: widget.isEditing
+                                      ? strings.saveChanges
+                                      : (_kind == StarKind.lit
+                                            ? strings.lightThisStar
+                                            : strings.placeThisStarAction),
+                                  lit: canSave,
+                                  onPressed: canSave
+                                      ? _save
+                                      : _showCannotSaveMessage,
                                 ),
                               );
                             },

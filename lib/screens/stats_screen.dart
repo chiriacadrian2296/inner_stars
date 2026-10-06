@@ -454,7 +454,7 @@ class _StatsScreenState extends State<StatsScreen> {
                       children: [
                         Expanded(
                           child: FilterButton(
-                            icon: Icons.tune,
+                            icon: Icons.flare,
                             active: _filter.isAreaNarrowed,
                             horizontal: true,
                             label: _filter.isAreaNarrowed

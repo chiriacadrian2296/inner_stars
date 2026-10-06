@@ -345,13 +345,13 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
     return TourScope(
       storage: tourStorage,
       tourLengths: const {
-        'sky-navigation': 15,
-        'star-form': 14,
-        'search-stars': 6,
-        'light-your-sky': 4,
-        'constellation-form': 11,
-        'supernova-vision': 4,
-        'star-reader': 5,
+        'sky-navigation': 10,
+        'star-form': 2,
+        'search-stars': 2,
+        'light-your-sky': 1,
+        'constellation-form': 1,
+        'supernova-vision': 3,
+        'star-reader': 2,
       },
       labels: TourLabels(
         skip: strings.tourSkipAction,

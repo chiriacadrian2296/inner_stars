@@ -4,12 +4,10 @@ import 'package:flutter/material.dart';
 
 import '../data/photo_storage.dart';
 
-/// Displays a star's photo from [photoPath] — whatever [PhotoStorage] used to
-/// save it (a real file path on native, a [SharedPreferences]-backed key on
-/// web) — behind one async read, so every photo display site works the same
-/// on both platforms instead of assuming a real filesystem. Renders nothing
-/// while loading or if the photo is missing; callers that need a fallback
-/// (e.g. a background gradient) already layer one behind this.
+/// Displays a star's photo from [photoPath] — either a remote placeholder used
+/// by sample data or whatever [PhotoStorage] used to save a user-picked photo.
+/// Renders nothing while loading or if the photo is missing; callers that need
+/// a fallback (e.g. a background gradient) already layer one behind this.
 class PhotoImage extends StatelessWidget {
   const PhotoImage({
     super.key,
@@ -33,6 +31,19 @@ class PhotoImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (PhotoStorage.isRemote(photoPath)) {
+      return Image.network(
+        photoPath,
+        fit: fit,
+        alignment: alignment,
+        width: width,
+        height: height,
+        cacheWidth: cacheWidth,
+        gaplessPlayback: true,
+        errorBuilder: (_, _, _) => SizedBox(width: width, height: height),
+      );
+    }
+
     final cached = PhotoStorage.cachedBytes(photoPath);
     if (cached != null) return _image(cached);
 

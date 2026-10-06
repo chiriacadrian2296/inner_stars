@@ -1,5 +1,6 @@
 import '../models/artwork_blend.dart';
 import '../models/artwork_layer.dart';
+import '../settings/sky_grid_size.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -9,6 +10,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// independent scalars with no shared ordering to preserve.
 class SettingsRepository {
   SettingsRepository(this._prefs);
+
+  static const defaultShowSupernovae = true;
+  static const defaultSupernovaScale = 0.9;
+  static const defaultSupernovaIntensity = 0.8;
+  static const defaultArtworkOpacity = 0.1;
+  static const defaultArtworkScale = 1.0;
+  static const defaultArtworkColor = 0xFFFFFFFF;
+  static const defaultArtworkLayer = ArtworkLayer.aboveStars;
+  static const defaultArtworkBlend = ArtworkBlend.plus;
 
   static const _localeKey = 'settings.locale';
   static const _reminderEnabledKey = 'settings.reminderEnabled';
@@ -25,6 +35,8 @@ class SettingsRepository {
   static const _supernovaScaleKey = 'settings.supernovaScale';
   static const _supernovaIntensityKey = 'settings.supernovaIntensity';
   static const _tutorialsEnabledKey = 'settings.tutorialsEnabled';
+  static const _skyGridViewKey = 'settings.skyGridView';
+  static const _skyGridSizeStepKey = 'settings.skyGridSizeStep';
 
   final SharedPreferences _prefs;
 
@@ -62,38 +74,59 @@ class SettingsRepository {
 
   Future<void> setShowGrid(bool value) => _prefs.setBool(_showGridKey, value);
 
+  /// Whether the Sky browser shows its results as a grid of miniature pages
+  /// instead of the list of cards — list by default.
+  bool get skyGridView => _prefs.getBool(_skyGridViewKey) ?? false;
+
+  Future<void> setSkyGridView(bool value) =>
+      _prefs.setBool(_skyGridViewKey, value);
+
+  /// Index into `kSkyGridTileExtents` — how big the grid's cards are.
+  int get skyGridSizeStep => clampSkyGridSizeStep(
+    _prefs.getInt(_skyGridSizeStepKey) ?? kSkyGridDefaultSizeStep,
+  );
+
+  Future<void> setSkyGridSizeStep(int value) =>
+      _prefs.setInt(_skyGridSizeStepKey, value);
+
   /// Whether the Cosmo draws each life area's supernova (the giant star over
   /// its artwork, and the sigil around it) — on by default.
-  bool get showSupernovae => _prefs.getBool(_showSupernovaeKey) ?? true;
+  bool get showSupernovae =>
+      _prefs.getBool(_showSupernovaeKey) ?? defaultShowSupernovae;
 
   Future<void> setShowSupernovae(bool value) =>
       _prefs.setBool(_showSupernovaeKey, value);
 
-  double get supernovaScale => _prefs.getDouble(_supernovaScaleKey) ?? 1.0;
+  double get supernovaScale =>
+      _prefs.getDouble(_supernovaScaleKey) ?? defaultSupernovaScale;
 
   Future<void> setSupernovaScale(double value) =>
       _prefs.setDouble(_supernovaScaleKey, value);
 
   double get supernovaIntensity =>
-      _prefs.getDouble(_supernovaIntensityKey) ?? 1.0;
+      _prefs.getDouble(_supernovaIntensityKey) ?? defaultSupernovaIntensity;
 
   Future<void> setSupernovaIntensity(double value) =>
       _prefs.setDouble(_supernovaIntensityKey, value);
 
   /// How strongly the Cosmo's area artwork shows (0..1), and how it blends
   /// onto the sky — defaults are the original look (half strength, additive).
-  double get artworkOpacity => _prefs.getDouble(_artworkOpacityKey) ?? 0.5;
+  double get artworkOpacity =>
+      _prefs.getDouble(_artworkOpacityKey) ?? defaultArtworkOpacity;
 
   Future<void> setArtworkOpacity(double value) =>
       _prefs.setDouble(_artworkOpacityKey, value);
 
-  ArtworkBlend get artworkBlend =>
-      ArtworkBlend.fromName(_prefs.getString(_artworkBlendKey));
+  ArtworkBlend get artworkBlend {
+    final saved = _prefs.getString(_artworkBlendKey);
+    return saved == null ? defaultArtworkBlend : ArtworkBlend.fromName(saved);
+  }
 
   Future<void> setArtworkBlend(ArtworkBlend value) =>
       _prefs.setString(_artworkBlendKey, value.name);
 
-  double get artworkScale => _prefs.getDouble(_artworkScaleKey) ?? 1.0;
+  double get artworkScale =>
+      _prefs.getDouble(_artworkScaleKey) ?? defaultArtworkScale;
 
   Future<void> setArtworkScale(double value) =>
       _prefs.setDouble(_artworkScaleKey, value);
@@ -109,17 +142,32 @@ class SettingsRepository {
         return appGold;
       }
     }
-    return saved ?? appGold;
+    return saved ?? defaultArtworkColor;
   }
 
   Future<void> setArtworkColor(int value) =>
       _prefs.setInt(_artworkColorKey, value);
 
-  ArtworkLayer get artworkLayer =>
-      ArtworkLayer.fromName(_prefs.getString(_artworkLayerKey));
+  ArtworkLayer get artworkLayer {
+    final saved = _prefs.getString(_artworkLayerKey);
+    return saved == null ? defaultArtworkLayer : ArtworkLayer.fromName(saved);
+  }
 
   Future<void> setArtworkLayer(ArtworkLayer value) =>
       _prefs.setString(_artworkLayerKey, value.name);
+
+  Future<void> resetCosmoVisuals() async {
+    await Future.wait([
+      setShowSupernovae(defaultShowSupernovae),
+      setSupernovaScale(defaultSupernovaScale),
+      setSupernovaIntensity(defaultSupernovaIntensity),
+      setArtworkOpacity(defaultArtworkOpacity),
+      setArtworkScale(defaultArtworkScale),
+      setArtworkColor(defaultArtworkColor),
+      setArtworkLayer(defaultArtworkLayer),
+      setArtworkBlend(defaultArtworkBlend),
+    ]);
+  }
 
   /// Whether any `hint_kit` guided tour is allowed to auto-start at all. Off
   /// by default; turning it off doesn't touch which tours are individually
