@@ -66,3 +66,7 @@ app.*.map.json
 # Local research notes and reports (personal, not part of the app)
 /reports/
 /research_notes/
+
+# Artwork sources (kept locally only)
+assets/images/*.pur
+assets/images/*.zip
