@@ -199,8 +199,12 @@ class HabitRepository {
   /// is cleaned by the caller, which has access to its separate repository.
   Future<List<int>> deleteAllForProject(int projectId) async {
     final habits = getAll();
-    final removed = habits.where((habit) => habit.projectId == projectId).toList();
-    await _saveAll(habits.where((habit) => habit.projectId != projectId).toList());
+    final removed = habits
+        .where((habit) => habit.projectId == projectId)
+        .toList();
+    await _saveAll(
+      habits.where((habit) => habit.projectId != projectId).toList(),
+    );
     return removed.map((habit) => habit.id).toList();
   }
 

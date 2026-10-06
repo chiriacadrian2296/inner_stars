@@ -98,9 +98,7 @@ class ProjectRepository {
       throw StateError('No project found with id $projectId');
     }
 
-    final updated = projects[index].copyWith(
-      starsShapeId: starsShapeId,
-    );
+    final updated = projects[index].copyWith(starsShapeId: starsShapeId);
     projects[index] = updated;
     await _saveAll(projects);
     return updated;
@@ -149,7 +147,8 @@ class ProjectRepository {
       iconSlug: iconSlug,
       starsShapeId: starsShapeId,
       description: (trimmedDescription == null || trimmedDescription.isEmpty)
-          ? null : trimmedDescription,
+          ? null
+          : trimmedDescription,
       createdAt: existing.createdAt,
     );
     projects[index] = updated;

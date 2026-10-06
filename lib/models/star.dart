@@ -88,9 +88,8 @@ class Star {
   /// [StarKind.nascent] (that's a slot with no star in it yet) and never
   /// [StarKind.pulsar] (that's a [Habit]) — the single place the
   /// dead/lit/unlit decision is made, so no screen re-derives it by hand.
-  StarKind get kind => dead
-      ? StarKind.dead
-      : (isLit ? StarKind.lit : StarKind.unlit);
+  StarKind get kind =>
+      dead ? StarKind.dead : (isLit ? StarKind.lit : StarKind.unlit);
 
   Star copyWith({
     int? id,

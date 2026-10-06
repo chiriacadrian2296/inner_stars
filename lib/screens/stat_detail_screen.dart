@@ -363,9 +363,7 @@ class _StatDetailScaffold extends StatelessWidget {
 }
 
 class _DetailCard extends StatelessWidget {
-  const _DetailCard({
-    required this.children,
-  });
+  const _DetailCard({required this.children});
 
   final List<Widget> children;
 
@@ -410,9 +408,7 @@ class _DetailRow extends StatelessWidget {
             ),
       child: Row(
         children: [
-          Expanded(
-            child: Text(label, style: context.typography.supporting),
-          ),
+          Expanded(child: Text(label, style: context.typography.supporting)),
           Text(
             value,
             style: context.typography.body.copyWith(

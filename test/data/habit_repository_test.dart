@@ -9,13 +9,16 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  test('add() defaults a pulsar to the middle of the intensity scale', () async {
-    final repo = await HabitRepository.create();
+  test(
+    'add() defaults a pulsar to the middle of the intensity scale',
+    () async {
+      final repo = await HabitRepository.create();
 
-    final habit = await repo.add(title: 'Stretch', projectId: 1);
+      final habit = await repo.add(title: 'Stretch', projectId: 1);
 
-    expect(habit.intensity, 3);
-  });
+      expect(habit.intensity, 3);
+    },
+  );
 
   test('delete() tombstones rather than erasing — the pulsar stays in the '
       'sky as a dead star', () async {
@@ -35,11 +38,7 @@ void main() {
       'history', () async {
     final repo = await HabitRepository.create();
     final completions = await HabitCompletionRepository.create();
-    final habit = await repo.add(
-      title: 'Stretch',
-      projectId: 1,
-      intensity: 2,
-    );
+    final habit = await repo.add(title: 'Stretch', projectId: 1, intensity: 2);
     await completions.markDone(habit.id);
     await repo.delete(habit.id);
 

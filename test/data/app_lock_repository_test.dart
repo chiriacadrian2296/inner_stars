@@ -56,15 +56,18 @@ void main() {
     expect(second.verifyPin('1234'), isTrue);
   });
 
-  test('setPin() replaces a previous PIN — only the new one verifies', () async {
-    final repo = await AppLockRepository.create();
-    await repo.setPin('1234');
+  test(
+    'setPin() replaces a previous PIN — only the new one verifies',
+    () async {
+      final repo = await AppLockRepository.create();
+      await repo.setPin('1234');
 
-    await repo.setPin('5678');
+      await repo.setPin('5678');
 
-    expect(repo.verifyPin('1234'), isFalse);
-    expect(repo.verifyPin('5678'), isTrue);
-  });
+      expect(repo.verifyPin('1234'), isFalse);
+      expect(repo.verifyPin('5678'), isTrue);
+    },
+  );
 
   test('setBiometricEnabled() is a no-op without a PIN set', () async {
     final repo = await AppLockRepository.create();
@@ -96,14 +99,17 @@ void main() {
     expect(repo.verifyPin('1234'), isFalse);
   });
 
-  test('a set PIN persists across repository instances (same storage)', () async {
-    final first = await AppLockRepository.create();
-    await first.setPin('1234');
+  test(
+    'a set PIN persists across repository instances (same storage)',
+    () async {
+      final first = await AppLockRepository.create();
+      await first.setPin('1234');
 
-    final second = await AppLockRepository.create();
+      final second = await AppLockRepository.create();
 
-    expect(second.isEnabled, isTrue);
-    expect(second.hasPin, isTrue);
-    expect(second.verifyPin('1234'), isTrue);
-  });
+      expect(second.isEnabled, isTrue);
+      expect(second.hasPin, isTrue);
+      expect(second.verifyPin('1234'), isTrue);
+    },
+  );
 }

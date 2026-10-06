@@ -200,5 +200,6 @@ extension AppColorsX on BuildContext {
   // Falls back to `dark` rather than asserting non-null: on some devices the
   // very first post-launch frame can resolve Theme before the extension is
   // attached, and this is purely cosmetic for one frame — not worth a crash.
-  AppColors get colors => Theme.of(this).extension<AppColors>() ?? AppColors.dark;
+  AppColors get colors =>
+      Theme.of(this).extension<AppColors>() ?? AppColors.dark;
 }

@@ -161,9 +161,9 @@ void main() {
       // Slots 1-3 are the shape's own and stay nascent; 4 exists only
       // because the graph had to grow to reach 5, so nothing is drawn there.
       expect(
-        built.stars.where((s) => s.kind == StarKind.nascent).map(
-          (s) => s.slotSequence,
-        ),
+        built.stars
+            .where((s) => s.kind == StarKind.nascent)
+            .map((s) => s.slotSequence),
         [1, 2, 3],
       );
       expect(built.stars.singleWhere((s) => s.entityId == 1).slotSequence, 5);

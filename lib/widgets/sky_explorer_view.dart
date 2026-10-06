@@ -635,9 +635,8 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           ? context.strings.creationSuccessLitMessage
           : context.strings.creationSuccessUnlitMessage,
       onOpen: () => _openCreatedEntry(project, StarEntry(star).key),
-      onTakeMeThere: () => widget.onNavigateTo(
-        SkyStarTarget(project, starId: star.id),
-      ),
+      onTakeMeThere: () =>
+          widget.onNavigateTo(SkyStarTarget(project, starId: star.id)),
       onShare: () => showSharePreview(
         context: context,
         content: star.isLit
@@ -658,9 +657,8 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       iconColor: starKindColor(StarKind.pulsar, context.colors),
       message: context.strings.creationSuccessPulsarMessage,
       onOpen: () => _openCreatedEntry(project, PulsarEntry(habit).key),
-      onTakeMeThere: () => widget.onNavigateTo(
-        SkyStarTarget(project, habitId: habit.id),
-      ),
+      onTakeMeThere: () =>
+          widget.onNavigateTo(SkyStarTarget(project, habitId: habit.id)),
       onShare: () => showSharePreview(
         context: context,
         content: ShareablePulsarCard(habit: habit, project: project),

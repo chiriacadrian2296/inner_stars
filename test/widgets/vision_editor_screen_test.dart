@@ -112,7 +112,9 @@ void main() {
     );
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
-    await tester.tap(find.text(const StringsIt().discardChangesAction.toUpperCase()));
+    await tester.tap(
+      find.text(const StringsIt().discardChangesAction.toUpperCase()),
+    );
     await tester.pumpAndSettle();
     expect(repository.getVision(LifeArea.physical), 'La mia visione');
     expect(find.text('Apri'), findsOneWidget);

@@ -103,10 +103,7 @@ List<ReaderEntry> buildReaderEntries({
 }) {
   final bySlot = {for (final star in stars) star.slotSequence: star};
   final shapeSlots = shape?.points.length ?? 0;
-  final highest = stars.fold<int>(
-    0,
-    (max, s) => math.max(max, s.slotSequence),
-  );
+  final highest = stars.fold<int>(0, (max, s) => math.max(max, s.slotSequence));
   final entries = <ReaderEntry>[];
   for (var slot = 1; slot <= math.max(shapeSlots, highest); slot++) {
     final star = bySlot[slot];

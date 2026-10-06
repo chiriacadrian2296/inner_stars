@@ -696,26 +696,21 @@ final _specsEn = [
     ],
     habits: [_HabitSeed('Read before bed', _activeStreak(7), intensity: 1)],
   ),
-  _ProjectSeed(
-    'Reconnect with old friends',
-    LifeArea.social,
-    'chat_bubble',
-    [
-      _WinSeed("Reached out to a friend I hadn't spoken to in years"),
-      _WinSeed(
-        'Made the first move to patch things up',
-        'Awkward at first, worth it.',
-      ),
-      _WinSeed('Showed up to a get-together I almost skipped'),
-      _WinSeed('Called instead of just texting'),
-      _WinSeed('Said something honest instead of staying quiet'),
-      _WinSeed(
-        'Reconnected with someone after a long silence',
-        "Neither of us apologized, we just moved on.",
-      ),
-      _WinSeed('Made plans instead of waiting for someone else to'),
-    ],
-  ),
+  _ProjectSeed('Reconnect with old friends', LifeArea.social, 'chat_bubble', [
+    _WinSeed("Reached out to a friend I hadn't spoken to in years"),
+    _WinSeed(
+      'Made the first move to patch things up',
+      'Awkward at first, worth it.',
+    ),
+    _WinSeed('Showed up to a get-together I almost skipped'),
+    _WinSeed('Called instead of just texting'),
+    _WinSeed('Said something honest instead of staying quiet'),
+    _WinSeed(
+      'Reconnected with someone after a long silence',
+      "Neither of us apologized, we just moved on.",
+    ),
+    _WinSeed('Made plans instead of waiting for someone else to'),
+  ]),
   _ProjectSeed('Volunteer monthly', LifeArea.philanthropic, 'campaign', [
     _WinSeed('Showed up to volunteer even though I was exhausted'),
     _WinSeed('Organized a small donation drive'),
@@ -743,18 +738,27 @@ final _specsIt = [
         'Mi sono alzato per correre alle 6 del mattino per tre giorni di fila',
         'Avevo le gambe indolenzite ma l\'ho fatto lo stesso.',
       ),
-      _WinSeed('Ho continuato a correre nonostante un crampo invece di mollare'),
-      _WinSeed('Mi sono iscritto alla gara dei 10 km', 'Terrorizzato, ma l\'ho fatto.'),
+      _WinSeed(
+        'Ho continuato a correre nonostante un crampo invece di mollare',
+      ),
+      _WinSeed(
+        'Mi sono iscritto alla gara dei 10 km',
+        'Terrorizzato, ma l\'ho fatto.',
+      ),
       _WinSeed(
         'Ho corso al mio ritmo migliore di sempre',
         'Due minuti più veloce del mese scorso.',
       ),
-      _WinSeed('Ho tenuto duro nell\'ultimo chilometro quando volevo camminare'),
+      _WinSeed(
+        'Ho tenuto duro nell\'ultimo chilometro quando volevo camminare',
+      ),
       _WinSeed(
         'Sono uscito a correre dopo una giornata di lavoro davvero pesante',
         'Mi ha aiutato più di quanto pensassi.',
       ),
-      _WinSeed('Ho fatto una sessione di scatti in salita che evitavo da settimane'),
+      _WinSeed(
+        'Ho fatto una sessione di scatti in salita che evitavo da settimane',
+      ),
       _WinSeed('Ho corso al freddo senza lamentarmi (troppo)'),
       _WinSeed(
         'Mi sono ripreso da un piccolo infortunio e sono tornato a correre',
@@ -762,7 +766,10 @@ final _specsIt = [
       ),
       _WinSeed('Ho superato la distanza della settimana scorsa'),
     ],
-    goals: ['Correre una mezza maratona', 'Scendere sotto i 50 minuti nei 10 km'],
+    goals: [
+      'Correre una mezza maratona',
+      'Scendere sotto i 50 minuti nei 10 km',
+    ],
     habits: [
       _HabitSeed('Stretching mattutino', _activeStreak(10)),
       _HabitSeed('Bagno di ghiaccio', [4, 5, 6], intensity: 5),
@@ -776,7 +783,10 @@ final _specsIt = [
       'Sono andato in piscina da solo per la prima volta',
       'Nessuno dietro cui nascondermi, solo io e l\'acqua.',
     ),
-    _WinSeed('Ho provato la parte profonda della piscina', 'Il cuore mi batteva forte ma l\'ho fatto.'),
+    _WinSeed(
+      'Ho provato la parte profonda della piscina',
+      'Il cuore mi batteva forte ma l\'ho fatto.',
+    ),
     _WinSeed('Ho fatto pratica con la respirazione per 20 minuti di fila'),
     _WinSeed('Ho nuotato due vasche senza aver bisogno di fermarmi'),
   ]),
@@ -807,12 +817,16 @@ final _specsIt = [
         'Mi ha aiutato a rispondere invece che reagire d\'istinto.',
       ),
       _WinSeed('Per una volta ho osservato i miei pensieri senza giudicarli'),
-      _WinSeed('Mi sono preso un giorno per la salute mentale senza sentirmi in colpa'),
+      _WinSeed(
+        'Mi sono preso un giorno per la salute mentale senza sentirmi in colpa',
+      ),
       _WinSeed(
         'Ho fatto pratica stando in silenzio per 15 minuti',
         'È stato difficile, ma l\'ho fatto lo stesso.',
       ),
-      _WinSeed('Sono riuscito a calmarmi da una spirale usando quello che ho imparato'),
+      _WinSeed(
+        'Sono riuscito a calmarmi da una spirale usando quello che ho imparato',
+      ),
       _WinSeed(
         'Ho meditato in un giorno in cui non ne avevo proprio voglia',
         'Mi sono fatto vivo lo stesso.',
@@ -836,7 +850,9 @@ final _specsIt = [
         'Grezza qua e là ma funziona.',
       ),
       _WinSeed('Ho risolto un bug che mi faceva impazzire da due giorni'),
-      _WinSeed('Ho rifattorizzato il codice disordinato della settimana scorsa'),
+      _WinSeed(
+        'Ho rifattorizzato il codice disordinato della settimana scorsa',
+      ),
       _WinSeed('Ho scritto i test invece di saltarli'),
       _WinSeed(
         'Ho capito perché l\'animazione non funzionava',
@@ -861,7 +877,9 @@ final _specsIt = [
     LifeArea.professional,
     'business_center',
     [
-      _WinSeed('Ho inviato una candidatura anche se mi sentivo poco qualificato'),
+      _WinSeed(
+        'Ho inviato una candidatura anche se mi sentivo poco qualificato',
+      ),
       _WinSeed('Sono sopravvissuto a un colloquio da far tremare i polsi'),
       _WinSeed('Ho fatto un follow-up dopo settimane di silenzio'),
       _WinSeed('Ho riscritto il mio curriculum invece di evitarlo'),
@@ -877,7 +895,9 @@ final _specsIt = [
     LifeArea.financial,
     'home',
     [
-      _WinSeed('Ho rinunciato a un acquisto impulsivo e ho messo da parte i soldi'),
+      _WinSeed(
+        'Ho rinunciato a un acquisto impulsivo e ho messo da parte i soldi',
+      ),
       _WinSeed('Sono arrivato a fine mese restando sotto budget'),
       _WinSeed(
         'Ho dato un\'occhiata sincera alle mie spese',
@@ -899,7 +919,9 @@ final _specsIt = [
       _WinSeed('Ho iniziato un libro che mi intimidiva'),
       _WinSeed('Ho finito un capitolo invece di fermarmi a metà'),
     ],
-    habits: [_HabitSeed('Leggere prima di dormire', _activeStreak(7), intensity: 1)],
+    habits: [
+      _HabitSeed('Leggere prima di dormire', _activeStreak(7), intensity: 1),
+    ],
   ),
   _ProjectSeed(
     'Riallacciare i rapporti con vecchi amici',
@@ -918,19 +940,28 @@ final _specsIt = [
         'Ho ristabilito il contatto con qualcuno dopo un lungo silenzio',
         'Nessuno dei due si è scusato, abbiamo solo ricominciato.',
       ),
-      _WinSeed('Ho organizzato qualcosa invece di aspettare che lo facesse qualcun altro'),
+      _WinSeed(
+        'Ho organizzato qualcosa invece di aspettare che lo facesse qualcun altro',
+      ),
     ],
   ),
-  _ProjectSeed('Fare volontariato ogni mese', LifeArea.philanthropic, 'campaign', [
-    _WinSeed('Mi sono presentato per fare volontariato anche se ero esausto'),
-    _WinSeed('Ho organizzato una piccola raccolta di donazioni'),
-    _WinSeed(
-      'Ho passato un sabato ad aiutare invece di riposare',
-      'Stanco, ma contento di averlo fatto.',
-    ),
-    _WinSeed('Ho rinunciato a un weekend per aiutare un vicino a traslocare'),
-    _WinSeed('Ho donato invece di comprare qualcosa di cui non avevo bisogno'),
-  ]),
+  _ProjectSeed(
+    'Fare volontariato ogni mese',
+    LifeArea.philanthropic,
+    'campaign',
+    [
+      _WinSeed('Mi sono presentato per fare volontariato anche se ero esausto'),
+      _WinSeed('Ho organizzato una piccola raccolta di donazioni'),
+      _WinSeed(
+        'Ho passato un sabato ad aiutare invece di riposare',
+        'Stanco, ma contento di averlo fatto.',
+      ),
+      _WinSeed('Ho rinunciato a un weekend per aiutare un vicino a traslocare'),
+      _WinSeed(
+        'Ho donato invece di comprare qualcosa di cui non avevo bisogno',
+      ),
+    ],
+  ),
 ];
 
 final _specsRo = [
@@ -954,12 +985,16 @@ final _specsRo = [
         'Am alergat în cel mai bun ritm personal',
         'Cu două minute mai repede decât luna trecută.',
       ),
-      _WinSeed('Am dus-o până la capăt în ultimul kilometru când voiam să merg la pas'),
+      _WinSeed(
+        'Am dus-o până la capăt în ultimul kilometru când voiam să merg la pas',
+      ),
       _WinSeed(
         'Am ieșit la alergat după o zi foarte grea la muncă',
         'M-a ajutat mai mult decât mă așteptam.',
       ),
-      _WinSeed('Am făcut o sesiune de sprint pe deal pe care o evitam de săptămâni întregi'),
+      _WinSeed(
+        'Am făcut o sesiune de sprint pe deal pe care o evitam de săptămâni întregi',
+      ),
       _WinSeed('Am alergat pe frig fără să mă plâng (prea mult)'),
       _WinSeed(
         'Mi-am revenit după o mică accidentare și am ieșit din nou',
@@ -976,12 +1011,17 @@ final _specsRo = [
   ),
   _ProjectSeed('Învăț să înot', LifeArea.physical, 'pool', [
     _WinSeed('Mi-am băgat fața în apă fără să intru în panică'),
-    _WinSeed('Am înotat un bazin întreg fără să mă opresc să-mi trag răsuflarea'),
+    _WinSeed(
+      'Am înotat un bazin întreg fără să mă opresc să-mi trag răsuflarea',
+    ),
     _WinSeed(
       'Am mers singur la piscină pentru prima dată',
       'Nimeni în spatele căruia să mă ascund, doar eu și apa.',
     ),
-    _WinSeed('Am încercat partea adâncă', 'Inima îmi bătea cu putere, dar am făcut-o.'),
+    _WinSeed(
+      'Am încercat partea adâncă',
+      'Inima îmi bătea cu putere, dar am făcut-o.',
+    ),
     _WinSeed('Am exersat tehnica de respirație timp de 20 de minute în șir'),
     _WinSeed('Am înotat două bazine fără să am nevoie să mă opresc'),
   ]),
@@ -1012,7 +1052,9 @@ final _specsRo = [
         'M-a ajutat să răspund în loc să reacționez.',
       ),
       _WinSeed('Pentru o dată mi-am observat gândurile fără să le judec'),
-      _WinSeed('Mi-am luat o zi liberă pentru sănătatea mintală fără să mă simt vinovat'),
+      _WinSeed(
+        'Mi-am luat o zi liberă pentru sănătatea mintală fără să mă simt vinovat',
+      ),
       _WinSeed(
         'Am exersat să stau în tăcere timp de 15 minute',
         'A fost greu, dar am făcut-o oricum.',
@@ -1082,14 +1124,18 @@ final _specsRo = [
     LifeArea.financial,
     'home',
     [
-      _WinSeed('Am renunțat la o cumpărătură impulsivă și am pus banii deoparte'),
+      _WinSeed(
+        'Am renunțat la o cumpărătură impulsivă și am pus banii deoparte',
+      ),
       _WinSeed('Am terminat luna sub buget'),
       _WinSeed(
         'Am analizat sincer cheltuielile mele',
         'Neplăcut, dar necesar.',
       ),
       _WinSeed('Am spus nu unei ieșiri în oraș ca să-mi protejez economiile'),
-      _WinSeed('Am atins un obiectiv de economisire spre care lucram de mult timp'),
+      _WinSeed(
+        'Am atins un obiectiv de economisire spre care lucram de mult timp',
+      ),
       _WinSeed('Am anulat un abonament pe care nu-l foloseam'),
     ],
     goals: ['Atinge obiectivul pentru avans'],
@@ -1104,28 +1150,25 @@ final _specsRo = [
       _WinSeed('Am început o carte care mă intimida'),
       _WinSeed('Am terminat un capitol în loc să mă opresc la jumătate'),
     ],
-    habits: [_HabitSeed('Citesc înainte de culcare', _activeStreak(7), intensity: 1)],
-  ),
-  _ProjectSeed(
-    'Reconectez cu vechi prieteni',
-    LifeArea.social,
-    'chat_bubble',
-    [
-      _WinSeed('Am contactat un prieten cu care nu mai vorbisem de ani de zile'),
-      _WinSeed(
-        'Am făcut primul pas ca să repar lucrurile',
-        'Stânjenitor la început, dar a meritat.',
-      ),
-      _WinSeed('M-am prezentat la o întâlnire pe care era să o ratez'),
-      _WinSeed('Am sunat în loc să trimit doar un mesaj'),
-      _WinSeed('Am spus ceva sincer în loc să tac'),
-      _WinSeed(
-        'Am reluat legătura cu cineva după o tăcere lungă',
-        'Niciunul dintre noi nu și-a cerut scuze, am mers mai departe.',
-      ),
-      _WinSeed('Am făcut planuri în loc să aștept ca altcineva să o facă'),
+    habits: [
+      _HabitSeed('Citesc înainte de culcare', _activeStreak(7), intensity: 1),
     ],
   ),
+  _ProjectSeed('Reconectez cu vechi prieteni', LifeArea.social, 'chat_bubble', [
+    _WinSeed('Am contactat un prieten cu care nu mai vorbisem de ani de zile'),
+    _WinSeed(
+      'Am făcut primul pas ca să repar lucrurile',
+      'Stânjenitor la început, dar a meritat.',
+    ),
+    _WinSeed('M-am prezentat la o întâlnire pe care era să o ratez'),
+    _WinSeed('Am sunat în loc să trimit doar un mesaj'),
+    _WinSeed('Am spus ceva sincer în loc să tac'),
+    _WinSeed(
+      'Am reluat legătura cu cineva după o tăcere lungă',
+      'Niciunul dintre noi nu și-a cerut scuze, am mers mai departe.',
+    ),
+    _WinSeed('Am făcut planuri în loc să aștept ca altcineva să o facă'),
+  ]),
   _ProjectSeed('Fac voluntariat lunar', LifeArea.philanthropic, 'campaign', [
     _WinSeed('M-am prezentat la voluntariat chiar dacă eram epuizat'),
     _WinSeed('Am organizat o mică campanie de donații'),

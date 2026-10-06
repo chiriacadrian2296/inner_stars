@@ -9,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// reads it directly.
 class PrefsTourStorage extends TourStorage {
   PrefsTourStorage(this._prefs, {bool Function()? enabled})
-      : _enabled = enabled ?? _alwaysEnabled;
+    : _enabled = enabled ?? _alwaysEnabled;
 
   static const _keyPrefix = 'tour.';
 

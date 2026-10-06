@@ -20,6 +20,5 @@ class OnboardingPrefs {
 
   bool get hasSeenOnboarding => _prefs.getBool(_seenKey) ?? false;
 
-  Future<void> setSeenOnboarding(bool value) =>
-      _prefs.setBool(_seenKey, value);
+  Future<void> setSeenOnboarding(bool value) => _prefs.setBool(_seenKey, value);
 }

@@ -47,17 +47,11 @@ class StarsShape {
       shape: ConstellationShape(
         points: (json['points'] as List<dynamic>)
             .map(
-              (p) => Offset(
-                (p as List<dynamic>)[0] as double,
-                p[1] as double,
-              ),
+              (p) => Offset((p as List<dynamic>)[0] as double, p[1] as double),
             )
             .toList(),
         edges: (json['edges'] as List<dynamic>)
-            .map(
-              (e) =>
-                  ((e as List<dynamic>)[0] as int, e[1] as int),
-            )
+            .map((e) => ((e as List<dynamic>)[0] as int, e[1] as int))
             .toList(),
       ),
       createdAt: DateTime.parse(json['createdAt'] as String),

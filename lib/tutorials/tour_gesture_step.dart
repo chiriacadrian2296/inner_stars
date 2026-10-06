@@ -101,7 +101,8 @@ class TourGestureBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isActiveTourStep(context, tour, order)) return const SizedBox.shrink();
+    if (!_isActiveTourStep(context, tour, order))
+      return const SizedBox.shrink();
     final colors = context.colors;
     return Positioned(
       top: 0,
@@ -271,8 +272,7 @@ class TourGestureConfirmStep extends StatefulWidget {
   final String tryLabel;
 
   @override
-  State<TourGestureConfirmStep> createState() =>
-      _TourGestureConfirmStepState();
+  State<TourGestureConfirmStep> createState() => _TourGestureConfirmStepState();
 }
 
 class _TourGestureConfirmStepState extends State<TourGestureConfirmStep> {

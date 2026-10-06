@@ -30,26 +30,32 @@ void main() {
     expect(created.shape.edges, shape.edges);
   });
 
-  test('getById() finds a saved shape by id, or null if it does not exist', () async {
-    final repo = await StarsShapeRepository.create();
-    final created = await repo.add(name: 'My path', shape: shape);
+  test(
+    'getById() finds a saved shape by id, or null if it does not exist',
+    () async {
+      final repo = await StarsShapeRepository.create();
+      final created = await repo.add(name: 'My path', shape: shape);
 
-    expect(repo.getById(created.id)?.name, 'My path');
-    expect(repo.getById(-1), isNull);
-  });
+      expect(repo.getById(created.id)?.name, 'My path');
+      expect(repo.getById(-1), isNull);
+    },
+  );
 
-  test('data survives reloading the repository from the same storage', () async {
-    final repo = await StarsShapeRepository.create();
-    await repo.add(name: 'My path', shape: shape);
+  test(
+    'data survives reloading the repository from the same storage',
+    () async {
+      final repo = await StarsShapeRepository.create();
+      await repo.add(name: 'My path', shape: shape);
 
-    final reloaded = await StarsShapeRepository.create();
+      final reloaded = await StarsShapeRepository.create();
 
-    expect(reloaded.getAll(), hasLength(1));
-    final roundTripped = reloaded.getAll().first;
-    expect(roundTripped.name, 'My path');
-    expect(roundTripped.shape.points, shape.points);
-    expect(roundTripped.shape.edges, shape.edges);
-  });
+      expect(reloaded.getAll(), hasLength(1));
+      final roundTripped = reloaded.getAll().first;
+      expect(roundTripped.name, 'My path');
+      expect(roundTripped.shape.points, shape.points);
+      expect(roundTripped.shape.edges, shape.edges);
+    },
+  );
 
   test('update() replaces name and shape but keeps id and createdAt', () async {
     final repo = await StarsShapeRepository.create();

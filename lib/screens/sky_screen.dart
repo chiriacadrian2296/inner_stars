@@ -5031,185 +5031,206 @@ class _ArtworkControls extends StatelessWidget {
               child: SizedBox(
                 width: width,
                 child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              child: !open
-                  ? const SizedBox.shrink()
-                  : Container(
-                      key: const ValueKey('artwork-controls'),
-                      padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
-                      constraints: BoxConstraints(maxHeight: panelMaxHeight),
-                      decoration: panelDecoration(colors),
-                      child: SingleChildScrollView(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                            sectionTitle(strings.skySupernovaeSection),
-                            const SizedBox(height: 4),
-                            Row(
+                  duration: const Duration(milliseconds: 180),
+                  child: !open
+                      ? const SizedBox.shrink()
+                      : Container(
+                          key: const ValueKey('artwork-controls'),
+                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+                          constraints: BoxConstraints(
+                            maxHeight: panelMaxHeight,
+                          ),
+                          decoration: panelDecoration(colors),
+                          child: SingleChildScrollView(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Expanded(
-                                  child: Text(
-                                    strings.skySupernovaeToggleLabel,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: colors.muted,
-                                      fontSize: 11,
-                                    ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      sectionTitle(
+                                        strings.skySupernovaeSection,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              strings.skySupernovaeToggleLabel,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                color: colors.muted,
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ),
+                                          Transform.scale(
+                                            scale: 0.65,
+                                            child: Switch(
+                                              materialTapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                              value: settings.showSupernovae,
+                                              onChanged:
+                                                  settings.setShowSupernovae,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      _ArtworkSlider(
+                                        label: strings.skySupernovaScaleLabel,
+                                        valueLabel:
+                                            '${settings.supernovaScale.toStringAsFixed(2)}×',
+                                        value: settings.supernovaScale,
+                                        min: 0.4,
+                                        max: 2.2,
+                                        onChanged: settings.setSupernovaScale,
+                                      ),
+                                      _ArtworkSlider(
+                                        label:
+                                            strings.skySupernovaIntensityLabel,
+                                        valueLabel:
+                                            '${(settings.supernovaIntensity * 100).round()}%',
+                                        value: settings.supernovaIntensity,
+                                        min: 0,
+                                        max: 2,
+                                        onChanged:
+                                            settings.setSupernovaIntensity,
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                Transform.scale(
-                                  scale: 0.65,
-                                  child: Switch(
-                                    materialTapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                    value: settings.showSupernovae,
-                                    onChanged: settings.setShowSupernovae,
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      sectionTitle(strings.skyArtworkSection),
+                                      const SizedBox(height: 4),
+                                      _ArtworkSlider(
+                                        label: strings.skyArtworkOpacityLabel,
+                                        valueLabel:
+                                            '${(settings.artworkOpacity * 100).round()}%',
+                                        value: settings.artworkOpacity,
+                                        min: 0,
+                                        max: 1,
+                                        onChanged: settings.setArtworkOpacity,
+                                      ),
+                                      _ArtworkSlider(
+                                        label: strings.skyArtworkScaleLabel,
+                                        valueLabel:
+                                            '${settings.artworkScale.toStringAsFixed(2)}×',
+                                        value: settings.artworkScale,
+                                        min: 0.4,
+                                        max: 2.2,
+                                        onChanged: settings.setArtworkScale,
+                                      ),
+                                      _ArtworkSlider(
+                                        label: strings.skyArtworkColorLabel,
+                                        valueLabel:
+                                            '${HSLColor.fromColor(settings.artworkColor).hue.round()}°',
+                                        value: HSLColor.fromColor(
+                                          settings.artworkColor,
+                                        ).hue,
+                                        min: 0,
+                                        max: 360,
+                                        leading: Container(
+                                          width: 16,
+                                          height: 16,
+                                          decoration: BoxDecoration(
+                                            color: settings.artworkColor,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: colors.text,
+                                            ),
+                                          ),
+                                        ),
+                                        onChanged: (hue) {
+                                          final current = HSLColor.fromColor(
+                                            settings.artworkColor,
+                                          );
+                                          settings.setArtworkColor(
+                                            current.withHue(hue).toColor(),
+                                          );
+                                        },
+                                      ),
+                                      _ArtworkSlider(
+                                        label:
+                                            strings.skyArtworkSaturationLabel,
+                                        valueLabel:
+                                            '${(HSLColor.fromColor(settings.artworkColor).saturation * 100).round()}%',
+                                        value: HSLColor.fromColor(
+                                          settings.artworkColor,
+                                        ).saturation,
+                                        min: 0,
+                                        max: 1,
+                                        onChanged: (saturation) {
+                                          final current = HSLColor.fromColor(
+                                            settings.artworkColor,
+                                          );
+                                          settings.setArtworkColor(
+                                            current
+                                                .withSaturation(saturation)
+                                                .toColor(),
+                                          );
+                                        },
+                                      ),
+                                      _ArtworkSlider(
+                                        label: strings.skyArtworkLightnessLabel,
+                                        valueLabel:
+                                            '${(HSLColor.fromColor(settings.artworkColor).lightness * 100).round()}%',
+                                        value: HSLColor.fromColor(
+                                          settings.artworkColor,
+                                        ).lightness,
+                                        min: 0,
+                                        max: 1,
+                                        onChanged: (lightness) {
+                                          final current = HSLColor.fromColor(
+                                            settings.artworkColor,
+                                          );
+                                          settings.setArtworkColor(
+                                            current
+                                                .withLightness(lightness)
+                                                .toColor(),
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(height: 4),
+                                      _ArtworkDropdown<ArtworkLayer>(
+                                        label: strings.skyArtworkLayerLabel,
+                                        value: settings.artworkLayer,
+                                        values: ArtworkLayer.values,
+                                        displayName: (value) => switch (value) {
+                                          ArtworkLayer.behindSky =>
+                                            strings.skyArtworkLayerBehindSky,
+                                          ArtworkLayer.behindSupernovae =>
+                                            strings
+                                                .skyArtworkLayerBehindSupernovae,
+                                          ArtworkLayer.aboveStars =>
+                                            strings.skyArtworkLayerAboveStars,
+                                        },
+                                        onChanged: settings.setArtworkLayer,
+                                      ),
+                                      _ArtworkDropdown<ArtworkBlend>(
+                                        label: strings.skyArtworkBlendLabel,
+                                        value: settings.artworkBlend,
+                                        values: ArtworkBlend.values,
+                                        displayName: (value) => value.label,
+                                        onChanged: settings.setArtworkBlend,
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                            _ArtworkSlider(
-                              label: strings.skySupernovaScaleLabel,
-                              valueLabel:
-                                  '${settings.supernovaScale.toStringAsFixed(2)}×',
-                              value: settings.supernovaScale,
-                              min: 0.4,
-                              max: 2.2,
-                              onChanged: settings.setSupernovaScale,
-                            ),
-                            _ArtworkSlider(
-                              label: strings.skySupernovaIntensityLabel,
-                              valueLabel:
-                                  '${(settings.supernovaIntensity * 100).round()}%',
-                              value: settings.supernovaIntensity,
-                              min: 0,
-                              max: 2,
-                              onChanged: settings.setSupernovaIntensity,
-                            ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                            sectionTitle(strings.skyArtworkSection),
-                            const SizedBox(height: 4),
-                            _ArtworkSlider(
-                              label: strings.skyArtworkOpacityLabel,
-                              valueLabel:
-                                  '${(settings.artworkOpacity * 100).round()}%',
-                              value: settings.artworkOpacity,
-                              min: 0,
-                              max: 1,
-                              onChanged: settings.setArtworkOpacity,
-                            ),
-                            _ArtworkSlider(
-                              label: strings.skyArtworkScaleLabel,
-                              valueLabel:
-                                  '${settings.artworkScale.toStringAsFixed(2)}×',
-                              value: settings.artworkScale,
-                              min: 0.4,
-                              max: 2.2,
-                              onChanged: settings.setArtworkScale,
-                            ),
-                            _ArtworkSlider(
-                              label: strings.skyArtworkColorLabel,
-                              valueLabel:
-                                  '${HSLColor.fromColor(settings.artworkColor).hue.round()}°',
-                              value: HSLColor.fromColor(settings.artworkColor)
-                                  .hue,
-                              min: 0,
-                              max: 360,
-                              leading: Container(
-                                width: 16,
-                                height: 16,
-                                decoration: BoxDecoration(
-                                  color: settings.artworkColor,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: colors.text),
-                                ),
-                              ),
-                              onChanged: (hue) {
-                                final current = HSLColor.fromColor(
-                                  settings.artworkColor,
-                                );
-                                settings.setArtworkColor(
-                                  current.withHue(hue).toColor(),
-                                );
-                              },
-                            ),
-                            _ArtworkSlider(
-                              label: strings.skyArtworkSaturationLabel,
-                              valueLabel:
-                                  '${(HSLColor.fromColor(settings.artworkColor).saturation * 100).round()}%',
-                              value: HSLColor.fromColor(settings.artworkColor)
-                                  .saturation,
-                              min: 0,
-                              max: 1,
-                              onChanged: (saturation) {
-                                final current = HSLColor.fromColor(
-                                  settings.artworkColor,
-                                );
-                                settings.setArtworkColor(
-                                  current.withSaturation(saturation).toColor(),
-                                );
-                              },
-                            ),
-                            _ArtworkSlider(
-                              label: strings.skyArtworkLightnessLabel,
-                              valueLabel:
-                                  '${(HSLColor.fromColor(settings.artworkColor).lightness * 100).round()}%',
-                              value: HSLColor.fromColor(settings.artworkColor)
-                                  .lightness,
-                              min: 0,
-                              max: 1,
-                              onChanged: (lightness) {
-                                final current = HSLColor.fromColor(
-                                  settings.artworkColor,
-                                );
-                                settings.setArtworkColor(
-                                  current.withLightness(lightness).toColor(),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 4),
-                            _ArtworkDropdown<ArtworkLayer>(
-                              label: strings.skyArtworkLayerLabel,
-                              value: settings.artworkLayer,
-                              values: ArtworkLayer.values,
-                              displayName: (value) => switch (value) {
-                                ArtworkLayer.behindSky =>
-                                  strings.skyArtworkLayerBehindSky,
-                                ArtworkLayer.behindSupernovae =>
-                                  strings.skyArtworkLayerBehindSupernovae,
-                                ArtworkLayer.aboveStars =>
-                                  strings.skyArtworkLayerAboveStars,
-                              },
-                              onChanged: settings.setArtworkLayer,
-                            ),
-                            _ArtworkDropdown<ArtworkBlend>(
-                              label: strings.skyArtworkBlendLabel,
-                              value: settings.artworkBlend,
-                              values: ArtworkBlend.values,
-                              displayName: (value) => value.label,
-                              onChanged: settings.setArtworkBlend,
-                            ),
-                                ],
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
                 ),
               ),
             ),
@@ -5265,9 +5286,7 @@ class _ArtworkSlider extends StatelessWidget {
           child: SliderTheme(
             data: SliderTheme.of(context).copyWith(
               trackHeight: 2,
-              thumbShape: const RoundSliderThumbShape(
-                enabledThumbRadius: 6,
-              ),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
               overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
             ),
             child: Slider(

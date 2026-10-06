@@ -60,8 +60,7 @@ class HabitStatsSummary {
 /// Monday of the calendar week containing [day] — [HabitFrequency.weekly]'s
 /// own period boundary, a hard reset every Monday rather than a rolling
 /// 7-day window (`DateTime.weekday` is 1 for Monday..7 for Sunday).
-DateTime _weekStart(DateTime day) =>
-    addDays(day, -(day.weekday - 1));
+DateTime _weekStart(DateTime day) => addDays(day, -(day.weekday - 1));
 
 /// Groups [completions] by calendar day, counting how many were logged on
 /// each day — 0 or 1 for a [HabitFrequency.daily] habit whose target is 1
@@ -196,9 +195,7 @@ int habitCurrentStreak(
   if (!isHabitLit(habit, countsByDay, now: today)) return 0;
 
   if (habit.frequency == HabitFrequency.daily) {
-    var day = _dayMet(habit, countsByDay, today)
-        ? today
-        : addDays(today, -1);
+    var day = _dayMet(habit, countsByDay, today) ? today : addDays(today, -1);
     var streak = 0;
     while (_dayMet(habit, countsByDay, day)) {
       streak++;
@@ -245,11 +242,7 @@ int habitLongestStreak(
   var longest = 0;
   var running = 0;
   if (habit.frequency == HabitFrequency.daily) {
-    for (
-      var day = start;
-      !day.isAfter(end);
-      day = addDays(day, 1)
-    ) {
+    for (var day = start; !day.isAfter(end); day = addDays(day, 1)) {
       if (_dayMet(habit, countsByDay, day)) {
         running++;
         if (running > longest) longest = running;
@@ -298,11 +291,7 @@ HabitStatsSummary habitStatsSummary(
   var earned = 0.0;
   var possible = 0.0;
   if (!end.isBefore(start)) {
-    for (
-      var day = start;
-      !day.isAfter(end);
-      day = addDays(day, 1)
-    ) {
+    for (var day = start; !day.isAfter(end); day = addDays(day, 1)) {
       final raw = counts[day] ?? 0;
       final dayProgress = habit.frequency == HabitFrequency.daily
           ? (raw / habit.targetPerPeriod).clamp(0.0, 1.0).toDouble()

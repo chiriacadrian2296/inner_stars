@@ -195,8 +195,7 @@ class AudioService with WidgetsBindingObserver {
   Future<void> setTapVolume(double volume) => _settings.setTapVolume(volume);
 
   double get holdVolume => _settings.holdVolume;
-  Future<void> setHoldVolume(double volume) =>
-      _settings.setHoldVolume(volume);
+  Future<void> setHoldVolume(double volume) => _settings.setHoldVolume(volume);
 
   double get whooshVolume => _settings.whooshVolume;
   Future<void> setWhooshVolume(double volume) =>
@@ -254,12 +253,10 @@ class AudioService with WidgetsBindingObserver {
   /// `sky_screen.dart`'s `_flyToWorld`/`_zoomTo`, which compare the
   /// destination zoom against the current one to decide which of these
   /// two to call.
-  Future<void> playZoomInSound() =>
-      _playTransition(whooshInSound.assetPath);
+  Future<void> playZoomInSound() => _playTransition(whooshInSound.assetPath);
 
   /// The same, for a fly that lands on a *farther* view.
-  Future<void> playZoomOutSound() =>
-      _playTransition(whooshOutSound.assetPath);
+  Future<void> playZoomOutSound() => _playTransition(whooshOutSound.assetPath);
 
   /// Previews [sound] on demand — used by the Sound Lab so picking a
   /// zoom-in/zoom-out whoosh there previews it immediately.
@@ -268,10 +265,7 @@ class AudioService with WidgetsBindingObserver {
 
   Future<void> _playTransition(String assetPath) async {
     await _transitionPlayer.stop();
-    await _transitionPlayer.play(
-      AssetSource(assetPath),
-      volume: whooshVolume,
-    );
+    await _transitionPlayer.play(AssetSource(assetPath), volume: whooshVolume);
   }
 
   /// Clears every stored choice (see `AudioSettingsRepository.clear`) and
@@ -284,7 +278,9 @@ class AudioService with WidgetsBindingObserver {
   Future<void> resetToDefaults() async {
     await _settings.clear();
     await _backgroundPlayer.setVolume(_settings.backgroundVolume);
-    await _backgroundPlayer.play(AssetSource(_settings.backgroundTrack.assetPath));
+    await _backgroundPlayer.play(
+      AssetSource(_settings.backgroundTrack.assetPath),
+    );
   }
 
   Future<void> dispose() async {

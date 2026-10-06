@@ -103,7 +103,11 @@ class MetricTile extends StatelessWidget {
           : Material(
               type: MaterialType.transparency,
               borderRadius: radius,
-              child: InkWell(onTap: onTap, borderRadius: radius, child: content),
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: radius,
+                child: content,
+              ),
             ),
     );
   }
@@ -292,7 +296,8 @@ class _TrendBarsState extends State<TrendBars> {
                 Expanded(
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTap: () => setState(() => _selected = _selected == i ? null : i),
+                    onTap: () =>
+                        setState(() => _selected = _selected == i ? null : i),
                     child: Align(
                       alignment: Alignment.bottomCenter,
                       child: Padding(
@@ -334,10 +339,7 @@ class _TrendBarsState extends State<TrendBars> {
               ),
             ),
             if (selected == null)
-              Text(
-                _day(context, last),
-                style: context.typography.microLabel,
-              ),
+              Text(_day(context, last), style: context.typography.microLabel),
           ],
         ),
       ],
@@ -367,7 +369,10 @@ class AreaDistribution extends StatelessWidget {
     final maxCount = counts.first.value;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: kSpaceMd, vertical: kSpaceXs),
+      padding: const EdgeInsets.symmetric(
+        horizontal: kSpaceMd,
+        vertical: kSpaceXs,
+      ),
       decoration: panelDecoration(colors),
       child: Column(
         children: [

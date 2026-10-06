@@ -107,9 +107,8 @@ class SkyHintTarget extends StatelessWidget {
         !surfaceObject.hasSize) {
       return null;
     }
-    final RenderObject? overlayObject = Overlay.of(
-      surfaceContext,
-    ).context.findRenderObject();
+    final RenderObject? overlayObject = Overlay.of(surfaceContext).context
+        .findRenderObject();
     if (overlayObject is! RenderBox ||
         !overlayObject.attached ||
         !overlayObject.hasSize) {

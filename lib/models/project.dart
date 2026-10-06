@@ -74,8 +74,7 @@ class Project {
       'area': area.name,
       'iconSlug': iconSlug,
       // Same pre-rename key as fromJson reads — see its own comment.
-      if (starsShapeId != null)
-        'customConstellationId': starsShapeId,
+      if (starsShapeId != null) 'customConstellationId': starsShapeId,
       if (description != null) 'description': description,
       'createdAt': createdAt.toIso8601String(),
     };

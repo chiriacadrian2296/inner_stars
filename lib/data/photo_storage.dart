@@ -59,9 +59,7 @@ class PhotoStorage {
   static Future<String> save(XFile picked) async {
     final bytes = await picked.readAsBytes();
     final dotIndex = picked.name.lastIndexOf('.');
-    final extension = dotIndex == -1
-        ? '.jpg'
-        : picked.name.substring(dotIndex);
+    final extension = dotIndex == -1 ? '.jpg' : picked.name.substring(dotIndex);
     return saveBytes(bytes, extension: extension);
   }
 

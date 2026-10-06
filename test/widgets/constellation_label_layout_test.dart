@@ -51,7 +51,10 @@ void main() {
               node.center.dx.clamp(rects[i].left, rects[i].right),
               node.center.dy.clamp(rects[i].top, rects[i].bottom),
             );
-            expect((nearest - node.center).distance, greaterThanOrEqualTo(node.radius));
+            expect(
+              (nearest - node.center).distance,
+              greaterThanOrEqualTo(node.radius),
+            );
           }
         }
       });
@@ -127,7 +130,10 @@ void main() {
         },
       );
       for (final id in first.placements.keys) {
-        expect(second.placements[id]!.candidate, first.placements[id]!.candidate);
+        expect(
+          second.placements[id]!.candidate,
+          first.placements[id]!.candidate,
+        );
       }
     });
 
@@ -140,8 +146,7 @@ void main() {
           // the grid's actual symmetry axis.
           MapNode(id: 2, center: Offset(300, 120), radius: 10),
         ],
-        labelSize: (id, scale) =>
-            id == 2 ? null : Size(44 * scale, 16 * scale),
+        labelSize: (id, scale) => id == 2 ? null : Size(44 * scale, 16 * scale),
         anchor: const Offset(220, 180),
         symmetryAxisX: 180,
       );
@@ -166,8 +171,14 @@ void main() {
         grid: const LabelGrid(origin: Offset.zero, spacing: 20),
       );
       for (final placement in layout.placements.values) {
-        expect(placement.lineEnd.dx / 20, closeTo((placement.lineEnd.dx / 20).round(), 0.001));
-        expect(placement.lineEnd.dy / 20, closeTo((placement.lineEnd.dy / 20).round(), 0.001));
+        expect(
+          placement.lineEnd.dx / 20,
+          closeTo((placement.lineEnd.dx / 20).round(), 0.001),
+        );
+        expect(
+          placement.lineEnd.dy / 20,
+          closeTo((placement.lineEnd.dy / 20).round(), 0.001),
+        );
       }
     });
 

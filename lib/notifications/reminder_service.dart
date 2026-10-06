@@ -31,13 +31,17 @@ class ReminderService {
 
   final FlutterLocalNotificationsPlugin _plugin;
 
-  static Future<ReminderService> create({void Function(NotificationResponse)? onNotificationTap}) async {
+  static Future<ReminderService> create({
+    void Function(NotificationResponse)? onNotificationTap,
+  }) async {
     final plugin = FlutterLocalNotificationsPlugin();
     // Must be a plain white silhouette drawable, not the full-color launcher
     // mipmap — Android's status bar only reads the alpha channel of a
     // notification icon (API 21+), so the adaptive launcher icon used to
     // render as blank/invisible there.
-    const androidSettings = AndroidInitializationSettings('@drawable/ic_stat_notification');
+    const androidSettings = AndroidInitializationSettings(
+      '@drawable/ic_stat_notification',
+    );
     await plugin.initialize(
       settings: const InitializationSettings(android: androidSettings),
       onDidReceiveNotificationResponse: onNotificationTap,
@@ -69,7 +73,10 @@ class ReminderService {
   /// whether the reminder can actually be shown; other platforms in this
   /// app (none yet) default to true since no prompt is needed.
   Future<bool> requestPermission() async {
-    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     if (androidPlugin == null) return true;
     final granted = await androidPlugin.requestNotificationsPermission();
     return granted ?? false;
@@ -85,12 +92,18 @@ class ReminderService {
   /// so [scheduleUpcoming] always re-checks [_canScheduleExactAlarms] fresh
   /// rather than assuming this call succeeded.
   Future<void> requestExactAlarmPermission() async {
-    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     await androidPlugin?.requestExactAlarmsPermission();
   }
 
   Future<bool> _canScheduleExactAlarms() async {
-    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     if (androidPlugin == null) return true;
     return await androidPlugin.canScheduleExactNotifications() ?? false;
   }
@@ -120,7 +133,14 @@ class ReminderService {
         : AndroidScheduleMode.inexactAllowWhileIdle;
     final now = tz.TZDateTime.now(tz.local);
     for (var i = 0; i < _daysAhead; i++) {
-      var date = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+      var date = tz.TZDateTime(
+        tz.local,
+        now.year,
+        now.month,
+        now.day,
+        hour,
+        minute,
+      );
       if (!date.isAfter(now)) date = date.add(const Duration(days: 1));
       date = date.add(Duration(days: i));
 
@@ -129,7 +149,9 @@ class ReminderService {
         scheduledDate: date,
         title: title,
         body: bodies[i % bodies.length],
-        notificationDetails: const NotificationDetails(android: _androidChannel),
+        notificationDetails: const NotificationDetails(
+          android: _androidChannel,
+        ),
         androidScheduleMode: scheduleMode,
       );
     }

@@ -13,15 +13,18 @@ void main() {
     expect(prefs.hideHelp, isFalse);
   });
 
-  test('setHideHelp(true) persists and survives reloading from the same storage', () async {
-    final prefs = await ConstellationEditorPrefs.create();
+  test(
+    'setHideHelp(true) persists and survives reloading from the same storage',
+    () async {
+      final prefs = await ConstellationEditorPrefs.create();
 
-    await prefs.setHideHelp(true);
+      await prefs.setHideHelp(true);
 
-    expect(prefs.hideHelp, isTrue);
-    final reloaded = await ConstellationEditorPrefs.create();
-    expect(reloaded.hideHelp, isTrue);
-  });
+      expect(prefs.hideHelp, isTrue);
+      final reloaded = await ConstellationEditorPrefs.create();
+      expect(reloaded.hideHelp, isTrue);
+    },
+  );
 
   test('setHideHelp(false) can turn the flag back off', () async {
     final prefs = await ConstellationEditorPrefs.create();

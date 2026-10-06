@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
-
 /// How long a page's [StaggeredEntrance]s need after the route itself has
 /// finished sliding in: the last animated index's delay plus its own drift.
 const kEntranceSettle = Duration(milliseconds: 350);

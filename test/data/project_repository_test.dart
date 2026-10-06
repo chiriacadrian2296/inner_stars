@@ -17,7 +17,11 @@ void main() {
   test('add() persists name, area, and iconSlug', () async {
     final repo = await ProjectRepository.create();
 
-    final project = await repo.add(name: 'Build this app', area: LifeArea.professional, iconSlug: 'rocket_launch');
+    final project = await repo.add(
+      name: 'Build this app',
+      area: LifeArea.professional,
+      iconSlug: 'rocket_launch',
+    );
 
     expect(project.name, 'Build this app');
     expect(project.area, LifeArea.professional);
@@ -53,29 +57,57 @@ void main() {
   test('getProjectsForArea() only returns projects in that area', () async {
     final repo = await ProjectRepository.create();
 
-    await repo.add(name: 'Build this app', area: LifeArea.professional, iconSlug: 'rocket_launch');
-    await repo.add(name: 'Find a job', area: LifeArea.professional, iconSlug: 'work');
-    await repo.add(name: 'Run a 10k', area: LifeArea.physical, iconSlug: 'fitness_center');
+    await repo.add(
+      name: 'Build this app',
+      area: LifeArea.professional,
+      iconSlug: 'rocket_launch',
+    );
+    await repo.add(
+      name: 'Find a job',
+      area: LifeArea.professional,
+      iconSlug: 'work',
+    );
+    await repo.add(
+      name: 'Run a 10k',
+      area: LifeArea.physical,
+      iconSlug: 'fitness_center',
+    );
 
-    expect(repo.getProjectsForArea(LifeArea.professional).map((p) => p.name), ['Find a job', 'Build this app']);
-    expect(repo.getProjectsForArea(LifeArea.physical).map((p) => p.name), ['Run a 10k']);
+    expect(repo.getProjectsForArea(LifeArea.professional).map((p) => p.name), [
+      'Find a job',
+      'Build this app',
+    ]);
+    expect(repo.getProjectsForArea(LifeArea.physical).map((p) => p.name), [
+      'Run a 10k',
+    ]);
     expect(repo.getProjectsForArea(LifeArea.spiritual), isEmpty);
   });
 
-  test('data survives reloading the repository from the same storage', () async {
-    final repo = await ProjectRepository.create();
-    await repo.add(name: 'Build this app', area: LifeArea.professional, iconSlug: 'rocket_launch');
+  test(
+    'data survives reloading the repository from the same storage',
+    () async {
+      final repo = await ProjectRepository.create();
+      await repo.add(
+        name: 'Build this app',
+        area: LifeArea.professional,
+        iconSlug: 'rocket_launch',
+      );
 
-    final reloaded = await ProjectRepository.create();
+      final reloaded = await ProjectRepository.create();
 
-    expect(reloaded.getAll(), hasLength(1));
-    expect(reloaded.getAll().first.name, 'Build this app');
-    expect(reloaded.getAll().first.area, LifeArea.professional);
-  });
+      expect(reloaded.getAll(), hasLength(1));
+      expect(reloaded.getAll().first.name, 'Build this app');
+      expect(reloaded.getAll().first.area, LifeArea.professional);
+    },
+  );
 
   test('assignStarsShape() sets the id and persists it', () async {
     final repo = await ProjectRepository.create();
-    final project = await repo.add(name: 'Build this app', area: LifeArea.professional, iconSlug: 'rocket_launch');
+    final project = await repo.add(
+      name: 'Build this app',
+      area: LifeArea.professional,
+      iconSlug: 'rocket_launch',
+    );
     expect(project.starsShapeId, isNull);
 
     final updated = await repo.assignStarsShape(
@@ -87,15 +119,26 @@ void main() {
     expect(repo.getAll().single.starsShapeId, 42);
   });
 
-  test('assignStarsShape() keeps the project in the same position in the list', () async {
-    final repo = await ProjectRepository.create();
-    final first = await repo.add(name: 'First', area: LifeArea.professional, iconSlug: 'rocket_launch');
-    await repo.add(name: 'Second', area: LifeArea.professional, iconSlug: 'work');
+  test(
+    'assignStarsShape() keeps the project in the same position in the list',
+    () async {
+      final repo = await ProjectRepository.create();
+      final first = await repo.add(
+        name: 'First',
+        area: LifeArea.professional,
+        iconSlug: 'rocket_launch',
+      );
+      await repo.add(
+        name: 'Second',
+        area: LifeArea.professional,
+        iconSlug: 'work',
+      );
 
-    await repo.assignStarsShape(projectId: first.id, starsShapeId: 1);
+      await repo.assignStarsShape(projectId: first.id, starsShapeId: 1);
 
-    expect(repo.getAll().map((p) => p.name), ['Second', 'First']);
-  });
+      expect(repo.getAll().map((p) => p.name), ['Second', 'First']);
+    },
+  );
 
   test('assignStarsShape() throws for an id that does not exist', () async {
     final repo = await ProjectRepository.create();
@@ -108,7 +151,11 @@ void main() {
 
   test('clear() deletes every project, including from a repository reloaded afterward', () async {
     final repo = await ProjectRepository.create();
-    await repo.add(name: 'Build this app', area: LifeArea.professional, iconSlug: 'rocket_launch');
+    await repo.add(
+      name: 'Build this app',
+      area: LifeArea.professional,
+      iconSlug: 'rocket_launch',
+    );
 
     await repo.clear();
 

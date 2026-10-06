@@ -360,12 +360,11 @@ class _StatsScreenState extends State<StatsScreen> {
   void _openCurrentStreakDetail() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            CurrentStreakDetailScreen(
-              starRepository: widget.starRepository,
-              projectRepository: widget.projectRepository,
-              filter: _filter,
-            ),
+        builder: (_) => CurrentStreakDetailScreen(
+          starRepository: widget.starRepository,
+          projectRepository: widget.projectRepository,
+          filter: _filter,
+        ),
       ),
     );
   }
@@ -373,12 +372,11 @@ class _StatsScreenState extends State<StatsScreen> {
   void _openLongestStreakDetail() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            LongestStreakDetailScreen(
-              starRepository: widget.starRepository,
-              projectRepository: widget.projectRepository,
-              filter: _filter,
-            ),
+        builder: (_) => LongestStreakDetailScreen(
+          starRepository: widget.starRepository,
+          projectRepository: widget.projectRepository,
+          filter: _filter,
+        ),
       ),
     );
   }
@@ -1263,7 +1261,11 @@ class _TotalStarsBanner extends StatelessWidget {
                 right: -2,
                 child: StaggeredEntrance(
                   index: 2,
-                  child: Icon(Icons.chevron_right, size: 18, color: colors.muted),
+                  child: Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: colors.muted,
+                  ),
                 ),
               ),
             ],

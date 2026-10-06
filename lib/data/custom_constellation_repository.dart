@@ -29,10 +29,7 @@ class StarsShapeRepository {
     try {
       final decoded = jsonDecode(raw) as List<dynamic>;
       return decoded
-          .map(
-            (entry) =>
-                StarsShape.fromJson(entry as Map<String, dynamic>),
-          )
+          .map((entry) => StarsShape.fromJson(entry as Map<String, dynamic>))
           .toList();
     } catch (_) {
       return const [];

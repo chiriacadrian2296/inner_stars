@@ -41,34 +41,51 @@ void main() {
     }
   });
 
-  test('every shape is drawable: on-grid points, valid edges, nothing stranded', () {
-    for (final preset in starsShapePresets) {
-      final reason = preset.id;
-      expect(preset.grid.length, greaterThanOrEqualTo(2), reason: reason);
-      // The editor's own soft cap (`_maxEditorPoints`) — a preset the user
-      // couldn't have drawn by hand would be a shape they can't then edit.
-      expect(preset.grid.length, lessThanOrEqualTo(25), reason: reason);
-      expect(preset.grid.toSet(), hasLength(preset.grid.length), reason: reason);
+  test(
+    'every shape is drawable: on-grid points, valid edges, nothing stranded',
+    () {
+      for (final preset in starsShapePresets) {
+        final reason = preset.id;
+        expect(preset.grid.length, greaterThanOrEqualTo(2), reason: reason);
+        // The editor's own soft cap (`_maxEditorPoints`) — a preset the user
+        // couldn't have drawn by hand would be a shape they can't then edit.
+        expect(preset.grid.length, lessThanOrEqualTo(25), reason: reason);
+        expect(
+          preset.grid.toSet(),
+          hasLength(preset.grid.length),
+          reason: reason,
+        );
 
-      for (final (x, y) in preset.grid) {
-        expect(x, inInclusiveRange(0, 10), reason: reason);
-        expect(y, inInclusiveRange(0, 10), reason: reason);
-      }
+        for (final (x, y) in preset.grid) {
+          expect(x, inInclusiveRange(0, 10), reason: reason);
+          expect(y, inInclusiveRange(0, 10), reason: reason);
+        }
 
-      final wired = <int>{};
-      for (final (a, b) in preset.edges) {
-        expect(a, isNot(b), reason: reason);
-        expect(a, inInclusiveRange(0, preset.grid.length - 1), reason: reason);
-        expect(b, inInclusiveRange(0, preset.grid.length - 1), reason: reason);
-        wired..add(a)..add(b);
+        final wired = <int>{};
+        for (final (a, b) in preset.edges) {
+          expect(a, isNot(b), reason: reason);
+          expect(
+            a,
+            inInclusiveRange(0, preset.grid.length - 1),
+            reason: reason,
+          );
+          expect(
+            b,
+            inInclusiveRange(0, preset.grid.length - 1),
+            reason: reason,
+          );
+          wired
+            ..add(a)
+            ..add(b);
+        }
+        expect(
+          wired.length,
+          preset.grid.length,
+          reason: '$reason has a star on no edge',
+        );
       }
-      expect(
-        wired.length,
-        preset.grid.length,
-        reason: '$reason has a star on no edge',
-      );
-    }
-  });
+    },
+  );
 
   test('shapes normalize into the 0..1 box, keeping their point order', () {
     for (final preset in starsShapePresets) {
@@ -103,7 +120,11 @@ void main() {
       expect(suggested, isNotNull, reason: area.name);
       expect(suggested, isNotEmpty, reason: area.name);
       for (final slug in suggested!) {
-        expect(availableIconSlugs, contains(slug), reason: '$slug (${area.name})');
+        expect(
+          availableIconSlugs,
+          contains(slug),
+          reason: '$slug (${area.name})',
+        );
       }
     }
   });

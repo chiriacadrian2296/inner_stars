@@ -26,12 +26,16 @@ class StringsScope extends InheritedWidget {
 
   static AppStrings of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<StringsScope>();
-    assert(scope != null, 'No StringsScope found in context — is the app wrapped in one?');
+    assert(
+      scope != null,
+      'No StringsScope found in context — is the app wrapped in one?',
+    );
     return scope!.strings;
   }
 
   @override
-  bool updateShouldNotify(StringsScope oldWidget) => oldWidget.strings.languageCode != strings.languageCode;
+  bool updateShouldNotify(StringsScope oldWidget) =>
+      oldWidget.strings.languageCode != strings.languageCode;
 }
 
 extension AppStringsX on BuildContext {

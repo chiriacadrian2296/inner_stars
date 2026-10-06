@@ -31,7 +31,6 @@ const Map<String, IconData> _iconsBySlug = {
   'nightlight': Icons.nightlight, // Crescent moon
   'water_drop': Icons.water_drop, // Rain cloud
   'ac_unit': Icons.ac_unit, // Snowflake
-
   // Animals
   'pets': Icons.pets, // Dog
   'flutter_dash': Icons.flutter_dash, // Bird
@@ -39,7 +38,6 @@ const Map<String, IconData> _iconsBySlug = {
   'emoji_nature': Icons.emoji_nature, // Bee
   'filter_vintage': Icons.filter_vintage, // Butterfly
   'cruelty_free': Icons.cruelty_free, // Rabbit
-
   // Body & sport
   'fitness_center': Icons.fitness_center, // Dumbbell
   'directions_run': Icons.directions_run, // Runner
@@ -51,7 +49,6 @@ const Map<String, IconData> _iconsBySlug = {
   'sports_mma': Icons.sports_mma, // Boxing glove
   'sports_tennis': Icons.sports_tennis, // Tennis racket
   'monitor_heart': Icons.monitor_heart, // Heartbeat
-
   // Work & study
   'business_center': Icons.business_center, // Briefcase
   'laptop_mac': Icons.laptop_mac, // Laptop
@@ -64,7 +61,6 @@ const Map<String, IconData> _iconsBySlug = {
   'corporate_fare': Icons.corporate_fare, // Tower
   'schedule': Icons.schedule, // Clock
   'emoji_objects': Icons.emoji_objects, // Lightbulb
-
   // Money
   'paid': Icons.paid, // Coins
   'account_balance_wallet': Icons.account_balance_wallet, // Wallet
@@ -74,7 +70,6 @@ const Map<String, IconData> _iconsBySlug = {
   'shopping_cart': Icons.shopping_cart, // Shopping cart
   'balance': Icons.balance, // Scales
   'vpn_key': Icons.vpn_key, // Key
-
   // Home & everyday
   'home': Icons.home, // House
   'king_bed': Icons.king_bed, // Bed
@@ -85,7 +80,6 @@ const Map<String, IconData> _iconsBySlug = {
   'umbrella': Icons.umbrella, // Umbrella
   'checkroom': Icons.checkroom, // T-shirt
   'cleaning_services': Icons.cleaning_services, // Broom
-
   // Food & drink
   'local_cafe': Icons.local_cafe, // Coffee cup
   'restaurant': Icons.restaurant, // Fork and knife
@@ -94,7 +88,6 @@ const Map<String, IconData> _iconsBySlug = {
   'cake': Icons.cake, // Cake
   'icecream': Icons.icecream, // Ice cream
   'agriculture': Icons.agriculture, // Apple
-
   // Art, music & play
   'audiotrack': Icons.audiotrack, // Guitar
   'piano': Icons.piano, // Piano keys
@@ -106,7 +99,6 @@ const Map<String, IconData> _iconsBySlug = {
   'photo_camera': Icons.photo_camera, // Camera
   'sports_esports': Icons.sports_esports, // Game controller
   'casino': Icons.casino, // Dice
-
   // Travel & adventure
   'flight': Icons.flight, // Airplane
   'sailing': Icons.sailing, // Sailboat
@@ -118,7 +110,6 @@ const Map<String, IconData> _iconsBySlug = {
   'anchor': Icons.anchor, // Anchor
   'rocket_launch': Icons.rocket_launch, // Rocket
   'luggage': Icons.luggage, // Suitcase
-
   // People & bonds
   'favorite': Icons.favorite, // Heart
   'people': Icons.people, // Two people
@@ -129,7 +120,6 @@ const Map<String, IconData> _iconsBySlug = {
   'celebration': Icons.celebration, // Toast
   'mail': Icons.mail, // Envelope
   'campaign': Icons.campaign, // Megaphone
-
   // Spirit & symbols
   'wb_incandescent': Icons.wb_incandescent, // Candle
   'spa': Icons.spa, // Lotus

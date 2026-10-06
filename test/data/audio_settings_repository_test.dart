@@ -10,16 +10,19 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  test('defaults to Observing the Star, paused, glass bell/warm ding', () async {
-    final repo = await AudioSettingsRepository.create();
+  test(
+    'defaults to Observing the Star, paused, glass bell/warm ding',
+    () async {
+      final repo = await AudioSettingsRepository.create();
 
-    expect(repo.backgroundTrack, BackgroundTrack.observingTheStar);
-    expect(repo.backgroundPaused, isTrue);
-    expect(repo.tapSound, SkySoundEffect.glassBell);
-    expect(repo.holdSound, SkySoundEffect.chimeWarm);
-    expect(repo.whooshInSound, SkyWhooshEffect.whooshA);
-    expect(repo.whooshOutSound, SkyWhooshEffect.whooshB);
-  });
+      expect(repo.backgroundTrack, BackgroundTrack.observingTheStar);
+      expect(repo.backgroundPaused, isTrue);
+      expect(repo.tapSound, SkySoundEffect.glassBell);
+      expect(repo.holdSound, SkySoundEffect.chimeWarm);
+      expect(repo.whooshInSound, SkyWhooshEffect.whooshA);
+      expect(repo.whooshOutSound, SkyWhooshEffect.whooshB);
+    },
+  );
 
   test('every volume defaults to its own preset level', () async {
     final repo = await AudioSettingsRepository.create();
@@ -70,15 +73,18 @@ void main() {
     expect(repo.holdSound, SkySoundEffect.select);
   });
 
-  test('setWhooshInSound()/setWhooshOutSound() persist independently', () async {
-    final repo = await AudioSettingsRepository.create();
+  test(
+    'setWhooshInSound()/setWhooshOutSound() persist independently',
+    () async {
+      final repo = await AudioSettingsRepository.create();
 
-    await repo.setWhooshInSound(SkyWhooshEffect.whooshE);
-    await repo.setWhooshOutSound(SkyWhooshEffect.whooshF);
+      await repo.setWhooshInSound(SkyWhooshEffect.whooshE);
+      await repo.setWhooshOutSound(SkyWhooshEffect.whooshF);
 
-    expect(repo.whooshInSound, SkyWhooshEffect.whooshE);
-    expect(repo.whooshOutSound, SkyWhooshEffect.whooshF);
-  });
+      expect(repo.whooshInSound, SkyWhooshEffect.whooshE);
+      expect(repo.whooshOutSound, SkyWhooshEffect.whooshF);
+    },
+  );
 
   test('clear() resets every setting back to its default', () async {
     final repo = await AudioSettingsRepository.create();

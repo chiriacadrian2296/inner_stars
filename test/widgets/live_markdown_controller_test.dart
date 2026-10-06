@@ -13,9 +13,7 @@ Iterable<TextSpan> flatten(TextSpan span) sync* {
 void main() {
   test('combines bold and italic in the same inline span', () {
     const style = TextStyle(fontFamily: 'Newsreader', fontSize: 17);
-    final span = TextSpan(
-      children: markdownInlineSpans('***Both***', style),
-    );
+    final span = TextSpan(children: markdownInlineSpans('***Both***', style));
     final both = flatten(span).firstWhere((item) => item.text == 'Both');
 
     expect(both.style!.fontWeight, FontWeight.bold);
@@ -102,9 +100,7 @@ void main() {
     },
   );
 
-  testWidgets('keeps inline formats hidden on the same line', (
-    tester,
-  ) async {
+  testWidgets('keeps inline formats hidden on the same line', (tester) async {
     final controller = LiveMarkdownController(
       text: 'Start **bold word**, *italic words*',
     );
@@ -126,11 +122,10 @@ void main() {
       style: style,
       withComposing: true,
     );
-    bool markersAreVisible(String marker) => flatten(
-      render(),
-    ).where((span) => span.text == marker).every(
-      (span) => span.style!.fontSize != 0,
-    );
+    bool markersAreVisible(String marker) =>
+        flatten(render())
+            .where((span) => span.text == marker)
+            .every((span) => span.style!.fontSize != 0);
 
     controller.focused = true;
     controller.selection = const TextSelection.collapsed(offset: 2);

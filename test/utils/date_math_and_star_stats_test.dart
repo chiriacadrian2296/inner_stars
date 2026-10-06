@@ -121,9 +121,7 @@ void main() {
     });
 
     test('area filter drops other areas and orphans', () {
-      final filter = StarFilter.all().copyWith(
-        areas: {LifeArea.professional},
-      );
+      final filter = StarFilter.all().copyWith(areas: {LifeArea.professional});
       final ids = stars
           .where((s) => filter.matches(s, projects))
           .map((s) => s.id);
