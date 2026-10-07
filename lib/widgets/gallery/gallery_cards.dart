@@ -293,7 +293,8 @@ class GalleryProjectData {
   const GalleryProjectData({
     required this.project,
     required this.shape,
-    required this.litSlots,
+    required this.slotKinds,
+    required this.pulsarsLit,
     required this.totalStars,
     required this.litStars,
   });
@@ -301,13 +302,17 @@ class GalleryProjectData {
   final Project project;
   final ConstellationShape? shape;
 
-  /// 0-based indices of the shape's points that hold a lit star.
-  final Set<int> litSlots;
+  /// Kind of the star sitting on each of the shape's points (0-based); a
+  /// point missing here is a nascent slot.
+  final Map<int, StarKind> slotKinds;
+
+  /// One entry per live habit (pulsar): whether it is lit right now.
+  final List<bool> pulsarsLit;
   final int totalStars;
   final int litStars;
 }
 
-/// Miniature of a constellation's page: its shape on the night gradient
+/// Miniature of a constellation's page: its shape on the flat navy panel
 /// (lit stars gold, the rest dim), the name, and how many are lit.
 class GalleryProjectTile extends StatelessWidget {
   const GalleryProjectTile({super.key, required this.data, this.onTap});
@@ -328,15 +333,6 @@ class GalleryProjectTile extends StatelessWidget {
           return Stack(
             fit: StackFit.expand,
             children: [
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFF1C2747), Colors.black],
-                  ),
-                ),
-              ),
               if (shape != null && shape.points.isNotEmpty)
                 Positioned(
                   left: 14 * u,
@@ -346,9 +342,9 @@ class GalleryProjectTile extends StatelessWidget {
                   child: CustomPaint(
                     painter: _MiniConstellationPainter(
                       shape: shape,
-                      litSlots: data.litSlots,
-                      litColor: colors.gold,
-                      dimColor: colors.muted.withValues(alpha: 0.55),
+                      slotKinds: data.slotKinds,
+                      pulsarsLit: data.pulsarsLit,
+                      colors: colors,
                       lineColor: colors.text.withValues(alpha: 0.4),
                       pointRadius: 3.2 * u,
                     ),
@@ -415,17 +411,17 @@ class GalleryProjectTile extends StatelessWidget {
 class _MiniConstellationPainter extends CustomPainter {
   const _MiniConstellationPainter({
     required this.shape,
-    required this.litSlots,
-    required this.litColor,
-    required this.dimColor,
+    required this.slotKinds,
+    required this.pulsarsLit,
+    required this.colors,
     required this.lineColor,
     required this.pointRadius,
   });
 
   final ConstellationShape shape;
-  final Set<int> litSlots;
-  final Color litColor;
-  final Color dimColor;
+  final Map<int, StarKind> slotKinds;
+  final List<bool> pulsarsLit;
+  final AppColors colors;
   final Color lineColor;
   final double pointRadius;
 
@@ -444,23 +440,44 @@ class _MiniConstellationPainter extends CustomPainter {
       if (a >= points.length || b >= points.length) continue;
       canvas.drawLine(points[a], points[b], linePaint);
     }
-    final litPaint = Paint()..color = litColor;
-    final dimPaint = Paint()..color = dimColor;
     for (var i = 0; i < points.length; i++) {
+      final kind = slotKinds[i] ?? StarKind.nascent;
       canvas.drawCircle(
         points[i],
         pointRadius,
-        litSlots.contains(i) ? litPaint : dimPaint,
+        Paint()..color = starKindColor(kind, colors),
+      );
+    }
+    // Habits aren't part of the shape: small loose dots around its edges.
+    for (var i = 0; i < pulsarsLit.length && i < _pulsarSpots.length; i++) {
+      final spot = _pulsarSpots[i];
+      canvas.drawCircle(
+        origin + Offset(spot.dx * side, spot.dy * side),
+        pointRadius * 0.7,
+        Paint()
+          ..color = starKindColor(StarKind.pulsar, colors, lit: pulsarsLit[i]),
       );
     }
   }
 
+  /// Fixed spots (normalized to the square) for the first few habits.
+  static const _pulsarSpots = [
+    Offset(0.04, 0.08),
+    Offset(0.96, 0.14),
+    Offset(0.06, 0.92),
+    Offset(0.95, 0.88),
+    Offset(0.5, 0.01),
+    Offset(0.5, 0.99),
+    Offset(0.01, 0.5),
+    Offset(0.99, 0.5),
+  ];
+
   @override
   bool shouldRepaint(covariant _MiniConstellationPainter old) =>
       shape != old.shape ||
-      litSlots != old.litSlots ||
-      litColor != old.litColor ||
-      dimColor != old.dimColor ||
+      slotKinds != old.slotKinds ||
+      pulsarsLit != old.pulsarsLit ||
+      colors != old.colors ||
       lineColor != old.lineColor ||
       pointRadius != old.pointRadius;
 }

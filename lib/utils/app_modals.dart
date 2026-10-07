@@ -5,6 +5,10 @@ import '../theme/app_colors.dart';
 import '../theme/app_motion.dart';
 import '../theme/app_style.dart';
 
+/// Material 3's desktop width for modal bottom sheets. Fixed sheets use a
+/// custom route, so they need to opt into the same cap explicitly.
+const double _kFixedSheetMaxWidth = 640;
+
 enum AppConfirmationTone { standard, destructive }
 
 /// Canonical heading for bottom sheets: same scale as dialog titles, with
@@ -354,9 +358,12 @@ Future<T?> showFixedAppSheet<T>({
           elevation: sheetTheme.elevation ?? 0,
           shape: sheetTheme.shape,
           clipBehavior: Clip.antiAlias,
-          child: SizedBox(
-            width: mediaQuery.size.width,
-            child: Builder(builder: builder),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: _kFixedSheetMaxWidth),
+            child: SizedBox(
+              width: mediaQuery.size.width,
+              child: Builder(builder: builder),
+            ),
           ),
         ),
       ),

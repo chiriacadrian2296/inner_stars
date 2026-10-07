@@ -643,6 +643,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                       const SizedBox(height: 6),
                       AppTextField(
                         controller: _nameController,
+                        maxLength: kTitleMaxLength,
                         autofocus: widget.presetArea != null,
                         hintText: strings.newProjectNameHint,
                       ),
@@ -662,6 +663,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                       const SizedBox(height: 6),
                       AppTextField(
                         controller: _descriptionController,
+                        maxLength: kProjectDescriptionMaxLength,
                         maxLines: 3,
                         hintText: strings.projectDescriptionHint,
                       ),

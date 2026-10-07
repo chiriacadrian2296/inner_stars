@@ -34,38 +34,43 @@ class SkyViewModeSection extends StatelessWidget {
     return ListenableBuilder(
       listenable: settings,
       builder: (context, _) {
-        final grid = settings.skyGridView;
+        // With the list view parked there's nothing to switch to: the grid is
+        // always on and only its size is left to set.
+        final grid = !kShowSkyListView || settings.skyGridView;
         final step = settings.skyGridSizeStep;
         return Row(
           children: [
-            SizedBox(
-              width: 104,
-              child: AnimatedToggleSwitch<bool>.rolling(
-                height: 40,
-                current: grid,
-                values: const [false, true],
-                onChanged: settings.setSkyGridView,
-                borderWidth: kBorderWidth,
-                iconOpacity: 1.0,
-                iconBuilder: (value, size) => Tooltip(
-                  message: value ? strings.skyViewGrid : strings.skyViewList,
-                  child: Icon(
-                    value
-                        ? Icons.grid_view_rounded
-                        : Icons.view_agenda_outlined,
-                    size: 20,
-                    color: value == grid ? colors.night : colors.muted,
+            if (!kShowSkyListView)
+              Icon(Icons.grid_view_rounded, size: 20, color: colors.muted)
+            else
+              SizedBox(
+                width: 104,
+                child: AnimatedToggleSwitch<bool>.rolling(
+                  height: 40,
+                  current: grid,
+                  values: const [false, true],
+                  onChanged: settings.setSkyGridView,
+                  borderWidth: kBorderWidth,
+                  iconOpacity: 1.0,
+                  iconBuilder: (value, size) => Tooltip(
+                    message: value ? strings.skyViewGrid : strings.skyViewList,
+                    child: Icon(
+                      value
+                          ? Icons.grid_view_rounded
+                          : Icons.view_agenda_outlined,
+                      size: 20,
+                      color: value == grid ? colors.night : colors.muted,
+                    ),
+                  ),
+                  style: ToggleStyle(
+                    backgroundColor: colors.nightPanel,
+                    indicatorColor: colors.gold,
+                    borderColor: colors.nightBorder,
+                    borderRadius: BorderRadius.circular(kRadiusField),
+                    indicatorBorderRadius: BorderRadius.circular(kRadiusField),
                   ),
                 ),
-                style: ToggleStyle(
-                  backgroundColor: colors.nightPanel,
-                  indicatorColor: colors.gold,
-                  borderColor: colors.nightBorder,
-                  borderRadius: BorderRadius.circular(kRadiusField),
-                  indicatorBorderRadius: BorderRadius.circular(kRadiusField),
-                ),
               ),
-            ),
             const SizedBox(width: 12),
             Expanded(
               child: Opacity(

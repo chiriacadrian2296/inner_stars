@@ -1350,8 +1350,6 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get linksLabel => 'Link';
   @override
-  String get documentsLabel => 'Documenti';
-  @override
   String get addVoiceNoteHint => 'Registra una nota vocale';
   @override
   String get addExtraPhotosHint => 'Aggiungi foto';
@@ -1359,10 +1357,6 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get addVideoHint => 'Aggiungi un video';
   @override
   String get addLinkHint => 'Aggiungi un link';
-  @override
-  String get addDocumentHint => 'Aggiungi un documento';
-  @override
-  String get documentOpenError => 'Impossibile aprire il documento.';
   @override
   String get cropPhotoTitle => 'Modifica la foto';
   @override
@@ -1769,7 +1763,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get starReaderTourIntroTitle => 'Spostarsi tra le stelle';
   @override
   String get starReaderTourIntroBody =>
-      'Scorri di lato, o tocca i bordi sinistro e destro, per andare alla stella precedente o successiva. Su una stella con foto, tocca il centro per vedere solo la foto.';
+      'Scorri di lato per andare alla stella precedente o successiva. Su una stella con foto, tocca un punto vuoto per vedere solo la foto.';
   @override
   String get starReaderTourDockTitle => 'Tutto quello che puoi fare';
   @override

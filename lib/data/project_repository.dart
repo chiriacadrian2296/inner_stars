@@ -72,7 +72,7 @@ class ProjectRepository {
   /// other would silently never be updated (`backfillMissingConstellations`
   /// leaving the second of two same-icon projects with no shape at all is
   /// how this first showed up). Stepping past anything already taken makes
-  /// back-to-back adds safe — `seedSampleData` creates nine projects in a
+  /// back-to-back adds safe — `seedSampleData` creates two dozen projects in a
   /// loop — without callers having to sleep between them.
   static int _nextId(List<Project> existing) {
     var id = DateTime.now().millisecondsSinceEpoch;

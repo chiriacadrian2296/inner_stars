@@ -7,16 +7,26 @@ import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 
 import '../models/star_media.dart';
+import 'star_media_web_stub.dart'
+    if (dart.library.js_interop) 'star_media_web.dart'
+    as web;
 
 /// Files behind a victory's extras (voice notes, secondary photos, videos),
-/// kept under `documents/star_media/`. Native only: on the web the extras
-/// section is hidden (localStorage is too small for audio/video), so none of
-/// this is reachable there.
+/// kept under `documents/star_media/` on native platforms and in IndexedDB
+/// on the web. SharedPreferences only stores the small opaque id, never the
+/// media bytes.
 ///
 /// [StarMedia.path] holds just the file name, so a moved documents directory
 /// (reinstall, restore) never breaks a saved reference.
 class StarMediaStorage {
-  static bool get isSupported => !kIsWeb;
+  static bool get isSupported => true;
+
+  static bool isRemote(String path) {
+    final uri = Uri.tryParse(path);
+    return uri != null && (uri.scheme == 'http' || uri.scheme == 'https');
+  }
+
+  static const _webPrefix = 'star-media:';
 
   static Future<Directory> _dir() async {
     final docs = await getApplicationDocumentsDirectory();
@@ -43,6 +53,11 @@ class StarMediaStorage {
     String? name,
   }) async {
     final id = _newId(_extensionOf(name ?? file.name, fallbackExtension));
+    if (kIsWeb) {
+      final key = '$_webPrefix$id';
+      await web.writeMedia(key, await file.readAsBytes());
+      return key;
+    }
     final dir = await _dir();
     await file.saveTo('${dir.path}/$id');
     return id;
@@ -71,17 +86,30 @@ class StarMediaStorage {
     return '${dir.path}/${DateTime.now().microsecondsSinceEpoch}.m4a';
   }
 
-  /// The stored file for [path], or null if it is gone.
+  /// The stored file for [path], or null if it is gone. Native only; web
+  /// callers use [readBytes] instead.
   static Future<File?> file(String path) async {
+    if (kIsWeb) return null;
     final dir = await _dir();
-    final file = File('${dir.path}/${path.split('/').last}');
-    return await file.exists() ? file : null;
+    final stored = File('${dir.path}/${path.split('/').last}');
+    return await stored.exists() ? stored : null;
   }
 
   static Future<Uint8List?> readBytes(String path) async =>
-      (await file(path))?.readAsBytes();
+      kIsWeb ? web.readMedia(path) : (await file(path))?.readAsBytes();
 
   static Future<VideoPlayerController?> video(String path) async {
+    if (kIsWeb) {
+      final extension = path.split('.').last.toLowerCase();
+      final mime = extension == 'webm'
+          ? 'video/webm'
+          : extension == 'mov'
+          ? 'video/quicktime'
+          : 'video/mp4';
+      return VideoPlayerController.networkUrl(
+        Uri.dataFromBytes(await web.readMedia(path), mimeType: mime),
+      );
+    }
     final f = await file(path);
     return f == null ? null : VideoPlayerController.file(f);
   }
@@ -112,7 +140,12 @@ class StarMediaStorage {
 
   /// Best-effort delete of one stored file (and a video's thumbnail).
   static Future<void> delete(String path) async {
+    if (isRemote(path)) return;
     try {
+      if (kIsWeb) {
+        await web.deleteMedia(path);
+        return;
+      }
       final f = await file(path);
       if (f != null) await f.delete();
       final dir = await _dir();
@@ -132,7 +165,10 @@ class StarMediaStorage {
 
   /// Removes every stored extra — used by "reset all data".
   static Future<void> clear() async {
-    if (!isSupported) return;
+    if (kIsWeb) {
+      await web.clearMedia();
+      return;
+    }
     try {
       final docs = await getApplicationDocumentsDirectory();
       final dir = Directory('${docs.path}/star_media');

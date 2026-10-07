@@ -20,7 +20,6 @@ import 'data/onboarding_prefs.dart';
 import 'data/project_repository.dart';
 import 'data/reflection_answer_repository.dart';
 import 'data/star_repository.dart';
-import 'debug/seed_data.dart';
 import 'l10n/strings_scope.dart';
 import 'notifications/reminder_service.dart';
 import 'models/star_kind.dart';
@@ -130,25 +129,6 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
       final tourStorage = await PrefsTourStorage.create(
         enabled: () => settings.tutorialsEnabled,
       );
-
-      // Debug builds only, and only for a genuinely empty install — the
-      // same seeding "Settings > Seed sample data" already does by hand
-      // (see `SettingsScreen._seedSampleData`), just run automatically so
-      // there's always something to explore without reaching for that
-      // button first. Matters most for the web: `flutter run -d chrome`
-      // opens a brand-new, disposable browser profile on every single
-      // launch, so without this every fresh web debug session would start
-      // from zero projects (and, on the Sky, zero constellations)
-      // regardless of what was seeded last time.
-      if (kDebugMode && projectRepository.getAll().isEmpty) {
-        await seedSampleData(
-          starRepository: starRepository,
-          projectRepository: projectRepository,
-          habitRepository: habitRepository,
-          habitCompletionRepository: habitCompletionRepository,
-          languageCode: settings.locale,
-        );
-      }
 
       // Idempotent — safe (and cheap once everything's migrated) to run on
       // every launch. Must finish before setState reveals the app below, so

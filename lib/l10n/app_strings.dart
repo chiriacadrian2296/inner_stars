@@ -673,13 +673,10 @@ abstract class AppStrings {
   String get extraPhotosLabel;
   String get videosLabel;
   String get linksLabel;
-  String get documentsLabel;
   String get addVoiceNoteHint;
   String get addExtraPhotosHint;
   String get addVideoHint;
   String get addLinkHint;
-  String get addDocumentHint;
-  String get documentOpenError;
   String get cropPhotoTitle;
   String get cropPhotoConfirm;
   String get cropPhotoHint;
@@ -963,8 +960,7 @@ abstract class AppStrings {
   String get shareLayoutPostcard;
   String get shareNowAction;
 
-  // "star-reader" tour — `StarReaderScreen`. The `...Arrow...` bodies are the
-  // wide-layout variants (arrows instead of tap strips).
+  // "star-reader" tour — `StarReaderScreen`.
   String get starReaderTourIntroTitle;
   String get starReaderTourIntroBody;
   String get starReaderTourDockTitle;

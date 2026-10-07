@@ -128,6 +128,16 @@ class FieldRequirementLegend extends StatelessWidget {
   }
 }
 
+/// The longest a star's or constellation's title may be: two lines of the
+/// header title at its size on a phone (see `BalancedTitle`), rounded.
+const int kTitleMaxLength = 50;
+
+/// How long a star's description may run.
+const int kStarDescriptionMaxLength = 1000;
+
+/// How long a constellation's description may run.
+const int kProjectDescriptionMaxLength = 500;
+
 /// The app's one text input.
 ///
 /// A plain [TextField] can follow two thirds of the field rule from the
@@ -144,6 +154,7 @@ class AppTextField extends StatefulWidget {
     this.hintText,
     this.minLines,
     this.maxLines = 1,
+    this.maxLength,
     this.autofocus = false,
     this.textInputAction,
     this.onChanged,
@@ -158,6 +169,9 @@ class AppTextField extends StatefulWidget {
   final String? hintText;
   final int? minLines;
   final int? maxLines;
+
+  /// Caps the text and shows a "x/y" counter under the field.
+  final int? maxLength;
   final bool autofocus;
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onChanged;
@@ -217,6 +231,7 @@ class _AppTextFieldState extends State<AppTextField> {
             autofocus: widget.autofocus,
             minLines: widget.minLines,
             maxLines: widget.maxLines,
+            maxLength: widget.maxLength,
             textInputAction: widget.textInputAction,
             onChanged: widget.onChanged,
             onTapOutside: (_) => _focusNode.unfocus(),

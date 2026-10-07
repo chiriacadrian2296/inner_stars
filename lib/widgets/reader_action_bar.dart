@@ -22,9 +22,9 @@ class ReaderAction {
   final VoidCallback? onTap;
   final bool loading;
 
-  /// Drawn dark instead of gold: the star this belongs to is off, and this is
+  /// Drawn dark instead of white: the star this belongs to is off, and this is
   /// what switches it on (or, on a burning pulsar, off). A dark button that
-  /// can be pressed also beckons — its icon shakes and flashes gold every
+  /// can be pressed also beckons — its icon shakes and flashes white every
   /// couple of seconds (see [ReaderActionButton]).
   final bool off;
 }
@@ -73,12 +73,12 @@ class ReaderActionBar extends StatelessWidget {
   }
 }
 
-/// The gold pill every action shares — an icon and label together inside one
-/// [StadiumBorder], or just the icon when [compact].
+/// The disc every action shares: a white [StadiumBorder] with the icon on it
+/// (dark when [off]).
 ///
 /// An [off] button that can be pressed beckons: every [_beckonPeriod] its
 /// icon gives the same little shake as the big star above the calendar in
-/// the stats (only more often), and lights up gold for as long as it lasts.
+/// the stats (only more often), and lights up white for as long as it lasts.
 class ReaderActionButton extends StatefulWidget {
   const ReaderActionButton({
     super.key,
@@ -94,11 +94,11 @@ class ReaderActionButton extends StatefulWidget {
   final VoidCallback? onTap;
   final bool loading;
 
-  /// Dark and muted instead of gold.
+  /// Dark and muted instead of white.
   final bool off;
 
-  static const iconSize = 20.0;
-  static const _verticalPadding = 14.0;
+  static const iconSize = 18.0;
+  static const _verticalPadding = 8.0;
 
   // The stats' big star shakes every 5 seconds; this one is meant to be
   // noticed more, so it repeats about twice as often. The first shake comes
@@ -163,9 +163,14 @@ class _ReaderActionButtonState extends State<ReaderActionButton>
   Widget build(BuildContext context) {
     final colors = context.colors;
     final off = widget.off;
-    final foreground = widget.onTap == null && !widget.loading
+    // White disc with a dark glyph when live; a dark disc when the button is
+    // off or unavailable.
+    final filled = !off && (widget.onTap != null || widget.loading);
+    final foreground = filled
+        ? colors.night
+        : widget.onTap == null && !widget.loading
         ? colors.muted
-        : colors.gold;
+        : Colors.white;
     final Widget leading;
     if (widget.loading) {
       leading = SizedBox(
@@ -179,14 +184,14 @@ class _ReaderActionButtonState extends State<ReaderActionButton>
         builder: (context, _) {
           final t = _shake.value;
           // The big star's own shake (sideways, fading out over three
-          // swings), scaled to an icon this small; the gold swells and
+          // swings), scaled to an icon this small; the white swells and
           // fades with the same beat.
           final dx = math.sin(t * math.pi * 6) * (1 - t) * 3;
           final glow = math.sin(t * math.pi);
           final icon = Icon(
             widget.icon,
             size: ReaderActionButton.iconSize,
-            color: Color.lerp(colors.muted, colors.gold, glow),
+            color: Color.lerp(colors.muted, Colors.white, glow),
           );
           return Transform.translate(
             offset: Offset(dx, 0),
@@ -194,7 +199,7 @@ class _ReaderActionButtonState extends State<ReaderActionButton>
                 ? icon
                 // A blurred copy of the icon behind it, so the glow follows
                 // the glyph's own outline (same trick as `IntensityBolts`),
-                // fading in and out with the gold — same size as the icon,
+                // fading in and out with the white — same size as the icon,
                 // so nothing grows.
                 : Stack(
                     alignment: Alignment.center,
@@ -205,7 +210,7 @@ class _ReaderActionButtonState extends State<ReaderActionButton>
                         child: Icon(
                           widget.icon,
                           size: ReaderActionButton.iconSize,
-                          color: colors.gold.withValues(alpha: 0.75 * glow),
+                          color: Colors.white.withValues(alpha: 0.75 * glow),
                         ),
                       ),
                       icon,
@@ -222,9 +227,17 @@ class _ReaderActionButtonState extends State<ReaderActionButton>
       );
     }
     final pill = Material(
-      color: Colors.transparent,
+      color: filled ? Colors.white : colors.nightPanel,
+      // A dark disc has no edge against the night, so it reads smaller than
+      // the white one of the same size; a thin rim makes its true size show.
+      shape: StadiumBorder(
+        side: filled
+            ? BorderSide.none
+            : BorderSide(color: Colors.white.withValues(alpha: 0.35)),
+      ),
       child: InkWell(
         onTap: widget.onTap,
+        customBorder: const StadiumBorder(),
         child: Padding(
           padding: const EdgeInsets.all(ReaderActionButton._verticalPadding),
           child: leading,

@@ -39,8 +39,6 @@ dependencies:
   animations: ^3.0.0
   animated_toggle_switch: ^0.8.7
   record: ^7.1.1
-  file_picker: ^13.1.0
-  open_filex: ^4.7.0
   fc_native_video_thumbnail: ^3.0.1
 dev_dependencies:
   flutter_test:
@@ -84,6 +82,21 @@ flutter:
     - assets/icon/Star.svg
     - assets/mascots/moon.svg
     - assets/mascots/moon_body.svg
+    - assets/mascots/moon_body_app.svg
+    - assets/mascots/moon_body_gold.svg
+    - assets/mascots/moon_refined.svg
+    - assets/mascots/moon_ethereal.svg
+    - assets/mascots/moon_celestial.svg
+    - assets/avatars/avatar_blue_hoodie.svg
+    - assets/avatars/avatar_blue_hoodie_final.svg
+    - assets/avatars/avatar_blue_hoodie_female.svg
+    - assets/avatars/avatar_blue_hoodie_female_final.svg
+    - assets/avatars/avatar_blue_male_short_sweater.svg
+    - assets/avatars/avatar_blue_male_sidepart_jacket.svg
+    - assets/avatars/avatar_blue_male_curly_overshirt.svg
+    - assets/avatars/avatar_blue_female_bob_sweater.svg
+    - assets/avatars/avatar_blue_female_ponytail_jacket.svg
+    - assets/avatars/avatar_blue_female_wavy_turtleneck.svg
     - assets/audio/bg/
     - assets/audio/sfx/
     - assets/images/1. Physical - CENTER CROP.jpg

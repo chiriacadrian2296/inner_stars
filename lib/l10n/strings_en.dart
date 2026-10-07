@@ -1339,8 +1339,6 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get linksLabel => 'Links';
   @override
-  String get documentsLabel => 'Documents';
-  @override
   String get addVoiceNoteHint => 'Record a voice note';
   @override
   String get addExtraPhotosHint => 'Add photos';
@@ -1348,10 +1346,6 @@ My contribution meets a real need and is something I can sustain.
   String get addVideoHint => 'Add a video';
   @override
   String get addLinkHint => 'Add a link';
-  @override
-  String get addDocumentHint => 'Add a document';
-  @override
-  String get documentOpenError => "Couldn't open that document.";
   @override
   String get cropPhotoTitle => 'Adjust photo';
   @override
@@ -1749,7 +1743,7 @@ My contribution meets a real need and is something I can sustain.
   String get starReaderTourIntroTitle => 'Moving between stars';
   @override
   String get starReaderTourIntroBody =>
-      'Swipe sideways, or tap the left and right edges, to go to the previous or next star. On a star with a photo, tap the middle to see just the photo.';
+      'Swipe sideways to go to the previous or next star. On a star with a photo, tap an empty spot to see just the photo.';
   @override
   String get starReaderTourDockTitle => 'Everything you can do';
   @override

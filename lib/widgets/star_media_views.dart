@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
@@ -45,20 +46,45 @@ class StarMediaImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<File?>(
-      future: StarMediaStorage.file(path),
+    if (StarMediaStorage.isRemote(path)) {
+      return Image.network(
+        path,
+        width: width,
+        height: height,
+        fit: fit,
+        errorBuilder: (_, _, _) => SizedBox(width: width, height: height),
+      );
+    }
+
+    return FutureBuilder<Object?>(
+      future: kIsWeb
+          ? StarMediaStorage.readBytes(path)
+          : StarMediaStorage.file(path),
       builder: (context, snapshot) {
-        final file = snapshot.data;
-        if (file == null) {
+        final value = snapshot.data;
+        if (value == null) {
           return SizedBox(width: width, height: height);
         }
-        return Image.file(
-          file,
-          width: width,
-          height: height,
-          fit: fit,
-          errorBuilder: (_, _, _) => SizedBox(width: width, height: height),
-        );
+        Widget error(
+          BuildContext context,
+          Object exception,
+          StackTrace? stack,
+        ) => SizedBox(width: width, height: height);
+        return kIsWeb
+            ? Image.memory(
+                value as Uint8List,
+                width: width,
+                height: height,
+                fit: fit,
+                errorBuilder: error,
+              )
+            : Image.file(
+                value as File,
+                width: width,
+                height: height,
+                fit: fit,
+                errorBuilder: error,
+              );
       },
     );
   }
@@ -83,6 +109,9 @@ class StarVideoThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    if (kIsWeb) {
+      return _WebVideoThumb(path: path, iconSize: iconSize);
+    }
     return FutureBuilder<File?>(
       future: StarMediaStorage.videoThumbnail(path),
       builder: (context, snapshot) {
@@ -110,6 +139,77 @@ class StarVideoThumb extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _WebVideoThumb extends StatefulWidget {
+  const _WebVideoThumb({required this.path, required this.iconSize});
+
+  final String path;
+  final double iconSize;
+
+  @override
+  State<_WebVideoThumb> createState() => _WebVideoThumbState();
+}
+
+class _WebVideoThumbState extends State<_WebVideoThumb> {
+  VideoPlayerController? _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_load());
+  }
+
+  Future<void> _load() async {
+    final controller = await StarMediaStorage.video(widget.path);
+    if (controller == null) return;
+    try {
+      await controller.initialize();
+      await controller.seekTo(Duration.zero);
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      setState(() => _controller = controller);
+    } catch (_) {
+      await controller.dispose();
+    }
+  }
+
+  @override
+  void dispose() {
+    unawaited(_controller?.dispose());
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final controller = _controller;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ColoredBox(color: colors.night),
+        if (controller != null)
+          FittedBox(
+            fit: BoxFit.cover,
+            clipBehavior: Clip.hardEdge,
+            child: SizedBox(
+              width: controller.value.size.width,
+              height: controller.value.size.height,
+              child: VideoPlayer(controller),
+            ),
+          ),
+        Center(
+          child: Icon(
+            Icons.play_circle_outline,
+            color: controller == null ? colors.gold : Colors.white,
+            size: widget.iconSize,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -284,7 +384,7 @@ class _VideoPageState extends State<_VideoPage> {
 
 /// The reader's "Memories" block, everything centered and stacked one thing
 /// under the next: voice notes, then all photos and videos together as one
-/// mosaic (the moodboard's layout), then documents, then links. Shows nothing
+/// mosaic (the moodboard's layout), then links. Shows nothing
 /// when the victory has no extras.
 class StarMediaSection extends StatelessWidget {
   const StarMediaSection({super.key, required this.media});
@@ -304,14 +404,12 @@ class StarMediaSection extends StatelessWidget {
           (m) => m.kind == StarMediaKind.photo || m.kind == StarMediaKind.video,
         )
         .toList();
-    final documents = of(StarMediaKind.document);
     final links = of(StarMediaKind.link);
 
     final blocks = <Widget>[
       for (final voice in voices)
         VoiceNotePlayer(key: ValueKey(voice.id), media: voice),
       if (visuals.isNotEmpty) StarMediaMosaic(visuals: visuals),
-      for (final doc in documents) StarDocumentRow(media: doc),
       for (final link in links) StarLinkRow(media: link),
     ];
     // Opaque and tap-absorbing: the reader treats a tap on the page as
@@ -414,8 +512,7 @@ class _MosaicContent extends StatelessWidget {
   }
 }
 
-/// A tappable centered line with a leading icon — how links and documents
-/// are listed.
+/// A tappable centered line with a leading icon — how links are listed.
 class _ActionRow extends StatelessWidget {
   const _ActionRow({
     required this.icon,
@@ -488,42 +585,8 @@ class StarLinkRow extends StatelessWidget {
   }
 }
 
-class StarDocumentRow extends StatelessWidget {
-  const StarDocumentRow({super.key, required this.media});
-
-  final StarMedia media;
-
-  @override
-  Widget build(BuildContext context) {
-    return _ActionRow(
-      icon: Icons.description_outlined,
-      text: documentDisplayText(media),
-      onTap: () => _open(context),
-    );
-  }
-
-  Future<void> _open(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final message = context.strings.documentOpenError;
-    var ok = false;
-    try {
-      final file = await StarMediaStorage.file(media.path!);
-      if (file != null) {
-        ok = (await OpenFilex.open(file.path)).type == ResultType.done;
-      }
-    } catch (_) {}
-    if (!ok) messenger.showSnackBar(SnackBar(content: Text(message)));
-  }
-}
-
 /// What to show for a link row: its label if it has one, else the address.
 String linkDisplayText(StarMedia link) {
   final label = link.label?.trim();
   return (label == null || label.isEmpty) ? (link.url ?? '') : label;
-}
-
-/// A document shows the file name it was picked with.
-String documentDisplayText(StarMedia doc) {
-  final label = doc.label?.trim();
-  return (label == null || label.isEmpty) ? (doc.path ?? '') : label;
 }

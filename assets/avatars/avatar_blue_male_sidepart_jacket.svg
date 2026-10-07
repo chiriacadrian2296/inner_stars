@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="768" height="768" viewBox="0 0 768 768" fill="none">
+  <title>Male avatar with side-parted hair and lightweight blue jacket</title>
+  <defs>
+    <linearGradient id="haloGradient" x1="177" y1="154" x2="558" y2="603" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8BD8F1"/><stop offset="0.48" stop-color="#7DCBEC"/><stop offset="1" stop-color="#5AA8E3"/>
+    </linearGradient>
+    <radialGradient id="haloGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(514 214) rotate(126.8) scale(353 305)">
+      <stop stop-color="#B8EAF7" stop-opacity="0.7"/><stop offset="0.68" stop-color="#85D1EF" stop-opacity="0.16"/><stop offset="1" stop-color="#4E9DE0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="hairGradient" x1="370" y1="105" x2="382" y2="455" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4B96D1"/><stop offset="0.55" stop-color="#3E67B9"/><stop offset="1" stop-color="#314694"/>
+    </linearGradient>
+    <linearGradient id="skinGradient" x1="375" y1="170" x2="375" y2="472" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFDFD"/><stop offset="0.62" stop-color="#FFFDFD"/><stop offset="1" stop-color="#F7F8FC"/>
+    </linearGradient>
+    <linearGradient id="neckGradient" x1="370" y1="412" x2="370" y2="568" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B8C9E1"/><stop offset="0.4" stop-color="#DEE7F3"/><stop offset="0.72" stop-color="#F8FAFD"/><stop offset="1" stop-color="#FFFDFD"/>
+    </linearGradient>
+    <linearGradient id="outfitGradient" x1="338" y1="485" x2="410" y2="724" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#418FCB"/><stop offset="0.5" stop-color="#3473B8"/><stop offset="1" stop-color="#28599B"/>
+    </linearGradient>
+    <linearGradient id="sleeveLeftGradient" x1="137" y1="540" x2="277" y2="694" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3473B8"/><stop offset="1" stop-color="#28599B"/>
+    </linearGradient>
+    <linearGradient id="sleeveRightGradient" x1="610" y1="540" x2="500" y2="694" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#418FCB"/><stop offset="1" stop-color="#3473B8"/>
+    </linearGradient>
+    <linearGradient id="accentGradient" x1="370" y1="500" x2="375" y2="650" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#263F85"/><stop offset="1" stop-color="#28599B"/>
+    </linearGradient>
+    <clipPath id="haloClip"><circle cx="368.5" cy="368.5" r="284.5"/></clipPath>  </defs>
+  <g id="halo" clip-path="url(#haloClip)">
+    <circle cx="368.5" cy="368.5" r="284.5" fill="url(#haloGradient)"/>
+    <circle cx="368.5" cy="368.5" r="284.5" fill="url(#haloGlow)"/>
+  </g>
+  <g id="character">
+
+    <g id="outfit-body">
+      <path id="left-sleeve" d="M188 527C158 539 126 551 109 574C98 590 93 606 93 624V685H342L337 572C286 548 235 526 188 527Z" fill="url(#sleeveLeftGradient)"/>
+      <path id="right-sleeve" d="M547 526C579 537 614 551 632 574C644 590 651 607 651 624V685H405L410 571C455 548 504 526 547 526Z" fill="url(#sleeveRightGradient)"/>
+      <path id="torso" d="M188 527C225 510 273 499 321 492H424C473 498 520 511 557 530L555 685H189L188 527Z" fill="url(#outfitGradient)"/>
+    </g>
+<path id="t-shirt" d="M300 509C322 544 346 561 373 562C401 561 425 543 447 509L430 641H316L300 509Z" fill="#75C6E8"/>
+    <g id="neck-and-collar"><path id="neck" d="M293 397H451V483C451 506 468 520 482 527C454 552 417 568 373 568C329 568 291 550 264 525C278 515 293 501 293 477V397Z" fill="url(#neckGradient)"/></g>
+    <g id="jacket-front">
+      <path d="M290 499C308 532 332 567 374 641L287 594C249 581 218 562 194 537C188 522 190 504 198 487C219 506 248 515 290 499Z" fill="url(#outfitGradient)"/>
+      <path d="M456 499C438 532 416 568 374 641L459 594C499 581 530 562 554 537C560 521 558 504 549 487C528 506 498 515 456 499Z" fill="url(#outfitGradient)"/>
+      <path d="M374 563V642" stroke="#263F85" stroke-width="5"/>
+    </g>
+    <g id="head">
+      <path id="left-ear" d="M267 287C254 274 244 267 237 272C222 283 215 302 219 318C223 336 237 348 254 352H270L267 287Z" fill="#FFFDFD"/>
+      <path id="right-ear" d="M480 287C493 274 503 267 510 272C525 283 532 302 528 318C524 336 510 348 493 352H477L480 287Z" fill="#FFFDFD"/>
+      <path id="face" d="M372 174C316 166 283 179 268 222C257 257 258 301 262 342C267 395 287 435 320 454C337 464 354 466 373 466C392 466 410 463 426 453C459 432 478 393 484 341C489 300 485 257 475 223C451 214 423 205 399 190C390 184 381 178 372 174Z" fill="url(#skinGradient)"/>
+    </g>
+    <g id="hair">
+      <path d="M263 342C259 306 260 273 268 239C278 195 301 163 338 150C369 139 401 143 427 158C452 172 469 196 476 226C450 218 427 205 407 185C382 211 343 225 282 231C270 262 264 301 263 342Z" fill="url(#hairGradient)"/>
+      <path d="M406 185C422 169 440 166 458 174C466 184 472 198 476 226C451 217 428 204 406 185Z" fill="#324B9B" opacity="0.55"/>
+    </g>
+  </g>
+</svg>

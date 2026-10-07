@@ -24,7 +24,9 @@ import '../widgets/constellation_map/constellation_map_view.dart';
 import '../widgets/constellation_map/pulsar_spacing.dart';
 import '../widgets/constellation_painter.dart';
 import '../widgets/logo_watermark.dart';
-import '../widgets/marquee_title.dart';
+import '../utils/responsive.dart';
+import '../widgets/balanced_title.dart';
+import '../widgets/responsive_content.dart';
 import '../widgets/shareable_constellation_card.dart';
 import '../widgets/staggered_entrance.dart';
 import 'pulsar_reader_screen.dart';
@@ -401,52 +403,67 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
         // Edge-to-edge lets the night sky continue behind the status icons.
         backgroundColor: Colors.black,
         body: DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF1C2747), Colors.black],
-            ),
-          ),
+          // The same night gradient as the Star Reader, so the transparent dock
+          // shows the sky instead of a black end to the gradient.
+          decoration: BoxDecoration(gradient: colors.nightlightGradient),
           child: SafeArea(
             bottom: false,
             child: Column(
               children: [
                 DecoratedBox(
                   decoration: const BoxDecoration(color: Colors.transparent),
-                  child: SizedBox(
-                    height: 64,
-                    child: Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => _moveBy(-1),
-                          icon: Icon(Icons.chevron_left, color: colors.text),
-                        ),
-                        Expanded(
-                          child: StaggeredEntrance(
-                            key: ValueKey('constellation-title-${_project.id}'),
-                            index: 0,
-                            axis: Axis.horizontal,
-                            reverse: _contentReverse,
-                            child: MarqueeTitle(
-                              key: ValueKey(
-                                'constellation-title-${_project.id}',
-                              ),
-                              title: _project.name,
-                              style: TextStyle(
-                                fontFamily: kFontStarTitle,
-                                fontSize: 32,
-                                fontWeight: FontWeight.w800,
+                  child: Padding(
+                    // Same insets as the Star Reader's header, so the arrows
+                    // and title sit in the same place in every "Vedi".
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                    child: ResponsiveContent(
+                      maxWidth:
+                          readerFrameWidth(context) ??
+                          kResponsiveContentMaxWidth,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 64),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              onPressed: () => _moveBy(-1),
+                              icon: Icon(
+                                Icons.chevron_left,
                                 color: colors.text,
                               ),
                             ),
-                          ),
+                            Expanded(
+                              child: StaggeredEntrance(
+                                key: ValueKey(
+                                  'constellation-title-${_project.id}',
+                                ),
+                                index: 0,
+                                axis: Axis.horizontal,
+                                reverse: _contentReverse,
+                                child: BalancedTitle(
+                                  key: ValueKey(
+                                    'constellation-title-${_project.id}',
+                                  ),
+                                  title: _project.name,
+                                  style: TextStyle(
+                                    fontFamily: kFontStarTitle,
+                                    fontSize: 24,
+                                    height: 1.25,
+                                    fontWeight: FontWeight.w800,
+                                    color: colors.text,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => _moveBy(1),
+                              icon: Icon(
+                                Icons.chevron_right,
+                                color: colors.text,
+                              ),
+                            ),
+                          ],
                         ),
-                        IconButton(
-                          onPressed: () => _moveBy(1),
-                          icon: Icon(Icons.chevron_right, color: colors.text),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -533,17 +550,6 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                   ),
                 ),
                 Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.9),
-                        blurRadius: 32,
-                        spreadRadius: 6,
-                        offset: const Offset(0, -10),
-                      ),
-                    ],
-                  ),
                   padding: EdgeInsets.fromLTRB(
                     12,
                     16,
@@ -805,8 +811,8 @@ class _OutlinedSwipeText extends StatelessWidget {
   );
 }
 
-/// The constellation dock keeps actions icon-only and without a disc, so the
-/// map remains the visual focus above it.
+/// The constellation dock sits on a transparent background, so each action
+/// carries its own white disc.
 class _ConstellationDockAction extends StatelessWidget {
   const _ConstellationDockAction({
     required this.icon,
@@ -821,12 +827,20 @@ class _ConstellationDockAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Tooltip(
     message: label,
-    child: IconButton(
-      onPressed: onTap,
-      icon: Icon(icon, size: 22, color: context.colors.gold),
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-      splashRadius: 24,
+    child: Material(
+      color: Colors.white,
+      shape: const StadiumBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const StadiumBorder(),
+        child: SizedBox(
+          width: 34,
+          height: 34,
+          child: Center(
+            child: Icon(icon, size: 18, color: context.colors.night),
+          ),
+        ),
+      ),
     ),
   );
 }

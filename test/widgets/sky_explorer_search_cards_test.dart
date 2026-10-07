@@ -14,6 +14,7 @@ import 'package:inner_stars/l10n/strings_it.dart';
 import 'package:inner_stars/l10n/strings_scope.dart';
 import 'package:inner_stars/models/life_area.dart';
 import 'package:inner_stars/settings/settings_controller.dart';
+import 'package:inner_stars/settings/sky_grid_size.dart';
 import 'package:inner_stars/theme/app_theme.dart';
 import 'package:inner_stars/widgets/constellation_editor_painter.dart';
 import 'package:inner_stars/widgets/search_result_card.dart';
@@ -120,7 +121,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.getSize(firstSurface).height, 88);
     expect(tester.takeException(), isNull);
-  });
+  }, skip: !kShowSkyListView);
 
   testWidgets('area cards expose their dock actions in the quick menu', (
     tester,
@@ -157,7 +158,7 @@ void main() {
       find.descendant(of: firstCard, matching: find.text('VOLA')),
       findsOneWidget,
     );
-  });
+  }, skip: !kShowSkyListView);
 
   testWidgets('real Search uses compact cards in all three result levels', (
     tester,
@@ -239,5 +240,5 @@ void main() {
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
-  });
+  }, skip: !kShowSkyListView);
 }

@@ -12,6 +12,7 @@ import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import '../utils/date_format.dart';
 import '../utils/icon_for_slug.dart';
+import 'app_choice_chip.dart';
 import 'area_filter_sheet.dart';
 import 'date_range_filter_sheet.dart';
 import 'sort_filter_sheet.dart';
@@ -19,6 +20,10 @@ import 'staggered_entrance.dart';
 
 class _CreateNewProject {
   const _CreateNewProject();
+}
+
+class _ClearSelection {
+  const _ClearSelection();
 }
 
 /// Picks an existing constellation, or creates a new one inline via
@@ -29,20 +34,31 @@ class _CreateNewProject {
 /// optional initial value for the complete editor opened by "New"; it never
 /// narrows this picker, otherwise returning here after one choice can trap
 /// the user inside that constellation's area.
+///
+/// [selected] is shown as already chosen. Reset in the sheet deselects it;
+/// applying that empty choice calls [onCleared] (when given) and returns null.
 Future<Project?> pickProject(
   BuildContext context,
   ProjectRepository repository,
   StarsShapeRepository starsShapeRepository, {
   LifeArea? area,
   bool allowCreate = true,
+  Project? selected,
+  VoidCallback? onCleared,
 }) async {
   final result = await _pickProjectFlat(
     context,
     repository,
     starsShapeRepository,
     allowCreate: allowCreate,
+    initialId: selected?.id,
+    allowClear: onCleared != null,
   );
   if (!context.mounted) return null;
+  if (result is _ClearSelection) {
+    onCleared?.call();
+    return null;
+  }
   if (result is Project) return result;
   if (result is _CreateNewProject) {
     return Navigator.of(context).push<Project>(
@@ -63,6 +79,8 @@ Future<Object?> _pickProjectFlat(
   ProjectRepository repository,
   StarsShapeRepository starsShapeRepository, {
   required bool allowCreate,
+  required int? initialId,
+  required bool allowClear,
 }) {
   final sheetHeight = MediaQuery.sizeOf(context).height * 0.85;
   return showFixedAppSheet<Object>(
@@ -73,6 +91,8 @@ Future<Object?> _pickProjectFlat(
         starsShapeRepository: starsShapeRepository,
         sheetHeight: sheetHeight,
         allowCreate: allowCreate,
+        initialId: initialId,
+        allowClear: allowClear,
       );
     },
   );
@@ -87,12 +107,16 @@ class _FlatProjectPickerSheet extends StatefulWidget {
     required this.starsShapeRepository,
     required this.sheetHeight,
     required this.allowCreate,
+    required this.initialId,
+    required this.allowClear,
   });
 
   final List<Project> projects;
   final StarsShapeRepository starsShapeRepository;
   final double sheetHeight;
   final bool allowCreate;
+  final int? initialId;
+  final bool allowClear;
 
   @override
   State<_FlatProjectPickerSheet> createState() =>
@@ -101,6 +125,7 @@ class _FlatProjectPickerSheet extends StatefulWidget {
 
 class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
   String _query = '';
+  late int? _selectedId = widget.initialId;
   Set<LifeArea> _areaFilter = {...LifeArea.values};
   DateTimeRange? _dateRangeFilter;
   DateRangePreset _dateRangePreset = DateRangePreset.allTime;
@@ -276,6 +301,28 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
     );
   }
 
+  bool get _canApply =>
+      _selectedId != widget.initialId &&
+      (_selectedId != null || widget.allowClear);
+
+  void _apply() {
+    final id = _selectedId;
+    Navigator.of(context).pop(
+      id == null
+          ? const _ClearSelection()
+          : widget.projects.firstWhere((project) => project.id == id),
+    );
+  }
+
+  Widget _projectChip(Project project) => AppChoiceChip(
+    icon: iconForSlug(project.iconSlug),
+    label: project.name,
+    selected: _selectedId == project.id,
+    onPressed: () => setState(() => _selectedId = project.id),
+    showCheck: true,
+    expand: true,
+  );
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -345,22 +392,27 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
                           ),
                         )
                       : ListView.separated(
-                          shrinkWrap: false,
-                          itemCount: filtered.length,
+                          itemCount: (filtered.length + 1) ~/ 2,
                           separatorBuilder: (_, _) =>
                               const SizedBox(height: 10),
-                          itemBuilder: (context, index) {
-                            final project = filtered[index];
-                            return StaggeredEntrance(
-                              index: index + 3,
-                              child: AppSheetAction(
-                                icon: iconForSlug(project.iconSlug),
-                                label: project.name,
-                                onPressed: () =>
-                                    Navigator.of(context).pop(project),
-                              ),
-                            );
-                          },
+                          itemBuilder: (context, row) => Row(
+                            children: [
+                              for (var col = 0; col < 2; col++) ...[
+                                if (col > 0) const SizedBox(width: 10),
+                                Expanded(
+                                  child: row * 2 + col < filtered.length
+                                      ? StaggeredEntrance(
+                                          index: row + col + 3,
+                                          axis: Axis.horizontal,
+                                          child: _projectChip(
+                                            filtered[row * 2 + col],
+                                          ),
+                                        )
+                                      : const SizedBox.shrink(),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
                 ),
               ),
@@ -373,16 +425,22 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
                   runSpacing: 8,
                   children: [
                     TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: AppButtonLabel(strings.cancel),
+                      onPressed: _selectedId == null
+                          ? null
+                          : () => setState(() => _selectedId = null),
+                      child: AppButtonLabel(strings.clearFilterAction),
                     ),
                     if (widget.allowCreate)
-                      ElevatedButton(
+                      TextButton(
                         onPressed: () =>
                             Navigator.of(context)
                                 .pop(const _CreateNewProject()),
                         child: AppButtonLabel(strings.newAction),
                       ),
+                    ElevatedButton(
+                      onPressed: _canApply ? _apply : null,
+                      child: AppButtonLabel(strings.applyFilterAction),
+                    ),
                   ],
                 ),
               ),

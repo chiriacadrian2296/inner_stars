@@ -1,12 +1,12 @@
 /// What kind of extra memory a [StarMedia] holds, attached to a victory on
 /// top of its cover photo.
-enum StarMediaKind { voice, photo, video, link, document }
+enum StarMediaKind { voice, photo, video, link }
 
 /// Most extras a single victory can carry.
 const int kMaxStarMedia = 10;
 
 /// One optional extra attached to a lit star: a voice note, a secondary
-/// photo, a short video, a document (PDF…), or a link. File-backed kinds keep an opaque file
+/// photo, a short video, or a link. File-backed kinds keep an opaque file
 /// name in [path] (resolved by `StarMediaStorage`); a link keeps its address
 /// in [url].
 class StarMedia {
@@ -33,13 +33,17 @@ class StarMedia {
 
   bool get isFile => kind != StarMediaKind.link;
 
-  factory StarMedia.fromJson(Map<String, dynamic> json) {
+  /// Null for an item whose kind this version doesn't know (e.g. one saved
+  /// by a build that had a kind since removed), so loading a star never
+  /// fails over a leftover extra.
+  static StarMedia? tryFromJson(Map<String, dynamic> json) {
+    final kind = StarMediaKind.values
+        .where((k) => k.name == json['kind'])
+        .firstOrNull;
+    if (kind == null) return null;
     return StarMedia(
       id: json['id'] as String,
-      kind: StarMediaKind.values.firstWhere(
-        (k) => k.name == json['kind'],
-        orElse: () => StarMediaKind.link,
-      ),
+      kind: kind,
       path: json['path'] as String?,
       url: json['url'] as String?,
       label: json['label'] as String?,

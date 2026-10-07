@@ -148,7 +148,7 @@ class Star {
       photoPath: json['photoPath'] as String?,
       media: [
         for (final m in (json['media'] as List?) ?? const [])
-          StarMedia.fromJson(Map<String, dynamic>.from(m as Map)),
+          ?StarMedia.tryFromJson(Map<String, dynamic>.from(m as Map)),
       ],
       dead: json['dead'] as bool? ?? false,
       deadDate: (json['deadDate'] as String?).let(DateTime.parse),

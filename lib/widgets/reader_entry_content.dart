@@ -45,6 +45,18 @@ class ReaderEntrance {
     drift: drift,
   );
 
+  /// Wraps [child] as the [order]th block to arrive, but rising from below
+  /// instead of coming in from the side — on the same schedule as [call], so
+  /// it still waits for the page leaving when swiping.
+  Widget rising(int order, Widget child, {double drift = 0.7}) =>
+      StaggeredEntrance(
+        index: axis == Axis.horizontal ? order ~/ 2 + lead : order,
+        enabled: animate,
+        axis: Axis.vertical,
+        drift: drift,
+        child: child,
+      );
+
   /// Wraps [child] as the [order]th block to arrive.
   Widget call(int order, Widget child) => StaggeredEntrance(
     index: axis == Axis.horizontal ? order ~/ 2 + lead : order,
@@ -229,7 +241,7 @@ class ReaderPage extends StatelessWidget {
         ],
         if (footer != null) ...[
           const SizedBox(height: 24),
-          entrance(
+          entrance.rising(
             6,
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),

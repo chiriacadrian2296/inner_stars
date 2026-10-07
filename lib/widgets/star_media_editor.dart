@@ -1,4 +1,3 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -14,23 +13,8 @@ import 'star_media_views.dart';
 import 'voice_note_player.dart';
 import 'voice_note_recorder_sheet.dart';
 
-/// Extensions offered when attaching a document.
-const _documentExtensions = [
-  'pdf',
-  'doc',
-  'docx',
-  'txt',
-  'rtf',
-  'odt',
-  'xls',
-  'xlsx',
-  'csv',
-  'ppt',
-  'pptx',
-];
-
 /// The optional "Memories" part of a victory's form: one individual field
-/// per kind of extra (voice notes, more photos, videos, documents, links),
+/// per kind of extra (voice notes, more photos, videos, links),
 /// each holding its own items and a way to add another. Reports every
 /// change through [onChanged]; the form decides what to do with files
 /// whose items got removed.
@@ -149,30 +133,6 @@ class StarMediaEditor extends StatelessWidget {
     }
   }
 
-  Future<void> _addDocument(BuildContext context) async {
-    if (!_checkLimit(context)) return;
-    try {
-      final picked = await FilePicker.pickFile(
-        type: FileType.custom,
-        allowedExtensions: _documentExtensions,
-      );
-      if (picked == null) return;
-      final path = await StarMediaStorage.save(picked.xFile, name: picked.name);
-      _addAll([
-        StarMedia(
-          id: _newId(0),
-          kind: StarMediaKind.document,
-          path: path,
-          label: picked.name,
-          createdAt: DateTime.now(),
-        ),
-      ]);
-    } catch (error) {
-      debugPrint('Adding a document failed: $error');
-      if (context.mounted) _showError(context);
-    }
-  }
-
   Future<void> _addLink(BuildContext context) async {
     if (!_checkLimit(context)) return;
     final result = await showAppDialog<({String url, String? label})>(
@@ -257,24 +217,6 @@ class StarMediaEditor extends StatelessWidget {
                     ],
                   ),
                 ),
-              ),
-            ),
-        ],
-      ),
-      _ExtraField(
-        label: strings.documentsLabel,
-        hint: strings.addDocumentHint,
-        icon: Icons.attach_file_rounded,
-        canAdd: canAdd,
-        onAdd: () => _addDocument(context),
-        items: [
-          for (final item in of(StarMediaKind.document))
-            _RemovableRow(
-              key: ValueKey(item.id),
-              onRemove: () => _remove(item),
-              child: _LeadingText(
-                icon: Icons.description_outlined,
-                text: documentDisplayText(item),
               ),
             ),
         ],

@@ -5,6 +5,7 @@ import 'package:inner_stars/data/project_repository.dart';
 import 'package:inner_stars/data/star_repository.dart';
 import 'package:inner_stars/debug/seed_data.dart';
 import 'package:inner_stars/models/habit.dart';
+import 'package:inner_stars/models/star_media.dart';
 import 'package:inner_stars/utils/date_math.dart';
 import 'package:inner_stars/utils/habit_stats.dart';
 import 'package:inner_stars/utils/star_stats.dart';
@@ -30,6 +31,12 @@ void main() {
     final today = dateOnly(DateTime.now());
     final lit = stars.getAll().where((s) => s.isLit).toList();
 
+    // Most victories have useful placeholder copy for exercising longer
+    // reader/card layouts, while a minority still covers the empty state.
+    final withDescriptions = lit.where((s) => s.description != null).toList();
+    expect(withDescriptions.length, greaterThan(lit.length * .7));
+    expect(withDescriptions.length, lessThan(lit.length));
+
     // Most sample victories exercise photo layouts, while a minority still
     // covers the no-photo state.
     final withPhotos = lit.where((s) => s.photoPath != null).toList();
@@ -38,6 +45,27 @@ void main() {
     expect(
       withPhotos.every(
         (s) => s.photoPath!.startsWith('https://picsum.photos/seed/'),
+      ),
+      isTrue,
+    );
+
+    // Only a handful of immediately visible victories demonstrate the
+    // secondary-photo gallery.
+    final withSecondaryPhotos = lit.where((s) => s.media.isNotEmpty).toList();
+    expect(withSecondaryPhotos, isNotEmpty);
+    expect(withSecondaryPhotos.length, lessThan(lit.length * .15));
+    expect(
+      withSecondaryPhotos.every(
+        (s) =>
+            dayDiff(dateOnly(s.achievedDate!), today) <= 1 &&
+            s.media.length == 2 &&
+            s.media.every(
+              (m) =>
+                  m.kind == StarMediaKind.photo &&
+                  m.path!.startsWith(
+                    'https://picsum.photos/seed/inner-stars-extra-',
+                  ),
+            ),
       ),
       isTrue,
     );
@@ -58,7 +86,7 @@ void main() {
       for (final p in projects.getAll()) p.id: p,
     });
     expect(byArea.length, greaterThan(4));
-    expect(byArea.first.value, greaterThan(byArea.last.value * 3));
+    expect(byArea.first.value, greaterThan(byArea.last.value * 2));
 
     // Habit variety: weekly, multi-per-day, dead, brand new, unlit.
     final all = habits.getAll();

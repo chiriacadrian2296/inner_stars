@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="768" height="768" viewBox="0 0 768 768" fill="none">
+  <defs>
+    <linearGradient id="haloGradient" x1="177" y1="154" x2="558" y2="603" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8BD8F1"/>
+      <stop offset="0.48" stop-color="#7DCBEC"/>
+      <stop offset="1" stop-color="#5AA8E3"/>
+    </linearGradient>
+    <radialGradient id="haloGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(514 214) rotate(126.8) scale(353 305)">
+      <stop stop-color="#B8EAF7" stop-opacity="0.7"/>
+      <stop offset="0.68" stop-color="#85D1EF" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#4E9DE0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="hairGradient" x1="385" y1="55" x2="391" y2="344" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4FA8DC"/>
+      <stop offset="0.55" stop-color="#4B7DD4"/>
+      <stop offset="1" stop-color="#485AC8"/>
+    </linearGradient>
+    <linearGradient id="skinGradient" x1="375" y1="170" x2="375" y2="468" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFDFD"/>
+      <stop offset="0.62" stop-color="#FFFDFD"/>
+      <stop offset="1" stop-color="#F7F8FC"/>
+    </linearGradient>
+    <linearGradient id="neckGradient" x1="370" y1="412" x2="370" y2="565" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DCE5F4"/>
+      <stop offset="0.49" stop-color="#F8F9FC"/>
+      <stop offset="1" stop-color="#FFFDFD"/>
+    </linearGradient>
+    <linearGradient id="torsoGradient" x1="338" y1="486" x2="411" y2="724" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#438FDB"/>
+      <stop offset="0.46" stop-color="#3D70CF"/>
+      <stop offset="1" stop-color="#3558BB"/>
+    </linearGradient>
+    <linearGradient id="leftSleeveGradient" x1="145" y1="534" x2="270" y2="698" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3E73CD"/>
+      <stop offset="1" stop-color="#3457B8"/>
+    </linearGradient>
+    <linearGradient id="rightSleeveGradient" x1="605" y1="536" x2="514" y2="694" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#477CD0"/>
+      <stop offset="1" stop-color="#3561C0"/>
+    </linearGradient>
+    <linearGradient id="hoodLeftGradient" x1="223" y1="428" x2="361" y2="629" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4CA8DF"/>
+      <stop offset="0.55" stop-color="#4389D8"/>
+      <stop offset="1" stop-color="#3C64C7"/>
+    </linearGradient>
+    <linearGradient id="hoodRightGradient" x1="505" y1="427" x2="399" y2="628" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#50AFE2"/>
+      <stop offset="0.58" stop-color="#468CD7"/>
+      <stop offset="1" stop-color="#3D67C8"/>
+    </linearGradient>
+    <linearGradient id="cordGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#6FD0F0"/>
+      <stop offset="1" stop-color="#55A9E5"/>
+    </linearGradient>
+    <clipPath id="haloClip">
+      <circle cx="368.5" cy="368.5" r="284.5"/>
+    </clipPath>
+  </defs>
+
+  <!-- Transparent outside the circular avatar artwork. -->
+  <g id="halo" clip-path="url(#haloClip)">
+    <circle cx="368.5" cy="368.5" r="284.5" fill="url(#haloGradient)"/>
+    <circle cx="368.5" cy="368.5" r="284.5" fill="url(#haloGlow)"/>
+  </g>
+
+  <g id="character">
+    <g id="hoodie-body">
+      <path id="left-sleeve" d="M188 527C161 539 128 550 111 573C99 588 93 604 93 623V685H342L337 572C286 548 235 526 188 527Z" fill="url(#leftSleeveGradient)"/>
+      <path id="right-sleeve" d="M547 526C578 537 613 550 631 573C644 590 651 605 651 624V685H405L410 571C455 548 504 526 547 526Z" fill="url(#rightSleeveGradient)"/>
+      <path id="torso" d="M188 528C224 511 273 499 321 492H424C473 498 518 511 549 528L555 685H187L188 528Z" fill="url(#torsoGradient)"/>
+    </g>
+
+    <g id="neck-and-collar">
+      <path id="neck" d="M293 397H451V483C451 506 468 520 482 527C454 552 417 568 373 568C329 568 291 550 264 525C278 515 293 501 293 477V397Z" fill="url(#neckGradient)"/>
+    </g>
+
+    <g id="hood">
+      <path id="hood-left" d="M292 415C253 418 220 440 198 474C186 492 181 512 187 530C202 556 235 577 287 594L374 642C354 601 331 568 305 539C278 509 259 489 253 471C248 455 255 445 271 438C281 434 289 425 292 415Z" fill="url(#hoodLeftGradient)"/>
+      <path id="hood-right" d="M452 415C491 418 524 439 547 474C559 493 564 512 557 530C543 555 510 577 458 594L374 642C393 602 416 568 442 539C470 509 487 489 493 471C499 455 492 445 476 438C466 434 456 425 452 415Z" fill="url(#hoodRightGradient)"/>
+    </g>
+
+    <path id="shirt" d="M293 421C274 426 259 439 253 453C248 469 258 487 279 508C289 501 293 490 293 476V421ZM451 421C470 426 485 439 491 453C496 469 486 487 465 508C455 501 451 490 451 476V421ZM307 543C331 559 353 568 373 568C396 568 418 559 440 543L374 642L307 543Z" fill="#4058BC"/>
+
+    <g id="head">
+      <path id="left-ear" d="M267 287C254 274 244 267 237 272C222 283 215 302 219 318C223 336 237 348 254 352L270 352L267 287Z" fill="#FFFDFD"/>
+      <path id="right-ear" d="M480 287C493 274 503 267 510 272C525 283 532 302 528 318C524 336 510 348 493 352L477 352L480 287Z" fill="#FFFDFD"/>
+      <path id="face" d="M372 174C316 166 283 179 268 222C257 257 258 301 262 342C267 395 287 435 320 454C337 464 354 466 373 466C392 466 410 463 426 453C459 432 478 393 484 341C489 300 485 257 475 223C451 214 423 205 399 190C390 184 381 178 372 174Z" fill="url(#skinGradient)"/>
+    </g>
+
+    <g id="hair">
+      <path d="M264 344C260 313 259 282 266 249C275 207 294 183 326 178C341 175 356 175 371 179C394 212 431 232 476 239C489 274 490 306 488 333C493 300 505 272 526 248C541 262 556 265 569 259C559 255 550 244 545 224C556 218 563 210 566 199C551 205 538 204 528 196C517 187 518 173 510 158C496 132 468 102 438 85C449 77 454 64 444 46C441 60 430 67 414 68C389 68 379 61 349 63C310 64 280 79 265 104C260 113 259 124 260 136C238 145 221 166 215 190C205 230 217 269 230 294C241 310 252 327 264 344Z" fill="url(#hairGradient)"/>
+    </g>
+
+    <g id="drawstrings">
+      <path d="M292 568V645" stroke="#60BDEB" stroke-width="10" stroke-linecap="round"/>
+      <path d="M450 568V645" stroke="#60BDEB" stroke-width="10" stroke-linecap="round"/>
+      <rect x="283" y="641" width="19" height="25" rx="6" fill="url(#cordGradient)"/>
+      <rect x="440" y="641" width="19" height="25" rx="6" fill="url(#cordGradient)"/>
+    </g>
+  </g>
+</svg>

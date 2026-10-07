@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/widgets.dart';
@@ -30,3 +32,13 @@ const double kWideLayoutBreakpoint = 840;
 /// to half-screen, or a phone.
 bool isWideLayout(BuildContext context) =>
     MediaQuery.sizeOf(context).width >= kWideLayoutBreakpoint;
+
+/// The width of the phone-shaped 9:16 column the "Vedi" pages (star,
+/// constellation, area) keep their header, content and dock inside on a wide
+/// layout — the same shape the Star Reader gives a photo — or null on a phone
+/// layout, where the page is edge to edge anyway.
+double? readerFrameWidth(BuildContext context) {
+  if (!isWideLayout(context)) return null;
+  final size = MediaQuery.sizeOf(context);
+  return math.min(size.width, size.height * 9 / 16);
+}

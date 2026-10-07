@@ -1346,8 +1346,6 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get linksLabel => 'Linkuri';
   @override
-  String get documentsLabel => 'Documente';
-  @override
   String get addVoiceNoteHint => 'Înregistrează o notă vocală';
   @override
   String get addExtraPhotosHint => 'Adaugă fotografii';
@@ -1355,10 +1353,6 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get addVideoHint => 'Adaugă un video';
   @override
   String get addLinkHint => 'Adaugă un link';
-  @override
-  String get addDocumentHint => 'Adaugă un document';
-  @override
-  String get documentOpenError => 'Nu am putut deschide documentul.';
   @override
   String get cropPhotoTitle => 'Ajustează fotografia';
   @override
@@ -1764,7 +1758,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get starReaderTourIntroTitle => 'Mișcarea între stele';
   @override
   String get starReaderTourIntroBody =>
-      'Glisează lateral sau atinge marginile stângă și dreaptă pentru a merge la steaua anterioară sau următoare. La o stea cu fotografie, atinge mijlocul ca să vezi doar fotografia.';
+      'Glisează lateral pentru a merge la steaua anterioară sau următoare. La o stea cu fotografie, atinge un loc gol ca să vezi doar fotografia.';
   @override
   String get starReaderTourDockTitle => 'Tot ce poți face';
   @override

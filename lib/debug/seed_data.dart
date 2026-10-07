@@ -5,10 +5,11 @@ import '../data/star_repository.dart';
 import '../models/life_area.dart';
 import '../models/habit.dart';
 import '../models/project.dart';
+import '../models/star_media.dart';
 import '../utils/date_math.dart';
 
 /// How many wins each seed project gains every time [seedSampleData] runs.
-const winsPerSeedTap = 12;
+const winsPerSeedTap = 4;
 
 /// Picsum-backed photos are attached to four out of every five sample wins.
 /// The remaining fifth deliberately stays photo-less so both UI states are
@@ -17,6 +18,46 @@ String? _samplePhotoUrl(int projectIndex, int winPosition) {
   if ((projectIndex + winPosition) % 5 == 0) return null;
   return 'https://picsum.photos/seed/inner-stars-$projectIndex-$winPosition/'
       '720/1280';
+}
+
+const _loremDescriptions = [
+  'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod '
+      'tempor incididunt ut labore et dolore magna aliqua.',
+  'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi '
+      'ut aliquip ex ea commodo consequat.',
+  'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum '
+      'dolore eu fugiat nulla pariatur.',
+  'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia '
+      'deserunt mollit anim id est laborum.',
+];
+
+String? _sampleDescription(_WinSeed phrase, int projectIndex, int winPosition) {
+  if (phrase.description != null) return phrase.description;
+  if ((projectIndex + winPosition) % 6 == 0) return null;
+  return _loremDescriptions[(projectIndex * 3 + winPosition) %
+      _loremDescriptions.length];
+}
+
+/// A small set of the newest sample victories gets a pair of secondary
+/// photos, making the media gallery visible near the top of the archive.
+List<StarMedia> _sampleSecondaryPhotos({
+  required int projectIndex,
+  required int winPosition,
+  required int dayOffset,
+  required DateTime achievedDate,
+}) {
+  if (dayOffset > 1 || (projectIndex + winPosition) % 3 != 0) return const [];
+  return [
+    for (var index = 0; index < 2; index++)
+      StarMedia(
+        id: 'sample-$projectIndex-$winPosition-$index',
+        kind: StarMediaKind.photo,
+        path:
+            'https://picsum.photos/seed/inner-stars-extra-$projectIndex-'
+            '$winPosition-$index/720/1280',
+        createdAt: achievedDate.add(Duration(milliseconds: index)),
+      ),
+  ];
 }
 
 /// Backdates seeded wins so the dashboard has something to show: day
@@ -47,11 +88,11 @@ const _dayOffsets = [
 /// fully deterministic: each project's phrase list is cycled through in a
 /// fixed order based on how many wins it already has, so running this
 /// repeatedly (or on a fresh install) always produces the same sequence of
-/// content — nothing here is randomized. "Build this app" has a shorter
-/// phrase list that repeats sooner, so it's the one that reaches its
-/// constellation's slot capacity (~160) after enough taps and exercises the
-/// overflow fallback. Spiritual is left with no seed project, to exercise
-/// that area's empty state.
+/// content — nothing here is randomized. There are many small constellations
+/// (24 per language) rather than a few crowded ones, each gaining only a few
+/// wins per tap; repeated taps still grow them until a constellation reaches
+/// its slot capacity and exercises the overflow fallback. Spiritual is left
+/// with no seed project, to exercise that area's empty state.
 ///
 /// [languageCode] picks which translation of the seed content to use (see
 /// [_specsFor]) — matching [SettingsController.locale] so the seeded
@@ -143,11 +184,17 @@ Future<void> seedSampleData({
 
       await starRepository.add(
         title: phrase.title,
-        description: phrase.description,
+        description: _sampleDescription(phrase, specIndex, position),
         projectId: project.id,
         achievedDate: date,
         intensity: 1 + position % 5,
         photoPath: _samplePhotoUrl(specIndex, position),
+        media: _sampleSecondaryPhotos(
+          projectIndex: specIndex,
+          winPosition: position,
+          dayOffset: dayOffset,
+          achievedDate: date,
+        ),
       );
       // Star ids are millisecondsSinceEpoch; a tight loop without this could
       // mint duplicate ids, which every id-based lookup in the app assumes
@@ -218,7 +265,11 @@ const _historyStartDays = 36;
 /// the area split, the date-range and area filters and the month paging on
 /// the Statistics page all have something to show: Physical and Professional
 /// dominate, Philanthropic is almost empty.
-const _historyWinsPerProject = [30, 14, 26, 34, 8, 10, 12, 9, 5];
+const _historyWinsPerProject = [8, 5, 7, 9, 4, 4, 4, 3, 3];
+
+/// Backdated wins for every project past the list above (the extra, smaller
+/// constellations).
+const _historyWinsDefault = 3;
 
 /// Project index that also receives an unbroken run of wins on the days
 /// 50..63 ago — an old streak longer than the live one, so "longest streak"
@@ -236,7 +287,7 @@ Future<void> _seedStarHistory({
 }) async {
   final count = specIndex < _historyWinsPerProject.length
       ? _historyWinsPerProject[specIndex]
-      : 0;
+      : _historyWinsDefault;
   final offsets = <int>[
     for (var k = 0; k < count; k++)
       // 36..175 days ago, scattered but deterministic.
@@ -253,7 +304,7 @@ Future<void> _seedStarHistory({
     );
     await starRepository.add(
       title: phrase.title,
-      description: phrase.description,
+      description: _sampleDescription(phrase, specIndex, position),
       projectId: project.id,
       achievedDate: date,
       intensity: 1 + (position * 3 + specIndex) % 5,
@@ -732,6 +783,145 @@ final _specsEn = [
     _WinSeed('Gave up a weekend to help a neighbor move'),
     _WinSeed("Donated instead of buying something I didn't need"),
   ]),
+  // The smaller constellations below (index 9 on) keep the Sky well filled
+  // with many short constellations rather than a few crowded ones.
+  _ProjectSeed(
+    'Build strength',
+    LifeArea.physical,
+    'fitness_center',
+    [
+      _WinSeed('Lifted heavier than last week'),
+      _WinSeed('Went to the gym on a day I wanted to skip'),
+      _WinSeed('Learned proper squat form'),
+      _WinSeed('Finished a full workout plan week'),
+    ],
+    goals: ['Deadlift my body weight'],
+  ),
+  _ProjectSeed('Cycle to work', LifeArea.physical, 'directions_bike', [
+    _WinSeed('Biked to work instead of taking the car'),
+    _WinSeed('Rode in the rain and enjoyed it'),
+    _WinSeed('Fixed a flat tire on my own'),
+    _WinSeed('Cycled 30 km on the weekend'),
+  ]),
+  _ProjectSeed('Keep a journal', LifeArea.psychological, 'edit', [
+    _WinSeed('Wrote three pages before breakfast'),
+    _WinSeed('Journaled after a hard day instead of bottling it up'),
+    _WinSeed('Reread an old entry and saw how far I came'),
+    _WinSeed('Wrote every day for a week'),
+  ]),
+  _ProjectSeed(
+    'Sleep better',
+    LifeArea.psychological,
+    'nightlight',
+    [
+      _WinSeed('Went to bed before midnight'),
+      _WinSeed('Put the phone away an hour before sleep'),
+      _WinSeed('Woke up without snoozing the alarm'),
+      _WinSeed('Kept a steady sleep schedule all week'),
+    ],
+    goals: ['Sleep 8 hours for a month'],
+  ),
+  _ProjectSeed(
+    'Finish the online course',
+    LifeArea.professional,
+    'school',
+    [
+      _WinSeed('Completed a module I had been postponing'),
+      _WinSeed('Passed the first quiz on the first try'),
+      _WinSeed('Took notes instead of just watching'),
+      _WinSeed('Studied for an hour straight without distractions'),
+    ],
+    goals: ['Get the certificate'],
+  ),
+  _ProjectSeed(
+    'Launch a side project',
+    LifeArea.professional,
+    'emoji_objects',
+    [
+      _WinSeed('Sketched the first idea on paper'),
+      _WinSeed('Bought the domain name'),
+      _WinSeed('Shipped a tiny prototype'),
+      _WinSeed('Showed it to a friend and listened to feedback'),
+    ],
+    goals: ['Get the first paying customer'],
+  ),
+  _ProjectSeed(
+    'Pay off the credit card',
+    LifeArea.financial,
+    'account_balance_wallet',
+    [
+      _WinSeed('Paid more than the minimum'),
+      _WinSeed('Tracked every expense for a week'),
+      _WinSeed('Cancelled a card I did not need'),
+      _WinSeed('Cleared a whole month of the balance'),
+    ],
+  ),
+  _ProjectSeed(
+    'Start investing',
+    LifeArea.financial,
+    'trending_up',
+    [
+      _WinSeed('Opened my first investment account'),
+      _WinSeed('Read a book about index funds'),
+      _WinSeed('Set up an automatic monthly deposit'),
+      _WinSeed('Resisted checking the balance every day'),
+    ],
+    goals: ['Reach an emergency fund of six months'],
+  ),
+  _ProjectSeed('Learn to draw', LifeArea.personal, 'brush', [
+    _WinSeed('Drew every day for a week'),
+    _WinSeed('Finished a portrait I was afraid to start'),
+    _WinSeed('Filled a whole sketchbook page'),
+    _WinSeed('Shared a drawing with a friend'),
+  ]),
+  _ProjectSeed(
+    'Learn the piano',
+    LifeArea.personal,
+    'piano',
+    [
+      _WinSeed('Played a song hands together'),
+      _WinSeed('Practiced scales for twenty minutes'),
+      _WinSeed('Learned the intro of a song I love'),
+      _WinSeed('Played for a friend without apologizing'),
+    ],
+    goals: ['Play a full song from memory'],
+  ),
+  _ProjectSeed('Cook at home', LifeArea.personal, 'restaurant', [
+    _WinSeed('Cooked dinner instead of ordering in'),
+    _WinSeed('Tried a recipe I had never made'),
+    _WinSeed('Prepared lunches for the whole week'),
+    _WinSeed('Cooked for friends and they loved it'),
+  ]),
+  _ProjectSeed(
+    'Travel more',
+    LifeArea.personal,
+    'luggage',
+    [
+      _WinSeed('Booked a weekend trip'),
+      _WinSeed('Explored a city I had never visited'),
+      _WinSeed('Travelled light for the first time'),
+      _WinSeed('Planned the next trip while still on this one'),
+    ],
+    goals: ['Visit three new countries'],
+  ),
+  _ProjectSeed('Date night every week', LifeArea.social, 'favorite', [
+    _WinSeed('Planned a surprise evening'),
+    _WinSeed('Put the phones away during dinner'),
+    _WinSeed('Tried a new restaurant together'),
+    _WinSeed('Danced in the living room'),
+  ]),
+  _ProjectSeed('Call family more', LifeArea.social, 'family_restroom', [
+    _WinSeed('Called my parents just to chat'),
+    _WinSeed('Visited my grandparents for lunch'),
+    _WinSeed('Sent a long message to my sibling'),
+    _WinSeed('Remembered a birthday in time'),
+  ]),
+  _ProjectSeed('Give back to the community', LifeArea.philanthropic, 'redeem', [
+    _WinSeed('Donated clothes I no longer wear'),
+    _WinSeed('Helped at the neighbourhood food bank'),
+    _WinSeed('Taught a free workshop'),
+    _WinSeed('Brought supplies to the local shelter'),
+  ]),
 ];
 
 final _specsIt = [
@@ -973,6 +1163,162 @@ final _specsIt = [
       ),
     ],
   ),
+  _ProjectSeed(
+    'Costruire forza',
+    LifeArea.physical,
+    'fitness_center',
+    [
+      _WinSeed('Ho sollevato più della settimana scorsa'),
+      _WinSeed('Sono andato in palestra in un giorno in cui volevo saltare'),
+      _WinSeed('Ho imparato la tecnica giusta degli squat'),
+      _WinSeed('Ho completato una settimana intera di scheda'),
+    ],
+    goals: ['Fare uno stacco con il mio peso corporeo'],
+  ),
+  _ProjectSeed(
+    'Andare al lavoro in bici',
+    LifeArea.physical,
+    'directions_bike',
+    [
+      _WinSeed('Sono andato al lavoro in bici invece che in auto'),
+      _WinSeed('Ho pedalato sotto la pioggia e mi è piaciuto'),
+      _WinSeed('Ho riparato una foratura da solo'),
+      _WinSeed('Ho pedalato 30 km nel weekend'),
+    ],
+  ),
+  _ProjectSeed('Tenere un diario', LifeArea.psychological, 'edit', [
+    _WinSeed('Ho scritto tre pagine prima di colazione'),
+    _WinSeed(
+      'Ho scritto dopo una giornata dura invece di tenermi tutto dentro',
+    ),
+    _WinSeed('Ho riletto una vecchia pagina e visto quanta strada ho fatto'),
+    _WinSeed('Ho scritto ogni giorno per una settimana'),
+  ]),
+  _ProjectSeed(
+    'Dormire meglio',
+    LifeArea.psychological,
+    'nightlight',
+    [
+      _WinSeed('Sono andato a letto prima di mezzanotte'),
+      _WinSeed('Ho messo via il telefono un\'ora prima di dormire'),
+      _WinSeed('Mi sono svegliato senza rimandare la sveglia'),
+      _WinSeed('Ho mantenuto orari regolari per tutta la settimana'),
+    ],
+    goals: ['Dormire 8 ore per un mese'],
+  ),
+  _ProjectSeed(
+    'Finire il corso online',
+    LifeArea.professional,
+    'school',
+    [
+      _WinSeed('Ho completato un modulo che rimandavo'),
+      _WinSeed('Ho superato il primo quiz al primo tentativo'),
+      _WinSeed('Ho preso appunti invece di guardare e basta'),
+      _WinSeed('Ho studiato un\'ora di fila senza distrazioni'),
+    ],
+    goals: ['Ottenere il certificato'],
+  ),
+  _ProjectSeed(
+    'Lanciare un progetto personale',
+    LifeArea.professional,
+    'emoji_objects',
+    [
+      _WinSeed('Ho abbozzato la prima idea su carta'),
+      _WinSeed('Ho comprato il nome a dominio'),
+      _WinSeed('Ho rilasciato un piccolo prototipo'),
+      _WinSeed('L\'ho mostrato a un amico e ho ascoltato il suo parere'),
+    ],
+    goals: ['Avere il primo cliente pagante'],
+  ),
+  _ProjectSeed(
+    'Estinguere la carta di credito',
+    LifeArea.financial,
+    'account_balance_wallet',
+    [
+      _WinSeed('Ho pagato più del minimo'),
+      _WinSeed('Ho tracciato ogni spesa per una settimana'),
+      _WinSeed('Ho chiuso una carta che non mi serviva'),
+      _WinSeed('Ho azzerato un intero mese di saldo'),
+    ],
+  ),
+  _ProjectSeed(
+    'Iniziare a investire',
+    LifeArea.financial,
+    'trending_up',
+    [
+      _WinSeed('Ho aperto il mio primo conto di investimento'),
+      _WinSeed('Ho letto un libro sui fondi indicizzati'),
+      _WinSeed('Ho impostato un versamento mensile automatico'),
+      _WinSeed('Ho resistito alla voglia di controllare il saldo ogni giorno'),
+    ],
+    goals: ['Costruire un fondo d\'emergenza di sei mesi'],
+  ),
+  _ProjectSeed('Imparare a disegnare', LifeArea.personal, 'brush', [
+    _WinSeed('Ho disegnato ogni giorno per una settimana'),
+    _WinSeed('Ho finito un ritratto che avevo paura di iniziare'),
+    _WinSeed('Ho riempito un\'intera pagina di schizzi'),
+    _WinSeed('Ho mostrato un disegno a un amico'),
+  ]),
+  _ProjectSeed(
+    'Imparare il pianoforte',
+    LifeArea.personal,
+    'piano',
+    [
+      _WinSeed('Ho suonato una canzone a mani unite'),
+      _WinSeed('Ho fatto scale per venti minuti'),
+      _WinSeed('Ho imparato l\'intro di una canzone che amo'),
+      _WinSeed('Ho suonato per un amico senza scusarmi'),
+    ],
+    goals: ['Suonare un brano intero a memoria'],
+  ),
+  _ProjectSeed('Cucinare a casa', LifeArea.personal, 'restaurant', [
+    _WinSeed('Ho cucinato la cena invece di ordinare'),
+    _WinSeed('Ho provato una ricetta mai fatta'),
+    _WinSeed('Ho preparato i pranzi per tutta la settimana'),
+    _WinSeed('Ho cucinato per gli amici e hanno apprezzato'),
+  ]),
+  _ProjectSeed(
+    'Viaggiare di più',
+    LifeArea.personal,
+    'luggage',
+    [
+      _WinSeed('Ho prenotato una gita di un weekend'),
+      _WinSeed('Ho esplorato una città che non avevo mai visto'),
+      _WinSeed('Ho viaggiato leggero per la prima volta'),
+      _WinSeed(
+        'Ho pianificato il prossimo viaggio mentre ero ancora in questo',
+      ),
+    ],
+    goals: ['Visitare tre nuovi paesi'],
+  ),
+  _ProjectSeed('Serata di coppia ogni settimana', LifeArea.social, 'favorite', [
+    _WinSeed('Ho organizzato una serata a sorpresa'),
+    _WinSeed('Abbiamo messo via i telefoni durante la cena'),
+    _WinSeed('Abbiamo provato un nuovo ristorante'),
+    _WinSeed('Abbiamo ballato in salotto'),
+  ]),
+  _ProjectSeed(
+    'Chiamare di più la famiglia',
+    LifeArea.social,
+    'family_restroom',
+    [
+      _WinSeed('Ho chiamato i miei genitori solo per chiacchierare'),
+      _WinSeed('Sono andato a pranzo dai nonni'),
+      _WinSeed('Ho scritto un lungo messaggio a mio fratello'),
+      _WinSeed('Mi sono ricordato di un compleanno in tempo'),
+    ],
+  ),
+  _ProjectSeed(
+    'Restituire qualcosa alla comunità',
+    LifeArea.philanthropic,
+    'redeem',
+    [
+      _WinSeed('Ho donato i vestiti che non uso più'),
+      _WinSeed('Ho dato una mano al banco alimentare del quartiere'),
+      _WinSeed('Ho tenuto un laboratorio gratuito'),
+      _WinSeed('Ho portato provviste al rifugio locale'),
+    ],
+  ),
 ];
 
 final _specsRo = [
@@ -1189,5 +1535,152 @@ final _specsRo = [
     ),
     _WinSeed('Am renunțat la un weekend ca să ajut un vecin să se mute'),
     _WinSeed('Am donat în loc să cumpăr ceva de care nu aveam nevoie'),
+  ]),
+  _ProjectSeed(
+    'Construiesc forță',
+    LifeArea.physical,
+    'fitness_center',
+    [
+      _WinSeed('Am ridicat mai mult decât săptămâna trecută'),
+      _WinSeed('Am mers la sală într-o zi în care voiam să sar peste'),
+      _WinSeed('Am învățat forma corectă pentru genuflexiuni'),
+      _WinSeed('Am terminat o săptămână întreagă de antrenament'),
+    ],
+    goals: ['Ridic greutatea corpului la îndreptări'],
+  ),
+  _ProjectSeed(
+    'Merg cu bicicleta la serviciu',
+    LifeArea.physical,
+    'directions_bike',
+    [
+      _WinSeed('Am mers cu bicicleta la muncă în loc de mașină'),
+      _WinSeed('Am pedalat în ploaie și mi-a plăcut'),
+      _WinSeed('Mi-am reparat singur o pană'),
+      _WinSeed('Am pedalat 30 km în weekend'),
+    ],
+  ),
+  _ProjectSeed('Țin un jurnal', LifeArea.psychological, 'edit', [
+    _WinSeed('Am scris trei pagini înainte de micul dejun'),
+    _WinSeed('Am scris după o zi grea în loc să țin totul în mine'),
+    _WinSeed('Am recitit o pagină veche și am văzut cât am progresat'),
+    _WinSeed('Am scris în fiecare zi timp de o săptămână'),
+  ]),
+  _ProjectSeed(
+    'Dorm mai bine',
+    LifeArea.psychological,
+    'nightlight',
+    [
+      _WinSeed('M-am culcat înainte de miezul nopții'),
+      _WinSeed('Am lăsat telefonul deoparte cu o oră înainte de somn'),
+      _WinSeed('M-am trezit fără să amân alarma'),
+      _WinSeed('Am ținut un program de somn constant toată săptămâna'),
+    ],
+    goals: ['Dorm 8 ore timp de o lună'],
+  ),
+  _ProjectSeed(
+    'Termin cursul online',
+    LifeArea.professional,
+    'school',
+    [
+      _WinSeed('Am terminat un modul pe care îl amânam'),
+      _WinSeed('Am trecut primul test din prima încercare'),
+      _WinSeed('Am luat notițe în loc să mă uit doar'),
+      _WinSeed('Am studiat o oră fără pauze sau distrageri'),
+    ],
+    goals: ['Obțin certificatul'],
+  ),
+  _ProjectSeed(
+    'Lansez un proiect personal',
+    LifeArea.professional,
+    'emoji_objects',
+    [
+      _WinSeed('Am schițat prima idee pe hârtie'),
+      _WinSeed('Am cumpărat numele de domeniu'),
+      _WinSeed('Am lansat un mic prototip'),
+      _WinSeed('L-am arătat unui prieten și i-am ascultat părerea'),
+    ],
+    goals: ['Primul client plătitor'],
+  ),
+  _ProjectSeed(
+    'Achit cardul de credit',
+    LifeArea.financial,
+    'account_balance_wallet',
+    [
+      _WinSeed('Am plătit mai mult decât minimul'),
+      _WinSeed('Mi-am notat fiecare cheltuială timp de o săptămână'),
+      _WinSeed('Am închis un card de care nu aveam nevoie'),
+      _WinSeed('Am șters soldul unei luni întregi'),
+    ],
+  ),
+  _ProjectSeed(
+    'Încep să investesc',
+    LifeArea.financial,
+    'trending_up',
+    [
+      _WinSeed('Mi-am deschis primul cont de investiții'),
+      _WinSeed('Am citit o carte despre fonduri index'),
+      _WinSeed('Am setat o depunere lunară automată'),
+      _WinSeed('Am rezistat tentației de a verifica soldul în fiecare zi'),
+    ],
+    goals: ['Fond de urgență pentru șase luni'],
+  ),
+  _ProjectSeed('Învăț să desenez', LifeArea.personal, 'brush', [
+    _WinSeed('Am desenat în fiecare zi timp de o săptămână'),
+    _WinSeed('Am terminat un portret de care mi-era teamă'),
+    _WinSeed('Am umplut o pagină întreagă de schițe'),
+    _WinSeed('I-am arătat un desen unui prieten'),
+  ]),
+  _ProjectSeed(
+    'Învăț pianul',
+    LifeArea.personal,
+    'piano',
+    [
+      _WinSeed('Am cântat o melodie cu ambele mâini'),
+      _WinSeed('Am exersat game timp de douăzeci de minute'),
+      _WinSeed('Am învățat introducerea unei melodii pe care o ador'),
+      _WinSeed('Am cântat pentru un prieten fără să-mi cer scuze'),
+    ],
+    goals: ['Cânt o piesă întreagă din memorie'],
+  ),
+  _ProjectSeed('Gătesc acasă', LifeArea.personal, 'restaurant', [
+    _WinSeed('Am gătit cina în loc să comand'),
+    _WinSeed('Am încercat o rețetă pe care nu o făcusem niciodată'),
+    _WinSeed('Am pregătit prânzurile pentru toată săptămâna'),
+    _WinSeed('Am gătit pentru prieteni și le-a plăcut'),
+  ]),
+  _ProjectSeed(
+    'Călătoresc mai mult',
+    LifeArea.personal,
+    'luggage',
+    [
+      _WinSeed('Am rezervat o escapadă de weekend'),
+      _WinSeed('Am explorat un oraș în care nu fusesem niciodată'),
+      _WinSeed('Am călătorit ușor pentru prima dată'),
+      _WinSeed('Am planificat următoarea călătorie încă fiind în aceasta'),
+    ],
+    goals: ['Vizitez trei țări noi'],
+  ),
+  _ProjectSeed(
+    'Seară în doi în fiecare săptămână',
+    LifeArea.social,
+    'favorite',
+    [
+      _WinSeed('Am organizat o seară-surpriză'),
+      _WinSeed('Am lăsat telefoanele deoparte la cină'),
+      _WinSeed('Am încercat un restaurant nou împreună'),
+      _WinSeed('Am dansat în sufragerie'),
+    ],
+  ),
+  _ProjectSeed('Sun mai des familia', LifeArea.social, 'family_restroom', [
+    _WinSeed('Mi-am sunat părinții doar ca să vorbim'),
+    _WinSeed('Am luat prânzul la bunici'),
+    _WinSeed('I-am scris un mesaj lung fratelui meu'),
+    _WinSeed('Mi-am amintit la timp de o zi de naștere'),
+  ]),
+  _ProjectSeed('Dau înapoi comunității', LifeArea.philanthropic, 'redeem', [
+    _WinSeed('Am donat hainele pe care nu le mai port'),
+    _WinSeed('Am ajutat la banca de alimente din cartier'),
+    _WinSeed('Am ținut un atelier gratuit'),
+    _WinSeed('Am dus provizii la adăpostul local'),
   ]),
 ];

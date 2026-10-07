@@ -10,6 +10,89 @@ enum MoonExpression { neutral, happy, sleepy, curious, concerned, surprised }
 /// Short, app-triggered motions that return Moon to her current expression.
 enum MoonReaction { acknowledge, celebrate }
 
+/// Color treatments for the same Moon design and motion system.
+enum MoonPalette { original, app, gold }
+
+/// Optional layer controls used by the Moon visual lab.
+@immutable
+class MoonAppearance {
+  const MoonAppearance({
+    this.showEyeStars = true,
+    this.showEyeAccent = true,
+    this.showOuterGlow = true,
+    this.showBlush = true,
+    this.showMouth = true,
+    this.showBrows = true,
+    this.showForeheadShine = true,
+    this.showRim = true,
+    this.useBodyGradient = true,
+    this.bodyHue = 211,
+    this.rimHue = 198,
+    this.glowHue = 194,
+    this.faceHue = 224,
+    this.starHue = 194,
+    this.eyeAccentHue = 192,
+    this.blushHue = 252,
+    this.shineHue = 190,
+  });
+
+  final bool showEyeStars;
+  final bool showEyeAccent;
+  final bool showOuterGlow;
+  final bool showBlush;
+  final bool showMouth;
+  final bool showBrows;
+  final bool showForeheadShine;
+  final bool showRim;
+  final bool useBodyGradient;
+  final double bodyHue;
+  final double rimHue;
+  final double glowHue;
+  final double faceHue;
+  final double starHue;
+  final double eyeAccentHue;
+  final double blushHue;
+  final double shineHue;
+
+  MoonAppearance copyWith({
+    bool? showEyeStars,
+    bool? showEyeAccent,
+    bool? showOuterGlow,
+    bool? showBlush,
+    bool? showMouth,
+    bool? showBrows,
+    bool? showForeheadShine,
+    bool? showRim,
+    bool? useBodyGradient,
+    double? bodyHue,
+    double? rimHue,
+    double? glowHue,
+    double? faceHue,
+    double? starHue,
+    double? eyeAccentHue,
+    double? blushHue,
+    double? shineHue,
+  }) => MoonAppearance(
+    showEyeStars: showEyeStars ?? this.showEyeStars,
+    showEyeAccent: showEyeAccent ?? this.showEyeAccent,
+    showOuterGlow: showOuterGlow ?? this.showOuterGlow,
+    showBlush: showBlush ?? this.showBlush,
+    showMouth: showMouth ?? this.showMouth,
+    showBrows: showBrows ?? this.showBrows,
+    showForeheadShine: showForeheadShine ?? this.showForeheadShine,
+    showRim: showRim ?? this.showRim,
+    useBodyGradient: useBodyGradient ?? this.useBodyGradient,
+    bodyHue: bodyHue ?? this.bodyHue,
+    rimHue: rimHue ?? this.rimHue,
+    glowHue: glowHue ?? this.glowHue,
+    faceHue: faceHue ?? this.faceHue,
+    starHue: starHue ?? this.starHue,
+    eyeAccentHue: eyeAccentHue ?? this.eyeAccentHue,
+    blushHue: blushHue ?? this.blushHue,
+    shineHue: shineHue ?? this.shineHue,
+  );
+}
+
 /// Imperative access to the one-shot reactions of a mounted [MoonMascot].
 class MoonMascotController {
   _MoonMascotState? _state;
@@ -41,6 +124,8 @@ class MoonMascot extends StatefulWidget {
     this.size = 180,
     this.animate = true,
     this.controller,
+    this.palette = MoonPalette.original,
+    this.appearance,
     this.semanticLabel = 'Moon',
   }) : assert(size > 0);
 
@@ -48,6 +133,8 @@ class MoonMascot extends StatefulWidget {
   final double size;
   final bool animate;
   final MoonMascotController? controller;
+  final MoonPalette palette;
+  final MoonAppearance? appearance;
   final String semanticLabel;
 
   @override
@@ -58,7 +145,9 @@ enum _MicroBehavior { glance, contented }
 
 class _MoonMascotState extends State<MoonMascot>
     with TickerProviderStateMixin, WidgetsBindingObserver {
-  static const _bodyAsset = 'assets/mascots/moon_body.svg';
+  static const _originalBodyAsset = 'assets/mascots/moon_body.svg';
+  static const _appBodyAsset = 'assets/mascots/moon_body_app.svg';
+  static const _goldBodyAsset = 'assets/mascots/moon_body_gold.svg';
 
   late final AnimationController _blinkController;
   late final AnimationController _idleController;
@@ -386,6 +475,13 @@ class _MoonMascotState extends State<MoonMascot>
                         (_motionActive ? math.sin(idlePhase) * 0.035 : 0) +
                         glowBoost)
                     .clamp(0.0, 1.0);
+            final glowColor = widget.appearance != null
+                ? _withHue(const Color(0xFF55D9FF), widget.appearance!.glowHue)
+                : switch (widget.palette) {
+                    MoonPalette.original => const Color(0xFF55D9FF),
+                    MoonPalette.app ||
+                    MoonPalette.gold => const Color(0xFFF2B84B),
+                  };
             return Transform.translate(
               offset: Offset(0, idleBob + reactionY),
               child: Transform.rotate(
@@ -397,23 +493,37 @@ class _MoonMascotState extends State<MoonMascot>
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF55D9FF)
-                                .withValues(alpha: glow),
-                            blurRadius: widget.size * 0.105,
-                            spreadRadius: widget.size * 0.012,
-                          ),
-                        ],
+                        boxShadow: widget.appearance?.showOuterGlow ?? true
+                            ? [
+                                BoxShadow(
+                                  color: glowColor.withValues(
+                                    alpha:
+                                        widget.appearance == null &&
+                                            widget.palette == MoonPalette.app
+                                        ? glow * 0.56
+                                        : glow,
+                                  ),
+                                  blurRadius: widget.size * 0.105,
+                                  spreadRadius: widget.size * 0.012,
+                                ),
+                              ]
+                            : const [],
                       ),
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
-                          SvgPicture.asset(
-                            _bodyAsset,
-                            fit: BoxFit.contain,
-                            excludeFromSemantics: true,
-                          ),
+                          if (widget.appearance case final appearance?)
+                            CustomPaint(painter: _MoonBodyPainter(appearance))
+                          else
+                            SvgPicture.asset(
+                              switch (widget.palette) {
+                                MoonPalette.original => _originalBodyAsset,
+                                MoonPalette.app => _appBodyAsset,
+                                MoonPalette.gold => _goldBodyAsset,
+                              },
+                              fit: BoxFit.contain,
+                              excludeFromSemantics: true,
+                            ),
                           CustomPaint(
                             painter: _MoonFacePainter(
                               pose: _currentPose,
@@ -422,6 +532,8 @@ class _MoonMascotState extends State<MoonMascot>
                               ambientEyeOffset: eyeOffset,
                               smileBoost: contentedSmileBoost,
                               celebrationProgress: celebrationProgress,
+                              palette: widget.palette,
+                              appearance: widget.appearance,
                             ),
                           ),
                         ],
@@ -577,6 +689,99 @@ class _FacePose {
   static double _lerp(double a, double b, double t) => a + (b - a) * t;
 }
 
+Color _withHue(Color color, double hue) =>
+    HSLColor.fromColor(color).withHue(hue.clamp(0.0, 360.0)).toColor();
+
+class _MoonBodyPainter extends CustomPainter {
+  const _MoonBodyPainter(this.appearance);
+
+  final MoonAppearance appearance;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final scale = math.min(size.width, size.height) / 1024;
+    canvas.save();
+    canvas.scale(scale, scale);
+
+    if (appearance.showRim) {
+      final rimRect = const Rect.fromLTWH(88, 88, 848, 848);
+      canvas.drawCircle(
+        const Offset(512, 512),
+        424,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              _withHue(const Color(0xFFC9FAFF), appearance.rimHue),
+              _withHue(const Color(0xFF51CFFF), appearance.rimHue),
+              _withHue(const Color(0xFF386FE2), appearance.rimHue),
+              _withHue(const Color(0xFF162F73), appearance.rimHue),
+            ],
+            stops: const [0, 0.38, 0.75, 1],
+          ).createShader(rimRect),
+      );
+    }
+
+    final bodyRect = const Rect.fromLTWH(101, 101, 822, 822);
+    final bodyPaint = Paint();
+    if (appearance.useBodyGradient) {
+      bodyPaint.shader = RadialGradient(
+        center: const Alignment(-0.06, -0.22),
+        radius: 0.72,
+        colors: [
+          _withHue(const Color(0xFFE9FEFF), appearance.bodyHue),
+          _withHue(const Color(0xFF9DEEFF), appearance.bodyHue),
+          _withHue(const Color(0xFF4B9EF4), appearance.bodyHue),
+          _withHue(const Color(0xFF2860CF), appearance.bodyHue),
+          _withHue(const Color(0xFF173982), appearance.bodyHue),
+        ],
+        stops: const [0, 0.30, 0.62, 0.84, 1],
+      ).createShader(bodyRect);
+    } else {
+      bodyPaint.color = _withHue(const Color(0xFF4B9EF4), appearance.bodyHue);
+    }
+    canvas.drawCircle(const Offset(512, 512), 411, bodyPaint);
+
+    if (appearance.showForeheadShine) {
+      const center = Offset(649, 231);
+      canvas.save();
+      canvas.translate(center.dx, center.dy);
+      canvas.rotate(19 * math.pi / 180);
+      canvas.translate(-center.dx, -center.dy);
+      final shineRect = Rect.fromCenter(
+        center: center,
+        width: 302,
+        height: 150,
+      );
+      canvas.drawOval(
+        shineRect,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              _withHue(
+                const Color(0xFFFFFFFF),
+                appearance.shineHue,
+              ).withValues(alpha: 0.78),
+              _withHue(
+                const Color(0xFFC4F9FF),
+                appearance.shineHue,
+              ).withValues(alpha: 0),
+            ],
+          ).createShader(shineRect),
+      );
+      canvas.restore();
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _MoonBodyPainter oldDelegate) =>
+      oldDelegate.appearance != appearance;
+}
+
 class _MoonFacePainter extends CustomPainter {
   const _MoonFacePainter({
     required this.pose,
@@ -584,6 +789,8 @@ class _MoonFacePainter extends CustomPainter {
     required this.ambientEyeOffset,
     required this.smileBoost,
     required this.celebrationProgress,
+    required this.palette,
+    required this.appearance,
   });
 
   final _FacePose pose;
@@ -591,41 +798,76 @@ class _MoonFacePainter extends CustomPainter {
   final double ambientEyeOffset;
   final double smileBoost;
   final double celebrationProgress;
+  final MoonPalette palette;
+  final MoonAppearance? appearance;
 
-  static const _navy = Color(0xFF173477);
-  static const _eyeDark = Color(0xFF07194E);
-  static const _eyeLight = Color(0xFF253F92);
+  Color get _lineColor => appearance != null
+      ? _withHue(const Color(0xFF173477), appearance!.faceHue)
+      : palette == MoonPalette.app
+      ? const Color(0xFF0D1220)
+      : const Color(0xFF173477);
+  Color get _eyeDark => appearance != null
+      ? _withHue(const Color(0xFF07194E), appearance!.faceHue)
+      : palette == MoonPalette.app
+      ? const Color(0xFF0D1220)
+      : const Color(0xFF07194E);
+  Color get _eyeLight => appearance != null
+      ? _withHue(const Color(0xFF253F92), appearance!.faceHue)
+      : palette == MoonPalette.app
+      ? const Color(0xFF232C44)
+      : const Color(0xFF253F92);
+  Color get _eyeAccent => appearance != null
+      ? _withHue(const Color(0xFF28CFFF), appearance!.eyeAccentHue)
+      : palette == MoonPalette.app
+      ? const Color(0xFF6E8CD8)
+      : const Color(0xFF28CFFF);
+  Color get _starColor => appearance != null
+      ? _withHue(const Color(0xFFE9FEFF), appearance!.starHue)
+      : palette == MoonPalette.app
+      ? const Color(0xFFF2B84B)
+      : Colors.white;
+  Color get _blushColor => appearance != null
+      ? _withHue(const Color(0xFF9C87F4), appearance!.blushHue)
+      : palette == MoonPalette.app
+      ? const Color(0xFFF2B84B)
+      : const Color(0xFF9C87F4);
 
   @override
   void paint(Canvas canvas, Size size) {
     final scale = math.min(size.width, size.height) / 1024;
     canvas.save();
     canvas.scale(scale, scale);
-    _paintBlush(canvas);
-    _paintBrows(canvas);
+    if (appearance?.showBlush ?? true) _paintBlush(canvas);
+    if (appearance?.showBrows ?? true) _paintBrows(canvas);
     _paintEye(canvas, const Offset(382, 514));
     _paintEye(canvas, const Offset(642, 514));
-    _paintMouth(canvas);
+    if (appearance?.showMouth ?? true) _paintMouth(canvas);
     _paintCelebration(canvas);
     canvas.restore();
   }
 
   void _paintBlush(Canvas canvas) {
     final paint = Paint()
-      ..shader = const RadialGradient(
-        colors: [Color(0xFF9C87F4), Color(0x009C87F4)],
+      ..shader = RadialGradient(
+        colors: [
+          _blushColor.withValues(alpha: pose.blushOpacity),
+          _blushColor.withValues(alpha: 0),
+        ],
       ).createShader(const Rect.fromLTWH(251, 548, 164, 106))
-      ..color = Colors.white.withValues(alpha: pose.blushOpacity);
+      ..color = Colors.white;
     canvas.drawOval(const Rect.fromLTWH(251, 548, 164, 106), paint);
-    paint.shader = const RadialGradient(
-      colors: [Color(0xFF9C87F4), Color(0x009C87F4)],
+    paint.shader = RadialGradient(
+      colors: [
+        _blushColor.withValues(alpha: pose.blushOpacity),
+        _blushColor.withValues(alpha: 0),
+      ],
     ).createShader(const Rect.fromLTWH(609, 548, 164, 106));
     canvas.drawOval(const Rect.fromLTWH(609, 548, 164, 106), paint);
   }
 
   void _paintBrows(Canvas canvas) {
     final paint = Paint()
-      ..color = _navy
+      ..color = _lineColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 20
       ..strokeCap = StrokeCap.round;
@@ -665,7 +907,7 @@ class _MoonFacePainter extends CustomPainter {
       canvas.drawPath(
         lid,
         Paint()
-          ..color = _navy
+          ..color = _lineColor
           ..style = PaintingStyle.stroke
           ..strokeWidth = 17
           ..strokeCap = StrokeCap.round,
@@ -679,7 +921,7 @@ class _MoonFacePainter extends CustomPainter {
       height: 144 * openness,
     );
     final eyePaint = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [_eyeLight, _eyeDark],
@@ -687,20 +929,22 @@ class _MoonFacePainter extends CustomPainter {
     canvas.drawOval(eyeRect, eyePaint);
     final detailOpacity = ((openness - 0.20) / 0.80).clamp(0.0, 1.0);
     if (detailOpacity <= 0) return;
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(center.dx - 15, center.dy + 45 * openness),
-        width: 28,
-        height: 18 * math.min(openness, 1),
-      ),
-      Paint()
-        ..color = const Color(0xFF28CFFF)
-            .withValues(alpha: 0.88 * detailOpacity),
-    );
-    canvas.drawPath(
-      _starPath(Offset(center.dx, center.dy - 30 * openness), 30, 10),
-      Paint()..color = Colors.white.withValues(alpha: detailOpacity),
-    );
+    if (appearance?.showEyeAccent ?? true) {
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset(center.dx - 15, center.dy + 45 * openness),
+          width: 28,
+          height: 18 * math.min(openness, 1),
+        ),
+        Paint()..color = _eyeAccent.withValues(alpha: 0.88 * detailOpacity),
+      );
+    }
+    if (appearance?.showEyeStars ?? true) {
+      canvas.drawPath(
+        _starPath(Offset(center.dx, center.dy - 30 * openness), 30, 10),
+        Paint()..color = _starColor.withValues(alpha: detailOpacity),
+      );
+    }
   }
 
   void _paintMouth(Canvas canvas) {
@@ -719,7 +963,7 @@ class _MoonFacePainter extends CustomPainter {
       canvas.drawPath(
         path,
         Paint()
-          ..color = _navy.withValues(alpha: curveOpacity)
+          ..color = _lineColor.withValues(alpha: curveOpacity)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 19
           ..strokeCap = StrokeCap.round,
@@ -732,18 +976,22 @@ class _MoonFacePainter extends CustomPainter {
           width: 45 + pose.mouthWidth * 0.18,
           height: 54,
         ),
-        Paint()..color = _navy.withValues(alpha: mouthOpen),
+        Paint()..color = _lineColor.withValues(alpha: mouthOpen),
       );
     }
   }
 
   void _paintCelebration(Canvas canvas) {
-    if (celebrationProgress <= 0 || celebrationProgress >= 1) return;
+    if (!(appearance?.showEyeStars ?? true) ||
+        celebrationProgress <= 0 ||
+        celebrationProgress >= 1) {
+      return;
+    }
     final envelope = math.sin(celebrationProgress * math.pi);
     final pulse =
         0.72 + 0.28 * math.sin(celebrationProgress * math.pi * 4).abs();
     final paint = Paint()
-      ..color = Colors.white.withValues(alpha: envelope * 0.90);
+      ..color = _starColor.withValues(alpha: envelope * 0.90);
     canvas.save();
     canvas.translate(177, 310);
     canvas.scale(envelope * pulse);
@@ -798,5 +1046,7 @@ class _MoonFacePainter extends CustomPainter {
       oldDelegate.blinkOpenness != blinkOpenness ||
       oldDelegate.ambientEyeOffset != ambientEyeOffset ||
       oldDelegate.smileBoost != smileBoost ||
-      oldDelegate.celebrationProgress != celebrationProgress;
+      oldDelegate.celebrationProgress != celebrationProgress ||
+      oldDelegate.palette != palette ||
+      oldDelegate.appearance != appearance;
 }

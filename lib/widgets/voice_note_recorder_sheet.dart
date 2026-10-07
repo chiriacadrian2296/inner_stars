@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:record/record.dart';
 
 import '../data/star_media_storage.dart';
@@ -65,6 +67,7 @@ class _VoiceNoteRecorderSheetState extends State<_VoiceNoteRecorderSheet> {
     final path = _tempPath;
     _tempPath = null;
     if (path == null) return;
+    if (kIsWeb) return;
     unawaited(File(path).delete().then((_) {}, onError: (_) {}));
   }
 
@@ -79,9 +82,9 @@ class _VoiceNoteRecorderSheetState extends State<_VoiceNoteRecorderSheet> {
         return;
       }
       _discardTemp();
-      final path = await StarMediaStorage.newRecordingPath();
+      final path = kIsWeb ? '' : await StarMediaStorage.newRecordingPath();
       await _recorder.start(const RecordConfig(), path: path);
-      _tempPath = path;
+      if (!kIsWeb) _tempPath = path;
       if (!mounted) return;
       setState(() {
         _phase = _Phase.recording;
@@ -104,7 +107,8 @@ class _VoiceNoteRecorderSheetState extends State<_VoiceNoteRecorderSheet> {
   Future<void> _stop() async {
     _ticker?.cancel();
     try {
-      await _recorder.stop();
+      final result = await _recorder.stop();
+      if (result != null) _tempPath = result;
     } catch (_) {
       if (mounted) setState(() => _failed = true);
     }
@@ -116,7 +120,9 @@ class _VoiceNoteRecorderSheetState extends State<_VoiceNoteRecorderSheet> {
     final temp = _tempPath;
     if (temp == null) return;
     try {
-      final stored = await StarMediaStorage.saveRecording(temp);
+      final stored = kIsWeb
+          ? await StarMediaStorage.save(XFile(temp), fallbackExtension: 'webm')
+          : await StarMediaStorage.saveRecording(temp);
       _tempPath = null;
       if (!mounted) return;
       Navigator.of(context)

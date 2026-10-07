@@ -121,6 +121,25 @@ void main() {
       tester.element(find.byKey(const ValueKey('moon-expression-curious'))),
     ).extension<AppColors>()!;
     expect(curiousChip.selectedColor, colors.gold);
+    expect(find.byKey(const Key('moon-appearance-editor')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('moon-layer-mouth')));
+    await tester.pump();
+    expect(
+      tester
+          .widget<FilterChip>(find.byKey(const ValueKey('moon-layer-mouth')))
+          .selected,
+      isFalse,
+    );
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('moon-hue-body')),
+      180,
+      scrollable: verticalScroll(),
+    );
+    await tester.drag(
+      find.byKey(const ValueKey('moon-hue-body')),
+      const Offset(80, 0),
+    );
+    await tester.pump();
     expect(find.byKey(const ValueKey('moon-56')), findsOneWidget);
     expect(find.byKey(const ValueKey('moon-112')), findsOneWidget);
     expect(find.byKey(const ValueKey('moon-220')), findsOneWidget);

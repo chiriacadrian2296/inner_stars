@@ -18,10 +18,12 @@ import '../theme/life_area_theme.dart';
 import '../tutorials/tour_step_card.dart';
 import '../utils/area_hero_art.dart';
 import '../utils/area_hero_art_tone.dart';
+import '../widgets/balanced_title.dart';
 import '../widgets/area_section_header.dart';
 import '../widgets/moodboard_grid.dart';
 import '../widgets/logo_watermark.dart';
 import '../widgets/reflection_questions_section.dart';
+import '../utils/responsive.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
 import '../widgets/vision_markdown.dart';
@@ -469,54 +471,60 @@ class _AreaNavigationBar extends StatelessWidget {
     elevation: 20,
     shadowColor: Colors.black,
     surfaceTintColor: Colors.transparent,
-    child: SizedBox(
-      height: 64,
-      child: Row(
-        children: [
-          StaggeredEntrance(
-            replayKey: replayKey,
-            index: 0,
-            axis: Axis.horizontal,
-            reverse: reverse,
-            enabled: animate,
-            child: IconButton(
-              onPressed: onPrevious,
-              icon: const Icon(Icons.chevron_left, color: Colors.white),
-            ),
-          ),
-          Expanded(
-            child: StaggeredEntrance(
-              replayKey: replayKey,
-              index: 1,
-              axis: Axis.horizontal,
-              reverse: reverse,
-              enabled: animate,
-              child: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontFamily: kFontStarTitle,
-                  fontSize: 32,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
+    child: Padding(
+      // Same insets as the Star Reader's header, so the arrows and title sit
+      // in the same place in every "Vedi".
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      child: ResponsiveContent(
+        maxWidth: readerFrameWidth(context) ?? kResponsiveContentMaxWidth,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 64),
+          child: Row(
+            children: [
+              StaggeredEntrance(
+                replayKey: replayKey,
+                index: 0,
+                axis: Axis.horizontal,
+                reverse: reverse,
+                enabled: animate,
+                child: IconButton(
+                  onPressed: onPrevious,
+                  icon: const Icon(Icons.chevron_left, color: Colors.white),
                 ),
               ),
-            ),
+              Expanded(
+                child: StaggeredEntrance(
+                  replayKey: replayKey,
+                  index: 1,
+                  axis: Axis.horizontal,
+                  reverse: reverse,
+                  enabled: animate,
+                  child: BalancedTitle(
+                    title: title,
+                    style: const TextStyle(
+                      fontFamily: kFontStarTitle,
+                      fontSize: 24,
+                      height: 1.25,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              StaggeredEntrance(
+                replayKey: replayKey,
+                index: 2,
+                axis: Axis.horizontal,
+                reverse: reverse,
+                enabled: animate,
+                child: IconButton(
+                  onPressed: onNext,
+                  icon: const Icon(Icons.chevron_right, color: Colors.white),
+                ),
+              ),
+            ],
           ),
-          StaggeredEntrance(
-            replayKey: replayKey,
-            index: 2,
-            axis: Axis.horizontal,
-            reverse: reverse,
-            enabled: animate,
-            child: IconButton(
-              onPressed: onNext,
-              icon: const Icon(Icons.chevron_right, color: Colors.white),
-            ),
-          ),
-        ],
+        ),
       ),
     ),
   );

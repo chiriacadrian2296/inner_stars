@@ -44,6 +44,20 @@ void main() {
     expect(Star.fromJson(json).media, isEmpty);
   });
 
+  test(
+    'an extra of an unknown kind is dropped instead of failing the load',
+    () {
+      final json = _star(media: [voice]).toJson();
+      (json['media'] as List).add({
+        'id': 'x',
+        'kind': 'hologram',
+        'createdAt': DateTime(2024).toIso8601String(),
+      });
+
+      expect(Star.fromJson(json).media, [voice]);
+    },
+  );
+
   test('copyWith can replace and clear media', () {
     final star = _star(media: [voice]);
 

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="night" cx="42%" cy="34%" r="70%">
+      <stop stop-color="#426EAA"/>
+      <stop offset=".42" stop-color="#203E77"/>
+      <stop offset="1" stop-color="#090F2B"/>
+    </radialGradient>
+    <linearGradient id="crescent" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#93E8F5" stop-opacity=".65"/>
+      <stop offset="1" stop-color="#3C79BE" stop-opacity=".08"/>
+    </linearGradient>
+  </defs>
+  <circle cx="512" cy="512" r="424" fill="#111D45" stroke="#4A83B8" stroke-width="8"/>
+  <circle cx="512" cy="512" r="406" fill="url(#night)"/>
+  <path d="M664 145C443 159 273 336 273 551C273 725 381 848 526 900C312 891 139 716 139 501C139 287 313 112 528 100C575 98 621 114 664 145Z" fill="url(#crescent)"/>
+  <path d="M364 493Q382 476 400 493Q382 510 364 493Z" fill="#D7F9FF"/>
+  <path d="M624 493Q642 476 660 493Q642 510 624 493Z" fill="#D7F9FF"/>
+  <path d="M382 468L387 488L407 493L387 498L382 518L377 498L357 493L377 488Z" fill="#FFFFFF"/>
+  <path d="M642 468L647 488L667 493L647 498L642 518L637 498L617 493L637 488Z" fill="#FFFFFF"/>
+  <path d="M474 619Q512 633 550 619" fill="none" stroke="#91DCE9" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="746" cy="310" r="7" fill="#E9C86B"/>
+  <path d="M789 373L794 391L812 396L794 401L789 419L784 401L766 396L784 391Z" fill="#E9C86B"/>
+</svg>

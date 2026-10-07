@@ -32,6 +32,7 @@ class _UiSandboxScreenState extends State<UiSandboxScreen> {
   bool _selected = false;
   bool _loading = false;
   bool _moonAnimated = true;
+  MoonAppearance _moonAppearance = const MoonAppearance();
   MoonExpression _moonExpression = MoonExpression.neutral;
   final _moonController = MoonMascotController();
   final _emptyController = TextEditingController();
@@ -65,7 +66,7 @@ class _UiSandboxScreenState extends State<UiSandboxScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Moon motion lab'),
+        title: const Text('Moon visual lab'),
         backgroundColor: colors.night,
         surfaceTintColor: Colors.transparent,
         actions: [
@@ -84,18 +85,21 @@ class _UiSandboxScreenState extends State<UiSandboxScreen> {
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
             children: [
               Text(
-                'A focused playground for Moon expressions, reactions, and ambient motion.',
+                'Live controls for exploring Moon layers and color without changing her motion system.',
                 style: TextStyle(color: colors.muted, height: 1.45),
               ),
               const SizedBox(height: 18),
               _MoonMascotPreview(
                 expression: _moonExpression,
                 animate: _moonAnimated,
+                appearance: _moonAppearance,
                 controller: _moonController,
                 onExpressionChanged: (value) =>
                     setState(() => _moonExpression = value),
                 onAnimateChanged: (value) =>
                     setState(() => _moonAnimated = value),
+                onAppearanceChanged: (value) =>
+                    setState(() => _moonAppearance = value),
               ),
             ],
           ),
@@ -434,16 +438,20 @@ class _MoonMascotPreview extends StatelessWidget {
   const _MoonMascotPreview({
     required this.expression,
     required this.animate,
+    required this.appearance,
     required this.controller,
     required this.onExpressionChanged,
     required this.onAnimateChanged,
+    required this.onAppearanceChanged,
   });
 
   final MoonExpression expression;
   final bool animate;
+  final MoonAppearance appearance;
   final MoonMascotController controller;
   final ValueChanged<MoonExpression> onExpressionChanged;
   final ValueChanged<bool> onAnimateChanged;
+  final ValueChanged<MoonAppearance> onAppearanceChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -483,6 +491,39 @@ class _MoonMascotPreview extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
+          Center(
+            child: Wrap(
+              spacing: 24,
+              runSpacing: 20,
+              crossAxisAlignment: WrapCrossAlignment.end,
+              alignment: WrapAlignment.center,
+              children: [
+                _MoonSizeSample(
+                  label: 'Icon · 56',
+                  size: 56,
+                  expression: expression,
+                  animate: animate,
+                  appearance: appearance,
+                ),
+                _MoonSizeSample(
+                  label: 'Card · 112',
+                  size: 112,
+                  expression: expression,
+                  animate: animate,
+                  appearance: appearance,
+                ),
+                _MoonSizeSample(
+                  label: 'Hero · 220',
+                  size: 220,
+                  expression: expression,
+                  animate: animate,
+                  appearance: appearance,
+                  controller: controller,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
           Material(
             color: Colors.transparent,
             child: SwitchListTile.adaptive(
@@ -521,35 +562,10 @@ class _MoonMascotPreview extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Center(
-            child: Wrap(
-              spacing: 24,
-              runSpacing: 20,
-              crossAxisAlignment: WrapCrossAlignment.end,
-              alignment: WrapAlignment.center,
-              children: [
-                _MoonSizeSample(
-                  label: 'Icon · 56',
-                  size: 56,
-                  expression: expression,
-                  animate: animate,
-                ),
-                _MoonSizeSample(
-                  label: 'Card · 112',
-                  size: 112,
-                  expression: expression,
-                  animate: animate,
-                ),
-                _MoonSizeSample(
-                  label: 'Hero · 220',
-                  size: 220,
-                  expression: expression,
-                  animate: animate,
-                  controller: controller,
-                ),
-              ],
-            ),
+          const SizedBox(height: 16),
+          _MoonAppearanceEditor(
+            appearance: appearance,
+            onChanged: onAppearanceChanged,
           ),
         ],
       ),
@@ -566,12 +582,296 @@ class _MoonMascotPreview extends StatelessWidget {
   };
 }
 
+class _MoonAppearanceEditor extends StatelessWidget {
+  const _MoonAppearanceEditor({
+    required this.appearance,
+    required this.onChanged,
+  });
+
+  final MoonAppearance appearance;
+  final ValueChanged<MoonAppearance> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Container(
+      key: const Key('moon-appearance-editor'),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colors.night.withValues(alpha: 0.42),
+        border: Border.all(color: colors.nightBorder),
+        borderRadius: BorderRadius.circular(kRadiusField),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Visual layers',
+                  style: TextStyle(
+                    color: colors.text,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                key: const Key('moon-appearance-reset'),
+                onPressed: () => onChanged(const MoonAppearance()),
+                icon: const Icon(Icons.restart_alt_rounded, size: 18),
+                label: const Text('RESET'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            key: const Key('moon-layer-toggles'),
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MoonLayerToggle(
+                id: 'stars',
+                label: 'Stars',
+                value: appearance.showEyeStars,
+                onChanged: (value) =>
+                    onChanged(appearance.copyWith(showEyeStars: value)),
+              ),
+              _MoonLayerToggle(
+                id: 'eye-accent',
+                label: 'Eye accent',
+                value: appearance.showEyeAccent,
+                onChanged: (value) =>
+                    onChanged(appearance.copyWith(showEyeAccent: value)),
+              ),
+              _MoonLayerToggle(
+                id: 'outer-glow',
+                label: 'Outer glow',
+                value: appearance.showOuterGlow,
+                onChanged: (value) =>
+                    onChanged(appearance.copyWith(showOuterGlow: value)),
+              ),
+              _MoonLayerToggle(
+                id: 'blush',
+                label: 'Blush',
+                value: appearance.showBlush,
+                onChanged: (value) =>
+                    onChanged(appearance.copyWith(showBlush: value)),
+              ),
+              _MoonLayerToggle(
+                id: 'mouth',
+                label: 'Mouth',
+                value: appearance.showMouth,
+                onChanged: (value) =>
+                    onChanged(appearance.copyWith(showMouth: value)),
+              ),
+              _MoonLayerToggle(
+                id: 'brows',
+                label: 'Brows',
+                value: appearance.showBrows,
+                onChanged: (value) =>
+                    onChanged(appearance.copyWith(showBrows: value)),
+              ),
+              _MoonLayerToggle(
+                id: 'forehead-shine',
+                label: 'Forehead light',
+                value: appearance.showForeheadShine,
+                onChanged: (value) =>
+                    onChanged(appearance.copyWith(showForeheadShine: value)),
+              ),
+              _MoonLayerToggle(
+                id: 'rim',
+                label: 'Rim',
+                value: appearance.showRim,
+                onChanged: (value) =>
+                    onChanged(appearance.copyWith(showRim: value)),
+              ),
+              _MoonLayerToggle(
+                id: 'body-gradient',
+                label: 'Sphere gradient',
+                value: appearance.useBodyGradient,
+                onChanged: (value) =>
+                    onChanged(appearance.copyWith(useBodyGradient: value)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Text(
+            'Hue',
+            style: TextStyle(color: colors.text, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final sliderWidth = constraints.maxWidth >= 680
+                  ? (constraints.maxWidth - 16) / 2
+                  : constraints.maxWidth;
+              return Wrap(
+                spacing: 16,
+                children: [
+                  _MoonHueSlider(
+                    width: sliderWidth,
+                    id: 'body',
+                    label: 'Sphere',
+                    value: appearance.bodyHue,
+                    onChanged: (value) =>
+                        onChanged(appearance.copyWith(bodyHue: value)),
+                  ),
+                  _MoonHueSlider(
+                    width: sliderWidth,
+                    id: 'rim',
+                    label: 'Rim',
+                    value: appearance.rimHue,
+                    onChanged: (value) =>
+                        onChanged(appearance.copyWith(rimHue: value)),
+                  ),
+                  _MoonHueSlider(
+                    width: sliderWidth,
+                    id: 'glow',
+                    label: 'Outer glow',
+                    value: appearance.glowHue,
+                    onChanged: (value) =>
+                        onChanged(appearance.copyWith(glowHue: value)),
+                  ),
+                  _MoonHueSlider(
+                    width: sliderWidth,
+                    id: 'face',
+                    label: 'Face and eyes',
+                    value: appearance.faceHue,
+                    onChanged: (value) =>
+                        onChanged(appearance.copyWith(faceHue: value)),
+                  ),
+                  _MoonHueSlider(
+                    width: sliderWidth,
+                    id: 'stars',
+                    label: 'Stars',
+                    value: appearance.starHue,
+                    onChanged: (value) =>
+                        onChanged(appearance.copyWith(starHue: value)),
+                  ),
+                  _MoonHueSlider(
+                    width: sliderWidth,
+                    id: 'eye-accent',
+                    label: 'Eye accent',
+                    value: appearance.eyeAccentHue,
+                    onChanged: (value) =>
+                        onChanged(appearance.copyWith(eyeAccentHue: value)),
+                  ),
+                  _MoonHueSlider(
+                    width: sliderWidth,
+                    id: 'blush',
+                    label: 'Blush',
+                    value: appearance.blushHue,
+                    onChanged: (value) =>
+                        onChanged(appearance.copyWith(blushHue: value)),
+                  ),
+                  _MoonHueSlider(
+                    width: sliderWidth,
+                    id: 'shine',
+                    label: 'Forehead light',
+                    value: appearance.shineHue,
+                    onChanged: (value) =>
+                        onChanged(appearance.copyWith(shineHue: value)),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MoonLayerToggle extends StatelessWidget {
+  const _MoonLayerToggle({
+    required this.id,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String id;
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return FilterChip(
+      key: ValueKey('moon-layer-$id'),
+      label: Text(label),
+      selected: value,
+      selectedColor: colors.gold,
+      checkmarkColor: colors.onGold,
+      labelStyle: TextStyle(color: value ? colors.onGold : colors.text),
+      side: BorderSide(color: value ? colors.gold : colors.nightBorder),
+      onSelected: onChanged,
+    );
+  }
+}
+
+class _MoonHueSlider extends StatelessWidget {
+  const _MoonHueSlider({
+    required this.width,
+    required this.id,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final double width;
+  final String id;
+  final String label;
+  final double value;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return SizedBox(
+      width: width,
+      child: Row(
+        children: [
+          SizedBox(
+            width: 92,
+            child: Text(label, style: TextStyle(color: colors.muted)),
+          ),
+          Expanded(
+            child: Slider(
+              key: ValueKey('moon-hue-$id'),
+              value: value,
+              min: 0,
+              max: 360,
+              divisions: 360,
+              label: '${value.round()}°',
+              activeColor: HSLColor.fromAHSL(1, value, 0.78, 0.56).toColor(),
+              inactiveColor: colors.nightBorder,
+              onChanged: onChanged,
+            ),
+          ),
+          SizedBox(
+            width: 40,
+            child: Text(
+              '${value.round()}°',
+              textAlign: TextAlign.end,
+              style: TextStyle(color: colors.text, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MoonSizeSample extends StatelessWidget {
   const _MoonSizeSample({
     required this.label,
     required this.size,
     required this.expression,
     required this.animate,
+    required this.appearance,
     this.controller,
   });
 
@@ -579,6 +879,7 @@ class _MoonSizeSample extends StatelessWidget {
   final double size;
   final MoonExpression expression;
   final bool animate;
+  final MoonAppearance appearance;
   final MoonMascotController? controller;
 
   @override
@@ -592,6 +893,7 @@ class _MoonSizeSample extends StatelessWidget {
           size: size,
           expression: expression,
           animate: animate,
+          appearance: appearance,
           controller: controller,
         ),
         const SizedBox(height: 8),

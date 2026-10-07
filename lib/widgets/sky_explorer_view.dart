@@ -514,6 +514,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     });
   }
 
+  /// Whether the grid is showing — always, while the list view is parked
+  /// ([kShowSkyListView]); otherwise whatever the person picked.
+  bool get _gridView => !kShowSkyListView || widget.settings.skyGridView;
+
   /// The list/grid choice or the grid's card size changed (from the view-mode
   /// sheet): rebuild with the new view, closing any quick menu that belonged
   /// to the old one.
@@ -547,7 +551,12 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     return GalleryProjectData(
       project: project,
       shape: shape,
-      litSlots: {for (final s in lit) s.slotSequence - 1},
+      slotKinds: {for (final s in stars) s.slotSequence - 1: s.kind},
+      pulsarsLit: [
+        for (final habit in _habitsCache)
+          if (habit.projectId == project.id && !habit.dead)
+            isHabitLit(habit, _countsByDayFor(habit.id)),
+      ],
       totalStars: shape?.points.length ?? stars.length,
       litStars: lit.length,
     );
@@ -595,23 +604,26 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         ),
       );
     }
-    return LayoutBuilder(
-      builder: (context, constraints) => GridView.builder(
-        controller: controller,
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: skyGridColumnsFor(
-            widget.settings.skyGridSizeStep,
-            constraints.maxWidth - 40,
+    // Capped to the shared content column on wide layouts, like the lists.
+    return ResponsiveContent(
+      child: LayoutBuilder(
+        builder: (context, constraints) => GridView.builder(
+          controller: controller,
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: skyGridColumnsFor(
+              widget.settings.skyGridSizeStep,
+              constraints.maxWidth - 40,
+            ),
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: kGalleryTileAspectRatio,
           ),
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          childAspectRatio: kGalleryTileAspectRatio,
-        ),
-        itemCount: items.length,
-        itemBuilder: (context, index) => StaggeredEntrance(
-          index: index % 12,
-          child: tile(items[index], () => onTap(index)),
+          itemCount: items.length,
+          itemBuilder: (context, index) => StaggeredEntrance(
+            index: index % 12,
+            child: tile(items[index], () => onTap(index)),
+          ),
         ),
       ),
     );
@@ -1096,7 +1108,12 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           projectsById: _projectsById,
           projectRepository: widget.projectRepository,
           starsShapeRepository: widget.starsShapeRepository,
-          refreshEntries: _filteredReaderEntries,
+          // The reader edits stars while it's open: re-read the repositories
+          // each time, or it keeps showing what the grid last cached.
+          refreshEntries: () {
+            _refreshDataCache();
+            return _filteredReaderEntries();
+          },
           habitRepository: widget.habitRepository,
           habitCompletionRepository: widget.habitCompletionRepository,
           onNavigateTo: (project, starId) =>
@@ -1392,6 +1409,13 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       widget.projectRepository,
       widget.starsShapeRepository,
       allowCreate: false,
+      selected: _projectsCache
+          .where((p) => p.id == _projectFilterId)
+          .firstOrNull,
+      onCleared: () {
+        setState(() => _projectFilterId = null);
+        _saveSession();
+      },
     );
     if (picked == null) return;
     setState(() => _projectFilterId = picked.id);
@@ -1909,7 +1933,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                           // one or two cards now sits right under the search row
                           // instead of floating mid-screen.
                           _SkyMode.supernovas =>
-                            widget.settings.skyGridView
+                            _gridView
                                 ? _areasGrid(strings)
                                 : Builder(
                                     builder: (context) {
@@ -2013,7 +2037,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                                     },
                                   ),
                           _SkyMode.constellations =>
-                            widget.settings.skyGridView
+                            _gridView
                                 ? _constellationsGrid(strings)
                                 : _ConstellationsList(
                                     scrollController: _scrollControllers[1],
@@ -2032,7 +2056,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                                     onDelete: _deleteConstellation,
                                   ),
                           _SkyMode.stars =>
-                            widget.settings.skyGridView
+                            _gridView
                                 ? _starsGrid(strings)
                                 : _FlatList(
                                     scrollController: _scrollControllers[2],

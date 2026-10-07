@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart' show kIsWeb, listEquals;
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:hint_kit/hint_kit.dart';
 import 'package:image_picker/image_picker.dart';
@@ -714,6 +714,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
       repository,
       starsShapeRepository,
       area: _selectedArea,
+      selected: _selectedProject,
     );
     if (picked != null && mounted) {
       // The constellation is authoritative for its area: choosing one from
@@ -886,6 +887,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                         const SizedBox(height: 6),
                         AppTextField(
                           controller: _titleController,
+                          maxLength: kTitleMaxLength,
                           textInputAction: TextInputAction.next,
                           hintText: _titleHint(strings),
                           onChanged: (_) => setState(() {}),
@@ -907,6 +909,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                         const SizedBox(height: 6),
                         AppTextField(
                           controller: _descriptionController,
+                          maxLength: kStarDescriptionMaxLength,
                           minLines: 4,
                           maxLines: 6,
                           hintText: _detailsHint(strings),
@@ -1287,27 +1290,25 @@ class _StarFormScreenState extends State<StarFormScreen> {
                         ],
                       ),
                     ),
-                    if (!kIsWeb) ...[
-                      const SizedBox(height: 20),
-                      StaggeredEntrance(
-                        index: 13,
-                        replayKey: _kindEpoch,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            AppFieldLabel(
-                              strings.extrasLabel,
-                              requirement: FieldRequirement.optional,
-                            ),
-                            const SizedBox(height: 6),
-                            StarMediaEditor(
-                              media: _media,
-                              onChanged: _onMediaChanged,
-                            ),
-                          ],
-                        ),
+                    const SizedBox(height: 20),
+                    StaggeredEntrance(
+                      index: 13,
+                      replayKey: _kindEpoch,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AppFieldLabel(
+                            strings.extrasLabel,
+                            requirement: FieldRequirement.optional,
+                          ),
+                          const SizedBox(height: 6),
+                          StarMediaEditor(
+                            media: _media,
+                            onChanged: _onMediaChanged,
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ],
                   // Wider than the standard 20 between fields — this is the
                   // form's own action row, not one more field, and reads as

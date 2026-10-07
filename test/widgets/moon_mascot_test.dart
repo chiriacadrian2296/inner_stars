@@ -9,6 +9,8 @@ void main() {
     bool animate = true,
     bool disableAnimations = false,
     MoonMascotController? controller,
+    MoonPalette palette = MoonPalette.original,
+    MoonAppearance? appearance,
   }) => MaterialApp(
     builder: (context, child) => MediaQuery(
       data: MediaQuery.of(context)
@@ -23,6 +25,8 @@ void main() {
           size: size,
           animate: animate,
           controller: controller,
+          palette: palette,
+          appearance: appearance,
         ),
       ),
     ),
@@ -48,6 +52,60 @@ void main() {
       tester.getSize(find.byKey(const Key('moon'))),
       const Size.square(32),
     );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('renders the app palette with the same mascot API', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      harness(palette: MoonPalette.app, disableAnimations: true),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(MoonMascot), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('renders the gold palette with the original face', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      harness(palette: MoonPalette.gold, disableAnimations: true),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(MoonMascot), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('renders custom layer visibility and extreme hues safely', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      harness(
+        disableAnimations: true,
+        appearance: const MoonAppearance(
+          showEyeStars: false,
+          showEyeAccent: false,
+          showOuterGlow: false,
+          showBlush: false,
+          showMouth: false,
+          showBrows: false,
+          showForeheadShine: false,
+          showRim: false,
+          useBodyGradient: false,
+          bodyHue: 360,
+          rimHue: 0,
+          glowHue: 360,
+          faceHue: 0,
+          starHue: 360,
+          eyeAccentHue: 0,
+          blushHue: 360,
+          shineHue: 0,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(MoonMascot), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -145,16 +203,12 @@ void main() {
       ),
     );
 
-    tester.binding.handleAppLifecycleStateChanged(
-      AppLifecycleState.paused,
-    );
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
     await controller.play(MoonReaction.celebrate);
     await tester.pumpAndSettle();
     expect(tester.binding.hasScheduledFrame, isFalse);
 
-    tester.binding.handleAppLifecycleStateChanged(
-      AppLifecycleState.resumed,
-    );
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     controller.play(MoonReaction.acknowledge);
     for (var frame = 0; frame < 36; frame++) {
       await tester.pump(const Duration(milliseconds: 16));

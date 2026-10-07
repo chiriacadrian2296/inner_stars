@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../data/star_media_storage.dart';
@@ -34,6 +35,7 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
   Duration _position = Duration.zero;
   bool _failed = false;
   String? _filePath;
+  Source? _source;
 
   /// Set once playback ran to the end: a finished player can't be resumed,
   /// the source has to be played again from the start.
@@ -53,8 +55,16 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
     try {
       var player = _player;
       if (player == null) {
-        final file = await StarMediaStorage.file(widget.media.path!);
-        if (file == null) {
+        final Source? source;
+        if (kIsWeb) {
+          final bytes = await StarMediaStorage.readBytes(widget.media.path!);
+          source = bytes == null ? null : BytesSource(bytes);
+        } else {
+          final file = await StarMediaStorage.file(widget.media.path!);
+          _filePath = file?.path;
+          source = file == null ? null : DeviceFileSource(file.path);
+        }
+        if (source == null) {
           if (mounted) setState(() => _failed = true);
           return;
         }
@@ -64,7 +74,7 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
               .build(),
         );
         _player = player;
-        _filePath = file.path;
+        _source = source;
         _stateSub = player.onPlayerStateChanged.listen((state) {
           if (!mounted) return;
           setState(() {
@@ -78,14 +88,14 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
         _posSub = player.onPositionChanged.listen((p) {
           if (mounted) setState(() => _position = p);
         });
-        await player.play(DeviceFileSource(file.path));
+        await player.play(source);
         return;
       }
       if (_playing) {
         await player.pause();
       } else if (_finished) {
         _finished = false;
-        await player.play(DeviceFileSource(_filePath!));
+        await player.play(_source ?? DeviceFileSource(_filePath!));
       } else {
         await player.resume();
       }

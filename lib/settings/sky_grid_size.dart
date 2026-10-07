@@ -6,8 +6,14 @@
 /// more.
 const List<double> kSkyGridTileExtents = [90, 120, 170, 320];
 
-/// Where a person who never touched the slider lands: the second step.
-const int kSkyGridDefaultSizeStep = 1;
+/// Parked (see the TRB): the Sky shows its grid only. The list view — its
+/// cards, the list/grid switch in the controls sheet and the saved
+/// [SettingsController.skyGridView] choice — is all still in place; flip this
+/// back on to restore it exactly as before.
+const bool kShowSkyListView = false;
+
+/// Where a person who never touched the slider lands: the third step (Large).
+const int kSkyGridDefaultSizeStep = 2;
 
 int clampSkyGridSizeStep(int step) =>
     step.clamp(0, kSkyGridTileExtents.length - 1);
