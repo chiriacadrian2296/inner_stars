@@ -299,6 +299,13 @@ class StringsIt implements AppStrings {
   @override
   String get menuSettingsDescription =>
       'Lingua, promemoria e tutto ciò che riguarda il tuo account.';
+  @override
+  String get menuLabSection => 'Laboratorio';
+  @override
+  String get menuMoonLab => 'Moon Lab';
+  @override
+  String get menuMoonLabDescription =>
+      "Sperimenta con l'aspetto e i livelli di Moon.";
 
   @override
   String get comingSoonBadge => 'PRESTO DISPONIBILE';
@@ -1641,6 +1648,8 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get visionsEyebrow => 'IL QUADRO PIÙ GRANDE';
   @override
   String get visionsTitle => 'Le Tue Visioni';
+  @override
+  String get areasTitle => 'Aree';
   @override
   String get visionsSubtitle =>
       'Una visione per ogni supernova — la realtà che vuoi in quell\'area '

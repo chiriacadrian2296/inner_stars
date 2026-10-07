@@ -94,18 +94,10 @@ class _VisionsScreenState extends State<VisionsScreen> {
         right: false,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final contentWidth = constraints.maxWidth
-                .clamp(0.0, kResponsiveContentMaxWidth)
-                .toDouble();
-            final carouselHeight = (contentWidth * 1.15)
-                .clamp(340.0, 560.0)
-                .toDouble();
-            final verticalPadding =
-                ((constraints.maxHeight - carouselHeight - 120) / 2)
-                    .clamp(8.0, 140.0)
-                    .toDouble();
             return ListView(
-              padding: EdgeInsets.symmetric(vertical: verticalPadding),
+              // Starts near the top, under the title, rather than centering
+              // the whole page vertically.
+              padding: const EdgeInsets.only(top: 20, bottom: 24),
               children: [
                 ResponsiveContent(
                   child: Padding(
@@ -113,6 +105,20 @@ class _VisionsScreenState extends State<VisionsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        StaggeredEntrance(
+                          index: 0,
+                          child: Text(
+                            strings.areasTitle,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontFamily: kFontStarTitle,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
                         StaggeredEntrance(
                           index: 0,
                           child: Text(
@@ -235,11 +241,24 @@ class _VisionCard extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          tonedAreaHeroArt(
-            child: Image.asset(
-              kAreaHeroArt[area]!.skyAsset,
-              fit: BoxFit.cover,
-              excludeFromSemantics: true,
+          ColoredBox(color: context.colors.nightPanel),
+          // The artwork sits a little smaller, centered in the card, rather
+          // than filling it; the card itself keeps its size.
+          LayoutBuilder(
+            builder: (context, constraints) => Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: constraints.maxWidth * 0.04,
+              ),
+              child: Align(
+                alignment: Alignment.center,
+                child: tonedAreaHeroArt(
+                  child: Image.asset(
+                    kAreaHeroArt[area]!.skyAsset,
+                    fit: BoxFit.contain,
+                    excludeFromSemantics: true,
+                  ),
+                ),
+              ),
             ),
           ),
           DecoratedBox(

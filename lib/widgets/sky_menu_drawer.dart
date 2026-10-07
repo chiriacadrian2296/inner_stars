@@ -39,6 +39,7 @@ class SkyMenuDrawer extends StatelessWidget {
     required this.onStatistics,
     required this.onFriends,
     required this.onMetaphor,
+    required this.onMoonLab,
     required this.onSettings,
   });
 
@@ -51,6 +52,7 @@ class SkyMenuDrawer extends StatelessWidget {
   final VoidCallback onStatistics;
   final VoidCallback onFriends;
   final VoidCallback onMetaphor;
+  final VoidCallback onMoonLab;
   final VoidCallback onSettings;
 
   @override
@@ -67,6 +69,7 @@ class SkyMenuDrawer extends StatelessWidget {
           onStatistics: onStatistics,
           onFriends: onFriends,
           onMetaphor: onMetaphor,
+          onMoonLab: onMoonLab,
           onSettings: onSettings,
         ),
       ),
@@ -133,6 +136,7 @@ class SkyMenuContent extends StatelessWidget {
     required this.onStatistics,
     required this.onFriends,
     required this.onMetaphor,
+    required this.onMoonLab,
     required this.onSettings,
     this.detailed = false,
     this.scrollController,
@@ -148,6 +152,7 @@ class SkyMenuContent extends StatelessWidget {
   final VoidCallback onStatistics;
   final VoidCallback onFriends;
   final VoidCallback onMetaphor;
+  final VoidCallback onMoonLab;
   final VoidCallback onSettings;
 
   /// See the class doc comment — off for the drawer, on for the modal.
@@ -502,6 +507,17 @@ class SkyMenuContent extends StatelessWidget {
             onTap: onMetaphor,
           ),
         ],
+
+        if (!detailed) Divider(color: colors.nightBorder, height: 1),
+        sectionHeader(strings.menuLabSection, 7),
+        if (!detailed) const SizedBox(height: 8),
+        entry(
+          index: 7,
+          icon: Icons.nightlight_round,
+          label: strings.menuMoonLab,
+          description: strings.menuMoonLabDescription,
+          onTap: onMoonLab,
+        ),
 
         // In [detailed] mode (the modal), Settings is just one more
         // section in the same scrollable list as everything else —

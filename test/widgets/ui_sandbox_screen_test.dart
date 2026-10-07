@@ -122,6 +122,35 @@ void main() {
     ).extension<AppColors>()!;
     expect(curiousChip.selectedColor, colors.gold);
     expect(find.byKey(const Key('moon-appearance-editor')), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('moon-preset-gold')),
+      180,
+      scrollable: verticalScroll(),
+    );
+    await tester.tap(find.byKey(const ValueKey('moon-preset-gold')));
+    await tester.pump();
+    expect(
+      tester
+          .widget<ChoiceChip>(find.byKey(const ValueKey('moon-preset-gold')))
+          .selected,
+      isTrue,
+    );
+    expect(
+      tester
+          .widget<FilterChip>(find.byKey(const ValueKey('moon-layer-blush')))
+          .selected,
+      isFalse,
+    );
+    expect(
+      tester.widget<Slider>(find.byKey(const ValueKey('moon-hue-body'))).value,
+      38,
+    );
+    await tester.tap(find.byKey(const ValueKey('moon-preset-blue')));
+    await tester.pump();
+    expect(
+      tester.widget<Slider>(find.byKey(const ValueKey('moon-hue-body'))).value,
+      210,
+    );
     await tester.tap(find.byKey(const ValueKey('moon-layer-mouth')));
     await tester.pump();
     expect(

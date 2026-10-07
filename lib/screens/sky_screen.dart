@@ -130,6 +130,10 @@ const kHoldGestureDuration = Duration(milliseconds: 600);
 /// [DebugSkyHitZones] itself) once the double-tap spot is nailed down.
 const bool _kDebugShowSkyHitZones = false;
 
+/// Whether the supernovae's artwork tuning panel ([_ArtworkControls]) shows.
+/// Parked: the look it tuned is settled for now.
+const bool kShowArtworkControls = false;
+
 /// The Sky: the app's one and only screen. Every constellation, scattered
 /// across a single pannable/zoomable sky over the animated nebula
 /// background, with each supernova burning where its own area sits.
@@ -1797,28 +1801,20 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _refresh();
   }
 
-  /// Toggles [_quickAccessMenuOpen] — [_MenuStarButton]'s own quick-tap
-  /// callback; the mini menu's full-screen dismiss barrier and each of
-  /// its five buttons close it back down through [_closeQuickAccessMenu]
-  /// instead (see [_QuickAccessFan] in build()).
-  void _toggleQuickAccessMenu() {
+  /// [_MenuStarButton]'s quick tap: straight into Sky. (It used to toggle
+  /// the quick-access mini menu, [_QuickAccessFan]; that menu is parked, not
+  /// deleted — the hold now opens the full menu, see [_openMenuModal].)
+  void _openSkyFromMenuButton() {
     // Suppressed while some *other* locked step is active — e.g. a
-    // mistimed quick tap during order 8's "hold this" step, which would
-    // otherwise pop the fan open behind the tutorial's back. See
-    // [_tourWantsGesture]. Once order 10 itself is done (or no tour is
-    // running at all) this is unrestricted, same as ever.
+    // mistimed quick tap during order 8's "hold this" step. See
+    // [_tourWantsGesture].
     if (!_tourWantsGesture(10)) return;
     // Same short buzz + tap sound a tap on something in the sky gets —
     // this button is just as much a "tap" as any of those.
     if (isTouchOnlyMobile) _tapHaptic();
     widget.audioService.playTapSound();
-    setState(() => _quickAccessMenuOpen = !_quickAccessMenuOpen);
-    // The tour's order-10 step — this is its only real gesture, opening or
-    // closing either way (the guard inside only ever lets this through
-    // while order 10 is actually the active step, i.e. the very first
-    // time, so a later close/reopen well past that point is a no-op
-    // here).
     _advanceGestureTourStep(10);
+    _openSearch();
   }
 
   void _closeQuickAccessMenu() {
@@ -1850,7 +1846,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   }
 
   void _openUiSandbox() {
-    assert(kDebugMode);
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => const UiSandboxScreen()));
   }
@@ -1922,6 +1917,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
               onFriends: _openFriends,
               onSettings: _openSettings,
               onMetaphor: _openMetaphor,
+              onMoonLab: _openUiSandbox,
               detailed: true,
               scrollController: scrollController,
               physics: physics,
@@ -3429,6 +3425,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
           onFriends: _openFriends,
           onSettings: _openSettings,
           onMetaphor: _openMetaphor,
+          onMoonLab: _openUiSandbox,
         ),
         body: Stack(
           children: [
@@ -3977,17 +3974,21 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
-                    Positioned.fill(
-                      child: SafeArea(
-                        child: _ArtworkControls(
-                          settings: widget.settings,
-                          open: _artworkControlsOpen,
-                          onToggle: () => setState(
-                            () => _artworkControlsOpen = !_artworkControlsOpen,
+                    // The supernovae's artwork tuning panel — parked, see
+                    // [kShowArtworkControls].
+                    if (kShowArtworkControls)
+                      Positioned.fill(
+                        child: SafeArea(
+                          child: _ArtworkControls(
+                            settings: widget.settings,
+                            open: _artworkControlsOpen,
+                            onToggle: () => setState(
+                              () =>
+                                  _artworkControlsOpen = !_artworkControlsOpen,
+                            ),
                           ),
                         ),
                       ),
-                    ),
                     // The star FAB — an alternative way into the same menu the
                     // drawer opens (see [_openMenuModal]), tried alongside the
                     // drawer rather than replacing it. Deliberately not a disc/
@@ -4066,7 +4067,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                                 child: _MenuStarButton(
                                   key: _menuStarButtonKey,
                                   onTap: _openMenuModal,
-                                  onQuickTap: _toggleQuickAccessMenu,
+                                  onQuickTap: _openSkyFromMenuButton,
                                   onDismissSkyTooltip:
                                       _dismissSkyTooltipForMenuPress,
                                   onPressChanged: _setMenuControlPressed,

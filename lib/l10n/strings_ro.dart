@@ -299,6 +299,13 @@ class StringsRo implements AppStrings {
   @override
   String get menuSettingsDescription =>
       'Limbă, mementouri și tot ce ține de contul tău.';
+  @override
+  String get menuLabSection => 'Laborator';
+  @override
+  String get menuMoonLab => 'Moon Lab';
+  @override
+  String get menuMoonLabDescription =>
+      "Experimentează cu aspectul și straturile lui Moon.";
 
   @override
   String get comingSoonBadge => 'ÎN CURÂND';
@@ -1638,6 +1645,8 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get visionsEyebrow => 'IMAGINEA CEA MAI MARE';
   @override
   String get visionsTitle => 'Viziunile Tale';
+  @override
+  String get areasTitle => 'Arii';
   @override
   String get visionsSubtitle =>
       'O viziune pentru fiecare supernovă — realitatea pe care o vrei în '

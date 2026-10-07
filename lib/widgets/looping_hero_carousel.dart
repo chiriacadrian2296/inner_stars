@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:inner_stars/theme/app_colors.dart';
 import 'package:inner_stars/utils/responsive.dart';
 // M3Carousel does not expose infinite; its underlying wrapper does.
 // Keep m3_carousel pinned until this adapter is verified against an upgrade.
@@ -157,7 +158,7 @@ class _LoopingHeroCarouselState extends State<LoopingHeroCarousel> {
                                 HeroCarouselEmphasis(side: side, child: child!),
                                 IgnorePointer(
                                   child: ColoredBox(
-                                    color: Colors.black.withValues(
+                                    color: context.colors.night.withValues(
                                       alpha: 0.3 * side,
                                     ),
                                   ),
@@ -172,17 +173,17 @@ class _LoopingHeroCarouselState extends State<LoopingHeroCarousel> {
               ),
             ),
           ),
-          const IgnorePointer(
+          IgnorePointer(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.black,
-                    Colors.transparent,
-                    Colors.transparent,
-                    Colors.black,
+                    context.colors.night,
+                    context.colors.night.withValues(alpha: 0),
+                    context.colors.night.withValues(alpha: 0),
+                    context.colors.night,
                   ],
-                  stops: [0, 0.08, 0.92, 1],
+                  stops: const [0, 0.08, 0.92, 1],
                 ),
               ),
             ),

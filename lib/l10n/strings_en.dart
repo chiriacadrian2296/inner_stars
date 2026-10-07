@@ -297,6 +297,13 @@ class StringsEn implements AppStrings {
   @override
   String get menuSettingsDescription =>
       'Language, reminders, and everything about your account.';
+  @override
+  String get menuLabSection => 'Lab';
+  @override
+  String get menuMoonLab => 'Moon Lab';
+  @override
+  String get menuMoonLabDescription =>
+      "Experiment with Moon's look and layers.";
 
   @override
   String get comingSoonBadge => 'COMING SOON';
@@ -1626,6 +1633,8 @@ My contribution meets a real need and is something I can sustain.
   String get visionsEyebrow => 'THE BIGGEST PICTURE';
   @override
   String get visionsTitle => 'Your Visions';
+  @override
+  String get areasTitle => 'Areas';
   @override
   String get visionsSubtitle =>
       'One vision per supernova — the reality you want in that area of your '

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../debug/ui_audit_catalog.dart';
@@ -13,7 +12,7 @@ import '../widgets/app_toggle_chip.dart';
 import '../widgets/moon_mascot.dart';
 import '../widgets/pill_action_button.dart';
 
-/// Debug-only, data-isolated catalogue for reviewing the app's current UI
+/// Data-isolated catalogue for reviewing the app's current UI
 /// variants before any production component is migrated or removed.
 class UiSandboxScreen extends StatefulWidget {
   const UiSandboxScreen({super.key});
@@ -55,7 +54,6 @@ class _UiSandboxScreenState extends State<UiSandboxScreen> {
 
   @override
   Widget build(BuildContext context) {
-    assert(kDebugMode, 'UiSandboxScreen must only be opened in debug builds.');
     final colors = context.colors;
     final strings = context.strings;
     final items = _visibleItems;
@@ -605,6 +603,31 @@ class _MoonAppearanceEditor extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'Saved presets',
+            style: TextStyle(color: colors.text, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            key: const Key('moon-saved-presets'),
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MoonPresetChip(
+                id: 'blue',
+                label: 'Moon Blue',
+                selected: appearance == MoonAppearance.bluePreset,
+                onSelected: () => onChanged(MoonAppearance.bluePreset),
+              ),
+              _MoonPresetChip(
+                id: 'gold',
+                label: 'Moon Gold',
+                selected: appearance == MoonAppearance.goldPreset,
+                onSelected: () => onChanged(MoonAppearance.goldPreset),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
@@ -779,6 +802,38 @@ class _MoonAppearanceEditor extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _MoonPresetChip extends StatelessWidget {
+  const _MoonPresetChip({
+    required this.id,
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String id;
+  final String label;
+  final bool selected;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return ChoiceChip(
+      key: ValueKey('moon-preset-$id'),
+      label: Text(label),
+      selected: selected,
+      selectedColor: colors.gold,
+      checkmarkColor: colors.onGold,
+      labelStyle: TextStyle(
+        color: selected ? colors.onGold : colors.text,
+        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+      ),
+      side: BorderSide(color: selected ? colors.gold : colors.nightBorder),
+      onSelected: (_) => onSelected(),
     );
   }
 }

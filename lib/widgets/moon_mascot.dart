@@ -36,6 +36,34 @@ class MoonAppearance {
     this.shineHue = 190,
   });
 
+  static const bluePreset = MoonAppearance(
+    showEyeAccent: false,
+    showBlush: false,
+    showForeheadShine: false,
+    bodyHue: 210,
+    rimHue: 210,
+    glowHue: 210,
+    faceHue: 230,
+    starHue: 210,
+    eyeAccentHue: 0,
+    blushHue: 0,
+    shineHue: 0,
+  );
+
+  static const goldPreset = MoonAppearance(
+    showEyeAccent: false,
+    showBlush: false,
+    showForeheadShine: false,
+    bodyHue: 38,
+    rimHue: 38,
+    glowHue: 37,
+    faceHue: 230,
+    starHue: 203,
+    eyeAccentHue: 0,
+    blushHue: 0,
+    shineHue: 0,
+  );
+
   final bool showEyeStars;
   final bool showEyeAccent;
   final bool showOuterGlow;
@@ -91,6 +119,49 @@ class MoonAppearance {
     blushHue: blushHue ?? this.blushHue,
     shineHue: shineHue ?? this.shineHue,
   );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MoonAppearance &&
+          showEyeStars == other.showEyeStars &&
+          showEyeAccent == other.showEyeAccent &&
+          showOuterGlow == other.showOuterGlow &&
+          showBlush == other.showBlush &&
+          showMouth == other.showMouth &&
+          showBrows == other.showBrows &&
+          showForeheadShine == other.showForeheadShine &&
+          showRim == other.showRim &&
+          useBodyGradient == other.useBodyGradient &&
+          bodyHue == other.bodyHue &&
+          rimHue == other.rimHue &&
+          glowHue == other.glowHue &&
+          faceHue == other.faceHue &&
+          starHue == other.starHue &&
+          eyeAccentHue == other.eyeAccentHue &&
+          blushHue == other.blushHue &&
+          shineHue == other.shineHue;
+
+  @override
+  int get hashCode => Object.hashAll([
+    showEyeStars,
+    showEyeAccent,
+    showOuterGlow,
+    showBlush,
+    showMouth,
+    showBrows,
+    showForeheadShine,
+    showRim,
+    useBodyGradient,
+    bodyHue,
+    rimHue,
+    glowHue,
+    faceHue,
+    starHue,
+    eyeAccentHue,
+    blushHue,
+    shineHue,
+  ]);
 }
 
 /// Imperative access to the one-shot reactions of a mounted [MoonMascot].

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hint_kit/hint_kit.dart';
@@ -29,6 +31,9 @@ import '../widgets/vision_markdown.dart';
 import 'vision_editor_screen.dart';
 import 'moodboard_screen.dart';
 import 'new_project_screen.dart';
+
+/// How wide the area's artwork is drawn on wide layouts (web/desktop).
+const double _kWideArtWidth = 460;
 
 /// An area's artwork followed by compact Vision, Moodboard and Reflections
 /// sections. Each section opens its own full-screen editor.
@@ -226,12 +231,19 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                       index: 0,
                                       axis: Axis.horizontal,
                                       reverse: _contentReverse,
-                                      child: SizedBox(
-                                        width: double.infinity,
+                                      // Phones: the art spans the screen. Wide
+                                      // layouts: a smaller one, centered —
+                                      // the full column is too big.
+                                      child: Center(
                                         child: tonedAreaHeroArt(
                                           child: Image.asset(
                                             kAreaHeroArt[area]!.skyAsset,
-                                            width: constraints.maxWidth,
+                                            width: isWideLayout(context)
+                                                ? math.min(
+                                                    constraints.maxWidth,
+                                                    _kWideArtWidth,
+                                                  )
+                                                : constraints.maxWidth,
                                             fit: BoxFit.fitWidth,
                                           ),
                                         ),

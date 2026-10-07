@@ -112,6 +112,9 @@ abstract class AppStrings {
   String get menuFriendsDescription;
   String get menuMetaphorDescription;
   String get menuSettingsDescription;
+  String get menuLabSection;
+  String get menuMoonLab;
+  String get menuMoonLabDescription;
 
   // Placeholder screens — features sketched into the menu ahead of the
   // real thing existing yet. [comingSoonBadge] is the shared eyebrow for
@@ -887,6 +890,7 @@ abstract class AppStrings {
   // can be re-read and revised in one place.
   String get visionsEyebrow;
   String get visionsTitle;
+  String get areasTitle;
   String get moodboardTitle;
   String get moodboardPageDescription;
   String get moodboardAddLabel;

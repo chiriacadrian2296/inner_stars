@@ -82,14 +82,14 @@ Future<Object?> _pickProjectFlat(
   required int? initialId,
   required bool allowClear,
 }) {
-  final sheetHeight = MediaQuery.sizeOf(context).height * 0.85;
+  final maxHeight = MediaQuery.sizeOf(context).height * 0.85;
   return showFixedAppSheet<Object>(
     context: context,
     builder: (sheetContext) {
       return _FlatProjectPickerSheet(
         projects: repository.getAll(),
         starsShapeRepository: starsShapeRepository,
-        sheetHeight: sheetHeight,
+        maxHeight: maxHeight,
         allowCreate: allowCreate,
         initialId: initialId,
         allowClear: allowClear,
@@ -105,7 +105,7 @@ class _FlatProjectPickerSheet extends StatefulWidget {
   const _FlatProjectPickerSheet({
     required this.projects,
     required this.starsShapeRepository,
-    required this.sheetHeight,
+    required this.maxHeight,
     required this.allowCreate,
     required this.initialId,
     required this.allowClear,
@@ -113,7 +113,7 @@ class _FlatProjectPickerSheet extends StatefulWidget {
 
   final List<Project> projects;
   final StarsShapeRepository starsShapeRepository;
-  final double sheetHeight;
+  final double maxHeight;
   final bool allowCreate;
   final int? initialId;
   final bool allowClear;
@@ -314,6 +314,20 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
     );
   }
 
+  /// Sized for every constellation, not just the filtered ones, so the sheet
+  /// doesn't jump while typing: the chrome (title, search, buttons, padding)
+  /// plus the two-column rows of chips, capped at [_FlatProjectPickerSheet.maxHeight].
+  double _sheetHeight(BuildContext context) {
+    const chrome = 248.0;
+    const chipHeight = 48.0;
+    const gap = 10.0;
+    const emptyList = 72.0;
+    final rows = (widget.projects.length + 1) ~/ 2;
+    final list = rows == 0 ? emptyList : rows * chipHeight + (rows - 1) * gap;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    return (chrome + list + bottomInset).clamp(0.0, widget.maxHeight);
+  }
+
   Widget _projectChip(Project project) => AppChoiceChip(
     icon: iconForSlug(project.iconSlug),
     label: project.name,
@@ -330,7 +344,7 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
     final filtered = _filtered;
     return SafeArea(
       child: SizedBox(
-        height: widget.sheetHeight,
+        height: _sheetHeight(context),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -369,7 +383,7 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
               Expanded(
                 child: ClipRect(
                   child: filtered.isEmpty
