@@ -318,7 +318,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _seedSampleData() async {
     final strings = context.strings;
-    await seedSampleData(
+    final added = await seedSampleData(
       starRepository: widget.starRepository,
       projectRepository: widget.projectRepository,
       habitRepository: widget.habitRepository,
@@ -334,7 +334,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(strings.seedSampleDataResult(winsPerSeedTap))),
+        SnackBar(content: Text(strings.seedSampleDataResult(added))),
       );
     }
   }

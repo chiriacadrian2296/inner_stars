@@ -5,8 +5,10 @@ import '../models/habit.dart';
 import '../models/life_area.dart';
 import '../models/project.dart';
 import '../models/star_kind.dart';
+import '../theme/app_colors.dart';
 import 'search_result_card.dart';
 import 'sky_search_tooltip_card.dart';
+import 'star_glyph.dart';
 
 class SkyPulsarTooltip extends StatelessWidget {
   const SkyPulsarTooltip({
@@ -18,6 +20,8 @@ class SkyPulsarTooltip extends StatelessWidget {
     required this.onClose,
     required this.onView,
     required this.onToday,
+    this.onTodayDecrement,
+    this.stepperText,
     required this.todayActionIcon,
     required this.todayActionLabel,
     required this.onEdit,
@@ -32,6 +36,12 @@ class SkyPulsarTooltip extends StatelessWidget {
   final VoidCallback onClose;
   final VoidCallback onView;
   final VoidCallback onToday;
+
+  /// For a habit done several times a day: takes one instance back (null
+  /// when there is none to take). With [stepperText] it draws as a grouped
+  /// minus / count / plus.
+  final VoidCallback? onTodayDecrement;
+  final String? stepperText;
   final IconData todayActionIcon;
   final String todayActionLabel;
   final VoidCallback onEdit;
@@ -47,6 +57,9 @@ class SkyPulsarTooltip extends StatelessWidget {
       visual: SearchStarVisual(kind: StarKind.pulsar, pulsarLit: isLit),
       content: SearchCardTextContent(
         eyebrow: StarKind.pulsar.label(strings),
+        eyebrowColor: habit.dead
+            ? starKindColor(StarKind.dead, context.colors)
+            : starKindColor(StarKind.pulsar, context.colors, lit: isLit),
         title: habit.title,
         breadcrumb: project == null
             ? null
@@ -74,6 +87,8 @@ class SkyPulsarTooltip extends StatelessWidget {
             icon: todayActionIcon,
             label: todayActionLabel,
             onTap: onToday,
+            onDecrement: onTodayDecrement,
+            stepperText: stepperText,
           ),
         if (onShare != null)
           SearchCardAction(

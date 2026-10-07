@@ -679,7 +679,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get seedSampleData => 'Generează date de exemplu';
   @override
   String seedSampleDataResult(int count) =>
-      'S-au adăugat $count stele la fiecare constelație de exemplu.';
+      'S-au adăugat $count stele la constelațiile de exemplu.';
   @override
   String get resetAllData => 'Resetează toate datele';
   @override
@@ -1378,6 +1378,14 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get cannotSaveMissingInfo =>
       'Completează câmpurile obligatorii indicate înainte de salvare.';
+  @override
+  String get constellationFullTitle => 'Constelație plină';
+  @override
+  String constellationFullStars(int max) =>
+      'Această constelație are deja toate cele $max stele.';
+  @override
+  String constellationFullPulsars(int max) =>
+      'Această constelație are deja toți cei $max pulsari.';
   @override
   String get gotIt => 'OK';
   @override

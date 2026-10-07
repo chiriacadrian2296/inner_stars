@@ -6,8 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:hint_kit/hint_kit.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../data/constellation_layout.dart';
 import '../data/custom_constellation_repository.dart';
+import '../data/habit_repository.dart';
 import '../data/photo_storage.dart';
+import '../data/star_repository.dart';
 import '../data/star_media_storage.dart';
 import '../data/project_repository.dart';
 import '../l10n/app_strings.dart';
@@ -505,10 +508,51 @@ class _StarFormScreenState extends State<StarFormScreen> {
     );
   }
 
-  void _save() {
+  /// Whether saving would put one more star (or pulsar) into a constellation
+  /// that is already at its cap. Editing something in place never adds to
+  /// its constellation, so only a new entry or a move to another one counts.
+  Future<bool> _targetIsFull(Project project) async {
+    final isPulsar = _kind == StarKind.pulsar;
+    final existingProjectId =
+        widget.existingStar?.projectId ?? widget.existingHabit?.projectId;
+    if (existingProjectId == project.id) return false;
+    return isPulsar
+        ? (await HabitRepository.create()).isFull(project.id)
+        : (await StarRepository.create()).isFull(project.id);
+  }
+
+  Future<void> _showConstellationFullMessage() {
+    final strings = context.strings;
+    final isPulsar = _kind == StarKind.pulsar;
+    return showAppDialog<void>(
+      context: context,
+      builder: (dialogContext) => AppDialog(
+        title: Text(strings.constellationFullTitle),
+        content: Text(
+          isPulsar
+              ? strings.constellationFullPulsars(kMaxConstellationPulsars)
+              : strings.constellationFullStars(kMaxConstellationStars),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: AppButtonLabel(strings.gotIt),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _save() async {
     final title = _titleController.text.trim();
     final project = _selectedProject;
     if (title.isEmpty || project == null) return;
+
+    if (await _targetIsFull(project)) {
+      if (mounted) await _showConstellationFullMessage();
+      return;
+    }
+    if (!mounted) return;
 
     _saved = true;
     Navigator.of(context).pop(

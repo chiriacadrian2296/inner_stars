@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
-
 /// The one size a play mark is drawn at — on video thumbnails and voice notes
 /// alike.
 const double kPlayBadgeSize = 40;
 
-/// A gold play (or pause) button: a gold ring and glyph. The one "this plays"
+/// A white play (or pause) button: a white ring and glyph. The one "this plays"
 /// mark for videos and voice notes alike. Videos put a navy veil under it, so
 /// it needs no outline of its own to read on a picture.
 class PlayBadge extends StatelessWidget {
@@ -19,18 +17,17 @@ class PlayBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: colors.gold, width: 2),
+        border: Border.all(color: Colors.white, width: 2),
       ),
       child: Center(
         child: Icon(
           playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-          color: colors.gold,
+          color: Colors.white,
           size: size * 0.55,
         ),
       ),

@@ -19,8 +19,8 @@ import 'voice_note_player.dart';
 /// notes, photos, links.
 const double kReaderBlockGap = 20;
 
-/// How wide a voice note or link card is, as a fraction of the media column.
-const double _kMediaCardWidthFactor = 2 / 3;
+/// How wide a voice note is, as a fraction of the media column.
+const double _kVoiceCardWidthFactor = 0.5;
 
 /// How wide the photo mosaic is, as a fraction of the media column; its tile
 /// heights shrink by the same factor so every photo scales linearly.
@@ -414,7 +414,7 @@ class StarMediaSection extends StatelessWidget {
         ),
       for (final voice in voices)
         FractionallySizedBox(
-          widthFactor: _kMediaCardWidthFactor,
+          widthFactor: _kVoiceCardWidthFactor,
           child: VoiceNotePlayer(key: ValueKey(voice.id), media: voice),
         ),
       if (links.isNotEmpty)
@@ -534,7 +534,7 @@ class _MosaicContent extends StatelessWidget {
   }
 }
 
-/// A link as a small pill, as wide as what it says and no wider: a thin gold
+/// A link as a small pill, as wide as what it says and no wider: a thin white
 /// outline, the site (or the label the user gave it) and an arrow out. Its
 /// shape is what tells it apart from the wide voice-note card.
 class StarLinkRow extends StatelessWidget {
@@ -551,12 +551,12 @@ class StarLinkRow extends StatelessWidget {
         onTap: () => _open(context),
         customBorder: const StadiumBorder(),
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 240),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+          constraints: const BoxConstraints(maxWidth: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: ShapeDecoration(
             color: colors.night.withValues(alpha: 0.4),
             shape: StadiumBorder(
-              side: BorderSide(color: colors.gold, width: 1),
+              side: const BorderSide(color: Colors.white, width: 1),
             ),
           ),
           child: Row(
@@ -568,14 +568,18 @@ class StarLinkRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: colors.gold,
-                    fontSize: 14,
+                    color: Colors.white,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              const SizedBox(width: 6),
-              Icon(Icons.arrow_outward_rounded, color: colors.gold, size: 16),
+              const SizedBox(width: 5),
+              const Icon(
+                Icons.arrow_outward_rounded,
+                color: Colors.white,
+                size: 14,
+              ),
             ],
           ),
         ),

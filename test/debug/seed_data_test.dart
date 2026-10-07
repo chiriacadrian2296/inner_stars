@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inner_stars/data/constellation_layout.dart';
 import 'package:inner_stars/data/habit_completion_repository.dart';
 import 'package:inner_stars/data/habit_repository.dart';
 import 'package:inner_stars/data/project_repository.dart';
@@ -19,7 +20,7 @@ void main() {
     final habits = await HabitRepository.create();
     final completions = await HabitCompletionRepository.create();
 
-    Future<void> seed() => seedSampleData(
+    Future<int> seed() => seedSampleData(
       starRepository: stars,
       projectRepository: projects,
       habitRepository: habits,
@@ -110,15 +111,29 @@ void main() {
     expect(summary.trend.length, 90);
     expect(summary.bestWeekday, isNotNull);
 
-    // Second run adds more recent wins but no second copy of the history
-    // or of the history habits.
+    // Constellations come in every density, none past the cap.
+    final perProject = [
+      for (final p in projects.getAll()) stars.getAllForProject(p.id).length,
+    ];
+    expect(perProject.every((n) => n <= kMaxConstellationStars), isTrue);
+    expect(perProject.where((n) => n == kMaxConstellationStars), isNotEmpty);
+    expect(perProject.where((n) => n <= 6), isNotEmpty);
+    expect(perProject.where((n) => n > 6 && n < 30), isNotEmpty);
+    expect(
+      habits.getAll().every(
+        (h) =>
+            habits.getAllForProject(h.projectId).length <=
+            kMaxConstellationPulsars,
+      ),
+      isTrue,
+    );
+
+    // A second run is idempotent: every project is already at its target,
+    // and the history habits aren't duplicated.
     final starCount = stars.getAll().length;
     final habitCount = habits.getAll().length;
-    await seed();
+    expect(await seed(), 0);
     expect(habits.getAll().length, habitCount);
-    expect(
-      stars.getAll().length - starCount,
-      projects.getAll().length * winsPerSeedTap,
-    );
+    expect(stars.getAll().length, starCount);
   });
 }

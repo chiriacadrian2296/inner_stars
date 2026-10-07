@@ -13,7 +13,7 @@ uniform float uFlareRadius;
 // from [uColor] (the palette's own unlit/nascent/dead color).
 uniform float uMode;
 uniform vec3 uColor;
-uniform vec2 uPositions[24];
+uniform vec2 uPositions[32];
 // A star's own *normalized* (0..1, within its constellation's own local
 // shape space) position — stable across pan/zoom, unlike [uPositions]
 // above (absolute canvas pixels, which shift continuously as the camera
@@ -22,7 +22,7 @@ uniform vec2 uPositions[24];
 // [uPositions] for that instead made every star's rotation jump to a new
 // value the instant the view changed, since the hash's own input value
 // was changing too, not just the star's actual screen position.
-uniform vec2 uSeeds[24];
+uniform vec2 uSeeds[32];
 
 out vec4 fragColor;
 
@@ -49,7 +49,7 @@ const vec3 kCore = vec3(1.0, 0.98, 0.9);
 // are set to (-1, -1) by the Dart side and skipped below via the
 // `pos.x < 0.0` check, so this only ever costs a few cheap early-outs, not
 // full falloff math, for the unused tail of the array.
-const int kMaxStars = 24;
+const int kMaxStars = 32;
 
 // Deterministic pseudo-random 0..1 from a star's own canvas position (in
 // place of `nebula_particles.frag`'s per-cell hash, or `entityId` — this

@@ -1248,7 +1248,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     final project = data.constellation.project;
     final slot = data.star.slotSequence;
     if (slot == null) return;
-    _closeSkyTooltip();
     await _openConstellationReader(
       project,
       NascentEntry(projectId: project.id, slot: slot).key,
@@ -1298,7 +1297,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     if (data is! _StarTooltip) return;
     final constellation = data.constellation;
     final star = constellation.stars[data.starIndex];
-    _closeSkyTooltip();
     await _openConstellationReader(constellation.project, StarEntry(star).key);
   }
 
@@ -1309,7 +1307,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     if (data is! _PulsarTooltip) return;
     final project = data.constellation.project;
     final habit = data.habit;
-    _closeSkyTooltip();
     await _openConstellationReader(project, PulsarEntry(habit).key);
   }
 
@@ -1325,7 +1322,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // sits *above* routes rather than being covered by them the way the
     // old in-tree quick-look panel was, so leaving it open here left it
     // floating over the edit screen for as long as that stayed open.
-    _closeSkyTooltip();
 
     if (star.dead) {
       final result = await Navigator.of(context).push<Object>(
@@ -1396,7 +1392,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // Before the dialog, not after — see [_editQuickLookStar]'s own note
     // on why (the tooltip's root-overlay entry doesn't get covered by a
     // new one the way the old in-tree panel did).
-    _closeSkyTooltip();
     final confirmed = await showAppConfirmation(
       context: context,
       title: strings.deleteStarConfirmTitle,
@@ -1406,6 +1401,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       tone: AppConfirmationTone.destructive,
     );
     if (!confirmed) return;
+    _closeSkyTooltip();
     await widget.starRepository.delete(star.id);
     _refresh();
   }
@@ -1414,7 +1410,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     final star = _quickLookStar;
     if (star == null || star.dead || _sharingQuickLookStar) return;
     final project = _quickLookConstellation?.project;
-    _closeSkyTooltip();
     setState(() => _sharingQuickLookStar = true);
     try {
       if (!mounted) return;
@@ -1640,7 +1635,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // already be showing — this slot's own from a hold, or an unrelated
     // one from a stray tap — stayed floating on top of the form for as
     // long as it stayed open.
-    _closeSkyTooltip();
     final result = await Navigator.of(context).push<Object>(
       MaterialPageRoute(
         builder: (_) => StarFormScreen(
@@ -3427,302 +3421,425 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
           onMetaphor: _openMetaphor,
           onMoonLab: _openUiSandbox,
         ),
-        body: Stack(
-          children: [
-            Listener(
-              onPointerSignal: _handlePointerSignal,
-              child: GestureDetector(
-                onScaleStart: _handleScaleStart,
-                onScaleUpdate: _handleScaleUpdate,
-                onScaleEnd: _handleScaleEnd,
-                onTapDown: _handleTapDown,
-                onTapUp: _handleTapUp,
-                onTapCancel: _handleTapCancel,
-                child: Stack(
-                  key: _skySurfaceKey,
-                  fit: StackFit.expand,
-                  children: [
-                    // A 2026-09-19 test: moved ahead of NebulaBackground
-                    // (was painted just after it) to see whether Physical's
-                    // own backdrop wash reads as more blended in behind the
-                    // sky's own stars/nebula, rather than sitting visibly
-                    // on top of them. Both this and NebulaBackground itself
-                    // (see that file's own updated comment) had to move to
-                    // an additive blend for this to actually show anything
-                    // — NebulaBackground's shader paints every pixel fully
-                    // opaque, which would otherwise have hidden this
-                    // completely. Revert by swapping the two back and
-                    // dropping NebulaBackground's blendMode if this doesn't
-                    // end up being kept.
-                    if (widget.settings.artworkLayer == ArtworkLayer.behindSky)
-                      _artworkBackdrop(),
-                    NebulaBackground(
-                      camera: _camera,
-                      zoom: _zoom,
-                      showGrid: widget.settings.showGrid,
-                    ),
-                    if (widget.settings.artworkLayer ==
-                        ArtworkLayer.behindSupernovae)
-                      _artworkBackdrop(),
-                    // A decorative sigil behind each supernova — see
-                    // sky_area_sigils.dart. Painted before SkySupernova so that
-                    // widget's own glow/icon sit on top of it, not the other
-                    // way round.
-                    if (widget.settings.showSupernovae)
-                      SkyAreaSigils(
+        // Its own [Overlay]: the sky tooltip (see [_buildSkyTooltipOverlay])
+        // lives in it, below any route pushed on top, so it is still there
+        // when that page, popup or sheet closes.
+        body: Overlay.wrap(
+          child: Stack(
+            children: [
+              Listener(
+                onPointerSignal: _handlePointerSignal,
+                child: GestureDetector(
+                  onScaleStart: _handleScaleStart,
+                  onScaleUpdate: _handleScaleUpdate,
+                  onScaleEnd: _handleScaleEnd,
+                  onTapDown: _handleTapDown,
+                  onTapUp: _handleTapUp,
+                  onTapCancel: _handleTapCancel,
+                  child: Stack(
+                    key: _skySurfaceKey,
+                    fit: StackFit.expand,
+                    children: [
+                      // A 2026-09-19 test: moved ahead of NebulaBackground
+                      // (was painted just after it) to see whether Physical's
+                      // own backdrop wash reads as more blended in behind the
+                      // sky's own stars/nebula, rather than sitting visibly
+                      // on top of them. Both this and NebulaBackground itself
+                      // (see that file's own updated comment) had to move to
+                      // an additive blend for this to actually show anything
+                      // — NebulaBackground's shader paints every pixel fully
+                      // opaque, which would otherwise have hidden this
+                      // completely. Revert by swapping the two back and
+                      // dropping NebulaBackground's blendMode if this doesn't
+                      // end up being kept.
+                      if (widget.settings.artworkLayer ==
+                          ArtworkLayer.behindSky)
+                        _artworkBackdrop(),
+                      NebulaBackground(
                         camera: _camera,
                         zoom: _zoom,
-                        sizeFactor: widget.settings.supernovaScale,
+                        showGrid: widget.settings.showGrid,
                       ),
-                    // Alternative takes on this slot, tried in order —
-                    // SkyDecorations (spiral nebula + supernova per area),
-                    // SkyWisps (wispy Hubble-style filaments), SkyBlackHole (a
-                    // lensed black hole) — all disabled in favor of SkySupernova
-                    // (one simple lens-flare-style star) while the visual style
-                    // is explored; swap which one's active here to compare, none
-                    // of the files are deleted.
-                    if (widget.settings.showSupernovae)
-                      SkySupernova(
-                        camera: _camera,
-                        zoom: _zoom,
-                        scale: widget.settings.supernovaScale,
-                        intensity: widget.settings.supernovaIntensity,
-                      ),
-                    AnimatedConstellationField(
-                      placed: _placed,
-                      camera: _camera,
-                      zoom: _zoom,
-                      flareProgram: _flareProgram,
-                      // See [kSkyStarPalette]: a white core with a gold glow
-                      // around it for anything burning, matching `SkySupernova`'s
-                      // own icons (a plain white glyph over a gold gradient
-                      // border/glow), and the blue/white families for everything
-                      // that isn't.
-                      palette: kSkyStarPalette,
-                      revision: _revision,
-                    ),
-                    if (widget.settings.artworkLayer == ArtworkLayer.aboveStars)
-                      _artworkBackdrop(),
-                    // DEBUG ONLY — see [_kDebugShowSkyHitZones]'s own doc
-                    // comment. Real hit-test zones in green, the current
-                    // double-tap target circle in orange for comparison.
-                    if (_kDebugShowSkyHitZones) ...[
-                      DebugSkyHitZones(
+                      if (widget.settings.artworkLayer ==
+                          ArtworkLayer.behindSupernovae)
+                        _artworkBackdrop(),
+                      // A decorative sigil behind each supernova — see
+                      // sky_area_sigils.dart. Painted before SkySupernova so that
+                      // widget's own glow/icon sit on top of it, not the other
+                      // way round.
+                      if (widget.settings.showSupernovae)
+                        SkyAreaSigils(
+                          camera: _camera,
+                          zoom: _zoom,
+                          sizeFactor: widget.settings.supernovaScale,
+                        ),
+                      // Alternative takes on this slot, tried in order —
+                      // SkyDecorations (spiral nebula + supernova per area),
+                      // SkyWisps (wispy Hubble-style filaments), SkyBlackHole (a
+                      // lensed black hole) — all disabled in favor of SkySupernova
+                      // (one simple lens-flare-style star) while the visual style
+                      // is explored; swap which one's active here to compare, none
+                      // of the files are deleted.
+                      if (widget.settings.showSupernovae)
+                        SkySupernova(
+                          camera: _camera,
+                          zoom: _zoom,
+                          scale: widget.settings.supernovaScale,
+                          intensity: widget.settings.supernovaIntensity,
+                        ),
+                      AnimatedConstellationField(
                         placed: _placed,
                         camera: _camera,
                         zoom: _zoom,
+                        flareProgram: _flareProgram,
+                        // See [kSkyStarPalette]: a white core with a gold glow
+                        // around it for anything burning, matching `SkySupernova`'s
+                        // own icons (a plain white glyph over a gold gradient
+                        // border/glow), and the blue/white families for everything
+                        // that isn't.
+                        palette: kSkyStarPalette,
+                        revision: _revision,
                       ),
-                      IgnorePointer(
-                        child: Align(
-                          alignment: _emptySkySpotAlignment,
-                          // The 64x64 box here is what actually drives
-                          // Align's own placement math — matching
-                          // [TourGestureEmptySpotHint]'s real `spotSize`
-                          // exactly, not just the padded-out circle below,
-                          // since Align's result shifts with child size
-                          // for any non-center alignment. `OverflowBox`
-                          // then draws the true (padded) 96px hole
-                          // centered on that same point without changing
-                          // it.
-                          child: SizedBox(
-                            width: 64,
-                            height: 64,
-                            child: OverflowBox(
-                              maxWidth: 96,
-                              maxHeight: 96,
-                              child: Container(
-                                width: 96,
-                                height: 96,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: const Color(0x55FFA500),
-                                  border: Border.all(
-                                    color: const Color(0xFFFFA500),
-                                    width: 2,
+                      if (widget.settings.artworkLayer ==
+                          ArtworkLayer.aboveStars)
+                        _artworkBackdrop(),
+                      // DEBUG ONLY — see [_kDebugShowSkyHitZones]'s own doc
+                      // comment. Real hit-test zones in green, the current
+                      // double-tap target circle in orange for comparison.
+                      if (_kDebugShowSkyHitZones) ...[
+                        DebugSkyHitZones(
+                          placed: _placed,
+                          camera: _camera,
+                          zoom: _zoom,
+                        ),
+                        IgnorePointer(
+                          child: Align(
+                            alignment: _emptySkySpotAlignment,
+                            // The 64x64 box here is what actually drives
+                            // Align's own placement math — matching
+                            // [TourGestureEmptySpotHint]'s real `spotSize`
+                            // exactly, not just the padded-out circle below,
+                            // since Align's result shifts with child size
+                            // for any non-center alignment. `OverflowBox`
+                            // then draws the true (padded) 96px hole
+                            // centered on that same point without changing
+                            // it.
+                            child: SizedBox(
+                              width: 64,
+                              height: 64,
+                              child: OverflowBox(
+                                maxWidth: 96,
+                                maxHeight: 96,
+                                child: Container(
+                                  width: 96,
+                                  height: 96,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: const Color(0x55FFA500),
+                                    border: Border.all(
+                                      color: const Color(0xFFFFA500),
+                                      width: 2,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                    // Order 1, the tour's own opening — deliberately unlike
-                    // every step after it: no hole (nothing to point at
-                    // yet), no scrim at all (`scrimOpacity: 0`, so the sky
-                    // behind the card is fully visible, not dimmed), and
-                    // the card sits pinned dead-center of the screen
-                    // (`pinnedCardAlignment: Alignment.center`) rather than
-                    // anchored to anything. One button — Start
-                    // (`appTourWelcomeCard`, its own content builder, the
-                    // only one in this tour with a real Next-equivalent
-                    // control) — advances straight into order 2. `pulse:
-                    // false` turns off the (invisible anyway, with no hole)
-                    // pulsing ring, and `child: SizedBox.shrink()` matches
-                    // every other pointer-free step here.
-                    HintTarget(
-                      key: const ValueKey('sky-nav-step-1'),
-                      tour: 'sky-navigation',
-                      order: 1,
-                      showArrow: false,
-                      pulse: false,
-                      spotlightPadding: EdgeInsets.zero,
-                      pinnedCardAlignment: Alignment.center,
-                      theme: const HintThemeData(scrimOpacity: 0),
-                      contentBuilder: appTourWelcomeCard,
-                      title: context.strings.skyTourWelcomeTitle,
-                      description: context.strings.skyTourWelcomeBody,
-                      child: const SizedBox.shrink(),
-                    ),
-                    // Six gesture-driven steps — the sky itself is one
-                    // hand-drawn canvas, not discrete per-star widgets, so
-                    // there's nothing for a normal `HintTarget` to circle.
-                    // Four of them (1/2/3/5, each pointing at a real spot —
-                    // a supernova, the tour's own placeholder constellation,
-                    // one of its stars) use [SkyHintTarget] instead, which
-                    // cuts a real hole around that spot via the sky's own
-                    // camera projection and carries its own title/body card
-                    // (via [appTourGestureStepCard], Skip-only — see
-                    // [SkyHintTarget]'s own doc comment for why that card,
-                    // not a separate banner, is what keeps it from ending up
-                    // rendered *under* the scrim: both are the same
-                    // `HintTarget`'s own `Overlay` entry). The other two
-                    // (5/7) have no specific spot to point at — a gesture
-                    // (double-tap), and a tooltip closing — so they stay a
-                    // plain full-screen [TourGestureStep] paired with its
-                    // own top-of-screen [TourGestureBanner], same as before.
-                    // Either way, each only registers its own order and only
-                    // actually advances from the matching real gesture's own
-                    // handler below (`_flyToArea`, `_openStar`, etc. — order
-                    // 7 is different, see [_onSkyTooltipChanged]), not from
-                    // a Next tap. Order 1, the tour's own opening, is
-                    // different again — see [skyTourWelcomeTitle]'s own doc
-                    // comment, just below the FAB's own steps further down.
-                    //
-                    // Each of the four is also gated on
-                    // `!_hideTourDuringFlight` (see that field's own doc
-                    // comment for why it's a dedicated flag rather than
-                    // `_flyController.isAnimating` read directly): the tap
-                    // that advances it also kicks off a ~900ms fly-to (see
-                    // `_flyToArea`/`_flyToConstellation`/`_openStar`/
-                    // `_holdConstellation`), and a scrim+card sitting
-                    // frozen over a moving camera for that whole flight
-                    // hid the very motion the step just asked for.
-                    // Omitting the widget outright (rather than, say,
-                    // fading its opacity) is safe across that gap —
-                    // deregistering does not touch step counting or
-                    // ordering (`TourScope.deregisterTarget`'s own doc
-                    // comment), and re-registering when the flight ends
-                    // replays the normal fade-in, which reads as the card
-                    // "returning" rather than a glitch.
-                    //
-                    // Every one of steps 2-7 below carries its own
-                    // explicit `ValueKey` — without one, removing steps
-                    // 2-4 from this list (when `_hideTourDuringFlight`
-                    // flips true) shifts everything after them up by
-                    // three *positions*, and Flutter's unkeyed
-                    // `updateChildren` matches children by position, not
-                    // by identity: it briefly tried to turn the old
-                    // position-0 `SkyHintTarget(order: 2)` into the new
-                    // position-0 `TourGestureStep(order: 5)` while the
-                    // *original* order-5 element (now several slots
-                    // further down the shrunk list) hadn't been torn
-                    // down yet, producing two simultaneously-registered
-                    // `HintTarget`s for the same order and the exact
-                    // "Two HintTargets are mounted..." assertion this app
-                    // hit live. A `Key` per step makes every one of them
-                    // independently trackable across the list's length
-                    // changing, so Flutter moves/keeps each by its own
-                    // identity instead of by whatever position it happens
-                    // to fall on this build.
-                    if (!_hideTourDuringFlight) ...[
-                      SkyHintTarget(
-                        key: const ValueKey('sky-nav-step-3'),
+                      ],
+                      // Order 1, the tour's own opening — deliberately unlike
+                      // every step after it: no hole (nothing to point at
+                      // yet), no scrim at all (`scrimOpacity: 0`, so the sky
+                      // behind the card is fully visible, not dimmed), and
+                      // the card sits pinned dead-center of the screen
+                      // (`pinnedCardAlignment: Alignment.center`) rather than
+                      // anchored to anything. One button — Start
+                      // (`appTourWelcomeCard`, its own content builder, the
+                      // only one in this tour with a real Next-equivalent
+                      // control) — advances straight into order 2. `pulse:
+                      // false` turns off the (invisible anyway, with no hole)
+                      // pulsing ring, and `child: SizedBox.shrink()` matches
+                      // every other pointer-free step here.
+                      HintTarget(
+                        key: const ValueKey('sky-nav-step-1'),
                         tour: 'sky-navigation',
-                        order: 3,
-                        title: context.strings.skyTourTapConstellationTitle,
-                        description:
-                            context.strings.skyTourTapConstellationBody,
-                        skySurfaceKey: _skySurfaceKey,
-                        camera: () => _camera,
-                        zoom: () => _zoom,
-                        spotlightPadding: const EdgeInsets.all(48),
-                        worldPosition: _tutorialDemoSpotlightWorldPosition,
+                        order: 1,
+                        showArrow: false,
+                        pulse: false,
+                        spotlightPadding: EdgeInsets.zero,
+                        pinnedCardAlignment: Alignment.center,
+                        theme: const HintThemeData(scrimOpacity: 0),
+                        contentBuilder: appTourWelcomeCard,
+                        title: context.strings.skyTourWelcomeTitle,
+                        description: context.strings.skyTourWelcomeBody,
+                        child: const SizedBox.shrink(),
                       ),
-                    ],
-                    // A real spotlight hole over an empty patch of sky —
-                    // see [TourGestureEmptySpotHint]'s own doc comment for
-                    // why order 5 gets one instead of the fully invisible
-                    // scrim every other gesture step uses, and for why its
-                    // own card replaces the separate [TourGestureBanner]
-                    // every other whole-screen gesture step here uses.
-                    TourGestureEmptySpotHint(
-                      key: const ValueKey('sky-nav-step-5'),
-                      tour: 'sky-navigation',
-                      order: 5,
-                      title: context.strings.skyTourDoubleTapTitle,
-                      description: context.strings.skyTourDoubleTapBody,
-                      spotAlignment: _emptySkySpotAlignment,
-                    ),
-                    if (!_hideTourDuringFlight)
-                      SkyHintTarget(
-                        key: const ValueKey('sky-nav-step-6'),
+                      // Six gesture-driven steps — the sky itself is one
+                      // hand-drawn canvas, not discrete per-star widgets, so
+                      // there's nothing for a normal `HintTarget` to circle.
+                      // Four of them (1/2/3/5, each pointing at a real spot —
+                      // a supernova, the tour's own placeholder constellation,
+                      // one of its stars) use [SkyHintTarget] instead, which
+                      // cuts a real hole around that spot via the sky's own
+                      // camera projection and carries its own title/body card
+                      // (via [appTourGestureStepCard], Skip-only — see
+                      // [SkyHintTarget]'s own doc comment for why that card,
+                      // not a separate banner, is what keeps it from ending up
+                      // rendered *under* the scrim: both are the same
+                      // `HintTarget`'s own `Overlay` entry). The other two
+                      // (5/7) have no specific spot to point at — a gesture
+                      // (double-tap), and a tooltip closing — so they stay a
+                      // plain full-screen [TourGestureStep] paired with its
+                      // own top-of-screen [TourGestureBanner], same as before.
+                      // Either way, each only registers its own order and only
+                      // actually advances from the matching real gesture's own
+                      // handler below (`_flyToArea`, `_openStar`, etc. — order
+                      // 7 is different, see [_onSkyTooltipChanged]), not from
+                      // a Next tap. Order 1, the tour's own opening, is
+                      // different again — see [skyTourWelcomeTitle]'s own doc
+                      // comment, just below the FAB's own steps further down.
+                      //
+                      // Each of the four is also gated on
+                      // `!_hideTourDuringFlight` (see that field's own doc
+                      // comment for why it's a dedicated flag rather than
+                      // `_flyController.isAnimating` read directly): the tap
+                      // that advances it also kicks off a ~900ms fly-to (see
+                      // `_flyToArea`/`_flyToConstellation`/`_openStar`/
+                      // `_holdConstellation`), and a scrim+card sitting
+                      // frozen over a moving camera for that whole flight
+                      // hid the very motion the step just asked for.
+                      // Omitting the widget outright (rather than, say,
+                      // fading its opacity) is safe across that gap —
+                      // deregistering does not touch step counting or
+                      // ordering (`TourScope.deregisterTarget`'s own doc
+                      // comment), and re-registering when the flight ends
+                      // replays the normal fade-in, which reads as the card
+                      // "returning" rather than a glitch.
+                      //
+                      // Every one of steps 2-7 below carries its own
+                      // explicit `ValueKey` — without one, removing steps
+                      // 2-4 from this list (when `_hideTourDuringFlight`
+                      // flips true) shifts everything after them up by
+                      // three *positions*, and Flutter's unkeyed
+                      // `updateChildren` matches children by position, not
+                      // by identity: it briefly tried to turn the old
+                      // position-0 `SkyHintTarget(order: 2)` into the new
+                      // position-0 `TourGestureStep(order: 5)` while the
+                      // *original* order-5 element (now several slots
+                      // further down the shrunk list) hadn't been torn
+                      // down yet, producing two simultaneously-registered
+                      // `HintTarget`s for the same order and the exact
+                      // "Two HintTargets are mounted..." assertion this app
+                      // hit live. A `Key` per step makes every one of them
+                      // independently trackable across the list's length
+                      // changing, so Flutter moves/keeps each by its own
+                      // identity instead of by whatever position it happens
+                      // to fall on this build.
+                      if (!_hideTourDuringFlight) ...[
+                        SkyHintTarget(
+                          key: const ValueKey('sky-nav-step-3'),
+                          tour: 'sky-navigation',
+                          order: 3,
+                          title: context.strings.skyTourTapConstellationTitle,
+                          description:
+                              context.strings.skyTourTapConstellationBody,
+                          skySurfaceKey: _skySurfaceKey,
+                          camera: () => _camera,
+                          zoom: () => _zoom,
+                          spotlightPadding: const EdgeInsets.all(48),
+                          worldPosition: _tutorialDemoSpotlightWorldPosition,
+                        ),
+                      ],
+                      // A real spotlight hole over an empty patch of sky —
+                      // see [TourGestureEmptySpotHint]'s own doc comment for
+                      // why order 5 gets one instead of the fully invisible
+                      // scrim every other gesture step uses, and for why its
+                      // own card replaces the separate [TourGestureBanner]
+                      // every other whole-screen gesture step here uses.
+                      TourGestureEmptySpotHint(
+                        key: const ValueKey('sky-nav-step-5'),
                         tour: 'sky-navigation',
-                        order: 6,
-                        title: context.strings.skyTourHoldTitle,
-                        description: context.strings.skyTourHoldBody,
-                        skySurfaceKey: _skySurfaceKey,
-                        camera: () => _camera,
-                        zoom: () => _zoom,
-                        spotlightPadding: const EdgeInsets.all(48),
-                        worldPosition: _tutorialDemoSpotlightWorldPosition,
+                        order: 5,
+                        title: context.strings.skyTourDoubleTapTitle,
+                        description: context.strings.skyTourDoubleTapBody,
+                        spotAlignment: _emptySkySpotAlignment,
                       ),
-                    TourGestureStep(
-                      key: const ValueKey('sky-nav-step-7'),
-                      tour: 'sky-navigation',
-                      order: 7,
-                    ),
-                    // Sits on top of the tooltip [_holdConstellation]'s own
-                    // hold just opened — no gesture of its own to wait for,
-                    // just the tooltip closing (see
-                    // [_onSkyTooltipChanged]), whichever way that happens.
-                    TourGestureBanner(
-                      tour: 'sky-navigation',
-                      order: 7,
-                      title: context.strings.skyTourTooltipTitle,
-                      description: context.strings.skyTourTooltipBody,
-                    ),
-                    // The way into everything that isn't the sky itself — same
-                    // disc/navy/gold styling as every other overlay control.
-                    // There's no nav bar left for it to duplicate: this button
-                    // *is* the app's navigation (or was, before the star FAB —
-                    // see [_showDrawerButton]).
-                    if (_showDrawerButton)
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        child: SafeArea(
-                          child: Padding(
-                            padding: const EdgeInsets.all(6),
-                            child: Material(
-                              color: colors.nightPanel.withValues(alpha: 0.75),
-                              shape: CircleBorder(
-                                side: BorderSide(
-                                  color: colors.gold,
-                                  width: kBorderWidthActive,
+                      if (!_hideTourDuringFlight)
+                        SkyHintTarget(
+                          key: const ValueKey('sky-nav-step-6'),
+                          tour: 'sky-navigation',
+                          order: 6,
+                          title: context.strings.skyTourHoldTitle,
+                          description: context.strings.skyTourHoldBody,
+                          skySurfaceKey: _skySurfaceKey,
+                          camera: () => _camera,
+                          zoom: () => _zoom,
+                          spotlightPadding: const EdgeInsets.all(48),
+                          worldPosition: _tutorialDemoSpotlightWorldPosition,
+                        ),
+                      TourGestureStep(
+                        key: const ValueKey('sky-nav-step-7'),
+                        tour: 'sky-navigation',
+                        order: 7,
+                      ),
+                      // Sits on top of the tooltip [_holdConstellation]'s own
+                      // hold just opened — no gesture of its own to wait for,
+                      // just the tooltip closing (see
+                      // [_onSkyTooltipChanged]), whichever way that happens.
+                      TourGestureBanner(
+                        tour: 'sky-navigation',
+                        order: 7,
+                        title: context.strings.skyTourTooltipTitle,
+                        description: context.strings.skyTourTooltipBody,
+                      ),
+                      // The way into everything that isn't the sky itself — same
+                      // disc/navy/gold styling as every other overlay control.
+                      // There's no nav bar left for it to duplicate: this button
+                      // *is* the app's navigation (or was, before the star FAB —
+                      // see [_showDrawerButton]).
+                      if (_showDrawerButton)
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          child: SafeArea(
+                            child: Padding(
+                              padding: const EdgeInsets.all(6),
+                              child: Material(
+                                color: colors.nightPanel.withValues(
+                                  alpha: 0.75,
+                                ),
+                                shape: CircleBorder(
+                                  side: BorderSide(
+                                    color: colors.gold,
+                                    width: kBorderWidthActive,
+                                  ),
+                                ),
+                                child: InkWell(
+                                  customBorder: const CircleBorder(),
+                                  onTap: () =>
+                                      _scaffoldKey.currentState?.openDrawer(),
+                                  child: SizedBox(
+                                    width: 42,
+                                    height: 42,
+                                    child: Tooltip(
+                                      message: strings.openMenuAction,
+                                      child: Icon(
+                                        Icons.menu,
+                                        color: colors.gold,
+                                        size: 22,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
-                              child: InkWell(
-                                customBorder: const CircleBorder(),
-                                onTap: () =>
-                                    _scaffoldKey.currentState?.openDrawer(),
-                                child: SizedBox(
-                                  width: 42,
-                                  height: 42,
-                                  child: Tooltip(
-                                    message: strings.openMenuAction,
+                            ),
+                          ),
+                        ),
+                      // The one overlay control with its colors inverted (solid
+                      // gold, dark text/icon) rather than the translucent navy disc
+                      // every other control uses — top-center and the most
+                      // prominent thing here on purpose, since it's the fastest way
+                      // off "wander and hope" navigation into the search popup.
+                      if (_showSearchButton)
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: SafeArea(
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(6),
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(
+                                      kRadiusField,
+                                    ),
+                                    boxShadow: goldGlow(
+                                      colors,
+                                      strength: 1.1,
+                                      size: 56,
+                                    ),
+                                  ),
+                                  child: Material(
+                                    color: colors.gold,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        kRadiusField,
+                                      ),
+                                      // Dark navy rather than the gold every other
+                                      // control's border uses — this button's own fill
+                                      // is already gold, so a gold border would
+                                      // disappear into it.
+                                      side: BorderSide(
+                                        color: colors.night,
+                                        width: kBorderWidthActive,
+                                      ),
+                                    ),
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(
+                                        kRadiusField,
+                                      ),
+                                      onTap: _openSearch,
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 10,
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.search,
+                                              color: colors.onGold,
+                                              size: 18,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              strings.searchButtonLabel,
+                                              style: TextStyle(
+                                                color: colors.onGold,
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      // Always visible regardless of the three toggles below — it's
+                      // the only way back to turning them on again, so it can't be
+                      // one of the things it itself hides.
+                      if (_showUiControlsButton)
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: SafeArea(
+                            child: Padding(
+                              padding: const EdgeInsets.all(6),
+                              child: Material(
+                                color: colors.nightPanel.withValues(
+                                  alpha: 0.75,
+                                ),
+                                shape: CircleBorder(
+                                  side: BorderSide(
+                                    color: colors.gold,
+                                    width: kBorderWidthActive,
+                                  ),
+                                ),
+                                child: InkWell(
+                                  customBorder: const CircleBorder(),
+                                  onTap: () => _showUiControlsMenu(context),
+                                  child: SizedBox(
+                                    width: 42,
+                                    height: 42,
                                     child: Icon(
-                                      Icons.menu,
+                                      Icons.tune,
                                       color: colors.gold,
                                       size: 22,
                                     ),
@@ -3732,488 +3849,232 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                             ),
                           ),
                         ),
-                      ),
-                    // The one overlay control with its colors inverted (solid
-                    // gold, dark text/icon) rather than the translucent navy disc
-                    // every other control uses — top-center and the most
-                    // prominent thing here on purpose, since it's the fastest way
-                    // off "wander and hope" navigation into the search popup.
-                    if (_showSearchButton)
+                      // The three toggleable controls (Grid/Zoom/Rotation), left to
+                      // right along the bottom — one shared row rather than three
+                      // independently-positioned corners, so [FittedBox] can shrink
+                      // all three together (never grow them past their natural
+                      // size) whenever a narrow screen can't fit them side by side
+                      // at full size; on anything wide enough, this is a no-op and
+                      // they render exactly as big as they'd otherwise be.
                       Positioned(
-                        top: 0,
+                        bottom: 0,
                         left: 0,
                         right: 0,
                         child: SafeArea(
                           child: Center(
                             child: Padding(
-                              padding: const EdgeInsets.all(6),
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(
-                                    kRadiusField,
-                                  ),
-                                  boxShadow: goldGlow(
-                                    colors,
-                                    strength: 1.1,
-                                    size: 56,
-                                  ),
-                                ),
-                                child: Material(
-                                  color: colors.gold,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      kRadiusField,
-                                    ),
-                                    // Dark navy rather than the gold every other
-                                    // control's border uses — this button's own fill
-                                    // is already gold, so a gold border would
-                                    // disappear into it.
-                                    side: BorderSide(
-                                      color: colors.night,
-                                      width: kBorderWidthActive,
-                                    ),
-                                  ),
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(
-                                      kRadiusField,
-                                    ),
-                                    onTap: _openSearch,
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 10,
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.search,
-                                            color: colors.onGold,
-                                            size: 18,
+                              padding: const EdgeInsets.all(12),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    if (_showGridControl)
+                                      Material(
+                                        color: colors.nightPanel.withValues(
+                                          alpha: 0.75,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            _bottomPillRadius,
                                           ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            strings.searchButtonLabel,
-                                            style: TextStyle(
-                                              color: colors.onGold,
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 14,
+                                          side: BorderSide(
+                                            color: colors.gold,
+                                            width: kBorderWidthActive,
+                                          ),
+                                        ),
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                            left: 10,
+                                          ),
+                                          child: SizedBox(
+                                            height: _bottomPillHeight,
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  'Grid',
+                                                  style: TextStyle(
+                                                    color: colors.muted,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                                // Scaled down 20% along with the other
+                                                // two sky-overlay controls (see
+                                                // [_RollKnob]/[_ZoomSlider]'s own
+                                                // sizing) — Switch has no size
+                                                // parameter of its own, so this is the
+                                                // plain way to shrink it without
+                                                // losing its built-in tap/thumb-
+                                                // animation behavior.
+                                                // Colors come from the app's own
+                                                // switch theme, same as every other
+                                                // switch; only the 20% shrink is
+                                                // local, matching the other two
+                                                // sky-overlay controls' sizing.
+                                                Transform.scale(
+                                                  scale: 0.8,
+                                                  child: Switch(
+                                                    value: widget
+                                                        .settings
+                                                        .showGrid,
+                                                    onChanged: (value) {
+                                                      widget.settings
+                                                          .setShowGrid(value);
+                                                      setState(() {});
+                                                    },
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                        ],
+                                        ),
                                       ),
-                                    ),
-                                  ),
+                                    if (_showGridControl &&
+                                        (_showZoomControl || showRotation))
+                                      const SizedBox(width: 12),
+                                    if (_showZoomControl)
+                                      _ZoomSlider(
+                                        zoom: _zoom,
+                                        minZoom: minZoomWithoutRepeats,
+                                        maxZoom: _maxZoom,
+                                        onChanged: (value) {
+                                          if (_skyTooltipController.isOpen) {
+                                            _skyTooltipController.close();
+                                          }
+                                          _stopInertia();
+                                          _flyController.stop();
+                                          setState(() => _zoom = value);
+                                        },
+                                      ),
+                                    if (_showZoomControl && showRotation)
+                                      const SizedBox(width: 12),
+                                    // Touch already has its own two-finger rotate
+                                    // gesture (see `_handleScaleUpdate`'s
+                                    // `details.rotation`), which is exactly why this
+                                    // knob is hidden outright on mobile (see
+                                    // [isTouchOnlyMobile]) — kept on desktop/web,
+                                    // where there's no such gesture without it, and
+                                    // still user-toggleable there via
+                                    // [_showUiControlsMenu].
+                                    if (showRotation)
+                                      _RollKnob(
+                                        angle: cameraRollAngle(_camera),
+                                        onRoll: (delta) {
+                                          if (_skyTooltipController.isOpen) {
+                                            _skyTooltipController.close();
+                                          }
+                                          _stopInertia();
+                                          _flyController.stop();
+                                          setState(
+                                            () =>
+                                                _camera = _camera.rolled(delta),
+                                          );
+                                        },
+                                      ),
+                                  ],
                                 ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    // Always visible regardless of the three toggles below — it's
-                    // the only way back to turning them on again, so it can't be
-                    // one of the things it itself hides.
-                    if (_showUiControlsButton)
+                      // The supernovae's artwork tuning panel — parked, see
+                      // [kShowArtworkControls].
+                      if (kShowArtworkControls)
+                        Positioned.fill(
+                          child: SafeArea(
+                            child: _ArtworkControls(
+                              settings: widget.settings,
+                              open: _artworkControlsOpen,
+                              onToggle: () => setState(
+                                () => _artworkControlsOpen =
+                                    !_artworkControlsOpen,
+                              ),
+                            ),
+                          ),
+                        ),
+                      // The star FAB — an alternative way into the same menu the
+                      // drawer opens (see [_openMenuModal]), tried alongside the
+                      // drawer rather than replacing it. Deliberately not a disc/
+                      // chrome control like every other overlay button here: no
+                      // filled background, just a glowing gold ring around a
+                      // white glyph — as close to [SkySupernova]'s own "white
+                      // glyph inside a gold ring, glowing outward" look as a
+                      // plain widget (no shader) can get, so it reads as one
+                      // more thing burning up there rather than as UI sitting on
+                      // top of it.
                       Positioned(
-                        top: 0,
+                        left: 0,
                         right: 0,
+                        bottom: 0,
                         child: SafeArea(
                           child: Padding(
-                            padding: const EdgeInsets.all(6),
-                            child: Material(
-                              color: colors.nightPanel.withValues(alpha: 0.75),
-                              shape: CircleBorder(
-                                side: BorderSide(
-                                  color: colors.gold,
-                                  width: kBorderWidthActive,
-                                ),
-                              ),
-                              child: InkWell(
-                                customBorder: const CircleBorder(),
-                                onTap: () => _showUiControlsMenu(context),
-                                child: SizedBox(
-                                  width: 42,
-                                  height: 42,
-                                  child: Icon(
-                                    Icons.tune,
-                                    color: colors.gold,
-                                    size: 22,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    // The three toggleable controls (Grid/Zoom/Rotation), left to
-                    // right along the bottom — one shared row rather than three
-                    // independently-positioned corners, so [FittedBox] can shrink
-                    // all three together (never grow them past their natural
-                    // size) whenever a narrow screen can't fit them side by side
-                    // at full size; on anything wide enough, this is a no-op and
-                    // they render exactly as big as they'd otherwise be.
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      child: SafeArea(
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  if (_showGridControl)
-                                    Material(
-                                      color: colors.nightPanel.withValues(
-                                        alpha: 0.75,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(
-                                          _bottomPillRadius,
-                                        ),
-                                        side: BorderSide(
-                                          color: colors.gold,
-                                          width: kBorderWidthActive,
-                                        ),
-                                      ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(
-                                          left: 10,
-                                        ),
-                                        child: SizedBox(
-                                          height: _bottomPillHeight,
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                'Grid',
-                                                style: TextStyle(
-                                                  color: colors.muted,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                              // Scaled down 20% along with the other
-                                              // two sky-overlay controls (see
-                                              // [_RollKnob]/[_ZoomSlider]'s own
-                                              // sizing) — Switch has no size
-                                              // parameter of its own, so this is the
-                                              // plain way to shrink it without
-                                              // losing its built-in tap/thumb-
-                                              // animation behavior.
-                                              // Colors come from the app's own
-                                              // switch theme, same as every other
-                                              // switch; only the 20% shrink is
-                                              // local, matching the other two
-                                              // sky-overlay controls' sizing.
-                                              Transform.scale(
-                                                scale: 0.8,
-                                                child: Switch(
-                                                  value:
-                                                      widget.settings.showGrid,
-                                                  onChanged: (value) {
-                                                    widget.settings.setShowGrid(
-                                                      value,
-                                                    );
-                                                    setState(() {});
-                                                  },
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  if (_showGridControl &&
-                                      (_showZoomControl || showRotation))
-                                    const SizedBox(width: 12),
-                                  if (_showZoomControl)
-                                    _ZoomSlider(
-                                      zoom: _zoom,
-                                      minZoom: minZoomWithoutRepeats,
-                                      maxZoom: _maxZoom,
-                                      onChanged: (value) {
-                                        if (_skyTooltipController.isOpen) {
-                                          _skyTooltipController.close();
-                                        }
-                                        _stopInertia();
-                                        _flyController.stop();
-                                        setState(() => _zoom = value);
-                                      },
-                                    ),
-                                  if (_showZoomControl && showRotation)
-                                    const SizedBox(width: 12),
-                                  // Touch already has its own two-finger rotate
-                                  // gesture (see `_handleScaleUpdate`'s
-                                  // `details.rotation`), which is exactly why this
-                                  // knob is hidden outright on mobile (see
-                                  // [isTouchOnlyMobile]) — kept on desktop/web,
-                                  // where there's no such gesture without it, and
-                                  // still user-toggleable there via
-                                  // [_showUiControlsMenu].
-                                  if (showRotation)
-                                    _RollKnob(
-                                      angle: cameraRollAngle(_camera),
-                                      onRoll: (delta) {
-                                        if (_skyTooltipController.isOpen) {
-                                          _skyTooltipController.close();
-                                        }
-                                        _stopInertia();
-                                        _flyController.stop();
-                                        setState(
-                                          () => _camera = _camera.rolled(delta),
-                                        );
-                                      },
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // The supernovae's artwork tuning panel — parked, see
-                    // [kShowArtworkControls].
-                    if (kShowArtworkControls)
-                      Positioned.fill(
-                        child: SafeArea(
-                          child: _ArtworkControls(
-                            settings: widget.settings,
-                            open: _artworkControlsOpen,
-                            onToggle: () => setState(
-                              () =>
-                                  _artworkControlsOpen = !_artworkControlsOpen,
-                            ),
-                          ),
-                        ),
-                      ),
-                    // The star FAB — an alternative way into the same menu the
-                    // drawer opens (see [_openMenuModal]), tried alongside the
-                    // drawer rather than replacing it. Deliberately not a disc/
-                    // chrome control like every other overlay button here: no
-                    // filled background, just a glowing gold ring around a
-                    // white glyph — as close to [SkySupernova]'s own "white
-                    // glyph inside a gold ring, glowing outward" look as a
-                    // plain widget (no shader) can get, so it reads as one
-                    // more thing burning up there rather than as UI sitting on
-                    // top of it.
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      child: SafeArea(
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Center(
-                            // Order 10 wraps order 8's own `HintTarget`
-                            // rather than replacing it — the two are
-                            // never active at once (the tour has already
-                            // moved past 8 by the time 10 comes up), and
-                            // nesting is what lets both point at this
-                            // exact same button/hole without duplicating
-                            // `_MenuStarButton` itself. See
-                            // [skyTourQuickMenuTapTitle]'s own doc
-                            // comment for the step sequence this and
-                            // order 8 are now part of.
-                            child: HintTarget(
-                              tour: 'sky-navigation',
-                              order: 10,
-                              showArrow: true,
-                              // Real (quick) tap advances this one too
-                              // (see `_toggleQuickAccessMenu`) — same
-                              // reasoning as order 8's own `passthrough`.
-                              passthrough: true,
-                              spotlight: SpotlightShape.circle,
-                              spotlightPadding: const EdgeInsets.all(-11),
-                              contentBuilder: appTourGestureStepCard,
-                              title: context.strings.skyTourQuickMenuTapTitle,
-                              description:
-                                  context.strings.skyTourQuickMenuTapBody,
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Center(
+                              // Order 10 wraps order 8's own `HintTarget`
+                              // rather than replacing it — the two are
+                              // never active at once (the tour has already
+                              // moved past 8 by the time 10 comes up), and
+                              // nesting is what lets both point at this
+                              // exact same button/hole without duplicating
+                              // `_MenuStarButton` itself. See
+                              // [skyTourQuickMenuTapTitle]'s own doc
+                              // comment for the step sequence this and
+                              // order 8 are now part of.
                               child: HintTarget(
                                 tour: 'sky-navigation',
-                                order: 8,
+                                order: 10,
                                 showArrow: true,
-                                // Real tap advances this one too (see
-                                // `_openMenuModal`) — `passthrough` has to
-                                // let the actual press through to
-                                // `_MenuStarButton` underneath instead of
-                                // the scrim swallowing it.
+                                // Real (quick) tap advances this one too
+                                // (see `_toggleQuickAccessMenu`) — same
+                                // reasoning as order 8's own `passthrough`.
                                 passthrough: true,
-                                // A circle, not the default rounded rect —
-                                // matches the button's own round shape
-                                // instead of leaving dimmed corners inside
-                                // a squared-off hole.
                                 spotlight: SpotlightShape.circle,
-                                // Negative on purpose: `_MenuStarButton`'s
-                                // own measured size is its 110×110 tap
-                                // target (see `_tapTargetSize`),
-                                // deliberately much bigger than what it
-                                // actually draws — the visible mark is the
-                                // app logo at `_logoSize` (72px), not the
-                                // underlying `_iconSize` (58px) an earlier
-                                // pass mistakenly used here, which pulled
-                                // the hole in too far and nearly clipped
-                                // the logo. -11 targets a hole of
-                                // 72 + 2*8 = 88px — the same ~8px gap
-                                // Sound Lab gets from the theme's plain
-                                // default, around the logo's own real
-                                // size.
                                 spotlightPadding: const EdgeInsets.all(-11),
                                 contentBuilder: appTourGestureStepCard,
-                                title: context.strings.skyTourMenuTitle,
-                                description: context.strings.skyTourMenuBody,
-                                child: _MenuStarButton(
-                                  key: _menuStarButtonKey,
-                                  onTap: _openMenuModal,
-                                  onQuickTap: _openSkyFromMenuButton,
-                                  onDismissSkyTooltip:
-                                      _dismissSkyTooltipForMenuPress,
-                                  onPressChanged: _setMenuControlPressed,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // A dedicated way into the Sound Lab (see
-                    // `SoundLabScreen`) — top-right, clear of every other
-                    // control here. Placed for quick access while there's
-                    // a growing pool of candidate sounds to audition;
-                    // nothing behind it is destructive, so it's fine to
-                    // stay one tap away rather than buried in Settings.
-                    // Parked behind [_showSoundLabButton] now that
-                    // [QuickSettingsScreen] covers this same shortcut.
-                    if (_showSoundLabButton)
-                      Positioned(
-                        top: 0,
-                        right: 0,
-                        child: SafeArea(
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: _SkyOverlayButton(
-                              icon: Icons.graphic_eq,
-                              tooltip: context.strings.soundLabButtonTooltip,
-                              onTap: _openSoundLab,
-                            ),
-                          ),
-                        ),
-                      ),
-                    // Tutorial management (on/off switch + reset) — right
-                    // below the Sound Lab button, same corner, same style;
-                    // no `HintTarget` of its own since it isn't part of any
-                    // tour. See `showTutorialManagementDialog`'s own doc
-                    // comment for why this moved out of Settings. Parked
-                    // behind [_showTutorialsButton] for the same reason as
-                    // [_showSoundLabButton] just above.
-                    if (_showTutorialsButton)
-                      Positioned(
-                        top: 64,
-                        right: 0,
-                        child: SafeArea(
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: _SkyOverlayButton(
-                              icon: Icons.school_outlined,
-                              tooltip: context.strings.tutorialsButtonTooltip,
-                              onTap: () => showTutorialManagementDialog(
-                                context,
-                                settings: widget.settings,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    // The hold-charging ring (see [_handleTapDown]/
-                    // [_holdRingController]) — last so it paints above
-                    // every star/constellation/control here, never under
-                    // them. Purely decorative: [IgnorePointer] keeps it out
-                    // of hit-testing entirely, so it can't itself become
-                    // one more thing competing for the gesture arena (see
-                    // [_holdTimer]'s own doc comment on why that's worth
-                    // avoiding).
-                    IgnorePointer(
-                      child: AnimatedBuilder(
-                        animation: _holdRingController,
-                        builder: (context, _) => CustomPaint(
-                          painter: _HoldRingPainter(
-                            center: _holdRingCenter,
-                            progress: _holdRingController.value,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // A full-screen catch-all that closes the quick-access
-                    // menu on an outside tap — sits right under the fan
-                    // itself (next) so both paint/hit-test above every
-                    // other control here, last two in this Stack on
-                    // purpose. [_HoleBarrier] leaves the main button itself
-                    // touchable through it, so a press (tap to close, or a
-                    // hold for the full menu) works with this open too.
-                    // [IgnorePointer] while closed lets every
-                    // normal gesture on the sky pass straight through, the
-                    // same as if this widget weren't here at all.
-                    IgnorePointer(
-                      ignoring: !_quickAccessMenuOpen,
-                      child: _HoleBarrier(
-                        holeKey: _menuStarButtonKey,
-                        holeRadius: _MenuStarButtonState._tapTargetSize / 2,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: _closeQuickAccessMenu,
-                          child: const SizedBox.expand(),
-                        ),
-                      ),
-                    ),
-                    // The quick-access mini menu itself (see
-                    // [_QuickAccessFan]) — same bottom-center anchor as
-                    // [_MenuStarButton] just above (same
-                    // [SafeArea]/[Padding]/[Center] wrapping), so its own
-                    // fan of buttons arcs out from that exact button's
-                    // center rather than an independently-tuned spot.
-                    // Always mounted (never conditionally built) so it can
-                    // fade/scale in and out instead of popping; only
-                    // interactive while open.
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      child: SafeArea(
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Center(
-                            child: IgnorePointer(
-                              ignoring: !_quickAccessMenuOpen,
-                              child: AnimatedScale(
-                                scale: _quickAccessMenuOpen ? 1 : 0.85,
-                                duration: const Duration(milliseconds: 160),
-                                curve: Curves.easeOut,
-                                child: AnimatedOpacity(
-                                  opacity: _quickAccessMenuOpen ? 1 : 0,
-                                  duration: const Duration(milliseconds: 160),
-                                  child: _QuickAccessFan(
-                                    onQuickSettings: () =>
-                                        _selectQuickAccess(_openQuickSettings),
-                                    onStatistics: () =>
-                                        _selectQuickAccess(_openStatistics),
-                                    onNightlight: () =>
-                                        _selectQuickAccess(_openNightlight),
-                                    // Not routed through [_selectQuickAccess]
-                                    // like every other button here — this
-                                    // fan isn't [Navigator]-backed, so
-                                    // [_openSearch] needs it passed as its
-                                    // own [onCloseMenu] instead, closed only
-                                    // once it actually knows whether to
-                                    // (see that method's own doc comment).
-                                    onSearch: () => _openSearch(
-                                      onCloseMenu: _closeQuickAccessMenu,
-                                    ),
-                                    onUiSandbox: kDebugMode
-                                        ? () =>
-                                              _selectQuickAccess(_openUiSandbox)
-                                        : null,
+                                title: context.strings.skyTourQuickMenuTapTitle,
+                                description:
+                                    context.strings.skyTourQuickMenuTapBody,
+                                child: HintTarget(
+                                  tour: 'sky-navigation',
+                                  order: 8,
+                                  showArrow: true,
+                                  // Real tap advances this one too (see
+                                  // `_openMenuModal`) — `passthrough` has to
+                                  // let the actual press through to
+                                  // `_MenuStarButton` underneath instead of
+                                  // the scrim swallowing it.
+                                  passthrough: true,
+                                  // A circle, not the default rounded rect —
+                                  // matches the button's own round shape
+                                  // instead of leaving dimmed corners inside
+                                  // a squared-off hole.
+                                  spotlight: SpotlightShape.circle,
+                                  // Negative on purpose: `_MenuStarButton`'s
+                                  // own measured size is its 110×110 tap
+                                  // target (see `_tapTargetSize`),
+                                  // deliberately much bigger than what it
+                                  // actually draws — the visible mark is the
+                                  // app logo at `_logoSize` (72px), not the
+                                  // underlying `_iconSize` (58px) an earlier
+                                  // pass mistakenly used here, which pulled
+                                  // the hole in too far and nearly clipped
+                                  // the logo. -11 targets a hole of
+                                  // 72 + 2*8 = 88px — the same ~8px gap
+                                  // Sound Lab gets from the theme's plain
+                                  // default, around the logo's own real
+                                  // size.
+                                  spotlightPadding: const EdgeInsets.all(-11),
+                                  contentBuilder: appTourGestureStepCard,
+                                  title: context.strings.skyTourMenuTitle,
+                                  description: context.strings.skyTourMenuBody,
+                                  child: _MenuStarButton(
+                                    key: _menuStarButtonKey,
+                                    onTap: _openMenuModal,
+                                    onQuickTap: _openSkyFromMenuButton,
+                                    onDismissSkyTooltip:
+                                        _dismissSkyTooltipForMenuPress,
                                     onPressChanged: _setMenuControlPressed,
                                   ),
                                 ),
@@ -4222,77 +4083,224 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // A lit star's quick-look tooltip needs a real [ShareableLitStarCard]
-            // laid out (not just described) somewhere to capture — see
-            // [_shareQuickLookStar] — rendered here, far to the side, so it's
-            // never actually visible: [Opacity] would skip painting it
-            // entirely at 0, which [RenderRepaintBoundary.toImage] needs to
-            // have happened at least once, so an off-screen [Positioned] is
-            // used instead.
-            if (_quickLookStar case final star? when star.isLit)
-              Positioned(
-                left: -MediaQuery.sizeOf(context).width * 2,
-                top: 0,
-                width: MediaQuery.sizeOf(context).width,
-                height: MediaQuery.sizeOf(context).height,
-                child: RepaintBoundary(
-                  key: _quickLookShareKey,
-                  child: ShareableLitStarCard(
-                    star: star,
-                    project: _quickLookConstellation?.project,
+                      // A dedicated way into the Sound Lab (see
+                      // `SoundLabScreen`) — top-right, clear of every other
+                      // control here. Placed for quick access while there's
+                      // a growing pool of candidate sounds to audition;
+                      // nothing behind it is destructive, so it's fine to
+                      // stay one tap away rather than buried in Settings.
+                      // Parked behind [_showSoundLabButton] now that
+                      // [QuickSettingsScreen] covers this same shortcut.
+                      if (_showSoundLabButton)
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: SafeArea(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: _SkyOverlayButton(
+                                icon: Icons.graphic_eq,
+                                tooltip: context.strings.soundLabButtonTooltip,
+                                onTap: _openSoundLab,
+                              ),
+                            ),
+                          ),
+                        ),
+                      // Tutorial management (on/off switch + reset) — right
+                      // below the Sound Lab button, same corner, same style;
+                      // no `HintTarget` of its own since it isn't part of any
+                      // tour. See `showTutorialManagementDialog`'s own doc
+                      // comment for why this moved out of Settings. Parked
+                      // behind [_showTutorialsButton] for the same reason as
+                      // [_showSoundLabButton] just above.
+                      if (_showTutorialsButton)
+                        Positioned(
+                          top: 64,
+                          right: 0,
+                          child: SafeArea(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: _SkyOverlayButton(
+                                icon: Icons.school_outlined,
+                                tooltip: context.strings.tutorialsButtonTooltip,
+                                onTap: () => showTutorialManagementDialog(
+                                  context,
+                                  settings: widget.settings,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      // The hold-charging ring (see [_handleTapDown]/
+                      // [_holdRingController]) — last so it paints above
+                      // every star/constellation/control here, never under
+                      // them. Purely decorative: [IgnorePointer] keeps it out
+                      // of hit-testing entirely, so it can't itself become
+                      // one more thing competing for the gesture arena (see
+                      // [_holdTimer]'s own doc comment on why that's worth
+                      // avoiding).
+                      IgnorePointer(
+                        child: AnimatedBuilder(
+                          animation: _holdRingController,
+                          builder: (context, _) => CustomPaint(
+                            painter: _HoldRingPainter(
+                              center: _holdRingCenter,
+                              progress: _holdRingController.value,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // A full-screen catch-all that closes the quick-access
+                      // menu on an outside tap — sits right under the fan
+                      // itself (next) so both paint/hit-test above every
+                      // other control here, last two in this Stack on
+                      // purpose. [_HoleBarrier] leaves the main button itself
+                      // touchable through it, so a press (tap to close, or a
+                      // hold for the full menu) works with this open too.
+                      // [IgnorePointer] while closed lets every
+                      // normal gesture on the sky pass straight through, the
+                      // same as if this widget weren't here at all.
+                      IgnorePointer(
+                        ignoring: !_quickAccessMenuOpen,
+                        child: _HoleBarrier(
+                          holeKey: _menuStarButtonKey,
+                          holeRadius: _MenuStarButtonState._tapTargetSize / 2,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: _closeQuickAccessMenu,
+                            child: const SizedBox.expand(),
+                          ),
+                        ),
+                      ),
+                      // The quick-access mini menu itself (see
+                      // [_QuickAccessFan]) — same bottom-center anchor as
+                      // [_MenuStarButton] just above (same
+                      // [SafeArea]/[Padding]/[Center] wrapping), so its own
+                      // fan of buttons arcs out from that exact button's
+                      // center rather than an independently-tuned spot.
+                      // Always mounted (never conditionally built) so it can
+                      // fade/scale in and out instead of popping; only
+                      // interactive while open.
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: SafeArea(
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Center(
+                              child: IgnorePointer(
+                                ignoring: !_quickAccessMenuOpen,
+                                child: AnimatedScale(
+                                  scale: _quickAccessMenuOpen ? 1 : 0.85,
+                                  duration: const Duration(milliseconds: 160),
+                                  curve: Curves.easeOut,
+                                  child: AnimatedOpacity(
+                                    opacity: _quickAccessMenuOpen ? 1 : 0,
+                                    duration: const Duration(milliseconds: 160),
+                                    child: _QuickAccessFan(
+                                      onQuickSettings: () => _selectQuickAccess(
+                                        _openQuickSettings,
+                                      ),
+                                      onStatistics: () =>
+                                          _selectQuickAccess(_openStatistics),
+                                      onNightlight: () =>
+                                          _selectQuickAccess(_openNightlight),
+                                      // Not routed through [_selectQuickAccess]
+                                      // like every other button here — this
+                                      // fan isn't [Navigator]-backed, so
+                                      // [_openSearch] needs it passed as its
+                                      // own [onCloseMenu] instead, closed only
+                                      // once it actually knows whether to
+                                      // (see that method's own doc comment).
+                                      onSearch: () => _openSearch(
+                                        onCloseMenu: _closeQuickAccessMenu,
+                                      ),
+                                      onUiSandbox: kDebugMode
+                                          ? () => _selectQuickAccess(
+                                              _openUiSandbox,
+                                            )
+                                          : null,
+                                      onPressChanged: _setMenuControlPressed,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            // [CreationSuccessDialog]'s own off-screen card — same trick,
-            // independent state (see [_creationShareSubject]'s own doc
-            // comment for why).
-            if (_creationShareSubject case final subject?)
-              Positioned(
-                left: -MediaQuery.sizeOf(context).width * 2,
-                top: 0,
-                width: MediaQuery.sizeOf(context).width,
-                height: MediaQuery.sizeOf(context).height,
-                child: RepaintBoundary(
-                  key: _creationShareKey,
-                  child: switch (subject) {
-                    _StarShare(:final star, :final project) =>
-                      star.isLit
-                          ? ShareableLitStarCard(star: star, project: project)
-                          : ShareableGoalCard(star: star, project: project),
-                    _PulsarShare(:final habit, :final project) =>
-                      ShareablePulsarCard(habit: habit, project: project),
-                    _ConstellationShare(:final project, :final shape) =>
-                      ShareableConstellationCard(
-                        project: project,
-                        shape: shape,
-                      ),
-                  },
+              // A lit star's quick-look tooltip needs a real [ShareableLitStarCard]
+              // laid out (not just described) somewhere to capture — see
+              // [_shareQuickLookStar] — rendered here, far to the side, so it's
+              // never actually visible: [Opacity] would skip painting it
+              // entirely at 0, which [RenderRepaintBoundary.toImage] needs to
+              // have happened at least once, so an off-screen [Positioned] is
+              // used instead.
+              if (_quickLookStar case final star? when star.isLit)
+                Positioned(
+                  left: -MediaQuery.sizeOf(context).width * 2,
+                  top: 0,
+                  width: MediaQuery.sizeOf(context).width,
+                  height: MediaQuery.sizeOf(context).height,
+                  child: RepaintBoundary(
+                    key: _quickLookShareKey,
+                    child: ShareableLitStarCard(
+                      star: star,
+                      project: _quickLookConstellation?.project,
+                    ),
+                  ),
                 ),
+              // [CreationSuccessDialog]'s own off-screen card — same trick,
+              // independent state (see [_creationShareSubject]'s own doc
+              // comment for why).
+              if (_creationShareSubject case final subject?)
+                Positioned(
+                  left: -MediaQuery.sizeOf(context).width * 2,
+                  top: 0,
+                  width: MediaQuery.sizeOf(context).width,
+                  height: MediaQuery.sizeOf(context).height,
+                  child: RepaintBoundary(
+                    key: _creationShareKey,
+                    child: switch (subject) {
+                      _StarShare(:final star, :final project) =>
+                        star.isLit
+                            ? ShareableLitStarCard(star: star, project: project)
+                            : ShareableGoalCard(star: star, project: project),
+                      _PulsarShare(:final habit, :final project) =>
+                        ShareablePulsarCard(habit: habit, project: project),
+                      _ConstellationShare(:final project, :final shape) =>
+                        ShareableConstellationCard(
+                          project: project,
+                          shape: shape,
+                        ),
+                    },
+                  ),
+                ),
+              // The tap tooltip itself — see [_skyTooltipOverlay]'s own doc
+              // comment for why the actual `TooltipCard` is a cached field
+              // rather than built fresh right here. This [ListenableBuilder]
+              // is a thin wrapper that *does* rebuild on every
+              // [_skyTooltipController] change (exactly what
+              // [_tooltipAnchorOffset] needs, to react to which kind of
+              // tooltip just opened) — but since it hands the identical
+              // [_skyTooltipOverlay] instance down as `child` every time,
+              // `TooltipCard` itself never sees a reason to rebuild, so this
+              // adds no risk of reintroducing that field's own bug.
+              ListenableBuilder(
+                listenable: _skyTooltipController,
+                builder: (context, child) => Transform.translate(
+                  offset: _tooltipAnchorOffset(_skyTooltipController.data),
+                  child: child,
+                ),
+                child: _skyTooltipOverlay!,
               ),
-            // The tap tooltip itself — see [_skyTooltipOverlay]'s own doc
-            // comment for why the actual `TooltipCard` is a cached field
-            // rather than built fresh right here. This [ListenableBuilder]
-            // is a thin wrapper that *does* rebuild on every
-            // [_skyTooltipController] change (exactly what
-            // [_tooltipAnchorOffset] needs, to react to which kind of
-            // tooltip just opened) — but since it hands the identical
-            // [_skyTooltipOverlay] instance down as `child` every time,
-            // `TooltipCard` itself never sees a reason to rebuild, so this
-            // adds no risk of reintroducing that field's own bug.
-            ListenableBuilder(
-              listenable: _skyTooltipController,
-              builder: (context, child) => Transform.translate(
-                offset: _tooltipAnchorOffset(_skyTooltipController.data),
-                child: child,
-              ),
-              child: _skyTooltipOverlay!,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -4371,6 +4379,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         // hand-rolled tap/hold arena handling (see [_holdTimer]'s doc
         // comment) ever saw it. Dismissal here stays exactly what it
         // already was: this screen's own explicit `close()` calls.
+        // The nearest [Overlay] — the sky's own — not the root one above routes.
+        useRootOverlay: false,
         whenContentHide: WhenContentHide.pressOutSide,
         barrierDismissible: false,
         child: const SizedBox.shrink(),
@@ -4474,6 +4484,12 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       onClose: _closeSkyTooltip,
       onView: _viewQuickLookPulsar,
       onToday: () => _quickLookPulsarToday(habit),
+      onTodayDecrement: isStepper && habitDailyProgress(habit, countsByDay) > 0
+          ? () => _quickLookPulsarUndoToday(habit)
+          : null,
+      stepperText: isStepper
+          ? '${habitDailyProgress(habit, countsByDay)}/${habit.targetPerPeriod}'
+          : null,
       todayActionIcon: isStepper
           ? Icons.add_circle_outline_rounded
           : Icons.local_fire_department_rounded,
@@ -4497,7 +4513,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     PlacedConstellation constellation,
     Habit habit,
   ) async {
-    _closeSkyTooltip();
     await showSharePreview(
       context: context,
       content: ShareablePulsarCard(
@@ -4509,8 +4524,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     );
   }
 
+  /// Turns the habit on/off (or logs one more) without leaving the tooltip:
+  /// it stays open, showing the new state.
   Future<void> _quickLookPulsarToday(Habit habit) async {
-    _closeSkyTooltip();
     final completions = widget.habitCompletionRepository;
     final counts = habitCompletionCountsByDay(
       completions.getAllForHabit(habit.id),
@@ -4527,13 +4543,31 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       await completions.markDone(habit.id);
     }
     _refresh();
+    // Rebuild the open tooltip so it shows the new state.
+    final data = _skyTooltipController.data;
+    if (mounted && data != null) {
+      _skyTooltipController.updateData(_copyTooltip(data));
+    }
+  }
+
+  /// The stepper's minus: takes back the last instance logged today.
+  Future<void> _quickLookPulsarUndoToday(Habit habit) async {
+    final now = DateTime.now();
+    await widget.habitCompletionRepository.unlogLastInstance(
+      habit.id,
+      DateTime(now.year, now.month, now.day),
+    );
+    _refresh();
+    final data = _skyTooltipController.data;
+    if (mounted && data != null) {
+      _skyTooltipController.updateData(_copyTooltip(data));
+    }
   }
 
   Future<void> _editQuickLookPulsar(
     PlacedConstellation constellation,
     Habit habit,
   ) async {
-    _closeSkyTooltip();
     final result = await Navigator.of(context).push<Object>(
       MaterialPageRoute(
         builder: (_) => StarFormScreen(
@@ -4579,7 +4613,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _deleteQuickLookPulsar(Habit habit) async {
-    _closeSkyTooltip();
     final strings = context.strings;
     final confirmed = await showAppConfirmation(
       context: context,
@@ -4590,6 +4623,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       tone: AppConfirmationTone.destructive,
     );
     if (!confirmed) return;
+    _closeSkyTooltip();
     await widget.habitRepository.delete(habit.id);
     _refresh();
   }
@@ -4597,7 +4631,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   Future<void> _lightQuickLookStar() async {
     final star = _quickLookStar;
     if (star == null || !star.isUnlit) return;
-    _closeSkyTooltip();
     final result = await showMarkAchievedSheet(context);
     if (result == null) return;
     await widget.starRepository.markAchieved(
@@ -4633,7 +4666,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   Future<void> _addStarToQuickLookConstellation(
     PlacedConstellation constellation,
   ) async {
-    _closeSkyTooltip();
     final occupied = constellation.stars
         .map((star) => star.slotSequence)
         .toSet();
@@ -4694,7 +4726,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   ) async {
     final shape = constellation.shape;
     if (shape == null) return;
-    _closeSkyTooltip();
     await showSharePreview(
       context: context,
       content: ShareableConstellationCard(
@@ -4709,7 +4740,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   Future<void> _editQuickLookConstellation(
     PlacedConstellation constellation,
   ) async {
-    _closeSkyTooltip();
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => NewProjectScreen(
@@ -4725,7 +4755,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   Future<void> _deleteQuickLookConstellation(
     PlacedConstellation constellation,
   ) async {
-    _closeSkyTooltip();
     final strings = context.strings;
     final project = constellation.project;
     final confirmed = await showAppConfirmation(
@@ -4737,6 +4766,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       tone: AppConfirmationTone.destructive,
     );
     if (!confirmed) return;
+    _closeSkyTooltip();
     final habitIds = await widget.habitRepository.deleteAllForProject(
       project.id,
     );
@@ -4756,7 +4786,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _viewConstellation(PlacedConstellation constellation) async {
-    _closeSkyTooltip();
     final result = await Navigator.of(context).push<Project>(
       MaterialPageRoute(
         builder: (_) => ConstellationScreen(
@@ -4777,7 +4806,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _openQuickLookAreaVision(LifeArea area) async {
-    _closeSkyTooltip();
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => VisionEditorScreen(
@@ -4790,7 +4818,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _openQuickLookAreaMoodboard(LifeArea area) async {
-    _closeSkyTooltip();
     try {
       final repository = await MoodboardRepository.create();
       if (!mounted) return;
@@ -4810,7 +4837,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _openQuickLookAreaReflections(LifeArea area) async {
-    _closeSkyTooltip();
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => AreaReflectionsScreen(
@@ -4823,7 +4849,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _openQuickLookAreaConstellation(LifeArea area) async {
-    _closeSkyTooltip();
     final project = await Navigator.of(context).push<Project>(
       MaterialPageRoute(
         builder: (_) => NewProjectScreen(
@@ -4838,7 +4863,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _viewArea(LifeArea area) async {
-    _closeSkyTooltip();
     final result = await Navigator.of(context).push<LifeArea>(
       MaterialPageRoute(
         builder: (_) => AreaDetailScreen(

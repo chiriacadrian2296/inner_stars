@@ -223,6 +223,7 @@ class GalleryStarTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: colors.text,
+                        fontFamily: kFontStarTitle,
                         fontSize: 14 * u,
                         fontWeight: FontWeight.w700,
                         height: 1.15,
@@ -383,6 +384,7 @@ class GalleryProjectTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: colors.text,
+                        fontFamily: kFontStarTitle,
                         fontSize: 14 * u,
                         fontWeight: FontWeight.w700,
                         height: 1.15,

@@ -15,6 +15,30 @@ import 'constellation_shape.dart';
 /// below getting expensive for a project with an implausible number of wins.
 const int maxChainedStars = 600;
 
+/// How many stars (every kind that sits on the shape, dead ones included —
+/// they keep their slot) one constellation can hold. Matches the editor's cap
+/// on a shape's own points, so a shape can be drawn and then filled
+/// completely, but never grown past what Cosmo can render legibly.
+const int kMaxConstellationStars = 30;
+
+/// How many pulsars one constellation can hold. Counted apart from
+/// [kMaxConstellationStars]: pulsars scatter around the shape instead of
+/// sitting on it, and are drawn as smaller points.
+const int kMaxConstellationPulsars = 10;
+
+/// Thrown by `StarRepository.add` / `HabitRepository.add` when the target
+/// constellation is already at its cap. The star form checks first and shows
+/// a message, so this is only the safety net behind it.
+class ConstellationFullException implements Exception {
+  const ConstellationFullException({required this.pulsar});
+
+  final bool pulsar;
+
+  @override
+  String toString() =>
+      'ConstellationFullException(${pulsar ? 'pulsars' : 'stars'})';
+}
+
 /// The result of growing a [ConstellationShape] to a target star count:
 /// every star's position, and every line segment (as index pairs into
 /// [points]) that should connect them.

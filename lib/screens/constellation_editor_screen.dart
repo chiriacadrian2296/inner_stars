@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
+import '../data/constellation_layout.dart';
 import '../data/constellation_editor_prefs.dart';
 import '../data/constellation_shape.dart';
 import '../data/custom_constellation_repository.dart';
@@ -89,7 +90,7 @@ class StarsShapeEditorScreen extends StatefulWidget {
 /// every preset is one a person could have drawn here) mostly land at 6-14
 /// points, so this leaves headroom without inviting a shape so dense it
 /// stops reading as a constellation on a phone screen.
-const int _maxEditorPoints = 30;
+const int _maxEditorPoints = kMaxConstellationStars;
 
 /// Splits [text] around its own *first* run of digits — the changing
 /// figure a formatted status string like

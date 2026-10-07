@@ -1,3 +1,4 @@
+import '../data/constellation_layout.dart' show kMaxConstellationStars;
 import '../data/habit_completion_repository.dart';
 import '../data/habit_repository.dart';
 import '../data/project_repository.dart';
@@ -8,8 +9,25 @@ import '../models/project.dart';
 import '../models/star_media.dart';
 import '../utils/date_math.dart';
 
-/// How many wins each seed project gains every time [seedSampleData] runs.
-const winsPerSeedTap = 4;
+/// How many stars each seed project (by spec index) is filled up to the first
+/// time [seedSampleData] runs — deliberately uneven, so the Sky and Cosmo show
+/// every density side by side: a few constellations completely full
+/// ([kMaxConstellationStars]), a bunch half-grown, and the rest with only a
+/// handful of stars. Counts every star on the shape (lit, unlit and dead),
+/// history included; a project already at or past its target gains nothing.
+const _starTargets = [
+  30, 14, 22, 30, 8, 16, 30, 6, 5, //
+  12, 4, 18, 6, 30, 10, 3, 26, 8, //
+  14, 5, 30, 9, 20, 7,
+];
+
+/// Target for a spec index past [_starTargets] (never reached by the current
+/// 24 specs, but a longer list shouldn't crash).
+const _defaultStarTarget = 8;
+
+int _starTargetFor(int specIndex) => specIndex < _starTargets.length
+    ? _starTargets[specIndex]
+    : _defaultStarTarget;
 
 /// Picsum-backed photos are attached to four out of every five sample wins.
 /// The remaining fifth deliberately stays photo-less so both UI states are
@@ -88,10 +106,10 @@ const _dayOffsets = [
 /// fully deterministic: each project's phrase list is cycled through in a
 /// fixed order based on how many wins it already has, so running this
 /// repeatedly (or on a fresh install) always produces the same sequence of
-/// content — nothing here is randomized. There are many small constellations
-/// (24 per language) rather than a few crowded ones, each gaining only a few
-/// wins per tap; repeated taps still grow them until a constellation reaches
-/// its slot capacity and exercises the overflow fallback. Spiritual is left
+/// content — nothing here is randomized. Every project is filled up to its
+/// own [_starTargets] entry (some completely full, some half-grown, some
+/// nearly empty), so one tap gives the whole range of densities and further
+/// taps add nothing. Returns how many stars were added. Spiritual is left
 /// with no seed project, to exercise that area's empty state.
 ///
 /// [languageCode] picks which translation of the seed content to use (see
@@ -109,13 +127,14 @@ const _dayOffsets = [
 /// sample data" is what triggers this — every previously-seeded project
 /// just switches language along with the rest of the app instead of
 /// leaving stale foreign-language leftovers behind.
-Future<void> seedSampleData({
+Future<int> seedSampleData({
   required StarRepository starRepository,
   required ProjectRepository projectRepository,
   required HabitRepository habitRepository,
   required HabitCompletionRepository habitCompletionRepository,
   required String languageCode,
 }) async {
+  final starsBefore = starRepository.getAll().length;
   final specs = _specsFor(languageCode);
   final deadStarTitle = _deadStarTitleFor(languageCode);
 
@@ -169,9 +188,46 @@ Future<void> seedSampleData({
               s.achievedDate!.isBefore(addDays(today, -_historyStartDays + 1)),
         );
 
-    final startingCount = starRepository.getAllForProject(project.id).length;
+    final target = _starTargetFor(specIndex);
+    int remaining() =>
+        target - starRepository.getAllForProject(project!.id).length;
 
-    for (var i = 0; i < winsPerSeedTap; i++) {
+    // Fixed content first, so even a tiny constellation keeps its history
+    // and goals for the Statistics page; the recent wins fill what's left.
+    if (!hasHistory) {
+      await _seedStarHistory(
+        starRepository: starRepository,
+        project: project,
+        spec: spec,
+        specIndex: specIndex,
+        today: today,
+        maxCount: remaining(),
+      );
+    }
+
+    if (isNewProject) {
+      for (final goalTitle in spec.goals) {
+        if (remaining() <= 0) break;
+        await starRepository.add(title: goalTitle, projectId: project.id);
+        await Future.delayed(const Duration(milliseconds: 2));
+      }
+
+      if (spec.seedDeadStar && remaining() > 0) {
+        // Created then immediately deleted, so there's a tombstoned star
+        // ready to exercise the "resurrect" flow without the user having to
+        // delete one by hand first.
+        final deadSeed = await starRepository.add(
+          title: deadStarTitle,
+          projectId: project.id,
+        );
+        await Future.delayed(const Duration(milliseconds: 2));
+        await starRepository.delete(deadSeed.id);
+        await Future.delayed(const Duration(milliseconds: 2));
+      }
+    }
+
+    final startingCount = starRepository.getAllForProject(project.id).length;
+    for (var i = 0; remaining() > 0; i++) {
       final position = startingCount + i;
       final phrase = spec.wins[position % spec.wins.length];
       final dayOffset = _dayOffsets[globalIndex % _dayOffsets.length];
@@ -202,35 +258,7 @@ Future<void> seedSampleData({
       await Future.delayed(const Duration(milliseconds: 2));
     }
 
-    if (!hasHistory) {
-      await _seedStarHistory(
-        starRepository: starRepository,
-        project: project,
-        spec: spec,
-        specIndex: specIndex,
-        today: today,
-      );
-    }
-
     if (!isNewProject) continue;
-
-    for (final goalTitle in spec.goals) {
-      await starRepository.add(title: goalTitle, projectId: project.id);
-      await Future.delayed(const Duration(milliseconds: 2));
-    }
-
-    if (spec.seedDeadStar) {
-      // Created then immediately deleted, so there's a tombstoned star
-      // ready to exercise the "resurrect" flow without the user having to
-      // delete one by hand first.
-      final deadSeed = await starRepository.add(
-        title: deadStarTitle,
-        projectId: project.id,
-      );
-      await Future.delayed(const Duration(milliseconds: 2));
-      await starRepository.delete(deadSeed.id);
-      await Future.delayed(const Duration(milliseconds: 2));
-    }
 
     for (final habitSeed in spec.habits) {
       final habit = await habitRepository.add(
@@ -254,6 +282,8 @@ Future<void> seedSampleData({
     languageCode: languageCode,
     today: today,
   );
+
+  return starRepository.getAll().length - starsBefore;
 }
 
 /// Wins older than this many days mark a project as already holding seeded
@@ -284,6 +314,7 @@ Future<void> _seedStarHistory({
   required _ProjectSeed spec,
   required int specIndex,
   required DateTime today,
+  required int maxCount,
 }) async {
   final count = specIndex < _historyWinsPerProject.length
       ? _historyWinsPerProject[specIndex]
@@ -296,7 +327,7 @@ Future<void> _seedStarHistory({
       for (var k = 0; k < _oldStreakLength; k++) _oldStreakFromDay + k,
   ];
   final startingCount = starRepository.getAllForProject(project.id).length;
-  for (var k = 0; k < offsets.length; k++) {
+  for (var k = 0; k < offsets.length && k < maxCount; k++) {
     final position = startingCount + k;
     final phrase = spec.wins[position % spec.wins.length];
     final date = addDays(today, -offsets[k]).add(

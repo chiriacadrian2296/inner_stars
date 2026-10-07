@@ -55,7 +55,15 @@ class ConstellationScreen extends StatefulWidget {
     required this.habitRepository,
     required this.habitCompletionRepository,
     required this.starsShapeRepository,
+    this.initialTransform,
+    this.onTransformChanged,
   });
+
+  /// The map's zoom/pan to open with instead of the farthest-zoom framing,
+  /// and a report of every change, so Sky can bring the map back as it was
+  /// left after a "Vola".
+  final Matrix4? initialTransform;
+  final ValueChanged<Matrix4>? onTransformChanged;
 
   final Project project;
   final StarRepository starRepository;
@@ -90,6 +98,11 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
   late List<(int, int)> _edges;
   final _transformationController = TransformationController();
   bool _framed = false;
+  late Matrix4? _restoredTransform = widget.initialTransform;
+
+  /// The centered, farthest-zoom framing — what a double tap returns to, even
+  /// when the map opened from a restored camera.
+  Matrix4? _homeTransform;
   double? _fitScale;
   bool _contentReverse = false;
   bool _hasNavigatedConstellations = false;
@@ -106,6 +119,13 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
     super.initState();
     _project = widget.project;
     _loadData();
+    _transformationController.addListener(() {
+      if (_framed) {
+        widget.onTransformChanged?.call(
+          _transformationController.value.clone(),
+        );
+      }
+    });
   }
 
   @override
@@ -185,7 +205,11 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
       ..scaleByDouble(scale, scale, 1, 1)
       ..translateByDouble(-center.dx, -center.dy, 0, 1);
     setState(() {
-      _transformationController.value = matrix;
+      // Only the first framing restores; swiping to another constellation
+      // reframes from scratch.
+      _transformationController.value = _restoredTransform ?? matrix;
+      _restoredTransform = null;
+      _homeTransform = matrix;
       _renderStars = _buildRenderStars();
     });
   }
@@ -524,6 +548,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                                       stars: _renderStars,
                                       edges: _edges,
                                       transformation: _transformationController,
+                                      homeTransform: _homeTransform,
                                       canvasSize: _canvasSize,
                                       fitScale: _fitScaleFor(viewportSize),
                                       onStarTap: _openStar,

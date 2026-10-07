@@ -61,6 +61,9 @@ class _SkySearchTooltipCardState extends State<SkySearchTooltipCard> {
         content: widget.content,
         actions: widget.actions,
         onTap: widget.onTap,
+        // The tooltip's drawer stays open after an action: it's open for as
+        // long as the tooltip is.
+        preserveMenuOnAction: true,
       ),
     );
   }

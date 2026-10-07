@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/star.dart';
 import '../models/star_media.dart';
+import 'constellation_layout.dart';
 import 'photo_storage.dart';
 import 'star_media_storage.dart';
 
@@ -67,6 +68,12 @@ class StarRepository {
     return stars;
   }
 
+  /// Whether [projectId]'s constellation can take no more stars (dead ones
+  /// count — they keep their slot). Pulsars are capped separately, see
+  /// [kMaxConstellationPulsars].
+  bool isFull(int projectId) =>
+      getAllForProject(projectId).length >= kMaxConstellationStars;
+
   /// Records a new star. Pass [achievedDate] (and [intensity]) to light it
   /// straight away (a lit star / victory); leave both null to create an
   /// unlit star (a goal) instead.
@@ -98,13 +105,25 @@ class StarRepository {
     final requestedIsFree =
         slotSequence != null &&
         !projectStars.any((s) => s.slotSequence == slotSequence);
-    final nextSlot = requestedIsFree
+    if (projectStars.length >= kMaxConstellationStars) {
+      throw const ConstellationFullException(pulsar: false);
+    }
+    var nextSlot = requestedIsFree
         ? slotSequence
         : projectStars.fold<int>(
                 0,
                 (max, s) => s.slotSequence > max ? s.slotSequence : max,
               ) +
               1;
+    // Slots can be sparse (a nascent star configured out of order), so the
+    // end of the queue may already sit at the cap while free slots remain
+    // below it — fall back to the first of those rather than growing past it.
+    if (nextSlot > kMaxConstellationStars) {
+      final taken = {for (final s in projectStars) s.slotSequence};
+      nextSlot = [
+        for (var slot = 1; slot <= kMaxConstellationStars; slot++) slot,
+      ].firstWhere((slot) => !taken.contains(slot));
+    }
     final trimmedDescription = description?.trim();
 
     final star = Star(

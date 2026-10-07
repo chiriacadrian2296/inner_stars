@@ -91,13 +91,26 @@ sealed class SkyResume {
 }
 
 class ResumeArea extends SkyResume {
-  const ResumeArea(this.area);
+  const ResumeArea(
+    this.area, {
+    this.scrollOffset = 0,
+    this.previewOffsets = const {},
+  });
   final LifeArea area;
+
+  /// Where each section preview on the page was scrolled to.
+  final Map<int, double> previewOffsets;
+
+  /// Where the area page was scrolled to when it was left.
+  final double scrollOffset;
 }
 
 class ResumeProject extends SkyResume {
-  const ResumeProject(this.projectId);
+  const ResumeProject(this.projectId, {this.transform});
   final int projectId;
+
+  /// The constellation map's zoom/pan when it was left.
+  final Matrix4? transform;
 }
 
 class ResumeStar extends SkyResume {
@@ -545,13 +558,17 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   /// [SkyExplorerSession.resume]).
   void _resume(SkyResume resume) {
     switch (resume) {
-      case ResumeArea(:final area):
-        _openArea(area);
-      case ResumeProject(:final projectId):
+      case ResumeArea(:final area, :final scrollOffset, :final previewOffsets):
+        _openArea(
+          area,
+          scrollOffset: scrollOffset,
+          previewOffsets: previewOffsets,
+        );
+      case ResumeProject(:final projectId, :final transform):
         final project = _projectsCache
             .where((p) => p.id == projectId)
             .firstOrNull;
-        if (project != null) _openProject(project);
+        if (project != null) _openProject(project, transform: transform);
       case ResumeStar(:final anchorKey):
         _openStarReader(anchorKey);
     }
@@ -709,38 +726,65 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     );
   }
 
-  Future<LifeArea?> _pushArea(LifeArea area) =>
-      Navigator.of(context).push<LifeArea>(
-        MaterialPageRoute(
-          builder: (_) => AreaDetailScreen(
-            area: area,
-            areaVisionRepository: widget.areaVisionRepository,
-            reflectionAnswerRepository: widget.reflectionAnswerRepository,
-            projectRepository: widget.projectRepository,
-            starRepository: widget.starRepository,
-          ),
-        ),
-      );
+  Future<LifeArea?> _pushArea(
+    LifeArea area, {
+    double scrollOffset = 0,
+    ValueChanged<double>? onScrollChanged,
+    Map<int, double>? previewOffsets,
+  }) => Navigator.of(context).push<LifeArea>(
+    MaterialPageRoute(
+      builder: (_) => AreaDetailScreen(
+        area: area,
+        initialScrollOffset: scrollOffset,
+        onScrollChanged: onScrollChanged,
+        previewOffsets: previewOffsets,
+        areaVisionRepository: widget.areaVisionRepository,
+        reflectionAnswerRepository: widget.reflectionAnswerRepository,
+        projectRepository: widget.projectRepository,
+        starRepository: widget.starRepository,
+      ),
+    ),
+  );
 
-  Future<Project?> _pushProject(Project project) =>
-      Navigator.of(context).push<Project>(
-        MaterialPageRoute(
-          builder: (_) => ConstellationScreen(
-            project: project,
-            starRepository: widget.starRepository,
-            projectRepository: widget.projectRepository,
-            habitRepository: widget.habitRepository,
-            habitCompletionRepository: widget.habitCompletionRepository,
-            starsShapeRepository: widget.starsShapeRepository,
-          ),
-        ),
-      );
+  Future<Project?> _pushProject(
+    Project project, {
+    Matrix4? transform,
+    ValueChanged<Matrix4>? onTransformChanged,
+  }) => Navigator.of(context).push<Project>(
+    MaterialPageRoute(
+      builder: (_) => ConstellationScreen(
+        project: project,
+        initialTransform: transform,
+        onTransformChanged: onTransformChanged,
+        starRepository: widget.starRepository,
+        projectRepository: widget.projectRepository,
+        habitRepository: widget.habitRepository,
+        habitCompletionRepository: widget.habitCompletionRepository,
+        starsShapeRepository: widget.starsShapeRepository,
+      ),
+    ),
+  );
 
-  Future<void> _openArea(LifeArea area) async {
-    final result = await _pushArea(area);
+  Future<void> _openArea(
+    LifeArea area, {
+    double scrollOffset = 0,
+    Map<int, double> previewOffsets = const {},
+  }) async {
+    var lastOffset = scrollOffset;
+    final previews = {...previewOffsets};
+    final result = await _pushArea(
+      area,
+      scrollOffset: scrollOffset,
+      previewOffsets: previews,
+      onScrollChanged: (offset) => lastOffset = offset,
+    );
     _refreshAndRebuild();
     if (result != null && mounted) {
-      _session.resume = ResumeArea(area);
+      _session.resume = ResumeArea(
+        result,
+        scrollOffset: lastOffset,
+        previewOffsets: previews,
+      );
       widget.onNavigateTo(SkyAreaTarget(result));
     }
   }
@@ -1062,11 +1106,16 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     _refreshAndRebuild();
   }
 
-  Future<void> _openProject(Project project) async {
-    final result = await _pushProject(project);
+  Future<void> _openProject(Project project, {Matrix4? transform}) async {
+    var lastTransform = transform;
+    final result = await _pushProject(
+      project,
+      transform: transform,
+      onTransformChanged: (matrix) => lastTransform = matrix,
+    );
     _refreshAndRebuild();
     if (result != null && mounted) {
-      _session.resume = ResumeProject(project.id);
+      _session.resume = ResumeProject(result.id, transform: lastTransform);
       widget.onNavigateTo(SkyProjectTarget(result));
     }
   }

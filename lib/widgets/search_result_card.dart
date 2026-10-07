@@ -41,11 +41,22 @@ class SearchCardAction {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.onDecrement,
+    this.stepperText,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+
+  /// Set for a counter (a habit done several times a day): the action then
+  /// draws as one grouped pill — a minus ([onDecrement], disabled when null
+  /// but [isStepper] is true), the [stepperText] and a plus ([onTap]).
+  final VoidCallback? onDecrement;
+  final String? stepperText;
+
+  /// Whether this is a counter rather than a single button.
+  bool get isStepper => stepperText != null;
 }
 
 class SearchResultCard extends StatelessWidget {
@@ -667,28 +678,77 @@ class _SearchQuickMenuAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = context.colors.night;
+    final colors = context.colors;
+    if (action.isStepper) return _buildStepper(context, colors);
+    // A bare navy glyph on the gold drawer, no text and no disc. The label
+    // stays as the tooltip and the semantics label.
     return Semantics(
       button: true,
       label: action.label,
-      child: InkWell(
-        onTap: () {
-          onActionSelected();
-          action.onTap();
-        },
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(action.icon, size: 17, color: foreground),
-            const SizedBox(height: 2),
-            AppButtonLabel(
-              action.label,
-              color: foreground,
-              fontSize: 9,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
+      child: Tooltip(
+        message: action.label,
+        child: InkWell(
+          onTap: () {
+            onActionSelected();
+            action.onTap();
+          },
+          child: Center(
+            child: Icon(action.icon, size: 26, color: colors.night),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// A counter as one pill: minus, the count, plus — three zones that read
+  /// as a single button, outlined in navy on the gold drawer.
+  Widget _buildStepper(BuildContext context, AppColors colors) {
+    Widget zone(IconData icon, VoidCallback? onTap, String label) {
+      return Expanded(
+        child: Semantics(
+          button: true,
+          enabled: onTap != null,
+          label: label,
+          child: InkWell(
+            onTap: onTap == null
+                ? null
+                : () {
+                    onActionSelected();
+                    onTap();
+                  },
+            child: Center(
+              child: Icon(
+                icon,
+                size: 24,
+                color: colors.night.withValues(alpha: onTap == null ? 0.35 : 1),
+              ),
             ),
+          ),
+        ),
+      );
+    }
+
+    return Center(
+      child: Container(
+        height: 40,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: colors.night, width: 1.5),
+        ),
+        child: Row(
+          children: [
+            zone(Icons.remove, action.onDecrement, action.label),
+            Text(
+              action.stepperText!,
+              style: TextStyle(
+                color: colors.night,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            zone(Icons.add, action.onTap, action.label),
           ],
         ),
       ),

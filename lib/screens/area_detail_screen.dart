@@ -45,8 +45,20 @@ class AreaDetailScreen extends StatefulWidget {
     required this.reflectionAnswerRepository,
     required this.projectRepository,
     required this.starRepository,
+    this.initialScrollOffset = 0,
+    this.onScrollChanged,
+    this.previewOffsets,
   });
   final LifeArea area;
+
+  /// Each section preview's own scroll offset, keyed by the section's
+  /// entrance index. Read to restore previews, and written as they scroll.
+  final Map<int, double>? previewOffsets;
+
+  /// Where the page starts scrolled, and a report of where it is scrolled to,
+  /// so Sky can bring the page back as it was left after a "Vola".
+  final double initialScrollOffset;
+  final ValueChanged<double>? onScrollChanged;
   final AreaVisionRepository areaVisionRepository;
   final ReflectionAnswerRepository reflectionAnswerRepository;
   final ProjectRepository projectRepository;
@@ -119,12 +131,17 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
 
   /// The page's own scroll, so a preview scrolled to its end can hand the
   /// drag over to it (see [_ChainedPreviewScroll]).
-  final _pageScroll = ScrollController();
+  late final _pageScroll = ScrollController(
+    initialScrollOffset: widget.initialScrollOffset,
+  );
 
   @override
   void initState() {
     super.initState();
     _area = widget.area;
+    _pageScroll.addListener(
+      () => widget.onScrollChanged?.call(_pageScroll.offset),
+    );
   }
 
   @override
@@ -266,6 +283,8 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                         children: [
                                           _AreaSection(
                                             pageScroll: _pageScroll,
+                                            previewOffsets:
+                                                widget.previewOffsets,
                                             index: 0,
                                             replayKey: area,
                                             reverse: _contentReverse,
@@ -304,6 +323,8 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                           ),
                                           _AreaSection(
                                             pageScroll: _pageScroll,
+                                            previewOffsets:
+                                                widget.previewOffsets,
                                             index: 2,
                                             replayKey: area,
                                             reverse: _contentReverse,
@@ -353,6 +374,8 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                           ),
                                           _AreaSection(
                                             pageScroll: _pageScroll,
+                                            previewOffsets:
+                                                widget.previewOffsets,
                                             index: 4,
                                             replayKey: area,
                                             reverse: _contentReverse,
@@ -701,6 +724,7 @@ class _AreaDockAction extends StatelessWidget {
 class _AreaSection extends StatelessWidget {
   const _AreaSection({
     required this.pageScroll,
+    required this.previewOffsets,
     required this.index,
     required this.replayKey,
     required this.reverse,
@@ -720,6 +744,7 @@ class _AreaSection extends StatelessWidget {
 
   /// False when [preview] already staggers its own contents.
   final ScrollController pageScroll;
+  final Map<int, double>? previewOffsets;
   final bool staggerPreview;
   final bool showWatermark;
   final String title;
@@ -789,7 +814,14 @@ class _AreaSection extends StatelessWidget {
                         ),
                       ),
                     ),
-                  _ChainedPreviewScroll(outer: pageScroll, child: preview),
+                  _ChainedPreviewScroll(
+                    outer: pageScroll,
+                    initialOffset: previewOffsets?[index] ?? 0,
+                    onOffsetChanged: previewOffsets == null
+                        ? null
+                        : (offset) => previewOffsets![index] = offset,
+                    child: preview,
+                  ),
                   // The fades are only as tall as the fade itself. As
                   // full-box gradients clamped past their last stop, they
                   // left the whole preview a hair lighter than the page on
@@ -858,17 +890,56 @@ class _AreaSection extends StatelessWidget {
 /// swallowing it. A nested scrollable normally keeps every drag that started
 /// on it, which left the page stuck whenever a finger landed on a preview.
 class _ChainedPreviewScroll extends StatefulWidget {
-  const _ChainedPreviewScroll({required this.outer, required this.child});
+  const _ChainedPreviewScroll({
+    required this.outer,
+    required this.child,
+    this.initialOffset = 0,
+    this.onOffsetChanged,
+  });
 
   final ScrollController outer;
   final Widget child;
+
+  /// Where the preview starts scrolled, and a report of where it is scrolled.
+  final double initialOffset;
+  final ValueChanged<double>? onOffsetChanged;
 
   @override
   State<_ChainedPreviewScroll> createState() => _ChainedPreviewScrollState();
 }
 
 class _ChainedPreviewScrollState extends State<_ChainedPreviewScroll> {
-  final _inner = ScrollController();
+  late final _inner = ScrollController(
+    initialScrollOffset: widget.initialOffset,
+  );
+
+  /// The offset still to restore: a preview whose content isn't tall enough
+  /// yet (still loading) clamps it away, so it's re-applied once it grows.
+  double? _pending;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialOffset > 0) _pending = widget.initialOffset;
+    _inner.addListener(() {
+      if (_pending == null) widget.onOffsetChanged?.call(_inner.offset);
+    });
+  }
+
+  bool _onMetrics(ScrollMetricsNotification notification) {
+    final pending = _pending;
+    if (pending == null || !_inner.hasClients) return false;
+    final max = notification.metrics.maxScrollExtent;
+    if (max <= 0) return false;
+    _pending = null;
+    final target = pending.clamp(0.0, max);
+    if (target != _inner.offset) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _inner.hasClients) _inner.jumpTo(target);
+      });
+    }
+    return false;
+  }
 
   @override
   void dispose() {
@@ -899,13 +970,16 @@ class _ChainedPreviewScrollState extends State<_ChainedPreviewScroll> {
   @override
   Widget build(BuildContext context) => Listener(
     onPointerMove: _onMove,
-    child: SingleChildScrollView(
-      controller: _inner,
-      physics: const ClampingScrollPhysics(),
-      // Breathing room at both ends, so at rest the fades don't sit on the
-      // first and last lines; the content still scrolls under them.
-      padding: const EdgeInsets.symmetric(vertical: 36),
-      child: widget.child,
+    child: NotificationListener<ScrollMetricsNotification>(
+      onNotification: _onMetrics,
+      child: SingleChildScrollView(
+        controller: _inner,
+        physics: const ClampingScrollPhysics(),
+        // Breathing room at both ends, so at rest the fades don't sit on the
+        // first and last lines; the content still scrolls under them.
+        padding: const EdgeInsets.symmetric(vertical: 36),
+        child: widget.child,
+      ),
     ),
   );
 }

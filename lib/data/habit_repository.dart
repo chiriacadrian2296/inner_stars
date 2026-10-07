@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/habit.dart';
+import 'constellation_layout.dart';
 import 'habit_completion_repository.dart';
 
 /// Reads and writes the user's pulsars (habits) as a single JSON-encoded
@@ -46,6 +47,11 @@ class HabitRepository {
     return getAllForProject(projectId).where((h) => h.isActive).toList();
   }
 
+  /// Whether [projectId]'s constellation can take no more pulsars. Dead ones
+  /// still hold their scattered spot, so they count.
+  bool isFull(int projectId) =>
+      getAllForProject(projectId).length >= kMaxConstellationPulsars;
+
   Future<Habit> add({
     required String title,
     String? description,
@@ -61,6 +67,9 @@ class HabitRepository {
     DateTime? createdAt,
   }) async {
     final habits = getAll();
+    if (isFull(projectId)) {
+      throw const ConstellationFullException(pulsar: true);
+    }
     final trimmedDescription = description?.trim();
     final habit = Habit(
       id: DateTime.now().millisecondsSinceEpoch,

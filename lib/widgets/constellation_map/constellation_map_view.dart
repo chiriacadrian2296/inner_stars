@@ -69,6 +69,7 @@ class ConstellationMapView extends StatefulWidget {
     required this.stars,
     required this.edges,
     required this.transformation,
+    this.homeTransform,
     required this.canvasSize,
     required this.fitScale,
     required this.onStarTap,
@@ -84,6 +85,10 @@ class ConstellationMapView extends StatefulWidget {
   /// to screen pixels. Written by this widget's gestures; the screen only
   /// sets its initial framing.
   final TransformationController transformation;
+
+  /// The overview camera a double tap zooms back out to; defaults to the
+  /// camera the map opens with.
+  final Matrix4? homeTransform;
   final Size canvasSize;
 
   /// The zoom at which the whole shape fits the viewport — the scale
@@ -177,7 +182,9 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
     // The screen frames the shape before creating this map. Keep that exact
     // camera so a double-tap zoom-out always returns to the centered opening
     // composition, rather than merely zooming out around the last finger.
-    _initialTransform = Matrix4.copy(widget.transformation.value);
+    _initialTransform = Matrix4.copy(
+      widget.homeTransform ?? widget.transformation.value,
+    );
     _cameraAnimation.addListener(() {
       final t = Curves.easeOut.transform(_cameraAnimation.value);
       _apply(

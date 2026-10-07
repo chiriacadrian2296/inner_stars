@@ -679,7 +679,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get seedSampleData => 'Genera dati di esempio';
   @override
   String seedSampleDataResult(int count) =>
-      'Aggiunte $count stelle a ogni costellazione di esempio.';
+      'Aggiunte $count stelle alle costellazioni di esempio.';
   @override
   String get resetAllData => 'Azzera tutti i dati';
   @override
@@ -1382,6 +1382,14 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get cannotSaveMissingInfo =>
       'Completa i campi obbligatori indicati prima di salvare.';
+  @override
+  String get constellationFullTitle => 'Costellazione piena';
+  @override
+  String constellationFullStars(int max) =>
+      'Questa costellazione ha già tutte le sue $max stelle.';
+  @override
+  String constellationFullPulsars(int max) =>
+      'Questa costellazione ha già tutte le sue $max pulsar.';
   @override
   String get gotIt => 'OK';
   @override

@@ -676,7 +676,7 @@ My contribution meets a real need and is something I can sustain.
   String get seedSampleData => 'Seed sample data';
   @override
   String seedSampleDataResult(int count) =>
-      'Added $count stars to each seed constellation.';
+      'Added $count stars to the sample constellations.';
   @override
   String get resetAllData => 'Reset all data';
   @override
@@ -1370,6 +1370,14 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get cannotSaveMissingInfo =>
       'Complete the required fields shown below before saving.';
+  @override
+  String get constellationFullTitle => 'Constellation full';
+  @override
+  String constellationFullStars(int max) =>
+      'This constellation already holds its $max stars.';
+  @override
+  String constellationFullPulsars(int max) =>
+      'This constellation already holds its $max pulsars.';
   @override
   String get gotIt => 'OK';
   @override

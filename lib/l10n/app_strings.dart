@@ -693,6 +693,9 @@ abstract class AppStrings {
 
   String get cannotSaveTitle;
   String get cannotSaveMissingInfo;
+  String get constellationFullTitle;
+  String constellationFullStars(int max);
+  String constellationFullPulsars(int max);
   String get gotIt;
   String get deleteStarConfirmTitle;
   String get deleteStarConfirmBody;

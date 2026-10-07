@@ -121,12 +121,14 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
     } catch (_) {}
   }
 
+  /// The voice note's play badge — a good deal smaller than the one on a
+  /// video, since this is a compact row.
+  static const _badgeSize = 26.0;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final strings = context.strings;
-    // The waveform's played part: a lighter gold than the outline.
-    final lightGold = Color.lerp(colors.gold, Colors.white, 0.4)!;
     final total = _total;
     final progress = total.inMilliseconds == 0
         ? 0.0
@@ -135,23 +137,23 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
       behavior: HitTestBehavior.opaque,
       onTap: _failed ? null : _toggle,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        // Framed, it's a transparent pill with a thin gold outline, like a
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        // Framed, it's a transparent pill with a thin white outline, like a
         // link — not a solid card.
         decoration: widget.framed
             ? ShapeDecoration(
                 color: colors.night.withValues(alpha: 0.4),
                 shape: StadiumBorder(
-                  side: BorderSide(color: colors.gold, width: 1),
+                  side: const BorderSide(color: Colors.white, width: 1),
                 ),
               )
             : null,
         child: Row(
           children: [
             _failed
-                ? Icon(Icons.error_outline, color: colors.muted, size: 40)
-                : PlayBadge(size: kPlayBadgeSize, playing: _playing),
-            const SizedBox(width: 14),
+                ? Icon(Icons.error_outline, color: colors.muted, size: 26)
+                : PlayBadge(size: _badgeSize, playing: _playing),
+            const SizedBox(width: 8),
             Expanded(
               child: _failed
                   ? Text(
@@ -165,14 +167,14 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
                           details.localPosition.dx / constraints.maxWidth,
                         ),
                         child: SizedBox(
-                          height: 32,
+                          height: 18,
                           width: double.infinity,
                           child: CustomPaint(
                             painter: _WaveformPainter(
                               seed: widget.media.id.hashCode,
                               progress: progress,
-                              played: lightGold,
-                              rest: colors.gold.withValues(alpha: 0.4),
+                              played: Colors.white,
+                              rest: Colors.white.withValues(alpha: 0.4),
                             ),
                           ),
                         ),
@@ -180,12 +182,12 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
                     ),
             ),
             if (!_failed) ...[
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Text(
                 formatVoiceDuration(_playing ? _position : total),
                 style: TextStyle(
-                  color: colors.gold,
-                  fontSize: 22,
+                  color: Colors.white,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
@@ -199,7 +201,7 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
 }
 
 /// A voice note's bars: a fixed, per-note shape (seeded by its id, so each
-/// note keeps its own) that fills gold as playback advances.
+/// note keeps its own) that fills white as playback advances.
 class _WaveformPainter extends CustomPainter {
   _WaveformPainter({
     required this.seed,
