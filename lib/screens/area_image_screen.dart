@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../theme/app_colors.dart';
+
 import 'package:flutter/services.dart';
 
 import '../widgets/staggered_entrance.dart';
@@ -18,7 +21,7 @@ class AreaImageScreen extends StatelessWidget {
       child: Focus(
         autofocus: true,
         child: Scaffold(
-          backgroundColor: Colors.black,
+          backgroundColor: context.colors.night,
           body: Stack(
             fit: StackFit.expand,
             children: [
@@ -40,8 +43,10 @@ class AreaImageScreen extends StatelessWidget {
                         tooltip: MaterialLocalizations.of(context)
                             .closeButtonTooltip,
                         style: IconButton.styleFrom(
-                          backgroundColor: Colors.black54,
-                          foregroundColor: Colors.white,
+                          backgroundColor: context.colors.night.withValues(
+                            alpha: 0.7,
+                          ),
+                          foregroundColor: context.colors.text,
                         ),
                         icon: const Icon(Icons.close),
                         onPressed: () => Navigator.of(context).pop(),

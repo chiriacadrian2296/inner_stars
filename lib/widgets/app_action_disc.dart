@@ -31,6 +31,7 @@ class AppActionDisc extends StatelessWidget {
     required this.heroTag,
     this.lit = true,
     this.tooltip,
+    this.boldPlus = false,
   }) : _danger = false;
 
   /// The destructive variant: danger-colored, and never glowing — a delete
@@ -42,6 +43,7 @@ class AppActionDisc extends StatelessWidget {
     this.tooltip,
   }) : icon = Icons.delete_outline,
        lit = false,
+       boldPlus = false,
        _danger = true;
 
   final IconData icon;
@@ -52,6 +54,10 @@ class AppActionDisc extends StatelessWidget {
   final bool lit;
 
   final String? tooltip;
+
+  /// Draws a thick, rounded "+" in place of [icon] — Material's own `add`
+  /// glyph only comes in one thin weight.
+  final bool boldPlus;
 
   final bool _danger;
 
@@ -72,7 +78,37 @@ class AppActionDisc extends StatelessWidget {
         onPressed: onPressed,
         backgroundColor: background,
         tooltip: tooltip,
-        child: Icon(icon, color: colors.night),
+        child: boldPlus
+            ? _BoldPlus(color: colors.night)
+            : Icon(icon, color: colors.night),
+      ),
+    );
+  }
+}
+
+class _BoldPlus extends StatelessWidget {
+  const _BoldPlus({required this.color});
+
+  final Color color;
+
+  static const _length = 20.0;
+  static const _thickness = 4.0;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget bar(double width, double height) => Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(_thickness / 2),
+      ),
+    );
+    return SizedBox.square(
+      dimension: _length,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [bar(_length, _thickness), bar(_thickness, _length)],
       ),
     );
   }

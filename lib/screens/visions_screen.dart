@@ -88,7 +88,7 @@ class _VisionsScreenState extends State<VisionsScreen> {
     final strings = context.strings;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.night,
       body: SafeArea(
         left: false,
         right: false,
@@ -182,21 +182,6 @@ class _VisionsScreenState extends State<VisionsScreen> {
                               value: _freeScroll,
                               onChanged: (value) =>
                                   setState(() => _freeScroll = value),
-                              thumbColor: WidgetStateProperty.resolveWith(
-                                (states) =>
-                                    states.contains(WidgetState.selected)
-                                    ? const Color(0xFF0D1220)
-                                    : Colors.white,
-                              ),
-                              trackColor: WidgetStateProperty.resolveWith(
-                                (states) =>
-                                    states.contains(WidgetState.selected)
-                                    ? Colors.white
-                                    : const Color(0xFF0D1220),
-                              ),
-                              trackOutlineColor: const WidgetStatePropertyAll(
-                                Colors.white54,
-                              ),
                             ),
                           ),
                         ),
@@ -262,10 +247,10 @@ class _VisionCard extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: const [
-                  Colors.transparent,
-                  Color(0x99000000),
-                  Color(0xF5000000),
+                colors: [
+                  context.colors.night.withValues(alpha: 0),
+                  context.colors.night.withValues(alpha: 0.6),
+                  context.colors.night.withValues(alpha: 0.96),
                 ],
                 stops: [0.45 - 0.3 * side, 0.78 - 0.18 * side, 1],
               ),

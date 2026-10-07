@@ -51,35 +51,38 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
 
   Future<void> _addMedia(MoodboardKind kind) async {
     setState(() => _busy = true);
-    String? path;
+    final paths = <String>[];
     var saved = false;
     try {
       final picker = ImagePicker();
-      final file = kind == MoodboardKind.photo
-          ? await picker.pickImage(
-              source: ImageSource.gallery,
-              maxWidth: 2400,
-              imageQuality: 90,
-            )
-          : await picker.pickVideo(source: ImageSource.gallery);
-      if (file == null) return;
-      path = await MoodboardStorage.save(file);
+      // Photos come several at a time; a video is still one.
+      final List<XFile> files;
+      if (kind == MoodboardKind.photo) {
+        files = await picker.pickMultiImage(maxWidth: 2400, imageQuality: 90);
+      } else {
+        final video = await picker.pickVideo(source: ImageSource.gallery);
+        files = video == null ? const [] : [video];
+      }
+      if (files.isEmpty) return;
+      for (final file in files) {
+        paths.add(await MoodboardStorage.save(file));
+      }
+      final stamp = DateTime.now().microsecondsSinceEpoch;
       await widget.repository.save(widget.area, [
         ..._items,
-        MoodboardItem(
-          id: DateTime.now().microsecondsSinceEpoch.toString(),
-          kind: kind,
-          content: path,
-        ),
+        for (var i = 0; i < paths.length; i++)
+          MoodboardItem(id: '${stamp + i}', kind: kind, content: paths[i]),
       ]);
       saved = true;
     } catch (_) {
       _error();
     } finally {
-      if (!saved && path != null) {
-        try {
-          await MoodboardStorage.delete(path);
-        } catch (_) {}
+      if (!saved) {
+        for (final path in paths) {
+          try {
+            await MoodboardStorage.delete(path);
+          } catch (_) {}
+        }
       }
       if (mounted) setState(() => _busy = false);
     }
@@ -124,7 +127,7 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
         builder: (routeContext) => InheritedTheme.captureAll(
           context,
           Scaffold(
-            backgroundColor: Colors.black,
+            backgroundColor: context.colors.night,
             body: SafeArea(
               child: Column(
                 children: [
@@ -218,7 +221,7 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
       axis: Axis.horizontal,
     );
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: context.colors.night,
       body: SafeArea(
         child: Stack(
           fit: StackFit.expand,
@@ -247,7 +250,7 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                     child: Text(
                       strings.moodboardEmpty,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white70),
+                      style: TextStyle(color: context.colors.muted),
                     ),
                   ),
                 ),
@@ -255,7 +258,8 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
             ResponsiveContent(
               child: Column(
                 children: [
-                  if (_busy) const LinearProgressIndicator(color: Colors.white),
+                  if (_busy)
+                    LinearProgressIndicator(color: context.colors.gold),
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
@@ -401,6 +405,17 @@ class _QuoteEditorSheetState extends State<_QuoteEditorSheet> {
     };
   }
 
+  /// Needs some text, and for an existing quote, an actual change.
+  bool get _canSave {
+    final text = _text.text.trim();
+    if (text.isEmpty) return false;
+    final existing = widget.existing;
+    if (existing == null) return true;
+    return text != existing.content ||
+        _author.text.trim() != existing.author ||
+        _style != existing.quoteStyle;
+  }
+
   void _save() {
     final text = _text.text.trim();
     if (text.isEmpty) return;
@@ -426,10 +441,10 @@ class _QuoteEditorSheetState extends State<_QuoteEditorSheet> {
             child: AppButtonLabel(strings.cancel),
           ),
           const SizedBox(width: 8),
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: _text,
-            builder: (context, value, _) => ElevatedButton(
-              onPressed: value.text.trim().isEmpty ? null : _save,
+          ListenableBuilder(
+            listenable: Listenable.merge([_text, _author]),
+            builder: (context, _) => ElevatedButton(
+              onPressed: _canSave ? _save : null,
               child: AppButtonLabel(strings.saveChanges),
             ),
           ),

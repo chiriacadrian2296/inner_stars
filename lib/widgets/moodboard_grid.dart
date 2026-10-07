@@ -19,14 +19,20 @@ class MoodboardGrid extends StatelessWidget {
     this.onTap,
     this.placeholders = false,
     this.showEmptyMessage = true,
+    this.placeholderReplayKey,
   });
   final List<MoodboardItem> items;
   final ValueChanged<MoodboardItem>? onTap;
 
-  /// When [items] is empty, shows a block of plain grey squares holding the
+  /// When [items] is empty, shows a block of white-tinted squares holding the
   /// place of future content instead of the explanatory text — for the small
   /// preview on an area's page.
   final bool placeholders;
+
+  /// Replays the placeholder blocks' entrance when it changes, e.g. when the
+  /// area page swipes to another area (the blocks are otherwise the same
+  /// widgets and would stay put).
+  final Object? placeholderReplayKey;
 
   /// The full moodboard supplies its own centered empty state over the
   /// watermark; small previews can still use this grid's inline message.
@@ -34,7 +40,9 @@ class MoodboardGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (items.isEmpty && placeholders) return const _MoodboardPlaceholders();
+    if (items.isEmpty && placeholders) {
+      return _MoodboardPlaceholders(replayKey: placeholderReplayKey);
+    }
     if (items.isEmpty && !showEmptyMessage) return const SizedBox.shrink();
     if (items.isEmpty) {
       return StaggeredEntrance(
@@ -45,7 +53,7 @@ class MoodboardGrid extends StatelessWidget {
             child: Text(
               context.strings.moodboardEmpty,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70),
+              style: TextStyle(color: context.colors.muted),
             ),
           ),
         ),
@@ -60,7 +68,7 @@ class MoodboardGrid extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
         child: Material(
-          color: const Color(0xFF141D30),
+          color: context.colors.nightPanel,
           child: InkWell(
             onTap: onTap == null ? null : () => onTap!(items[index]),
             child: SizedBox.expand(
@@ -110,11 +118,13 @@ class MoodboardGrid extends StatelessWidget {
   }
 }
 
-/// Three rows of plain grey blocks, standing in for a moodboard with nothing
+/// Three rows of white-tinted blocks, standing in for a moodboard with nothing
 /// in it yet. Some are wider than the squares, since real photos and videos
 /// make the mosaic uneven too.
 class _MoodboardPlaceholders extends StatelessWidget {
-  const _MoodboardPlaceholders();
+  const _MoodboardPlaceholders({this.replayKey});
+
+  final Object? replayKey;
 
   static const _gap = 10.0;
 
@@ -125,16 +135,9 @@ class _MoodboardPlaceholders extends StatelessWidget {
     [1, 2],
   ];
 
-  /// A slightly different grey per block, in reading order, so they read as
-  /// different photos rather than one repeated tile.
-  static const _greys = [
-    Color(0xFF2B2B2B),
-    Color(0xFF3A3A3A),
-    Color(0xFF333333),
-    Color(0xFF262626),
-    Color(0xFF3F3F3F),
-    Color(0xFF303030),
-  ];
+  /// How far each block leans from night toward white, in reading order, so
+  /// they read as different photos rather than one repeated tile.
+  static const _whiteMix = [0.26, 0.16, 0.22, 0.12, 0.30, 0.19];
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +146,7 @@ class _MoodboardPlaceholders extends StatelessWidget {
         // The height of a square when three sit side by side; every row
         // shares it so the rows stay even.
         final rowHeight = (constraints.maxWidth - 2 * _gap) / 3;
-        // Blocks are numbered in reading order, for both the grey and the
+        // Blocks are numbered in reading order, for both the tint and the
         // entrance delay.
         var next = 0;
         Widget block(int flex) {
@@ -152,9 +155,14 @@ class _MoodboardPlaceholders extends StatelessWidget {
             flex: flex,
             child: StaggeredEntrance(
               index: index,
+              replayKey: replayKey,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: _greys[index % _greys.length],
+                  color: Color.lerp(
+                    context.colors.night,
+                    Colors.white,
+                    _whiteMix[index % _whiteMix.length],
+                  ),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const SizedBox.expand(),
@@ -250,16 +258,16 @@ class _MoodboardMediaState extends State<MoodboardMedia> {
                 fit: widget.expanded ? BoxFit.contain : BoxFit.cover,
                 errorBuilder: (_, _, _) => error,
               )
-            : const Center(
-                child: CircularProgressIndicator(color: Colors.white),
+            : Center(
+                child: CircularProgressIndicator(color: context.colors.gold),
               ),
       );
     }
     if (_failed) return error;
     final video = _video;
     if (video == null || !video.value.isInitialized) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
+      return Center(
+        child: CircularProgressIndicator(color: context.colors.gold),
       );
     }
     return Stack(

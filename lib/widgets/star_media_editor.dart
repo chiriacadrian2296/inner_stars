@@ -166,21 +166,6 @@ class StarMediaEditor extends StatelessWidget {
 
     final fields = <Widget>[
       _ExtraField(
-        label: strings.voiceNotesLabel,
-        hint: strings.addVoiceNoteHint,
-        icon: Icons.mic_none_rounded,
-        canAdd: canAdd,
-        onAdd: () => _addVoice(context),
-        items: [
-          for (final item in of(StarMediaKind.voice))
-            _RemovableRow(
-              key: ValueKey(item.id),
-              onRemove: () => _remove(item),
-              child: VoiceNotePlayer(media: item, framed: false),
-            ),
-        ],
-      ),
-      _ExtraField(
         label: strings.extraPhotosLabel,
         hint: strings.addExtraPhotosHint,
         icon: Icons.add_photo_alternate_outlined,
@@ -218,6 +203,21 @@ class StarMediaEditor extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
+        ],
+      ),
+      _ExtraField(
+        label: strings.voiceNotesLabel,
+        hint: strings.addVoiceNoteHint,
+        icon: Icons.mic_none_rounded,
+        canAdd: canAdd,
+        onAdd: () => _addVoice(context),
+        items: [
+          for (final item in of(StarMediaKind.voice))
+            _RemovableRow(
+              key: ValueKey(item.id),
+              onRemove: () => _remove(item),
+              child: VoiceNotePlayer(media: item, framed: false),
             ),
         ],
       ),

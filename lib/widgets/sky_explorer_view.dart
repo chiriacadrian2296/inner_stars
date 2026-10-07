@@ -29,10 +29,8 @@ import '../screens/share_preview_screen.dart';
 import '../screens/star_form_screen.dart';
 import '../screens/star_reader_screen.dart';
 import '../screens/vision_editor_screen.dart';
-import '../screens/visions_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
-import '../theme/life_area_theme.dart';
 import '../tutorials/tour_step_card.dart';
 import '../tutorials/tutorial_replay.dart';
 import '../utils/app_modals.dart';
@@ -46,7 +44,6 @@ import 'app_field.dart';
 import 'filter_button.dart';
 import 'project_picker.dart';
 import 'gallery/gallery_cards.dart';
-import 'gallery/gallery_pager.dart';
 import 'area_filter_sheet.dart';
 import 'date_range_filter_sheet.dart';
 import 'creation_success_dialog.dart';
@@ -82,6 +79,30 @@ class SkyExplorerSession {
   SortDirection sortDirection = SortDirection.descending;
   final scrollOffsets = <int, double>{};
   Object? openCardMenuId;
+
+  /// The detail page (area, constellation or star) its "take me there" was
+  /// tapped on: Sky reopens it on top of the browser next time, so flying to
+  /// something from its page and coming back lands on that page again.
+  SkyResume? resume;
+}
+
+sealed class SkyResume {
+  const SkyResume();
+}
+
+class ResumeArea extends SkyResume {
+  const ResumeArea(this.area);
+  final LifeArea area;
+}
+
+class ResumeProject extends SkyResume {
+  const ResumeProject(this.projectId);
+  final int projectId;
+}
+
+class ResumeStar extends SkyResume {
+  const ResumeStar(this.anchorKey);
+  final String anchorKey;
 }
 
 /// One flat-list row — either a [Star] (lit, unlit or dead) or a [Habit]
@@ -506,12 +527,34 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       );
       return controller;
     });
+    final resume = session.resume;
+    session.resume = null;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      if (resume != null) {
+        _resume(resume);
+        return;
+      }
       whenPageSettled(context, () {
         startTourAuto(Tour.read(context), 'search-stars');
       });
     });
+  }
+
+  /// Reopens the detail page a previous visit flew away from (see
+  /// [SkyExplorerSession.resume]).
+  void _resume(SkyResume resume) {
+    switch (resume) {
+      case ResumeArea(:final area):
+        _openArea(area);
+      case ResumeProject(:final projectId):
+        final project = _projectsCache
+            .where((p) => p.id == projectId)
+            .firstOrNull;
+        if (project != null) _openProject(project);
+      case ResumeStar(:final anchorKey):
+        _openStarReader(anchorKey);
+    }
   }
 
   /// Whether the grid is showing — always, while the list view is parked
@@ -629,31 +672,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     );
   }
 
-  /// One-at-a-time view for areas and constellations, opened from the grid.
-  /// [open] pushes the real detail page and returns where it asked to fly
-  /// to, which closes the pager and is handed to the Sky here.
-  Future<void> _openGridPager<T>({
-    required List<T> items,
-    required int index,
-    required Widget Function(T item) tileBuilder,
-    required Future<SkyNavigationTarget?> Function(T item) open,
-  }) async {
-    final result = await Navigator.of(context).push<Object>(
-      MaterialPageRoute(
-        builder: (_) => GalleryPager<T>(
-          items: items,
-          initialIndex: index,
-          tileBuilder: tileBuilder,
-          onOpen: (i) => open(items[i]),
-        ),
-      ),
-    );
-    _refreshAndRebuild();
-    if (result is SkyNavigationTarget && mounted) {
-      widget.onNavigateTo(result);
-    }
-  }
-
   Widget _areasGrid(AppStrings strings) {
     final areas = [
       for (final area in _filteredSupernovaAreas(strings)) _areaGridData(area),
@@ -663,15 +681,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       items: areas,
       emptyText: strings.noSearchResultsSupernovas,
       tile: (item, onTap) => GalleryAreaTile(data: item, onTap: onTap),
-      onTap: (index) => _openGridPager<GalleryAreaData>(
-        items: areas,
-        index: index,
-        tileBuilder: (d) => GalleryAreaTile(data: d),
-        open: (d) async {
-          final result = await _pushArea(d.area);
-          return result == null ? null : SkyAreaTarget(result);
-        },
-      ),
+      onTap: (index) => _openArea(areas[index].area),
     );
   }
 
@@ -684,15 +694,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       items: projects,
       emptyText: strings.noSearchResultsConstellations,
       tile: (item, onTap) => GalleryProjectTile(data: item, onTap: onTap),
-      onTap: (index) => _openGridPager<GalleryProjectData>(
-        items: projects,
-        index: index,
-        tileBuilder: (d) => GalleryProjectTile(data: d),
-        open: (d) async {
-          final result = await _pushProject(d.project);
-          return result == null ? null : SkyProjectTarget(result);
-        },
-      ),
+      onTap: (index) => _openProject(projects[index].project),
     );
   }
 
@@ -738,6 +740,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     final result = await _pushArea(area);
     _refreshAndRebuild();
     if (result != null && mounted) {
+      _session.resume = ResumeArea(area);
       widget.onNavigateTo(SkyAreaTarget(result));
     }
   }
@@ -745,12 +748,9 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   Future<void> _openAreaVision(LifeArea area) => Navigator.of(context)
       .push(
         MaterialPageRoute(
-          builder: (_) => Theme(
-            data: buildLifeAreaTheme(),
-            child: VisionEditorScreen(
-              area: area,
-              repository: widget.areaVisionRepository,
-            ),
+          builder: (_) => VisionEditorScreen(
+            area: area,
+            repository: widget.areaVisionRepository,
           ),
         ),
       )
@@ -764,10 +764,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       if (!mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => Theme(
-            data: buildLifeAreaTheme(),
-            child: MoodboardScreen(area: area, repository: repository),
-          ),
+          builder: (_) => MoodboardScreen(area: area, repository: repository),
         ),
       );
       _refreshAndRebuild();
@@ -925,49 +922,28 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     );
   }
 
-  Future<void> _manageAreas() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => VisionsScreen(
-          areaVisionRepository: widget.areaVisionRepository,
-          reflectionAnswerRepository: widget.reflectionAnswerRepository,
-          projectRepository: widget.projectRepository,
-          starRepository: widget.starRepository,
-        ),
-      ),
-    );
-    _refreshAndRebuild();
-  }
-
-  ({IconData icon, String tooltip, VoidCallback onPressed}) get _modeAction =>
+  ({IconData icon, String tooltip, VoidCallback onPressed})? get _modeAction =>
       switch (_mode) {
         _SkyMode.stars => (
-          icon: Icons.star,
+          icon: Icons.add,
           tooltip: 'Aggiungi stella',
           onPressed: _createStar,
         ),
         _SkyMode.constellations => (
-          icon: Icons.insights,
+          icon: Icons.add,
           tooltip: 'Aggiungi costellazione',
           onPressed: _createConstellation,
         ),
-        _SkyMode.supernovas => (
-          icon: Icons.flare,
-          tooltip: 'Gestisci aree',
-          onPressed: _manageAreas,
-        ),
+        _SkyMode.supernovas => null,
       };
 
   Future<void> _openAreaReflections(LifeArea area) =>
       Navigator.of(context)
           .push(
             MaterialPageRoute(
-              builder: (_) => Theme(
-                data: buildLifeAreaTheme(),
-                child: AreaReflectionsScreen(
-                  area: area,
-                  repository: widget.reflectionAnswerRepository,
-                ),
+              builder: (_) => AreaReflectionsScreen(
+                area: area,
+                repository: widget.reflectionAnswerRepository,
               ),
             ),
           )
@@ -1090,6 +1066,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     final result = await _pushProject(project);
     _refreshAndRebuild();
     if (result != null && mounted) {
+      _session.resume = ResumeProject(project.id);
       widget.onNavigateTo(SkyProjectTarget(result));
     }
   }
@@ -1116,8 +1093,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           },
           habitRepository: widget.habitRepository,
           habitCompletionRepository: widget.habitCompletionRepository,
-          onNavigateTo: (project, starId) =>
-              widget.onNavigateTo(SkyStarTarget(project, starId: starId)),
+          onNavigateTo: (project, starId) {
+            _session.resume = ResumeStar('s$starId');
+            widget.onNavigateTo(SkyStarTarget(project, starId: starId));
+          },
         ),
       ),
     );
@@ -2112,29 +2091,32 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                     ),
                   ),
                 ),
-                child: TweenAnimationBuilder<double>(
-                  key: ValueKey('sky-fab-${_mode.name}'),
-                  tween: Tween(begin: 1, end: 0),
-                  duration: const Duration(milliseconds: 420),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, glow, child) => DecoratedBox(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: goldGlow(
-                        colors,
-                        strength: 0.55 * glow,
-                        size: 64,
+                child: action == null
+                    ? SizedBox.shrink(key: ValueKey('sky-fab-${_mode.name}'))
+                    : TweenAnimationBuilder<double>(
+                        key: ValueKey('sky-fab-${_mode.name}'),
+                        tween: Tween(begin: 1, end: 0),
+                        duration: const Duration(milliseconds: 420),
+                        curve: Curves.easeOutCubic,
+                        builder: (context, glow, child) => DecoratedBox(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: goldGlow(
+                              colors,
+                              strength: 0.55 * glow,
+                              size: 64,
+                            ),
+                          ),
+                          child: child,
+                        ),
+                        child: AppActionDisc(
+                          icon: action.icon,
+                          boldPlus: true,
+                          onPressed: action.onPressed,
+                          heroTag: 'sky-search-${_mode.name}-action',
+                          tooltip: action.tooltip,
+                        ),
                       ),
-                    ),
-                    child: child,
-                  ),
-                  child: AppActionDisc(
-                    icon: action.icon,
-                    onPressed: action.onPressed,
-                    heroTag: 'sky-search-${_mode.name}-action',
-                    tooltip: action.tooltip,
-                  ),
-                ),
               ),
             ),
           ),

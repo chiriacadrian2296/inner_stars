@@ -14,7 +14,6 @@ import '../theme/app_colors.dart';
 import '../models/star_kind.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
-import '../theme/life_area_theme.dart';
 import '../tutorials/tour_step_card.dart';
 import '../utils/area_hero_art.dart';
 import '../utils/area_hero_art_tone.dart';
@@ -66,7 +65,7 @@ class AreaReflectionsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = context.strings;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: context.colors.night,
       body: SafeArea(
         child: ResponsiveContent(
           child: Stack(
@@ -113,10 +112,20 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
   late final Future<StarsShapeRepository> _starsShapes =
       StarsShapeRepository.create();
 
+  /// The page's own scroll, so a preview scrolled to its end can hand the
+  /// drag over to it (see [_ChainedPreviewScroll]).
+  final _pageScroll = ScrollController();
+
   @override
   void initState() {
     super.initState();
     _area = widget.area;
+  }
+
+  @override
+  void dispose() {
+    _pageScroll.dispose();
+    super.dispose();
   }
 
   void _moveBy(int direction) {
@@ -130,12 +139,8 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
   }
 
   Future<void> _open(Widget page) async {
-    final theme = buildLifeAreaTheme();
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) => Theme(data: theme, child: page),
-      ),
-    );
+    await Navigator.of(context)
+        .push<void>(MaterialPageRoute(builder: (_) => page));
     if (mounted) setState(() {});
   }
 
@@ -157,10 +162,6 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
   Future<void> _openNewConstellation() async {
     final starsShapeRepository = await _starsShapes;
     if (!mounted) return;
-    // Constellation creation always uses the app's canonical gold/navy
-    // editor. The area's other tools deliberately keep their Meta theme,
-    // so this route must not go through [_open], which wraps destinations
-    // in [buildLifeAreaTheme].
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => NewProjectScreen(
@@ -186,11 +187,11 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
         systemStatusBarContrastEnforced: false,
       ),
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: context.colors.night,
         body: SafeArea(
           bottom: false,
           child: DecoratedBox(
-            decoration: const BoxDecoration(color: Colors.black),
+            decoration: BoxDecoration(color: context.colors.night),
             child: ResponsiveContent(
               child: Stack(
                 fit: StackFit.expand,
@@ -214,6 +215,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                             ),
                             Expanded(
                               child: CustomScrollView(
+                                controller: _pageScroll,
                                 slivers: [
                                   const SliverToBoxAdapter(
                                     child: SizedBox(height: 16),
@@ -251,6 +253,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                             CrossAxisAlignment.stretch,
                                         children: [
                                           _AreaSection(
+                                            pageScroll: _pageScroll,
                                             index: 0,
                                             replayKey: area,
                                             reverse: _contentReverse,
@@ -261,7 +264,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                                       strings,
                                                     )
                                                   : vision,
-                                              color: Colors.white,
+                                              color: context.colors.text,
                                             ),
                                             action: HintTarget(
                                               tour: 'supernova-vision',
@@ -288,6 +291,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                             ),
                                           ),
                                           _AreaSection(
+                                            pageScroll: _pageScroll,
                                             index: 2,
                                             replayKey: area,
                                             reverse: _contentReverse,
@@ -307,16 +311,19 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                                       );
                                                     }
                                                     if (!snapshot.hasData) {
-                                                      return const Center(
+                                                      return Center(
                                                         child:
                                                             CircularProgressIndicator(
-                                                              color:
-                                                                  Colors.white,
+                                                              color: context
+                                                                  .colors
+                                                                  .gold,
                                                             ),
                                                       );
                                                     }
                                                     return MoodboardGrid(
                                                       placeholders: true,
+                                                      placeholderReplayKey:
+                                                          area,
                                                       items: snapshot.data!
                                                           .getItems(area)
                                                           .take(6)
@@ -333,6 +340,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                             ),
                                           ),
                                           _AreaSection(
+                                            pageScroll: _pageScroll,
                                             index: 4,
                                             replayKey: area,
                                             reverse: _contentReverse,
@@ -343,8 +351,8 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                               children: [
                                                 Text(
                                                   '${answers.length}/${questions.length} ${strings.reflectionAnsweredCountLabel}',
-                                                  style: const TextStyle(
-                                                    color: Colors.white54,
+                                                  style: TextStyle(
+                                                    color: context.colors.muted,
                                                   ),
                                                 ),
                                                 const SizedBox(height: 12),
@@ -355,12 +363,13 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                                 ) ...[
                                                   Text(
                                                     questions[i],
-                                                    style: const TextStyle(
+                                                    style: TextStyle(
                                                       fontFamily:
                                                           kFontStarTitle,
                                                       fontSize: 18,
                                                       height: 1.4,
-                                                      color: Colors.white,
+                                                      color:
+                                                          context.colors.text,
                                                     ),
                                                   ),
                                                   const SizedBox(height: 6),
@@ -371,8 +380,9 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                                     maxLines: 2,
                                                     overflow:
                                                         TextOverflow.ellipsis,
-                                                    style: const TextStyle(
-                                                      color: Colors.white60,
+                                                    style: TextStyle(
+                                                      color:
+                                                          context.colors.muted,
                                                       height: 1.4,
                                                     ),
                                                   ),
@@ -429,6 +439,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                         ),
                       ),
                       onMoodboard: _openMoodboard,
+                      onFly: () => Navigator.of(context).pop(area),
                       onReflections: () => _open(
                         AreaReflectionsScreen(
                           area: area,
@@ -466,63 +477,75 @@ class _AreaNavigationBar extends StatelessWidget {
   final VoidCallback onNext;
 
   @override
-  Widget build(BuildContext context) => Material(
-    color: Colors.black,
-    elevation: 20,
-    shadowColor: Colors.black,
-    surfaceTintColor: Colors.transparent,
-    child: Padding(
-      // Same insets as the Star Reader's header, so the arrows and title sit
-      // in the same place in every "Vedi".
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-      child: ResponsiveContent(
-        maxWidth: readerFrameWidth(context) ?? kResponsiveContentMaxWidth,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 64),
-          child: Row(
-            children: [
-              StaggeredEntrance(
-                replayKey: replayKey,
-                index: 0,
-                axis: Axis.horizontal,
-                reverse: reverse,
-                enabled: animate,
-                child: IconButton(
-                  onPressed: onPrevious,
-                  icon: const Icon(Icons.chevron_left, color: Colors.white),
-                ),
-              ),
-              Expanded(
-                child: StaggeredEntrance(
+  Widget build(BuildContext context) => DecoratedBox(
+    // A plain navy shadow like the dock's: Material elevation would darken
+    // the navy into a black halo over the previews.
+    decoration: BoxDecoration(
+      color: context.colors.night,
+      boxShadow: [
+        BoxShadow(
+          color: context.colors.night.withValues(alpha: 0.9),
+          blurRadius: 32,
+          spreadRadius: 6,
+          offset: const Offset(0, 10),
+        ),
+      ],
+    ),
+    child: Material(
+      type: MaterialType.transparency,
+      child: Padding(
+        // Same insets as the Star Reader's header, so the arrows and title sit
+        // in the same place in every "Vedi".
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+        child: ResponsiveContent(
+          maxWidth: readerFrameWidth(context) ?? kResponsiveContentMaxWidth,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 64),
+            child: Row(
+              children: [
+                StaggeredEntrance(
                   replayKey: replayKey,
-                  index: 1,
+                  index: 0,
                   axis: Axis.horizontal,
                   reverse: reverse,
                   enabled: animate,
-                  child: BalancedTitle(
-                    title: title,
-                    style: const TextStyle(
-                      fontFamily: kFontStarTitle,
-                      fontSize: 24,
-                      height: 1.25,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                  child: IconButton(
+                    onPressed: onPrevious,
+                    icon: Icon(Icons.chevron_left, color: context.colors.text),
+                  ),
+                ),
+                Expanded(
+                  child: StaggeredEntrance(
+                    replayKey: replayKey,
+                    index: 1,
+                    axis: Axis.horizontal,
+                    reverse: reverse,
+                    enabled: animate,
+                    child: BalancedTitle(
+                      title: title,
+                      style: TextStyle(
+                        fontFamily: kFontStarTitle,
+                        fontSize: 24,
+                        height: 1.25,
+                        fontWeight: FontWeight.w800,
+                        color: context.colors.text,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              StaggeredEntrance(
-                replayKey: replayKey,
-                index: 2,
-                axis: Axis.horizontal,
-                reverse: reverse,
-                enabled: animate,
-                child: IconButton(
-                  onPressed: onNext,
-                  icon: const Icon(Icons.chevron_right, color: Colors.white),
+                StaggeredEntrance(
+                  replayKey: replayKey,
+                  index: 2,
+                  axis: Axis.horizontal,
+                  reverse: reverse,
+                  enabled: animate,
+                  child: IconButton(
+                    onPressed: onNext,
+                    icon: Icon(Icons.chevron_right, color: context.colors.text),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -537,6 +560,7 @@ class _AreaDock extends StatelessWidget {
     required this.onMoodboard,
     required this.onNewConstellation,
     required this.onReflections,
+    required this.onFly,
   });
 
   final bool animate;
@@ -544,14 +568,15 @@ class _AreaDock extends StatelessWidget {
   final VoidCallback onMoodboard;
   final VoidCallback onNewConstellation;
   final VoidCallback onReflections;
+  final VoidCallback onFly;
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
-      color: Colors.black,
+      color: context.colors.night,
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.9),
+          color: context.colors.night.withValues(alpha: 0.9),
           blurRadius: 32,
           spreadRadius: 6,
           offset: const Offset(0, -10),
@@ -619,7 +644,7 @@ class _AreaDock extends StatelessWidget {
             child: _AreaDockAction(
               icon: Icons.navigation,
               label: 'Vola',
-              onTap: onReflections,
+              onTap: onFly,
             ),
           ),
         ],
@@ -628,9 +653,7 @@ class _AreaDock extends StatelessWidget {
   );
 }
 
-/// Same compact, phone-width 48 px action geometry as the Star Reader dock.
-/// Area actions intentionally stay icon-only: this dock sits below rich
-/// content, so a white disc behind every action pulls attention away from it.
+/// Same white disc as the Star Reader and constellation docks.
 class _AreaDockAction extends StatelessWidget {
   const _AreaDockAction({
     required this.icon,
@@ -645,18 +668,27 @@ class _AreaDockAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Tooltip(
     message: label,
-    child: IconButton(
-      onPressed: onTap,
-      icon: Icon(icon, size: 22, color: Colors.white),
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-      splashRadius: 24,
+    child: Material(
+      color: Colors.white,
+      shape: const StadiumBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const StadiumBorder(),
+        child: SizedBox(
+          width: 34,
+          height: 34,
+          child: Center(
+            child: Icon(icon, size: 18, color: context.colors.night),
+          ),
+        ),
+      ),
     ),
   );
 }
 
 class _AreaSection extends StatelessWidget {
   const _AreaSection({
+    required this.pageScroll,
     required this.index,
     required this.replayKey,
     required this.reverse,
@@ -675,6 +707,7 @@ class _AreaSection extends StatelessWidget {
   final bool reverse;
 
   /// False when [preview] already staggers its own contents.
+  final ScrollController pageScroll;
   final bool staggerPreview;
   final bool showWatermark;
   final String title;
@@ -697,10 +730,10 @@ class _AreaSection extends StatelessWidget {
           child: Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: kFontBranding,
               fontSize: 30,
-              color: Colors.white,
+              color: context.colors.text,
             ),
           ),
         ),
@@ -712,56 +745,85 @@ class _AreaSection extends StatelessWidget {
     ),
   );
 
+  static const _fadeHeight = 66.0;
+
   Widget _previewBox(BuildContext context) {
     final box = SizedBox(
       height: 300,
       child: ClipRect(
-        clipBehavior: Clip.antiAliasWithSaveLayer,
         child: ScrollbarTheme(
           data: ScrollbarTheme.of(context).copyWith(minThumbLength: 10),
           // The thumb is painted after the Stack, while the fades still
           // stay above the preview content. Its track can therefore run
           // to the real bottom edge of the preview.
-          child: Scrollbar(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (showWatermark)
-                  Positioned.fill(
-                    child: LogoWatermark(
-                      scale: logoWatermarkScale(StarKind.nascent),
-                      color: logoWatermarkColor(
-                        context.colors,
-                        StarKind.nascent,
+          // Scrollbar shrinks its track by the screen's safe-area insets, so
+          // under the system bar the thumb stopped short of the bottom of
+          // a preview. A preview isn't under any system bar.
+          child: MediaQuery.removePadding(
+            context: context,
+            removeTop: true,
+            removeBottom: true,
+            child: Scrollbar(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (showWatermark)
+                    Positioned.fill(
+                      child: LogoWatermark(
+                        scale: logoWatermarkScale(StarKind.nascent),
+                        color: logoWatermarkColor(
+                          context.colors,
+                          StarKind.nascent,
+                        ),
+                      ),
+                    ),
+                  _ChainedPreviewScroll(outer: pageScroll, child: preview),
+                  // The fades are only as tall as the fade itself. As
+                  // full-box gradients clamped past their last stop, they
+                  // left the whole preview a hair lighter than the page on
+                  // some phones (+1 per channel against the navy).
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: _fadeHeight,
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              context.colors.night,
+                              context.colors.night.withValues(alpha: 0),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                SingleChildScrollView(child: preview),
-                const IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.black, Colors.transparent],
-                        stops: [0, 0.22],
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: _fadeHeight,
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              context.colors.night.withValues(alpha: 0),
+                              context.colors.night,
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.transparent, Colors.black],
-                        stops: [0.78, 1],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -777,6 +839,63 @@ class _AreaSection extends StatelessWidget {
           )
         : box;
   }
+}
+
+/// A preview's own vertical scroll that, once it can't move any further in the
+/// direction of the drag, passes that drag on to the page's scroll instead of
+/// swallowing it. A nested scrollable normally keeps every drag that started
+/// on it, which left the page stuck whenever a finger landed on a preview.
+class _ChainedPreviewScroll extends StatefulWidget {
+  const _ChainedPreviewScroll({required this.outer, required this.child});
+
+  final ScrollController outer;
+  final Widget child;
+
+  @override
+  State<_ChainedPreviewScroll> createState() => _ChainedPreviewScrollState();
+}
+
+class _ChainedPreviewScrollState extends State<_ChainedPreviewScroll> {
+  final _inner = ScrollController();
+
+  @override
+  void dispose() {
+    _inner.dispose();
+    super.dispose();
+  }
+
+  void _onMove(PointerMoveEvent event) {
+    final outer = widget.outer;
+    if (!_inner.hasClients || !outer.hasClients) return;
+    final dy = event.delta.dy;
+    final inner = _inner.position;
+    final atStart = inner.pixels <= inner.minScrollExtent;
+    final atEnd = inner.pixels >= inner.maxScrollExtent;
+    // Finger down moves toward the start of the content, finger up toward
+    // the end; at that edge the page takes the movement.
+    if ((dy > 0 && atStart) || (dy < 0 && atEnd)) {
+      final position = outer.position;
+      outer.jumpTo(
+        (position.pixels - dy).clamp(
+          position.minScrollExtent,
+          position.maxScrollExtent,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Listener(
+    onPointerMove: _onMove,
+    child: SingleChildScrollView(
+      controller: _inner,
+      physics: const ClampingScrollPhysics(),
+      // Breathing room at both ends, so at rest the fades don't sit on the
+      // first and last lines; the content still scrolls under them.
+      padding: const EdgeInsets.symmetric(vertical: 36),
+      child: widget.child,
+    ),
+  );
 }
 
 class _SectionButton extends StatelessWidget {
@@ -800,13 +919,10 @@ class _SectionButton extends StatelessWidget {
     reverse: reverse,
     child: Center(
       child: ElevatedButton.icon(
-        style: buildLifeAreaTheme().elevatedButtonTheme.style!.copyWith(
-          padding: const WidgetStatePropertyAll(
-            EdgeInsets.symmetric(horizontal: 22, vertical: 13),
-          ),
-          side: const WidgetStatePropertyAll(
-            BorderSide(color: Colors.white, width: 2),
-          ),
+        // Flat: these sit among text, so no lit-button glow.
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          shadowColor: Colors.transparent,
         ),
         onPressed: onPressed,
         icon: const Icon(Icons.edit_outlined, size: 20),

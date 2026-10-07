@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
+
 import '../utils/area_hero_art_tone.dart';
 import 'staggered_entrance.dart';
 
@@ -41,11 +43,11 @@ class AreaArtworkHeader extends SliverPersistentHeaderDelegate {
     final scale = 1 + 0.25 * Curves.easeInOut.transform(zoomProgress);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.black,
+        color: context.colors.night,
         boxShadow: [
           if (zoomProgress > 0)
             BoxShadow(
-              color: Colors.black.withValues(alpha: zoomProgress),
+              color: context.colors.night.withValues(alpha: zoomProgress),
               blurRadius: 42,
               spreadRadius: 8,
               offset: const Offset(0, 16),

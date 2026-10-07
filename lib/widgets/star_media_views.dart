@@ -12,7 +12,19 @@ import '../l10n/strings_scope.dart';
 import '../models/star_media.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import 'play_badge.dart';
 import 'voice_note_player.dart';
+
+/// The one gap between the reader's stacked blocks: data slot, texts, voice
+/// notes, photos, links.
+const double kReaderBlockGap = 20;
+
+/// How wide a voice note or link card is, as a fraction of the media column.
+const double _kMediaCardWidthFactor = 2 / 3;
+
+/// How wide the photo mosaic is, as a fraction of the media column; its tile
+/// heights shrink by the same factor so every photo scales linearly.
+const double _kMosaicWidthFactor = 0.8;
 
 /// Normalizes what the user typed into a link, or null if it isn't a usable
 /// http(s) address. A bare "example.com" gets "https://" in front.
@@ -96,13 +108,11 @@ class StarVideoThumb extends StatelessWidget {
   const StarVideoThumb({
     super.key,
     required this.path,
-    this.iconSize = 44,
     this.width,
     this.height,
   });
 
   final String path;
-  final double iconSize;
   final double? width;
   final double? height;
 
@@ -110,7 +120,7 @@ class StarVideoThumb extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     if (kIsWeb) {
-      return _WebVideoThumb(path: path, iconSize: iconSize);
+      return _WebVideoThumb(path: path);
     }
     return FutureBuilder<File?>(
       future: StarMediaStorage.videoThumbnail(path),
@@ -129,13 +139,9 @@ class StarVideoThumb extends StatelessWidget {
                 fit: BoxFit.cover,
                 errorBuilder: (_, _, _) => const SizedBox.shrink(),
               ),
-            Center(
-              child: Icon(
-                Icons.play_circle_outline,
-                color: thumb == null ? colors.gold : Colors.white,
-                size: iconSize,
-              ),
-            ),
+            // A translucent navy veil: over the picture, under the play mark.
+            ColoredBox(color: colors.night.withValues(alpha: 0.6)),
+            const Center(child: PlayBadge(size: kPlayBadgeSize)),
           ],
         );
       },
@@ -144,10 +150,9 @@ class StarVideoThumb extends StatelessWidget {
 }
 
 class _WebVideoThumb extends StatefulWidget {
-  const _WebVideoThumb({required this.path, required this.iconSize});
+  const _WebVideoThumb({required this.path});
 
   final String path;
-  final double iconSize;
 
   @override
   State<_WebVideoThumb> createState() => _WebVideoThumbState();
@@ -202,13 +207,8 @@ class _WebVideoThumbState extends State<_WebVideoThumb> {
               child: VideoPlayer(controller),
             ),
           ),
-        Center(
-          child: Icon(
-            Icons.play_circle_outline,
-            color: controller == null ? colors.gold : Colors.white,
-            size: widget.iconSize,
-          ),
-        ),
+        ColoredBox(color: colors.night.withValues(alpha: 0.6)),
+        const Center(child: PlayBadge(size: kPlayBadgeSize)),
       ],
     );
   }
@@ -231,7 +231,7 @@ class StarMediaTile extends StatelessWidget {
         height: size,
         child: media.kind == StarMediaKind.photo
             ? StarMediaImage(path: media.path!, width: size, height: size)
-            : StarVideoThumb(path: media.path!, iconSize: size * 0.45),
+            : StarVideoThumb(path: media.path!),
       ),
     );
   }
@@ -383,8 +383,8 @@ class _VideoPageState extends State<_VideoPage> {
 }
 
 /// The reader's "Memories" block, everything centered and stacked one thing
-/// under the next: voice notes, then all photos and videos together as one
-/// mosaic (the moodboard's layout), then links. Shows nothing
+/// under the next: all photos and videos together as one mosaic (the
+/// moodboard's layout), then voice notes, then links. Shows nothing
 /// when the victory has no extras.
 class StarMediaSection extends StatelessWidget {
   const StarMediaSection({super.key, required this.media});
@@ -407,10 +407,29 @@ class StarMediaSection extends StatelessWidget {
     final links = of(StarMediaKind.link);
 
     final blocks = <Widget>[
+      if (visuals.isNotEmpty)
+        FractionallySizedBox(
+          widthFactor: _kMosaicWidthFactor,
+          child: StarMediaMosaic(visuals: visuals),
+        ),
       for (final voice in voices)
-        VoiceNotePlayer(key: ValueKey(voice.id), media: voice),
-      if (visuals.isNotEmpty) StarMediaMosaic(visuals: visuals),
-      for (final link in links) StarLinkRow(media: link),
+        FractionallySizedBox(
+          widthFactor: _kMediaCardWidthFactor,
+          child: VoiceNotePlayer(key: ValueKey(voice.id), media: voice),
+        ),
+      if (links.isNotEmpty)
+        FractionallySizedBox(
+          widthFactor: _kMosaicWidthFactor,
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final link in links)
+                StarLinkRow(key: ValueKey(link.id), media: link),
+            ],
+          ),
+        ),
     ];
     // Opaque and tap-absorbing: the reader treats a tap on the page as
     // "show only the photo", and a tap that lands on the padding around a
@@ -422,7 +441,7 @@ class StarMediaSection extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           for (var i = 0; i < blocks.length; i++) ...[
-            if (i > 0) const SizedBox(height: 12),
+            if (i > 0) const SizedBox(height: kReaderBlockGap),
             blocks[i],
           ],
         ],
@@ -452,8 +471,11 @@ class StarMediaMosaic extends StatelessWidget {
         ),
       ),
     );
+    // Heights are tuned for the full 420 px column; the mosaic is narrower,
+    // so they shrink by the same factor.
+    const scale = _kMosaicWidthFactor;
     if (visuals.length == 1) {
-      return SizedBox(height: 220, child: tile(0));
+      return SizedBox(height: 220 * scale, child: tile(0));
     }
     return Column(
       children: [
@@ -461,7 +483,7 @@ class StarMediaMosaic extends StatelessWidget {
           Padding(
             padding: EdgeInsets.only(bottom: i + 3 < visuals.length ? 10 : 0),
             child: SizedBox(
-              height: visuals.length - i == 2 ? 160 : 220,
+              height: (visuals.length - i == 2 ? 160 : 220) * scale,
               child: Row(
                 textDirection: (i ~/ 3).isEven
                     ? TextDirection.ltr
@@ -512,51 +534,9 @@ class _MosaicContent extends StatelessWidget {
   }
 }
 
-/// A tappable centered line with a leading icon — how links are listed.
-class _ActionRow extends StatelessWidget {
-  const _ActionRow({
-    required this.icon,
-    required this.text,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String text;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(kRadiusField),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: colors.gold, size: 18),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                text,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: colors.gold,
-                  fontSize: 15,
-                  decoration: TextDecoration.underline,
-                  decorationColor: colors.gold,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
+/// A link as a small pill, as wide as what it says and no wider: a thin gold
+/// outline, the site (or the label the user gave it) and an arrow out. Its
+/// shape is what tells it apart from the wide voice-note card.
 class StarLinkRow extends StatelessWidget {
   const StarLinkRow({super.key, required this.media});
 
@@ -564,10 +544,42 @@ class StarLinkRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _ActionRow(
-      icon: Icons.link_rounded,
-      text: linkDisplayText(media),
-      onTap: () => _open(context),
+    final colors = context.colors;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _open(context),
+        customBorder: const StadiumBorder(),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 240),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+          decoration: ShapeDecoration(
+            color: colors.night.withValues(alpha: 0.4),
+            shape: StadiumBorder(
+              side: BorderSide(color: colors.gold, width: 1),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  linkPillText(media),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colors.gold,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Icon(Icons.arrow_outward_rounded, color: colors.gold, size: 16),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -583,6 +595,16 @@ class StarLinkRow extends StatelessWidget {
     }
     if (!ok) messenger.showSnackBar(SnackBar(content: Text(message)));
   }
+}
+
+/// What a link pill says: its label if it has one, else just the site
+/// (`example.com`, no scheme or `www.`).
+String linkPillText(StarMedia link) {
+  final label = link.label?.trim();
+  if (label != null && label.isNotEmpty) return label;
+  final host = Uri.tryParse(link.url ?? '')?.host ?? '';
+  final bare = host.startsWith('www.') ? host.substring(4) : host;
+  return bare.isEmpty ? (link.url ?? '') : bare;
 }
 
 /// What to show for a link row: its label if it has one, else the address.

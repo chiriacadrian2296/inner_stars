@@ -14,8 +14,8 @@ import 'package:inner_stars/screens/area_detail_screen.dart';
 import 'package:inner_stars/screens/moodboard_screen.dart';
 import 'package:inner_stars/screens/vision_editor_screen.dart';
 import 'package:inner_stars/widgets/reflection_questions_section.dart';
+import 'package:inner_stars/theme/app_colors.dart';
 import 'package:inner_stars/theme/app_theme.dart';
-import 'package:inner_stars/theme/life_area_theme.dart';
 
 void main() {
   testWidgets('area has three compact sections and direct editors', (
@@ -59,18 +59,7 @@ void main() {
     final editorTheme = Theme.of(
       tester.element(find.byType(VisionEditorScreen)),
     );
-    expect(editorTheme.textSelectionTheme.cursorColor, Colors.white);
-    expect(
-      editorTheme.inputDecorationTheme.focusedBorder!.borderSide.color,
-      Colors.white,
-    );
-    expect(editorTheme.scaffoldBackgroundColor, Colors.black);
-    expect(
-      editorTheme.segmentedButtonTheme.style!.backgroundColor!.resolve({
-        WidgetState.selected,
-      }),
-      Colors.white,
-    );
+    expect(editorTheme.scaffoldBackgroundColor, AppColors.dark.night);
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull, reason: 'return from vision');
@@ -88,8 +77,8 @@ void main() {
     final reflectionTheme = Theme.of(
       tester.element(find.byType(ReflectionQuestionsSection)),
     );
-    expect(reflectionTheme.sliderTheme.thumbColor, Colors.white);
-    expect(reflectionTheme.sliderTheme.activeTrackColor, Colors.white);
+    expect(reflectionTheme.sliderTheme.thumbColor, AppColors.dark.gold);
+    expect(reflectionTheme.sliderTheme.activeTrackColor, AppColors.dark.gold);
     final question = LifeArea.physical
         .reflectionQuestions(const StringsIt())
         .first;
@@ -120,7 +109,7 @@ void main() {
       StringsScope(
         strings: const StringsIt(),
         child: MaterialApp(
-          theme: buildLifeAreaTheme(),
+          theme: buildAppTheme(),
           home: MoodboardScreen(area: LifeArea.physical, repository: repo),
         ),
       ),
@@ -139,12 +128,7 @@ void main() {
     final quoteTheme = Theme.of(
       tester.element(find.byKey(const ValueKey('quote-text-field'))),
     );
-    expect(quoteTheme.textSelectionTheme.cursorColor, Colors.white);
-    expect(
-      quoteTheme.inputDecorationTheme.focusedBorder!.borderSide.color,
-      Colors.white,
-    );
-    expect(quoteTheme.dialogTheme.backgroundColor, Colors.black);
+    expect(quoteTheme.scaffoldBackgroundColor, AppColors.dark.night);
     await tester.tap(find.text(const StringsIt().saveChanges.toUpperCase()));
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 300));
@@ -163,6 +147,7 @@ void main() {
       find.byKey(const ValueKey('quote-text-field')),
       'A clearer direction',
     );
+    await tester.pump();
     await tester.tap(find.text(const StringsIt().saveChanges.toUpperCase()));
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 300));

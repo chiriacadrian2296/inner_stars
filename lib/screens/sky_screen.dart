@@ -40,7 +40,6 @@ import '../notifications/reminder_service.dart';
 import '../settings/settings_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
-import '../theme/life_area_theme.dart';
 import '../tutorials/sky_hint_target.dart';
 import '../tutorials/tour_gesture_step.dart';
 import '../tutorials/tour_step_card.dart';
@@ -4780,12 +4779,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _closeSkyTooltip();
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => Theme(
-          data: buildLifeAreaTheme(),
-          child: VisionEditorScreen(
-            area: area,
-            repository: widget.areaVisionRepository,
-          ),
+        builder: (_) => VisionEditorScreen(
+          area: area,
+          repository: widget.areaVisionRepository,
         ),
       ),
     );
@@ -4799,10 +4795,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       if (!mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => Theme(
-            data: buildLifeAreaTheme(),
-            child: MoodboardScreen(area: area, repository: repository),
-          ),
+          builder: (_) => MoodboardScreen(area: area, repository: repository),
         ),
       );
       _refresh();
@@ -4819,12 +4812,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _closeSkyTooltip();
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => Theme(
-          data: buildLifeAreaTheme(),
-          child: AreaReflectionsScreen(
-            area: area,
-            repository: widget.reflectionAnswerRepository,
-          ),
+        builder: (_) => AreaReflectionsScreen(
+          area: area,
+          repository: widget.reflectionAnswerRepository,
         ),
       ),
     );

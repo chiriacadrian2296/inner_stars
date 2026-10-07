@@ -187,7 +187,7 @@ class ReaderPage extends StatelessWidget {
               child: Center(child: extra ?? const SizedBox.shrink()),
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: kReaderBlockGap),
         ],
 
         // 4. Its texts.
@@ -208,7 +208,7 @@ class ReaderPage extends StatelessWidget {
             ),
           ),
         if (description != null) ...[
-          if (title != null) const SizedBox(height: 22),
+          if (title != null) const SizedBox(height: kReaderBlockGap),
           entrance(
             6,
             Text(
@@ -224,7 +224,7 @@ class ReaderPage extends StatelessWidget {
           ),
         ],
         if (note != null) ...[
-          SizedBox(height: title == null ? 0 : 16),
+          SizedBox(height: title == null ? 0 : kReaderBlockGap),
           entrance(
             6,
             Text(
@@ -240,7 +240,7 @@ class ReaderPage extends StatelessWidget {
           ),
         ],
         if (footer != null) ...[
-          const SizedBox(height: 24),
+          const SizedBox(height: kReaderBlockGap),
           entrance.rising(
             6,
             ConstrainedBox(

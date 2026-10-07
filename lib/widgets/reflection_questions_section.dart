@@ -46,20 +46,20 @@ class ReflectionQuestionsSectionState
               Expanded(
                 child: Text(
                   strings.reflectionQuestionsSectionLabel,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: context.colors.text,
                   ),
                 ),
               ),
               Text(
                 '$answeredCount/${questions.length} '
                 '${strings.reflectionAnsweredCountLabel}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.colors.text,
                 ),
               ),
             ],
@@ -190,7 +190,7 @@ class _ReflectionQuestionTileState extends State<_ReflectionQuestionTile> {
                         child: Icon(
                           Icons.offline_bolt,
                           size: 16,
-                          color: Colors.white,
+                          color: context.colors.gold,
                         ),
                       ),
                     ),
@@ -258,7 +258,7 @@ class _ReflectionQuestionTileState extends State<_ReflectionQuestionTile> {
                           child: Center(
                             child: IntensityBolts(
                               intensity: _intensity,
-                              color: Colors.white,
+                              color: context.colors.gold,
                               size: 22,
                               spacing: 6,
                               emphasizeLast: true,

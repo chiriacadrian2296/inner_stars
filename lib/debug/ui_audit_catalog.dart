@@ -513,7 +513,7 @@ const uiAuditCatalog = <UiAuditItem>[
       'Ban raw colors',
       'Allow only documented rendering/export exceptions',
     ],
-    recommendation: 'Use the standard night/gold palette throughout the app. The white-on-black meta theme is reserved for Manage Areas and Nightlight; fixed colors remain allowed only inside artwork and shaders.',
+    recommendation: 'Use the standard night/gold palette throughout the app. The alternative Nightlight theme is reserved for the Nightlight tool; fixed colors remain allowed only inside artwork and shaders.',
   ),
   UiAuditItem(
     id: 'icons-size-and-container',

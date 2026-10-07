@@ -1,3 +1,5 @@
+import '../utils/responsive.dart';
+
 /// The Sky grid's card sizes — a short, fixed list rather than a free range,
 /// so the size slider jumps between a few deliberate sizes. Each value is the
 /// width a card aims for (logical pixels); [skyGridColumnsFor] turns it into a
@@ -12,8 +14,9 @@ const List<double> kSkyGridTileExtents = [90, 120, 170, 320];
 /// back on to restore it exactly as before.
 const bool kShowSkyListView = false;
 
-/// Where a person who never touched the slider lands: the third step (Large).
-const int kSkyGridDefaultSizeStep = 2;
+/// Where a person who never touched the slider lands: Medium on a phone
+/// (native Android/iOS), Large everywhere else (web, desktop).
+int get kSkyGridDefaultSizeStep => isTouchOnlyMobile ? 1 : 2;
 
 int clampSkyGridSizeStep(int step) =>
     step.clamp(0, kSkyGridTileExtents.length - 1);

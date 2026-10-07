@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -8,10 +9,11 @@ import '../data/star_media_storage.dart';
 import '../l10n/strings_scope.dart';
 import '../models/star_media.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_style.dart';
+import 'play_badge.dart';
 import 'voice_note_recorder_sheet.dart' show formatVoiceDuration;
 
-/// Compact play/pause row for one voice note. Owns its own [AudioPlayer],
+/// One voice note as a card: a play badge, a waveform that fills as it
+/// plays (tap it to jump) and the length. Owns its own [AudioPlayer],
 /// set to mix with other audio so it never interrupts (or gets interrupted
 /// by) the Cosmo's background loop — see `AudioService`.
 class VoiceNotePlayer extends StatefulWidget {
@@ -19,7 +21,7 @@ class VoiceNotePlayer extends StatefulWidget {
 
   final StarMedia media;
 
-  /// Whether it draws its own outline — off when it sits inside a field
+  /// Whether it draws its own card — off when it sits inside a field
   /// that already has one.
   final bool framed;
 
@@ -104,10 +106,27 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
     }
   }
 
+  /// Jumps playback to [fraction] of the note — only once it has started;
+  /// before that a tap on the bars simply starts it.
+  Future<void> _seekTo(double fraction) async {
+    final player = _player;
+    if (player == null || _total == Duration.zero) {
+      await _toggle();
+      return;
+    }
+    try {
+      final target = _total * fraction.clamp(0.0, 1.0);
+      await player.seek(target);
+      if (mounted) setState(() => _position = target);
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final strings = context.strings;
+    // The waveform's played part: a lighter gold than the outline.
+    final lightGold = Color.lerp(colors.gold, Colors.white, 0.4)!;
     final total = _total;
     final progress = total.inMilliseconds == 0
         ? 0.0
@@ -116,52 +135,114 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
       behavior: HitTestBehavior.opaque,
       onTap: _failed ? null : _toggle,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        // Framed, it's a transparent pill with a thin gold outline, like a
+        // link — not a solid card.
         decoration: widget.framed
-            ? BoxDecoration(
-                borderRadius: BorderRadius.circular(kRadiusField),
-                border: Border.all(color: colors.muted.withValues(alpha: 0.35)),
+            ? ShapeDecoration(
+                color: colors.night.withValues(alpha: 0.4),
+                shape: StadiumBorder(
+                  side: BorderSide(color: colors.gold, width: 1),
+                ),
               )
             : null,
         child: Row(
           children: [
-            IconButton(
-              onPressed: _failed ? null : _toggle,
-              icon: Icon(
-                _failed
-                    ? Icons.error_outline
-                    : _playing
-                    ? Icons.pause_rounded
-                    : Icons.play_arrow_rounded,
-                color: colors.gold,
-              ),
-            ),
+            _failed
+                ? Icon(Icons.error_outline, color: colors.muted, size: 40)
+                : PlayBadge(size: kPlayBadgeSize, playing: _playing),
+            const SizedBox(width: 14),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _failed
-                        ? strings.mediaError
-                        : strings.voiceNoteLabel(
-                            formatVoiceDuration(_playing ? _position : total),
+              child: _failed
+                  ? Text(
+                      strings.mediaError,
+                      style: TextStyle(color: colors.muted, fontSize: 13),
+                    )
+                  : LayoutBuilder(
+                      builder: (context, constraints) => GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTapUp: (details) => _seekTo(
+                          details.localPosition.dx / constraints.maxWidth,
+                        ),
+                        child: SizedBox(
+                          height: 32,
+                          width: double.infinity,
+                          child: CustomPaint(
+                            painter: _WaveformPainter(
+                              seed: widget.media.id.hashCode,
+                              progress: progress,
+                              played: lightGold,
+                              rest: colors.gold.withValues(alpha: 0.4),
+                            ),
                           ),
-                    style: TextStyle(color: colors.muted, fontSize: 13),
-                  ),
-                  const SizedBox(height: 6),
-                  LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 2,
-                    color: colors.gold,
-                    backgroundColor: colors.muted.withValues(alpha: 0.2),
-                  ),
-                ],
-              ),
+                        ),
+                      ),
+                    ),
             ),
-            const SizedBox(width: 12),
+            if (!_failed) ...[
+              const SizedBox(width: 12),
+              Text(
+                formatVoiceDuration(_playing ? _position : total),
+                style: TextStyle(
+                  color: colors.gold,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
+}
+
+/// A voice note's bars: a fixed, per-note shape (seeded by its id, so each
+/// note keeps its own) that fills gold as playback advances.
+class _WaveformPainter extends CustomPainter {
+  _WaveformPainter({
+    required this.seed,
+    required this.progress,
+    required this.played,
+    required this.rest,
+  });
+
+  final int seed;
+  final double progress;
+  final Color played;
+  final Color rest;
+
+  static const _barWidth = 3.0;
+  static const _gap = 3.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final count = ((size.width + _gap) / (_barWidth + _gap)).floor();
+    if (count <= 0) return;
+    final random = math.Random(seed);
+    final paint = Paint()
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = _barWidth;
+    // Neighbouring bars drift rather than jump, so it reads as speech.
+    var level = 0.5;
+    for (var i = 0; i < count; i++) {
+      level = (level + (random.nextDouble() - 0.5) * 0.7).clamp(0.2, 1.0);
+      final x = i * (_barWidth + _gap) + _barWidth / 2;
+      final half = size.height * level / 2;
+      paint.color = (i + 0.5) / count <= progress ? played : rest;
+      canvas.drawLine(
+        Offset(x, size.height / 2 - half),
+        Offset(x, size.height / 2 + half),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_WaveformPainter old) =>
+      old.progress != progress ||
+      old.seed != seed ||
+      old.played != played ||
+      old.rest != rest;
 }

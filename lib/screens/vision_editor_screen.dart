@@ -61,25 +61,16 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
     if (_controller.text != _initial) {
       _asking = true;
       final strings = context.strings;
-      final discard = await showAppDialog<bool>(
+      final discard = await showAppConfirmation(
         context: context,
-        builder: (context) => AppDialog(
-          title: Text(strings.discardChangesConfirmTitle),
-          content: Text(strings.discardChangesConfirmBody),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: AppButtonLabel(strings.cancel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: AppButtonLabel(strings.discardChangesAction),
-            ),
-          ],
-        ),
+        title: strings.discardChangesConfirmTitle,
+        body: strings.discardChangesConfirmBody,
+        cancelLabel: strings.cancel,
+        confirmLabel: strings.discardChangesAction,
+        tone: AppConfirmationTone.destructive,
       );
       _asking = false;
-      if (discard != true || !mounted) return;
+      if (!discard || !mounted) return;
     }
     _close();
   }
@@ -284,7 +275,7 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
     Widget tool(IconData icon, String label, VoidCallback action) => IconButton(
       tooltip: label,
       style: IconButton.styleFrom(
-        foregroundColor: Colors.white,
+        foregroundColor: colors.text,
         disabledForegroundColor: colors.muted,
       ),
       icon: Icon(icon),
@@ -298,7 +289,10 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
       child: Scaffold(
         resizeToAvoidBottomInset: false,
         backgroundColor: colors.night,
+        // Keeps the bottom inset (gesture bar) when the keyboard opens, so the
+        // page — and the watermark sized from it — doesn't change size.
         body: SafeArea(
+          maintainBottomViewPadding: true,
           child: ResponsiveContent(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -328,7 +322,7 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                             child: PopupMenuButton<int>(
                               tooltip: strings.visionHeading,
                               enabled: !_saving,
-                              color: Colors.white,
+                              color: colors.nightPanel,
                               surfaceTintColor: Colors.transparent,
                               onSelected: (level) => _format(
                                 '${'#' * level} ',
@@ -343,21 +337,19 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                                       child: Text(
                                         '${strings.visionHeading} $level',
                                         textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          color: Colors.black,
-                                        ),
+                                        style: TextStyle(color: colors.text),
                                       ),
                                     ),
                                   ),
                               ],
-                              child: const SizedBox(
+                              child: SizedBox(
                                 width: 48,
                                 height: 48,
                                 child: Center(
                                   child: Text(
                                     'H',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: colors.text,
                                       fontSize: 22,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -369,12 +361,12 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                           StaggeredEntrance(
                             index: 1,
                             axis: Axis.horizontal,
-                            child: const SizedBox(
+                            child: SizedBox(
                               height: 24,
                               child: VerticalDivider(
                                 width: 24,
                                 thickness: 0.75,
-                                color: Color(0x47FFFFFF),
+                                color: colors.nightBorder,
                               ),
                             ),
                           ),
@@ -409,12 +401,12 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                           StaggeredEntrance(
                             index: 4,
                             axis: Axis.horizontal,
-                            child: const SizedBox(
+                            child: SizedBox(
                               height: 24,
                               child: VerticalDivider(
                                 width: 24,
                                 thickness: 0.75,
-                                color: Color(0x47FFFFFF),
+                                color: colors.nightBorder,
                               ),
                             ),
                           ),
@@ -444,12 +436,12 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                           StaggeredEntrance(
                             index: 6,
                             axis: Axis.horizontal,
-                            child: const SizedBox(
+                            child: SizedBox(
                               height: 24,
                               child: VerticalDivider(
                                 width: 24,
                                 thickness: 0.75,
-                                color: Color(0x47FFFFFF),
+                                color: colors.nightBorder,
                               ),
                             ),
                           ),
@@ -465,12 +457,12 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                           StaggeredEntrance(
                             index: 7,
                             axis: Axis.horizontal,
-                            child: const SizedBox(
+                            child: SizedBox(
                               height: 24,
                               child: VerticalDivider(
                                 width: 24,
                                 thickness: 0.75,
-                                color: Color(0x47FFFFFF),
+                                color: colors.nightBorder,
                               ),
                             ),
                           ),
@@ -484,7 +476,7 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                                   IconButton(
                                     tooltip: strings.visionUndo,
                                     style: IconButton.styleFrom(
-                                      foregroundColor: Colors.white,
+                                      foregroundColor: colors.text,
                                       disabledForegroundColor: colors.muted,
                                     ),
                                     icon: const Icon(Icons.undo),
@@ -495,7 +487,7 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                                   IconButton(
                                     tooltip: strings.visionRedo,
                                     style: IconButton.styleFrom(
-                                      foregroundColor: Colors.white,
+                                      foregroundColor: colors.text,
                                       disabledForegroundColor: colors.muted,
                                     ),
                                     icon: const Icon(Icons.redo),
@@ -514,12 +506,12 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                 ),
                 StaggeredEntrance(
                   index: 1,
-                  child: const Padding(
+                  child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 20),
                     child: Divider(
                       height: 1,
                       thickness: 0.75,
-                      color: Color(0x47FFFFFF),
+                      color: colors.nightBorder,
                     ),
                   ),
                 ),
@@ -596,15 +588,14 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                             strings.starQuickLookShareAction,
                           ),
                         ),
-                        ElevatedButton(
-                          onPressed: _saving ? null : _save,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: colors.night,
-                            disabledBackgroundColor: Colors.white38,
-                            disabledForegroundColor: colors.muted,
+                        ListenableBuilder(
+                          listenable: _controller,
+                          builder: (context, _) => ElevatedButton(
+                            onPressed: _saving || _controller.text == _initial
+                                ? null
+                                : _save,
+                            child: AppButtonLabel(strings.saveChanges),
                           ),
-                          child: AppButtonLabel(strings.saveChanges),
                         ),
                       ],
                     ),
