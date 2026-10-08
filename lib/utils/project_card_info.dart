@@ -7,11 +7,9 @@ import '../l10n/app_strings.dart';
 import '../models/habit.dart';
 import '../models/star.dart';
 import '../models/star_kind.dart';
-import '../models/star_media.dart';
 import '../theme/app_colors.dart';
 import '../widgets/star_glyph.dart' show starKindColor;
 import 'badge_schema.dart';
-import 'date_format.dart';
 import 'habit_stats.dart';
 import 'star_card_info.dart';
 
@@ -70,13 +68,52 @@ CardBadge _count(
   label: label,
 );
 
-/// The badges for a constellation, in two fixed rows (see [kBadgeRows]):
-/// the state of its stars — lit out of what it can hold, open goals, empty
-/// slots, dead stars — then its activity — the next goal date, habits lit
-/// today, the total intensity, memories. All eight are always there, a zero
-/// or a dash when there is nothing. [slotCount] is the shape's number of
-/// points (0 when it has none). Pure data, from caches: no I/O.
-List<List<CardBadge>> projectCardBadges({
+/// How many empty slots a constellation of [stars] has when its shape has
+/// [slotCount] points (0 when it has none).
+int emptySlotsOf(int slotCount, List<Star> stars) =>
+    math.max(0, slotCount - stars.length);
+
+/// The total intensity of the lit [stars]: a constellation's or an area's.
+int _energy(List<Star> stars) => stars
+    .where((s) => s.isLit)
+    .fold<int>(0, (sum, s) => sum + (s.intensity ?? 0));
+
+CardBadge _goalsBadge(int goals, AppColors colors, AppStrings strings) =>
+    _count(
+      BadgeSlot.goals,
+      Icons.star_outline_rounded,
+      goals,
+      colors.starUnlit,
+      colors,
+      strings.cardBadgeGoals,
+    );
+
+CardBadge _emptySlotsBadge(int empty, AppColors colors, AppStrings strings) =>
+    _count(
+      BadgeSlot.emptySlots,
+      Icons.circle_outlined,
+      empty,
+      colors.starNascent,
+      colors,
+      strings.cardBadgeEmptySlots,
+    );
+
+CardBadge _deadStarsBadge(int dead, AppColors colors, AppStrings strings) =>
+    _count(
+      BadgeSlot.deadStars,
+      StarKind.dead.icon,
+      dead,
+      colors.starDead,
+      colors,
+      strings.cardBadgeDeadStars,
+    );
+
+/// The badges for a constellation: the total intensity of its lit stars, then
+/// one fixed row — lit stars out of what it can hold, habits lit today, open
+/// goals, empty slots, dead stars. All of them are always there, a zero when
+/// there is nothing. [slotCount] is the shape's number of points (0 when it
+/// has none). Pure data, from caches: no I/O.
+CardBadges projectCardBadges({
   required List<Star> stars,
   required List<Habit> habits,
   required Map<int, Map<DateTime, int>> countsByHabit,
@@ -87,194 +124,88 @@ List<List<CardBadge>> projectCardBadges({
 }) {
   final clock = now ?? DateTime.now();
   final today = DateTime(clock.year, clock.month, clock.day);
-  final lit = stars.where((s) => s.isLit).toList();
-  final goals = stars.where((s) => s.isUnlit).toList();
+  final lit = stars.where((s) => s.isLit).length;
+  final goals = stars.where((s) => s.isUnlit).length;
   final dead = stars.where((s) => s.dead).length;
   // Out of what the constellation can hold, not out of the shape's own
   // points: stars past those grow the shape, so the points alone would give
   // "12/8". Older constellations already past the cap show their own count.
   final total = math.max(kMaxConstellationStars, stars.length);
 
-  DateTime? next;
-  for (final goal in goals) {
-    final date = goal.targetDate;
-    if (date == null) continue;
-    final day = DateTime(date.year, date.month, date.day);
-    if (day.isBefore(today)) continue;
-    if (next == null || day.isBefore(next)) next = day;
-  }
-  final energy = lit.fold<int>(0, (sum, s) => sum + (s.intensity ?? 0));
-  final memories = lit.fold<int>(
-    0,
-    (sum, s) =>
-        sum +
-        (s.photoPath != null ? 1 : 0) +
-        s.mediaCount(StarMediaKind.photo) +
-        s.mediaCount(StarMediaKind.video) +
-        s.mediaCount(StarMediaKind.voice) +
-        s.mediaCount(StarMediaKind.link),
+  return CardBadges(
+    intensity: intensityBadge(_energy(stars), colors, strings),
+    rows: [
+      [
+        makeBadge(
+          BadgeSlot.litOfTotal,
+          Icons.star_rounded,
+          colors,
+          color: colors.gold,
+          value: '$lit/$total',
+          zero: lit == 0,
+          label: strings.cardBadgeLitStars,
+        ),
+        _pulsarsBadge(
+          _pulsarsToday(habits, countsByHabit, today),
+          colors,
+          strings,
+        ),
+        _goalsBadge(goals, colors, strings),
+        _emptySlotsBadge(emptySlotsOf(slotCount, stars), colors, strings),
+        _deadStarsBadge(dead, colors, strings),
+      ],
+    ],
   );
-
-  return [
-    [
-      makeBadge(
-        BadgeSlot.litOfTotal,
-        Icons.star_rounded,
-        colors,
-        color: colors.gold,
-        value: '${lit.length}/$total',
-        zero: lit.isEmpty,
-        label: strings.cardBadgeLitStars,
-      ),
-      _count(
-        BadgeSlot.goals,
-        Icons.star_outline_rounded,
-        goals.length,
-        colors.starUnlit,
-        colors,
-        strings.cardBadgeGoals,
-      ),
-      _count(
-        BadgeSlot.emptySlots,
-        Icons.circle_outlined,
-        math.max(0, slotCount - stars.length),
-        colors.starNascent,
-        colors,
-        strings.cardBadgeEmptySlots,
-      ),
-      _count(
-        BadgeSlot.deadStars,
-        StarKind.dead.icon,
-        dead,
-        colors.starDead,
-        colors,
-        strings.cardBadgeDeadStars,
-      ),
-    ],
-    [
-      makeBadge(
-        BadgeSlot.nextDate,
-        Icons.event_outlined,
-        colors,
-        color: colors.gold,
-        value: next == null
-            ? '—'
-            : (next.year == today.year
-                  ? formatShortDate(next)
-                  : formatShortDateWithYear(next)),
-        zero: next == null,
-        label: strings.cardBadgeNextDate,
-      ),
-      _pulsarsBadge(
-        _pulsarsToday(habits, countsByHabit, today),
-        colors,
-        strings,
-      ),
-      _count(
-        BadgeSlot.energy,
-        Icons.bolt_rounded,
-        energy,
-        colors.gold,
-        colors,
-        strings.cardBadgeEnergy,
-      ),
-      _count(
-        BadgeSlot.memories,
-        Icons.photo_library_outlined,
-        memories,
-        colors.gold,
-        colors,
-        strings.cardBadgeMemories,
-      ),
-    ],
-  ];
 }
 
-/// The badges for an area (supernova), in two fixed rows (see
-/// [kBadgeRows]): its constellations, lit stars out of all its stars and
-/// habits lit today; then stars lit this month, answered reflections, a
-/// written vision (✓ or ✗) and moodboard items. All seven are always there.
-/// Pure data, from caches: no I/O.
-List<List<CardBadge>> areaCardBadges({
+/// The badges for an area (supernova): the total intensity of its lit stars,
+/// then one fixed row — its constellations, lit stars, living habits, open
+/// goals, empty slots (over all its constellations, [emptySlots]) and dead
+/// stars. All of them are always there. Pure data, from caches: no I/O.
+CardBadges areaCardBadges({
   required int constellationCount,
   required List<Star> stars,
   required List<Habit> habits,
-  required Map<int, Map<DateTime, int>> countsByHabit,
-  required int reflectionsAnswered,
-  required bool hasVision,
-  required int moodboardCount,
+  required int emptySlots,
   required AppColors colors,
   required AppStrings strings,
-  DateTime? now,
 }) {
-  final clock = now ?? DateTime.now();
-  final today = DateTime(clock.year, clock.month, clock.day);
-  final lit = stars.where((s) => s.isLit).toList();
+  final lit = stars.where((s) => s.isLit).length;
   final goals = stars.where((s) => s.isUnlit).length;
-  final thisMonth = lit.where((s) {
-    final date = s.achievedDate;
-    return date != null && date.year == today.year && date.month == today.month;
-  }).length;
+  final dead = stars.where((s) => s.dead).length;
 
-  return [
-    [
-      _count(
-        BadgeSlot.constellations,
-        Icons.insights_outlined,
-        constellationCount,
-        colors.gold,
-        colors,
-        strings.cardBadgeConstellations,
-      ),
-      makeBadge(
-        BadgeSlot.litOfTotal,
-        Icons.star_rounded,
-        colors,
-        color: colors.gold,
-        value: '${lit.length}/${lit.length + goals}',
-        zero: lit.isEmpty,
-        label: strings.cardBadgeLitStars,
-      ),
-      _pulsarsBadge(
-        _pulsarsToday(habits, countsByHabit, today),
-        colors,
-        strings,
-      ),
+  return CardBadges(
+    intensity: intensityBadge(_energy(stars), colors, strings),
+    rows: [
+      [
+        _count(
+          BadgeSlot.constellations,
+          Icons.insights_outlined,
+          constellationCount,
+          colors.gold,
+          colors,
+          strings.cardBadgeConstellations,
+        ),
+        _count(
+          BadgeSlot.litStars,
+          Icons.star_rounded,
+          lit,
+          colors.gold,
+          colors,
+          strings.cardBadgeLitStars,
+        ),
+        _count(
+          BadgeSlot.habits,
+          Icons.local_fire_department_rounded,
+          habits.where((h) => !h.dead).length,
+          starKindColor(StarKind.pulsar, colors),
+          colors,
+          strings.cardBadgeHabits,
+        ),
+        _goalsBadge(goals, colors, strings),
+        _emptySlotsBadge(emptySlots, colors, strings),
+        _deadStarsBadge(dead, colors, strings),
+      ],
     ],
-    [
-      _count(
-        BadgeSlot.thisMonth,
-        Icons.calendar_month_rounded,
-        thisMonth,
-        colors.gold,
-        colors,
-        strings.cardBadgeThisMonth,
-      ),
-      _count(
-        BadgeSlot.reflections,
-        Icons.auto_stories_outlined,
-        reflectionsAnswered,
-        colors.gold,
-        colors,
-        strings.cardBadgeReflections,
-      ),
-      makeBadge(
-        BadgeSlot.vision,
-        Icons.edit_outlined,
-        colors,
-        color: colors.gold,
-        check: hasVision,
-        zero: !hasVision,
-        label: strings.cardBadgeVision,
-      ),
-      _count(
-        BadgeSlot.moodboard,
-        Icons.photo_library_outlined,
-        moodboardCount,
-        colors.gold,
-        colors,
-        strings.cardBadgeMoodboard,
-      ),
-    ],
-  ];
+  );
 }

@@ -766,15 +766,9 @@ abstract class AppStrings {
   String get cardBadgeGoals;
   String get cardBadgeEmptySlots;
   String get cardBadgePulsarsToday;
-  String get cardBadgeNextDate;
-  String get cardBadgeEnergy;
-  String get cardBadgeMemories;
+  String get cardBadgeHabits;
   String get cardBadgeDeadStars;
   String get cardBadgeConstellations;
-  String get cardBadgeReflections;
-  String get cardBadgeVision;
-  String get cardBadgeMoodboard;
-  String get cardBadgeThisMonth;
 
   /// "2/3 today" — the daily-N-times stepper's own progress line, shown
   /// instead of [habitDoneTodayLabel]/[markHabitDoneAction] once the

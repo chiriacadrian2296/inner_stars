@@ -12,22 +12,18 @@ import 'date_format.dart';
 import 'habit_stats.dart';
 
 /// One small fact on a card (tooltip or grid tile): a fixed [slot], an icon
-/// and a value — a text, or a ✓/✗ ([check]). The icon carries the state in
-/// its colour (gold / blue); a value of zero is shown muted. Every badge has
-/// a value: there are no bare icons.
+/// and a text value. The icon carries the state in its colour (gold / blue);
+/// a value of zero is shown muted. Every badge has a value: there are no bare
+/// icons.
 class CardBadge {
   const CardBadge({
     required this.slot,
     required this.icon,
     required this.iconColor,
     required this.valueColor,
-    this.value,
-    this.check,
+    required this.value,
     this.semanticLabel,
-  }) : assert(
-         (value == null) != (check == null),
-         'a badge shows either a text value or a check, not both or neither',
-       );
+  });
 
   final BadgeSlot slot;
   final IconData icon;
@@ -35,25 +31,32 @@ class CardBadge {
   final Color valueColor;
 
   /// The text shown beside the icon.
-  final String? value;
-
-  /// A ✓ (true) or ✗ (false) shown instead of a text.
-  final bool? check;
+  final String value;
 
   /// What the badge stands for, read out by screen readers.
   final String? semanticLabel;
 }
 
-/// A badge whose value is [value] (or, when [check] is set, a ✓/✗). The icon
-/// always keeps its own [color]; only the value is muted when it is [zero] —
-/// a count that is nothing.
+/// A card's badges: its [intensity] (drawn bigger, above the card's first
+/// text) and its [rows] of fixed badges (see [kBadgeRows]).
+class CardBadges {
+  const CardBadges({this.intensity, this.rows = const []});
+
+  /// The intensity, or null for a card that has none (a goal, a dead star).
+  final CardBadge? intensity;
+  final List<List<CardBadge>> rows;
+
+  static const none = CardBadges();
+}
+
+/// A badge whose value is [value]. The icon always keeps its own [color];
+/// only the value is muted when it is [zero] — a count that is nothing.
 CardBadge makeBadge(
   BadgeSlot slot,
   IconData icon,
   AppColors colors, {
   required Color color,
-  String? value,
-  bool? check,
+  required String value,
   bool zero = false,
   String? label,
 }) => CardBadge(
@@ -62,18 +65,27 @@ CardBadge makeBadge(
   iconColor: color,
   valueColor: zero ? colors.muted : colors.text,
   value: value,
-  check: check,
   semanticLabel: label,
 );
 
+/// The intensity badge of a card: the gold bolt and the number, muted when
+/// the number is 0.
+CardBadge intensityBadge(int intensity, AppColors colors, AppStrings strings) =>
+    makeBadge(
+      BadgeSlot.intensity,
+      Icons.bolt_rounded,
+      colors,
+      color: colors.gold,
+      value: '$intensity',
+      zero: intensity == 0,
+      label: strings.intensityLabel,
+    );
+
 /// The badges for a [star] (a victory, a goal or a dead star), grouped in
-/// rows by [kBadgeRows]. A victory always has intensity, voice notes, photos,
-/// videos and links — a count of 0 when it has none. Pure model data, no I/O.
-List<List<CardBadge>> starCardBadges(
-  Star star,
-  AppColors colors,
-  AppStrings strings,
-) {
+/// rows by [kBadgeRows]. A victory always has its intensity and voice notes,
+/// photos, videos and links — a count of 0 when it has none. Pure model data,
+/// no I/O.
+CardBadges starCardBadges(Star star, AppColors colors, AppStrings strings) {
   switch (star.kind) {
     case StarKind.lit:
       CardBadge attachment(
@@ -94,79 +106,79 @@ List<List<CardBadge>> starCardBadges(
         );
       }
 
-      return [
-        [
-          makeBadge(
-            BadgeSlot.intensity,
-            Icons.bolt_rounded,
-            colors,
-            color: colors.gold,
-            value: '${star.intensity ?? 0}',
-            label: strings.intensityLabel,
-          ),
-          attachment(
-            BadgeSlot.voice,
-            StarMediaKind.voice,
-            Icons.mic_none_rounded,
-            strings.cardBadgeVoice,
-          ),
-          attachment(
-            BadgeSlot.photo,
-            StarMediaKind.photo,
-            Icons.photo_library_outlined,
-            strings.cardBadgePhotos,
-          ),
-          attachment(
-            BadgeSlot.video,
-            StarMediaKind.video,
-            Icons.videocam_outlined,
-            strings.cardBadgeVideos,
-          ),
-          attachment(
-            BadgeSlot.link,
-            StarMediaKind.link,
-            Icons.link_rounded,
-            strings.cardBadgeLinks,
-          ),
+      return CardBadges(
+        intensity: intensityBadge(star.intensity ?? 0, colors, strings),
+        rows: [
+          [
+            attachment(
+              BadgeSlot.voice,
+              StarMediaKind.voice,
+              Icons.mic_none_rounded,
+              strings.cardBadgeVoice,
+            ),
+            attachment(
+              BadgeSlot.photo,
+              StarMediaKind.photo,
+              Icons.photo_library_outlined,
+              strings.cardBadgePhotos,
+            ),
+            attachment(
+              BadgeSlot.video,
+              StarMediaKind.video,
+              Icons.videocam_outlined,
+              strings.cardBadgeVideos,
+            ),
+            attachment(
+              BadgeSlot.link,
+              StarMediaKind.link,
+              Icons.link_rounded,
+              strings.cardBadgeLinks,
+            ),
+          ],
         ],
-      ];
+      );
     case StarKind.unlit:
       final date = star.targetDate;
-      return [
-        [
-          makeBadge(
-            BadgeSlot.date,
-            Icons.calendar_month_rounded,
-            colors,
-            // Gold once a date is set, blue while it isn't.
-            color: date == null ? colors.starUnlit : colors.gold,
-            value: date == null ? '—' : formatDisplayDate(date, strings),
-          ),
+      return CardBadges(
+        rows: [
+          [
+            makeBadge(
+              BadgeSlot.date,
+              Icons.calendar_month_rounded,
+              colors,
+              // Gold once a date is set, blue while it isn't.
+              color: date == null ? colors.starUnlit : colors.gold,
+              value: date == null ? '—' : formatDisplayDate(date, strings),
+            ),
+          ],
         ],
-      ];
+      );
     case StarKind.dead:
       final date = star.deadDate;
-      return [
-        [
-          makeBadge(
-            BadgeSlot.date,
-            StarKind.dead.icon,
-            colors,
-            color: starKindColor(StarKind.dead, colors),
-            value: date == null ? '—' : formatDisplayDate(date, strings),
-          ),
+      return CardBadges(
+        rows: [
+          [
+            makeBadge(
+              BadgeSlot.date,
+              StarKind.dead.icon,
+              colors,
+              color: starKindColor(StarKind.dead, colors),
+              value: date == null ? '—' : formatDisplayDate(date, strings),
+            ),
+          ],
         ],
-      ];
+      );
     case StarKind.pulsar || StarKind.nascent:
-      return const [];
+      return CardBadges.none;
   }
 }
 
-/// The badges for a [habit] (a pulsar): streak, intensity and the progress of
-/// today (a daily habit) or of this week (a weekly one). [countsByDay] is the
-/// habit's completions per day, taken from a cache — never read from storage
-/// here. A dead habit keeps the same three, with a 0 streak and no progress.
-List<List<CardBadge>> habitCardBadges(
+/// The badges for a [habit] (a pulsar): its intensity, then the progress of
+/// today (a daily habit) or of this week (a weekly one) and the streak.
+/// [countsByDay] is the habit's completions per day, taken from a cache —
+/// never read from storage here. A dead habit keeps the same badges, with no
+/// progress and a 0 streak.
+CardBadges habitCardBadges(
   Habit habit,
   Map<DateTime, int> countsByDay,
   AppColors colors,
@@ -218,25 +230,20 @@ List<List<CardBadge>> habitCardBadges(
     );
   }
 
-  return [
-    [
-      makeBadge(
-        BadgeSlot.streak,
-        Icons.local_fire_department_rounded,
-        colors,
-        color: starKindColor(StarKind.pulsar, colors, lit: lit),
-        value: '$streak',
-        label: strings.habitCurrentStreakLabel,
-      ),
-      makeBadge(
-        BadgeSlot.intensity,
-        Icons.bolt_rounded,
-        colors,
-        color: colors.gold,
-        value: '${habit.intensity}',
-        label: strings.intensityLabel,
-      ),
-      progress,
+  return CardBadges(
+    intensity: intensityBadge(habit.intensity, colors, strings),
+    rows: [
+      [
+        progress,
+        makeBadge(
+          BadgeSlot.streak,
+          Icons.local_fire_department_rounded,
+          colors,
+          color: starKindColor(StarKind.pulsar, colors, lit: lit),
+          value: '$streak',
+          label: strings.habitCurrentStreakLabel,
+        ),
+      ],
     ],
-  ];
+  );
 }

@@ -1486,23 +1486,11 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get cardBadgePulsarsToday => 'Obiceiuri aprinse azi';
   @override
-  String get cardBadgeNextDate => 'Următoarea dată a obiectivelor';
-  @override
-  String get cardBadgeEnergy => 'Intensitate totală';
-  @override
-  String get cardBadgeMemories => 'Amintiri';
+  String get cardBadgeHabits => 'Obiceiuri';
   @override
   String get cardBadgeDeadStars => 'Stele moarte';
   @override
   String get cardBadgeConstellations => 'Constelații';
-  @override
-  String get cardBadgeReflections => 'Reflecții completate';
-  @override
-  String get cardBadgeVision => 'Viziune scrisă';
-  @override
-  String get cardBadgeMoodboard => 'Elemente din moodboard';
-  @override
-  String get cardBadgeThisMonth => 'Aprinse luna aceasta';
   @override
   String habitProgressToday(int done, int target) => '$done/$target azi';
   @override

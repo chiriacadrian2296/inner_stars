@@ -1478,23 +1478,11 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get cardBadgePulsarsToday => 'Habits lit today';
   @override
-  String get cardBadgeNextDate => 'Next goal date';
-  @override
-  String get cardBadgeEnergy => 'Total intensity';
-  @override
-  String get cardBadgeMemories => 'Memories';
+  String get cardBadgeHabits => 'Habits';
   @override
   String get cardBadgeDeadStars => 'Dead stars';
   @override
   String get cardBadgeConstellations => 'Constellations';
-  @override
-  String get cardBadgeReflections => 'Reflections answered';
-  @override
-  String get cardBadgeVision => 'Vision written';
-  @override
-  String get cardBadgeMoodboard => 'Moodboard items';
-  @override
-  String get cardBadgeThisMonth => 'Lit this month';
   @override
   String habitProgressToday(int done, int target) => '$done/$target today';
   @override

@@ -51,7 +51,7 @@ class SkyPulsarTooltip extends StatelessWidget {
     return SkySearchTooltipCard(
       menuId: 'tooltip-habit:${habit.id}',
       onTap: onView,
-      baseBodyHeight: SearchResultCard.bodyHeightForRows(badges.length),
+      baseBodyHeight: SearchResultCard.bodyHeightFor(badges),
       visual: SearchStarVisual(kind: StarKind.pulsar, pulsarLit: isLit),
       content: SearchCardTextContent(
         eyebrow: StarKind.pulsar.label(strings),
@@ -62,7 +62,7 @@ class SkyPulsarTooltip extends StatelessWidget {
         breadcrumb: project == null
             ? null
             : '${project!.area.displayName(strings)} → ${project!.name}',
-        badgeRows: badges,
+        badges: badges,
       ),
       actions: [
         if (habit.dead)

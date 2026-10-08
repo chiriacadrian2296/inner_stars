@@ -7,7 +7,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_motion.dart';
 import '../theme/app_style.dart';
 import '../utils/area_hero_art_tone.dart';
-import '../utils/star_card_info.dart' show CardBadge;
+import '../utils/star_card_info.dart' show CardBadges;
 import 'badge_icon.dart';
 import 'badge_rows.dart';
 import 'constellation_editor_painter.dart';
@@ -72,10 +72,11 @@ class SearchResultCard extends StatelessWidget {
   /// The default body height.
   static const defaultBodyHeight = _bodyHeight;
 
-  /// The body height for a card whose badges take [rowCount] rows: it follows
-  /// the card's kind (its fixed schema), never its data.
-  static double bodyHeightForRows(int rowCount) =>
-      rowCount > 1 ? 106.0 : _bodyHeight;
+  /// The body height for a card with these [badges]: taller when the card
+  /// carries an intensity above its first text. It follows the card's kind
+  /// (its fixed schema), never its data.
+  static double bodyHeightFor(CardBadges badges) =>
+      badges.intensity != null ? 106.0 : _bodyHeight;
   static const _drawerHeight = 68.0;
   static const _drawerUnderlap = 18.0;
   static const _toggleZoneWidth = 44.0;
@@ -238,7 +239,7 @@ class SearchCardTextContent extends StatelessWidget {
     super.key,
     required this.title,
     this.metrics = const [],
-    this.badgeRows,
+    this.badges,
     this.eyebrow,
     this.eyebrowColor,
     this.breadcrumb,
@@ -254,9 +255,9 @@ class SearchCardTextContent extends StatelessWidget {
   final bool descriptionMatched;
   final List<SearchCardMetric> metrics;
 
-  /// The card's badges in their fixed rows (see `BadgeRows`); when given they
-  /// are shown instead of [metrics].
-  final List<List<CardBadge>>? badgeRows;
+  /// The card's badges: the intensity above the first text and the fixed rows
+  /// (see `BadgeRows`) below; when given they are shown instead of [metrics].
+  final CardBadges? badges;
 
   @override
   Widget build(BuildContext context) {
@@ -265,6 +266,10 @@ class SearchCardTextContent extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (badges?.intensity != null) ...[
+          IntensityBadge(badge: badges!.intensity!),
+          const SizedBox(height: 3),
+        ],
         if (eyebrow != null) ...[
           Text(
             eyebrow!.toUpperCase(),
@@ -313,9 +318,9 @@ class SearchCardTextContent extends StatelessWidget {
             ),
           ),
         ],
-        if (!descriptionMatched && badgeRows != null) ...[
+        if (!descriptionMatched && badges != null) ...[
           const SizedBox(height: 6),
-          BadgeRows(rows: badgeRows!),
+          BadgeRows(rows: badges!.rows),
         ] else if (!descriptionMatched) ...[
           const SizedBox(height: 6),
           Wrap(
@@ -427,7 +432,7 @@ class SearchConstellationVisual extends StatelessWidget {
     super.key,
     required this.shape,
     this.darkBackground = true,
-    this.inset = 10,
+    this.inset = 16,
   });
 
   final ConstellationShape? shape;

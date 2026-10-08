@@ -48,12 +48,12 @@ void main() {
       HabitCompletion(id: i + 1, habitId: 1, date: days[i]),
   ]);
 
-  List<List<BadgeSlot>> slots(List<List<CardBadge>> rows) => [
-    for (final row in rows) [for (final badge in row) badge.slot],
+  List<List<BadgeSlot>> slots(CardBadges badges) => [
+    for (final row in badges.rows) [for (final badge in row) badge.slot],
   ];
 
   group('victory', () {
-    test('always has the same five badges, zeros when empty', () {
+    test('always has the same four attachments, zeros when empty', () {
       final bare = starCardBadges(victory(), colors, strings);
       final full = starCardBadges(
         victory(
@@ -70,13 +70,19 @@ void main() {
       );
       expect(slots(bare), kBadgeRows[BadgeCardKind.victory]);
       expect(slots(full), kBadgeRows[BadgeCardKind.victory]);
-      expect(bare.single.map((b) => b.value), ['4', '0', '0', '0', '0']);
-      expect(full.single.map((b) => b.value), ['4', '2', '1', '1', '1']);
+      expect(bare.rows.single.map((b) => b.value), ['0', '0', '0', '0']);
+      expect(full.rows.single.map((b) => b.value), ['2', '1', '1', '1']);
       // A zero mutes the value, never the icon.
-      expect(bare.single[1].valueColor, colors.muted);
-      expect(full.single[1].valueColor, colors.text);
-      expect(bare.single[1].iconColor, colors.gold);
-      expect(full.single[1].iconColor, colors.gold);
+      expect(bare.rows.single[0].valueColor, colors.muted);
+      expect(full.rows.single[0].valueColor, colors.text);
+      expect(bare.rows.single[0].iconColor, colors.gold);
+      expect(full.rows.single[0].iconColor, colors.gold);
+    });
+
+    test('the intensity is apart from the row, above the first text', () {
+      final badges = starCardBadges(victory(), colors, strings);
+      expect(badges.intensity!.slot, BadgeSlot.intensity);
+      expect(badges.intensity!.value, '4');
     });
   });
 
@@ -92,9 +98,10 @@ void main() {
         final undated = starCardBadges(goal(), colors, strings);
         expect(slots(dated), kBadgeRows[BadgeCardKind.goal]);
         expect(slots(undated), kBadgeRows[BadgeCardKind.goal]);
-        expect(dated.single.single.iconColor, colors.gold);
-        expect(undated.single.single.iconColor, colors.starUnlit);
-        expect(undated.single.single.value, '—');
+        expect(dated.intensity, isNull);
+        expect(dated.rows.single.single.iconColor, colors.gold);
+        expect(undated.rows.single.single.iconColor, colors.starUnlit);
+        expect(undated.rows.single.single.value, '—');
       },
     );
 
@@ -109,7 +116,8 @@ void main() {
       );
       final rows = starCardBadges(dead, colors, strings);
       expect(slots(rows), kBadgeRows[BadgeCardKind.deadStar]);
-      expect(rows.single.single.value, '—');
+      expect(rows.intensity, isNull);
+      expect(rows.rows.single.single.value, '—');
     });
   });
 
@@ -128,7 +136,7 @@ void main() {
       dead: dead,
     );
 
-    test('always has streak, intensity and progress', () {
+    test('always has progress and streak, and the intensity apart', () {
       for (final h in [
         habit(),
         habit(target: 3),
@@ -143,6 +151,7 @@ void main() {
           now: today,
         );
         expect(slots(rows), kBadgeRows[BadgeCardKind.habit]);
+        expect(rows.intensity, isNotNull);
       }
     });
 
@@ -154,7 +163,7 @@ void main() {
         colors,
         strings,
         now: today,
-      ).single.last;
+      ).rows.single.first;
       expect(before.value, '1/3');
       expect(before.iconColor, colors.starUnlit);
 
@@ -164,7 +173,7 @@ void main() {
         colors,
         strings,
         now: today,
-      ).single.last;
+      ).rows.single.first;
       expect(after.value, '2/3');
       expect(after.iconColor, colors.gold);
     });
@@ -176,28 +185,28 @@ void main() {
         colors,
         strings,
         now: today,
-      ).single.last.value!;
+      ).rows.single.first.value;
       expect(progress(habit(target: 3), [today]), '1/3');
       expect(progress(habit(), []), '0/1');
       expect(progress(habit(), [today]), '1/1');
     });
 
-    test('a dead habit has a 0 streak and a dash for progress', () {
+    test('a dead habit has a dash for progress and a 0 streak', () {
       final row = habitCardBadges(
         habit(dead: true),
         {},
         colors,
         strings,
         now: today,
-      ).single;
-      expect(row.first.value, '0');
-      expect(row.last.value, '—');
+      ).rows.single;
+      expect(row.first.value, '—');
+      expect(row.last.value, '0');
     });
   });
 
   group('constellation and area', () {
-    test('a constellation has the same eight badges whatever it holds', () {
-      List<List<CardBadge>> build({required bool full}) => projectCardBadges(
+    test('a constellation has the same five badges whatever it holds', () {
+      CardBadges build({required bool full}) => projectCardBadges(
         stars: full ? [victory(), goal(date: DateTime(2026, 2, 1))] : const [],
         habits: const [],
         countsByHabit: const {},
@@ -211,55 +220,59 @@ void main() {
         kBadgeRows[BadgeCardKind.constellation],
       );
       expect(slots(build(full: true)), kBadgeRows[BadgeCardKind.constellation]);
-      // Empty: zeros and a dash, muted; nothing is dropped.
-      final empty = build(full: false).expand((row) => row).toList();
-      expect(empty.length, 8);
-      expect(empty.every((b) => b.valueColor == colors.muted), isTrue);
+      // Empty: zeros, muted; nothing is dropped.
+      final empty = build(full: false);
+      expect(empty.rows.single.length, 5);
+      expect(empty.rows.length, 1);
+      expect(
+        empty.rows.single.every((b) => b.valueColor == colors.muted),
+        isTrue,
+      );
+      expect(empty.intensity!.value, '0');
+      // The intensity is the total of its lit stars.
+      expect(build(full: true).intensity!.value, '4');
     });
 
-    test('an area has the same seven badges, vision is a check or a cross', () {
-      List<List<CardBadge>> build({required bool vision}) => areaCardBadges(
-        constellationCount: 2,
-        stars: [victory(), goal()],
+    test('an area has one row of six counts and the total intensity', () {
+      CardBadges build({required bool full}) => areaCardBadges(
+        constellationCount: full ? 2 : 0,
+        stars: full ? [victory(), victory(intensity: 3), goal()] : const [],
         habits: const [],
-        countsByHabit: const {},
-        reflectionsAnswered: 0,
-        hasVision: vision,
-        moodboardCount: 0,
+        emptySlots: full ? 5 : 0,
         colors: colors,
         strings: strings,
-        now: today,
       );
-      expect(slots(build(vision: true)), kBadgeRows[BadgeCardKind.area]);
-      expect(slots(build(vision: false)), kBadgeRows[BadgeCardKind.area]);
-      CardBadge visionOf(List<List<CardBadge>> rows) =>
-          rows.expand((r) => r).firstWhere((b) => b.slot == BadgeSlot.vision);
-      expect(visionOf(build(vision: true)).check, isTrue);
-      expect(visionOf(build(vision: false)).check, isFalse);
-      expect(visionOf(build(vision: false)).value, isNull);
+      expect(slots(build(full: true)), kBadgeRows[BadgeCardKind.area]);
+      expect(slots(build(full: false)), kBadgeRows[BadgeCardKind.area]);
+      final full = build(full: true);
+      expect(full.intensity!.value, '7');
+      // constellations, lit stars, habits, goals, empty slots, dead stars.
+      expect(full.rows.single.map((b) => b.value), [
+        '2',
+        '2',
+        '0',
+        '1',
+        '5',
+        '0',
+      ]);
     });
   });
 
   test(
-    'every grid of the schema fits the reference width, 5 columns at most',
+    'every grid of the schema fits the reference width, one row at most',
     () {
       for (final rows in kBadgeRows.values) {
-        expect(rows.length, lessThanOrEqualTo(2));
-        for (final row in rows) {
-          expect(row.length, lessThanOrEqualTo(5));
-        }
+        expect(rows.length, 1);
+        expect(rows.single.length, lessThanOrEqualTo(6));
         expect(badgeGridWidth(rows), lessThanOrEqualTo(kBadgeReferenceWidth));
       }
     },
   );
 
-  test('the columns of a two-row card are as wide as their widest cell', () {
-    final widths = badgeColumnWidths(kBadgeRows[BadgeCardKind.constellation]!);
-    expect(widths.length, 4);
-    for (var c = 0; c < widths.length; c++) {
-      for (final row in kBadgeRows[BadgeCardKind.constellation]!) {
-        expect(row[c].width, lessThanOrEqualTo(widths[c]));
-      }
+  test('a row is as wide as the sum of its cells', () {
+    for (final rows in kBadgeRows.values) {
+      final widths = badgeColumnWidths(rows);
+      expect(widths, [for (final slot in rows.single) slot.width]);
     }
   });
 }

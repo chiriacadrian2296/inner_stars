@@ -12,8 +12,11 @@ const double _wide = 58;
 /// scale 1: a 14 px icon, 11.5 px bold digits, plus the gap to the next
 /// cell). Fixed cells keep the columns of every card of a kind lined up.
 enum BadgeSlot {
-  // A victory.
+  /// The card's intensity. It is not part of a row: it is drawn bigger above
+  /// the card's first text (see `CardBadges.intensity`).
   intensity(_narrow),
+
+  // A victory.
   voice(_narrow),
   photo(_narrow),
   video(_narrow),
@@ -23,25 +26,18 @@ enum BadgeSlot {
   date(94),
 
   // A habit.
-  streak(_medium),
   progress(_medium),
+  streak(_medium),
 
-  // A constellation.
+  // A constellation and an area.
   litOfTotal(_wide),
+  litStars(_narrow),
+  pulsarsToday(_medium),
+  habits(_narrow),
   goals(_narrow),
   emptySlots(_narrow),
   deadStars(_narrow),
-  pulsarsToday(_medium),
-  nextDate(_wide),
-  energy(_medium),
-  memories(_medium),
-
-  // An area (supernova).
-  constellations(_narrow),
-  thisMonth(_narrow),
-  reflections(_narrow),
-  vision(_narrow),
-  moodboard(_medium);
+  constellations(_narrow);
 
   const BadgeSlot(this.width);
 
@@ -54,16 +50,11 @@ enum BadgeCardKind { victory, goal, deadStar, habit, constellation, area }
 /// The one place that decides which badges each card shows, in which order,
 /// and how they are grouped: one inner list is one row. Nothing else
 /// reorders them — the same way the quick-look buttons on the sky keep a
-/// fixed order.
+/// fixed order. Every card has a single row; its intensity, when it has one,
+/// sits above its first text instead (see [BadgeSlot.intensity]).
 const Map<BadgeCardKind, List<List<BadgeSlot>>> kBadgeRows = {
   BadgeCardKind.victory: [
-    [
-      BadgeSlot.intensity,
-      BadgeSlot.voice,
-      BadgeSlot.photo,
-      BadgeSlot.video,
-      BadgeSlot.link,
-    ],
+    [BadgeSlot.voice, BadgeSlot.photo, BadgeSlot.video, BadgeSlot.link],
   ],
   BadgeCardKind.goal: [
     [BadgeSlot.date],
@@ -72,29 +63,25 @@ const Map<BadgeCardKind, List<List<BadgeSlot>>> kBadgeRows = {
     [BadgeSlot.date],
   ],
   BadgeCardKind.habit: [
-    [BadgeSlot.streak, BadgeSlot.intensity, BadgeSlot.progress],
+    [BadgeSlot.progress, BadgeSlot.streak],
   ],
   BadgeCardKind.constellation: [
     [
       BadgeSlot.litOfTotal,
+      BadgeSlot.pulsarsToday,
       BadgeSlot.goals,
       BadgeSlot.emptySlots,
       BadgeSlot.deadStars,
     ],
-    [
-      BadgeSlot.nextDate,
-      BadgeSlot.pulsarsToday,
-      BadgeSlot.energy,
-      BadgeSlot.memories,
-    ],
   ],
   BadgeCardKind.area: [
-    [BadgeSlot.constellations, BadgeSlot.litOfTotal, BadgeSlot.pulsarsToday],
     [
-      BadgeSlot.thisMonth,
-      BadgeSlot.reflections,
-      BadgeSlot.vision,
-      BadgeSlot.moodboard,
+      BadgeSlot.constellations,
+      BadgeSlot.litStars,
+      BadgeSlot.habits,
+      BadgeSlot.goals,
+      BadgeSlot.emptySlots,
+      BadgeSlot.deadStars,
     ],
   ],
 };

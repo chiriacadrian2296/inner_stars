@@ -28,6 +28,9 @@ class BadgeRows extends StatelessWidget {
   static const double textSize = 11.5;
   static const double rowGap = 4;
 
+  /// The smallest gap between two badges (a slot's width includes it).
+  static const double _gap = 8;
+
   /// The scale the badges are drawn at in [availableWidth].
   static double scaleFor(double availableWidth, double maxScale) =>
       math.min(maxScale, availableWidth / kBadgeReferenceWidth);
@@ -35,11 +38,6 @@ class BadgeRows extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (rows.isEmpty) return const SizedBox.shrink();
-    // One width per column, the widest cell in it across the rows, so the
-    // icons of a column sit exactly one under the other.
-    final columnWidths = badgeColumnWidths([
-      for (final row in rows) [for (final badge in row) badge.slot],
-    ]);
     return LayoutBuilder(
       builder: (context, constraints) {
         final scale = scaleFor(
@@ -48,24 +46,50 @@ class BadgeRows extends StatelessWidget {
               : kBadgeReferenceWidth * maxScale,
           maxScale,
         );
+        final width = constraints.maxWidth;
+        // The gap between two badges of a victory's row at this width.
+        final victory = kBadgeRows[BadgeCardKind.victory]!.single;
+        final victoryGap = width.isFinite
+            ? math.max(
+                _gap * scale,
+                (width -
+                        victory.fold<double>(
+                          0,
+                          (sum, slot) => sum + (slot.width - _gap) * scale,
+                        )) /
+                    (victory.length - 1),
+              )
+            : _gap * scale;
         return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             for (var i = 0; i < rows.length; i++) ...[
               if (i > 0) SizedBox(height: rowGap * scale),
+              // Each badge keeps its own size; whatever width is left over is
+              // shared out as equal gaps between them, edge to edge. A row of
+              // only two badges keeps the gap a victory's row has instead of
+              // stretching them apart.
               Row(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: rows[i].length == 2 && width.isFinite
+                    ? MainAxisAlignment.start
+                    : MainAxisAlignment.spaceBetween,
+                mainAxisSize: width.isFinite
+                    ? MainAxisSize.max
+                    : MainAxisSize.min,
                 children: [
-                  for (var j = 0; j < rows[i].length; j++)
+                  for (var j = 0; j < rows[i].length; j++) ...[
+                    if (j > 0 && rows[i].length == 2 && width.isFinite)
+                      SizedBox(width: victoryGap),
                     SizedBox(
-                      width: columnWidths[j] * scale,
+                      width: (rows[i][j].slot.width - _gap) * scale,
                       child: _BadgeCell(
                         badge: rows[i][j],
                         scale: scale,
                         first: j == 0,
                       ),
                     ),
+                  ],
                 ],
               ),
             ],
@@ -92,50 +116,79 @@ class _BadgeCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final check = badge.check;
-    final cell = Padding(
-      // The gap to the next cell is part of every slot's width.
-      padding: EdgeInsets.only(right: 8 * scale),
-      child: Row(
-        children: [
-          BadgeIcon(
-            badge.icon,
-            size: BadgeRows.iconSize * scale,
-            color: badge.iconColor,
-            trimLeading: first,
+    final cell = Row(
+      children: [
+        BadgeIcon(
+          badge.icon,
+          size: BadgeRows.iconSize * scale,
+          color: badge.iconColor,
+          trimLeading: first,
+        ),
+        SizedBox(width: 2 * scale),
+        Expanded(
+          // Only a freakishly large number ever shrinks; a normal one
+          // fills its cell at full size.
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              badge.value,
+              maxLines: 1,
+              softWrap: false,
+              style: TextStyle(
+                fontSize: BadgeRows.textSize * scale,
+                fontWeight: FontWeight.w700,
+                color: badge.valueColor,
+              ),
+            ),
           ),
-          SizedBox(width: 2 * scale),
-          Expanded(
-            child: check != null
-                ? Align(
-                    alignment: Alignment.centerLeft,
-                    child: Icon(
-                      check ? Icons.check_rounded : Icons.close_rounded,
-                      size: BadgeRows.iconSize * scale,
-                      color: badge.valueColor,
-                    ),
-                  )
-                // Only a freakishly large number ever shrinks; a normal one
-                // fills its cell at full size.
-                : FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      badge.value!,
-                      maxLines: 1,
-                      softWrap: false,
-                      style: TextStyle(
-                        fontSize: BadgeRows.textSize * scale,
-                        fontWeight: FontWeight.w700,
-                        color: badge.valueColor,
-                      ),
-                    ),
-                  ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
     final label = badge.semanticLabel;
     return label == null ? cell : Semantics(label: label, child: cell);
+  }
+}
+
+/// A card's intensity, drawn bigger than the other badges above the card's
+/// first text: the gold bolt and the number.
+class IntensityBadge extends StatelessWidget {
+  const IntensityBadge({super.key, required this.badge, this.scale = 1});
+
+  final CardBadge badge;
+
+  /// 1 = the tooltip's own size.
+  final double scale;
+
+  static const double iconSize = 19;
+  static const double textSize = 15;
+
+  @override
+  Widget build(BuildContext context) {
+    final row = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        BadgeIcon(
+          badge.icon,
+          size: iconSize * scale,
+          color: badge.iconColor,
+          trimLeading: true,
+        ),
+        SizedBox(width: 3 * scale),
+        Text(
+          badge.value,
+          maxLines: 1,
+          softWrap: false,
+          style: TextStyle(
+            fontSize: textSize * scale,
+            height: 1.1,
+            fontWeight: FontWeight.w800,
+            color: badge.valueColor,
+          ),
+        ),
+      ],
+    );
+    final label = badge.semanticLabel;
+    return label == null ? row : Semantics(label: label, child: row);
   }
 }

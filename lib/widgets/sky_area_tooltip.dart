@@ -22,8 +22,8 @@ class SkyAreaTooltip extends StatelessWidget {
 
   final LifeArea area;
 
-  /// The area's badges in their fixed rows.
-  final List<List<CardBadge>> badges;
+  /// The area's badges.
+  final CardBadges badges;
   final VoidCallback onClose;
   final VoidCallback onView;
   final VoidCallback onVision;
@@ -37,14 +37,14 @@ class SkyAreaTooltip extends StatelessWidget {
     return SkySearchTooltipCard(
       menuId: 'tooltip-area:${area.name}',
       onTap: onView,
-      baseBodyHeight: SearchResultCard.bodyHeightForRows(badges.length),
+      baseBodyHeight: SearchResultCard.bodyHeightFor(badges),
       visual: SearchArtworkVisual(
         asset: kAreaHeroArt[area]?.skyAsset,
         fallbackIcon: Icons.flare,
       ),
       content: SearchCardTextContent(
         title: area.displayName(strings),
-        badgeRows: badges,
+        badges: badges,
       ),
       actions: [
         SearchCardAction(

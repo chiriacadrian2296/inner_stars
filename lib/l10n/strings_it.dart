@@ -1490,23 +1490,11 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get cardBadgePulsarsToday => 'Abitudini accese oggi';
   @override
-  String get cardBadgeNextDate => 'Prossima data degli obiettivi';
-  @override
-  String get cardBadgeEnergy => 'Intensità totale';
-  @override
-  String get cardBadgeMemories => 'Ricordi';
+  String get cardBadgeHabits => 'Abitudini';
   @override
   String get cardBadgeDeadStars => 'Stelle morte';
   @override
   String get cardBadgeConstellations => 'Costellazioni';
-  @override
-  String get cardBadgeReflections => 'Riflessioni risposte';
-  @override
-  String get cardBadgeVision => 'Visione scritta';
-  @override
-  String get cardBadgeMoodboard => 'Elementi della moodboard';
-  @override
-  String get cardBadgeThisMonth => 'Accese questo mese';
   @override
   String habitProgressToday(int done, int target) => '$done/$target oggi';
   @override

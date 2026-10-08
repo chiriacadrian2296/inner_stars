@@ -26,8 +26,8 @@ class SkyConstellationTooltip extends StatelessWidget {
 
   final Project project;
 
-  /// The constellation's badges in their fixed rows.
-  final List<List<CardBadge>> badges;
+  /// The constellation's badges.
+  final CardBadges badges;
   final ConstellationShape? shape;
   final VoidCallback onClose;
   final VoidCallback onView;
@@ -42,16 +42,16 @@ class SkyConstellationTooltip extends StatelessWidget {
     return SkySearchTooltipCard(
       menuId: 'tooltip-project:${project.id}',
       onTap: onView,
-      baseBodyHeight: SearchResultCard.bodyHeightForRows(badges.length),
+      baseBodyHeight: SearchResultCard.bodyHeightFor(badges),
       visual: SearchConstellationVisual(
         shape: shape,
         darkBackground: false,
-        inset: 17,
+        inset: 24,
       ),
       content: SearchCardTextContent(
         title: project.name,
         breadcrumb: project.area.displayName(strings),
-        badgeRows: badges,
+        badges: badges,
       ),
       actions: [
         SearchCardAction(

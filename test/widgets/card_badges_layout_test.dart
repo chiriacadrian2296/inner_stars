@@ -58,23 +58,19 @@ void main() {
     createdAt: created,
   );
 
-  List<List<CardBadge>> constellationRows({required bool full}) =>
-      projectCardBadges(
-        stars: full ? [loaded, victory()] : const [],
-        habits: const [],
-        countsByHabit: const {},
-        slotCount: full ? 8 : 0,
-        colors: colors,
-        strings: strings,
-      );
-  List<List<CardBadge>> areaRows({required bool full}) => areaCardBadges(
+  CardBadges constellationRows({required bool full}) => projectCardBadges(
+    stars: full ? [loaded, victory()] : const [],
+    habits: const [],
+    countsByHabit: const {},
+    slotCount: full ? 8 : 0,
+    colors: colors,
+    strings: strings,
+  );
+  CardBadges areaRows({required bool full}) => areaCardBadges(
     constellationCount: full ? 4 : 0,
     stars: full ? [loaded] : const [],
     habits: const [],
-    countsByHabit: const {},
-    reflectionsAnswered: full ? 12 : 0,
-    hasVision: full,
-    moodboardCount: full ? 9 : 0,
+    emptySlots: full ? 5 : 0,
     colors: colors,
     strings: strings,
   );
@@ -121,7 +117,7 @@ void main() {
                   data: GalleryStarData.fromStar(
                     loaded,
                     null,
-                    badgeRows: starCardBadges(loaded, colors, strings),
+                    badges: starCardBadges(loaded, colors, strings),
                   ),
                 ),
                 GalleryProjectTile(
@@ -131,7 +127,7 @@ void main() {
                     edges: const [],
                     totalStars: 30,
                     litStars: 12,
-                    badgeRows: constellationRows(full: true),
+                    badges: constellationRows(full: true),
                   ),
                 ),
                 GalleryAreaTile(
@@ -139,7 +135,7 @@ void main() {
                     area: LifeArea.physical,
                     constellationCount: 4,
                     starCount: 30,
-                    badgeRows: areaRows(full: true),
+                    badges: areaRows(full: true),
                   ),
                 ),
               ])
@@ -160,13 +156,10 @@ void main() {
     double textSizeOf(WidgetTester t, Finder f) =>
         t.widget<Text>(f.first).style!.fontSize!;
 
-    Future<double> sizeFor(
-      WidgetTester tester,
-      List<List<CardBadge>> rows,
-    ) async {
+    Future<double> sizeFor(WidgetTester tester, CardBadges badges) async {
       await pump(
         tester,
-        SizedBox(width: 100, child: BadgeRows(rows: rows, maxScale: 1)),
+        SizedBox(width: 100, child: BadgeRows(rows: badges.rows, maxScale: 1)),
       );
       return textSizeOf(tester, find.byType(Text));
     }

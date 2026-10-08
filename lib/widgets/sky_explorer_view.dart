@@ -296,9 +296,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   late Map<int, List<Star>> _starsByProjectCache;
   late Map<int, Map<DateTime, int>> _completionCountsCache;
 
-  /// Loaded once after the first frame (the repository is created
-  /// asynchronously); the area badges count its items.
-  MoodboardRepository? _moodboardRepository;
   late Map<int, List<HabitCompletion>> _completionsByHabitCache;
   late Map<int, ConstellationShape> _shapesByIdCache;
 
@@ -541,9 +538,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     _sortField = session.sortField;
     _sortDirection = session.sortDirection;
     _refreshDataCache();
-    MoodboardRepository.create().then((repository) {
-      if (mounted) setState(() => _moodboardRepository = repository);
-    });
     _cardMenuController = SearchCardMenuController(
       initialOpenId: session.openCardMenuId,
     )..addListener(() => session.openCardMenuId = _cardMenuController.openId);
@@ -621,21 +615,21 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       area: area,
       constellationCount: projects.length,
       starCount: starCount,
-      badgeRows: areaCardBadges(
+      badges: areaCardBadges(
         constellationCount: projects.length,
         stars: [
           for (final project in projects) ..._starsForProject(project.id),
         ],
         habits: areaHabits,
-        countsByHabit: _completionCountsCache,
-        reflectionsAnswered: widget.reflectionAnswerRepository
-            .getAnswersForArea(area)
-            .length,
-        hasVision: widget.areaVisionRepository
-            .getVision(area)
-            .trim()
-            .isNotEmpty,
-        moodboardCount: _moodboardRepository?.getItems(area).length ?? 0,
+        emptySlots: projects.fold<int>(
+          0,
+          (sum, project) =>
+              sum +
+              emptySlotsOf(
+                _shapesByIdCache[project.starsShapeId]?.points.length ?? 0,
+                _starsForProject(project.id),
+              ),
+        ),
         colors: context.colors,
         strings: context.strings,
       ),
@@ -659,7 +653,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       edges: built.edges,
       totalStars: shape?.points.length ?? stars.length,
       litStars: stars.where((s) => s.isLit).length,
-      badgeRows: projectCardBadges(
+      badges: projectCardBadges(
         stars: stars,
         habits: _habitsCache.where((h) => h.projectId == project.id).toList(),
         countsByHabit: _completionCountsCache,
@@ -676,7 +670,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       return GalleryStarData.fromStar(
         entry.star!,
         _projectsById[entry.star!.projectId],
-        badgeRows: starCardBadges(entry.star!, context.colors, context.strings),
+        badges: starCardBadges(entry.star!, context.colors, context.strings),
       );
     }
     final counts = _countsByDayFor(habit.id);
@@ -684,12 +678,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       habit,
       _projectsById[habit.projectId],
       streak: habitCurrentStreak(habit, counts),
-      badgeRows: habitCardBadges(
-        habit,
-        counts,
-        context.colors,
-        context.strings,
-      ),
+      badges: habitCardBadges(habit, counts, context.colors, context.strings),
       pulsarLit: isHabitLit(habit, counts),
     );
   }

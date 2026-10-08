@@ -452,9 +452,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// handling) the same way plain fields used to be.
   final _skyTooltipController = TooltipCardController<_SkyTooltip>();
 
-  /// Loaded once in [initState] (the repository is created asynchronously);
-  /// the area tooltip counts its items.
-  MoodboardRepository? _moodboardRepository;
   final _quickLookShareKey = GlobalKey();
   bool _sharingQuickLookStar = false;
 
@@ -611,9 +608,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       duration: _holdDuration,
     );
     _skyTooltipController.addListener(_onSkyTooltipChanged);
-    MoodboardRepository.create().then((repository) {
-      if (mounted) setState(() => _moodboardRepository = repository);
-    });
     _loadData();
     _loadFlareProgram();
     // Opens centered on "Love" rather than the world origin — with a
@@ -4507,9 +4501,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     };
   }
 
-  List<List<CardBadge>> _constellationBadges(
-    PlacedConstellation constellation,
-  ) {
+  CardBadges _constellationBadges(PlacedConstellation constellation) {
     final habits = widget.habitRepository.getAllForProject(
       constellation.project.id,
     );
@@ -4523,25 +4515,27 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     );
   }
 
-  List<List<CardBadge>> _areaBadges(LifeArea area) {
+  CardBadges _areaBadges(LifeArea area) {
     final projects = widget.projectRepository.getProjectsForArea(area);
     final habits = [
       for (final project in projects)
         ...widget.habitRepository.getAllForProject(project.id),
     ];
+    final stars = {
+      for (final project in projects)
+        project.id: widget.starRepository.getAllForProject(project.id),
+    };
     return areaCardBadges(
       constellationCount: projects.length,
-      stars: [
-        for (final project in projects)
-          ...widget.starRepository.getAllForProject(project.id),
-      ],
+      stars: [for (final list in stars.values) ...list],
       habits: habits,
-      countsByHabit: _countsFor(habits),
-      reflectionsAnswered: widget.reflectionAnswerRepository
-          .getAnswersForArea(area)
-          .length,
-      hasVision: widget.areaVisionRepository.getVision(area).trim().isNotEmpty,
-      moodboardCount: _moodboardRepository?.getItems(area).length ?? 0,
+      emptySlots: projects.fold<int>(0, (sum, project) {
+        final shapeId = project.starsShapeId;
+        final points = shapeId == null
+            ? 0
+            : widget.starsShapeRepository.getById(shapeId)?.shape.points.length;
+        return sum + emptySlotsOf(points ?? 0, stars[project.id]!);
+      }),
       colors: context.colors,
       strings: context.strings,
     );

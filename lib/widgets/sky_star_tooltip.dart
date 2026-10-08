@@ -75,7 +75,7 @@ class SkyStarTooltip extends StatelessWidget {
                 ),
               ),
             ),
-      baseBodyHeight: SearchResultCard.bodyHeightForRows(badges.length),
+      baseBodyHeight: SearchResultCard.bodyHeightFor(badges),
       content: SearchCardTextContent(
         eyebrow: kind.label(strings),
         eyebrowColor: starKindColor(kind, context.colors),
@@ -83,7 +83,7 @@ class SkyStarTooltip extends StatelessWidget {
         breadcrumb: project == null
             ? null
             : '${project!.area.displayName(strings)} → ${project!.name}',
-        badgeRows: badges,
+        badges: badges,
       ),
       actions: [
         if (star.dead)

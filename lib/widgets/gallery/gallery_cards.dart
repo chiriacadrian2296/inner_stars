@@ -10,6 +10,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_fonts.dart';
 import '../../utils/area_hero_art.dart';
 import '../../utils/area_hero_art_tone.dart';
+import '../../utils/badge_schema.dart' show BadgeSlot;
 import '../../utils/star_card_info.dart';
 import '../badge_rows.dart';
 import '../constellation_painter.dart' show ConstellationStar;
@@ -29,20 +30,23 @@ const double kGalleryTileAspectRatio = 2 / 3;
 /// One star-like entry as the Gallery shows it: a [Star], or a [Habit]
 /// (pulsar, or dead pulsar).
 class GalleryStarData {
-  GalleryStarData.fromStar(Star star, this.project, {this.badgeRows = const []})
-    : star = star,
-      habit = null,
-      kind = star.kind,
-      streak = 0,
-      pulsarLit = true,
-      sortKey = star.achievedDate ?? star.createdAt;
+  GalleryStarData.fromStar(
+    Star star,
+    this.project, {
+    this.badges = CardBadges.none,
+  }) : star = star,
+       habit = null,
+       kind = star.kind,
+       streak = 0,
+       pulsarLit = true,
+       sortKey = star.achievedDate ?? star.createdAt;
 
   GalleryStarData.fromHabit(
     Habit habit,
     this.project, {
     required this.streak,
     required this.pulsarLit,
-    this.badgeRows = const [],
+    this.badges = CardBadges.none,
   }) : star = null,
        habit = habit,
        kind = habit.dead ? StarKind.dead : StarKind.pulsar,
@@ -56,9 +60,8 @@ class GalleryStarData {
   final bool pulsarLit;
   final DateTime sortKey;
 
-  /// The entry's badges in their fixed rows (see `starCardBadges` /
-  /// `habitCardBadges`).
-  final List<List<CardBadge>> badgeRows;
+  /// The entry's badges (see `starCardBadges` / `habitCardBadges`).
+  final CardBadges badges;
 
   String get title => star?.title ?? habit!.title;
   String get key => star != null ? 's${star!.id}' : 'p${habit!.id}';
@@ -187,6 +190,13 @@ class GalleryStarTile extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (data.badges.intensity != null) ...[
+                      IntensityBadge(
+                        badge: data.badges.intensity!,
+                        scale: u * _kTileBadgeScale,
+                      ),
+                      SizedBox(height: 4 * u),
+                    ],
                     Text(
                       kind.label(strings).toUpperCase(),
                       maxLines: 1,
@@ -213,7 +223,7 @@ class GalleryStarTile extends StatelessWidget {
                     ),
                     SizedBox(height: 8 * u),
                     BadgeRows(
-                      rows: data.badgeRows,
+                      rows: _withoutDeadStars(data.badges.rows),
                       maxScale: u * _kTileBadgeScale,
                     ),
                     if (data.project != null) ...[
@@ -236,6 +246,16 @@ class GalleryStarTile extends StatelessWidget {
   }
 }
 
+/// The tiles leave the dead-stars badge out for now (the tooltips keep it,
+/// they have the room).
+List<List<CardBadge>> _withoutDeadStars(List<List<CardBadge>> rows) => [
+  for (final row in rows)
+    [
+      for (final badge in row)
+        if (badge.slot != BadgeSlot.deadStars) badge,
+    ],
+];
+
 /// A tile's badges are drawn at this fraction of the tooltip size (the tile
 /// text is smaller than the card's), times the tile's own scale.
 const double _kTileBadgeScale = 12 / 14;
@@ -249,7 +269,7 @@ class GalleryProjectData {
     required this.edges,
     required this.totalStars,
     required this.litStars,
-    this.badgeRows = const [],
+    this.badges = CardBadges.none,
   });
 
   final Project project;
@@ -265,9 +285,8 @@ class GalleryProjectData {
   final int totalStars;
   final int litStars;
 
-  /// The constellation's badges in their fixed rows (see
-  /// `projectCardBadges`).
-  final List<List<CardBadge>> badgeRows;
+  /// The constellation's badges (see `projectCardBadges`).
+  final CardBadges badges;
 }
 
 /// Miniature of a constellation's page: its shape on the flat navy panel
@@ -292,10 +311,10 @@ class GalleryProjectTile extends StatelessWidget {
             children: [
               if (data.renderStars.isNotEmpty)
                 Positioned(
-                  left: 14 * u,
-                  right: 14 * u,
-                  top: 14 * u,
-                  bottom: 84 * u,
+                  left: 26 * u,
+                  right: 26 * u,
+                  top: 16 * u,
+                  bottom: 115 * u,
                   child: CustomPaint(
                     painter: _MiniConstellationPainter(
                       stars: data.renderStars,
@@ -322,6 +341,13 @@ class GalleryProjectTile extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (data.badges.intensity != null) ...[
+                      IntensityBadge(
+                        badge: data.badges.intensity!,
+                        scale: u * _kTileBadgeScale,
+                      ),
+                      SizedBox(height: 4 * u),
+                    ],
                     Text(
                       data.project.area.displayName(strings).toUpperCase(),
                       maxLines: 1,
@@ -348,7 +374,7 @@ class GalleryProjectTile extends StatelessWidget {
                     ),
                     SizedBox(height: 8 * u),
                     BadgeRows(
-                      rows: data.badgeRows,
+                      rows: _withoutDeadStars(data.badges.rows),
                       maxScale: u * _kTileBadgeScale,
                     ),
                   ],
@@ -459,15 +485,15 @@ class GalleryAreaData {
     required this.area,
     required this.constellationCount,
     required this.starCount,
-    this.badgeRows = const [],
+    this.badges = CardBadges.none,
   });
 
   final LifeArea area;
   final int constellationCount;
   final int starCount;
 
-  /// The area's badges in their fixed rows (see `areaCardBadges`).
-  final List<List<CardBadge>> badgeRows;
+  /// The area's badges (see `areaCardBadges`).
+  final CardBadges badges;
 }
 
 /// Miniature of an area's cover page: its hero art, the name, and counts.
@@ -521,6 +547,13 @@ class GalleryAreaTile extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 10 * u),
+                if (data.badges.intensity != null) ...[
+                  IntensityBadge(
+                    badge: data.badges.intensity!,
+                    scale: u * _kTileBadgeScale,
+                  ),
+                  SizedBox(height: 4 * u),
+                ],
                 Text(
                   data.area.displayName(strings),
                   maxLines: 2,
@@ -533,7 +566,10 @@ class GalleryAreaTile extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 8 * u),
-                BadgeRows(rows: data.badgeRows, maxScale: u * _kTileBadgeScale),
+                BadgeRows(
+                  rows: _withoutDeadStars(data.badges.rows),
+                  maxScale: u * _kTileBadgeScale,
+                ),
               ],
             ),
           );
