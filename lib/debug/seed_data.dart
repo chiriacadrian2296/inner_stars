@@ -25,9 +25,9 @@ const _starTargets = [
   9, 4, 5, 4, 10, 3,
 ];
 
-/// Target for a spec index past [_starTargets] (never reached by the current
-/// 24 specs, but a longer list shouldn't crash).
-const _defaultStarTarget = 5;
+/// Target for a spec index past [_starTargets]: the extra empty constellations
+/// (see [_emptySpecs]) keep only their nascent stars.
+const _defaultStarTarget = 0;
 
 int _starTargetFor(int specIndex) => specIndex < _starTargets.length
     ? _starTargets[specIndex]
@@ -604,13 +604,46 @@ class _ProjectSeed {
 List<_ProjectSeed> _specsFor(String languageCode) {
   switch (languageCode) {
     case 'it':
-      return _specsIt;
+      return _allSpecsIt;
     case 'ro':
-      return _specsRo;
+      return _allSpecsRo;
     default:
-      return _specsEn;
+      return _allSpecsEn;
   }
 }
+
+/// How many extra constellations with no stars at all (only the nascent ones
+/// their shape draws) each area gets — for checking how the Sky and an area
+/// lay out many constellations. Deliberately lopsided: one area is crowded,
+/// the others range from busy to nearly bare; spiritual stays empty.
+const _emptyConstellationsPerArea = <(LifeArea, int, List<String>)>[
+  (LifeArea.physical, 14, ['sports_gymnastics', 'pool', 'directions_bike']),
+  (LifeArea.professional, 9, ['rocket_launch', 'business_center', 'school']),
+  (LifeArea.personal, 6, ['brush', 'restaurant']),
+  (LifeArea.social, 4, ['chat_bubble', 'favorite']),
+  (LifeArea.psychological, 3, ['edit']),
+  (LifeArea.financial, 2, ['home']),
+];
+
+/// The extra empty constellations, named "[word] 01", "[word] 02"… — in the
+/// same order in every language, like the hand-written specs.
+List<_ProjectSeed> _emptySpecs(String word) {
+  var number = 0;
+  return [
+    for (final (area, count, slugs) in _emptyConstellationsPerArea)
+      for (var i = 0; i < count; i++)
+        _ProjectSeed(
+          '$word ${(++number).toString().padLeft(2, '0')}',
+          area,
+          slugs[i % slugs.length],
+          const [],
+        ),
+  ];
+}
+
+final _allSpecsEn = [..._specsEn, ..._emptySpecs('Empty')];
+final _allSpecsIt = [..._specsIt, ..._emptySpecs('Vuota')];
+final _allSpecsRo = [..._specsRo, ..._emptySpecs('Goală')];
 
 /// Every name [index]'s conceptual project has ever been seeded under,
 /// across all three languages — [_specsEn]/[_specsIt]/[_specsRo] are kept
@@ -619,9 +652,9 @@ List<_ProjectSeed> _specsFor(String languageCode) {
 /// find an already-seeded project regardless of which language it was
 /// seeded in last (see [seedSampleData]'s own doc comment).
 Set<String> _alternateNamesAt(int index) => {
-  _specsEn[index].name,
-  _specsIt[index].name,
-  _specsRo[index].name,
+  _allSpecsEn[index].name,
+  _allSpecsIt[index].name,
+  _allSpecsRo[index].name,
 };
 
 /// The dead/tombstoned seed star's title (see [_ProjectSeed.seedDeadStar])

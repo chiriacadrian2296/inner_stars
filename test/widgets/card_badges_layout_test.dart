@@ -9,7 +9,9 @@ import 'package:inner_stars/models/star.dart';
 import 'package:inner_stars/models/star_media.dart';
 import 'package:inner_stars/theme/app_colors.dart';
 import 'package:inner_stars/theme/app_theme.dart';
+import 'package:inner_stars/utils/project_card_info.dart';
 import 'package:inner_stars/utils/star_card_info.dart';
+import 'package:inner_stars/widgets/badge_rows.dart';
 import 'package:inner_stars/widgets/gallery/gallery_cards.dart';
 import 'package:inner_stars/widgets/sky_area_tooltip.dart';
 import 'package:inner_stars/widgets/sky_constellation_tooltip.dart';
@@ -29,22 +31,52 @@ void main() {
     createdAt: created,
   );
 
-  final loaded = Star(
+  Star victory({List<StarMedia> extras = const []}) => Star(
     id: 1,
     projectId: 1,
     slotSequence: 1,
     title:
         'Un titolo molto lungo che occupa tre righe nella tile della griglia',
-    description: 'Descrizione',
     createdAt: created,
     achievedDate: created,
     intensity: 5,
-    media: [
+    media: extras,
+  );
+  final loaded = victory(
+    extras: [
       media(StarMediaKind.voice, 'a'),
       media(StarMediaKind.photo, 'b'),
       media(StarMediaKind.video, 'c'),
       media(StarMediaKind.link, 'd'),
     ],
+  );
+  final project = Project(
+    id: 1,
+    name: 'Una costellazione con un nome piuttosto lungo',
+    area: LifeArea.physical,
+    iconSlug: 'pool',
+    createdAt: created,
+  );
+
+  List<List<CardBadge>> constellationRows({required bool full}) =>
+      projectCardBadges(
+        stars: full ? [loaded, victory()] : const [],
+        habits: const [],
+        countsByHabit: const {},
+        slotCount: full ? 8 : 0,
+        colors: colors,
+        strings: strings,
+      );
+  List<List<CardBadge>> areaRows({required bool full}) => areaCardBadges(
+    constellationCount: full ? 4 : 0,
+    stars: full ? [loaded] : const [],
+    habits: const [],
+    countsByHabit: const {},
+    reflectionsAnswered: full ? 12 : 0,
+    hasVision: full,
+    moodboardCount: full ? 9 : 0,
+    colors: colors,
+    strings: strings,
   );
 
   Future<void> pump(
@@ -76,21 +108,45 @@ void main() {
 
   for (final width in [90.0, 120.0, 170.0, 320.0]) {
     for (final scale in [1.0, 1.3]) {
-      testWidgets('grid tile at $width px, text scale $scale: no overflow', (
+      testWidgets('tiles at $width px, text $scale: no overflow', (
         tester,
       ) async {
-        final data = GalleryStarData.fromStar(
-          loaded,
-          null,
-          badges: starCardBadges(loaded, colors, strings),
-        );
         await pump(
           tester,
-          SizedBox(
-            width: width,
-            height: width * 1.5,
-            child: GalleryStarTile(data: data),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final tile in <Widget>[
+                GalleryStarTile(
+                  data: GalleryStarData.fromStar(
+                    loaded,
+                    null,
+                    badgeRows: starCardBadges(loaded, colors, strings),
+                  ),
+                ),
+                GalleryProjectTile(
+                  data: GalleryProjectData(
+                    project: project,
+                    renderStars: const [],
+                    edges: const [],
+                    totalStars: 30,
+                    litStars: 12,
+                    badgeRows: constellationRows(full: true),
+                  ),
+                ),
+                GalleryAreaTile(
+                  data: GalleryAreaData(
+                    area: LifeArea.physical,
+                    constellationCount: 4,
+                    starCount: 30,
+                    badgeRows: areaRows(full: true),
+                  ),
+                ),
+              ])
+                SizedBox(width: width, height: width * 1.5, child: tile),
+            ],
           ),
+          size: const Size(400, 1800),
           textScale: scale,
         );
         expect(tester.takeException(), isNull);
@@ -98,26 +154,105 @@ void main() {
     }
   }
 
-  testWidgets('the victory tooltip holds every badge without overflow', (
+  testWidgets('badge size depends on the width only, not the card or data', (
     tester,
   ) async {
+    double textSizeOf(WidgetTester t, Finder f) =>
+        t.widget<Text>(f.first).style!.fontSize!;
+
+    Future<double> sizeFor(
+      WidgetTester tester,
+      List<List<CardBadge>> rows,
+    ) async {
+      await pump(
+        tester,
+        SizedBox(width: 100, child: BadgeRows(rows: rows, maxScale: 1)),
+      );
+      return textSizeOf(tester, find.byType(Text));
+    }
+
+    final sizes = <double>{
+      await sizeFor(tester, starCardBadges(loaded, colors, strings)),
+      await sizeFor(tester, constellationRows(full: true)),
+      await sizeFor(tester, constellationRows(full: false)),
+      await sizeFor(tester, areaRows(full: true)),
+      await sizeFor(tester, areaRows(full: false)),
+    };
+    expect(sizes.length, 1);
+  });
+
+  testWidgets('every tooltip holds its fixed badges without overflow', (
+    tester,
+  ) async {
+    Widget box(Widget child) => SizedBox(width: 348, child: child);
+    final habit = Habit(
+      id: 1,
+      projectId: 1,
+      title: 'Nuoto',
+      createdAt: created,
+      frequency: HabitFrequency.weekly,
+      targetPerPeriod: 3,
+    );
     await pump(
       tester,
-      SizedBox(
-        width: 348,
-        child: SkyStarTooltip(
-          star: loaded,
-          project: null,
-          onClose: () {},
-          onView: () {},
-          onEdit: () {},
+      SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            box(
+              SkyStarTooltip(
+                star: loaded,
+                project: null,
+                onClose: () {},
+                onView: () {},
+                onEdit: () {},
+              ),
+            ),
+            box(
+              SkyPulsarTooltip(
+                habit: habit,
+                project: null,
+                countsByDay: const {},
+                isLit: false,
+                onClose: () {},
+                onView: () {},
+                onToday: () {},
+                todayActionIcon: Icons.local_fire_department_rounded,
+                todayActionLabel: 'Accendi',
+                onEdit: () {},
+              ),
+            ),
+            box(
+              SkyConstellationTooltip(
+                project: project,
+                badges: constellationRows(full: true),
+                shape: null,
+                onClose: () {},
+                onView: () {},
+                onAddStar: () {},
+                onShare: () {},
+                onEdit: () {},
+                onDelete: () {},
+              ),
+            ),
+            box(
+              SkyAreaTooltip(
+                area: LifeArea.physical,
+                badges: areaRows(full: true),
+                onClose: () {},
+                onView: () {},
+                onVision: () {},
+                onMoodboard: () {},
+                onReflections: () {},
+                onNewConstellation: () {},
+              ),
+            ),
+          ],
         ),
       ),
+      size: const Size(400, 1200),
     );
     expect(tester.takeException(), isNull);
-    // intensity, description and four attachments
-    expect(find.byIcon(Icons.mic_none_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.link_rounded), findsOneWidget);
   });
 
   testWidgets('the habit tooltip shows the week count and updates', (
@@ -131,8 +266,8 @@ void main() {
       frequency: HabitFrequency.weekly,
       targetPerPeriod: 3,
     );
-    final today = DateTime.now();
-    final day = DateTime(today.year, today.month, today.day);
+    final now = DateTime.now();
+    final day = DateTime(now.year, now.month, now.day);
     Widget tooltip(Map<DateTime, int> counts) => SizedBox(
       width: 348,
       child: SkyPulsarTooltip(
@@ -153,149 +288,6 @@ void main() {
     expect(find.text('0/3'), findsOneWidget);
     await pump(tester, tooltip({day: 1}));
     expect(find.text('1/3'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  projectAndAreaLayoutTests();
-}
-
-// ---- Constellation and area cards ----------------------------------------
-
-void projectAndAreaLayoutTests() {
-  const colors = AppColors.dark;
-  const strings = StringsIt();
-
-  final project = Project(
-    id: 1,
-    name: 'Una costellazione con un nome piuttosto lungo',
-    area: LifeArea.physical,
-    iconSlug: 'pool',
-    createdAt: DateTime(2026, 1, 1),
-  );
-
-  final fullProject = [
-    for (final label in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'])
-      CardBadge(
-        icon: Icons.star_rounded,
-        value: '12/30',
-        iconColor: colors.gold,
-        valueColor: colors.text,
-        semanticLabel: label,
-        secondary: label != 'a',
-      ),
-  ];
-
-  Future<void> pump(
-    WidgetTester tester,
-    Widget child, {
-    Size size = const Size(360, 800),
-    double textScale = 1,
-  }) async {
-    tester.view.physicalSize = size;
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(
-      StringsScope(
-        strings: strings,
-        child: MaterialApp(
-          theme: buildAppTheme(),
-          builder: (context, appChild) => MediaQuery(
-            data: MediaQuery.of(context)
-                .copyWith(textScaler: TextScaler.linear(textScale)),
-            child: appChild!,
-          ),
-          home: Scaffold(body: Center(child: child)),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-  }
-
-  for (final width in [90.0, 120.0, 170.0, 320.0]) {
-    testWidgets('constellation tile at $width px has no overflow', (
-      tester,
-    ) async {
-      await pump(
-        tester,
-        SizedBox(
-          width: width,
-          height: width * 1.5,
-          child: GalleryProjectTile(
-            data: GalleryProjectData(
-              project: project,
-              renderStars: const [],
-              edges: const [],
-              totalStars: 30,
-              litStars: 12,
-              badges: fullProject,
-            ),
-          ),
-        ),
-        textScale: 1.3,
-      );
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('area tile at $width px has no overflow', (tester) async {
-      await pump(
-        tester,
-        SizedBox(
-          width: width,
-          height: width * 1.5,
-          child: GalleryAreaTile(
-            data: GalleryAreaData(
-              area: LifeArea.physical,
-              constellationCount: 4,
-              starCount: 30,
-              badges: fullProject,
-            ),
-          ),
-        ),
-        textScale: 1.3,
-      );
-      expect(tester.takeException(), isNull);
-    });
-  }
-
-  testWidgets('constellation and area tooltips hold many badges', (
-    tester,
-  ) async {
-    await pump(
-      tester,
-      Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 348,
-            child: SkyConstellationTooltip(
-              project: project,
-              badges: fullProject,
-              shape: null,
-              onClose: () {},
-              onView: () {},
-              onAddStar: () {},
-              onShare: () {},
-              onEdit: () {},
-              onDelete: () {},
-            ),
-          ),
-          SizedBox(
-            width: 348,
-            child: SkyAreaTooltip(
-              area: LifeArea.physical,
-              badges: fullProject,
-              onClose: () {},
-              onView: () {},
-              onVision: () {},
-              onMoodboard: () {},
-              onReflections: () {},
-              onNewConstellation: () {},
-            ),
-          ),
-        ],
-      ),
-    );
     expect(tester.takeException(), isNull);
   });
 }

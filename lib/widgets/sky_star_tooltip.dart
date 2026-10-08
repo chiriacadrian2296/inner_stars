@@ -18,11 +18,6 @@ import 'star_glyph.dart';
 const double _kPhotoFrame = 6;
 const double _kPhotoInset = kBorderWidth + _kPhotoFrame;
 
-/// How many badges fit on the card's single row, and the body height that
-/// makes room for a second one.
-const int _kBadgesPerRow = 4;
-const double _kTallBodyHeight = 106;
-
 class SkyStarTooltip extends StatelessWidget {
   const SkyStarTooltip({
     super.key,
@@ -49,9 +44,7 @@ class SkyStarTooltip extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = context.strings;
     final kind = star.kind;
-    final metrics = cardBadgeMetrics(
-      starCardBadges(star, context.colors, strings),
-    );
+    final badges = starCardBadges(star, context.colors, strings);
     final photoPath = kind == StarKind.lit ? star.photoPath : null;
     return SkySearchTooltipCard(
       menuId: 'tooltip-star:${star.id}',
@@ -82,8 +75,7 @@ class SkyStarTooltip extends StatelessWidget {
                 ),
               ),
             ),
-      // A second row of badges needs a taller card.
-      baseBodyHeight: metrics.length > _kBadgesPerRow ? _kTallBodyHeight : 88,
+      baseBodyHeight: SearchResultCard.bodyHeightForRows(badges.length),
       content: SearchCardTextContent(
         eyebrow: kind.label(strings),
         eyebrowColor: starKindColor(kind, context.colors),
@@ -91,7 +83,7 @@ class SkyStarTooltip extends StatelessWidget {
         breadcrumb: project == null
             ? null
             : '${project!.area.displayName(strings)} → ${project!.name}',
-        metrics: metrics,
+        badgeRows: badges,
       ),
       actions: [
         if (star.dead)

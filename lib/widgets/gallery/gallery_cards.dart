@@ -10,10 +10,8 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_fonts.dart';
 import '../../utils/area_hero_art.dart';
 import '../../utils/area_hero_art_tone.dart';
-import '../../utils/date_format.dart';
 import '../../utils/star_card_info.dart';
-import '../badge_icon.dart';
-import '../intensity_bolts.dart';
+import '../badge_rows.dart';
 import '../constellation_painter.dart' show ConstellationStar;
 import '../photo_image.dart';
 import '../star_glyph.dart';
@@ -31,7 +29,7 @@ const double kGalleryTileAspectRatio = 2 / 3;
 /// One star-like entry as the Gallery shows it: a [Star], or a [Habit]
 /// (pulsar, or dead pulsar).
 class GalleryStarData {
-  GalleryStarData.fromStar(Star star, this.project, {this.badges = const []})
+  GalleryStarData.fromStar(Star star, this.project, {this.badgeRows = const []})
     : star = star,
       habit = null,
       kind = star.kind,
@@ -44,7 +42,7 @@ class GalleryStarData {
     this.project, {
     required this.streak,
     required this.pulsarLit,
-    this.badges = const [],
+    this.badgeRows = const [],
   }) : star = null,
        habit = habit,
        kind = habit.dead ? StarKind.dead : StarKind.pulsar,
@@ -58,10 +56,9 @@ class GalleryStarData {
   final bool pulsarLit;
   final DateTime sortKey;
 
-  /// Every small fact about this entry (see `starCardBadges` /
-  /// `habitCardBadges`), the first being the main one the tile already draws
-  /// as its data row; the rest go in a row of small icons under it.
-  final List<CardBadge> badges;
+  /// The entry's badges in their fixed rows (see `starCardBadges` /
+  /// `habitCardBadges`).
+  final List<List<CardBadge>> badgeRows;
 
   String get title => star?.title ?? habit!.title;
   String get key => star != null ? 's${star!.id}' : 'p${habit!.id}';
@@ -162,40 +159,6 @@ class GalleryStarTile extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final u = _unit(constraints);
-          // The first badge is the main fact; the rest follow it on the same
-          // line, all of them whatever the tile's size.
-          final extraBadges = data.badges.skip(1).toList();
-          final Widget dataRow = switch (kind) {
-            StarKind.lit => IntensityBolts(
-              intensity: data.star!.intensity ?? 0,
-              size: 14 * u,
-              spacing: 2 * u,
-            ),
-            StarKind.unlit => _DataLine(
-              icon: Icons.calendar_month_rounded,
-              text: data.star!.targetDate == null
-                  ? '—'
-                  : formatDisplayDate(data.star!.targetDate!, strings),
-              // Gold icon once a date is set, blue while it isn't.
-              color: data.star!.targetDate == null ? color : colors.gold,
-              unit: u,
-            ),
-            StarKind.pulsar => _DataLine(
-              icon: Icons.local_fire_department_rounded,
-              text: '${data.streak}',
-              color: color,
-              unit: u,
-            ),
-            StarKind.dead => _DataLine(
-              icon: Icons.cancel_outlined,
-              text: data.deadDate == null
-                  ? '—'
-                  : formatDisplayDate(data.deadDate!, strings),
-              color: color,
-              unit: u,
-            ),
-            StarKind.nascent => const SizedBox.shrink(),
-          };
           return Stack(
             fit: StackFit.expand,
             children: [
@@ -249,28 +212,10 @@ class GalleryStarTile extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: 8 * u),
-                    if (data.badges.isEmpty)
-                      dataRow
-                    else
-                      // Every badge on one line, shrunk to fit the tile.
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _BadgeChip(
-                              badge: data.badges.first,
-                              unit: u,
-                              first: true,
-                            ),
-                            for (final badge in extraBadges) ...[
-                              SizedBox(width: 8 * u),
-                              _BadgeChip(badge: badge, unit: u),
-                            ],
-                          ],
-                        ),
-                      ),
+                    BadgeRows(
+                      rows: data.badgeRows,
+                      maxScale: u * _kTileBadgeScale,
+                    ),
                     if (data.project != null) ...[
                       SizedBox(height: 6 * u),
                       Text(
@@ -291,113 +236,9 @@ class GalleryStarTile extends StatelessWidget {
   }
 }
 
-/// Every badge on one line, shrunk (never wrapped) to fit the tile's width.
-class _BadgeLine extends StatelessWidget {
-  const _BadgeLine({required this.badges, required this.unit});
-
-  final List<CardBadge> badges;
-  final double unit;
-
-  @override
-  Widget build(BuildContext context) {
-    final shown = badges;
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      alignment: Alignment.centerLeft,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < shown.length; i++) ...[
-            if (i > 0) SizedBox(width: 8 * unit),
-            _BadgeChip(badge: shown[i], unit: unit, first: i == 0),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-/// A small badge on a tile: its icon (gold or blue) and, if it has one, its
-/// value in plain text colour.
-class _BadgeChip extends StatelessWidget {
-  const _BadgeChip({
-    required this.badge,
-    required this.unit,
-    this.first = false,
-  });
-
-  final CardBadge badge;
-  final double unit;
-
-  /// The first badge of a row: its icon's empty left margin is trimmed so it
-  /// lines up with the text above.
-  final bool first;
-
-  @override
-  Widget build(BuildContext context) {
-    final row = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        BadgeIcon(
-          badge.icon,
-          size: 12 * unit,
-          color: badge.iconColor,
-          trimLeading: first,
-        ),
-        if (badge.value != null) ...[
-          SizedBox(width: 2 * unit),
-          Text(
-            badge.value!,
-            style: TextStyle(
-              color: badge.valueColor,
-              fontSize: 11 * unit,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ],
-    );
-    final label = badge.semanticLabel;
-    return label == null ? row : Semantics(label: label, child: row);
-  }
-}
-
-class _DataLine extends StatelessWidget {
-  const _DataLine({
-    required this.icon,
-    required this.text,
-    required this.color,
-    required this.unit,
-  });
-
-  final IconData icon;
-  final String text;
-  final Color color;
-  final double unit;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14 * unit, color: color),
-        SizedBox(width: 4 * unit),
-        Flexible(
-          child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: context.colors.text,
-              fontSize: 12 * unit,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
+/// A tile's badges are drawn at this fraction of the tooltip size (the tile
+/// text is smaller than the card's), times the tile's own scale.
+const double _kTileBadgeScale = 12 / 14;
 
 // -- Constellation ----------------------------------------------------------
 
@@ -408,7 +249,7 @@ class GalleryProjectData {
     required this.edges,
     required this.totalStars,
     required this.litStars,
-    this.badges = const [],
+    this.badgeRows = const [],
   });
 
   final Project project;
@@ -424,9 +265,9 @@ class GalleryProjectData {
   final int totalStars;
   final int litStars;
 
-  /// The facts shown under the name, the first being the main one (see
+  /// The constellation's badges in their fixed rows (see
   /// `projectCardBadges`).
-  final List<CardBadge> badges;
+  final List<List<CardBadge>> badgeRows;
 }
 
 /// Miniature of a constellation's page: its shape on the flat navy panel
@@ -506,15 +347,10 @@ class GalleryProjectTile extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: 8 * u),
-                    if (data.badges.isEmpty)
-                      _DataLine(
-                        icon: Icons.star_rounded,
-                        text: '${data.litStars} / ${data.totalStars}',
-                        color: colors.gold,
-                        unit: u,
-                      )
-                    else
-                      _BadgeLine(badges: data.badges, unit: u),
+                    BadgeRows(
+                      rows: data.badgeRows,
+                      maxScale: u * _kTileBadgeScale,
+                    ),
                   ],
                 ),
               ),
@@ -623,15 +459,15 @@ class GalleryAreaData {
     required this.area,
     required this.constellationCount,
     required this.starCount,
-    this.badges = const [],
+    this.badgeRows = const [],
   });
 
   final LifeArea area;
   final int constellationCount;
   final int starCount;
 
-  /// The facts shown under the name (see `areaCardBadges`).
-  final List<CardBadge> badges;
+  /// The area's badges in their fixed rows (see `areaCardBadges`).
+  final List<List<CardBadge>> badgeRows;
 }
 
 /// Miniature of an area's cover page: its hero art, the name, and counts.
@@ -697,26 +533,7 @@ class GalleryAreaTile extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 8 * u),
-                if (data.badges.isEmpty)
-                  Row(
-                    children: [
-                      _DataLine(
-                        icon: Icons.insights_outlined,
-                        text: '${data.constellationCount}',
-                        color: colors.gold,
-                        unit: u,
-                      ),
-                      SizedBox(width: 12 * u),
-                      _DataLine(
-                        icon: Icons.star_outline_rounded,
-                        text: '${data.starCount}',
-                        color: colors.gold,
-                        unit: u,
-                      ),
-                    ],
-                  )
-                else
-                  _BadgeLine(badges: data.badges, unit: u),
+                BadgeRows(rows: data.badgeRows, maxScale: u * _kTileBadgeScale),
               ],
             ),
           );

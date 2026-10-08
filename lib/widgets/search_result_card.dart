@@ -7,8 +7,9 @@ import '../theme/app_colors.dart';
 import '../theme/app_motion.dart';
 import '../theme/app_style.dart';
 import '../utils/area_hero_art_tone.dart';
-import '../utils/star_card_info.dart';
+import '../utils/star_card_info.dart' show CardBadge;
 import 'badge_icon.dart';
+import 'badge_rows.dart';
 import 'constellation_editor_painter.dart';
 import 'star_glyph.dart';
 
@@ -71,17 +72,10 @@ class SearchResultCard extends StatelessWidget {
   /// The default body height.
   static const defaultBodyHeight = _bodyHeight;
 
-  /// How many metrics fit on a tooltip card's single row, and the body
-  /// height that makes room for a second one.
-  static const metricsPerRow = 4;
-  static const tallBodyHeight = 106.0;
-  static const tallerBodyHeight = 124.0;
-
-  /// The body height a card needs for [metricCount] metrics: one row up to
-  /// 4, two rows up to 6, three beyond (a constellation with every badge).
-  static double bodyHeightFor(int metricCount) => metricCount > 6
-      ? tallerBodyHeight
-      : (metricCount > metricsPerRow ? tallBodyHeight : _bodyHeight);
+  /// The body height for a card whose badges take [rowCount] rows: it follows
+  /// the card's kind (its fixed schema), never its data.
+  static double bodyHeightForRows(int rowCount) =>
+      rowCount > 1 ? 106.0 : _bodyHeight;
   static const _drawerHeight = 68.0;
   static const _drawerUnderlap = 18.0;
   static const _toggleZoneWidth = 44.0;
@@ -243,7 +237,8 @@ class SearchCardTextContent extends StatelessWidget {
   const SearchCardTextContent({
     super.key,
     required this.title,
-    required this.metrics,
+    this.metrics = const [],
+    this.badgeRows,
     this.eyebrow,
     this.eyebrowColor,
     this.breadcrumb,
@@ -258,6 +253,10 @@ class SearchCardTextContent extends StatelessWidget {
   final String? description;
   final bool descriptionMatched;
   final List<SearchCardMetric> metrics;
+
+  /// The card's badges in their fixed rows (see `BadgeRows`); when given they
+  /// are shown instead of [metrics].
+  final List<List<CardBadge>>? badgeRows;
 
   @override
   Widget build(BuildContext context) {
@@ -314,7 +313,10 @@ class SearchCardTextContent extends StatelessWidget {
             ),
           ),
         ],
-        if (!descriptionMatched) ...[
+        if (!descriptionMatched && badgeRows != null) ...[
+          const SizedBox(height: 6),
+          BadgeRows(rows: badgeRows!),
+        ] else if (!descriptionMatched) ...[
           const SizedBox(height: 6),
           Wrap(
             spacing: 14,
@@ -355,18 +357,6 @@ class SearchCardMetric {
   /// What the icon stands for, read out by screen readers.
   final String? semanticLabel;
 }
-
-/// [badges] as card metrics: gold or blue icon, value in its own colour.
-List<SearchCardMetric> cardBadgeMetrics(List<CardBadge> badges) => [
-  for (final badge in badges)
-    SearchCardMetric(
-      icon: badge.icon,
-      value: badge.value,
-      color: badge.iconColor,
-      valueColor: badge.valueColor,
-      semanticLabel: badge.semanticLabel,
-    ),
-];
 
 class _SearchCardMetric extends StatelessWidget {
   const _SearchCardMetric(this.metric, {this.first = false});

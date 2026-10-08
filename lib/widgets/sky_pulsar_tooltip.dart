@@ -11,11 +11,6 @@ import 'search_result_card.dart';
 import 'sky_search_tooltip_card.dart';
 import 'star_glyph.dart';
 
-/// How many badges fit on the card's single row, and the body height that
-/// makes room for a second one.
-const int _kBadgesPerRow = 4;
-const double _kTallBodyHeight = 106;
-
 class SkyPulsarTooltip extends StatelessWidget {
   const SkyPulsarTooltip({
     super.key,
@@ -52,13 +47,11 @@ class SkyPulsarTooltip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = context.strings;
-    final metrics = cardBadgeMetrics(
-      habitCardBadges(habit, countsByDay, context.colors, strings),
-    );
+    final badges = habitCardBadges(habit, countsByDay, context.colors, strings);
     return SkySearchTooltipCard(
       menuId: 'tooltip-habit:${habit.id}',
       onTap: onView,
-      baseBodyHeight: metrics.length > _kBadgesPerRow ? _kTallBodyHeight : 88,
+      baseBodyHeight: SearchResultCard.bodyHeightForRows(badges.length),
       visual: SearchStarVisual(kind: StarKind.pulsar, pulsarLit: isLit),
       content: SearchCardTextContent(
         eyebrow: StarKind.pulsar.label(strings),
@@ -69,7 +62,7 @@ class SkyPulsarTooltip extends StatelessWidget {
         breadcrumb: project == null
             ? null
             : '${project!.area.displayName(strings)} → ${project!.name}',
-        metrics: metrics,
+        badgeRows: badges,
       ),
       actions: [
         if (habit.dead)

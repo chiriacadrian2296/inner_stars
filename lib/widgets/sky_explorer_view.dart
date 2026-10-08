@@ -621,7 +621,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       area: area,
       constellationCount: projects.length,
       starCount: starCount,
-      badges: areaCardBadges(
+      badgeRows: areaCardBadges(
         constellationCount: projects.length,
         stars: [
           for (final project in projects) ..._starsForProject(project.id),
@@ -659,7 +659,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       edges: built.edges,
       totalStars: shape?.points.length ?? stars.length,
       litStars: stars.where((s) => s.isLit).length,
-      badges: projectCardBadges(
+      badgeRows: projectCardBadges(
         stars: stars,
         habits: _habitsCache.where((h) => h.projectId == project.id).toList(),
         countsByHabit: _completionCountsCache,
@@ -676,7 +676,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       return GalleryStarData.fromStar(
         entry.star!,
         _projectsById[entry.star!.projectId],
-        badges: starCardBadges(entry.star!, context.colors, context.strings),
+        badgeRows: starCardBadges(entry.star!, context.colors, context.strings),
       );
     }
     final counts = _countsByDayFor(habit.id);
@@ -684,7 +684,12 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       habit,
       _projectsById[habit.projectId],
       streak: habitCurrentStreak(habit, counts),
-      badges: habitCardBadges(habit, counts, context.colors, context.strings),
+      badgeRows: habitCardBadges(
+        habit,
+        counts,
+        context.colors,
+        context.strings,
+      ),
       pulsarLit: isHabitLit(habit, counts),
     );
   }
@@ -2835,7 +2840,7 @@ class _SearchStarCard extends StatelessWidget {
       ],
       StarKind.dead => [
         SearchCardMetric(
-          icon: Icons.cancel_outlined,
+          icon: StarKind.dead.icon,
           value: deadDate == null ? '—' : formatDisplayDate(deadDate, strings),
         ),
       ],

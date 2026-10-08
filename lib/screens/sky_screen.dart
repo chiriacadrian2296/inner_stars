@@ -4507,7 +4507,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     };
   }
 
-  List<CardBadge> _constellationBadges(PlacedConstellation constellation) {
+  List<List<CardBadge>> _constellationBadges(
+    PlacedConstellation constellation,
+  ) {
     final habits = widget.habitRepository.getAllForProject(
       constellation.project.id,
     );
@@ -4521,7 +4523,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     );
   }
 
-  List<CardBadge> _areaBadges(LifeArea area) {
+  List<List<CardBadge>> _areaBadges(LifeArea area) {
     final projects = widget.projectRepository.getProjectsForArea(area);
     final habits = [
       for (final project in projects)
