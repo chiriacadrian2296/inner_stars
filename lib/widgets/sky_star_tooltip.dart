@@ -7,7 +7,7 @@ import '../models/star.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
-import '../utils/date_format.dart';
+import '../utils/star_card_info.dart';
 import 'photo_image.dart';
 import 'search_result_card.dart';
 import 'sky_search_tooltip_card.dart';
@@ -17,6 +17,11 @@ import 'star_glyph.dart';
 /// navy band of this width inside it.
 const double _kPhotoFrame = 6;
 const double _kPhotoInset = kBorderWidth + _kPhotoFrame;
+
+/// How many badges fit on the card's single row, and the body height that
+/// makes room for a second one.
+const int _kBadgesPerRow = 4;
+const double _kTallBodyHeight = 106;
 
 class SkyStarTooltip extends StatelessWidget {
   const SkyStarTooltip({
@@ -44,31 +49,9 @@ class SkyStarTooltip extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = context.strings;
     final kind = star.kind;
-    final metrics = switch (kind) {
-      StarKind.lit => [
-        SearchCardMetric(
-          icon: Icons.bolt_rounded,
-          value: '${star.intensity ?? 0}',
-        ),
-      ],
-      StarKind.unlit => [
-        SearchCardMetric(
-          icon: Icons.calendar_month_rounded,
-          value: star.targetDate == null
-              ? '—'
-              : formatDisplayDate(star.targetDate!, strings),
-        ),
-      ],
-      StarKind.dead => [
-        SearchCardMetric(
-          icon: Icons.cancel_outlined,
-          value: star.deadDate == null
-              ? '—'
-              : formatDisplayDate(star.deadDate!, strings),
-        ),
-      ],
-      StarKind.pulsar || StarKind.nascent => const <SearchCardMetric>[],
-    };
+    final metrics = cardBadgeMetrics(
+      starCardBadges(star, context.colors, strings),
+    );
     final photoPath = kind == StarKind.lit ? star.photoPath : null;
     return SkySearchTooltipCard(
       menuId: 'tooltip-star:${star.id}',
@@ -99,6 +82,8 @@ class SkyStarTooltip extends StatelessWidget {
                 ),
               ),
             ),
+      // A second row of badges needs a taller card.
+      baseBodyHeight: metrics.length > _kBadgesPerRow ? _kTallBodyHeight : 88,
       content: SearchCardTextContent(
         eyebrow: kind.label(strings),
         eyebrowColor: starKindColor(kind, context.colors),

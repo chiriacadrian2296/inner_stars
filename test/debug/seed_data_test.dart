@@ -118,7 +118,10 @@ void main() {
     expect(perProject.every((n) => n <= kMaxConstellationStars), isTrue);
     expect(perProject.where((n) => n == kMaxConstellationStars), isNotEmpty);
     expect(perProject.where((n) => n <= 6), isNotEmpty);
-    expect(perProject.where((n) => n > 6 && n < 30), isNotEmpty);
+    expect(
+      perProject.where((n) => n > 6 && n < kMaxConstellationStars),
+      isNotEmpty,
+    );
     expect(
       habits.getAll().every(
         (h) =>

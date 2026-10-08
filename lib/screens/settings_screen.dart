@@ -324,6 +324,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       habitRepository: widget.habitRepository,
       habitCompletionRepository: widget.habitCompletionRepository,
       languageCode: widget.settings.locale,
+      areaVisionRepository: widget.areaVisionRepository,
+      reflectionAnswerRepository: widget.reflectionAnswerRepository,
+      moodboardRepository: await MoodboardRepository.create(),
     );
     // seedSampleData still creates projects the old way (iconSlug only) —
     // this backfills them with a real constellation immediately, instead of

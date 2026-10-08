@@ -113,6 +113,35 @@ void main() {
       expect(summary.longestStreak, 2);
     });
 
+    test('the streak goes up the moment this week reaches its target', () {
+      final weekly = habit(frequency: HabitFrequency.weekly, target: 2);
+      // Last week (Jan 5-11) was met: 2 days. Wednesday Jan 14, this week.
+      final lastWeekMet = {DateTime(2026, 1, 5): 1, DateTime(2026, 1, 7): 1};
+      Map<DateTime, int> counts(Map<DateTime, int> values) =>
+          habitCompletionCountsByDay(logs(values));
+      final now = DateTime(2026, 1, 14);
+
+      // One day in: the week isn't met yet; the streak still reads last week's.
+      var values = counts({...lastWeekMet, DateTime(2026, 1, 12): 1});
+      expect(habitCurrentStreak(weekly, values, now: now), 1);
+      expect(isHabitLit(weekly, values, now: now), isFalse);
+
+      // The second day reaches the target: +1, and lit.
+      values = counts({
+        ...lastWeekMet,
+        DateTime(2026, 1, 12): 1,
+        DateTime(2026, 1, 14): 1,
+      });
+      expect(habitCurrentStreak(weekly, values, now: now), 2);
+      expect(isHabitLit(weekly, values, now: now), isTrue);
+
+      // Last week missed: the streak is 0, and reaching the target gives 1.
+      values = counts({DateTime(2026, 1, 12): 1});
+      expect(habitCurrentStreak(weekly, values, now: now), 0);
+      values = counts({DateTime(2026, 1, 12): 1, DateTime(2026, 1, 14): 1});
+      expect(habitCurrentStreak(weekly, values, now: now), 1);
+    });
+
     test('current partial week only expects opportunities elapsed so far', () {
       final weekly = habit(
         frequency: HabitFrequency.weekly,

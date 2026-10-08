@@ -27,6 +27,7 @@ import '../widgets/logo_watermark.dart';
 import '../utils/responsive.dart';
 import '../widgets/balanced_title.dart';
 import '../widgets/responsive_content.dart';
+import '../widgets/sky_navigation_target.dart';
 import '../widgets/shareable_constellation_card.dart';
 import '../widgets/staggered_entrance.dart';
 import 'pulsar_reader_screen.dart';
@@ -269,6 +270,10 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
           refreshEntries: load,
           habitRepository: widget.habitRepository,
           habitCompletionRepository: widget.habitCompletionRepository,
+          // The reader has already closed itself by now; this closes the
+          // constellation too and hands the star back to whoever opened it.
+          onNavigateTo: (project, {starId, habitId}) => Navigator.of(context)
+              .pop(SkyStarTarget(project, starId: starId, habitId: habitId)),
         ),
       ),
     );
@@ -388,7 +393,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
         await widget.habitRepository.add(
           title: result.title,
           description: result.description,
-          projectId: _project.id,
+          projectId: result.projectId,
           intensity: result.intensity ?? 3,
           frequency: result.habitFrequency ?? HabitFrequency.daily,
           targetPerPeriod: result.habitTargetPerPeriod ?? 1,
@@ -399,7 +404,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
         await widget.starRepository.add(
           title: result.title,
           description: result.description,
-          projectId: _project.id,
+          projectId: result.projectId,
           slotSequence: result.slotSequence,
           targetDate: result.targetDate,
           achievedDate: result.achievedDate,

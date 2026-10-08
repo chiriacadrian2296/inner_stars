@@ -6,6 +6,9 @@ import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_motion.dart';
 import '../theme/app_style.dart';
+import '../utils/area_hero_art_tone.dart';
+import '../utils/star_card_info.dart';
+import 'badge_icon.dart';
 import 'constellation_editor_painter.dart';
 import 'star_glyph.dart';
 
@@ -41,22 +44,11 @@ class SearchCardAction {
     required this.icon,
     required this.label,
     required this.onTap,
-    this.onDecrement,
-    this.stepperText,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-
-  /// Set for a counter (a habit done several times a day): the action then
-  /// draws as one grouped pill — a minus ([onDecrement], disabled when null
-  /// but [isStepper] is true), the [stepperText] and a plus ([onTap]).
-  final VoidCallback? onDecrement;
-  final String? stepperText;
-
-  /// Whether this is a counter rather than a single button.
-  bool get isStepper => stepperText != null;
 }
 
 class SearchResultCard extends StatelessWidget {
@@ -70,10 +62,26 @@ class SearchResultCard extends StatelessWidget {
     required this.onTap,
     this.showBorder = true,
     this.preserveMenuOnAction = false,
+    this.baseBodyHeight = _bodyHeight,
   });
 
   static const visualSize = 88.0;
   static const _bodyHeight = 88.0;
+
+  /// The default body height.
+  static const defaultBodyHeight = _bodyHeight;
+
+  /// How many metrics fit on a tooltip card's single row, and the body
+  /// height that makes room for a second one.
+  static const metricsPerRow = 4;
+  static const tallBodyHeight = 106.0;
+  static const tallerBodyHeight = 124.0;
+
+  /// The body height a card needs for [metricCount] metrics: one row up to
+  /// 4, two rows up to 6, three beyond (a constellation with every badge).
+  static double bodyHeightFor(int metricCount) => metricCount > 6
+      ? tallerBodyHeight
+      : (metricCount > metricsPerRow ? tallBodyHeight : _bodyHeight);
   static const _drawerHeight = 68.0;
   static const _drawerUnderlap = 18.0;
   static const _toggleZoneWidth = 44.0;
@@ -87,13 +95,17 @@ class SearchResultCard extends StatelessWidget {
   final bool showBorder;
   final bool preserveMenuOnAction;
 
+  /// The card body's height at normal text size; a taller one fits a second
+  /// row of badges. The visual stays [visualSize] and is centred.
+  final double baseBodyHeight;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final bodyHeight = textScale <= 1
-        ? _bodyHeight
-        : _bodyHeight + (textScale - 1) * 58;
+        ? baseBodyHeight
+        : baseBodyHeight + (textScale - 1) * 58;
     const drawerReveal = _drawerHeight - _drawerUnderlap;
     double ease(double t) => Curves.easeOutCubic.transform(t);
 
@@ -156,7 +168,7 @@ class SearchResultCard extends StatelessWidget {
                             children: [
                               Positioned(
                                 left: 0,
-                                top: 0,
+                                top: (bodyHeight - visualSize) / 2,
                                 width: visualSize,
                                 height: visualSize,
                                 child: visual,
@@ -307,7 +319,10 @@ class SearchCardTextContent extends StatelessWidget {
           Wrap(
             spacing: 14,
             runSpacing: 4,
-            children: [for (final metric in metrics) _SearchCardMetric(metric)],
+            children: [
+              for (var i = 0; i < metrics.length; i++)
+                _SearchCardMetric(metrics[i], first: i == 0),
+            ],
           ),
         ],
       ],
@@ -318,7 +333,13 @@ class SearchCardTextContent extends StatelessWidget {
 /// A compact, visual-first fact on a search card. A photo needs only its
 /// gold glyph; intensity uses the same gold disc/bolt language as the Sky.
 class SearchCardMetric {
-  const SearchCardMetric({required this.icon, this.value, this.color});
+  const SearchCardMetric({
+    required this.icon,
+    this.value,
+    this.color,
+    this.valueColor,
+    this.semanticLabel,
+  });
 
   final IconData icon;
   final String? value;
@@ -326,19 +347,47 @@ class SearchCardMetric {
   /// Defaults to gold, but a metric can opt into its star kind's own
   /// color — for example an unlit goal without a date and an unlit habit.
   final Color? color;
+
+  /// The value's own colour when it should differ from the icon's (for
+  /// example white beside a gold or blue icon); defaults to [color].
+  final Color? valueColor;
+
+  /// What the icon stands for, read out by screen readers.
+  final String? semanticLabel;
 }
 
+/// [badges] as card metrics: gold or blue icon, value in its own colour.
+List<SearchCardMetric> cardBadgeMetrics(List<CardBadge> badges) => [
+  for (final badge in badges)
+    SearchCardMetric(
+      icon: badge.icon,
+      value: badge.value,
+      color: badge.iconColor,
+      valueColor: badge.valueColor,
+      semanticLabel: badge.semanticLabel,
+    ),
+];
+
 class _SearchCardMetric extends StatelessWidget {
-  const _SearchCardMetric(this.metric);
+  const _SearchCardMetric(this.metric, {this.first = false});
 
   final SearchCardMetric metric;
+
+  /// The first metric of the row: its icon's empty left margin is trimmed so
+  /// it lines up with the text above.
+  final bool first;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final color = metric.color ?? colors.gold;
-    final icon = Icon(metric.icon, size: 14, color: color);
-    return Row(
+    final icon = BadgeIcon(
+      metric.icon,
+      size: 14,
+      color: color,
+      trimLeading: first,
+    );
+    final row = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         icon,
@@ -349,12 +398,14 @@ class _SearchCardMetric extends StatelessWidget {
             style: TextStyle(
               fontSize: 11.5,
               fontWeight: FontWeight.w700,
-              color: color,
+              color: metric.valueColor ?? color,
             ),
           ),
         ],
       ],
     );
+    final label = metric.semanticLabel;
+    return label == null ? row : Semantics(label: label, child: row);
   }
 }
 
@@ -371,18 +422,32 @@ class SearchArtworkVisual extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (asset == null) return SearchMissingVisual(icon: fallbackIcon);
-    return Image.asset(
-      asset!,
-      fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => SearchMissingVisual(icon: fallbackIcon),
+    return tonedAreaHeroArt(
+      child: Image.asset(
+        asset!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => SearchMissingVisual(icon: fallbackIcon),
+      ),
     );
   }
 }
 
 class SearchConstellationVisual extends StatelessWidget {
-  const SearchConstellationVisual({super.key, required this.shape});
+  const SearchConstellationVisual({
+    super.key,
+    required this.shape,
+    this.darkBackground = true,
+    this.inset = 10,
+  });
 
   final ConstellationShape? shape;
+
+  /// Whether the shape sits on a darkened panel; off, it is drawn straight on
+  /// the card's own background.
+  final bool darkBackground;
+
+  /// Space kept free around the shape, in logical pixels.
+  final double inset;
 
   @override
   Widget build(BuildContext context) {
@@ -392,14 +457,16 @@ class SearchConstellationVisual extends StatelessWidget {
       return const SearchMissingVisual(icon: Icons.insights);
     }
     return ColoredBox(
-      color: colors.night.withValues(alpha: 0.48),
+      color: darkBackground
+          ? colors.night.withValues(alpha: 0.48)
+          : Colors.transparent,
       child: LayoutBuilder(
         builder: (context, constraints) => CustomPaint(
           painter: ConstellationEditorPainter(
             points: _centeredShapePoints(
               shape.points,
               constraints.biggest,
-              inset: 10,
+              inset: inset,
             ),
             edges: shape.edges,
             highlightedIndex: null,
@@ -679,77 +746,18 @@ class _SearchQuickMenuAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    if (action.isStepper) return _buildStepper(context, colors);
     // A bare navy glyph on the gold drawer, no text and no disc. The label
-    // stays as the tooltip and the semantics label.
+    // lives in the semantics.
     return Semantics(
       button: true,
       label: action.label,
-      child: Tooltip(
-        message: action.label,
-        child: InkWell(
-          onTap: () {
-            onActionSelected();
-            action.onTap();
-          },
-          child: Center(
-            child: Icon(action.icon, size: 26, color: colors.night),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// A counter as one pill: minus, the count, plus — three zones that read
-  /// as a single button, outlined in navy on the gold drawer.
-  Widget _buildStepper(BuildContext context, AppColors colors) {
-    Widget zone(IconData icon, VoidCallback? onTap, String label) {
-      return Expanded(
-        child: Semantics(
-          button: true,
-          enabled: onTap != null,
-          label: label,
-          child: InkWell(
-            onTap: onTap == null
-                ? null
-                : () {
-                    onActionSelected();
-                    onTap();
-                  },
-            child: Center(
-              child: Icon(
-                icon,
-                size: 24,
-                color: colors.night.withValues(alpha: onTap == null ? 0.35 : 1),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Center(
-      child: Container(
-        height: 40,
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: colors.night, width: 1.5),
-        ),
-        child: Row(
-          children: [
-            zone(Icons.remove, action.onDecrement, action.label),
-            Text(
-              action.stepperText!,
-              style: TextStyle(
-                color: colors.night,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-            zone(Icons.add, action.onTap, action.label),
-          ],
+      child: InkWell(
+        onTap: () {
+          onActionSelected();
+          action.onTap();
+        },
+        child: Center(
+          child: Icon(action.icon, size: 26, color: colors.nightPanel),
         ),
       ),
     );

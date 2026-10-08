@@ -44,13 +44,15 @@ import '../tutorials/sky_hint_target.dart';
 import '../tutorials/tour_gesture_step.dart';
 import '../tutorials/tour_step_card.dart';
 import '../tutorials/tutorial_management.dart';
+import '../utils/project_card_info.dart';
+import '../utils/star_card_info.dart';
 import '../utils/app_modals.dart';
 import '../utils/area_hero_art.dart';
 import '../utils/habit_stats.dart';
 import '../utils/haptics.dart';
 import '../utils/icon_for_slug.dart';
 import '../utils/responsive.dart';
-import '../utils/star_stats.dart';
+import '../widgets/habit_stepper_dialog.dart';
 import '../widgets/constellation_field.dart';
 import '../widgets/constellation_painter.dart';
 import '../widgets/creation_success_dialog.dart';
@@ -449,6 +451,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// during `build` (the off-screen share capture, the back-button
   /// handling) the same way plain fields used to be.
   final _skyTooltipController = TooltipCardController<_SkyTooltip>();
+
+  /// Loaded once in [initState] (the repository is created asynchronously);
+  /// the area tooltip counts its items.
+  MoodboardRepository? _moodboardRepository;
   final _quickLookShareKey = GlobalKey();
   bool _sharingQuickLookStar = false;
 
@@ -605,6 +611,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       duration: _holdDuration,
     );
     _skyTooltipController.addListener(_onSkyTooltipChanged);
+    MoodboardRepository.create().then((repository) {
+      if (mounted) setState(() => _moodboardRepository = repository);
+    });
     _loadData();
     _loadFlareProgram();
     // Opens centered on "Love" rather than the world origin — with a
@@ -1235,6 +1244,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
           refreshEntries: load,
           habitRepository: widget.habitRepository,
           habitCompletionRepository: widget.habitCompletionRepository,
+          onNavigateTo: (project, {starId, habitId}) => _flyToWithHoldFeedback(
+            SkyStarTarget(project, starId: starId, habitId: habitId),
+          ),
         ),
       ),
     );
@@ -4293,10 +4305,16 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
               // adds no risk of reintroducing that field's own bug.
               ListenableBuilder(
                 listenable: _skyTooltipController,
-                builder: (context, child) => Transform.translate(
-                  offset: _tooltipAnchorOffset(_skyTooltipController.data),
-                  child: child,
-                ),
+                builder: (context, child) {
+                  final data = _skyTooltipController.data;
+                  if (data != null) {
+                    _lastSkyTooltipOffset = _tooltipAnchorOffset(data);
+                  }
+                  return Transform.translate(
+                    offset: _lastSkyTooltipOffset,
+                    child: child,
+                  );
+                },
                 child: _skyTooltipOverlay!,
               ),
             ],
@@ -4395,6 +4413,25 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// the exit-animation frame after a close) renders empty: `TooltipCard`
   /// itself decides whether that's ever actually visible.
   Widget _buildSkyTooltip() {
+    // The exit animation runs *after* the controller's data is already null.
+    // Building empty content for it collapsed the card to its bare padding —
+    // a small dark dot beside the beak — for the length of the fade. Keep
+    // showing the last content instead, so the whole card fades out as one.
+    if (_skyTooltipController.data == null) {
+      return _lastSkyTooltipContent ?? const SizedBox.shrink();
+    }
+    return _lastSkyTooltipContent = _buildSkyTooltipContent();
+  }
+
+  /// What [_buildSkyTooltip] last built for an open tooltip, replayed while
+  /// that tooltip fades out.
+  Widget? _lastSkyTooltipContent;
+
+  /// Same idea for the anchor drop: [_tooltipAnchorOffset] is zero once the
+  /// data is null, which snapped the fading card up to the star.
+  Offset _lastSkyTooltipOffset = Offset.zero;
+
+  Widget _buildSkyTooltipContent() {
     return switch (_skyTooltipController.data) {
       _StarTooltip(:final constellation, :final starIndex) => _buildStarTooltip(
         constellation,
@@ -4406,7 +4443,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       ),
       _ConstellationTooltip(:final constellation) => SkyConstellationTooltip(
         project: constellation.project,
-        stars: constellation.stars,
+        badges: _constellationBadges(constellation),
         shape: constellation.shape,
         onClose: _closeSkyTooltip,
         onView: () => _viewConstellation(constellation),
@@ -4417,11 +4454,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       ),
       _AreaTooltip(:final area) => SkyAreaTooltip(
         area: area,
-        starCount: starsInArea(
-          area,
-          widget.projectRepository,
-          widget.starRepository,
-        ),
+        badges: _areaBadges(area),
         onClose: _closeSkyTooltip,
         onView: () => _viewArea(area),
         onVision: () => _openQuickLookAreaVision(area),
@@ -4448,8 +4481,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// wherever it just flew to, so it only nudges down slightly. Plain
   /// tuned numbers, not derived from anything — adjust them directly if
   /// the amount ever needs to change.
-  static const _starTooltipDrop = 15.0;
-  static const _areaTooltipDrop = 35.0;
+  static const _starTooltipDrop = 5.0;
+  static const _areaTooltipDrop = 95.0;
   static const _constellationTooltipDrop = 120.0;
 
   Offset _tooltipAnchorOffset(_SkyTooltip? data) => switch (data) {
@@ -4460,6 +4493,57 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _NascentStarTooltip() => const Offset(0, _starTooltipDrop),
     null => Offset.zero,
   };
+
+  /// Completions per day for each of [habits], read fresh for the tooltip
+  /// that is open (a single decode, not one per habit).
+  Map<int, Map<DateTime, int>> _countsFor(List<Habit> habits) {
+    final all = widget.habitCompletionRepository.getAll();
+    return {
+      for (final habit in habits)
+        habit.id: habitCompletionCountsByDay([
+          for (final completion in all)
+            if (completion.habitId == habit.id) completion,
+        ]),
+    };
+  }
+
+  List<CardBadge> _constellationBadges(PlacedConstellation constellation) {
+    final habits = widget.habitRepository.getAllForProject(
+      constellation.project.id,
+    );
+    return projectCardBadges(
+      stars: widget.starRepository.getAllForProject(constellation.project.id),
+      habits: habits,
+      countsByHabit: _countsFor(habits),
+      slotCount: constellation.shape?.points.length ?? 0,
+      colors: context.colors,
+      strings: context.strings,
+    );
+  }
+
+  List<CardBadge> _areaBadges(LifeArea area) {
+    final projects = widget.projectRepository.getProjectsForArea(area);
+    final habits = [
+      for (final project in projects)
+        ...widget.habitRepository.getAllForProject(project.id),
+    ];
+    return areaCardBadges(
+      constellationCount: projects.length,
+      stars: [
+        for (final project in projects)
+          ...widget.starRepository.getAllForProject(project.id),
+      ],
+      habits: habits,
+      countsByHabit: _countsFor(habits),
+      reflectionsAnswered: widget.reflectionAnswerRepository
+          .getAnswersForArea(area)
+          .length,
+      hasVision: widget.areaVisionRepository.getVision(area).trim().isNotEmpty,
+      moodboardCount: _moodboardRepository?.getItems(area).length ?? 0,
+      colors: context.colors,
+      strings: context.strings,
+    );
+  }
 
   /// A pulsar's own version of [_buildStarTooltip] — no stale-index guard
   /// needed here (unlike a star, [_PulsarTooltip] carries the [Habit]
@@ -4479,19 +4563,13 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     return SkyPulsarTooltip(
       habit: habit,
       project: constellation.project,
-      currentStreak: habitCurrentStreak(habit, countsByDay),
+      countsByDay: countsByDay,
       isLit: !habit.dead && isHabitLit(habit, countsByDay),
       onClose: _closeSkyTooltip,
       onView: _viewQuickLookPulsar,
       onToday: () => _quickLookPulsarToday(habit),
-      onTodayDecrement: isStepper && habitDailyProgress(habit, countsByDay) > 0
-          ? () => _quickLookPulsarUndoToday(habit)
-          : null,
-      stepperText: isStepper
-          ? '${habitDailyProgress(habit, countsByDay)}/${habit.targetPerPeriod}'
-          : null,
       todayActionIcon: isStepper
-          ? Icons.add_circle_outline_rounded
+          ? Icons.import_export
           : Icons.local_fire_department_rounded,
       todayActionLabel: isStepper
           ? context.strings.habitProgressToday(
@@ -4524,8 +4602,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     );
   }
 
-  /// Turns the habit on/off (or logs one more) without leaving the tooltip:
-  /// it stays open, showing the new state.
+  /// Turns the habit on/off, or opens its stepper popup for a counting
+  /// habit, without leaving the tooltip: it stays open, showing the new state.
   Future<void> _quickLookPulsarToday(Habit habit) async {
     final completions = widget.habitCompletionRepository;
     final counts = habitCompletionCountsByDay(
@@ -4536,27 +4614,25 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     final isStepper =
         habit.frequency == HabitFrequency.daily && habit.targetPerPeriod > 1;
     if (isStepper) {
-      await completions.logInstance(habit.id);
+      // A counting habit: a popup with a minus and a plus, as many taps as
+      // needed; the tooltip refreshes behind it after each one.
+      await showHabitStepperDialog(
+        context: context,
+        habit: habit,
+        repository: completions,
+        onChanged: _refreshOpenTooltip,
+      );
+      return;
     } else if (counts.containsKey(today)) {
       await completions.unmarkDone(habit.id, today);
     } else {
       await completions.markDone(habit.id);
     }
-    _refresh();
-    // Rebuild the open tooltip so it shows the new state.
-    final data = _skyTooltipController.data;
-    if (mounted && data != null) {
-      _skyTooltipController.updateData(_copyTooltip(data));
-    }
+    _refreshOpenTooltip();
   }
 
-  /// The stepper's minus: takes back the last instance logged today.
-  Future<void> _quickLookPulsarUndoToday(Habit habit) async {
-    final now = DateTime.now();
-    await widget.habitCompletionRepository.unlogLastInstance(
-      habit.id,
-      DateTime(now.year, now.month, now.day),
-    );
+  /// Reloads the data and rebuilds the open tooltip so it shows the new state.
+  void _refreshOpenTooltip() {
     _refresh();
     final data = _skyTooltipController.data;
     if (mounted && data != null) {
@@ -4695,7 +4771,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       final created = await widget.habitRepository.add(
         title: result.title,
         description: result.description,
-        projectId: constellation.project.id,
+        projectId: result.projectId,
         intensity: result.intensity ?? 3,
         frequency: result.habitFrequency ?? HabitFrequency.daily,
         targetPerPeriod: result.habitTargetPerPeriod ?? 1,
@@ -4708,7 +4784,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       final created = await widget.starRepository.add(
         title: result.title,
         description: result.description,
-        projectId: constellation.project.id,
+        projectId: result.projectId,
         slotSequence: result.slotSequence,
         targetDate: result.targetDate,
         achievedDate: result.achievedDate,
@@ -4786,7 +4862,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _viewConstellation(PlacedConstellation constellation) async {
-    final result = await Navigator.of(context).push<Project>(
+    final result = await Navigator.of(context).push<Object>(
       MaterialPageRoute(
         builder: (_) => ConstellationScreen(
           project: constellation.project,
@@ -4799,7 +4875,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       ),
     );
     _refresh();
-    if (result != null && mounted) {
+    if (result == null || !mounted) return;
+    if (result is SkyStarTarget) {
+      _flyToWithHoldFeedback(result);
+    } else if (result is Project) {
       final placed = _placedFor(result);
       if (placed != null) _flyToConstellation(placed);
     }

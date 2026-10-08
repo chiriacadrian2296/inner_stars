@@ -11,6 +11,7 @@ class SkySearchTooltipCard extends StatefulWidget {
     required this.content,
     required this.actions,
     required this.onTap,
+    this.baseBodyHeight = SearchResultCard.defaultBodyHeight,
   });
 
   final Object menuId;
@@ -18,6 +19,9 @@ class SkySearchTooltipCard extends StatefulWidget {
   final Widget content;
   final List<SearchCardAction> actions;
   final VoidCallback onTap;
+
+  /// Taller than the default when the content has a second row of badges.
+  final double baseBodyHeight;
 
   @override
   State<SkySearchTooltipCard> createState() => _SkySearchTooltipCardState();
@@ -61,6 +65,7 @@ class _SkySearchTooltipCardState extends State<SkySearchTooltipCard> {
         content: widget.content,
         actions: widget.actions,
         onTap: widget.onTap,
+        baseBodyHeight: widget.baseBodyHeight,
         // The tooltip's drawer stays open after an action: it's open for as
         // long as the tooltip is.
         preserveMenuOnAction: true,

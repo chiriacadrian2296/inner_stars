@@ -1,4 +1,7 @@
+import '../data/area_vision_repository.dart';
 import '../data/constellation_layout.dart' show kMaxConstellationStars;
+import '../data/moodboard_repository.dart';
+import '../data/reflection_answer_repository.dart';
 import '../data/habit_completion_repository.dart';
 import '../data/habit_repository.dart';
 import '../data/project_repository.dart';
@@ -8,6 +11,7 @@ import '../models/habit.dart';
 import '../models/project.dart';
 import '../models/star_media.dart';
 import '../utils/date_math.dart';
+import 'seed_area_content.dart';
 
 /// How many stars each seed project (by spec index) is filled up to the first
 /// time [seedSampleData] runs — deliberately uneven, so the Sky and Cosmo show
@@ -16,14 +20,14 @@ import '../utils/date_math.dart';
 /// handful of stars. Counts every star on the shape (lit, unlit and dead),
 /// history included; a project already at or past its target gains nothing.
 const _starTargets = [
-  30, 14, 22, 30, 8, 16, 30, 6, 5, //
-  12, 4, 18, 6, 30, 10, 3, 26, 8, //
-  14, 5, 30, 9, 20, 7,
+  15, 9, 11, 15, 5, 8, 15, 3, 4, //
+  7, 3, 10, 4, 15, 8, 3, 11, 5, //
+  9, 4, 5, 4, 10, 3,
 ];
 
 /// Target for a spec index past [_starTargets] (never reached by the current
 /// 24 specs, but a longer list shouldn't crash).
-const _defaultStarTarget = 8;
+const _defaultStarTarget = 5;
 
 int _starTargetFor(int specIndex) => specIndex < _starTargets.length
     ? _starTargets[specIndex]
@@ -133,6 +137,9 @@ Future<int> seedSampleData({
   required HabitRepository habitRepository,
   required HabitCompletionRepository habitCompletionRepository,
   required String languageCode,
+  AreaVisionRepository? areaVisionRepository,
+  ReflectionAnswerRepository? reflectionAnswerRepository,
+  MoodboardRepository? moodboardRepository,
 }) async {
   final starsBefore = starRepository.getAll().length;
   final specs = _specsFor(languageCode);
@@ -283,6 +290,18 @@ Future<int> seedSampleData({
     today: today,
   );
 
+  // The areas get content of their own too (visions, reflections, moodboard)
+  // when the caller hands over their repositories.
+  if (areaVisionRepository != null &&
+      reflectionAnswerRepository != null &&
+      moodboardRepository != null) {
+    await seedAreaContent(
+      languageCode: languageCode,
+      areaVisionRepository: areaVisionRepository,
+      reflectionAnswerRepository: reflectionAnswerRepository,
+      moodboardRepository: moodboardRepository,
+    );
+  }
   return starRepository.getAll().length - starsBefore;
 }
 
@@ -295,16 +314,17 @@ const _historyStartDays = 36;
 /// the area split, the date-range and area filters and the month paging on
 /// the Statistics page all have something to show: Physical and Professional
 /// dominate, Philanthropic is almost empty.
-const _historyWinsPerProject = [8, 5, 7, 9, 4, 4, 4, 3, 3];
+const _historyWinsPerProject = [4, 3, 4, 4, 2, 3, 3, 2, 2];
 
 /// Backdated wins for every project past the list above (the extra, smaller
 /// constellations).
-const _historyWinsDefault = 3;
+const _historyWinsDefault = 2;
 
-/// Project index that also receives an unbroken run of wins on the days
+/// The first this-many projects share an unbroken run of wins on the days
 /// 50..63 ago — an old streak longer than the live one, so "longest streak"
-/// and "current streak" read as two different things.
-const _oldStreakProject = 3;
+/// and "current streak" read as two different things. Shared out day by day
+/// because no single constellation can hold 14 stars of history.
+const _oldStreakProjects = 6;
 const _oldStreakFromDay = 50;
 const _oldStreakLength = 14;
 
@@ -320,11 +340,13 @@ Future<void> _seedStarHistory({
       ? _historyWinsPerProject[specIndex]
       : _historyWinsDefault;
   final offsets = <int>[
+    // First, so a small constellation's budget never cuts the streak.
+    if (specIndex < _oldStreakProjects)
+      for (var k = specIndex; k < _oldStreakLength; k += _oldStreakProjects)
+        _oldStreakFromDay + k,
     for (var k = 0; k < count; k++)
       // 36..175 days ago, scattered but deterministic.
       _historyStartDays + (k * 53 + specIndex * 29) % 140,
-    if (specIndex == _oldStreakProject)
-      for (var k = 0; k < _oldStreakLength; k++) _oldStreakFromDay + k,
   ];
   final startingCount = starRepository.getAllForProject(project.id).length;
   for (var k = 0; k < offsets.length && k < maxCount; k++) {
@@ -534,8 +556,8 @@ class _WinSeed {
 /// been marked done on — hand-chosen per seed to exercise a different
 /// streak state at a glance:
 /// - [_activeStreak] gives a live, still-growing streak (lit, growing).
-/// - `[1]` (yesterday only) exercises the one-day grace: lit today even
-///   though today itself hasn't been marked done yet.
+/// - `[1]` (yesterday only) is a habit not done yet today: dark, but its
+///   streak from yesterday is still counted until the day ends.
 /// - A short burst several days back (e.g. `[4, 5, 6]`) exercises a habit
 ///   that's gone dark — its streak broke days ago and it hasn't recovered.
 class _HabitSeed {
@@ -708,8 +730,8 @@ final _specsEn = [
     ],
     goals: ['Complete a 10-day silent retreat'],
     habits: [
-      // Completed yesterday only, not yet today — exercises the one-day
-      // grace: this should still show up lit.
+      // Completed yesterday only, not yet today — shows dark (lit means
+      // done today) while keeping yesterday's streak.
       _HabitSeed('Evening meditation', [1]),
     ],
   ),
@@ -1066,8 +1088,8 @@ final _specsIt = [
     ],
     goals: ['Completare un ritiro silenzioso di 10 giorni'],
     habits: [
-      // Completato solo ieri, non ancora oggi — verifica il giorno di
-      // tolleranza: deve comunque risultare acceso.
+      // Completato solo ieri, non ancora oggi — risulta spento (acceso
+      // vuol dire fatto oggi) ma conserva la serie di ieri.
       _HabitSeed('Meditazione serale', [1]),
     ],
   ),
@@ -1455,8 +1477,8 @@ final _specsRo = [
     ],
     goals: ['Finalizează un retreat de tăcere de 10 zile'],
     habits: [
-      // Bifat doar ieri, nu încă azi — verifică ziua de grație: tot
-      // trebuie să apară aprins.
+      // Bifat doar ieri, nu încă azi — apare stins (aprins înseamnă făcut
+      // azi), dar păstrează seria de ieri.
       _HabitSeed('Meditație de seară', [1]),
     ],
   ),

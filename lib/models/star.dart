@@ -89,6 +89,10 @@ class Star {
   /// Lit — a victory, an effort already made.
   bool get isLit => achievedDate != null && !dead;
 
+  /// How many extras of [kind] this star carries.
+  int mediaCount(StarMediaKind kind) =>
+      media.where((item) => item.kind == kind).length;
+
   /// Unlit — a goal, an effort still ahead.
   bool get isUnlit => achievedDate == null && !dead;
 

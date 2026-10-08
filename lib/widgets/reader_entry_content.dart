@@ -90,6 +90,7 @@ class ReaderPage extends StatelessWidget {
     this.numberLabel,
     this.extra,
     this.reserveExtraSlot = true,
+    this.extraSlotHeight = extraHeight,
     this.title,
     this.titleColor,
     this.description,
@@ -114,6 +115,10 @@ class ReaderPage extends StatelessWidget {
   /// Whether the slot is kept even with nothing in it. Off only for a dead
   /// star (a failure), which has no particular data at all.
   final bool reserveExtraSlot;
+
+  /// Height of that slot; taller only for a page that stacks two data
+  /// blocks (a counting habit's streak and today's repetitions).
+  final double extraSlotHeight;
   final String? title;
   final Color? titleColor;
   final String? description;
@@ -183,7 +188,7 @@ class ReaderPage extends StatelessWidget {
           entrance(
             4,
             SizedBox(
-              height: extraHeight,
+              height: extraSlotHeight,
               child: Center(child: extra ?? const SizedBox.shrink()),
             ),
           ),
@@ -435,6 +440,9 @@ class StarReaderContent extends StatelessWidget {
   }
 }
 
+/// Slot height for a streak block with today's repetitions stacked under it.
+const double _stackedExtraHeight = 132;
+
 /// A pulsar's page in the star reader — a habit, burning (kept today) or
 /// dark; deleted, a failure.
 class PulsarReaderContent extends StatelessWidget {
@@ -447,6 +455,8 @@ class PulsarReaderContent extends StatelessWidget {
     required this.streak,
     required this.weekProgress,
     required this.entrance,
+    this.todayProgress,
+    this.doneToday = false,
   });
 
   final Habit habit;
@@ -459,6 +469,13 @@ class PulsarReaderContent extends StatelessWidget {
 
   /// Only shown for a weekly habit.
   final int weekProgress;
+
+  /// Today's repetitions so far; only for a daily habit with a target above
+  /// 1 (null otherwise), shown under the streak.
+  final int? todayProgress;
+
+  /// Whether today is marked — shown with a weekly habit's week count.
+  final bool doneToday;
   final ReaderEntrance entrance;
 
   @override
@@ -470,28 +487,70 @@ class PulsarReaderContent extends StatelessWidget {
     Widget? extra;
     if (!habit.dead) {
       final isWeekly = habit.frequency == HabitFrequency.weekly;
-      extra = _DataBlock(
+      // The streak is gold from the moment the period's goal is reached (for
+      // a weekly habit: the week's count) and blue again when a new one
+      // begins — [lit]. The week block below follows today instead.
+      final streakTint = tint;
+      final weekTint = starKindColor(StarKind.pulsar, colors, lit: doneToday);
+      final streakBlock = _DataBlock(
         value: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.local_fire_department, size: 40, color: tint),
+            Icon(Icons.local_fire_department, size: 40, color: streakTint),
             const SizedBox(width: 4),
             Text(
               '$streak',
               style: TextStyle(
                 fontSize: 44,
                 fontWeight: FontWeight.w800,
-                color: tint,
+                color: streakTint,
                 height: 1,
               ),
             ),
           ],
         ),
-        caption: isWeekly
-            ? '${strings.habitCurrentStreakLabel} · '
-                  '${strings.habitProgressThisWeek(weekProgress, habit.targetPerPeriod)}'
-            : strings.habitCurrentStreakLabel,
+        caption: strings.habitCurrentStreakLabel,
       );
+      final today = todayProgress;
+      // Same look as the streak, a size smaller: today's repetitions so far
+      // (daily counting habit), or this week's count with today's state
+      // (weekly habit).
+      extra = (today == null && !isWeekly)
+          ? streakBlock
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                streakBlock,
+                const SizedBox(height: 14),
+                _DataBlock(
+                  value: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isWeekly ? Icons.date_range : Icons.import_export,
+                        size: 26,
+                        color: isWeekly ? weekTint : tint,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        isWeekly
+                            ? '$weekProgress/${habit.targetPerPeriod}'
+                            : '$today/${habit.targetPerPeriod}',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: isWeekly ? weekTint : tint,
+                          height: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                  caption: isWeekly
+                      ? strings.habitThisWeekCaption(doneToday)
+                      : strings.habitTodayLabel,
+                ),
+              ],
+            );
     }
 
     return ReaderPage(
@@ -499,6 +558,10 @@ class PulsarReaderContent extends StatelessWidget {
       lit: lit,
       entrance: entrance,
       reserveExtraSlot: !habit.dead,
+      extraSlotHeight:
+          (todayProgress == null && habit.frequency != HabitFrequency.weekly)
+          ? ReaderPage.extraHeight
+          : _stackedExtraHeight,
       createdAt: habit.createdAt,
       project: project,
       numberLabel: number == null ? null : strings.pulsarNumberLabel(number!),

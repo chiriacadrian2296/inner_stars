@@ -694,6 +694,7 @@ abstract class AppStrings {
   String get cannotSaveTitle;
   String get cannotSaveMissingInfo;
   String get constellationFullTitle;
+  String get constellationFullCreateNew;
   String constellationFullStars(int max);
   String constellationFullPulsars(int max);
   String get gotIt;
@@ -754,6 +755,26 @@ abstract class AppStrings {
   String get habitStillToDoLabel;
   String get habitDoneTodayLabel;
   String get undoHabitTodayAction;
+  String get habitTodayLabel;
+
+  // Card badges: what an icon on a star's card stands for (semantics only).
+  String get cardBadgeVoice;
+  String get cardBadgePhotos;
+  String get cardBadgeVideos;
+  String get cardBadgeLinks;
+  String get cardBadgeLitStars;
+  String get cardBadgeGoals;
+  String get cardBadgeEmptySlots;
+  String get cardBadgePulsarsToday;
+  String get cardBadgeNextDate;
+  String get cardBadgeEnergy;
+  String get cardBadgeMemories;
+  String get cardBadgeDeadStars;
+  String get cardBadgeConstellations;
+  String get cardBadgeReflections;
+  String get cardBadgeVision;
+  String get cardBadgeMoodboard;
+  String get cardBadgeThisMonth;
 
   /// "2/3 today" — the daily-N-times stepper's own progress line, shown
   /// instead of [habitDoneTodayLabel]/[markHabitDoneAction] once the
@@ -764,6 +785,10 @@ abstract class AppStrings {
   /// [habitCurrentStreakLabel] rather than instead of it (the day itself is
   /// still a plain done/not-done toggle; only the week total is a count).
   String habitProgressThisWeek(int done, int target);
+
+  /// Caption under a weekly habit's "this week" count: says whether today
+  /// is already marked too.
+  String habitThisWeekCaption(bool doneToday);
 
   String get habitStatsSectionTitle;
   String get starsStatsSectionTitle;

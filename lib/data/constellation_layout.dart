@@ -19,12 +19,12 @@ const int maxChainedStars = 600;
 /// they keep their slot) one constellation can hold. Matches the editor's cap
 /// on a shape's own points, so a shape can be drawn and then filled
 /// completely, but never grown past what Cosmo can render legibly.
-const int kMaxConstellationStars = 30;
+const int kMaxConstellationStars = 15;
 
 /// How many pulsars one constellation can hold. Counted apart from
 /// [kMaxConstellationStars]: pulsars scatter around the shape instead of
 /// sitting on it, and are drawn as smaller points.
-const int kMaxConstellationPulsars = 10;
+const int kMaxConstellationPulsars = 5;
 
 /// Thrown by `StarRepository.add` / `HabitRepository.add` when the target
 /// constellation is already at its cap. The star form checks first and shows
@@ -152,12 +152,89 @@ const _kScatterPadding = 0.1;
 Offset seededOverflowPosition(int seed) =>
     _seededScatter(seed, minRadius: 0.55, maxRadius: 1.0);
 
-/// Deterministic placement for a pulsar's own small, scattered star — a
-/// closer band that overlaps the constellation's own footprint (pulsars sit
-/// "around/inside/outside" the shape, not past its edge like overflow
-/// stars), seeded by the habit's own immutable id.
-Offset seededPulsarPosition(int seed) =>
-    _seededScatter(seed, minRadius: 0.15, maxRadius: 0.65);
+/// How far a pulsar must stay from every star and line of its constellation's
+/// shape (as a fraction of the constellation's footprint), and from the other
+/// pulsars. Large enough that a pulsar always reads as its own point of light
+/// rather than part of the figure.
+const double kPulsarShapeClearance = 0.14;
+const double _kPulsarPulsarClearance = 0.1;
+
+/// Pulsars may sit closer to the edge of the footprint than other scattered
+/// stars: a shape already fills 0.1..0.9 along its longest axis, so the free
+/// room is mostly out there.
+const double _kPulsarPadding = 0.05;
+
+double _distanceToSegment(Offset p, Offset a, Offset b) {
+  final ab = b - a;
+  final lengthSq = ab.distanceSquared;
+  if (lengthSq == 0) return (p - a).distance;
+  final t = (((p - a).dx * ab.dx + (p - a).dy * ab.dy) / lengthSq).clamp(
+    0.0,
+    1.0,
+  );
+  return (p - (a + ab * t)).distance;
+}
+
+double _clearanceFromShape(Offset p, ConstellationShape shape) {
+  var nearest = double.infinity;
+  for (final point in shape.points) {
+    nearest = math.min(nearest, (p - point).distance);
+  }
+  for (final (a, b) in shape.edges) {
+    if (a >= shape.points.length || b >= shape.points.length) continue;
+    nearest = math.min(
+      nearest,
+      _distanceToSegment(p, shape.points[a], shape.points[b]),
+    );
+  }
+  return nearest;
+}
+
+/// Deterministic placement for a pulsar's own small, scattered star, seeded
+/// by the habit's own immutable id. It is kept at least
+/// [kPulsarShapeClearance] from every star and line of [shape] and
+/// [_kPulsarPulsarClearance] from the pulsars already placed ([avoid]):
+/// candidates are drawn from the seed in order and the first one that clears
+/// both wins; if none does (a shape that fills the whole footprint), the
+/// candidate with the most room is used instead. Only the shape's own graph
+/// counts, not the stars grown onto it later — those sit on its lines — so
+/// a pulsar never moves as stars are added.
+Offset seededPulsarPosition(
+  int seed, {
+  ConstellationShape? shape,
+  List<Offset> avoid = const [],
+}) {
+  final random = math.Random(seed);
+  Offset? best;
+  var bestRoom = -1.0;
+  for (var attempt = 0; attempt < 80; attempt++) {
+    final candidate = Offset(
+      _kPulsarPadding + random.nextDouble() * (1 - 2 * _kPulsarPadding),
+      _kPulsarPadding + random.nextDouble() * (1 - 2 * _kPulsarPadding),
+    );
+    if (shape == null && avoid.isEmpty) return candidate;
+    final fromShape = shape == null
+        ? double.infinity
+        : _clearanceFromShape(candidate, shape);
+    var fromPulsars = double.infinity;
+    for (final other in avoid) {
+      fromPulsars = math.min(fromPulsars, (candidate - other).distance);
+    }
+    if (fromShape >= kPulsarShapeClearance &&
+        fromPulsars >= _kPulsarPulsarClearance) {
+      return candidate;
+    }
+    // Shape clearance matters most; pulsar spacing only breaks ties.
+    final room =
+        math.min(fromShape / kPulsarShapeClearance, 1.0) * 2 +
+        math.min(fromPulsars / _kPulsarPulsarClearance, 1.0);
+    if (room > bestRoom) {
+      bestRoom = room;
+      best = candidate;
+    }
+  }
+  return best!;
+}
 
 /// Turns one project's raw [stars]/[habits] into everything
 /// [ConstellationPainter] needs to draw it: every slot on the shape's grown
@@ -234,14 +311,25 @@ buildConstellationRenderStars({
     );
   }
 
-  for (final habit in habits) {
+  // By id, not list order: a new pulsar lands at the front of the stored
+  // list, and each placement avoids the ones before it, so placing in list
+  // order would move existing pulsars whenever another was added.
+  final placedPulsars = <Offset>[];
+  final orderedHabits = [...habits]..sort((a, b) => a.id.compareTo(b.id));
+  for (final habit in orderedHabits) {
+    final pulsarPosition = seededPulsarPosition(
+      habit.id,
+      shape: shape,
+      avoid: placedPulsars,
+    );
+    placedPulsars.add(pulsarPosition);
     final countsByDay = habitCompletionCountsByDay(
       completionsByHabit[habit.id] ?? const <HabitCompletion>[],
     );
     renderStars.add(
       ConstellationStar(
         entityId: habit.id,
-        position: seededPulsarPosition(habit.id),
+        position: pulsarPosition,
         // A deleted pulsar keeps its scattered spot and becomes a dead
         // star, the same way a deleted star does — see [Habit.dead].
         kind: habit.dead ? StarKind.dead : StarKind.pulsar,

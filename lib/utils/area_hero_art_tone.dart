@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
 import 'area_hero_art.dart';
 
 /// Nudges an area's own hero art (see [AreaHeroArt]/assets/images — every
@@ -15,10 +16,27 @@ import 'area_hero_art.dart';
 /// This is meant to still read as the same art, just toned down, so both
 /// adjustments are deliberately small.
 Widget tonedAreaHeroArt({required Widget child}) {
-  if (kUseRoyalArtworkPreview) return child;
+  if (kUseRoyalArtworkPreview) return _GoldArt(child: child);
   return ColorFiltered(
     colorFilter: _areaArtDesaturate,
     child: ColorFiltered(colorFilter: _areaArtHueNudge, child: child),
+  );
+}
+
+/// The royal symbols are single-colour gold drawings on transparency, but
+/// their yellow is only close to the app's gold. Repainting every opaque
+/// pixel with the exact `AppColors.gold` (keeping the alpha, so the shape and
+/// its soft edges stay) makes them the very same colour as the rest of the
+/// app, whatever theme is active.
+class _GoldArt extends StatelessWidget {
+  const _GoldArt({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => ColorFiltered(
+    colorFilter: ColorFilter.mode(context.colors.gold, BlendMode.srcIn),
+    child: child,
   );
 }
 

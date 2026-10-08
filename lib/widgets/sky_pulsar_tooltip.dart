@@ -6,22 +6,26 @@ import '../models/life_area.dart';
 import '../models/project.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
+import '../utils/star_card_info.dart';
 import 'search_result_card.dart';
 import 'sky_search_tooltip_card.dart';
 import 'star_glyph.dart';
+
+/// How many badges fit on the card's single row, and the body height that
+/// makes room for a second one.
+const int _kBadgesPerRow = 4;
+const double _kTallBodyHeight = 106;
 
 class SkyPulsarTooltip extends StatelessWidget {
   const SkyPulsarTooltip({
     super.key,
     required this.habit,
     required this.project,
-    required this.currentStreak,
+    required this.countsByDay,
     required this.isLit,
     required this.onClose,
     required this.onView,
     required this.onToday,
-    this.onTodayDecrement,
-    this.stepperText,
     required this.todayActionIcon,
     required this.todayActionLabel,
     required this.onEdit,
@@ -31,17 +35,14 @@ class SkyPulsarTooltip extends StatelessWidget {
 
   final Habit habit;
   final Project? project;
-  final int currentStreak;
+
+  /// The habit's completions per day (from a cache), what the badges
+  /// are computed from.
+  final Map<DateTime, int> countsByDay;
   final bool isLit;
   final VoidCallback onClose;
   final VoidCallback onView;
   final VoidCallback onToday;
-
-  /// For a habit done several times a day: takes one instance back (null
-  /// when there is none to take). With [stepperText] it draws as a grouped
-  /// minus / count / plus.
-  final VoidCallback? onTodayDecrement;
-  final String? stepperText;
   final IconData todayActionIcon;
   final String todayActionLabel;
   final VoidCallback onEdit;
@@ -51,9 +52,13 @@ class SkyPulsarTooltip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = context.strings;
+    final metrics = cardBadgeMetrics(
+      habitCardBadges(habit, countsByDay, context.colors, strings),
+    );
     return SkySearchTooltipCard(
       menuId: 'tooltip-habit:${habit.id}',
       onTap: onView,
+      baseBodyHeight: metrics.length > _kBadgesPerRow ? _kTallBodyHeight : 88,
       visual: SearchStarVisual(kind: StarKind.pulsar, pulsarLit: isLit),
       content: SearchCardTextContent(
         eyebrow: StarKind.pulsar.label(strings),
@@ -64,16 +69,7 @@ class SkyPulsarTooltip extends StatelessWidget {
         breadcrumb: project == null
             ? null
             : '${project!.area.displayName(strings)} → ${project!.name}',
-        metrics: [
-          SearchCardMetric(
-            icon: Icons.local_fire_department_rounded,
-            value: '$currentStreak',
-          ),
-          SearchCardMetric(
-            icon: Icons.bolt_rounded,
-            value: '${habit.intensity}',
-          ),
-        ],
+        metrics: metrics,
       ),
       actions: [
         if (habit.dead)
@@ -87,8 +83,6 @@ class SkyPulsarTooltip extends StatelessWidget {
             icon: todayActionIcon,
             label: todayActionLabel,
             onTap: onToday,
-            onDecrement: onTodayDecrement,
-            stepperText: stepperText,
           ),
         if (onShare != null)
           SearchCardAction(

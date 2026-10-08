@@ -784,7 +784,10 @@ _ConstellationTransform? _projectConstellationTransform(
   // Per radian of tangent-plane angle so far — scaled down to per local
   // 0..1 unit (matching how every other size in this file already treats
   // kSkyConstellationAngularSpan) by multiplying by angularSpan below.
-  final rightVec = (rightOffset - centerOffset) / _epsilon * angularSpan;
+  // Negated: the Sky's canonical "right" runs the opposite way to a shape's
+  // own local x, so every shape drew mirrored left-to-right against its
+  // tooltip/search preview (confirmed on-device; vertical was already right).
+  final rightVec = -(rightOffset - centerOffset) / _epsilon * angularSpan;
   final upVec = (upOffset - centerOffset) / _epsilon * angularSpan;
 
   return _ConstellationTransform(

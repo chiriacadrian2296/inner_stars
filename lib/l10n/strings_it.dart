@@ -1385,11 +1385,13 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get constellationFullTitle => 'Costellazione piena';
   @override
+  String get constellationFullCreateNew => 'Crea';
+  @override
   String constellationFullStars(int max) =>
-      'Questa costellazione ha già tutte le sue $max stelle.';
+      'Questa costellazione ha già tutte le sue $max stelle. Ne creiamo una nuova nella stessa area per continuare?';
   @override
   String constellationFullPulsars(int max) =>
-      'Questa costellazione ha già tutte le sue $max pulsar.';
+      'Questa costellazione ha già tutte le sue $max pulsar. Ne creiamo una nuova nella stessa area per continuare?';
   @override
   String get gotIt => 'OK';
   @override
@@ -1470,10 +1472,50 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get undoHabitTodayAction => 'Annulla';
   @override
+  String get habitTodayLabel => 'Oggi';
+  @override
+  String get cardBadgeVoice => 'Note vocali';
+  @override
+  String get cardBadgePhotos => 'Foto';
+  @override
+  String get cardBadgeVideos => 'Video';
+  @override
+  String get cardBadgeLinks => 'Link';
+  @override
+  String get cardBadgeLitStars => 'Stelle accese';
+  @override
+  String get cardBadgeGoals => 'Obiettivi';
+  @override
+  String get cardBadgeEmptySlots => 'Posti vuoti';
+  @override
+  String get cardBadgePulsarsToday => 'Abitudini accese oggi';
+  @override
+  String get cardBadgeNextDate => 'Prossima data degli obiettivi';
+  @override
+  String get cardBadgeEnergy => 'Intensità totale';
+  @override
+  String get cardBadgeMemories => 'Ricordi';
+  @override
+  String get cardBadgeDeadStars => 'Stelle morte';
+  @override
+  String get cardBadgeConstellations => 'Costellazioni';
+  @override
+  String get cardBadgeReflections => 'Riflessioni risposte';
+  @override
+  String get cardBadgeVision => 'Visione scritta';
+  @override
+  String get cardBadgeMoodboard => 'Elementi della moodboard';
+  @override
+  String get cardBadgeThisMonth => 'Accese questo mese';
+  @override
   String habitProgressToday(int done, int target) => '$done/$target oggi';
   @override
   String habitProgressThisWeek(int done, int target) =>
       '$done/$target questa settimana';
+  @override
+  String habitThisWeekCaption(bool doneToday) => doneToday
+      ? 'Questa settimana · oggi fatto'
+      : 'Questa settimana · oggi non ancora';
   @override
   String get habitStatsSectionTitle => 'Pulsar';
   @override

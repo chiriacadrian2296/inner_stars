@@ -125,34 +125,22 @@ int _weekMetDays(
 /// Whether a habit's star should currently read as lit, given how many
 /// times it's been completed on which days.
 ///
-/// [HabitFrequency.daily]: true as soon as either today or yesterday has
-/// met [Habit.targetPerPeriod] — at 9am, having met yesterday's target but
-/// not yet today's, the habit is still lit, since there's time left before
-/// today's implicit midnight deadline. The instant the calendar rolls to a
-/// new day without that day's target having been met, both checks turn
-/// false and the star goes dark immediately — this looks back exactly one
-/// day, never further.
+/// [HabitFrequency.daily]: true only while today has met
+/// [Habit.targetPerPeriod] — lit means "done today", so the star and the
+/// button that marks it done always agree. Yesterday's completion no longer
+/// keeps it lit (it only keeps the streak alive, see [habitCurrentStreak]).
 ///
-/// [HabitFrequency.weekly]: true once this calendar week (Monday reset, no
-/// grace across the boundary) has already met its target, **or** while
-/// meeting it by Sunday is still mathematically possible — i.e. the days
-/// already met plus every day still left in the week (today included) add
-/// up to at least the target. It only goes dark the moment that stops being
-/// true, not the instant a single day is skipped.
+/// [HabitFrequency.weekly]: true only once this calendar week (Monday reset)
+/// has met its target — dark until then, same simple rule as a daily habit:
+/// lit means "the goal is reached".
 bool isHabitLit(Habit habit, Map<DateTime, int> countsByDay, {DateTime? now}) {
   final today = dateOnly(now ?? DateTime.now());
   if (habit.frequency == HabitFrequency.daily) {
-    final yesterday = addDays(today, -1);
-    return _dayMet(habit, countsByDay, today) ||
-        _dayMet(habit, countsByDay, yesterday);
+    return _dayMet(habit, countsByDay, today);
   }
 
-  final weekStart = _weekStart(today);
-  final doneDays = _weekMetDays(habit, countsByDay, weekStart);
-  if (doneDays >= habit.targetPerPeriod) return true;
-  final daysElapsed = dayDiff(weekStart, today) + 1;
-  final daysRemaining = 7 - daysElapsed;
-  return doneDays + daysRemaining >= habit.targetPerPeriod;
+  return _weekMetDays(habit, countsByDay, _weekStart(today)) >=
+      habit.targetPerPeriod;
 }
 
 /// [HabitFrequency.daily]: today's raw completion count, for a "2/3 today"
@@ -180,8 +168,9 @@ int habitWeeklyProgress(
 }
 
 /// Consecutive periods met — days for [HabitFrequency.daily], calendar
-/// weeks for [HabitFrequency.weekly] — 0 once the habit isn't lit at all
-/// (see [isHabitLit]).
+/// weeks for [HabitFrequency.weekly]. A habit not done yet for the current
+/// period (today / this week) keeps the streak it had up to the previous one
+/// until that period ends; it drops to 0 once the previous one was missed too.
 ///
 /// Deliberately not a generalization of `star_stats.dart`'s `currentStreak`
 /// (which requires today specifically to have a value) — a habit's own
@@ -192,8 +181,6 @@ int habitCurrentStreak(
   DateTime? now,
 }) {
   final today = dateOnly(now ?? DateTime.now());
-  if (!isHabitLit(habit, countsByDay, now: today)) return 0;
-
   if (habit.frequency == HabitFrequency.daily) {
     var day = _dayMet(habit, countsByDay, today) ? today : addDays(today, -1);
     var streak = 0;
@@ -205,8 +192,7 @@ int habitCurrentStreak(
   }
 
   // A week still in progress only joins the streak once it's actually met
-  // its target — [isHabitLit] can already be true purely because meeting it
-  // by Sunday is still *possible*, which isn't the same as having done it.
+  // its target.
   var weekStart = _weekStart(today);
   if (_weekMetDays(habit, countsByDay, weekStart) < habit.targetPerPeriod) {
     weekStart = addDays(weekStart, -7);

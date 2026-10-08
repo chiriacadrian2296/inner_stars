@@ -350,7 +350,7 @@ class ConstellationPainter extends CustomPainter {
   // constellation) — must match `constellation_flare.frag`'s own `kMaxStars`
   // exactly (positions beyond however many stars actually exist are padded
   // with (-1, -1), which the shader skips).
-  static const _kMaxFlareStars = 32;
+  static const _kMaxFlareStars = 16;
 
   void _drawGlowAndSparkle(
     Canvas canvas,

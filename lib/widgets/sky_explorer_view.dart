@@ -4,6 +4,7 @@ import 'package:hint_kit/hint_kit.dart';
 
 import '../data/area_vision_repository.dart';
 import '../data/custom_constellation_repository.dart';
+import '../data/constellation_layout.dart';
 import '../data/constellation_shape.dart';
 import '../data/habit_completion_repository.dart';
 import '../data/habit_repository.dart';
@@ -15,6 +16,7 @@ import '../data/star_repository.dart';
 import '../l10n/app_strings.dart';
 import '../l10n/strings_scope.dart';
 import '../models/habit.dart';
+import '../models/habit_completion.dart';
 import '../models/life_area.dart';
 import '../models/project.dart';
 import '../models/star.dart';
@@ -39,6 +41,8 @@ import '../utils/date_format.dart';
 import '../utils/habit_stats.dart';
 import '../utils/icon_for_slug.dart';
 import '../utils/page_settled.dart';
+import '../utils/project_card_info.dart';
+import '../utils/star_card_info.dart';
 import 'app_action_disc.dart';
 import 'app_field.dart';
 import 'filter_button.dart';
@@ -291,6 +295,11 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   late List<Habit> _habitsCache;
   late Map<int, List<Star>> _starsByProjectCache;
   late Map<int, Map<DateTime, int>> _completionCountsCache;
+
+  /// Loaded once after the first frame (the repository is created
+  /// asynchronously); the area badges count its items.
+  MoodboardRepository? _moodboardRepository;
+  late Map<int, List<HabitCompletion>> _completionsByHabitCache;
   late Map<int, ConstellationShape> _shapesByIdCache;
 
   void _refreshDataCache() {
@@ -314,6 +323,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       stars.sort((a, b) => a.slotSequence.compareTo(b.slotSequence));
     }
     final completions = widget.habitCompletionRepository.getAll();
+    _completionsByHabitCache = <int, List<HabitCompletion>>{};
+    for (final completion in completions) {
+      (_completionsByHabitCache[completion.habitId] ??= []).add(completion);
+    }
     _completionCountsCache = {
       for (final habit in _habitsCache)
         habit.id: habitCompletionCountsByDay(
@@ -528,6 +541,9 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     _sortField = session.sortField;
     _sortDirection = session.sortDirection;
     _refreshDataCache();
+    MoodboardRepository.create().then((repository) {
+      if (mounted) setState(() => _moodboardRepository = repository);
+    });
     _cardMenuController = SearchCardMenuController(
       initialOpenId: session.openCardMenuId,
     )..addListener(() => session.openCardMenuId = _cardMenuController.openId);
@@ -597,28 +613,60 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           _starsForProject(project.id).length +
           _habitsCache.where((h) => h.projectId == project.id).length,
     );
+    final areaHabits = [
+      for (final project in projects)
+        ..._habitsCache.where((h) => h.projectId == project.id),
+    ];
     return GalleryAreaData(
       area: area,
       constellationCount: projects.length,
       starCount: starCount,
+      badges: areaCardBadges(
+        constellationCount: projects.length,
+        stars: [
+          for (final project in projects) ..._starsForProject(project.id),
+        ],
+        habits: areaHabits,
+        countsByHabit: _completionCountsCache,
+        reflectionsAnswered: widget.reflectionAnswerRepository
+            .getAnswersForArea(area)
+            .length,
+        hasVision: widget.areaVisionRepository
+            .getVision(area)
+            .trim()
+            .isNotEmpty,
+        moodboardCount: _moodboardRepository?.getItems(area).length ?? 0,
+        colors: context.colors,
+        strings: context.strings,
+      ),
     );
   }
 
   GalleryProjectData _projectGridData(Project project) {
     final stars = _starsForProject(project.id);
     final shape = _shapesByIdCache[project.starsShapeId];
-    final lit = stars.where((s) => s.isLit).toList();
+    // The same builder Cosmo and the constellation page use, so the preview
+    // holds the same stars: grown layout, nascent slots, overflow, pulsars.
+    final built = buildConstellationRenderStars(
+      stars: stars,
+      habits: _habitsCache.where((h) => h.projectId == project.id).toList(),
+      shape: shape,
+      completionsByHabit: _completionsByHabitCache,
+    );
     return GalleryProjectData(
       project: project,
-      shape: shape,
-      slotKinds: {for (final s in stars) s.slotSequence - 1: s.kind},
-      pulsarsLit: [
-        for (final habit in _habitsCache)
-          if (habit.projectId == project.id && !habit.dead)
-            isHabitLit(habit, _countsByDayFor(habit.id)),
-      ],
+      renderStars: built.stars,
+      edges: built.edges,
       totalStars: shape?.points.length ?? stars.length,
-      litStars: lit.length,
+      litStars: stars.where((s) => s.isLit).length,
+      badges: projectCardBadges(
+        stars: stars,
+        habits: _habitsCache.where((h) => h.projectId == project.id).toList(),
+        countsByHabit: _completionCountsCache,
+        slotCount: shape?.points.length ?? 0,
+        colors: context.colors,
+        strings: context.strings,
+      ),
     );
   }
 
@@ -628,6 +676,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       return GalleryStarData.fromStar(
         entry.star!,
         _projectsById[entry.star!.projectId],
+        badges: starCardBadges(entry.star!, context.colors, context.strings),
       );
     }
     final counts = _countsByDayFor(habit.id);
@@ -635,6 +684,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       habit,
       _projectsById[habit.projectId],
       streak: habitCurrentStreak(habit, counts),
+      badges: habitCardBadges(habit, counts, context.colors, context.strings),
       pulsarLit: isHabitLit(habit, counts),
     );
   }
@@ -746,11 +796,11 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     ),
   );
 
-  Future<Project?> _pushProject(
+  Future<Object?> _pushProject(
     Project project, {
     Matrix4? transform,
     ValueChanged<Matrix4>? onTransformChanged,
-  }) => Navigator.of(context).push<Project>(
+  }) => Navigator.of(context).push<Object>(
     MaterialPageRoute(
       builder: (_) => ConstellationScreen(
         project: project,
@@ -1025,7 +1075,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       final habit = await widget.habitRepository.add(
         title: result.title,
         description: result.description,
-        projectId: project.id,
+        projectId: result.projectId,
         intensity: result.intensity ?? 3,
         frequency: result.habitFrequency ?? HabitFrequency.daily,
         targetPerPeriod: result.habitTargetPerPeriod ?? 1,
@@ -1039,7 +1089,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     final star = await widget.starRepository.add(
       title: result.title,
       description: result.description,
-      projectId: project.id,
+      projectId: result.projectId,
       slotSequence: result.slotSequence,
       targetDate: result.targetDate,
       achievedDate: result.achievedDate,
@@ -1114,7 +1164,14 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       onTransformChanged: (matrix) => lastTransform = matrix,
     );
     _refreshAndRebuild();
-    if (result != null && mounted) {
+    if (result == null || !mounted) return;
+    if (result is SkyStarTarget) {
+      _session.resume = ResumeProject(
+        result.project.id,
+        transform: lastTransform,
+      );
+      widget.onNavigateTo(result);
+    } else if (result is Project) {
       _session.resume = ResumeProject(result.id, transform: lastTransform);
       widget.onNavigateTo(SkyProjectTarget(result));
     }
@@ -1142,9 +1199,13 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           },
           habitRepository: widget.habitRepository,
           habitCompletionRepository: widget.habitCompletionRepository,
-          onNavigateTo: (project, starId) {
-            _session.resume = ResumeStar('s$starId');
-            widget.onNavigateTo(SkyStarTarget(project, starId: starId));
+          onNavigateTo: (project, {starId, habitId}) {
+            _session.resume = ResumeStar(
+              starId != null ? 's$starId' : 'p$habitId',
+            );
+            widget.onNavigateTo(
+              SkyStarTarget(project, starId: starId, habitId: habitId),
+            );
           },
         ),
       ),
@@ -1175,8 +1236,9 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           refreshEntries: load,
           habitRepository: widget.habitRepository,
           habitCompletionRepository: widget.habitCompletionRepository,
-          onNavigateTo: (project, starId) =>
-              widget.onNavigateTo(SkyStarTarget(project, starId: starId)),
+          onNavigateTo: (project, {starId, habitId}) => widget.onNavigateTo(
+            SkyStarTarget(project, starId: starId, habitId: habitId),
+          ),
         ),
       ),
     );
@@ -2761,6 +2823,7 @@ class _SearchStarCard extends StatelessWidget {
               ? '—'
               : formatDisplayDate(entry.star!.targetDate!, strings),
           color: entry.star!.targetDate == null ? colors.starUnlit : null,
+          valueColor: colors.text,
         ),
       ],
       StarKind.pulsar => [

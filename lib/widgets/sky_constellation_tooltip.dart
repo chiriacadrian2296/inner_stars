@@ -4,7 +4,7 @@ import '../data/constellation_shape.dart';
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
 import '../models/project.dart';
-import '../models/star.dart';
+import '../utils/star_card_info.dart';
 import 'search_result_card.dart';
 import 'sky_search_tooltip_card.dart';
 
@@ -14,7 +14,7 @@ class SkyConstellationTooltip extends StatelessWidget {
   const SkyConstellationTooltip({
     super.key,
     required this.project,
-    required this.stars,
+    required this.badges,
     required this.shape,
     required this.onClose,
     required this.onView,
@@ -25,7 +25,7 @@ class SkyConstellationTooltip extends StatelessWidget {
   });
 
   final Project project;
-  final List<Star> stars;
+  final List<CardBadge> badges;
   final ConstellationShape? shape;
   final VoidCallback onClose;
   final VoidCallback onView;
@@ -37,22 +37,20 @@ class SkyConstellationTooltip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = context.strings;
-    final litStars = stars.where((star) => star.isLit).length;
-    final unlitStars = stars.where((star) => star.isUnlit).length;
+    final metrics = cardBadgeMetrics(badges);
     return SkySearchTooltipCard(
       menuId: 'tooltip-project:${project.id}',
       onTap: onView,
-      visual: SearchConstellationVisual(shape: shape),
+      baseBodyHeight: SearchResultCard.bodyHeightFor(metrics.length),
+      visual: SearchConstellationVisual(
+        shape: shape,
+        darkBackground: false,
+        inset: 17,
+      ),
       content: SearchCardTextContent(
         title: project.name,
         breadcrumb: project.area.displayName(strings),
-        metrics: [
-          SearchCardMetric(icon: Icons.star_rounded, value: '$litStars'),
-          SearchCardMetric(
-            icon: Icons.star_outline_rounded,
-            value: '$unlitStars',
-          ),
-        ],
+        metrics: metrics,
       ),
       actions: [
         SearchCardAction(

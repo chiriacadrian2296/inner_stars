@@ -1373,11 +1373,13 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get constellationFullTitle => 'Constellation full';
   @override
+  String get constellationFullCreateNew => 'Create';
+  @override
   String constellationFullStars(int max) =>
-      'This constellation already holds its $max stars.';
+      'This constellation already holds its $max stars. Start a new one in the same area to keep going?';
   @override
   String constellationFullPulsars(int max) =>
-      'This constellation already holds its $max pulsars.';
+      'This constellation already holds its $max pulsars. Start a new one in the same area to keep going?';
   @override
   String get gotIt => 'OK';
   @override
@@ -1458,10 +1460,49 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get undoHabitTodayAction => 'Undo';
   @override
+  String get habitTodayLabel => 'Today';
+  @override
+  String get cardBadgeVoice => 'Voice notes';
+  @override
+  String get cardBadgePhotos => 'Photos';
+  @override
+  String get cardBadgeVideos => 'Videos';
+  @override
+  String get cardBadgeLinks => 'Links';
+  @override
+  String get cardBadgeLitStars => 'Lit stars';
+  @override
+  String get cardBadgeGoals => 'Goals';
+  @override
+  String get cardBadgeEmptySlots => 'Empty slots';
+  @override
+  String get cardBadgePulsarsToday => 'Habits lit today';
+  @override
+  String get cardBadgeNextDate => 'Next goal date';
+  @override
+  String get cardBadgeEnergy => 'Total intensity';
+  @override
+  String get cardBadgeMemories => 'Memories';
+  @override
+  String get cardBadgeDeadStars => 'Dead stars';
+  @override
+  String get cardBadgeConstellations => 'Constellations';
+  @override
+  String get cardBadgeReflections => 'Reflections answered';
+  @override
+  String get cardBadgeVision => 'Vision written';
+  @override
+  String get cardBadgeMoodboard => 'Moodboard items';
+  @override
+  String get cardBadgeThisMonth => 'Lit this month';
+  @override
   String habitProgressToday(int done, int target) => '$done/$target today';
   @override
   String habitProgressThisWeek(int done, int target) =>
       '$done/$target this week';
+  @override
+  String habitThisWeekCaption(bool doneToday) =>
+      doneToday ? 'This week · today done' : 'This week · not today yet';
   @override
   String get habitStatsSectionTitle => 'Pulsars';
   @override

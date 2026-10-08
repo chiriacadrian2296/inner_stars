@@ -42,6 +42,7 @@ import '../widgets/search_result_card.dart' show SearchStarVisual;
 import '../widgets/staggered_entrance.dart';
 import '../widgets/star_glyph.dart';
 import '../widgets/star_media_editor.dart';
+import 'new_project_screen.dart';
 import 'photo_crop_screen.dart';
 
 /// What the user entered, handed back to whoever pushed this screen.
@@ -245,6 +246,10 @@ class _StarFormScreenState extends State<StarFormScreen> {
   late List<StarMedia> _media = widget.existingStar?.media ?? const [];
   late final List<StarMedia> _initialMedia = _media;
   bool _saved = false;
+
+  /// Set once the person carried on in a new constellation because the one
+  /// this form opened on was full.
+  bool _movedToNewConstellation = false;
   late bool _customReminder = widget.existingHabit?.reminderHour != null;
   late int _reminderHour = widget.existingHabit?.reminderHour ?? 9;
   late int _reminderMinute = widget.existingHabit?.reminderMinute ?? 0;
@@ -521,10 +526,15 @@ class _StarFormScreenState extends State<StarFormScreen> {
         : (await StarRepository.create()).isFull(project.id);
   }
 
-  Future<void> _showConstellationFullMessage() {
+  /// Tells the person the constellation can take no more of this kind, and
+  /// offers to carry on in a brand new one in the same area — the form, with
+  /// everything typed so far, then saves straight into it. Returns whether
+  /// the target was switched.
+  Future<bool> _offerNewConstellation(Project full) async {
     final strings = context.strings;
+    final colors = context.colors;
     final isPulsar = _kind == StarKind.pulsar;
-    return showAppDialog<void>(
+    final createNew = await showAppDialog<bool>(
       context: context,
       builder: (dialogContext) => AppDialog(
         title: Text(strings.constellationFullTitle),
@@ -535,12 +545,50 @@ class _StarFormScreenState extends State<StarFormScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: AppButtonLabel(strings.gotIt),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            style: TextButton.styleFrom(foregroundColor: colors.muted),
+            child: AppButtonLabel(strings.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: colors.gold,
+              foregroundColor: colors.onGold,
+              shape: const StadiumBorder(),
+            ),
+            child: AppButtonLabel(
+              strings.constellationFullCreateNew,
+              color: colors.onGold,
+            ),
           ),
         ],
       ),
     );
+    if (createNew != true || !mounted) return false;
+
+    // The form may have been opened already scoped to one constellation, in
+    // which case it holds no repositories of its own for the picker.
+    final projectRepository =
+        widget.projectRepository ?? await ProjectRepository.create();
+    final starsShapeRepository =
+        widget.starsShapeRepository ?? await StarsShapeRepository.create();
+    if (!mounted) return false;
+    final created = await Navigator.of(context).push<Project>(
+      MaterialPageRoute(
+        builder: (_) => NewProjectScreen(
+          projectRepository: projectRepository,
+          starsShapeRepository: starsShapeRepository,
+          presetArea: full.area,
+        ),
+      ),
+    );
+    if (created == null || !mounted) return false;
+    setState(() {
+      _selectedProject = created;
+      _selectedArea = created.area;
+      _movedToNewConstellation = true;
+    });
+    return true;
   }
 
   Future<void> _save() async {
@@ -549,7 +597,9 @@ class _StarFormScreenState extends State<StarFormScreen> {
     if (title.isEmpty || project == null) return;
 
     if (await _targetIsFull(project)) {
-      if (mounted) await _showConstellationFullMessage();
+      if (!mounted) return;
+      // Saved straight away once the new constellation exists.
+      if (await _offerNewConstellation(project)) await _save();
       return;
     }
     if (!mounted) return;
@@ -561,7 +611,8 @@ class _StarFormScreenState extends State<StarFormScreen> {
         title: title,
         description: _descriptionController.text,
         projectId: project.id,
-        slotSequence: widget.slotSequence,
+        // A slot belongs to the constellation it was tapped on.
+        slotSequence: _movedToNewConstellation ? null : widget.slotSequence,
         targetDate: _kind == StarKind.unlit ? _targetDate : null,
         achievedDate: _kind == StarKind.lit ? (_date ?? DateTime.now()) : null,
         intensity: _kind == StarKind.unlit ? null : _intensity,

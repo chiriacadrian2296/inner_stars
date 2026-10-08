@@ -26,6 +26,7 @@ import '../tutorials/tutorial_replay.dart';
 import '../utils/habit_stats.dart';
 import '../utils/page_settled.dart';
 import '../utils/responsive.dart';
+import '../widgets/habit_stepper_dialog.dart';
 import '../widgets/intensity_bolts.dart';
 import '../widgets/logo_watermark.dart';
 import '../widgets/balanced_title.dart';
@@ -124,7 +125,8 @@ class StarReaderScreen extends StatefulWidget {
   /// handing the current star's project *and* id back to the sky camera
   /// to jump to — the id is what lets it land on that exact star's own
   /// tooltip rather than just the constellation's (see `SkyStarTarget`).
-  final void Function(Project project, int starId)? onNavigateTo;
+  final void Function(Project project, {int? starId, int? habitId})?
+  onNavigateTo;
 
   @override
   State<StarReaderScreen> createState() => _StarReaderScreenState();
@@ -482,15 +484,14 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
 
   /// The stepper for a daily habit with a target above 1 — each tap logs one
   /// more instance, with no cap on exceeding the target.
-  Future<void> _logInstance(Habit habit) async {
-    await widget.habitCompletionRepository!.logInstance(habit.id);
-    if (mounted) setState(() => _animateContent = false);
-  }
-
-  Future<void> _unlogInstance(Habit habit) async {
-    await widget.habitCompletionRepository!.unlogLastInstance(habit.id, _today);
-    if (mounted) setState(() => _animateContent = false);
-  }
+  Future<void> _openStepper(Habit habit) => showHabitStepperDialog(
+    context: context,
+    habit: habit,
+    repository: widget.habitCompletionRepository!,
+    onChanged: () {
+      if (mounted) setState(() => _animateContent = false);
+    },
+  );
 
   /// Whether the page is giving light right now — a lit star, or a pulsar
   /// that's kept its rhythm.
@@ -651,6 +652,11 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
       weekProgress: habit.frequency == HabitFrequency.weekly
           ? habitWeeklyProgress(habit, countsByDay)
           : 0,
+      todayProgress:
+          habit.frequency == HabitFrequency.daily && habit.targetPerPeriod > 1
+          ? habitDailyProgress(habit, countsByDay)
+          : null,
+      doneToday: countsByDay.containsKey(_today),
       entrance: entrance,
     );
   }
@@ -710,7 +716,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
           );
         }
         if (widget.onNavigateTo != null && project != null) {
-          actions.add(_takeMeThere(project, star.id));
+          actions.add(_takeMeThere(project, starId: star.id));
         }
         if (canEdit && !star.dead) {
           actions.add(_editAction());
@@ -729,6 +735,9 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
               ),
             );
           }
+          if (widget.onNavigateTo != null && project != null) {
+            actions.add(_takeMeThere(project, habitId: habit.id));
+          }
           break;
         }
         if (completions != null) {
@@ -737,33 +746,37 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
           );
           final isWeekly = habit.frequency == HabitFrequency.weekly;
           if (!isWeekly && habit.targetPerPeriod > 1) {
-            // A daily habit with a target above 1 steps up and down.
+            // A daily habit with a target above 1: one button that opens a
+            // popup to step the day's count up and down.
             final todayCount = habitDailyProgress(habit, countsByDay);
             actions.add(
               ReaderAction(
-                icon: Icons.add,
+                icon: Icons.import_export,
                 label: strings.habitProgressToday(
                   todayCount,
                   habit.targetPerPeriod,
                 ),
-                onTap: () => _logInstance(habit),
-              ),
-            );
-            actions.add(
-              ReaderAction(
-                icon: Icons.remove,
-                label: strings.undoHabitTodayAction,
-                onTap: todayCount > 0 ? () => _unlogInstance(habit) : null,
+                onTap: () => _openStepper(habit),
+                // Dark and beckoning (shakes, flashes white) until today's
+                // target is reached; then the normal white button.
+                off: todayCount < habit.targetPerPeriod,
               ),
             );
           } else {
             final done = countsByDay.containsKey(_today);
+            // A weekly habit whose goal is already reached this week has
+            // nothing urgent left: the button stays a plain white "mark
+            // today" instead of beckoning.
+            final weekGoalMet =
+                isWeekly &&
+                habitWeeklyProgress(habit, countsByDay) >=
+                    habit.targetPerPeriod;
             actions.add(
               ReaderAction(
                 icon: Icons.local_fire_department,
-                // The flame shows the pulsar's state: gold while it's burning
-                // (done today), dark while it isn't.
-                off: !done,
+                // Dark and beckoning until it's done (today, or — for a weekly
+                // habit — the week's goal); then the normal white button.
+                off: !done && !weekGoalMet,
                 label: done ? strings.actionTurnOff : strings.actionLight,
                 onTap: () => _toggleToday(habit, done),
               ),
@@ -778,6 +791,9 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
             loading: _sharing,
           ),
         );
+        if (widget.onNavigateTo != null && project != null) {
+          actions.add(_takeMeThere(project, habitId: habit.id));
+        }
         if (canEdit) {
           actions.add(_editAction());
           actions.add(_deleteAction());
@@ -786,14 +802,15 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
     return actions;
   }
 
-  ReaderAction _takeMeThere(Project project, int starId) => ReaderAction(
-    icon: Icons.navigation,
-    label: context.strings.actionFly,
-    onTap: () {
-      Navigator.of(context).pop();
-      widget.onNavigateTo!(project, starId);
-    },
-  );
+  ReaderAction _takeMeThere(Project project, {int? starId, int? habitId}) =>
+      ReaderAction(
+        icon: Icons.navigation,
+        label: context.strings.actionFly,
+        onTap: () {
+          Navigator.of(context).pop();
+          widget.onNavigateTo!(project, starId: starId, habitId: habitId);
+        },
+      );
 
   ReaderAction _editAction() => ReaderAction(
     icon: Icons.edit_outlined,

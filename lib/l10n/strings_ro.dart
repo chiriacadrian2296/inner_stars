@@ -1381,11 +1381,13 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get constellationFullTitle => 'Constelație plină';
   @override
+  String get constellationFullCreateNew => 'Creează';
+  @override
   String constellationFullStars(int max) =>
-      'Această constelație are deja toate cele $max stele.';
+      'Această constelație are deja toate cele $max stele. Creăm una nouă în aceeași zonă pentru a continua?';
   @override
   String constellationFullPulsars(int max) =>
-      'Această constelație are deja toți cei $max pulsari.';
+      'Această constelație are deja toți cei $max pulsari. Creăm una nouă în aceeași zonă pentru a continua?';
   @override
   String get gotIt => 'OK';
   @override
@@ -1466,10 +1468,50 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get undoHabitTodayAction => 'Anulează';
   @override
+  String get habitTodayLabel => 'Astăzi';
+  @override
+  String get cardBadgeVoice => 'Note vocale';
+  @override
+  String get cardBadgePhotos => 'Fotografii';
+  @override
+  String get cardBadgeVideos => 'Videoclipuri';
+  @override
+  String get cardBadgeLinks => 'Linkuri';
+  @override
+  String get cardBadgeLitStars => 'Stele aprinse';
+  @override
+  String get cardBadgeGoals => 'Obiective';
+  @override
+  String get cardBadgeEmptySlots => 'Locuri goale';
+  @override
+  String get cardBadgePulsarsToday => 'Obiceiuri aprinse azi';
+  @override
+  String get cardBadgeNextDate => 'Următoarea dată a obiectivelor';
+  @override
+  String get cardBadgeEnergy => 'Intensitate totală';
+  @override
+  String get cardBadgeMemories => 'Amintiri';
+  @override
+  String get cardBadgeDeadStars => 'Stele moarte';
+  @override
+  String get cardBadgeConstellations => 'Constelații';
+  @override
+  String get cardBadgeReflections => 'Reflecții completate';
+  @override
+  String get cardBadgeVision => 'Viziune scrisă';
+  @override
+  String get cardBadgeMoodboard => 'Elemente din moodboard';
+  @override
+  String get cardBadgeThisMonth => 'Aprinse luna aceasta';
+  @override
   String habitProgressToday(int done, int target) => '$done/$target azi';
   @override
   String habitProgressThisWeek(int done, int target) =>
       '$done/$target săptămâna aceasta';
+  @override
+  String habitThisWeekCaption(bool doneToday) => doneToday
+      ? 'Săptămâna aceasta · azi bifat'
+      : 'Săptămâna aceasta · azi încă nu';
   @override
   String get habitStatsSectionTitle => 'Pulsari';
   @override

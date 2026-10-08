@@ -103,13 +103,13 @@ void main() {
     final drawer = find.byKey(const Key('search-card-quick-menu'));
     expect(tester.getSize(surface), const Size(300, 138));
     expect(tester.getSize(drawer).width, 300);
-    // Drawer buttons are icon-only; the label lives in the tooltip.
-    expect(find.byTooltip('Apri'), findsOneWidget);
-    expect(find.byTooltip('Portami lì'), findsOneWidget);
-    expect(find.byTooltip('Modifica'), findsNothing);
-    expect(find.byTooltip('Condividi'), findsNothing);
+    // Drawer buttons are icon-only; the label lives in the semantics.
+    expect(find.bySemanticsLabel('Apri'), findsOneWidget);
+    expect(find.bySemanticsLabel('Portami lì'), findsOneWidget);
+    expect(find.bySemanticsLabel('Modifica'), findsNothing);
+    expect(find.bySemanticsLabel('Condividi'), findsNothing);
 
-    await tester.tap(find.byTooltip('Portami lì'));
+    await tester.tap(find.bySemanticsLabel('Portami lì'));
     await tester.pumpAndSettle();
     expect(navigateCount, 1);
     expect(openCount, 0);
