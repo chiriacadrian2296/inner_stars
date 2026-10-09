@@ -257,6 +257,17 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
         borderRadius: BorderRadius.circular(kRadiusCard),
       ),
     ),
+    // The Sky cards' dark blue on every page's scrollbar (the modal sheets'
+    // hand-drawn one in `app_modals.dart` matches), a step lighter on hover.
+    scrollbarTheme: ScrollbarThemeData(
+      thumbColor: WidgetStateProperty.resolveWith(
+        (states) =>
+            states.contains(WidgetState.hovered) ||
+                states.contains(WidgetState.dragged)
+            ? palette.nightBorder
+            : palette.nightPanel,
+      ),
+    ),
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: palette.night,
       surfaceTintColor: Colors.transparent,

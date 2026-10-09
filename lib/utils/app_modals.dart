@@ -4,10 +4,16 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_motion.dart';
 import '../theme/app_style.dart';
+import 'responsive.dart';
 
 /// Material 3's desktop width for modal bottom sheets. Fixed sheets use a
 /// custom route, so they need to opt into the same cap explicitly.
 const double _kFixedSheetMaxWidth = 640;
+
+/// Room reserved on each side of a wide-screen sheet so its scrollbar can
+/// sit just outside the sheet's edge (thumb ~8px plus a small gap) instead of
+/// inside it. Both sides, so the sheet itself stays centered.
+const double _kSheetScrollbarGutter = 14;
 
 enum AppConfirmationTone { standard, destructive }
 
@@ -270,9 +276,30 @@ Future<T?> showAppSheet<T>({
   ShapeBorder? shape,
   Clip? clipBehavior,
   double? elevation,
+  bool outsideScrollbar = true,
 }) {
   final reduceMotion = MediaQuery.disableAnimationsOf(context);
   final openingMediaQuery = MediaQuery.of(context);
+  final sheetTheme = Theme.of(context).bottomSheetTheme;
+
+  // On a wide mouse-driven screen the sheet is a narrower centered panel;
+  // there its scrollbar goes just outside the panel's edge. The route's own
+  // sheet surface is then made invisible and widened by the gutters, and
+  // [_OutsideScrollbarFrame] repaints the real surface inside them.
+  final baseConstraints = constraints ?? sheetTheme.constraints;
+  final baseMaxWidth = baseConstraints?.maxWidth ?? 640;
+  final outside =
+      outsideScrollbar &&
+      !isTouchOnlyMobile &&
+      baseMaxWidth.isFinite &&
+      MediaQuery.sizeOf(context).width >=
+          baseMaxWidth + 2 * _kSheetScrollbarGutter;
+  final routeConstraints = !outside
+      ? constraints
+      : (baseConstraints ?? const BoxConstraints()).copyWith(
+          maxWidth: baseMaxWidth + 2 * _kSheetScrollbarGutter,
+        );
+
   return showModalBottomSheet<T>(
     context: context,
     builder: (sheetContext) {
@@ -283,23 +310,31 @@ Future<T?> showAppSheet<T>({
         systemGestureInsets: routeMediaQuery.systemGestureInsets,
         viewInsets: EdgeInsets.zero,
       );
-      return MediaQuery(
+      final content = MediaQuery(
         data: fixedMediaQuery,
         child: Builder(builder: builder),
       );
+      if (!outside) return content;
+      return _OutsideScrollbarFrame(
+        color: backgroundColor ?? sheetTheme.backgroundColor,
+        elevation: elevation ?? sheetTheme.elevation ?? 1,
+        shape: shape ?? sheetTheme.shape,
+        clipBehavior: clipBehavior ?? sheetTheme.clipBehavior ?? Clip.none,
+        child: content,
+      );
     },
-    backgroundColor: backgroundColor,
+    backgroundColor: outside ? Colors.transparent : backgroundColor,
     barrierColor: barrierColor,
-    constraints: constraints,
+    constraints: routeConstraints,
     isScrollControlled: isScrollControlled,
     useSafeArea: useSafeArea,
     enableDrag: enableDrag,
     isDismissible: isDismissible,
     showDragHandle: showDragHandle,
     useRootNavigator: useRootNavigator,
-    shape: shape,
-    clipBehavior: clipBehavior,
-    elevation: elevation,
+    shape: outside ? const RoundedRectangleBorder() : shape,
+    clipBehavior: outside ? Clip.none : clipBehavior,
+    elevation: outside ? 0 : elevation,
     sheetAnimationStyle: AnimationStyle(
       duration: reduceMotion ? Duration.zero : kMotionBase,
       reverseDuration: reduceMotion ? Duration.zero : kMotionFast,
@@ -342,6 +377,18 @@ Future<T?> showFixedAppSheet<T>({
   final theme = Theme.of(context);
   final sheetTheme = theme.bottomSheetTheme;
   final reduceMotion = MediaQuery.disableAnimationsOf(context);
+  final outside =
+      !isTouchOnlyMobile &&
+      mediaQuery.size.width >=
+          _kFixedSheetMaxWidth + 2 * _kSheetScrollbarGutter;
+
+  final sheetBody = ConstrainedBox(
+    constraints: const BoxConstraints(maxWidth: _kFixedSheetMaxWidth),
+    child: SizedBox(
+      width: mediaQuery.size.width,
+      child: Builder(builder: builder),
+    ),
+  );
 
   return showGeneralDialog<T>(
     context: context,
@@ -353,19 +400,21 @@ Future<T?> showFixedAppSheet<T>({
       data: mediaQuery,
       child: Align(
         alignment: Alignment.bottomCenter,
-        child: Material(
-          color: sheetTheme.backgroundColor ?? Colors.transparent,
-          elevation: sheetTheme.elevation ?? 0,
-          shape: sheetTheme.shape,
-          clipBehavior: Clip.antiAlias,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: _kFixedSheetMaxWidth),
-            child: SizedBox(
-              width: mediaQuery.size.width,
-              child: Builder(builder: builder),
-            ),
-          ),
-        ),
+        child: outside
+            ? _OutsideScrollbarFrame(
+                color: sheetTheme.backgroundColor ?? Colors.transparent,
+                elevation: sheetTheme.elevation ?? 0,
+                shape: sheetTheme.shape,
+                clipBehavior: Clip.antiAlias,
+                child: sheetBody,
+              )
+            : Material(
+                color: sheetTheme.backgroundColor ?? Colors.transparent,
+                elevation: sheetTheme.elevation ?? 0,
+                shape: sheetTheme.shape,
+                clipBehavior: Clip.antiAlias,
+                child: sheetBody,
+              ),
       ),
     ),
     transitionBuilder: (context, animation, secondaryAnimation, child) =>
@@ -377,4 +426,242 @@ Future<T?> showFixedAppSheet<T>({
           child: child,
         ),
   );
+}
+
+/// Wide-screen sheet surface whose scrollbar sits just outside its edge.
+///
+/// Draws the sheet surface itself (the route's own one is made invisible and
+/// [_kSheetScrollbarGutter] wider each side by the caller), and owns the
+/// [ScrollController] its content scrolls with: it is handed down as the
+/// [PrimaryScrollController], so any vertical scroll view inside that doesn't
+/// bring its own controller picks it up with no change at the call site. The
+/// thumb ([_OutsideScrollThumb]) is drawn in the right-hand gutter, over the
+/// same vertical span as the scroll view. Scroll views that do bring their own controller
+/// keep their normal in-sheet scrollbar.
+class _OutsideScrollbarFrame extends StatefulWidget {
+  const _OutsideScrollbarFrame({
+    required this.color,
+    required this.elevation,
+    required this.shape,
+    required this.clipBehavior,
+    required this.child,
+  });
+
+  final Color? color;
+  final double elevation;
+  final ShapeBorder? shape;
+  final Clip clipBehavior;
+  final Widget child;
+
+  @override
+  State<_OutsideScrollbarFrame> createState() => _OutsideScrollbarFrameState();
+}
+
+class _OutsideScrollbarFrameState extends State<_OutsideScrollbarFrame> {
+  final _controller = ScrollController();
+  final _surfaceKey = GlobalKey();
+
+  /// Where the sheet's scroll view sits inside the frame, so the outside
+  /// track runs alongside the scrollable part (below the title, above the
+  /// footer) exactly as an in-sheet scrollbar would, not the whole sheet.
+  EdgeInsets _trackInsets = EdgeInsets.zero;
+  bool _measureScheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleMeasure();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _scheduleMeasure() {
+    if (_measureScheduled) return;
+    _measureScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _measureScheduled = false;
+      if (mounted) _measure();
+    });
+  }
+
+  void _measure() {
+    var next = EdgeInsets.zero;
+    if (_controller.hasClients) {
+      final surface = _surfaceKey.currentContext?.findRenderObject();
+      final viewport = _controller.positions.first.context.storageContext
+          .findRenderObject();
+      if (surface is RenderBox &&
+          viewport is RenderBox &&
+          surface.attached &&
+          viewport.attached &&
+          surface.hasSize &&
+          viewport.hasSize) {
+        final top = viewport.localToGlobal(Offset.zero, ancestor: surface).dy;
+        final bottom = surface.size.height - top - viewport.size.height;
+        next = EdgeInsets.only(
+          top: top < 0 ? 0 : top,
+          bottom: bottom < 0 ? 0 : bottom,
+        );
+      }
+    }
+    if (next != _trackInsets) setState(() => _trackInsets = next);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PrimaryScrollController(
+      controller: _controller,
+      // Desktop and web don't hand the primary controller to scroll views on
+      // their own; this sheet needs them to.
+      automaticallyInheritForPlatforms: TargetPlatform.values.toSet(),
+      child: ScrollConfiguration(
+        behavior: _OutsideScrollbarBehavior(_controller),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            NotificationListener<ScrollMetricsNotification>(
+              onNotification: (_) {
+                // Content or viewport size changed: re-align the track.
+                _scheduleMeasure();
+                if (mounted) setState(() {});
+                return false;
+              },
+              child: Padding(
+                key: _surfaceKey,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: _kSheetScrollbarGutter,
+                ),
+                child: Material(
+                  color: widget.color,
+                  elevation: widget.elevation,
+                  shape: widget.shape,
+                  clipBehavior: widget.clipBehavior,
+                  surfaceTintColor: Colors.transparent,
+                  child: widget.child,
+                ),
+              ),
+            ),
+            // Same vertical span as the scroll view itself, in the right-hand
+            // gutter.
+            Positioned(
+              top: _trackInsets.top,
+              bottom: _trackInsets.bottom,
+              right: 0,
+              width: _kSheetScrollbarGutter,
+              child: _OutsideScrollThumb(controller: _controller),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The thumb of [_OutsideScrollbarFrame]: drawn and dragged by hand rather
+/// than with [Scrollbar], whose track length is tied to the scroll view's own
+/// box and so can't be shifted down to run alongside it from outside.
+class _OutsideScrollThumb extends StatefulWidget {
+  const _OutsideScrollThumb({required this.controller});
+
+  final ScrollController controller;
+
+  @override
+  State<_OutsideScrollThumb> createState() => _OutsideScrollThumbState();
+}
+
+class _OutsideScrollThumbState extends State<_OutsideScrollThumb> {
+  static const _thickness = 8.0;
+  static const _minLength = 32.0;
+
+  bool _hovering = false;
+  bool _dragging = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: widget.controller,
+      builder: (context, _) {
+        if (!widget.controller.hasClients) return const SizedBox.shrink();
+        final position = widget.controller.positions.first;
+        if (!position.hasContentDimensions || position.maxScrollExtent <= 0) {
+          return const SizedBox.shrink();
+        }
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final track = constraints.maxHeight;
+            final max = position.maxScrollExtent;
+            final viewport = position.viewportDimension;
+            final length = (track * viewport / (viewport + max))
+                .clamp(_minLength, track)
+                .toDouble();
+            final travel = track - length;
+            final top = max <= 0
+                ? 0.0
+                : (position.pixels.clamp(0.0, max) / max) * travel;
+            final colors = context.colors;
+            return Stack(
+              children: [
+                Positioned(
+                  top: top,
+                  right: 0,
+                  width: _thickness,
+                  height: length,
+                  child: MouseRegion(
+                    onEnter: (_) => setState(() => _hovering = true),
+                    onExit: (_) => setState(() => _hovering = false),
+                    child: GestureDetector(
+                      onVerticalDragStart: (_) =>
+                          setState(() => _dragging = true),
+                      onVerticalDragEnd: (_) =>
+                          setState(() => _dragging = false),
+                      onVerticalDragCancel: () =>
+                          setState(() => _dragging = false),
+                      onVerticalDragUpdate: (details) {
+                        if (travel <= 0) return;
+                        widget.controller.jumpTo(
+                          (position.pixels + details.delta.dy * max / travel)
+                              .clamp(0.0, max),
+                        );
+                      },
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: _hovering || _dragging
+                              ? colors.nightBorder
+                              : colors.nightPanel,
+                          borderRadius: BorderRadius.circular(_thickness / 2),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+/// The platform scrollbar for every scroll view except the one driven by
+/// [owner], whose scrollbar [_OutsideScrollbarFrame] already draws outside
+/// the sheet — so it doesn't get a second one inside.
+class _OutsideScrollbarBehavior extends MaterialScrollBehavior {
+  const _OutsideScrollbarBehavior(this.owner);
+
+  final ScrollController owner;
+
+  @override
+  Widget buildScrollbar(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    if (identical(details.controller, owner)) return child;
+    return super.buildScrollbar(context, child, details);
+  }
 }

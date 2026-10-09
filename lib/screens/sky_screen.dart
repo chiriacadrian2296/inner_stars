@@ -1882,6 +1882,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _advanceGestureTourStep(8);
     showAppSheet<void>(
       context: context,
+      // The main menu never shows a scrollbar, inside or out.
+      outsideScrollbar: false,
       isScrollControlled: true,
       // Explicit, not just relying on the default (also true): a tap
       // outside the sheet — on the barrier, not on `SkyMenuContent`

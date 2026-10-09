@@ -549,7 +549,14 @@ class SkyMenuContent extends StatelessWidget {
         // handled higher up, by [SkyMenuModalFrame] wrapping this whole
         // widget in detailed mode — see its own doc comment for why
         // that has to live there instead of here.
-        Expanded(child: list),
+        // The main menu never shows a scrollbar (wheel/drag still scroll).
+        Expanded(
+          child: ScrollConfiguration(
+            behavior: ScrollConfiguration.of(context)
+                .copyWith(scrollbars: false),
+            child: list,
+          ),
+        ),
         // Compact mode only: Settings sits outside the scrollable list
         // entirely, not just last within it — its own divider plus the
         // gap above and below reads as "a different kind of thing" (the

@@ -737,10 +737,12 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         ),
       );
     }
-    // Capped to the shared content column on wide layouts, like the lists.
-    return ResponsiveContent(
-      child: LayoutBuilder(
-        builder: (context, constraints) => CustomScrollView(
+    // Capped to the shared content column on wide layouts, like the lists —
+    // by padding, not by wrapping: the scroll view itself spans the window.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final inset = responsiveSideInset(context, constraints.maxWidth);
+        return CustomScrollView(
           // The three tabs build this same widget in the same place, so
           // without a key of its own per tab Flutter reuses one scroll view
           // and hands its position from controller to controller: scrolling
@@ -752,12 +754,12 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           controller: controller,
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+              padding: EdgeInsets.fromLTRB(20 + inset, 4, 20 + inset, 0),
               sliver: SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: skyGridColumnsFor(
                     widget.settings.skyGridSizeStep,
-                    constraints.maxWidth - 40,
+                    constraints.maxWidth - 2 * inset - 40,
                   ),
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
@@ -785,8 +787,8 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                   : const SizedBox(height: 24),
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 

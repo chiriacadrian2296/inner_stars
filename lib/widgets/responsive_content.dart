@@ -7,6 +7,21 @@ import '../utils/responsive.dart';
 /// app rather than each page picking its own width.
 const double kResponsiveContentMaxWidth = 720;
 
+/// The horizontal space to leave on each side of a full-width scrollable so
+/// its content lines up with a [ResponsiveContent] column: 0 on narrow
+/// layouts, half the spare width on wide ones. For slivers/grids that can't
+/// be wrapped in a [ResponsiveContent] — add it to their padding instead, so
+/// the scroll view itself still spans the whole window (wheel works anywhere,
+/// scrollbar sits at the page edge).
+double responsiveSideInset(
+  BuildContext context,
+  double viewportWidth, {
+  double maxWidth = kResponsiveContentMaxWidth,
+}) {
+  if (!isWideLayout(context)) return 0;
+  return viewportWidth > maxWidth ? (viewportWidth - maxWidth) / 2 : 0;
+}
+
 /// No-op on narrow viewports (renders [child] unchanged — zero risk to the
 /// phone layout). On wide viewports, centers [child] in a column capped at
 /// [maxWidth] so text/forms/lists don't stretch edge-to-edge in a browser
@@ -16,10 +31,16 @@ class ResponsiveContent extends StatefulWidget {
     super.key,
     required this.child,
     this.maxWidth = kResponsiveContentMaxWidth,
+    this.shrinkHeight = false,
   });
 
   final Widget child;
   final double maxWidth;
+
+  /// For a child placed in a slot with loose height (a `Positioned` with no
+  /// top/bottom pair, say): the wide-layout [Center] would otherwise grow to
+  /// fill that height and float [child] to its middle.
+  final bool shrinkHeight;
 
   @override
   State<ResponsiveContent> createState() => _ResponsiveContentState();
@@ -60,6 +81,7 @@ class _ResponsiveContentState extends State<ResponsiveContent> {
     final content = KeyedSubtree(key: _contentKey, child: widget.child);
     if (!isWideLayout(context)) return content;
     return Center(
+      heightFactor: widget.shrinkHeight ? 1 : null,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: widget.maxWidth),
         child: content,

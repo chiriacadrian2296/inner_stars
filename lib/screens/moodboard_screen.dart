@@ -255,14 +255,19 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                   ),
                 ),
               ),
-            ResponsiveContent(
-              child: Column(
-                children: [
-                  if (_busy)
-                    LinearProgressIndicator(color: context.colors.gold),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+            // The scroll view spans the full window width (wheel works
+            // anywhere, scrollbar at the page edge); only its content is
+            // capped/centered.
+            Column(
+              children: [
+                if (_busy)
+                  ResponsiveContent(
+                    child: LinearProgressIndicator(color: context.colors.gold),
+                  ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                    child: ResponsiveContent(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -324,29 +329,27 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                       ),
                     ),
                   ),
-                  StaggeredEntrance(
-                    index: 5,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                      child: Center(
-                        child: TextButton.icon(
-                          onPressed: _busy ? null : _share,
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 22,
-                              vertical: 14,
-                            ),
-                          ),
-                          icon: const Icon(Icons.share_outlined),
-                          label: AppButtonLabel(
-                            strings.starQuickLookShareAction,
+                ),
+                StaggeredEntrance(
+                  index: 5,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                    child: Center(
+                      child: TextButton.icon(
+                        onPressed: _busy ? null : _share,
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 22,
+                            vertical: 14,
                           ),
                         ),
+                        icon: const Icon(Icons.share_outlined),
+                        label: AppButtonLabel(strings.starQuickLookShareAction),
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ],
         ),

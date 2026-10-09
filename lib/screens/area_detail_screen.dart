@@ -84,35 +84,25 @@ class AreaReflectionsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: context.colors.night,
       body: SafeArea(
-        child: ResponsiveContent(
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Align(
-                alignment: Alignment.topCenter,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      StaggeredEntrance(
-                        index: 0,
-                        child: AreaSectionHeader(
-                          title:
-                              '${strings.areaReflectionsTitle} - ${area.displayName(strings)}',
-                          description: strings.reflectionsPageDescription,
-                        ),
-                      ),
-                      const SizedBox(height: 26),
-                      ReflectionQuestionsSection(
-                        area: area,
-                        repository: repository,
-                      ),
-                    ],
+        // Full-width scroll view, capped content — see [SettingsScreen].
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: ResponsiveContent(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                StaggeredEntrance(
+                  index: 0,
+                  child: AreaSectionHeader(
+                    title:
+                        '${strings.areaReflectionsTitle} - ${area.displayName(strings)}',
+                    description: strings.reflectionsPageDescription,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 26),
+                ReflectionQuestionsSection(area: area, repository: repository),
+              ],
+            ),
           ),
         ),
       ),
@@ -214,60 +204,63 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
           bottom: false,
           child: DecoratedBox(
             decoration: BoxDecoration(color: context.colors.night),
-            child: ResponsiveContent(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  GestureDetector(
-                    onHorizontalDragEnd: (details) {
-                      final velocity = details.primaryVelocity ?? 0;
-                      if (velocity.abs() > 180) _moveBy(velocity < 0 ? 1 : -1);
-                    },
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        return Column(
-                          children: [
-                            _AreaNavigationBar(
-                              title: area.displayName(strings),
-                              replayKey: area,
-                              reverse: _contentReverse,
-                              animate: _hasNavigatedAreas,
-                              onPrevious: () => _moveBy(-1),
-                              onNext: () => _moveBy(1),
-                            ),
-                            Expanded(
-                              child: CustomScrollView(
-                                controller: _pageScroll,
-                                slivers: [
-                                  const SliverToBoxAdapter(
-                                    child: SizedBox(height: 16),
-                                  ),
-                                  SliverToBoxAdapter(
-                                    child: StaggeredEntrance(
-                                      key: ValueKey('area-art-${area.name}'),
-                                      index: 0,
-                                      axis: Axis.horizontal,
-                                      reverse: _contentReverse,
-                                      // Phones: the art spans the screen. Wide
-                                      // layouts: a smaller one, centered —
-                                      // the full column is too big.
-                                      child: Center(
-                                        child: tonedAreaHeroArt(
-                                          child: Image.asset(
-                                            kAreaHeroArt[area]!.skyAsset,
-                                            width: isWideLayout(context)
-                                                ? math.min(
-                                                    constraints.maxWidth,
-                                                    _kWideArtWidth,
-                                                  )
-                                                : constraints.maxWidth,
-                                            fit: BoxFit.fitWidth,
-                                          ),
+            // The scroll view spans the full window width (so its
+            // scrollbar sits at the true page edge and the wheel works
+            // anywhere); only its content and the dock are capped/centered.
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                GestureDetector(
+                  onHorizontalDragEnd: (details) {
+                    final velocity = details.primaryVelocity ?? 0;
+                    if (velocity.abs() > 180) _moveBy(velocity < 0 ? 1 : -1);
+                  },
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Column(
+                        children: [
+                          _AreaNavigationBar(
+                            title: area.displayName(strings),
+                            replayKey: area,
+                            reverse: _contentReverse,
+                            animate: _hasNavigatedAreas,
+                            onPrevious: () => _moveBy(-1),
+                            onNext: () => _moveBy(1),
+                          ),
+                          Expanded(
+                            child: CustomScrollView(
+                              controller: _pageScroll,
+                              slivers: [
+                                const SliverToBoxAdapter(
+                                  child: SizedBox(height: 16),
+                                ),
+                                SliverToBoxAdapter(
+                                  child: StaggeredEntrance(
+                                    key: ValueKey('area-art-${area.name}'),
+                                    index: 0,
+                                    axis: Axis.horizontal,
+                                    reverse: _contentReverse,
+                                    // Phones: the art spans the screen. Wide
+                                    // layouts: a smaller one, centered —
+                                    // the full column is too big.
+                                    child: Center(
+                                      child: tonedAreaHeroArt(
+                                        child: Image.asset(
+                                          kAreaHeroArt[area]!.skyAsset,
+                                          width: isWideLayout(context)
+                                              ? math.min(
+                                                  constraints.maxWidth,
+                                                  _kWideArtWidth,
+                                                )
+                                              : constraints.maxWidth,
+                                          fit: BoxFit.fitWidth,
                                         ),
                                       ),
                                     ),
                                   ),
-                                  SliverToBoxAdapter(
+                                ),
+                                SliverToBoxAdapter(
+                                  child: ResponsiveContent(
                                     child: Padding(
                                       padding: EdgeInsets.fromLTRB(
                                         28,
@@ -453,18 +446,21 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                       ),
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
-                        );
-                      },
-                    ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: ResponsiveContent(
+                    shrinkHeight: true,
                     child: _AreaDock(
                       animate: !_hasNavigatedAreas,
                       onVision: () => _open(
@@ -484,8 +480,8 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                       onNewConstellation: _openNewConstellation,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

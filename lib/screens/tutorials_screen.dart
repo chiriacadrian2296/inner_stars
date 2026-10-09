@@ -285,74 +285,82 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
     return Scaffold(
       backgroundColor: colors.night,
       body: SafeArea(
-        child: ResponsiveContent(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-            children: [
-              StaggeredEntrance(
-                index: 0,
-                child: Text(
-                  strings.tutorialsManagementTitle,
-                  style: context.typography.utilityPageTitle,
-                ),
-              ),
-              const SizedBox(height: 8),
-              StaggeredEntrance(
-                index: 1,
-                child: Text(
-                  strings.tutorialsScreenIntro,
-                  style: TextStyle(color: colors.muted, fontSize: 13.5),
-                ),
-              ),
-              const SizedBox(height: 20),
-              for (var i = 0; i < kTutorialCatalog.length; i++)
-                StaggeredEntrance(
-                  index: i + 2,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Container(
-                      decoration: panelDecoration(colors),
-                      child: Material(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(kRadiusCard),
-                        clipBehavior: Clip.antiAlias,
-                        child: ListTile(
-                          leading: Icon(
-                            kTutorialCatalog[i].icon,
-                            color: colors.gold,
-                          ),
-                          title: Text(
-                            kTutorialCatalog[i].title(strings),
-                            style: TextStyle(color: colors.text, fontSize: 15),
-                          ),
-                          subtitle: Text(
-                            kTutorialCatalog[i].body(strings),
-                            style: TextStyle(
-                              color: colors.muted,
-                              fontSize: 12.5,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+          children: [
+            ResponsiveContent(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  StaggeredEntrance(
+                    index: 0,
+                    child: Text(
+                      strings.tutorialsManagementTitle,
+                      style: context.typography.utilityPageTitle,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  StaggeredEntrance(
+                    index: 1,
+                    child: Text(
+                      strings.tutorialsScreenIntro,
+                      style: TextStyle(color: colors.muted, fontSize: 13.5),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  for (var i = 0; i < kTutorialCatalog.length; i++)
+                    StaggeredEntrance(
+                      index: i + 2,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Container(
+                          decoration: panelDecoration(colors),
+                          child: Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(kRadiusCard),
+                            clipBehavior: Clip.antiAlias,
+                            child: ListTile(
+                              leading: Icon(
+                                kTutorialCatalog[i].icon,
+                                color: colors.gold,
+                              ),
+                              title: Text(
+                                kTutorialCatalog[i].title(strings),
+                                style: TextStyle(
+                                  color: colors.text,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              subtitle: Text(
+                                kTutorialCatalog[i].body(strings),
+                                style: TextStyle(
+                                  color: colors.muted,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                              trailing: Icon(
+                                Icons.play_circle_outline,
+                                color: colors.muted,
+                              ),
+                              onTap: () => _replay(kTutorialCatalog[i]),
                             ),
                           ),
-                          trailing: Icon(
-                            Icons.play_circle_outline,
-                            color: colors.muted,
-                          ),
-                          onTap: () => _replay(kTutorialCatalog[i]),
                         ),
                       ),
                     ),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: _resetAll,
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: AppButtonLabel(strings.resetToursAction),
+                    ),
                   ),
-                ),
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: _resetAll,
-                  icon: const Icon(Icons.refresh, size: 18),
-                  label: AppButtonLabel(strings.resetToursAction),
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
