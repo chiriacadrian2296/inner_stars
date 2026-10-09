@@ -56,6 +56,7 @@ import '../widgets/habit_stepper_dialog.dart';
 import '../widgets/constellation_field.dart';
 import '../widgets/constellation_painter.dart';
 import '../widgets/creation_success_dialog.dart';
+import '../widgets/cursor_sparkles.dart';
 import '../widgets/nebula_background.dart';
 // import '../widgets/sky_decorations.dart'; — the spiral-galaxy take on this
 // slot, disabled first in favor of SkyWisps, then SkyBlackHole, then
@@ -1893,6 +1894,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       // three don't render or compete underneath it.
       backgroundColor: Colors.transparent,
       elevation: 0,
+      // The theme's sheet shape draws a light outline of its own, which would
+      // stay put behind the frame while it is dragged down; the frame has its
+      // own border, so the sheet itself gets a plain, borderless shape.
+      shape: const RoundedRectangleBorder(),
       enableDrag: false,
       // `showModalBottomSheet` aligns via `Alignment.bottomCenter`, so
       // bounding `maxWidth` here is also what centers this horizontally
@@ -2740,6 +2745,14 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     return hitTestConstellations(position, _placed, _camera, _zoom, size) !=
             null &&
         _tourWantsGesture(6);
+  }
+
+  /// [_hasHoldTarget] for a *global* pointer position, for the hover
+  /// sparkles (see [CursorSparkles]).
+  bool _isSkyTargetAt(Offset global) {
+    final box = _skySurfaceKey.currentContext?.findRenderObject();
+    if (box is! RenderBox || !box.attached) return false;
+    return _hasHoldTarget(box.globalToLocal(global), box.size);
   }
 
   void _handleTapDown(TapDownDetails details) {
@@ -4156,6 +4169,16 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                           ),
                         ),
                       ),
+                      // Mouse-only hover sparkles around the cursor over
+                      // anything tappable — see [CursorSparkles]. Sits with
+                      // the ring, above the sky and its controls.
+                      if (!isTouchOnlyMobile)
+                        CursorSparkles(
+                          isSkyTarget: _isSkyTargetAt,
+                          centerOffset: kIsWeb
+                              ? kWebCursorCenterOffset
+                              : Offset.zero,
+                        ),
                       // A full-screen catch-all that closes the quick-access
                       // menu on an outside tap — sits right under the fan
                       // itself (next) so both paint/hit-test above every
@@ -4976,7 +4999,7 @@ class _HoldRingPainter extends CustomPainter {
   // poking out through its top edge. Horizontally left near 0 — an
   // earlier rightward nudge here overshot and left the cursor reading as
   // stuck against the ring's own left edge instead of centered.
-  static const _webCursorOffset = Offset(1, 8);
+  static const _webCursorOffset = kWebCursorCenterOffset;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -4993,6 +5016,17 @@ class _HoldRingPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..maskFilter = MaskFilter.blur(BlurStyle.normal, _glowBlur);
     canvas.drawArc(rect, _startAngle, sweep, false, glow);
+
+    // Web only: a thin black outline around the white stroke, like the
+    // OS cursor's own, so the ring stays legible on bright stars.
+    if (kIsWeb) {
+      final outline = Paint()
+        ..color = Colors.black
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = _strokeWidth + 1
+        ..strokeCap = StrokeCap.round;
+      canvas.drawArc(rect, _startAngle, sweep, false, outline);
+    }
 
     final ring = Paint()
       ..color = Colors.white
