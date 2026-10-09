@@ -1323,6 +1323,8 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get resetExtraAction => 'Resetează';
   @override
+  String get addExtraAction => 'Adaugă';
+  @override
   String mediaMaxDuration(String duration) => 'Max $duration';
   @override
   String get recordVoiceTitle => 'Înregistrează O Notă Vocală';

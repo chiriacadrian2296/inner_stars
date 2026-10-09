@@ -1327,6 +1327,8 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get resetExtraAction => 'Azzera';
   @override
+  String get addExtraAction => 'Aggiungi';
+  @override
   String mediaMaxDuration(String duration) => 'Max $duration';
   @override
   String get recordVoiceTitle => 'Registra Una Nota Vocale';

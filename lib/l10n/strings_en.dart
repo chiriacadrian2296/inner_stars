@@ -1316,6 +1316,8 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get resetExtraAction => 'Reset';
   @override
+  String get addExtraAction => 'Add';
+  @override
   String mediaMaxDuration(String duration) => 'Max $duration';
   @override
   String get recordVoiceTitle => 'Record a Voice Note';

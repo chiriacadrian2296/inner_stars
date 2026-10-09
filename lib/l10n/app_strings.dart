@@ -665,6 +665,7 @@ abstract class AppStrings {
   String get extraPhoto;
   String get extraLink;
   String get resetExtraAction;
+  String get addExtraAction;
   String mediaMaxDuration(String duration);
   String get recordVoiceTitle;
   String get recordStart;
