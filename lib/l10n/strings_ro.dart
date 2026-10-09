@@ -1214,6 +1214,8 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get areaLabel => 'Supernovă';
   @override
+  String get galaxyLabel => 'Galaxie';
+  @override
   String get nameLabel => 'Nume';
   @override
   String get newProjectNameHint => 'Ex. Aleargă un maraton';

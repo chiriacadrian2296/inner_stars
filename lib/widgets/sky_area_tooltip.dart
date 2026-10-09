@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/strings_scope.dart';
+import '../theme/app_colors.dart';
 import '../models/life_area.dart';
 import '../utils/area_hero_art.dart';
 import '../utils/star_card_info.dart';
@@ -38,12 +39,18 @@ class SkyAreaTooltip extends StatelessWidget {
       menuId: 'tooltip-area:${area.name}',
       onTap: onView,
       baseBodyHeight: SearchResultCard.bodyHeightFor(badges),
+      fillVisualHeight: true,
+      centerVisual: true,
       visual: SearchArtworkVisual(
         asset: kAreaHeroArt[area]?.skyAsset,
         fallbackIcon: Icons.flare,
+        framed: true,
       ),
       content: SearchCardTextContent(
+        eyebrow: strings.areaLabel,
+        eyebrowColor: context.colors.gold,
         title: area.displayName(strings),
+        breadcrumb: strings.galaxyLabel,
         badges: badges,
       ),
       actions: [

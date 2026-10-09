@@ -1,8 +1,7 @@
 // Cell widths: room for the icon, a value of up to two digits, three
 // characters or a `12/30`-like text, and the gap to the next cell.
-const double _narrow = 38;
-const double _medium = 46;
-const double _wide = 58;
+const double _narrow = 40;
+const double _medium = 48;
 
 /// One kind of badge on a card. Every card of a kind always shows the same
 /// slots in the same order (see [kBadgeRows]); a slot with nothing to say
@@ -23,16 +22,14 @@ enum BadgeSlot {
   link(_narrow),
 
   /// A goal's or a dead star's own date (long form, it has the room).
-  date(94),
+  date(96),
 
   // A habit.
   progress(_medium),
   streak(_medium),
 
   // A constellation and an area.
-  litOfTotal(_wide),
   litStars(_narrow),
-  pulsarsToday(_medium),
   habits(_narrow),
   goals(_narrow),
   emptySlots(_narrow),
@@ -67,8 +64,8 @@ const Map<BadgeCardKind, List<List<BadgeSlot>>> kBadgeRows = {
   ],
   BadgeCardKind.constellation: [
     [
-      BadgeSlot.litOfTotal,
-      BadgeSlot.pulsarsToday,
+      BadgeSlot.litStars,
+      BadgeSlot.habits,
       BadgeSlot.goals,
       BadgeSlot.emptySlots,
       BadgeSlot.deadStars,
@@ -76,7 +73,6 @@ const Map<BadgeCardKind, List<List<BadgeSlot>>> kBadgeRows = {
   ],
   BadgeCardKind.area: [
     [
-      BadgeSlot.constellations,
       BadgeSlot.litStars,
       BadgeSlot.habits,
       BadgeSlot.goals,

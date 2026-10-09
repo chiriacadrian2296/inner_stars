@@ -22,12 +22,17 @@ class CardBadge {
     required this.iconColor,
     required this.valueColor,
     required this.value,
+    this.iconColorEnd,
     this.semanticLabel,
   });
 
   final BadgeSlot slot;
   final IconData icon;
   final Color iconColor;
+
+  /// When set, the icon is [iconColor] on its left half and this on its
+  /// right half.
+  final Color? iconColorEnd;
   final Color valueColor;
 
   /// The text shown beside the icon.
@@ -40,10 +45,14 @@ class CardBadge {
 /// A card's badges: its [intensity] (drawn bigger, above the card's first
 /// text) and its [rows] of fixed badges (see [kBadgeRows]).
 class CardBadges {
-  const CardBadges({this.intensity, this.rows = const []});
+  const CardBadges({this.intensity, this.title, this.rows = const []});
 
   /// The intensity, or null for a card that has none (a goal, a dead star).
   final CardBadge? intensity;
+
+  /// A badge shown to the right of the card's title (an area's number of
+  /// constellations), or null.
+  final CardBadge? title;
   final List<List<CardBadge>> rows;
 
   static const none = CardBadges();
@@ -57,12 +66,14 @@ CardBadge makeBadge(
   AppColors colors, {
   required Color color,
   required String value,
+  Color? colorEnd,
   bool zero = false,
   String? label,
 }) => CardBadge(
   slot: slot,
   icon: icon,
   iconColor: color,
+  iconColorEnd: colorEnd,
   valueColor: zero ? colors.muted : colors.text,
   value: value,
   semanticLabel: label,
@@ -160,7 +171,7 @@ CardBadges starCardBadges(Star star, AppColors colors, AppStrings strings) {
           [
             makeBadge(
               BadgeSlot.date,
-              StarKind.dead.icon,
+              Icons.delete_outline_rounded,
               colors,
               color: starKindColor(StarKind.dead, colors),
               value: date == null ? '—' : formatDisplayDate(date, strings),

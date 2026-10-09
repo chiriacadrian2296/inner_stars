@@ -7,6 +7,7 @@ import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
+import 'badge_lab_screen.dart';
 import '../widgets/app_field.dart';
 import '../widgets/app_toggle_chip.dart';
 import '../widgets/moon_mascot.dart';
@@ -68,6 +69,14 @@ class _UiSandboxScreenState extends State<UiSandboxScreen> {
         backgroundColor: colors.night,
         surfaceTintColor: Colors.transparent,
         actions: [
+          IconButton(
+            key: const Key('badge-lab-open'),
+            tooltip: 'Badge lab',
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const BadgeLabScreen())),
+            icon: const Icon(Icons.straighten_rounded),
+          ),
           IconButton(
             key: const Key('moon-sandbox-open-parked'),
             tooltip: 'Parked UI studies',

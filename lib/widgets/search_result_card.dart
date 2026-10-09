@@ -4,6 +4,7 @@ import '../data/constellation_shape.dart';
 import '../l10n/strings_scope.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_fonts.dart';
 import '../theme/app_motion.dart';
 import '../theme/app_style.dart';
 import '../utils/area_hero_art_tone.dart';
@@ -64,6 +65,8 @@ class SearchResultCard extends StatelessWidget {
     this.showBorder = true,
     this.preserveMenuOnAction = false,
     this.baseBodyHeight = _bodyHeight,
+    this.fillVisualHeight = false,
+    this.centerVisual = false,
   });
 
   static const visualSize = 88.0;
@@ -75,8 +78,11 @@ class SearchResultCard extends StatelessWidget {
   /// The body height for a card with these [badges]: taller when the card
   /// carries an intensity above its first text. It follows the card's kind
   /// (its fixed schema), never its data.
-  static double bodyHeightFor(CardBadges badges) =>
-      badges.intensity != null ? 106.0 : _bodyHeight;
+  static double bodyHeightFor(CardBadges badges) => badges.title != null
+      ? 118.0
+      : badges.intensity != null
+      ? 110.0
+      : _bodyHeight;
   static const _drawerHeight = 68.0;
   static const _drawerUnderlap = 18.0;
   static const _toggleZoneWidth = 44.0;
@@ -94,13 +100,26 @@ class SearchResultCard extends StatelessWidget {
   /// row of badges. The visual stays [visualSize] and is centred.
   final double baseBodyHeight;
 
+  /// Whether the visual takes the whole body height (still [visualSize] wide)
+  /// instead of staying a centred square: for a photo or artwork that can
+  /// simply show more.
+  final bool fillVisualHeight;
+
+  /// Whether the visual sits centred between the card's left edge and where
+  /// the text starts, so the gap on its left equals the gap on its right.
+  final bool centerVisual;
+
+  /// The text starts this far from the visual's right edge (the content's
+  /// left padding).
+  static const _textGap = 12.0;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final bodyHeight = textScale <= 1
         ? baseBodyHeight
-        : baseBodyHeight + (textScale - 1) * 58;
+        : baseBodyHeight + (textScale - 1) * 66;
     const drawerReveal = _drawerHeight - _drawerUnderlap;
     double ease(double t) => Curves.easeOutCubic.transform(t);
 
@@ -162,10 +181,14 @@ class SearchResultCard extends StatelessWidget {
                           child: Stack(
                             children: [
                               Positioned(
-                                left: 0,
-                                top: (bodyHeight - visualSize) / 2,
+                                left: centerVisual ? _textGap / 2 : 0,
+                                top: fillVisualHeight
+                                    ? 0
+                                    : (bodyHeight - visualSize) / 2,
                                 width: visualSize,
-                                height: visualSize,
+                                height: fillVisualHeight
+                                    ? bodyHeight
+                                    : visualSize,
                                 child: visual,
                               ),
                               Positioned(
@@ -270,7 +293,14 @@ class SearchCardTextContent extends StatelessWidget {
           IntensityBadge(badge: badges!.intensity!),
           const SizedBox(height: 3),
         ],
-        if (eyebrow != null) ...[
+        if (eyebrow != null && badges?.title != null) ...[
+          EyebrowWithBadge(
+            label: eyebrow!,
+            color: eyebrowColor ?? colors.accentDim,
+            badge: badges!.title!,
+          ),
+          const SizedBox(height: 3),
+        ] else if (eyebrow != null) ...[
           Text(
             eyebrow!.toUpperCase(),
             maxLines: 1,
@@ -289,7 +319,8 @@ class SearchCardTextContent extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 15,
+            fontFamily: kFontStarTitle,
+            fontSize: 19,
             height: 1.1,
             fontWeight: FontWeight.w700,
             color: colors.text,
@@ -328,7 +359,7 @@ class SearchCardTextContent extends StatelessWidget {
             runSpacing: 4,
             children: [
               for (var i = 0; i < metrics.length; i++)
-                _SearchCardMetric(metrics[i], first: i == 0),
+                _SearchCardMetric(metrics[i]),
             ],
           ),
         ],
@@ -364,24 +395,15 @@ class SearchCardMetric {
 }
 
 class _SearchCardMetric extends StatelessWidget {
-  const _SearchCardMetric(this.metric, {this.first = false});
+  const _SearchCardMetric(this.metric);
 
   final SearchCardMetric metric;
-
-  /// The first metric of the row: its icon's empty left margin is trimmed so
-  /// it lines up with the text above.
-  final bool first;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final color = metric.color ?? colors.gold;
-    final icon = BadgeIcon(
-      metric.icon,
-      size: 14,
-      color: color,
-      trimLeading: first,
-    );
+    final icon = BadgeIcon(metric.icon, size: 14, color: color);
     final row = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -409,20 +431,32 @@ class SearchArtworkVisual extends StatelessWidget {
     super.key,
     this.asset,
     required this.fallbackIcon,
+    this.framed = false,
   });
 
+  /// Whether the artwork floats as a rounded picture with a margin all round
+  /// instead of filling its box edge to edge.
+  final bool framed;
   final String? asset;
   final IconData fallbackIcon;
 
   @override
   Widget build(BuildContext context) {
     if (asset == null) return SearchMissingVisual(icon: fallbackIcon);
-    return tonedAreaHeroArt(
+    final art = tonedAreaHeroArt(
       child: Image.asset(
         asset!,
         fit: BoxFit.cover,
         errorBuilder: (_, _, _) => SearchMissingVisual(icon: fallbackIcon),
       ),
+    );
+    if (!framed) return art;
+    // The same margin all round as on its left and right.
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        vertical: SearchResultCard._textGap / 2,
+      ),
+      child: ClipRRect(borderRadius: BorderRadius.circular(10), child: art),
     );
   }
 }
@@ -433,6 +467,7 @@ class SearchConstellationVisual extends StatelessWidget {
     required this.shape,
     this.darkBackground = true,
     this.inset = 16,
+    this.verticalInset,
   });
 
   final ConstellationShape? shape;
@@ -441,8 +476,12 @@ class SearchConstellationVisual extends StatelessWidget {
   /// the card's own background.
   final bool darkBackground;
 
-  /// Space kept free around the shape, in logical pixels.
+  /// Space kept free left and right of the shape, in logical pixels (and
+  /// above and below it, unless [verticalInset] says otherwise).
   final double inset;
+
+  /// Space kept free above and below the shape; [inset] when null.
+  final double? verticalInset;
 
   @override
   Widget build(BuildContext context) {
@@ -462,6 +501,7 @@ class SearchConstellationVisual extends StatelessWidget {
               shape.points,
               constraints.biggest,
               inset: inset,
+              verticalInset: verticalInset,
             ),
             edges: shape.edges,
             highlightedIndex: null,
@@ -763,6 +803,7 @@ List<Offset> _centeredShapePoints(
   List<Offset> points,
   Size size, {
   double inset = 0,
+  double? verticalInset,
 }) {
   if (points.isEmpty || size.isEmpty) return const [];
   var minX = points.first.dx;
@@ -778,7 +819,10 @@ List<Offset> _centeredShapePoints(
   final shapeWidth = (maxX - minX).abs();
   final shapeHeight = (maxY - minY).abs();
   final availableWidth = (size.width - inset * 2).clamp(1.0, double.infinity);
-  final availableHeight = (size.height - inset * 2).clamp(1.0, double.infinity);
+  final availableHeight = (size.height - (verticalInset ?? inset) * 2).clamp(
+    1.0,
+    double.infinity,
+  );
   final scaleX = shapeWidth == 0
       ? double.infinity
       : availableWidth / shapeWidth;

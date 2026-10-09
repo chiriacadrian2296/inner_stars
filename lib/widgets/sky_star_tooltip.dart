@@ -76,6 +76,7 @@ class SkyStarTooltip extends StatelessWidget {
               ),
             ),
       baseBodyHeight: SearchResultCard.bodyHeightFor(badges),
+      fillVisualHeight: photoPath != null,
       content: SearchCardTextContent(
         eyebrow: kind.label(strings),
         eyebrowColor: starKindColor(kind, context.colors),

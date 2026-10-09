@@ -16,12 +16,24 @@ import 'badge_icon.dart';
 /// badge size for every kind of card. Nothing wraps and nothing is scaled to
 /// fit its own content.
 class BadgeRows extends StatelessWidget {
-  const BadgeRows({super.key, required this.rows, this.maxScale = 1});
+  const BadgeRows({
+    super.key,
+    required this.rows,
+    this.maxScale = 1,
+    this.debug = false,
+    this.rawIcons = false,
+  });
 
   final List<List<CardBadge>> rows;
 
   /// The largest scale to draw at (1 = the tooltip's own size).
   final double maxScale;
+
+  /// Tint the boxes of each cell, icon and text (the badge lab).
+  final bool debug;
+
+  /// Draw the icons without the optical corrections (the badge lab).
+  final bool rawIcons;
 
   /// A badge at scale 1: the icon, the value's text and the gap between rows.
   static const double iconSize = 14;
@@ -30,6 +42,9 @@ class BadgeRows extends StatelessWidget {
 
   /// The smallest gap between two badges (a slot's width includes it).
   static const double _gap = 8;
+
+  /// A badge with a one-digit value at scale 1: the icon, its gap and a digit.
+  static const double _typicalBadgeWidth = 14 + 4 + 7;
 
   /// The scale the badges are drawn at in [availableWidth].
   static double scaleFor(double availableWidth, double maxScale) =>
@@ -47,17 +62,16 @@ class BadgeRows extends StatelessWidget {
           maxScale,
         );
         final width = constraints.maxWidth;
-        // The gap between two badges of a victory's row at this width.
-        final victory = kBadgeRows[BadgeCardKind.victory]!.single;
-        final victoryGap = width.isFinite
+        final bounded = width.isFinite;
+        // What a victory's row would leave between two badges at this width,
+        // for values of one digit: a row of only two badges keeps that gap
+        // instead of stretching them apart.
+        final victoryBadges = kBadgeRows[BadgeCardKind.victory]!.single.length;
+        final victoryGap = bounded
             ? math.max(
                 _gap * scale,
-                (width -
-                        victory.fold<double>(
-                          0,
-                          (sum, slot) => sum + (slot.width - _gap) * scale,
-                        )) /
-                    (victory.length - 1),
+                (width - victoryBadges * _typicalBadgeWidth * scale) /
+                    (victoryBadges - 1),
               )
             : _gap * scale;
         return Column(
@@ -66,28 +80,30 @@ class BadgeRows extends StatelessWidget {
           children: [
             for (var i = 0; i < rows.length; i++) ...[
               if (i > 0) SizedBox(height: rowGap * scale),
-              // Each badge keeps its own size; whatever width is left over is
-              // shared out as equal gaps between them, edge to edge. A row of
-              // only two badges keeps the gap a victory's row has instead of
-              // stretching them apart.
+              // Each badge is as wide as what it shows (icon, gap, value).
+              // The width left over is shared out as equal gaps *between*
+              // those, edge to edge, so the space between two badges is the
+              // same whatever they hold. With only two badges they keep the
+              // victory gap instead; unbounded, the gap is the smallest one.
               Row(
-                mainAxisAlignment: rows[i].length == 2 && width.isFinite
-                    ? MainAxisAlignment.start
-                    : MainAxisAlignment.spaceBetween,
-                mainAxisSize: width.isFinite
-                    ? MainAxisSize.max
-                    : MainAxisSize.min,
+                mainAxisAlignment: bounded && rows[i].length > 2
+                    ? MainAxisAlignment.spaceBetween
+                    : MainAxisAlignment.start,
+                mainAxisSize: bounded ? MainAxisSize.max : MainAxisSize.min,
                 children: [
                   for (var j = 0; j < rows[i].length; j++) ...[
-                    if (j > 0 && rows[i].length == 2 && width.isFinite)
-                      SizedBox(width: victoryGap),
-                    SizedBox(
-                      width: (rows[i][j].slot.width - _gap) * scale,
-                      child: _BadgeCell(
-                        badge: rows[i][j],
-                        scale: scale,
-                        first: j == 0,
+                    if (j > 0)
+                      SizedBox(
+                        width: rows[i].length == 2
+                            ? victoryGap
+                            : (bounded ? 0 : _gap * scale),
                       ),
+                    _BadgeCell(
+                      badge: rows[i][j],
+                      scale: scale,
+                      first: j == 0,
+                      debug: debug,
+                      rawIcons: rawIcons,
                     ),
                   ],
                 ],
@@ -105,49 +121,61 @@ class _BadgeCell extends StatelessWidget {
     required this.badge,
     required this.scale,
     required this.first,
+    this.debug = false,
+    this.rawIcons = false,
   });
 
+  /// The first badge of a row: its drawing starts at the row's left edge, in
+  /// line with the texts and the intensity above it.
+  final bool first;
+  final bool debug;
+  final bool rawIcons;
   final CardBadge badge;
   final double scale;
-
-  /// The first cell of a row: its icon's empty left margin is trimmed so the
-  /// drawing lines up with the text above.
-  final bool first;
 
   @override
   Widget build(BuildContext context) {
     final cell = Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        BadgeIcon(
-          badge.icon,
-          size: BadgeRows.iconSize * scale,
-          color: badge.iconColor,
-          trimLeading: first,
+        _tint(
+          BadgeIcon(
+            badge.icon,
+            size: BadgeRows.iconSize * scale,
+            color: badge.iconColor,
+            endColor: badge.iconColorEnd,
+            raw: rawIcons,
+            alignStart: first,
+          ),
+          Colors.greenAccent,
         ),
-        SizedBox(width: 2 * scale),
-        Expanded(
-          // Only a freakishly large number ever shrinks; a normal one
-          // fills its cell at full size.
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              badge.value,
-              maxLines: 1,
-              softWrap: false,
-              style: TextStyle(
-                fontSize: BadgeRows.textSize * scale,
-                fontWeight: FontWeight.w700,
-                color: badge.valueColor,
-              ),
+        SizedBox(width: 4 * scale),
+        _tint(
+          Text(
+            badge.value,
+            maxLines: 1,
+            softWrap: false,
+            style: TextStyle(
+              fontSize: BadgeRows.textSize * scale,
+              fontWeight: FontWeight.w700,
+              color: badge.valueColor,
             ),
           ),
+          Colors.redAccent,
         ),
       ],
     );
+    final tinted = debug
+        ? ColoredBox(color: Colors.blue.withValues(alpha: 0.22), child: cell)
+        : cell;
     final label = badge.semanticLabel;
-    return label == null ? cell : Semantics(label: label, child: cell);
+    return label == null ? tinted : Semantics(label: label, child: tinted);
   }
+
+  /// In debug mode, the [child]'s box tinted with a translucent [color].
+  Widget _tint(Widget child, Color color) => debug
+      ? ColoredBox(color: color.withValues(alpha: 0.35), child: child)
+      : child;
 }
 
 /// A card's intensity, drawn bigger than the other badges above the card's
@@ -172,9 +200,9 @@ class IntensityBadge extends StatelessWidget {
           badge.icon,
           size: iconSize * scale,
           color: badge.iconColor,
-          trimLeading: true,
+          alignStart: true,
         ),
-        SizedBox(width: 3 * scale),
+        SizedBox(width: 4 * scale),
         Text(
           badge.value,
           maxLines: 1,
@@ -190,5 +218,78 @@ class IntensityBadge extends StatelessWidget {
     );
     final label = badge.semanticLabel;
     return label == null ? row : Semantics(label: label, child: row);
+  }
+}
+
+/// The kind label above a title with, after a white dash, a badge (an area's
+/// number of constellations): `SUPERNOVA - ✧ 5`. The value and the dash have
+/// the label's size; the icon is a little bigger than the other badges' to
+/// sit well on this row.
+class EyebrowWithBadge extends StatelessWidget {
+  const EyebrowWithBadge({
+    super.key,
+    required this.label,
+    required this.color,
+    required this.badge,
+    this.fontSize = 9.5,
+    this.letterSpacing = 0.7,
+    this.scale = 1,
+  });
+
+  final String label;
+  final Color color;
+  final CardBadge badge;
+  final double fontSize;
+  final double letterSpacing;
+
+  /// 1 = the tooltip's own size.
+  final double scale;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Flexible(
+          child: Text(
+            label.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: color,
+              fontSize: fontSize,
+              fontWeight: FontWeight.w700,
+              letterSpacing: letterSpacing,
+            ),
+          ),
+        ),
+        SizedBox(width: 5 * scale),
+        Text(
+          '-',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: fontSize,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(width: 5 * scale),
+        BadgeIcon(
+          badge.icon,
+          // The icon follows the value's size, like in every other badge.
+          size: fontSize * BadgeRows.iconSize / BadgeRows.textSize,
+          color: badge.iconColor,
+        ),
+        SizedBox(width: 4 * scale),
+        Text(
+          badge.value,
+          maxLines: 1,
+          softWrap: false,
+          style: TextStyle(
+            color: badge.valueColor,
+            fontSize: fontSize,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
   }
 }

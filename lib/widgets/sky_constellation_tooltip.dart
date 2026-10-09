@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/constellation_shape.dart';
 import '../l10n/strings_scope.dart';
+import '../theme/app_colors.dart';
 import '../models/life_area.dart';
 import '../models/project.dart';
 import '../utils/star_card_info.dart';
@@ -43,12 +44,17 @@ class SkyConstellationTooltip extends StatelessWidget {
       menuId: 'tooltip-project:${project.id}',
       onTap: onView,
       baseBodyHeight: SearchResultCard.bodyHeightFor(badges),
+      fillVisualHeight: true,
+      centerVisual: true,
       visual: SearchConstellationVisual(
         shape: shape,
         darkBackground: false,
-        inset: 24,
+        inset: 14,
+        verticalInset: 20,
       ),
       content: SearchCardTextContent(
+        eyebrow: strings.projectLabel,
+        eyebrowColor: context.colors.gold,
         title: project.name,
         breadcrumb: project.area.displayName(strings),
         badges: badges,

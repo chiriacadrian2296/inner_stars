@@ -61,7 +61,6 @@ void main() {
   CardBadges constellationRows({required bool full}) => projectCardBadges(
     stars: full ? [loaded, victory()] : const [],
     habits: const [],
-    countsByHabit: const {},
     slotCount: full ? 8 : 0,
     colors: colors,
     strings: strings,

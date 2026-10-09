@@ -1216,6 +1216,8 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get areaLabel => 'Supernova';
   @override
+  String get galaxyLabel => 'Galassia';
+  @override
   String get nameLabel => 'Nome';
   @override
   String get newProjectNameHint => 'Es. Correre una maratona';

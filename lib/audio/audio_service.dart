@@ -241,12 +241,33 @@ class AudioService with WidgetsBindingObserver {
   Future<void> previewHoldSound(SkySoundEffect sound) =>
       _playSfx(sound, holdVolume);
 
-  Future<void> _playSfx(SkySoundEffect sound, double volume) async {
-    // Restarts from the top on every call rather than layering overlapping
-    // instances — these are short, one-shot UI sounds, not something a
-    // rapid string of taps needs to hear all of individually.
-    await _sfxPlayer.stop();
-    await _sfxPlayer.play(AssetSource(sound.assetPath), volume: volume);
+  Future<void> _playSfx(SkySoundEffect sound, double volume) =>
+      _playOneShot(_sfxPlayer, sound.assetPath, volume);
+
+  /// Plays a short, one-shot UI sound on [player]. It restarts from the top
+  /// on every call rather than layering overlapping instances — not
+  /// something a rapid string of taps needs to hear all of individually.
+  ///
+  /// These calls are fire-and-forget and the sound is only decoration, so a
+  /// failure must never escape. `play` waits for the native player's
+  /// "prepared" event, which can be lost (the same thing that stalled the
+  /// background track after a hot restart — see [_prepareBackground]); then
+  /// the plugin gave up only after 30 seconds, throwing a TimeoutException
+  /// nobody was awaiting, and the player was stuck for that whole time. The
+  /// wait is capped well below that and any error just skips this one sound.
+  Future<void> _playOneShot(
+    AudioPlayer player,
+    String assetPath,
+    double volume,
+  ) async {
+    try {
+      await (() async {
+        await player.stop();
+        await player.play(AssetSource(assetPath), volume: volume);
+      })().timeout(const Duration(seconds: 2));
+    } catch (error) {
+      if (kDebugMode) debugPrint('Sound skipped ($assetPath): $error');
+    }
   }
 
   /// Fired whenever the sky's camera flies to a *closer* view — see
@@ -263,10 +284,8 @@ class AudioService with WidgetsBindingObserver {
   Future<void> previewWhooshSound(SkyWhooshEffect sound) =>
       _playTransition(sound.assetPath);
 
-  Future<void> _playTransition(String assetPath) async {
-    await _transitionPlayer.stop();
-    await _transitionPlayer.play(AssetSource(assetPath), volume: whooshVolume);
-  }
+  Future<void> _playTransition(String assetPath) =>
+      _playOneShot(_transitionPlayer, assetPath, whooshVolume);
 
   /// Clears every stored choice (see `AudioSettingsRepository.clear`) and
   /// re-applies the resulting default track/volume to the already-playing

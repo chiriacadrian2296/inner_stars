@@ -12,6 +12,8 @@ class SkySearchTooltipCard extends StatefulWidget {
     required this.actions,
     required this.onTap,
     this.baseBodyHeight = SearchResultCard.defaultBodyHeight,
+    this.fillVisualHeight = false,
+    this.centerVisual = false,
   });
 
   final Object menuId;
@@ -22,6 +24,12 @@ class SkySearchTooltipCard extends StatefulWidget {
 
   /// Taller than the default when the content has a second row of badges.
   final double baseBodyHeight;
+
+  /// The visual takes the card's whole height (see `SearchResultCard`).
+  final bool fillVisualHeight;
+
+  /// The visual is centred between the card's edge and the text.
+  final bool centerVisual;
 
   @override
   State<SkySearchTooltipCard> createState() => _SkySearchTooltipCardState();
@@ -66,6 +74,8 @@ class _SkySearchTooltipCardState extends State<SkySearchTooltipCard> {
         actions: widget.actions,
         onTap: widget.onTap,
         baseBodyHeight: widget.baseBodyHeight,
+        fillVisualHeight: widget.fillVisualHeight,
+        centerVisual: widget.centerVisual,
         // The tooltip's drawer stays open after an action: it's open for as
         // long as the tooltip is.
         preserveMenuOnAction: true,

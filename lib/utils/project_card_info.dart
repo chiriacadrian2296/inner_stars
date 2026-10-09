@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../data/constellation_layout.dart' show kMaxConstellationStars;
 import '../l10n/app_strings.dart';
 import '../models/habit.dart';
 import '../models/star.dart';
@@ -10,45 +9,27 @@ import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../widgets/star_glyph.dart' show starKindColor;
 import 'badge_schema.dart';
-import 'habit_stats.dart';
 import 'star_card_info.dart';
 
-/// How many of [habits] (the living ones) are lit right now, and how many
-/// there are.
-({int lit, int total}) _pulsarsToday(
+/// The habits badge: how many living [habits] there are. The fire is half
+/// gold, half navy — a habit is lit one day and dark the next.
+CardBadge _habitsBadge(
   List<Habit> habits,
-  Map<int, Map<DateTime, int>> countsByHabit,
-  DateTime today,
-) {
-  var lit = 0;
-  var total = 0;
-  for (final habit in habits) {
-    if (habit.dead) continue;
-    total++;
-    if (isHabitLit(habit, countsByHabit[habit.id] ?? const {}, now: today)) {
-      lit++;
-    }
-  }
-  return (lit: lit, total: total);
-}
-
-CardBadge _pulsarsBadge(
-  ({int lit, int total}) pulsars,
   AppColors colors,
   AppStrings strings,
-) => makeBadge(
-  BadgeSlot.pulsarsToday,
-  Icons.local_fire_department_rounded,
-  colors,
-  color: starKindColor(
-    StarKind.pulsar,
+) {
+  final count = habits.where((h) => !h.dead).length;
+  return makeBadge(
+    BadgeSlot.habits,
+    Icons.local_fire_department_rounded,
     colors,
-    lit: pulsars.total > 0 && pulsars.lit == pulsars.total,
-  ),
-  value: '${pulsars.lit}/${pulsars.total}',
-  zero: pulsars.total == 0,
-  label: strings.cardBadgePulsarsToday,
-);
+    color: starKindColor(StarKind.pulsar, colors),
+    colorEnd: starKindColor(StarKind.pulsar, colors, lit: false),
+    value: '$count',
+    zero: count == 0,
+    label: strings.cardBadgeHabits,
+  );
+}
 
 /// A count badge: muted when it is nothing.
 CardBadge _count(
@@ -108,51 +89,34 @@ CardBadge _deadStarsBadge(int dead, AppColors colors, AppStrings strings) =>
       strings.cardBadgeDeadStars,
     );
 
-/// The badges for a constellation: the total intensity of its lit stars, then
-/// one fixed row — lit stars out of what it can hold, habits lit today, open
-/// goals, empty slots, dead stars. All of them are always there, a zero when
-/// there is nothing. [slotCount] is the shape's number of points (0 when it
-/// has none). Pure data, from caches: no I/O.
+/// The badges for a constellation: the total intensity of its lit stars,
+/// then one fixed row — its lit stars, habits, open goals, empty slots and
+/// dead stars, all plain counts (as on an area). All of them are always
+/// there, a zero when there is nothing. [slotCount] is the shape's number of
+/// points (0 when it has none). Pure data, from caches: no I/O.
 CardBadges projectCardBadges({
   required List<Star> stars,
   required List<Habit> habits,
-  required Map<int, Map<DateTime, int>> countsByHabit,
   required int slotCount,
   required AppColors colors,
   required AppStrings strings,
-  DateTime? now,
 }) {
-  final clock = now ?? DateTime.now();
-  final today = DateTime(clock.year, clock.month, clock.day);
-  final lit = stars.where((s) => s.isLit).length;
-  final goals = stars.where((s) => s.isUnlit).length;
-  final dead = stars.where((s) => s.dead).length;
-  // Out of what the constellation can hold, not out of the shape's own
-  // points: stars past those grow the shape, so the points alone would give
-  // "12/8". Older constellations already past the cap show their own count.
-  final total = math.max(kMaxConstellationStars, stars.length);
-
   return CardBadges(
     intensity: intensityBadge(_energy(stars), colors, strings),
     rows: [
       [
-        makeBadge(
-          BadgeSlot.litOfTotal,
+        _count(
+          BadgeSlot.litStars,
           Icons.star_rounded,
+          stars.where((s) => s.isLit).length,
+          colors.gold,
           colors,
-          color: colors.gold,
-          value: '$lit/$total',
-          zero: lit == 0,
-          label: strings.cardBadgeLitStars,
+          strings.cardBadgeLitStars,
         ),
-        _pulsarsBadge(
-          _pulsarsToday(habits, countsByHabit, today),
-          colors,
-          strings,
-        ),
-        _goalsBadge(goals, colors, strings),
+        _habitsBadge(habits, colors, strings),
+        _goalsBadge(stars.where((s) => s.isUnlit).length, colors, strings),
         _emptySlotsBadge(emptySlotsOf(slotCount, stars), colors, strings),
-        _deadStarsBadge(dead, colors, strings),
+        _deadStarsBadge(stars.where((s) => s.dead).length, colors, strings),
       ],
     ],
   );
@@ -176,16 +140,16 @@ CardBadges areaCardBadges({
 
   return CardBadges(
     intensity: intensityBadge(_energy(stars), colors, strings),
+    title: _count(
+      BadgeSlot.constellations,
+      Icons.insights_outlined,
+      constellationCount,
+      colors.gold,
+      colors,
+      strings.cardBadgeConstellations,
+    ),
     rows: [
       [
-        _count(
-          BadgeSlot.constellations,
-          Icons.insights_outlined,
-          constellationCount,
-          colors.gold,
-          colors,
-          strings.cardBadgeConstellations,
-        ),
         _count(
           BadgeSlot.litStars,
           Icons.star_rounded,
@@ -194,14 +158,7 @@ CardBadges areaCardBadges({
           colors,
           strings.cardBadgeLitStars,
         ),
-        _count(
-          BadgeSlot.habits,
-          Icons.local_fire_department_rounded,
-          habits.where((h) => !h.dead).length,
-          starKindColor(StarKind.pulsar, colors),
-          colors,
-          strings.cardBadgeHabits,
-        ),
+        _habitsBadge(habits, colors, strings),
         _goalsBadge(goals, colors, strings),
         _emptySlotsBadge(emptySlots, colors, strings),
         _deadStarsBadge(dead, colors, strings),

@@ -8,10 +8,12 @@ import '../utils/responsive.dart';
 /// more.
 const List<double> kSkyGridTileExtents = [90, 120, 170, 320];
 
-/// Parked (see the TRB): the Sky shows its grid only. The list view — its
-/// cards, the list/grid switch in the controls sheet and the saved
-/// [SettingsController.skyGridView] choice — is all still in place; flip this
-/// back on to restore it exactly as before.
+/// Parked (see the TRB): the Sky shows its grid only. We chose to drop the
+/// list view — it is no longer part of the design, and only kept here, not
+/// deleted, until we decide to remove it for good. Its cards, the list/grid
+/// switch in the controls sheet and the saved [SettingsController.skyGridView]
+/// choice are all still in place (and follow the same badge schema as the
+/// grid); flip this back on to restore it exactly as before.
 const bool kShowSkyListView = false;
 
 /// Where a person who never touched the slider lands: Medium on a phone

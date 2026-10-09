@@ -1209,6 +1209,8 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get areaLabel => 'Supernova';
   @override
+  String get galaxyLabel => 'Galaxy';
+  @override
   String get nameLabel => 'Name';
   @override
   String get newProjectNameHint => 'E.g. Run a marathon';

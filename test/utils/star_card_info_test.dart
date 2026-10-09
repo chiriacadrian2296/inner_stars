@@ -209,11 +209,9 @@ void main() {
       CardBadges build({required bool full}) => projectCardBadges(
         stars: full ? [victory(), goal(date: DateTime(2026, 2, 1))] : const [],
         habits: const [],
-        countsByHabit: const {},
         slotCount: full ? 8 : 0,
         colors: colors,
         strings: strings,
-        now: today,
       );
       expect(
         slots(build(full: false)),
@@ -233,7 +231,7 @@ void main() {
       expect(build(full: true).intensity!.value, '4');
     });
 
-    test('an area has one row of six counts and the total intensity', () {
+    test('an area has one row of five counts and the total intensity', () {
       CardBadges build({required bool full}) => areaCardBadges(
         constellationCount: full ? 2 : 0,
         stars: full ? [victory(), victory(intensity: 3), goal()] : const [],
@@ -247,14 +245,8 @@ void main() {
       final full = build(full: true);
       expect(full.intensity!.value, '7');
       // constellations, lit stars, habits, goals, empty slots, dead stars.
-      expect(full.rows.single.map((b) => b.value), [
-        '2',
-        '2',
-        '0',
-        '1',
-        '5',
-        '0',
-      ]);
+      expect(full.title!.value, '2');
+      expect(full.rows.single.map((b) => b.value), ['2', '0', '1', '5', '0']);
     });
   });
 
@@ -263,7 +255,7 @@ void main() {
     () {
       for (final rows in kBadgeRows.values) {
         expect(rows.length, 1);
-        expect(rows.single.length, lessThanOrEqualTo(6));
+        expect(rows.single.length, lessThanOrEqualTo(5));
         expect(badgeGridWidth(rows), lessThanOrEqualTo(kBadgeReferenceWidth));
       }
     },

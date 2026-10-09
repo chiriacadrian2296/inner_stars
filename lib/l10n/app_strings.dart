@@ -591,6 +591,9 @@ abstract class AppStrings {
   String get newProjectEyebrow;
   String get newProjectQuestion;
   String get areaLabel;
+
+  /// The whole sky, the top of an area's breadcrumb.
+  String get galaxyLabel;
   String get nameLabel;
   String get newProjectNameHint;
   String get projectDescriptionLabel;

@@ -1,93 +1,171 @@
 import 'package:flutter/material.dart';
 
-/// Material icons all sit in the same 24 px box but fill it very differently
-/// (a bolt is thin, a calendar nearly square, "insights" almost edge to
-/// edge), so at the same nominal size they read as different sizes. Each
-/// badge icon gets a factor that evens out what the eye sees.
-///
-/// The factors come from measuring the painted glyph of each icon (its ink
-/// box inside the em square) and aiming every one at the same visual size —
-/// half its longest side plus half the geometric mean of its two sides —
-/// kept between 0.8 and 1.35. An icon not listed here is drawn at its
-/// nominal size; add its factor when a new badge icon is introduced.
-final Map<IconData, double> kBadgeIconScale = {
-  Icons.bolt_rounded: 1.1,
-  Icons.calendar_month_rounded: 0.96,
-  Icons.cancel_outlined: 0.94,
-  Icons.hide_source: 0.91,
-  Icons.star_rounded: 1.10,
-  Icons.star_outline_rounded: 1.10,
+import 'badge_icon_ink.dart';
+
+/// Every icon a badge uses. The ink measurements in `badge_icon_ink.dart` are
+/// generated for exactly this set (`test/widgets/badge_icon_ink_test.dart`
+/// fails when they are out of date): add a new badge icon here and rerun it.
+const List<IconData> kBadgeIconSet = [
+  Icons.bolt_rounded,
+  Icons.calendar_month_rounded,
+  Icons.delete_outline_rounded,
+  Icons.hide_source,
+  Icons.star_rounded,
+  Icons.star_outline_rounded,
+  Icons.circle_outlined,
+  Icons.local_fire_department_rounded,
+  Icons.event_outlined,
+  Icons.photo_library_outlined,
+  Icons.insights_outlined,
+  Icons.auto_stories_outlined,
+  Icons.edit_outlined,
+  Icons.mic_none_rounded,
+  Icons.videocam_outlined,
+  Icons.link_rounded,
+  Icons.date_range,
+  Icons.import_export,
+];
+
+/// The height of an icon's drawing as a fraction of the badge icon's [size];
+/// every icon is scaled so its ink is exactly this tall.
+const double kBadgeIconInkHeight = 0.86;
+
+/// How far an icon is centred on its weight rather than on its bounding box
+/// (0 = the box, 1 = the centre of mass). A star or a flame is heavier below
+/// the middle of its box, so centred by the box alone it looks too low.
+const double kBadgeIconMassWeight = 1;
+
+/// Icons drawn smaller than the rest, as a fraction of the common size,
+/// still centred in their space.
+final Map<IconData, double> kBadgeIconRelativeSize = {
+  // Areas and Constellations
   Icons.circle_outlined: 0.94,
-  Icons.local_fire_department_rounded: 1.10,
-  Icons.event_outlined: 0.96,
-  Icons.photo_library_outlined: 0.75,
-  Icons.insights_outlined: 0.90,
-  Icons.auto_stories_outlined: 0.87,
-  Icons.edit_outlined: 1.04,
-  Icons.mic_none_rounded: 1.06,
-  Icons.videocam_outlined: 1.15,
-  Icons.link_rounded: 0.65,
-  Icons.date_range: 0.96,
-  Icons.import_export: 1.11,
+  // Victories
+  Icons.mic_none_rounded: 0.90,
+  Icons.photo_library_outlined: 0.85,
+  Icons.videocam_outlined: 0.85,
+  Icons.link_rounded: 1.00,
 };
 
-/// How far each icon's drawing starts from the left edge of its box, as a
-/// fraction of the box (measured like [kBadgeIconScale]). The first icon of a
-/// row is pulled left by this much so its drawing — not its empty margin —
-/// lines up with the text above it.
-final Map<IconData, double> kBadgeIconLeftInset = {
-  Icons.bolt_rounded: 0.2875,
-  Icons.calendar_month_rounded: 0.125,
-  Icons.cancel_outlined: 0.0833,
-  Icons.hide_source: 0.0583,
-  Icons.star_rounded: 0.1417,
-  Icons.star_outline_rounded: 0.1417,
-  Icons.circle_outlined: 0.0833,
-  Icons.local_fire_department_rounded: 0.1625,
-  Icons.event_outlined: 0.125,
-  Icons.photo_library_outlined: 0.0833,
-  Icons.insights_outlined: 0.0375,
-  Icons.auto_stories_outlined: 0.0375,
-  Icons.edit_outlined: 0.125,
-  Icons.mic_none_rounded: 0.2083,
-  Icons.videocam_outlined: 0.125,
-  Icons.link_rounded: 0.0833,
-  Icons.date_range: 0.125,
-  Icons.import_export: 0.2083,
+/// A last vertical nudge for an icon that still looks off, as a fraction of
+/// the badge icon's size (negative = up).
+final Map<IconData, double> kBadgeIconNudgeY = {
+  // Areas and Constellations
+  Icons.photo_library_outlined: 0.025,
 };
 
-/// A badge's icon at [size], corrected so it looks the same size as every
-/// other badge icon (see [kBadgeIconScale]). With [trimLeading] the empty
-/// margin to the left of its drawing is cut off (it still paints where it
-/// would have), so the first icon of a row starts on the same line as the
-/// text around it.
+/// The width of the fixed space every badge icon has, as a fraction of its
+/// [size]. An icon is centred in it (and a very wide one, the link, stops
+/// growing at its edges), so all icons take exactly the same room.
+const double kBadgeIconSlotWidth = 1;
+
+/// A badge's icon, drawn so every icon has the same visual size and no empty
+/// margin around it: the Material glyph is scaled until its painted part
+/// (measured from the font, see [kBadgeIconInk]) is [kBadgeIconInkHeight] of
+/// [size] tall, then centred in a fixed space of [kBadgeIconSlotWidth] x
+/// [size] (horizontally by its drawing, vertically by its weight). The space
+/// is the same for every icon, so gaps to the text and between badges are the
+/// same whatever the icon.
+///
+/// With [endColor] the left half of the drawing is [color] and the right half
+/// that colour, with a hard edge down the middle.
 class BadgeIcon extends StatelessWidget {
   const BadgeIcon(
     this.icon, {
     super.key,
     required this.size,
     this.color,
-    this.trimLeading = false,
+    this.endColor,
+    this.raw = false,
+    this.alignStart = false,
   });
 
   final IconData icon;
   final double size;
   final Color? color;
-  final bool trimLeading;
+  final Color? endColor;
+
+  /// Draw the Material glyph as is, in a [size] square (the badge lab
+  /// compares the two).
+  final bool raw;
+
+  /// Instead of centring the drawing in the fixed space, start it exactly at
+  /// the left edge and make the box only as wide as the drawing: for an icon
+  /// that must line up with the text above or below it (the intensity).
+  final bool alignStart;
+
+  /// The width of the space every icon takes at [size].
+  static double slotWidth(double size) => size * kBadgeIconSlotWidth;
+
+  static double _em(BadgeIconInk ink, double size) {
+    final byHeight = size * kBadgeIconInkHeight / ink.height;
+    final byWidth = slotWidth(size) / ink.width;
+    return byHeight < byWidth ? byHeight : byWidth;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final glyph = Icon(
-      icon,
-      size: size * (kBadgeIconScale[icon] ?? 1),
-      color: color,
+    final ink = kBadgeIconInk[icon.codePoint];
+    final end = endColor;
+    if (raw || ink == null) {
+      return SizedBox(
+        width: slotWidth(size),
+        height: size,
+        child: Center(
+          child: _tinted(Icon(icon, size: size, color: color), 0.5, size, size),
+        ),
+      );
+    }
+    final em = _em(ink, size) * (kBadgeIconRelativeSize[icon] ?? 1);
+    return SizedBox(
+      width: alignStart ? em * ink.width : slotWidth(size),
+      height: size,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: alignStart
+                ? -em * ink.left
+                : (slotWidth(size) - em * ink.width) / 2 - em * ink.left,
+            top:
+                size / 2 +
+                size * (kBadgeIconNudgeY[icon] ?? 0) -
+                em *
+                    ((ink.top + ink.bottom) / 2 * (1 - kBadgeIconMassWeight) +
+                        ink.massY * kBadgeIconMassWeight),
+            width: em,
+            height: em,
+            child: end == null
+                ? Icon(icon, size: em, color: color)
+                : _tinted(
+                    Icon(icon, size: em, color: color),
+                    (ink.left + ink.right) / 2,
+                    em,
+                    em,
+                  ),
+          ),
+        ],
+      ),
     );
-    if (!trimLeading) return glyph;
-    final inset = kBadgeIconLeftInset[icon] ?? 0;
-    return Align(
-      alignment: Alignment.centerRight,
-      widthFactor: 1 - inset,
-      child: glyph,
+  }
+
+  /// [glyph] as is, or split down [edge] (a fraction of its width) into the
+  /// two colours.
+  Widget _tinted(Icon glyph, double edge, double width, double height) {
+    final end = endColor;
+    if (end == null) return glyph;
+    final start = color ?? Colors.white;
+    return SizedBox(
+      width: width,
+      height: height,
+      child: ShaderMask(
+        blendMode: BlendMode.srcIn,
+        shaderCallback: (bounds) => LinearGradient(
+          colors: [start, start, end, end],
+          stops: [0, edge, edge, 1],
+        ).createShader(bounds),
+        child: Icon(glyph.icon, size: glyph.size, color: Colors.white),
+      ),
     );
   }
 }

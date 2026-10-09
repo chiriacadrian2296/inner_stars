@@ -4488,19 +4488,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     null => Offset.zero,
   };
 
-  /// Completions per day for each of [habits], read fresh for the tooltip
-  /// that is open (a single decode, not one per habit).
-  Map<int, Map<DateTime, int>> _countsFor(List<Habit> habits) {
-    final all = widget.habitCompletionRepository.getAll();
-    return {
-      for (final habit in habits)
-        habit.id: habitCompletionCountsByDay([
-          for (final completion in all)
-            if (completion.habitId == habit.id) completion,
-        ]),
-    };
-  }
-
   CardBadges _constellationBadges(PlacedConstellation constellation) {
     final habits = widget.habitRepository.getAllForProject(
       constellation.project.id,
@@ -4508,7 +4495,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     return projectCardBadges(
       stars: widget.starRepository.getAllForProject(constellation.project.id),
       habits: habits,
-      countsByHabit: _countsFor(habits),
       slotCount: constellation.shape?.points.length ?? 0,
       colors: context.colors,
       strings: context.strings,

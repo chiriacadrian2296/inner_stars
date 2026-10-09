@@ -10,7 +10,6 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_fonts.dart';
 import '../../utils/area_hero_art.dart';
 import '../../utils/area_hero_art_tone.dart';
-import '../../utils/badge_schema.dart' show BadgeSlot;
 import '../../utils/star_card_info.dart';
 import '../badge_rows.dart';
 import '../constellation_painter.dart' show ConstellationStar;
@@ -190,6 +189,7 @@ class GalleryStarTile extends StatelessWidget {
                         ),
                       ),
                     ),
+                    SizedBox(height: 10 * u),
                     if (data.badges.intensity != null) ...[
                       IntensityBadge(
                         badge: data.badges.intensity!,
@@ -211,30 +211,31 @@ class GalleryStarTile extends StatelessWidget {
                     SizedBox(height: 4 * u),
                     Text(
                       data.title,
-                      maxLines: 3,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: colors.text,
                         fontFamily: kFontStarTitle,
-                        fontSize: 14 * u,
+                        fontSize: 18 * u,
                         fontWeight: FontWeight.w700,
                         height: 1.15,
                       ),
                     ),
-                    SizedBox(height: 8 * u),
-                    BadgeRows(
-                      rows: _withoutDeadStars(data.badges.rows),
-                      maxScale: u * _kTileBadgeScale,
-                    ),
                     if (data.project != null) ...[
-                      SizedBox(height: 6 * u),
+                      SizedBox(height: 4 * u),
                       Text(
-                        data.project!.name,
+                        '${data.project!.area.displayName(strings)} → '
+                        '${data.project!.name}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: colors.muted, fontSize: 10 * u),
                       ),
                     ],
+                    SizedBox(height: 6 * u),
+                    BadgeRows(
+                      rows: data.badges.rows,
+                      maxScale: u * _kTileBadgeScale,
+                    ),
                   ],
                 ),
               ),
@@ -245,16 +246,6 @@ class GalleryStarTile extends StatelessWidget {
     );
   }
 }
-
-/// The tiles leave the dead-stars badge out for now (the tooltips keep it,
-/// they have the room).
-List<List<CardBadge>> _withoutDeadStars(List<List<CardBadge>> rows) => [
-  for (final row in rows)
-    [
-      for (final badge in row)
-        if (badge.slot != BadgeSlot.deadStars) badge,
-    ],
-];
 
 /// A tile's badges are drawn at this fraction of the tooltip size (the tile
 /// text is smaller than the card's), times the tile's own scale.
@@ -306,81 +297,87 @@ class GalleryProjectTile extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final u = _unit(constraints);
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              if (data.renderStars.isNotEmpty)
-                Positioned(
-                  left: 26 * u,
-                  right: 26 * u,
-                  top: 16 * u,
-                  bottom: 115 * u,
-                  child: CustomPaint(
-                    painter: _MiniConstellationPainter(
-                      stars: data.renderStars,
-                      edges: data.edges,
-                      colorOf: (star) =>
-                          starKindColor(star.kind, colors, lit: star.lit),
-                      lineColor: colors.text.withValues(alpha: 0.4),
-                      pointRadius: 3.2 * u,
+          // The shape sits in the upper part like the area's art: it takes
+          // the room the text leaves, centred in it.
+          return Padding(
+            padding: EdgeInsets.all(12 * u),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 14 * u),
+                    child: SizedBox.expand(
+                      child: data.renderStars.isNotEmpty
+                          ? CustomPaint(
+                              painter: _MiniConstellationPainter(
+                                stars: data.renderStars,
+                                edges: data.edges,
+                                colorOf: (star) => starKindColor(
+                                  star.kind,
+                                  colors,
+                                  lit: star.lit,
+                                ),
+                                lineColor: colors.text.withValues(alpha: 0.4),
+                                pointRadius: 3.2 * u,
+                              ),
+                            )
+                          : Center(
+                              child: Icon(
+                                Icons.insights,
+                                size: 40 * u,
+                                color: colors.muted,
+                              ),
+                            ),
                     ),
                   ),
-                )
-              else
-                Align(
-                  alignment: const Alignment(0, -0.35),
-                  child: Icon(
-                    Icons.insights,
-                    size: 40 * u,
-                    color: colors.muted,
+                ),
+                SizedBox(height: 10 * u),
+                if (data.badges.intensity != null) ...[
+                  IntensityBadge(
+                    badge: data.badges.intensity!,
+                    scale: u * _kTileBadgeScale,
+                  ),
+                  SizedBox(height: 4 * u),
+                ],
+                Text(
+                  strings.projectLabel.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colors.gold,
+                    fontSize: 9.5 * u,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
                   ),
                 ),
-              Padding(
-                padding: EdgeInsets.all(12 * u),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (data.badges.intensity != null) ...[
-                      IntensityBadge(
-                        badge: data.badges.intensity!,
-                        scale: u * _kTileBadgeScale,
-                      ),
-                      SizedBox(height: 4 * u),
-                    ],
-                    Text(
-                      data.project.area.displayName(strings).toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: colors.gold,
-                        fontSize: 9.5 * u,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    SizedBox(height: 4 * u),
-                    Text(
-                      data.project.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: colors.text,
-                        fontFamily: kFontStarTitle,
-                        fontSize: 14 * u,
-                        fontWeight: FontWeight.w700,
-                        height: 1.15,
-                      ),
-                    ),
-                    SizedBox(height: 8 * u),
-                    BadgeRows(
-                      rows: _withoutDeadStars(data.badges.rows),
-                      maxScale: u * _kTileBadgeScale,
-                    ),
-                  ],
+                SizedBox(height: 4 * u),
+                Text(
+                  data.project.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colors.text,
+                    fontFamily: kFontStarTitle,
+                    fontSize: 18 * u,
+                    fontWeight: FontWeight.w700,
+                    height: 1.15,
+                  ),
                 ),
-              ),
-            ],
+                SizedBox(height: 4 * u),
+                Text(
+                  data.project.area.displayName(strings),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: colors.muted, fontSize: 10 * u),
+                ),
+                SizedBox(height: 6 * u),
+                BadgeRows(
+                  rows: data.badges.rows,
+                  maxScale: u * _kTileBadgeScale,
+                ),
+              ],
+            ),
           );
         },
       ),
@@ -554,20 +551,50 @@ class GalleryAreaTile extends StatelessWidget {
                   ),
                   SizedBox(height: 4 * u),
                 ],
+                if (data.badges.title != null)
+                  EyebrowWithBadge(
+                    label: strings.areaLabel,
+                    color: colors.gold,
+                    badge: data.badges.title!,
+                    fontSize: 9.5 * u,
+                    letterSpacing: 1.2,
+                    scale: u * _kTileBadgeScale,
+                  )
+                else
+                  Text(
+                    strings.areaLabel.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: colors.gold,
+                      fontSize: 9.5 * u,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                SizedBox(height: 4 * u),
                 Text(
                   data.area.displayName(strings),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: colors.text,
-                    fontFamily: kFontBranding,
+                    fontFamily: kFontStarTitle,
                     fontSize: 18 * u,
-                    height: 1.1,
+                    fontWeight: FontWeight.w700,
+                    height: 1.15,
                   ),
                 ),
-                SizedBox(height: 8 * u),
+                SizedBox(height: 4 * u),
+                Text(
+                  strings.galaxyLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: colors.muted, fontSize: 10 * u),
+                ),
+                SizedBox(height: 6 * u),
                 BadgeRows(
-                  rows: _withoutDeadStars(data.badges.rows),
+                  rows: data.badges.rows,
                   maxScale: u * _kTileBadgeScale,
                 ),
               ],

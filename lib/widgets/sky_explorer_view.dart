@@ -607,33 +607,55 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           _starsForProject(project.id).length +
           _habitsCache.where((h) => h.projectId == project.id).length,
     );
-    final areaHabits = [
-      for (final project in projects)
-        ..._habitsCache.where((h) => h.projectId == project.id),
-    ];
     return GalleryAreaData(
       area: area,
       constellationCount: projects.length,
       starCount: starCount,
-      badges: areaCardBadges(
-        constellationCount: projects.length,
-        stars: [
-          for (final project in projects) ..._starsForProject(project.id),
-        ],
-        habits: areaHabits,
-        emptySlots: projects.fold<int>(
-          0,
-          (sum, project) =>
-              sum +
-              emptySlotsOf(
-                _shapesByIdCache[project.starsShapeId]?.points.length ?? 0,
-                _starsForProject(project.id),
-              ),
-        ),
-        colors: context.colors,
-        strings: context.strings,
-      ),
+      badges: _areaBadges(area),
     );
+  }
+
+  CardBadges _areaBadges(LifeArea area) {
+    final projects = _projectsCache.where((p) => p.area == area).toList();
+    return areaCardBadges(
+      constellationCount: projects.length,
+      stars: [for (final project in projects) ..._starsForProject(project.id)],
+      habits: [
+        for (final project in projects)
+          ..._habitsCache.where((h) => h.projectId == project.id),
+      ],
+      emptySlots: projects.fold<int>(
+        0,
+        (sum, project) =>
+            sum +
+            emptySlotsOf(
+              _shapesByIdCache[project.starsShapeId]?.points.length ?? 0,
+              _starsForProject(project.id),
+            ),
+      ),
+      colors: context.colors,
+      strings: context.strings,
+    );
+  }
+
+  CardBadges _projectBadges(Project project) => projectCardBadges(
+    stars: _starsForProject(project.id),
+    habits: _habitsCache.where((h) => h.projectId == project.id).toList(),
+    slotCount: _shapesByIdCache[project.starsShapeId]?.points.length ?? 0,
+    colors: context.colors,
+    strings: context.strings,
+  );
+
+  CardBadges _entryBadges(_SkyEntry entry) {
+    final habit = entry.habit;
+    return habit == null
+        ? starCardBadges(entry.star!, context.colors, context.strings)
+        : habitCardBadges(
+            habit,
+            _countsByDayFor(habit.id),
+            context.colors,
+            context.strings,
+          );
   }
 
   GalleryProjectData _projectGridData(Project project) {
@@ -653,14 +675,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       edges: built.edges,
       totalStars: shape?.points.length ?? stars.length,
       litStars: stars.where((s) => s.isLit).length,
-      badges: projectCardBadges(
-        stars: stars,
-        habits: _habitsCache.where((h) => h.projectId == project.id).toList(),
-        countsByHabit: _completionCountsCache,
-        slotCount: shape?.points.length ?? 0,
-        colors: context.colors,
-        strings: context.strings,
-      ),
+      badges: _projectBadges(project),
     );
   }
 
@@ -670,7 +685,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       return GalleryStarData.fromStar(
         entry.star!,
         _projectsById[entry.star!.projectId],
-        badges: starCardBadges(entry.star!, context.colors, context.strings),
+        badges: _entryBadges(entry),
       );
     }
     final counts = _countsByDayFor(habit.id);
@@ -678,7 +693,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       habit,
       _projectsById[habit.projectId],
       streak: habitCurrentStreak(habit, counts),
-      badges: habitCardBadges(habit, counts, context.colors, context.strings),
+      badges: _entryBadges(entry),
       pulsarLit: isHabitLit(habit, counts),
     );
   }
@@ -2058,28 +2073,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                                             const SizedBox(height: 10),
                                         itemBuilder: (context, index) {
                                           final area = areas[index];
-                                          final projects = _projectsCache
-                                              .where(
-                                                (project) =>
-                                                    project.area == area,
-                                              )
-                                              .toList();
-                                          final starCount = projects.fold<int>(
-                                            0,
-                                            (count, project) =>
-                                                count +
-                                                (_starsByProjectCache[project
-                                                            .id]
-                                                        ?.length ??
-                                                    0) +
-                                                _habitsCache
-                                                    .where(
-                                                      (habit) =>
-                                                          habit.projectId ==
-                                                          project.id,
-                                                    )
-                                                    .length,
-                                          );
                                           return StaggeredEntrance(
                                             index: index,
                                             child: ResponsiveContent(
@@ -2090,9 +2083,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                                                     ),
                                                 child: _AreaCard(
                                                   area: area,
-                                                  constellationCount:
-                                                      projects.length,
-                                                  starCount: starCount,
+                                                  badges: _areaBadges(area),
                                                   menuController:
                                                       _cardMenuController,
                                                   onTap: () => _openArea(area),
@@ -2128,7 +2119,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                                     hasAnyProjects:
                                         _filteredAreaProjects.isNotEmpty,
                                     filteredProjects: _filteredProjects,
-                                    starsForProject: _starsForProject,
+                                    badgesFor: _projectBadges,
                                     shapeForProject: (project) =>
                                         _shapesByIdCache[project.starsShapeId],
                                     menuController: _cardMenuController,
@@ -2148,6 +2139,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                                     entries: filteredEntries,
                                     projectsById: _projectsById,
                                     countsByDayFor: _countsByDayFor,
+                                    badgesFor: _entryBadges,
                                     query: _query,
                                     menuController: _cardMenuController,
                                     onOpenStar: (entry) => _openStarReader(
@@ -2234,8 +2226,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
 class _AreaCard extends StatelessWidget {
   const _AreaCard({
     required this.area,
-    required this.constellationCount,
-    required this.starCount,
+    required this.badges,
     required this.menuController,
     required this.onTap,
     required this.onVision,
@@ -2246,8 +2237,7 @@ class _AreaCard extends StatelessWidget {
   });
 
   final LifeArea area;
-  final int constellationCount;
-  final int starCount;
+  final CardBadges badges;
   final SearchCardMenuController menuController;
   final VoidCallback onTap;
   final VoidCallback onVision;
@@ -2264,22 +2254,17 @@ class _AreaCard extends StatelessWidget {
       menuId: 'area:${area.name}',
       menuController: menuController,
       onTap: onTap,
+      baseBodyHeight: SearchResultCard.bodyHeightFor(badges),
       visual: SearchArtworkVisual(
         asset: kAreaHeroArt[area]?.skyAsset,
         fallbackIcon: Icons.flare,
       ),
       content: SearchCardTextContent(
+        eyebrow: strings.areaLabel,
+        eyebrowColor: context.colors.gold,
         title: area.displayName(strings),
-        metrics: [
-          SearchCardMetric(
-            icon: Icons.insights_outlined,
-            value: '$constellationCount',
-          ),
-          SearchCardMetric(
-            icon: Icons.star_outline_rounded,
-            value: '$starCount',
-          ),
-        ],
+        breadcrumb: strings.galaxyLabel,
+        badges: badges,
       ),
       actions: [
         SearchCardAction(
@@ -2456,7 +2441,7 @@ class _ConstellationsList extends StatelessWidget {
   const _ConstellationsList({
     required this.hasAnyProjects,
     required this.filteredProjects,
-    required this.starsForProject,
+    required this.badgesFor,
     required this.shapeForProject,
     required this.menuController,
     required this.onTap,
@@ -2470,7 +2455,7 @@ class _ConstellationsList extends StatelessWidget {
 
   final bool hasAnyProjects;
   final List<Project> filteredProjects;
-  final List<Star> Function(int projectId) starsForProject;
+  final CardBadges Function(Project project) badgesFor;
   final ConstellationShape? Function(Project project) shapeForProject;
   final SearchCardMenuController menuController;
   final void Function(Project) onTap;
@@ -2528,9 +2513,6 @@ class _ConstellationsList extends StatelessWidget {
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final project = filteredProjects[index];
-        final stars = starsForProject(project.id);
-        final litStars = stars.where((s) => s.isLit).toList();
-        final unlitStars = stars.where((s) => s.isUnlit).length;
         return StaggeredEntrance(
           index: index,
           child: ResponsiveContent(
@@ -2538,8 +2520,7 @@ class _ConstellationsList extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: _ProjectCard(
                 project: project,
-                starCount: litStars.length,
-                unlitStars: unlitStars,
+                badges: badgesFor(project),
                 shape: shapeForProject(project),
                 menuController: menuController,
                 onTap: () => onTap(project),
@@ -2565,6 +2546,7 @@ class _FlatList extends StatelessWidget {
     required this.entries,
     required this.projectsById,
     required this.countsByDayFor,
+    required this.badgesFor,
     required this.query,
     required this.menuController,
     required this.onOpenStar,
@@ -2584,6 +2566,7 @@ class _FlatList extends StatelessWidget {
   final List<_SkyEntry> entries;
   final Map<int, Project> projectsById;
   final Map<DateTime, int> Function(int habitId) countsByDayFor;
+  final CardBadges Function(_SkyEntry entry) badgesFor;
   final String query;
   final SearchCardMenuController menuController;
   final void Function(_SkyEntry entry) onOpenStar;
@@ -2670,9 +2653,7 @@ class _FlatList extends StatelessWidget {
           entry: entry,
           project: project,
           query: query,
-          currentStreak: entry.habit == null
-              ? 0
-              : habitCurrentStreak(entry.habit!, habitCounts),
+          badges: badgesFor(entry),
           pulsarLit: entry.habit == null
               ? true
               : isHabitLit(entry.habit!, habitCounts),
@@ -2764,7 +2745,7 @@ class _SearchStarCard extends StatelessWidget {
     required this.entry,
     required this.project,
     required this.query,
-    required this.currentStreak,
+    required this.badges,
     required this.pulsarLit,
     required this.menuController,
     required this.onTap,
@@ -2781,7 +2762,7 @@ class _SearchStarCard extends StatelessWidget {
   final _SkyEntry entry;
   final Project? project;
   final String query;
-  final int currentStreak;
+  final CardBadges badges;
   final bool pulsarLit;
   final SearchCardMenuController menuController;
   final VoidCallback onTap;
@@ -2793,48 +2774,12 @@ class _SearchStarCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = context.strings;
-    final colors = context.colors;
     final kind = entry.kind;
     final description = entry.description;
     final normalizedQuery = query.trim().toLowerCase();
     final descriptionMatched =
         normalizedQuery.isNotEmpty &&
         (description?.toLowerCase().contains(normalizedQuery) ?? false);
-    final deadDate = entry.star?.deadDate ?? entry.habit?.deadDate;
-    final metrics = switch (kind) {
-      StarKind.lit => [
-        SearchCardMetric(
-          icon: Icons.bolt_rounded,
-          value: '${entry.star!.intensity ?? 0}',
-        ),
-        if (entry.star!.photoPath != null)
-          const SearchCardMetric(icon: Icons.photo_camera_rounded),
-      ],
-      StarKind.unlit => [
-        SearchCardMetric(
-          icon: Icons.calendar_month_rounded,
-          value: entry.star!.targetDate == null
-              ? '—'
-              : formatDisplayDate(entry.star!.targetDate!, strings),
-          color: entry.star!.targetDate == null ? colors.starUnlit : null,
-          valueColor: colors.text,
-        ),
-      ],
-      StarKind.pulsar => [
-        SearchCardMetric(
-          icon: Icons.local_fire_department_rounded,
-          value: '$currentStreak',
-          color: pulsarLit ? null : colors.starUnlit,
-        ),
-      ],
-      StarKind.dead => [
-        SearchCardMetric(
-          icon: StarKind.dead.icon,
-          value: deadDate == null ? '—' : formatDisplayDate(deadDate, strings),
-        ),
-      ],
-      StarKind.nascent => const [SearchCardMetric(icon: Icons.star_outline)],
-    };
     final eyebrow = kind == StarKind.dead && entry.habit != null
         ? '${kind.label(strings)} · ${strings.formerPulsarLabel}'
         : kind.label(strings);
@@ -2872,6 +2817,7 @@ class _SearchStarCard extends StatelessWidget {
           : 'star:${entry.star!.id}',
       menuController: menuController,
       onTap: onTap,
+      baseBodyHeight: SearchResultCard.bodyHeightFor(badges),
       visual: SearchStarVisual(kind: kind, pulsarLit: pulsarLit),
       content: SearchCardTextContent(
         eyebrow: eyebrow,
@@ -2882,7 +2828,7 @@ class _SearchStarCard extends StatelessWidget {
             : '${project!.area.displayName(strings)} → ${project!.name}',
         description: descriptionMatched ? description : null,
         descriptionMatched: descriptionMatched,
-        metrics: metrics,
+        badges: badges,
       ),
       actions: actions,
     );
@@ -2896,8 +2842,7 @@ class _SearchStarCard extends StatelessWidget {
 class _ProjectCard extends StatelessWidget {
   const _ProjectCard({
     required this.project,
-    required this.starCount,
-    required this.unlitStars,
+    required this.badges,
     required this.shape,
     required this.menuController,
     required this.onTap,
@@ -2909,8 +2854,7 @@ class _ProjectCard extends StatelessWidget {
   });
 
   final Project project;
-  final int starCount;
-  final int unlitStars;
+  final CardBadges badges;
   final ConstellationShape? shape;
   final SearchCardMenuController menuController;
   final VoidCallback onTap;
@@ -2928,17 +2872,14 @@ class _ProjectCard extends StatelessWidget {
       menuId: 'project:${project.id}',
       menuController: menuController,
       onTap: onTap,
+      baseBodyHeight: SearchResultCard.bodyHeightFor(badges),
       visual: SearchConstellationVisual(shape: shape),
       content: SearchCardTextContent(
+        eyebrow: strings.projectLabel,
+        eyebrowColor: context.colors.gold,
         title: project.name,
         breadcrumb: project.area.displayName(strings),
-        metrics: [
-          SearchCardMetric(icon: Icons.star_rounded, value: '$starCount'),
-          SearchCardMetric(
-            icon: Icons.star_outline_rounded,
-            value: '$unlitStars',
-          ),
-        ],
+        badges: badges,
       ),
       actions: [
         SearchCardAction(icon: Icons.star, label: '+ Stella', onTap: onAddStar),
