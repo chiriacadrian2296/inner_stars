@@ -45,6 +45,7 @@ import '../utils/project_card_info.dart';
 import '../utils/star_card_info.dart';
 import 'app_action_disc.dart';
 import 'app_field.dart';
+import 'app_footer_mark.dart';
 import 'filter_button.dart';
 import 'project_picker.dart';
 import 'gallery/gallery_cards.dart';
@@ -71,16 +72,16 @@ enum _SkyMode { supernovas, constellations, stars }
 /// context instead of constructing a fresh browser every time.
 class SkyExplorerSession {
   int modeIndex = 0;
-  String query = '';
+
+  /// What each tab (Areas, Constellations, Stars) keeps to itself: its search
+  /// text, date range and sort. The area, constellation and kind filters
+  /// below are shared across tabs.
+  final tabs = List.generate(_SkyMode.values.length, (_) => SkyTabView());
   Set<StarKind> kindFilter = {...kListableStarKinds};
   Set<LifeArea> areaFilter = {...LifeArea.values};
 
   /// Stars only: the one constellation to show stars from (null = all).
   int? projectFilterId;
-  DateTimeRange? dateRangeFilter;
-  DateRangePreset dateRangePreset = DateRangePreset.allTime;
-  SortField sortField = SortField.date;
-  SortDirection sortDirection = SortDirection.descending;
   final scrollOffsets = <int, double>{};
   Object? openCardMenuId;
 
@@ -88,6 +89,16 @@ class SkyExplorerSession {
   /// tapped on: Sky reopens it on top of the browser next time, so flying to
   /// something from its page and coming back lands on that page again.
   SkyResume? resume;
+}
+
+/// The part of the filters one tab keeps separately: see
+/// [SkyExplorerSession.tabs].
+class SkyTabView {
+  String query = '';
+  DateTimeRange? dateRange;
+  DateRangePreset dateRangePreset = DateRangePreset.allTime;
+  SortField sortField = SortField.date;
+  SortDirection sortDirection = SortDirection.descending;
 }
 
 sealed class SkyResume {
@@ -241,6 +252,8 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       _modeReverse = mode.index < _mode.index;
       _mode = mode;
     });
+    // The search box shows this tab's own text.
+    _queryController.text = _query;
     _saveSession();
     _modeAnimation.forward(from: 0);
   }
@@ -267,13 +280,11 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   /// why a single correction is all it should ever make.
   bool _autoSwitchedModeForTour = false;
   late final TextEditingController _queryController;
-  late String _query;
   // Filters model exactly what their sheets show: everything starts on,
   // and an empty set really means that nothing matches.
   late Set<StarKind> _kindFilter;
   late Set<LifeArea> _areaFilter;
   int? _projectFilterId;
-  DateTimeRange? _dateRangeFilter;
 
   /// Which chip (if any) produced [_dateRangeFilter] — kept alongside it
   /// purely so a reopened sheet can still show the right chip highlighted
@@ -282,14 +293,26 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   /// name, precisely so seeing it doesn't require opening the sheet.) See
   /// [DateRangePreset]'s own doc for why this can't just be recomputed from
   /// the range on demand.
-  late DateRangePreset _dateRangePreset;
-
   /// Unlike the three filters above, sorting has no "off" state to default
   /// to empty — results are always in *some* order — so these two start at
   /// whatever this file's lists always used to be sorted by (newest first)
   /// rather than at a neutral placeholder.
-  late SortField _sortField;
-  late SortDirection _sortDirection;
+
+  /// The current tab's own search text, date range and sort. The tabs share
+  /// the area, constellation and kind filters but not these: sorting stars by
+  /// date and constellations by name, or searching one tab, doesn't touch
+  /// the others.
+  SkyTabView get _tab => _session.tabs[_mode.index];
+  String get _query => _tab.query;
+  set _query(String value) => _tab.query = value;
+  DateTimeRange? get _dateRangeFilter => _tab.dateRange;
+  set _dateRangeFilter(DateTimeRange? value) => _tab.dateRange = value;
+  DateRangePreset get _dateRangePreset => _tab.dateRangePreset;
+  set _dateRangePreset(DateRangePreset value) => _tab.dateRangePreset = value;
+  SortField get _sortField => _tab.sortField;
+  set _sortField(SortField value) => _tab.sortField = value;
+  SortDirection get _sortDirection => _tab.sortDirection;
+  set _sortDirection(SortDirection value) => _tab.sortDirection = value;
   late List<Project> _projectsCache;
   late List<Star> _starsCache;
   late List<Habit> _habitsCache;
@@ -341,14 +364,9 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     final session = _session;
     session
       ..modeIndex = _mode.index
-      ..query = _query
       ..kindFilter = {..._kindFilter}
       ..areaFilter = {..._areaFilter}
       ..projectFilterId = _projectFilterId
-      ..dateRangeFilter = _dateRangeFilter
-      ..dateRangePreset = _dateRangePreset
-      ..sortField = _sortField
-      ..sortDirection = _sortDirection
       ..openCardMenuId = _cardMenuController.openId;
     for (var i = 0; i < _scrollControllers.length; i++) {
       final controller = _scrollControllers[i];
@@ -528,15 +546,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         ? _SkyMode.values.length - 1
         : session.modeIndex;
     _mode = _SkyMode.values[modeIndex];
-    _query = session.query;
     _queryController = TextEditingController(text: _query);
     _kindFilter = {...session.kindFilter};
     _areaFilter = {...session.areaFilter};
     _projectFilterId = session.projectFilterId;
-    _dateRangeFilter = session.dateRangeFilter;
-    _dateRangePreset = session.dateRangePreset;
-    _sortField = session.sortField;
-    _sortDirection = session.sortDirection;
     _refreshDataCache();
     _cardMenuController = SearchCardMenuController(
       initialOpenId: session.openCardMenuId,
@@ -706,6 +719,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     required String emptyText,
     required Widget Function(T item, VoidCallback onTap) tile,
     required void Function(int index) onTap,
+    bool footer = false,
   }) {
     final colors = context.colors;
     if (items.isEmpty) {
@@ -726,23 +740,51 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     // Capped to the shared content column on wide layouts, like the lists.
     return ResponsiveContent(
       child: LayoutBuilder(
-        builder: (context, constraints) => GridView.builder(
+        builder: (context, constraints) => CustomScrollView(
+          // The three tabs build this same widget in the same place, so
+          // without a key of its own per tab Flutter reuses one scroll view
+          // and hands its position from controller to controller: scrolling
+          // one tab scrolled them all. Its own key gives each tab its own
+          // scroll view, and the storage key remembers where it was left.
+          key: PageStorageKey<String>(
+            'sky-grid-${_scrollControllers.indexOf(controller)}',
+          ),
           controller: controller,
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: skyGridColumnsFor(
-              widget.settings.skyGridSizeStep,
-              constraints.maxWidth - 40,
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+              sliver: SliverGrid(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: skyGridColumnsFor(
+                    widget.settings.skyGridSizeStep,
+                    constraints.maxWidth - 40,
+                  ),
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  childAspectRatio: kGalleryTileAspectRatio,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => StaggeredEntrance(
+                    index: index % 12,
+                    child: tile(items[index], () => onTap(index)),
+                  ),
+                  childCount: items.length,
+                ),
+              ),
             ),
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: kGalleryTileAspectRatio,
-          ),
-          itemCount: items.length,
-          itemBuilder: (context, index) => StaggeredEntrance(
-            index: index % 12,
-            child: tile(items[index], () => onTap(index)),
-          ),
+            // With few tiles the mark sits at the bottom of the page; with
+            // many it follows them and shows only once scrolled all the way
+            // down — either way it leaves the room under the last tiles.
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: footer
+                  ? const Align(
+                      alignment: Alignment.bottomCenter,
+                      child: AppFooterMark(),
+                    )
+                  : const SizedBox(height: 24),
+            ),
+          ],
         ),
       ),
     );
@@ -758,6 +800,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       emptyText: strings.noSearchResultsSupernovas,
       tile: (item, onTap) => GalleryAreaTile(data: item, onTap: onTap),
       onTap: (index) => _openArea(areas[index].area),
+      footer: true,
     );
   }
 
@@ -771,6 +814,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       emptyText: strings.noSearchResultsConstellations,
       tile: (item, onTap) => GalleryProjectTile(data: item, onTap: onTap),
       onTap: (index) => _openProject(projects[index].project),
+      footer: true,
     );
   }
 
@@ -782,6 +826,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       emptyText: strings.noSearchResultsStars,
       tile: (item, onTap) => GalleryStarTile(data: item, onTap: onTap),
       onTap: (index) => _openStarReader(stars[index].key),
+      footer: true,
     );
   }
 
