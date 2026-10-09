@@ -4167,6 +4167,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                             painter: _HoldRingPainter(
                               center: _holdRingCenter,
                               progress: _holdRingController.value,
+                              aroundButton: _holdTargetIsMenuControl,
                             ),
                           ),
                         ),
@@ -4970,22 +4971,29 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
 /// closes into a full circle exactly as [progress] reaches 1, with a soft
 /// white glow trailing behind the same stroke.
 class _HoldRingPainter extends CustomPainter {
-  const _HoldRingPainter({required this.center, required this.progress});
+  const _HoldRingPainter({
+    required this.center,
+    required this.progress,
+    this.aroundButton = false,
+  });
 
   final Offset? center;
   final double progress;
+
+  /// A hold on the menu button: the ring wraps the whole button, centered on
+  /// it, at the same size on every platform — the pointer's own position is
+  /// irrelevant there (see [_SkyScreenState._handleTapDown]).
+  final bool aroundButton;
 
   // Three different pointers, three different sizes: native mobile touch
   // is a fingertip wide enough to cover the original size outright (bumped
   // up here), web's is a small mouse cursor (shrunk so the ring wraps it
   // closely instead of reading as oversized), and native desktop's mouse
   // keeps the size this had before either of those were split out.
-  static double get _radius =>
-      isTouchOnlyMobile ? 50.0 : (kIsWeb ? 14.0 : 28.0);
-  static double get _strokeWidth =>
-      isTouchOnlyMobile ? 4.5 : (kIsWeb ? 2.0 : 3.0);
-  static double get _glowBlur =>
-      isTouchOnlyMobile ? 16.0 : (kIsWeb ? 6.0 : 10.0);
+  bool get _large => isTouchOnlyMobile || aroundButton;
+  double get _radius => _large ? 50.0 : (kIsWeb ? 14.0 : 28.0);
+  double get _strokeWidth => _large ? 4.5 : (kIsWeb ? 2.0 : 3.0);
+  double get _glowBlur => _large ? 16.0 : (kIsWeb ? 6.0 : 10.0);
   // Starts straight up, same convention as a clock/loading-spinner face,
   // so the point it grows from and reconnects at reads as a fixed anchor
   // rather than an arbitrary spot on the ring.
@@ -5007,7 +5015,9 @@ class _HoldRingPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final rawCenter = this.center;
     if (rawCenter == null || progress <= 0) return;
-    final center = kIsWeb ? rawCenter + _webCursorOffset : rawCenter;
+    final center = kIsWeb && !aroundButton
+        ? rawCenter + _webCursorOffset
+        : rawCenter;
     final sweep = progress * 2 * math.pi;
     final rect = Rect.fromCircle(center: center, radius: _radius);
 
@@ -5019,17 +5029,6 @@ class _HoldRingPainter extends CustomPainter {
       ..maskFilter = MaskFilter.blur(BlurStyle.normal, _glowBlur);
     canvas.drawArc(rect, _startAngle, sweep, false, glow);
 
-    // Web only: a thin black outline around the white stroke, like the
-    // OS cursor's own, so the ring stays legible on bright stars.
-    if (kIsWeb) {
-      final outline = Paint()
-        ..color = Colors.black
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = _strokeWidth + 1
-        ..strokeCap = StrokeCap.round;
-      canvas.drawArc(rect, _startAngle, sweep, false, outline);
-    }
-
     final ring = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke
@@ -5040,7 +5039,9 @@ class _HoldRingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _HoldRingPainter oldDelegate) =>
-      oldDelegate.center != center || oldDelegate.progress != progress;
+      oldDelegate.center != center ||
+      oldDelegate.progress != progress ||
+      oldDelegate.aroundButton != aroundButton;
 }
 
 /// A small, chrome-disc icon button floating directly on the sky — see the
@@ -5614,6 +5615,12 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   // screen, rather than two independently-tuned numbers that happened to
   // be close.
   static const _chargeDuration = kHoldGestureDuration;
+  // Web only: a mouse release after a press this long was a hold the user
+  // gave up on (the charging ring is already showing by then, see
+  // [_SkyScreenState._holdRingArmDelay]), not a click, so it doesn't open
+  // the quick-access menu. Fingers on a phone stay as they were.
+  static const _webTapMaxDuration = Duration(milliseconds: 250);
+  final _pressWatch = Stopwatch();
 
   ui.FragmentShader? _shader;
   late final Ticker _ticker;
@@ -5705,6 +5712,9 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   void _handlePressStart() {
     _dismissedSkyTooltip = widget.onDismissSkyTooltip?.call() ?? false;
     widget.onPressChanged?.call(true);
+    _pressWatch
+      ..reset()
+      ..start();
     _chargeController.forward();
     if (isTouchOnlyMobile) _startHoldHaptic();
   }
@@ -5721,9 +5731,11 @@ class _MenuStarButtonState extends State<_MenuStarButton>
     widget.onPressChanged?.call(false);
     _stopHoldHaptic();
     _dismissedSkyTooltip = false;
+    final abandonedHold = kIsWeb && _pressWatch.elapsed > _webTapMaxDuration;
+    _pressWatch.stop();
     if (_chargeController.status == AnimationStatus.forward) {
       _chargeController.reverse();
-      widget.onQuickTap();
+      if (!abandonedHold) widget.onQuickTap();
     }
   }
 
