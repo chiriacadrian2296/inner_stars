@@ -2,8 +2,20 @@
 /// top of its cover photo.
 enum StarMediaKind { voice, photo, video, link }
 
-/// Most extras a single victory can carry.
-const int kMaxStarMedia = 10;
+/// Most extras of each kind a single victory can carry.
+const Map<StarMediaKind, int> kMaxStarMediaPerKind = {
+  StarMediaKind.photo: 8,
+  StarMediaKind.video: 3,
+  StarMediaKind.voice: 5,
+  StarMediaKind.link: 5,
+};
+
+/// Longest video extra the picker accepts.
+const Duration kMaxVideoDuration = Duration(seconds: 60);
+
+/// Longest link address and link label a victory's extra may hold.
+const int kMaxLinkUrlLength = 500;
+const int kMaxLinkLabelLength = 50;
 
 /// One optional extra attached to a lit star: a voice note, a secondary
 /// photo, a short video, or a link. File-backed kinds keep an opaque file

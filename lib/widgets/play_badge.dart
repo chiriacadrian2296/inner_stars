@@ -8,9 +8,18 @@ const double kPlayBadgeSize = 40;
 /// mark for videos and voice notes alike. Videos put a navy veil under it, so
 /// it needs no outline of its own to read on a picture.
 class PlayBadge extends StatelessWidget {
-  const PlayBadge({super.key, required this.size, this.playing = false});
+  const PlayBadge({
+    super.key,
+    required this.size,
+    this.playing = false,
+    this.color = Colors.white,
+  });
 
   final double size;
+
+  /// Ring and glyph color — white everywhere but the create form, which
+  /// draws it gold.
+  final Color color;
 
   /// Shows a pause glyph instead of the play triangle.
   final bool playing;
@@ -22,12 +31,12 @@ class PlayBadge extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
+        border: Border.all(color: color, width: 2),
       ),
       child: Center(
         child: Icon(
           playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-          color: Colors.white,
+          color: color,
           size: size * 0.55,
         ),
       ),

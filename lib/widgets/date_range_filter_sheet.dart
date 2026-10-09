@@ -10,6 +10,7 @@ import '../utils/date_format.dart';
 import '../utils/responsive.dart';
 import 'app_choice_chip.dart';
 import 'responsive_content.dart';
+import 'results_count_row.dart';
 import 'staggered_entrance.dart';
 
 /// Opens the date-range filter sheet for Sky's Stars view — narrows the flat
@@ -34,6 +35,7 @@ showDateRangeFilterSheet(
   BuildContext context, {
   required DateTimeRange? initialRange,
   required DateRangePreset initialPreset,
+  FilterPreview<DateTimeRange?>? preview,
 }) {
   return showAppSheet<({DateTimeRange? range, DateRangePreset preset})>(
     context: context,
@@ -41,6 +43,7 @@ showDateRangeFilterSheet(
     builder: (_) => _DateRangeFilterSheet(
       initialRange: initialRange,
       initialPreset: initialPreset,
+      preview: preview,
     ),
   );
 }
@@ -61,10 +64,12 @@ class _DateRangeFilterSheet extends StatefulWidget {
   const _DateRangeFilterSheet({
     required this.initialRange,
     required this.initialPreset,
+    this.preview,
   });
 
   final DateTimeRange? initialRange;
   final DateRangePreset initialPreset;
+  final FilterPreview<DateTimeRange?>? preview;
 
   @override
   State<_DateRangeFilterSheet> createState() => _DateRangeFilterSheetState();
@@ -323,7 +328,9 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
                   to: _range?.end,
                   onTap: _pickCustom,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
+                if (widget.preview != null) widget.preview!.rowFor(_range),
+                const SizedBox(height: 16),
                 StaggeredEntrance(
                   index: 7,
                   child: Align(

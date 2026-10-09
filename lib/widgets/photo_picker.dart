@@ -59,17 +59,156 @@ class PhotoPicker extends StatelessWidget {
     required this.photoPath,
     required this.onPick,
     required this.onRemove,
+    this.compact = false,
   });
 
   final String? photoPath;
   final VoidCallback onPick;
   final VoidCallback onRemove;
 
+  /// Draws the chosen photo's preview at half its usual size (the create
+  /// form); the reader's quick sheet keeps the full one.
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final strings = context.strings;
     final path = photoPath;
+
+    if (compact) {
+      // Same grammar as the Memories fields: a panel that always stands
+      // (a faint stand-in while empty, the photo once chosen) and, apart
+      // from it, a smaller add button.
+      final radius = BorderRadius.circular(kRadiusField);
+      final width = MediaQuery.sizeOf(context).width * 0.44;
+      final height = width * 16 / 9;
+      return StaggeredEntrance(
+        index: 0,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: fieldDecoration(
+                colors,
+                path == null ? FieldState.empty : FieldState.filled,
+              ),
+              child: Column(
+                children: [
+                  Center(
+                    child: path == null
+                        ? ExcludeSemantics(
+                            child: Opacity(
+                              opacity: 0.3,
+                              child: Container(
+                                width: width,
+                                height: height,
+                                decoration: BoxDecoration(
+                                  borderRadius: radius,
+                                  border: Border.all(color: colors.muted),
+                                ),
+                                child: Icon(
+                                  Icons.image_outlined,
+                                  color: colors.muted,
+                                  size: 36,
+                                ),
+                              ),
+                            ),
+                          )
+                        : Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              InkWell(
+                                onTap: onPick,
+                                borderRadius: radius,
+                                child: ClipRRect(
+                                  borderRadius: radius,
+                                  child: PhotoImage(
+                                    photoPath: path,
+                                    width: width,
+                                    height: height,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: -6,
+                                right: -6,
+                                child: InkWell(
+                                  onTap: onRemove,
+                                  customBorder: const CircleBorder(),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(3),
+                                    decoration: BoxDecoration(
+                                      color: colors.nightPanel,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: colors.gold),
+                                    ),
+                                    child: Icon(
+                                      Icons.close_rounded,
+                                      size: 14,
+                                      color: colors.gold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                  const SizedBox(height: 6),
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: path == null ? null : onRemove,
+                      style: TextButton.styleFrom(
+                        foregroundColor: colors.gold,
+                        minimumSize: Size.zero,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      icon: const Icon(Icons.restart_alt_rounded, size: 18),
+                      label: AppButtonLabel(
+                        strings.resetExtraAction,
+                        color: colors.gold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: onPick,
+              borderRadius: radius,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: fieldDecoration(colors, FieldState.empty),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.add_a_photo_outlined,
+                      color: colors.muted,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      strings.addPhotoHint,
+                      style: TextStyle(color: colors.muted, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     if (path == null) {
       return StaggeredEntrance(
@@ -98,7 +237,8 @@ class PhotoPicker extends StatelessWidget {
     }
 
     final borderRadius = BorderRadius.circular(kRadiusField);
-    final previewWidth = MediaQuery.sizeOf(context).width * 0.88;
+    final previewWidth =
+        MediaQuery.sizeOf(context).width * (compact ? 0.44 : 0.88);
     final previewHeight = previewWidth * 16 / 9;
     return StaggeredEntrance(
       index: 0,

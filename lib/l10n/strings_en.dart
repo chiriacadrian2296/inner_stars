@@ -431,6 +431,13 @@ class StringsEn implements AppStrings {
   @override
   String activeAreasCount(int count) => count == 1 ? '1 area' : '$count areas';
   @override
+  String resultsAreasWord(int count) => count == 1 ? 'area' : 'areas';
+  @override
+  String resultsConstellationsWord(int count) =>
+      count == 1 ? 'constellation' : 'constellations';
+  @override
+  String resultsStarsWord(int count) => count == 1 ? 'star' : 'stars';
+  @override
   String get filterKindAction => 'Filter kinds';
   @override
   String get filterKindSectionTitle => 'Star Kinds';
@@ -1286,6 +1293,8 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get photoLabel => 'Photo';
   @override
+  String get mainPhotoLabel => 'Main Photo';
+  @override
   String get addPhotoHint => 'Add a photo';
   @override
   String get photoSourceTitle => 'Add Photo';
@@ -1296,8 +1305,6 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get photoPickError => "Couldn't get that photo. Try again?";
   @override
-  String get extrasLabel => 'Memories';
-  @override
   String get extrasHint =>
       'Add a voice note, photos, a video or a link to remember this victory.';
   @override
@@ -1305,9 +1312,11 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get extraPhoto => 'Photo';
   @override
-  String get extraVideo => 'Video';
-  @override
   String get extraLink => 'Link';
+  @override
+  String get resetExtraAction => 'Reset';
+  @override
+  String mediaMaxDuration(String duration) => 'Max $duration';
   @override
   String get recordVoiceTitle => 'Record a Voice Note';
   @override
@@ -1342,7 +1351,7 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get voiceNotesLabel => 'Voice Notes';
   @override
-  String get extraPhotosLabel => 'More Photos';
+  String get extraPhotosLabel => 'Secondary Photos';
   @override
   String get videosLabel => 'Videos';
   @override

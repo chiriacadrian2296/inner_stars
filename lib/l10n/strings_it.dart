@@ -434,6 +434,13 @@ class StringsIt implements AppStrings {
   @override
   String activeAreasCount(int count) => count == 1 ? '1 area' : '$count aree';
   @override
+  String resultsAreasWord(int count) => count == 1 ? 'area' : 'aree';
+  @override
+  String resultsConstellationsWord(int count) =>
+      count == 1 ? 'costellazione' : 'costellazioni';
+  @override
+  String resultsStarsWord(int count) => count == 1 ? 'stella' : 'stelle';
+  @override
   String get filterKindAction => 'Filtra tipi';
   @override
   String get filterKindSectionTitle => 'Tipo di stella';
@@ -1296,6 +1303,8 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get photoLabel => 'Foto';
   @override
+  String get mainPhotoLabel => 'Foto Principale';
+  @override
   String get addPhotoHint => 'Aggiungi una foto';
   @override
   String get photoSourceTitle => 'Aggiungi Foto';
@@ -1307,8 +1316,6 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get photoPickError =>
       'Non è stato possibile ottenere la foto. Riprova?';
   @override
-  String get extrasLabel => 'Ricordi';
-  @override
   String get extrasHint =>
       'Aggiungi una nota vocale, foto, un video o un link per ricordare questa vittoria.';
   @override
@@ -1316,9 +1323,11 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get extraPhoto => 'Foto';
   @override
-  String get extraVideo => 'Video';
-  @override
   String get extraLink => 'Link';
+  @override
+  String get resetExtraAction => 'Azzera';
+  @override
+  String mediaMaxDuration(String duration) => 'Max $duration';
   @override
   String get recordVoiceTitle => 'Registra Una Nota Vocale';
   @override
@@ -1353,7 +1362,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get voiceNotesLabel => 'Note Vocali';
   @override
-  String get extraPhotosLabel => 'Altre Foto';
+  String get extraPhotosLabel => 'Foto Secondarie';
   @override
   String get videosLabel => 'Video';
   @override

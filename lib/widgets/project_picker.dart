@@ -15,6 +15,7 @@ import '../utils/icon_for_slug.dart';
 import 'app_choice_chip.dart';
 import 'area_filter_sheet.dart';
 import 'date_range_filter_sheet.dart';
+import 'results_count_row.dart';
 import 'sort_filter_sheet.dart';
 import 'staggered_entrance.dart';
 
@@ -35,24 +36,32 @@ class _ClearSelection {
 /// narrows this picker, otherwise returning here after one choice can trap
 /// the user inside that constellation's area.
 ///
-/// [selected] is shown as already chosen. Reset in the sheet deselects it;
-/// applying that empty choice calls [onCleared] (when given) and returns null.
+/// With [instantPick] (the default, the star form) one tap on a row picks it
+/// and closes the sheet, and a Reset button (when [onCleared] is given)
+/// clears the current choice. With it off (the Sky's filter) the sheet is
+/// the original two-column chip list: select, then Apply; Reset deselects,
+/// and applying that empty choice calls [onCleared] and returns null.
+/// [selected] is shown as already chosen either way.
 Future<Project?> pickProject(
   BuildContext context,
   ProjectRepository repository,
   StarsShapeRepository starsShapeRepository, {
   LifeArea? area,
   bool allowCreate = true,
+  bool instantPick = true,
   Project? selected,
   VoidCallback? onCleared,
+  FilterPreview<int?>? preview,
 }) async {
   final result = await _pickProjectFlat(
     context,
     repository,
     starsShapeRepository,
     allowCreate: allowCreate,
+    instantPick: instantPick,
     initialId: selected?.id,
     allowClear: onCleared != null,
+    preview: preview,
   );
   if (!context.mounted) return null;
   if (result is _ClearSelection) {
@@ -79,8 +88,10 @@ Future<Object?> _pickProjectFlat(
   ProjectRepository repository,
   StarsShapeRepository starsShapeRepository, {
   required bool allowCreate,
+  required bool instantPick,
   required int? initialId,
   required bool allowClear,
+  FilterPreview<int?>? preview,
 }) {
   final maxHeight = MediaQuery.sizeOf(context).height * 0.85;
   return showFixedAppSheet<Object>(
@@ -91,8 +102,10 @@ Future<Object?> _pickProjectFlat(
         starsShapeRepository: starsShapeRepository,
         maxHeight: maxHeight,
         allowCreate: allowCreate,
+        instantPick: instantPick,
         initialId: initialId,
         allowClear: allowClear,
+        preview: preview,
       );
     },
   );
@@ -107,14 +120,19 @@ class _FlatProjectPickerSheet extends StatefulWidget {
     required this.starsShapeRepository,
     required this.maxHeight,
     required this.allowCreate,
+    required this.instantPick,
     required this.initialId,
     required this.allowClear,
+    this.preview,
   });
 
+  /// Filter mode only: previews the cards the pending choice would leave.
+  final FilterPreview<int?>? preview;
   final List<Project> projects;
   final StarsShapeRepository starsShapeRepository;
   final double maxHeight;
   final bool allowCreate;
+  final bool instantPick;
   final int? initialId;
   final bool allowClear;
 
@@ -301,6 +319,24 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
     );
   }
 
+  /// Sized for every constellation, not just the filtered ones, so the sheet
+  /// doesn't jump while typing: the chrome (title, search, buttons, padding)
+  /// plus one row per constellation, capped at [_FlatProjectPickerSheet.maxHeight].
+  double _sheetHeight(BuildContext context) {
+    final chrome = _showPreview ? 284.0 : 248.0;
+    const rowHeight = 48.0;
+    const gap = 10.0;
+    const emptyList = 72.0;
+    final rows = widget.instantPick
+        ? widget.projects.length
+        : (widget.projects.length + 1) ~/ 2;
+    final list = rows == 0 ? emptyList : rows * rowHeight + (rows - 1) * gap;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    return (chrome + list + bottomInset).clamp(0.0, widget.maxHeight);
+  }
+
+  bool get _showPreview => !widget.instantPick && widget.preview != null;
+
   bool get _canApply =>
       _selectedId != widget.initialId &&
       (_selectedId != null || widget.allowClear);
@@ -314,20 +350,7 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
     );
   }
 
-  /// Sized for every constellation, not just the filtered ones, so the sheet
-  /// doesn't jump while typing: the chrome (title, search, buttons, padding)
-  /// plus the two-column rows of chips, capped at [_FlatProjectPickerSheet.maxHeight].
-  double _sheetHeight(BuildContext context) {
-    const chrome = 248.0;
-    const chipHeight = 48.0;
-    const gap = 10.0;
-    const emptyList = 72.0;
-    final rows = (widget.projects.length + 1) ~/ 2;
-    final list = rows == 0 ? emptyList : rows * chipHeight + (rows - 1) * gap;
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
-    return (chrome + list + bottomInset).clamp(0.0, widget.maxHeight);
-  }
-
+  /// The filter's chip: tapping only selects; Apply commits.
   Widget _projectChip(Project project) => AppChoiceChip(
     icon: iconForSlug(project.iconSlug),
     label: project.name,
@@ -335,6 +358,15 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
     onPressed: () => setState(() => _selectedId = project.id),
     showCheck: true,
     expand: true,
+  );
+
+  /// One tap chooses it and closes the sheet, same as the area picker.
+  Widget _projectRow(Project project) => AppSheetAction(
+    icon: iconForSlug(project.iconSlug),
+    label: project.name,
+    uppercase: false,
+    selected: project.id == widget.initialId,
+    onPressed: () => Navigator.of(context).pop(project),
   );
 
   @override
@@ -405,6 +437,16 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
                             ),
                           ),
                         )
+                      : widget.instantPick
+                      ? ListView.separated(
+                          itemCount: filtered.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (context, index) => StaggeredEntrance(
+                            index: index + 3,
+                            child: _projectRow(filtered[index]),
+                          ),
+                        )
                       : ListView.separated(
                           itemCount: (filtered.length + 1) ~/ 2,
                           separatorBuilder: (_, _) =>
@@ -430,7 +472,12 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
                         ),
                 ),
               ),
-              const SizedBox(height: 24),
+              if (_showPreview) ...[
+                const SizedBox(height: 20),
+                Align(child: widget.preview!.rowFor(_selectedId)),
+                const SizedBox(height: 16),
+              ] else
+                const SizedBox(height: 24),
               Align(
                 alignment: Alignment.center,
                 child: Wrap(
@@ -438,23 +485,42 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
                   spacing: 12,
                   runSpacing: 8,
                   children: [
-                    TextButton(
-                      onPressed: _selectedId == null
-                          ? null
-                          : () => setState(() => _selectedId = null),
-                      child: AppButtonLabel(strings.clearFilterAction),
-                    ),
-                    if (widget.allowCreate)
+                    if (!widget.instantPick) ...[
                       TextButton(
-                        onPressed: () =>
-                            Navigator.of(context)
-                                .pop(const _CreateNewProject()),
-                        child: AppButtonLabel(strings.newAction),
+                        onPressed: _selectedId == null
+                            ? null
+                            : () => setState(() => _selectedId = null),
+                        child: AppButtonLabel(strings.clearFilterAction),
                       ),
-                    ElevatedButton(
-                      onPressed: _canApply ? _apply : null,
-                      child: AppButtonLabel(strings.applyFilterAction),
-                    ),
+                      if (widget.allowCreate)
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.of(context)
+                                  .pop(const _CreateNewProject()),
+                          child: AppButtonLabel(strings.newAction),
+                        ),
+                      ElevatedButton(
+                        onPressed: _canApply ? _apply : null,
+                        child: AppButtonLabel(strings.applyFilterAction),
+                      ),
+                    ] else ...[
+                      if (widget.allowCreate)
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.of(context)
+                                  .pop(const _CreateNewProject()),
+                          child: AppButtonLabel(strings.newAction),
+                        ),
+                      if (widget.allowClear)
+                        ElevatedButton(
+                          onPressed: widget.initialId == null
+                              ? null
+                              : () =>
+                                    Navigator.of(context)
+                                        .pop(const _ClearSelection()),
+                          child: AppButtonLabel(strings.clearFilterAction),
+                        ),
+                    ],
                   ],
                 ),
               ),

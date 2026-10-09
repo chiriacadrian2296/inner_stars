@@ -8,6 +8,7 @@ import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import 'app_choice_chip.dart';
 import 'app_toggle_chip.dart';
+import 'results_count_row.dart';
 import 'staggered_entrance.dart';
 import 'star_glyph.dart';
 
@@ -26,18 +27,21 @@ import 'star_glyph.dart';
 Future<Set<StarKind>?> showKindFilterSheet(
   BuildContext context, {
   required Set<StarKind> selectedKinds,
+  FilterPreview<Set<StarKind>>? preview,
 }) {
   return showAppSheet<Set<StarKind>>(
     context: context,
     isScrollControlled: true,
-    builder: (_) => _KindFilterSheet(initialKinds: selectedKinds),
+    builder: (_) =>
+        _KindFilterSheet(initialKinds: selectedKinds, preview: preview),
   );
 }
 
 class _KindFilterSheet extends StatefulWidget {
-  const _KindFilterSheet({required this.initialKinds});
+  const _KindFilterSheet({required this.initialKinds, this.preview});
 
   final Set<StarKind> initialKinds;
+  final FilterPreview<Set<StarKind>>? preview;
 
   @override
   State<_KindFilterSheet> createState() => _KindFilterSheetState();
@@ -131,7 +135,9 @@ class _KindFilterSheetState extends State<_KindFilterSheet> {
                 ],
               ),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+            if (widget.preview != null) widget.preview!.rowFor(_kinds),
+            const SizedBox(height: 16),
             StaggeredEntrance(
               index: 2 + (kListableStarKinds.length + 1) ~/ 2 + 1,
               child: Wrap(

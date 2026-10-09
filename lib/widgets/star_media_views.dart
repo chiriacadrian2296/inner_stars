@@ -110,17 +110,27 @@ class StarVideoThumb extends StatelessWidget {
     required this.path,
     this.width,
     this.height,
+    this.badgeColor = Colors.white,
+    this.badgeSize = kPlayBadgeSize,
   });
 
   final String path;
   final double? width;
   final double? height;
 
+  /// Color of the play mark (gold in the create form, white elsewhere).
+  final Color badgeColor;
+  final double badgeSize;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     if (kIsWeb) {
-      return _WebVideoThumb(path: path);
+      return _WebVideoThumb(
+        path: path,
+        badgeColor: badgeColor,
+        badgeSize: badgeSize,
+      );
     }
     return FutureBuilder<File?>(
       future: StarMediaStorage.videoThumbnail(path),
@@ -141,7 +151,9 @@ class StarVideoThumb extends StatelessWidget {
               ),
             // A translucent navy veil: over the picture, under the play mark.
             ColoredBox(color: colors.night.withValues(alpha: 0.6)),
-            const Center(child: PlayBadge(size: kPlayBadgeSize)),
+            Center(
+              child: PlayBadge(size: badgeSize, color: badgeColor),
+            ),
           ],
         );
       },
@@ -150,9 +162,15 @@ class StarVideoThumb extends StatelessWidget {
 }
 
 class _WebVideoThumb extends StatefulWidget {
-  const _WebVideoThumb({required this.path});
+  const _WebVideoThumb({
+    required this.path,
+    required this.badgeColor,
+    required this.badgeSize,
+  });
 
   final String path;
+  final Color badgeColor;
+  final double badgeSize;
 
   @override
   State<_WebVideoThumb> createState() => _WebVideoThumbState();
@@ -208,7 +226,9 @@ class _WebVideoThumbState extends State<_WebVideoThumb> {
             ),
           ),
         ColoredBox(color: colors.night.withValues(alpha: 0.6)),
-        const Center(child: PlayBadge(size: kPlayBadgeSize)),
+        Center(
+          child: PlayBadge(size: widget.badgeSize, color: widget.badgeColor),
+        ),
       ],
     );
   }
@@ -217,10 +237,18 @@ class _WebVideoThumbState extends State<_WebVideoThumb> {
 /// Small square tile for a photo or video extra — a photo shows its image,
 /// a video shows its first frame under a play glyph.
 class StarMediaTile extends StatelessWidget {
-  const StarMediaTile({super.key, required this.media, this.size = 72});
+  const StarMediaTile({
+    super.key,
+    required this.media,
+    this.size = 72,
+    this.badgeColor = Colors.white,
+    this.badgeSize = kPlayBadgeSize,
+  });
 
   final StarMedia media;
   final double size;
+  final Color badgeColor;
+  final double badgeSize;
 
   @override
   Widget build(BuildContext context) {
@@ -231,7 +259,11 @@ class StarMediaTile extends StatelessWidget {
         height: size,
         child: media.kind == StarMediaKind.photo
             ? StarMediaImage(path: media.path!, width: size, height: size)
-            : StarVideoThumb(path: media.path!),
+            : StarVideoThumb(
+                path: media.path!,
+                badgeColor: badgeColor,
+                badgeSize: badgeSize,
+              ),
       ),
     );
   }

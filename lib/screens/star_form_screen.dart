@@ -790,7 +790,16 @@ class _StarFormScreenState extends State<StarFormScreen> {
   /// to clears it rather than leaving the two fields disagreeing about
   /// which supernova the star is actually under.
   Future<void> _openAreaPicker() async {
-    final picked = await pickArea(context);
+    final picked = await pickArea(
+      context,
+      selected: _selectedArea,
+      // A constellation always sits under a supernova, so resetting the
+      // supernova resets the constellation with it.
+      onCleared: () => setState(() {
+        _selectedArea = null;
+        _selectedProject = null;
+      }),
+    );
     if (picked == null || !mounted) return;
     setState(() {
       _selectedArea = picked;
@@ -810,6 +819,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
       starsShapeRepository,
       area: _selectedArea,
       selected: _selectedProject,
+      onCleared: () => setState(() => _selectedProject = null),
     );
     if (picked != null && mounted) {
       // The constellation is authoritative for its area: choosing one from
@@ -948,7 +958,6 @@ class _StarFormScreenState extends State<StarFormScreen> {
                             _selectedArea?.icon ?? Icons.auto_awesome_outlined,
                         text: _selectedArea?.displayName(strings),
                         onTap: _openAreaPicker,
-                        trailing: Icon(Icons.expand_more, color: colors.muted),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -964,7 +973,6 @@ class _StarFormScreenState extends State<StarFormScreen> {
                             : iconForSlug(_selectedProject!.iconSlug),
                         text: _selectedProject?.name,
                         onTap: _openProjectPicker,
-                        trailing: Icon(Icons.expand_more, color: colors.muted),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -978,11 +986,14 @@ class _StarFormScreenState extends State<StarFormScreen> {
                         AppFieldLabel(
                           strings.titleFieldLabel,
                           requirement: FieldRequirement.required,
+                          counterController: _titleController,
+                          counterMax: kTitleMaxLength,
                         ),
                         const SizedBox(height: 6),
                         AppTextField(
                           controller: _titleController,
                           maxLength: kTitleMaxLength,
+                          showCounter: false,
                           textInputAction: TextInputAction.next,
                           hintText: _titleHint(strings),
                           onChanged: (_) => setState(() {}),
@@ -1000,11 +1011,14 @@ class _StarFormScreenState extends State<StarFormScreen> {
                         AppFieldLabel(
                           strings.detailsLabel,
                           requirement: FieldRequirement.optional,
+                          counterController: _descriptionController,
+                          counterMax: kStarDescriptionMaxLength,
                         ),
                         const SizedBox(height: 6),
                         AppTextField(
                           controller: _descriptionController,
                           maxLength: kStarDescriptionMaxLength,
+                          showCounter: false,
                           minLines: 4,
                           maxLines: 6,
                           hintText: _detailsHint(strings),
@@ -1368,7 +1382,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                             index: 0,
                             replayKey: _kindEpoch,
                             child: AppFieldLabel(
-                              strings.photoLabel,
+                              strings.mainPhotoLabel,
                               requirement: FieldRequirement.optional,
                             ),
                           ),
@@ -1380,6 +1394,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                               photoPath: _photoPath,
                               onPick: _pickPhoto,
                               onRemove: _removePhoto,
+                              compact: true,
                             ),
                           ),
                         ],
@@ -1389,19 +1404,9 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     StaggeredEntrance(
                       index: 13,
                       replayKey: _kindEpoch,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AppFieldLabel(
-                            strings.extrasLabel,
-                            requirement: FieldRequirement.optional,
-                          ),
-                          const SizedBox(height: 6),
-                          StarMediaEditor(
-                            media: _media,
-                            onChanged: _onMediaChanged,
-                          ),
-                        ],
+                      child: StarMediaEditor(
+                        media: _media,
+                        onChanged: _onMediaChanged,
                       ),
                     ),
                   ],

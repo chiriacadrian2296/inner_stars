@@ -305,8 +305,12 @@ class GalleryProjectTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
+                  // The same box the area's art fills, with room kept below
+                  // so a tall shape never crowds the badge underneath, and at
+                  // the sides so a wide shape doesn't end up looking bigger
+                  // than a tall one (which the height limits instead).
                   child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 14 * u),
+                    padding: EdgeInsets.fromLTRB(10 * u, 0, 10 * u, 14 * u),
                     child: SizedBox.expand(
                       child: data.renderStars.isNotEmpty
                           ? CustomPaint(
@@ -354,7 +358,7 @@ class GalleryProjectTile extends StatelessWidget {
                 SizedBox(height: 4 * u),
                 Text(
                   data.project.name,
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: colors.text,

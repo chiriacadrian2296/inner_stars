@@ -7,6 +7,7 @@ import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import 'app_choice_chip.dart';
 import 'app_toggle_chip.dart';
+import 'results_count_row.dart';
 import 'staggered_entrance.dart';
 
 /// Opens the area filter used by Sky's Constellations/Stars views — a
@@ -24,18 +25,21 @@ import 'staggered_entrance.dart';
 Future<Set<LifeArea>?> showAreaFilterSheet(
   BuildContext context, {
   required Set<LifeArea> selectedAreas,
+  FilterPreview<Set<LifeArea>>? preview,
 }) {
   return showAppSheet<Set<LifeArea>>(
     context: context,
     isScrollControlled: true,
-    builder: (_) => _AreaFilterSheet(initialAreas: selectedAreas),
+    builder: (_) =>
+        _AreaFilterSheet(initialAreas: selectedAreas, preview: preview),
   );
 }
 
 class _AreaFilterSheet extends StatefulWidget {
-  const _AreaFilterSheet({required this.initialAreas});
+  const _AreaFilterSheet({required this.initialAreas, this.preview});
 
   final Set<LifeArea> initialAreas;
+  final FilterPreview<Set<LifeArea>>? preview;
 
   @override
   State<_AreaFilterSheet> createState() => _AreaFilterSheetState();
@@ -118,7 +122,9 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
                 ],
               ),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+            if (widget.preview != null) widget.preview!.rowFor(_areas),
+            const SizedBox(height: 16),
             StaggeredEntrance(
               index: 2 + (LifeArea.values.length + 1) ~/ 2 + 1,
               child: Wrap(

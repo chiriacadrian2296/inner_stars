@@ -17,9 +17,18 @@ import 'voice_note_recorder_sheet.dart' show formatVoiceDuration;
 /// set to mix with other audio so it never interrupts (or gets interrupted
 /// by) the Cosmo's background loop — see `AudioService`.
 class VoiceNotePlayer extends StatefulWidget {
-  const VoiceNotePlayer({super.key, required this.media, this.framed = true});
+  const VoiceNotePlayer({
+    super.key,
+    required this.media,
+    this.framed = true,
+    this.accent = Colors.white,
+  });
 
   final StarMedia media;
+
+  /// Color of the play mark, waveform and length — gold in the create form,
+  /// white elsewhere.
+  final Color accent;
 
   /// Whether it draws its own card — off when it sits inside a field
   /// that already has one.
@@ -144,7 +153,7 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
             ? ShapeDecoration(
                 color: colors.night.withValues(alpha: 0.4),
                 shape: StadiumBorder(
-                  side: const BorderSide(color: Colors.white, width: 1),
+                  side: BorderSide(color: widget.accent, width: 1),
                 ),
               )
             : null,
@@ -152,7 +161,11 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
           children: [
             _failed
                 ? Icon(Icons.error_outline, color: colors.muted, size: 26)
-                : PlayBadge(size: _badgeSize, playing: _playing),
+                : PlayBadge(
+                    size: _badgeSize,
+                    playing: _playing,
+                    color: widget.accent,
+                  ),
             const SizedBox(width: 8),
             Expanded(
               child: _failed
@@ -173,8 +186,8 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
                             painter: _WaveformPainter(
                               seed: widget.media.id.hashCode,
                               progress: progress,
-                              played: Colors.white,
-                              rest: Colors.white.withValues(alpha: 0.4),
+                              played: widget.accent,
+                              rest: widget.accent.withValues(alpha: 0.4),
                             ),
                           ),
                         ),
@@ -186,7 +199,7 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
               Text(
                 formatVoiceDuration(_playing ? _position : total),
                 style: TextStyle(
-                  color: Colors.white,
+                  color: widget.accent,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   fontFeatures: const [FontFeature.tabularFigures()],

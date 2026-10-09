@@ -59,6 +59,7 @@ import 'shareable_lit_star_card.dart';
 import 'shareable_constellation_card.dart';
 import 'shareable_goal_card.dart';
 import 'shareable_pulsar_card.dart';
+import 'results_count_row.dart';
 import 'sky_navigation_target.dart';
 import 'sky_view_mode_button.dart';
 import 'sort_filter_sheet.dart';
@@ -382,8 +383,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       ? ascendingCompare
       : -ascendingCompare;
 
-  List<Project> get _filteredAreaProjects =>
-      _projectsCache.where((p) => _areaFilter.contains(p.area)).toList();
+  List<Project> _areaProjectsFor(Set<LifeArea> areas) =>
+      _projectsCache.where((p) => areas.contains(p.area)).toList();
+
+  List<Project> get _filteredAreaProjects => _areaProjectsFor(_areaFilter);
 
   /// The 8 fixed areas, narrowed by [_query] against each one's own
   /// localized display name — the same free-text search Constellations and
@@ -440,16 +443,25 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     return _directed(ascending);
   }
 
-  List<Project> get _filteredProjects {
+  List<Project> get _filteredProjects =>
+      _projectsMatching()..sort(_compareProjects);
+
+  /// The constellations the filters leave, unsorted. [areas] and [range] stand
+  /// in for the live filters, so a filter sheet can ask what a not-yet-applied
+  /// choice would show ([range] is a record because null is a valid range).
+  List<Project> _projectsMatching({
+    Set<LifeArea>? areas,
+    ({DateTimeRange? range})? dateRange,
+  }) {
     final query = _query.trim().toLowerCase();
-    final range = _dateRangeFilter;
-    var projects = _filteredAreaProjects;
+    final range = dateRange != null ? dateRange.range : _dateRangeFilter;
+    var projects = _areaProjectsFor(areas ?? _areaFilter);
     // A project has no date of its own to compare — it's kept only if at
     // least one of its stars/pulsars actually falls inside the range,
     // same idea as the kind filter but resolved through [_allEntries]
     // rather than a field on [Project] itself.
     if (range != null) {
-      final projectIdsInRange = _allEntries
+      final projectIdsInRange = _allEntriesFor(areas ?? _areaFilter)
           .where((e) => _isWithinRange(e.sortKey, range))
           .map((e) => e.star?.projectId ?? e.habit?.projectId)
           .whereType<int>()
@@ -463,15 +475,16 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           .where((p) => p.name.toLowerCase().contains(query))
           .toList();
     }
-    projects = [...projects]..sort(_compareProjects);
     return projects;
   }
 
   /// Every star and pulsar across the filtered areas' projects, of every
   /// kind, newest first — the unfiltered pool the kind-filter counts and the
   /// flat list itself are both drawn from.
-  List<_SkyEntry> get _allEntries {
-    final projectIds = _projectsById.keys.toSet();
+  List<_SkyEntry> get _allEntries => _allEntriesFor(_areaFilter);
+
+  List<_SkyEntry> _allEntriesFor(Set<LifeArea> areas) {
+    final projectIds = _areaProjectsFor(areas).map((p) => p.id).toSet();
     final entries = <_SkyEntry>[
       for (final star in _starsCache)
         if (projectIds.contains(star.projectId)) _SkyEntry.fromStar(star),
@@ -491,15 +504,27 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     return _directed(ascending);
   }
 
-  List<_SkyEntry> get _filteredEntries {
+  List<_SkyEntry> get _filteredEntries =>
+      _entriesMatching()..sort(_compareEntries);
+
+  /// The stars the filters leave, unsorted; [areas], [kinds] and [dateRange]
+  /// stand in for the live filters (see [_projectsMatching]).
+  List<_SkyEntry> _entriesMatching({
+    Set<LifeArea>? areas,
+    Set<StarKind>? kinds,
+    ({DateTimeRange? range})? dateRange,
+    ({int? id})? project,
+  }) {
     final query = _query.trim().toLowerCase();
-    final range = _dateRangeFilter;
-    final entries = _allEntries.where((e) {
-      if (!_kindFilter.contains(e.kind)) {
+    final range = dateRange != null ? dateRange.range : _dateRangeFilter;
+    final kindFilter = kinds ?? _kindFilter;
+    final projectFilterId = project != null ? project.id : _projectFilterId;
+    return _allEntriesFor(areas ?? _areaFilter).where((e) {
+      if (!kindFilter.contains(e.kind)) {
         return false;
       }
-      if (_projectFilterId != null &&
-          (e.star?.projectId ?? e.habit!.projectId) != _projectFilterId) {
+      if (projectFilterId != null &&
+          (e.star?.projectId ?? e.habit!.projectId) != projectFilterId) {
         return false;
       }
       if (range != null && !_isWithinRange(e.sortKey, range)) return false;
@@ -507,9 +532,47 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       return e.title.toLowerCase().contains(query) ||
           (e.description?.toLowerCase().contains(query) ?? false);
     }).toList();
-    entries.sort(_compareEntries);
-    return entries;
   }
+
+  IconData get _modeIcon => switch (_mode) {
+    _SkyMode.supernovas => Icons.flare,
+    _SkyMode.constellations => Icons.insights,
+    _SkyMode.stars => Icons.star,
+  };
+
+  /// The current mode's level word for [count] cards (area, constellation or
+  /// star, singular or plural).
+  String _resultsWord(int count) {
+    final strings = context.strings;
+    return switch (_mode) {
+      _SkyMode.supernovas => strings.resultsAreasWord(count),
+      _SkyMode.constellations => strings.resultsConstellationsWord(count),
+      _SkyMode.stars => strings.resultsStarsWord(count),
+    };
+  }
+
+  /// How many cards the current mode shows right now.
+  int _resultCount(AppStrings strings) => switch (_mode) {
+    _SkyMode.supernovas => _filteredSupernovaAreas(strings).length,
+    _SkyMode.constellations => _projectsMatching().length,
+    _SkyMode.stars => _entriesMatching().length,
+  };
+
+  /// How many cards the current mode would show with the given pending filter
+  /// choices swapped in — what a filter sheet previews above its buttons.
+  int _previewCount({
+    Set<LifeArea>? areas,
+    Set<StarKind>? kinds,
+    ({DateTimeRange? range})? dateRange,
+    ({int? id})? project,
+  }) => _mode == _SkyMode.stars
+      ? _entriesMatching(
+          areas: areas,
+          kinds: kinds,
+          dateRange: dateRange,
+          project: project,
+        ).length
+      : _projectsMatching(areas: areas, dateRange: dateRange).length;
 
   /// [_filteredEntries] as the star reader's pages, in the same order —
   /// stars and pulsars alike, so prev/next walks exactly what the list shows.
@@ -1543,6 +1606,11 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     final result = await showAreaFilterSheet(
       context,
       selectedAreas: _areaFilter,
+      preview: FilterPreview<Set<LifeArea>>(
+        icon: _modeIcon,
+        countFor: (areas) => _previewCount(areas: areas),
+        wordFor: _resultsWord,
+      ),
     );
     if (result == null) return;
     setState(() => _areaFilter = result);
@@ -1555,6 +1623,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       widget.projectRepository,
       widget.starsShapeRepository,
       allowCreate: false,
+      instantPick: false,
       selected: _projectsCache
           .where((p) => p.id == _projectFilterId)
           .firstOrNull,
@@ -1562,6 +1631,11 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         setState(() => _projectFilterId = null);
         _saveSession();
       },
+      preview: FilterPreview<int?>(
+        icon: _modeIcon,
+        countFor: (id) => _previewCount(project: (id: id)),
+        wordFor: _resultsWord,
+      ),
     );
     if (picked == null) return;
     setState(() => _projectFilterId = picked.id);
@@ -1572,6 +1646,11 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     final result = await showKindFilterSheet(
       context,
       selectedKinds: _kindFilter,
+      preview: FilterPreview<Set<StarKind>>(
+        icon: _modeIcon,
+        countFor: (kinds) => _previewCount(kinds: kinds),
+        wordFor: _resultsWord,
+      ),
     );
     if (result == null) return;
     setState(() => _kindFilter = result);
@@ -1583,6 +1662,11 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       context,
       initialRange: _dateRangeFilter,
       initialPreset: _dateRangePreset,
+      preview: FilterPreview<DateTimeRange?>(
+        icon: _modeIcon,
+        countFor: (range) => _previewCount(dateRange: (range: range)),
+        wordFor: _resultsWord,
+      ),
     );
     if (result == null) return;
     setState(() {
@@ -2035,6 +2119,19 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                             ),
                           );
                         },
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Builder(
+                          builder: (_) {
+                            final count = _resultCount(strings);
+                            return ResultsCountRow(
+                              icon: _modeIcon,
+                              count: count,
+                              word: _resultsWord(count),
+                            );
+                          },
+                        ),
                       ),
                     ],
                   ),

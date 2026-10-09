@@ -46,12 +46,20 @@ class AppSheetAction extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.iconColor,
+    this.uppercase = true,
+    this.selected = false,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onPressed;
   final Color? iconColor;
+
+  /// Off to show [label] as written instead of in capitals.
+  final bool uppercase;
+
+  /// Draws the row as the current choice.
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +73,7 @@ class AppSheetAction extends StatelessWidget {
         child: Container(
           constraints: const BoxConstraints(minHeight: 48),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: selectableDecoration(colors, selected: false),
+          decoration: selectableDecoration(colors, selected: selected),
           child: ExcludeSemantics(
             child: Row(
               children: [
@@ -74,6 +82,7 @@ class AppSheetAction extends StatelessWidget {
                 Expanded(
                   child: AppButtonLabel(
                     label,
+                    uppercase: uppercase,
                     color: colors.text,
                     fontSize: 12,
                     textAlign: TextAlign.start,

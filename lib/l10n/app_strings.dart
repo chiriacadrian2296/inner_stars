@@ -445,6 +445,11 @@ abstract class AppStrings {
   String get filterAreasAction;
   String get areaFilterDefaultLabel;
   String activeAreasCount(int count);
+
+  /// The bare level word ("area"/"areas") that follows Sky's results count.
+  String resultsAreasWord(int count);
+  String resultsConstellationsWord(int count);
+  String resultsStarsWord(int count);
   String get filterKindAction;
   String get filterKindSectionTitle;
   String get allKindsLabel;
@@ -649,17 +654,18 @@ abstract class AppStrings {
   String get detailsLabel;
   String get intensityLabel;
   String get photoLabel;
+  String get mainPhotoLabel;
   String get addPhotoHint;
   String get photoSourceTitle;
   String get takePhotoOption;
   String get choosePhotoOption;
   String get photoPickError;
-  String get extrasLabel;
   String get extrasHint;
   String get extraVoiceNote;
   String get extraPhoto;
-  String get extraVideo;
   String get extraLink;
+  String get resetExtraAction;
+  String mediaMaxDuration(String duration);
   String get recordVoiceTitle;
   String get recordStart;
   String get recordStop;

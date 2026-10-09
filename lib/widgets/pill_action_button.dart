@@ -102,13 +102,13 @@ class SaveActionButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.lit = true,
-    this.icon = Icons.check,
+    this.icon,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final bool lit;
-  final IconData icon;
+  final IconData? icon;
 
   static const _minimumHeight = 48.0;
   static const _padding = EdgeInsets.symmetric(horizontal: 20, vertical: 12);
@@ -136,8 +136,10 @@ class SaveActionButton extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, color: foreground, size: 18),
-                const SizedBox(width: 8),
+                if (icon != null) ...[
+                  Icon(icon, color: foreground, size: 18),
+                  const SizedBox(width: 8),
+                ],
                 AppButtonLabel(
                   label,
                   color: foreground,

@@ -62,9 +62,14 @@ class AppButtonLabel extends StatelessWidget {
     this.maxLines = 1,
     this.overflow = TextOverflow.ellipsis,
     this.textAlign = TextAlign.center,
+    this.uppercase = true,
   });
 
   final String label;
+
+  /// Off for a list of names (areas, constellations) that should read as
+  /// typed, with only their own initial capital.
+  final bool uppercase;
   final Color? color;
   final double fontSize;
   final int? maxLines;
@@ -75,7 +80,7 @@ class AppButtonLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     final inherited = DefaultTextStyle.of(context).style;
     return Text(
-      label.toUpperCase(),
+      uppercase ? label.toUpperCase() : label,
       maxLines: maxLines,
       overflow: overflow,
       textAlign: textAlign,
@@ -226,9 +231,6 @@ BoxDecoration fieldDecoration(AppColors colors, FieldState state) {
       color: fieldBorderColor(colors, state),
       width: fieldBorderWidth(state),
     ),
-    boxShadow: state == FieldState.focused
-        ? goldGlow(colors, strength: 0.7, size: 40)
-        : null,
   );
 }
 

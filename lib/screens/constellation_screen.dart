@@ -756,13 +756,9 @@ class _ConstellationSwipeBarState extends State<_ConstellationSwipeBar>
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _OutlinedSwipeIcon(Icons.chevron_left),
-              SizedBox(width: 20),
               _OutlinedSwipeIcon(Icons.swipe, size: 20),
               SizedBox(width: 8),
               _OutlinedSwipeText(),
-              SizedBox(width: 20),
-              _OutlinedSwipeIcon(Icons.chevron_right),
             ],
           ),
         ),

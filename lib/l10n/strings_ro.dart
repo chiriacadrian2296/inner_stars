@@ -434,6 +434,13 @@ class StringsRo implements AppStrings {
   @override
   String activeAreasCount(int count) => count == 1 ? '1 zonă' : '$count zone';
   @override
+  String resultsAreasWord(int count) => count == 1 ? 'zonă' : 'zone';
+  @override
+  String resultsConstellationsWord(int count) =>
+      count == 1 ? 'constelație' : 'constelații';
+  @override
+  String resultsStarsWord(int count) => count == 1 ? 'stea' : 'stele';
+  @override
   String get filterKindAction => 'Filtrează tipurile';
   @override
   String get filterKindSectionTitle => 'Tipul stelei';
@@ -1292,6 +1299,8 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get photoLabel => 'Fotografie';
   @override
+  String get mainPhotoLabel => 'Fotografie Principală';
+  @override
   String get addPhotoHint => 'Adaugă o fotografie';
   @override
   String get photoSourceTitle => 'Adaugă o Fotografie';
@@ -1303,8 +1312,6 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get photoPickError =>
       'Nu am putut obține fotografia. Încerci din nou?';
   @override
-  String get extrasLabel => 'Amintiri';
-  @override
   String get extrasHint =>
       'Adaugă o notă vocală, fotografii, un video sau un link pentru a-ți aminti această victorie.';
   @override
@@ -1312,9 +1319,11 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get extraPhoto => 'Fotografie';
   @override
-  String get extraVideo => 'Video';
-  @override
   String get extraLink => 'Link';
+  @override
+  String get resetExtraAction => 'Resetează';
+  @override
+  String mediaMaxDuration(String duration) => 'Max $duration';
   @override
   String get recordVoiceTitle => 'Înregistrează O Notă Vocală';
   @override
@@ -1349,7 +1358,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get voiceNotesLabel => 'Note Vocale';
   @override
-  String get extraPhotosLabel => 'Alte Fotografii';
+  String get extraPhotosLabel => 'Fotografii Secundare';
   @override
   String get videosLabel => 'Videoclipuri';
   @override

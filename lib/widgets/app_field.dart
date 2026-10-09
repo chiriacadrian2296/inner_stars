@@ -20,6 +20,19 @@ enum FieldRequirement {
       this == FieldRequirement.required ? colors.gold : colors.muted;
 }
 
+/// The label's own color, but smaller and lighter, so a limit ("12/50")
+/// never competes with the title it sits beside. [fieldLengthNoteStyle] is
+/// smaller still, for a per-item length such as "Max 1:00".
+TextStyle fieldLimitStyle(BuildContext context) => context
+    .typography
+    .compactSectionLabel
+    .copyWith(fontSize: 11, fontWeight: FontWeight.w500, letterSpacing: 0.6);
+
+TextStyle fieldLengthNoteStyle(BuildContext context) => context
+    .typography
+    .compactSectionLabel
+    .copyWith(fontSize: 9.5, fontWeight: FontWeight.w400, letterSpacing: 0.4);
+
 /// The small muted caption that sits above every field. Its own widget
 /// because it appeared, hand-written and very slightly different, above
 /// roughly fifteen fields across the app.
@@ -28,17 +41,32 @@ enum FieldRequirement {
 /// apply to (a slider that's never empty, a static non-editable box) —
 /// those render with no dot at all rather than an arbitrary guess.
 class AppFieldLabel extends StatelessWidget {
-  const AppFieldLabel(this.label, {super.key, this.requirement});
+  const AppFieldLabel(
+    this.label, {
+    super.key,
+    this.requirement,
+    this.counterController,
+    this.counterMax,
+  });
 
   final String label;
   final FieldRequirement? requirement;
+
+  /// With both set, the row also shows "length/max" of this controller's
+  /// text, right-aligned in the label's own style — the field below then
+  /// passes `showCounter: false`.
+  final TextEditingController? counterController;
+  final int? counterMax;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final requirement = this.requirement;
+    final counter = counterController;
+    final max = counterMax;
+    final hasCounter = counter != null && max != null;
     return Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: hasCounter ? MainAxisSize.max : MainAxisSize.min,
       children: [
         // Before the text, not after — so the dot sits in the same column
         // for every field regardless of how long each one's own label is,
@@ -48,6 +76,16 @@ class AppFieldLabel extends StatelessWidget {
           const SizedBox(width: 5),
         ],
         Text(label, style: context.typography.compactSectionLabel),
+        if (hasCounter) ...[
+          const Spacer(),
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: counter,
+            builder: (context, value, _) => Text(
+              '${value.text.characters.length}/$max',
+              style: fieldLimitStyle(context),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -155,6 +193,7 @@ class AppTextField extends StatefulWidget {
     this.minLines,
     this.maxLines = 1,
     this.maxLength,
+    this.showCounter = true,
     this.autofocus = false,
     this.textInputAction,
     this.onChanged,
@@ -172,6 +211,9 @@ class AppTextField extends StatefulWidget {
 
   /// Caps the text and shows a "x/y" counter under the field.
   final int? maxLength;
+
+  /// Off when the form's [AppFieldLabel] shows the count instead.
+  final bool showCounter;
   final bool autofocus;
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onChanged;
@@ -213,40 +255,32 @@ class _AppTextFieldState extends State<AppTextField> {
           enabled: widget.enabled,
           hasError: widget.errorText != null,
         );
-        // The glow can't go through InputDecoration, so it's painted behind
-        // the field; the border itself still comes from the decoration so
-        // the text/hint keep their normal insets.
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(kRadiusField),
-            boxShadow: state == FieldState.focused
-                ? goldGlow(colors, strength: 0.7, size: 40)
-                : null,
-          ),
-          child: TextField(
-            controller: widget.controller,
-            focusNode: _focusNode,
-            enabled: widget.enabled,
-            readOnly: widget.readOnly,
-            autofocus: widget.autofocus,
-            minLines: widget.minLines,
-            maxLines: widget.maxLines,
-            maxLength: widget.maxLength,
-            textInputAction: widget.textInputAction,
-            onChanged: widget.onChanged,
-            onTapOutside: (_) => _focusNode.unfocus(),
-            style: TextStyle(color: colors.text, fontSize: 15),
-            decoration: InputDecoration(
-              hintText: widget.hintText,
-              errorText: widget.errorText,
-              prefixIcon: widget.prefixIcon,
-              suffixIcon: widget.suffixIcon,
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(kRadiusField),
-                borderSide: BorderSide(
-                  color: fieldBorderColor(colors, state),
-                  width: fieldBorderWidth(state),
-                ),
+        // Focus is the gold border alone, no glow; the border comes from the
+        // decoration so the text/hint keep their normal insets.
+        return TextField(
+          controller: widget.controller,
+          focusNode: _focusNode,
+          enabled: widget.enabled,
+          readOnly: widget.readOnly,
+          autofocus: widget.autofocus,
+          minLines: widget.minLines,
+          maxLines: widget.maxLines,
+          maxLength: widget.maxLength,
+          textInputAction: widget.textInputAction,
+          onChanged: widget.onChanged,
+          onTapOutside: (_) => _focusNode.unfocus(),
+          style: TextStyle(color: colors.text, fontSize: 15),
+          decoration: InputDecoration(
+            hintText: widget.hintText,
+            errorText: widget.errorText,
+            counterText: widget.showCounter ? null : '',
+            prefixIcon: widget.prefixIcon,
+            suffixIcon: widget.suffixIcon,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(kRadiusField),
+              borderSide: BorderSide(
+                color: fieldBorderColor(colors, state),
+                width: fieldBorderWidth(state),
               ),
             ),
           ),

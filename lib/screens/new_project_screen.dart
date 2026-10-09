@@ -462,7 +462,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   }
 
   Future<void> _openAreaPicker() async {
-    final picked = await pickArea(context);
+    final picked = await pickArea(context, selected: _selectedArea);
     if (picked != null && mounted) {
       setState(() => _selectedArea = picked);
     }
@@ -637,14 +637,16 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       AppFieldLabel(
-                        strings.nameLabel,
+                        strings.titleFieldLabel,
                         requirement: FieldRequirement.required,
+                        counterController: _nameController,
+                        counterMax: kTitleMaxLength,
                       ),
                       const SizedBox(height: 6),
                       AppTextField(
                         controller: _nameController,
                         maxLength: kTitleMaxLength,
-                        autofocus: widget.presetArea != null,
+                        showCounter: false,
                         hintText: strings.newProjectNameHint,
                       ),
                     ],
@@ -659,11 +661,14 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                       AppFieldLabel(
                         strings.projectDescriptionLabel,
                         requirement: FieldRequirement.optional,
+                        counterController: _descriptionController,
+                        counterMax: kProjectDescriptionMaxLength,
                       ),
                       const SizedBox(height: 6),
                       AppTextField(
                         controller: _descriptionController,
                         maxLength: kProjectDescriptionMaxLength,
+                        showCounter: false,
                         maxLines: 3,
                         hintText: strings.projectDescriptionHint,
                       ),
