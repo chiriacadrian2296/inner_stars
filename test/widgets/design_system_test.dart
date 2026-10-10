@@ -24,6 +24,7 @@ void main() {
           children: [
             SaveActionButton(
               key: const Key('save'),
+              icon: Icons.check_rounded,
               label: 'Salva',
               onPressed: () {},
             ),

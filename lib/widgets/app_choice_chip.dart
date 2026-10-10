@@ -13,7 +13,6 @@ class AppChoiceChip extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.iconColor,
-    this.showCheck = false,
     this.expand = false,
   });
 
@@ -22,7 +21,6 @@ class AppChoiceChip extends StatelessWidget {
   final VoidCallback? onPressed;
   final IconData? icon;
   final Color? iconColor;
-  final bool showCheck;
   final bool expand;
 
   @override
@@ -31,7 +29,7 @@ class AppChoiceChip extends StatelessWidget {
     final enabled = onPressed != null;
     final content = Row(
       mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
-      mainAxisAlignment: icon == null && !showCheck
+      mainAxisAlignment: icon == null
           ? MainAxisAlignment.center
           : MainAxisAlignment.start,
       children: [
@@ -47,14 +45,6 @@ class AppChoiceChip extends StatelessWidget {
           Expanded(child: _label(context))
         else
           Flexible(child: _label(context)),
-        if (showCheck) ...[
-          const SizedBox(width: 8),
-          Icon(
-            selected ? Icons.check_circle : Icons.circle_outlined,
-            size: 16,
-            color: selected ? colors.gold : colors.muted,
-          ),
-        ],
       ],
     );
 
@@ -86,11 +76,9 @@ class AppChoiceChip extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       // An expanded text-only choice still reads as a centered button.
-      // Choices with a leading/trailing affordance keep their label aligned
-      // beside that affordance instead.
-      textAlign: expand && (icon != null || showCheck)
-          ? TextAlign.start
-          : TextAlign.center,
+      // Choices with a leading icon keep their label aligned beside it
+      // instead.
+      textAlign: expand && icon != null ? TextAlign.start : TextAlign.center,
       style: context.typography.controlLabel.copyWith(
         color: selected ? colors.text : colors.muted,
         fontWeight: selected ? FontWeight.w600 : FontWeight.w400,

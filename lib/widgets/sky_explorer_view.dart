@@ -82,7 +82,7 @@ class SkyExplorerSession {
   Set<LifeArea> areaFilter = {...LifeArea.values};
 
   /// Stars only: the one constellation to show stars from (null = all).
-  int? projectFilterId;
+  Set<int> projectFilterIds = {};
   final scrollOffsets = <int, double>{};
   Object? openCardMenuId;
 
@@ -285,7 +285,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   // and an empty set really means that nothing matches.
   late Set<StarKind> _kindFilter;
   late Set<LifeArea> _areaFilter;
-  int? _projectFilterId;
+  Set<int> _projectFilterIds = {};
 
   /// Which chip (if any) produced [_dateRangeFilter] — kept alongside it
   /// purely so a reopened sheet can still show the right chip highlighted
@@ -326,10 +326,9 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   void _refreshDataCache() {
     _projectsCache = widget.projectRepository.getAll();
     // A constellation deleted since the filter was set can't match anything.
-    if (_projectFilterId != null &&
-        !_projectsCache.any((p) => p.id == _projectFilterId)) {
-      _projectFilterId = null;
-    }
+    _projectFilterIds.removeWhere(
+      (id) => !_projectsCache.any((p) => p.id == id),
+    );
     _starsCache = widget.starRepository.getAll();
     _habitsCache = widget.habitRepository.getAll();
     _shapesByIdCache = {
@@ -367,7 +366,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       ..modeIndex = _mode.index
       ..kindFilter = {..._kindFilter}
       ..areaFilter = {..._areaFilter}
-      ..projectFilterId = _projectFilterId
+      ..projectFilterIds = {..._projectFilterIds}
       ..openCardMenuId = _cardMenuController.openId;
     for (var i = 0; i < _scrollControllers.length; i++) {
       final controller = _scrollControllers[i];
@@ -513,18 +512,18 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     Set<LifeArea>? areas,
     Set<StarKind>? kinds,
     ({DateTimeRange? range})? dateRange,
-    ({int? id})? project,
+    Set<int>? projects,
   }) {
     final query = _query.trim().toLowerCase();
     final range = dateRange != null ? dateRange.range : _dateRangeFilter;
     final kindFilter = kinds ?? _kindFilter;
-    final projectFilterId = project != null ? project.id : _projectFilterId;
+    final projectFilter = projects ?? _projectFilterIds;
     return _allEntriesFor(areas ?? _areaFilter).where((e) {
       if (!kindFilter.contains(e.kind)) {
         return false;
       }
-      if (projectFilterId != null &&
-          (e.star?.projectId ?? e.habit!.projectId) != projectFilterId) {
+      if (projectFilter.isNotEmpty &&
+          !projectFilter.contains(e.star?.projectId ?? e.habit!.projectId)) {
         return false;
       }
       if (range != null && !_isWithinRange(e.sortKey, range)) return false;
@@ -564,13 +563,13 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     Set<LifeArea>? areas,
     Set<StarKind>? kinds,
     ({DateTimeRange? range})? dateRange,
-    ({int? id})? project,
+    Set<int>? projects,
   }) => _mode == _SkyMode.stars
       ? _entriesMatching(
           areas: areas,
           kinds: kinds,
           dateRange: dateRange,
-          project: project,
+          projects: projects,
         ).length
       : _projectsMatching(areas: areas, dateRange: dateRange).length;
 
@@ -612,7 +611,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     _queryController = TextEditingController(text: _query);
     _kindFilter = {...session.kindFilter};
     _areaFilter = {...session.areaFilter};
-    _projectFilterId = session.projectFilterId;
+    _projectFilterIds = {...session.projectFilterIds};
     _refreshDataCache();
     _cardMenuController = SearchCardMenuController(
       initialOpenId: session.openCardMenuId,
@@ -1618,27 +1617,19 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   }
 
   Future<void> _openProjectFilter() async {
-    final picked = await pickProject(
+    final picked = await pickProjectFilter(
       context,
       widget.projectRepository,
       widget.starsShapeRepository,
-      allowCreate: false,
-      instantPick: false,
-      selected: _projectsCache
-          .where((p) => p.id == _projectFilterId)
-          .firstOrNull,
-      onCleared: () {
-        setState(() => _projectFilterId = null);
-        _saveSession();
-      },
-      preview: FilterPreview<int?>(
+      selected: _projectFilterIds,
+      preview: FilterPreview<Set<int>>(
         icon: _modeIcon,
-        countFor: (id) => _previewCount(project: (id: id)),
+        countFor: (ids) => _previewCount(projects: ids),
         wordFor: _resultsWord,
       ),
     );
     if (picked == null) return;
-    setState(() => _projectFilterId = picked.id);
+    setState(() => _projectFilterIds = picked);
     _saveSession();
   }
 
@@ -1718,15 +1709,17 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   bool get _isAreaFilterNarrowed =>
       _areaFilter.length != LifeArea.values.length;
 
-  bool get _isProjectFilterActive => _projectFilterId != null;
+  bool get _isProjectFilterActive => _projectFilterIds.isNotEmpty;
 
-  /// The constellation button's own label — the picked constellation's name,
-  /// or the neutral "Constellation" while none is picked.
+  /// The constellation button's own label — the picked constellation's name
+  /// when there is one, how many when there are several, or the neutral
+  /// "Constellation" while none is picked.
   String _projectFilterButtonLabel(AppStrings strings) {
-    final id = _projectFilterId;
-    if (id == null) return strings.projectLabel;
+    if (_projectFilterIds.length > 1) {
+      return strings.activeProjectsCount(_projectFilterIds.length);
+    }
     for (final project in _projectsCache) {
-      if (project.id == id) return project.name;
+      if (_projectFilterIds.contains(project.id)) return project.name;
     }
     return strings.projectLabel;
   }
@@ -1757,7 +1750,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   void _resetAllFilters() {
     setState(() {
       _areaFilter = {...LifeArea.values};
-      _projectFilterId = null;
+      _projectFilterIds = {};
       _kindFilter = {...kListableStarKinds};
       _dateRangeFilter = null;
       _dateRangePreset = DateRangePreset.allTime;

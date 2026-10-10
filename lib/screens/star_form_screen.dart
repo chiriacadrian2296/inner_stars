@@ -1006,7 +1006,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                           counterController: _titleController,
                           counterMax: kTitleMaxLength,
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: kFieldLabelGap),
                         AppTextField(
                           controller: _titleController,
                           maxLength: kTitleMaxLength,
@@ -1031,7 +1031,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                           counterController: _descriptionController,
                           counterMax: kStarDescriptionMaxLength,
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: kFieldLabelGap),
                         AppTextField(
                           controller: _descriptionController,
                           maxLength: kStarDescriptionMaxLength,
@@ -1137,11 +1137,10 @@ class _StarFormScreenState extends State<StarFormScreen> {
                               strings.intensityLabel,
                               requirement: FieldRequirement.required,
                             ),
-                            // Same label-to-content gap every other field uses
-                            // (6), not this section's own one-off 10 — kept it
-                            // from reading as more loosely spaced than its
-                            // neighbors.
-                            const SizedBox(height: 6),
+                            // The shared label-to-content gap, not this section's own
+                            // one-off 10 — kept it from reading as more loosely
+                            // spaced than its neighbors.
+                            const SizedBox(height: kFieldLabelGap),
                             Center(
                               child: _intensityTouched
                                   ? IntensityBolts(
@@ -1235,7 +1234,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                               requirement: FieldRequirement.required,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: kFieldLabelGap),
                           Row(
                             children: [
                               Expanded(
@@ -1450,8 +1449,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                               ),
                             ],
                           ),
-                          // The 28 px row (reset button) already leaves ~6 px
-                          // under the label text, as in every other field.
+                          const SizedBox(height: kFieldLabelGap),
                           LayoutBuilder(
                             builder: (context, constraints) {
                               const gap = 12.0;
@@ -1697,17 +1695,24 @@ class _StarKindSwitch extends StatelessWidget {
                           // of star, in place of the lines of text that used to
                           // explain it (the full meaning is still in the
                           // metaphor guide).
-                          SizedBox(
-                            // Full width of the tile, not just as wide as the
-                            // picture inside it — otherwise the glow was cut
-                            // off at the picture's own narrow edges.
-                            width: double.infinity,
-                            height: 76,
-                            child: Opacity(
-                              opacity: kinds[i] == selected ? 1 : 0.55,
-                              child: SearchStarVisual(
-                                kind: kinds[i],
-                                pulsarBothStates: true,
+                          // 8 above, the same as the title has below, with
+                          // the picture's box 8 shorter so the tile keeps its
+                          // height and the picture sits lower, nearer the
+                          // title.
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: SizedBox(
+                              // Full width of the tile, not just as wide as the
+                              // picture inside it — otherwise the glow was cut
+                              // off at the picture's own narrow edges.
+                              width: double.infinity,
+                              height: 68,
+                              child: Opacity(
+                                opacity: kinds[i] == selected ? 1 : 0.55,
+                                child: SearchStarVisual(
+                                  kind: kinds[i],
+                                  pulsarBothStates: true,
+                                ),
                               ),
                             ),
                           ),

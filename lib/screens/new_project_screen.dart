@@ -642,7 +642,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                         counterController: _nameController,
                         counterMax: kTitleMaxLength,
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: kFieldLabelGap),
                       AppTextField(
                         controller: _nameController,
                         maxLength: kTitleMaxLength,
@@ -664,7 +664,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                         counterController: _descriptionController,
                         counterMax: kProjectDescriptionMaxLength,
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: kFieldLabelGap),
                       AppTextField(
                         controller: _descriptionController,
                         maxLength: kProjectDescriptionMaxLength,
@@ -715,7 +715,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                                     strings.chooseShapeLabel,
                                     requirement: FieldRequirement.required,
                                   ),
-                                  const SizedBox(height: 8),
+                                  const SizedBox(height: kFieldLabelGap),
                                   _SelectedShapePreview(
                                     shape: _selectedShape,
                                     label: _selectedShapeName(strings),
@@ -769,7 +769,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                                     requirement: FieldRequirement.required,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: kFieldLabelGap),
                                 Expanded(
                                   child: StaggeredEntrance(
                                     index: 6,

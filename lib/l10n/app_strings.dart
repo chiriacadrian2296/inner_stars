@@ -445,6 +445,7 @@ abstract class AppStrings {
   String get filterAreasAction;
   String get areaFilterDefaultLabel;
   String activeAreasCount(int count);
+  String activeProjectsCount(int count);
 
   /// The bare level word ("area"/"areas") that follows Sky's results count.
   String resultsAreasWord(int count);
@@ -452,7 +453,6 @@ abstract class AppStrings {
   String resultsStarsWord(int count);
   String get filterKindAction;
   String get filterKindSectionTitle;
-  String get allKindsLabel;
   String get kindFilterDefaultLabel;
   String activeKindsCount(int count);
   String get applyFilterAction;
@@ -857,7 +857,6 @@ abstract class AppStrings {
 
   // Admire Your Stars (random reflection, filterable by area)
   String get chooseSupernovasToInclude;
-  String get allAreasLabel;
   String get admireAllAreasLabel;
   String get pickAtLeastOneArea;
   String get noStarsInSelection;

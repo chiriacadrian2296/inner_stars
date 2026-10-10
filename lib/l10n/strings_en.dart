@@ -431,6 +431,9 @@ class StringsEn implements AppStrings {
   @override
   String activeAreasCount(int count) => count == 1 ? '1 area' : '$count areas';
   @override
+  String activeProjectsCount(int count) =>
+      count == 1 ? '1 constellation' : '$count constellations';
+  @override
   String resultsAreasWord(int count) => count == 1 ? 'area' : 'areas';
   @override
   String resultsConstellationsWord(int count) =>
@@ -441,8 +444,6 @@ class StringsEn implements AppStrings {
   String get filterKindAction => 'Filter kinds';
   @override
   String get filterKindSectionTitle => 'Star Kinds';
-  @override
-  String get allKindsLabel => 'All';
   @override
   String get kindFilterDefaultLabel => 'Star Kinds';
   @override
@@ -1612,8 +1613,6 @@ My contribution meets a real need and is something I can sustain.
 
   @override
   String get chooseSupernovasToInclude => 'Choose which supernovas to include';
-  @override
-  String get allAreasLabel => 'All';
   @override
   String get admireAllAreasLabel => 'All';
   @override

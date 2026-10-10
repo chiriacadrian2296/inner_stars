@@ -5,7 +5,6 @@ import 'package:inner_stars/l10n/strings_it.dart';
 import 'package:inner_stars/l10n/strings_scope.dart';
 import 'package:inner_stars/models/life_area.dart';
 import 'package:inner_stars/models/star_kind.dart';
-import 'package:inner_stars/theme/app_colors.dart';
 import 'package:inner_stars/theme/app_theme.dart';
 import 'package:inner_stars/widgets/area_filter_sheet.dart';
 import 'package:inner_stars/widgets/kind_filter_sheet.dart';
@@ -13,8 +12,9 @@ import 'package:inner_stars/widgets/kind_filter_sheet.dart';
 void main() {
   const strings = StringsIt();
 
-  testWidgets('area filters start all on and only enable changed actions', (
-    tester,
+  Future<void> open(
+    WidgetTester tester,
+    Widget Function(BuildContext) button,
   ) async {
     await tester.pumpWidget(
       StringsScope(
@@ -23,15 +23,7 @@ void main() {
           child: MaterialApp(
             theme: buildAppTheme(),
             home: Builder(
-              builder: (context) => Scaffold(
-                body: ElevatedButton(
-                  onPressed: () => showAreaFilterSheet(
-                    context,
-                    selectedAreas: {...LifeArea.values},
-                  ),
-                  child: const Text('Apri'),
-                ),
-              ),
+              builder: (context) => Scaffold(body: button(context)),
             ),
           ),
         ),
@@ -39,8 +31,24 @@ void main() {
     );
     await tester.tap(find.text('Apri'));
     await tester.pumpAndSettle();
+  }
 
-    expect(find.text('Tutto'), findsOneWidget);
+  testWidgets('area filter starts with nothing chosen and has no All switch', (
+    tester,
+  ) async {
+    Set<LifeArea>? result;
+    await open(
+      tester,
+      (context) => ElevatedButton(
+        onPressed: () async => result = await showAreaFilterSheet(
+          context,
+          selectedAreas: {...LifeArea.values},
+        ),
+        child: const Text('Apri'),
+      ),
+    );
+
+    expect(find.byType(Switch), findsNothing);
     expect(_textButton(tester, strings.clearFilterAction).onPressed, isNull);
     expect(
       _elevatedButton(tester, strings.applyFilterAction).onPressed,
@@ -54,54 +62,54 @@ void main() {
       _elevatedButton(tester, strings.applyFilterAction).onPressed,
       isNotNull,
     );
-    expect(
-      tester.getCenter(find.text(strings.clearFilterAction.toUpperCase())).dx,
-      lessThan(
-        tester.getCenter(find.text(strings.applyFilterAction.toUpperCase())).dx,
+
+    await tester.tap(find.text(strings.applyFilterAction.toUpperCase()));
+    await tester.pumpAndSettle();
+    expect(result, {LifeArea.physical});
+  });
+
+  testWidgets('area filter: clearing, or choosing none, means every area', (
+    tester,
+  ) async {
+    Set<LifeArea>? result;
+    await open(
+      tester,
+      (context) => ElevatedButton(
+        onPressed: () async => result = await showAreaFilterSheet(
+          context,
+          selectedAreas: {LifeArea.physical, LifeArea.professional},
+        ),
+        child: const Text('Apri'),
       ),
     );
 
     await tester.tap(find.text(strings.clearFilterAction.toUpperCase()));
     await tester.pump();
     expect(_textButton(tester, strings.clearFilterAction).onPressed, isNull);
-    expect(
-      _elevatedButton(tester, strings.applyFilterAction).onPressed,
-      isNull,
-    );
+    await tester.tap(find.text(strings.applyFilterAction.toUpperCase()));
+    await tester.pumpAndSettle();
+    expect(result, {...LifeArea.values});
   });
 
-  testWidgets('kind All label follows selected and unselected chip colors', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      StringsScope(
-        strings: strings,
-        child: TourScope(
-          child: MaterialApp(
-            theme: buildAppTheme(),
-            home: Builder(
-              builder: (context) => Scaffold(
-                body: ElevatedButton(
-                  onPressed: () => showKindFilterSheet(
-                    context,
-                    selectedKinds: {...kListableStarKinds},
-                  ),
-                  child: const Text('Apri'),
-                ),
-              ),
-            ),
-          ),
+  testWidgets('kind filter works the same way', (tester) async {
+    Set<StarKind>? result;
+    await open(
+      tester,
+      (context) => ElevatedButton(
+        onPressed: () async => result = await showKindFilterSheet(
+          context,
+          selectedKinds: {...kListableStarKinds},
         ),
+        child: const Text('Apri'),
       ),
     );
-    await tester.tap(find.text('Apri'));
-    await tester.pumpAndSettle();
 
-    Text label() => tester.widget<Text>(find.text('Tutto'));
-    expect(label().style?.color, AppColors.dark.text);
-    await tester.tap(find.text('Tutto'));
+    expect(find.byType(Switch), findsNothing);
+    await tester.tap(find.text(kListableStarKinds.first.plural(strings)));
     await tester.pump();
-    expect(label().style?.color, AppColors.dark.muted);
+    await tester.tap(find.text(strings.applyFilterAction.toUpperCase()));
+    await tester.pumpAndSettle();
+    expect(result, {kListableStarKinds.first});
   });
 }
 

@@ -292,6 +292,7 @@ class StarMediaEditor extends StatelessWidget {
               _RemovableRow(
                 key: ValueKey(item.id),
                 onRemove: () => _remove(item),
+                onTap: () => openExtraLink(context, item),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
@@ -402,8 +403,7 @@ class _ExtraField extends StatelessWidget {
             MemoryResetButton(onReset: onReset, canReset: count > 0),
           ],
         ),
-        // The 28 px row (reset button) already leaves ~6 px under the label
-        // text, the same label-to-content gap every other field has.
+        const SizedBox(height: kFieldLabelGap),
         zone,
         if (note != null) MemoryCaption(note),
       ],
@@ -412,9 +412,17 @@ class _ExtraField extends StatelessWidget {
 }
 
 class _RemovableRow extends StatelessWidget {
-  const _RemovableRow({super.key, required this.child, required this.onRemove});
+  const _RemovableRow({
+    super.key,
+    required this.child,
+    required this.onRemove,
+    this.onTap,
+  });
 
   final Widget child;
+
+  /// Tapping anywhere on the tile (but its remove badge).
+  final VoidCallback? onTap;
   final VoidCallback onRemove;
 
   @override
@@ -425,11 +433,15 @@ class _RemovableRow extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          DecoratedBox(
-            decoration: _tileBody(colors),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: _kTileHeight),
-              child: Center(child: child),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap,
+            child: DecoratedBox(
+              decoration: _tileBody(colors),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: _kTileHeight),
+                child: Center(child: child),
+              ),
             ),
           ),
           Positioned(
@@ -664,7 +676,7 @@ class _LinkDialogState extends State<_LinkDialog> {
             counterController: _url,
             counterMax: kMaxLinkUrlLength,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: kFieldLabelGap),
           AppTextField(
             controller: _url,
             maxLength: kMaxLinkUrlLength,
@@ -681,7 +693,7 @@ class _LinkDialogState extends State<_LinkDialog> {
             counterController: _label,
             counterMax: kMaxLinkLabelLength,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: kFieldLabelGap),
           AppTextField(
             controller: _label,
             maxLength: kMaxLinkLabelLength,

@@ -20,6 +20,10 @@ enum FieldRequirement {
       this == FieldRequirement.required ? colors.gold : colors.muted;
 }
 
+/// The space between a field's name row and the field itself — the one value
+/// every form uses, so a name row must not add height of its own.
+const double kFieldLabelGap = 6;
+
 /// The label's own color, but smaller and lighter, so a limit ("12/50")
 /// never competes with the title it sits beside. [fieldLengthNoteStyle] is
 /// smaller still, for a per-item length such as "Max 1:00".
@@ -414,7 +418,7 @@ class AppPickerField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppFieldLabel(label!, requirement: requirement),
-        const SizedBox(height: 6),
+        const SizedBox(height: kFieldLabelGap),
         fieldWithError,
       ],
     );

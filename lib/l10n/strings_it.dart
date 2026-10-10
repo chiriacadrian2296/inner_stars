@@ -434,6 +434,9 @@ class StringsIt implements AppStrings {
   @override
   String activeAreasCount(int count) => count == 1 ? '1 area' : '$count aree';
   @override
+  String activeProjectsCount(int count) =>
+      count == 1 ? '1 costellazione' : '$count costellazioni';
+  @override
   String resultsAreasWord(int count) => count == 1 ? 'area' : 'aree';
   @override
   String resultsConstellationsWord(int count) =>
@@ -444,8 +447,6 @@ class StringsIt implements AppStrings {
   String get filterKindAction => 'Filtra tipi';
   @override
   String get filterKindSectionTitle => 'Tipo di stella';
-  @override
-  String get allKindsLabel => 'Tutto';
   @override
   String get kindFilterDefaultLabel => 'Tipi stella';
   @override
@@ -1627,8 +1628,6 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
 
   @override
   String get chooseSupernovasToInclude => 'Scegli le supernove da includere';
-  @override
-  String get allAreasLabel => 'Tutto';
   @override
   String get admireAllAreasLabel => 'Tutte';
   @override

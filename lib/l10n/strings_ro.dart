@@ -434,6 +434,9 @@ class StringsRo implements AppStrings {
   @override
   String activeAreasCount(int count) => count == 1 ? '1 zonă' : '$count zone';
   @override
+  String activeProjectsCount(int count) =>
+      count == 1 ? '1 constelație' : '$count constelații';
+  @override
   String resultsAreasWord(int count) => count == 1 ? 'zonă' : 'zone';
   @override
   String resultsConstellationsWord(int count) =>
@@ -444,8 +447,6 @@ class StringsRo implements AppStrings {
   String get filterKindAction => 'Filtrează tipurile';
   @override
   String get filterKindSectionTitle => 'Tipul stelei';
-  @override
-  String get allKindsLabel => 'Toate';
   @override
   String get kindFilterDefaultLabel => 'Tipuri de stele';
   @override
@@ -1624,8 +1625,6 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get chooseSupernovasToInclude =>
       'Alege supernovele pe care vrei să le incluzi';
-  @override
-  String get allAreasLabel => 'Toate';
   @override
   String get admireAllAreasLabel => 'Toate';
   @override

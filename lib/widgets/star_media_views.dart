@@ -588,7 +588,7 @@ class StarLinkRow extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => _open(context),
+        onTap: () => openExtraLink(context, media),
         customBorder: const StadiumBorder(),
         child: Container(
           constraints: const BoxConstraints(maxWidth: 200),
@@ -626,19 +626,20 @@ class StarLinkRow extends StatelessWidget {
       ),
     );
   }
+}
 
-  Future<void> _open(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final message = context.strings.linkOpenError;
-    final uri = parseExtraLink(media.url ?? '');
-    var ok = false;
-    if (uri != null) {
-      try {
-        ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } catch (_) {}
-    }
-    if (!ok) messenger.showSnackBar(SnackBar(content: Text(message)));
+/// Opens a link extra in the browser, or says it could not be opened.
+Future<void> openExtraLink(BuildContext context, StarMedia link) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final message = context.strings.linkOpenError;
+  final uri = parseExtraLink(link.url ?? '');
+  var ok = false;
+  if (uri != null) {
+    try {
+      ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {}
   }
+  if (!ok) messenger.showSnackBar(SnackBar(content: Text(message)));
 }
 
 /// What a link pill says: its label if it has one, else just the site

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../data/custom_constellation_repository.dart';
@@ -28,40 +29,34 @@ class _ClearSelection {
 }
 
 /// Picks an existing constellation, or creates a new one inline via
-/// [NewProjectScreen]. With [allowCreate] off (the Sky's constellation
-/// filter) it only lists what exists: no "New" button.
+/// [NewProjectScreen]. With [allowCreate] off it only lists what exists: no
+/// "New" button.
 ///
 /// Always lists every constellation across every area. [area] is only an
 /// optional initial value for the complete editor opened by "New"; it never
 /// narrows this picker, otherwise returning here after one choice can trap
 /// the user inside that constellation's area.
 ///
-/// With [instantPick] (the default, the star form) one tap on a row picks it
-/// and closes the sheet, and a Reset button (when [onCleared] is given)
-/// clears the current choice. With it off (the Sky's filter) the sheet is
-/// the original two-column chip list: select, then Apply; Reset deselects,
-/// and applying that empty choice calls [onCleared] and returns null.
-/// [selected] is shown as already chosen either way.
+/// One tap on a row picks it and closes the sheet, and a Reset button (when
+/// [onCleared] is given) clears the current choice. [selected] is shown as
+/// already chosen. (The Sky's constellation filter, which takes several, is
+/// [pickProjectFilter].)
 Future<Project?> pickProject(
   BuildContext context,
   ProjectRepository repository,
   StarsShapeRepository starsShapeRepository, {
   LifeArea? area,
   bool allowCreate = true,
-  bool instantPick = true,
   Project? selected,
   VoidCallback? onCleared,
-  FilterPreview<int?>? preview,
 }) async {
   final result = await _pickProjectFlat(
     context,
     repository,
     starsShapeRepository,
     allowCreate: allowCreate,
-    instantPick: instantPick,
     initialId: selected?.id,
     allowClear: onCleared != null,
-    preview: preview,
   );
   if (!context.mounted) return null;
   if (result is _ClearSelection) {
@@ -83,15 +78,45 @@ Future<Project?> pickProject(
   return null;
 }
 
+/// The Sky's constellation filter: a two-column chip list where any number of
+/// constellations can be chosen, then applied. Nothing chosen means no
+/// filter (every constellation shows). Returns the chosen ids (empty for no
+/// filter), or null if dismissed without applying.
+Future<Set<int>?> pickProjectFilter(
+  BuildContext context,
+  ProjectRepository repository,
+  StarsShapeRepository starsShapeRepository, {
+  required Set<int> selected,
+  FilterPreview<Set<int>>? preview,
+}) async {
+  final result = await _pickProjectFlat(
+    context,
+    repository,
+    starsShapeRepository,
+    allowCreate: false,
+    initialId: null,
+    allowClear: false,
+    filterIds: selected,
+    preview: preview,
+  );
+  return result is _ProjectIdsChosen ? result.ids : null;
+}
+
+class _ProjectIdsChosen {
+  const _ProjectIdsChosen(this.ids);
+
+  final Set<int> ids;
+}
+
 Future<Object?> _pickProjectFlat(
   BuildContext context,
   ProjectRepository repository,
   StarsShapeRepository starsShapeRepository, {
   required bool allowCreate,
-  required bool instantPick,
   required int? initialId,
   required bool allowClear,
-  FilterPreview<int?>? preview,
+  Set<int>? filterIds,
+  FilterPreview<Set<int>>? preview,
 }) {
   final maxHeight = MediaQuery.sizeOf(context).height * 0.85;
   return showFixedAppSheet<Object>(
@@ -102,9 +127,9 @@ Future<Object?> _pickProjectFlat(
         starsShapeRepository: starsShapeRepository,
         maxHeight: maxHeight,
         allowCreate: allowCreate,
-        instantPick: instantPick,
         initialId: initialId,
         allowClear: allowClear,
+        filterIds: filterIds,
         preview: preview,
       );
     },
@@ -120,19 +145,23 @@ class _FlatProjectPickerSheet extends StatefulWidget {
     required this.starsShapeRepository,
     required this.maxHeight,
     required this.allowCreate,
-    required this.instantPick,
     required this.initialId,
     required this.allowClear,
+    this.filterIds,
     this.preview,
   });
 
+  /// Filter mode (the Sky's constellation filter) when set: the constellations
+  /// chosen so far; the sheet is then a multi-select chip list with Apply.
+  /// Unset, it is the one-tap picker.
+  final Set<int>? filterIds;
+
   /// Filter mode only: previews the cards the pending choice would leave.
-  final FilterPreview<int?>? preview;
+  final FilterPreview<Set<int>>? preview;
   final List<Project> projects;
   final StarsShapeRepository starsShapeRepository;
   final double maxHeight;
   final bool allowCreate;
-  final bool instantPick;
   final int? initialId;
   final bool allowClear;
 
@@ -143,7 +172,7 @@ class _FlatProjectPickerSheet extends StatefulWidget {
 
 class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
   String _query = '';
-  late int? _selectedId = widget.initialId;
+  late Set<int> _selectedIds = {...?widget.filterIds};
   Set<LifeArea> _areaFilter = {...LifeArea.values};
   DateTimeRange? _dateRangeFilter;
   DateRangePreset _dateRangePreset = DateRangePreset.allTime;
@@ -327,7 +356,7 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
     const rowHeight = 48.0;
     const gap = 10.0;
     const emptyList = 72.0;
-    final rows = widget.instantPick
+    final rows = _instantPick
         ? widget.projects.length
         : (widget.projects.length + 1) ~/ 2;
     final list = rows == 0 ? emptyList : rows * rowHeight + (rows - 1) * gap;
@@ -335,28 +364,22 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
     return (chrome + list + bottomInset).clamp(0.0, widget.maxHeight);
   }
 
-  bool get _showPreview => !widget.instantPick && widget.preview != null;
+  bool get _instantPick => widget.filterIds == null;
 
-  bool get _canApply =>
-      _selectedId != widget.initialId &&
-      (_selectedId != null || widget.allowClear);
+  bool get _showPreview => !_instantPick && widget.preview != null;
 
-  void _apply() {
-    final id = _selectedId;
-    Navigator.of(context).pop(
-      id == null
-          ? const _ClearSelection()
-          : widget.projects.firstWhere((project) => project.id == id),
-    );
-  }
+  bool get _canApply => !setEquals(_selectedIds, widget.filterIds);
 
-  /// The filter's chip: tapping only selects; Apply commits.
+  void _apply() => Navigator.of(context).pop(_ProjectIdsChosen(_selectedIds));
+
+  /// The filter's chip: tapping toggles it; Apply commits.
   Widget _projectChip(Project project) => AppChoiceChip(
     icon: iconForSlug(project.iconSlug),
     label: project.name,
-    selected: _selectedId == project.id,
-    onPressed: () => setState(() => _selectedId = project.id),
-    showCheck: true,
+    selected: _selectedIds.contains(project.id),
+    onPressed: () => setState(() {
+      if (!_selectedIds.remove(project.id)) _selectedIds.add(project.id);
+    }),
     expand: true,
   );
 
@@ -437,7 +460,7 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
                             ),
                           ),
                         )
-                      : widget.instantPick
+                      : _instantPick
                       ? ListView.separated(
                           itemCount: filtered.length,
                           separatorBuilder: (_, _) =>
@@ -474,7 +497,7 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
               ),
               if (_showPreview) ...[
                 const SizedBox(height: 20),
-                Align(child: widget.preview!.rowFor(_selectedId)),
+                Align(child: widget.preview!.rowFor(_selectedIds)),
                 const SizedBox(height: 16),
               ] else
                 const SizedBox(height: 24),
@@ -485,11 +508,11 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
                   spacing: 12,
                   runSpacing: 8,
                   children: [
-                    if (!widget.instantPick) ...[
+                    if (!_instantPick) ...[
                       TextButton(
-                        onPressed: _selectedId == null
+                        onPressed: _selectedIds.isEmpty
                             ? null
-                            : () => setState(() => _selectedId = null),
+                            : () => setState(() => _selectedIds = {}),
                         child: AppButtonLabel(strings.clearFilterAction),
                       ),
                       if (widget.allowCreate)

@@ -7,23 +7,22 @@ import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import 'app_choice_chip.dart';
-import 'app_toggle_chip.dart';
 import 'results_count_row.dart';
 import 'staggered_entrance.dart';
 import 'star_glyph.dart';
 
 /// Opens the star-kind filter used by Sky's Stars view — a multi-select
 /// chip grid, one chip per [kListableStarKinds] entry, each in its own
-/// family's color so the filter reads the same way the sky does. Tapping a
-/// chip *adds* it to the filter; every kind starts checked, matching the
-/// unfiltered result set. Sibling to [showAreaFilterSheet] (split
-/// into its own button/sheet rather than a second section bolted onto that
-/// one, so each filter stands for exactly one thing) — same shape, same
-/// apply-or-keep contract, just for kinds instead of areas.
+/// family's color so the filter reads the same way the sky does. Nothing
+/// chosen means no filter (every kind shows); choosing some narrows it to
+/// just those. Sibling to [showAreaFilterSheet] (split into its own
+/// button/sheet rather than a second section bolted onto that one, so each
+/// filter stands for exactly one thing) — same shape, same apply-or-keep
+/// contract, just for kinds instead of areas: [selectedKinds] and the result
+/// are the kinds the filter lets through, so "no filter" is the full set.
 ///
-/// Returns the new selection, or null if dismissed without tapping Apply
-/// (caller should keep its previous filter in that case). An empty result
-/// is valid and means that no kind matches.
+/// Returns null if dismissed without tapping Apply (caller should keep its
+/// previous filter in that case).
 Future<Set<StarKind>?> showKindFilterSheet(
   BuildContext context, {
   required Set<StarKind> selectedKinds,
@@ -48,23 +47,25 @@ class _KindFilterSheet extends StatefulWidget {
 }
 
 class _KindFilterSheetState extends State<_KindFilterSheet> {
-  late Set<StarKind> _kinds = {...widget.initialKinds};
-  late final Set<StarKind> _initialKinds = {...widget.initialKinds};
+  // What is chosen on the chips: empty while the filter lets every kind in.
+  late Set<StarKind> _chosen = _chosenFrom(widget.initialKinds);
+  late final Set<StarKind> _initialChosen = {..._chosen};
 
-  bool get _allKindsSelected => _kinds.length == kListableStarKinds.length;
-  bool get _hasChanges => !setEquals(_kinds, _initialKinds);
+  static Set<StarKind> _chosenFrom(Set<StarKind> filter) =>
+      filter.length == kListableStarKinds.length ? {} : {...filter};
 
-  void _toggleAllKinds() {
-    setState(() => _kinds = _allKindsSelected ? {} : {...kListableStarKinds});
-  }
+  /// The kinds the filter lets through: all of them while nothing is chosen.
+  Set<StarKind> get _kinds =>
+      _chosen.isEmpty ? {...kListableStarKinds} : {..._chosen};
+  bool get _hasChanges => !setEquals(_chosen, _initialChosen);
 
   void _toggleKind(StarKind kind) {
     setState(() {
-      if (!_kinds.remove(kind)) _kinds.add(kind);
+      if (!_chosen.remove(kind)) _chosen.add(kind);
     });
   }
 
-  void _clear() => setState(() => _kinds = {...kListableStarKinds});
+  void _clear() => setState(() => _chosen = {});
 
   @override
   Widget build(BuildContext context) {
@@ -85,15 +86,6 @@ class _KindFilterSheetState extends State<_KindFilterSheet> {
               ),
             ),
             const SizedBox(height: 20),
-            StaggeredEntrance(
-              index: 1,
-              child: AppToggleChip(
-                label: strings.allKindsLabel,
-                value: _allKindsSelected,
-                onChanged: (_) => _toggleAllKinds(),
-              ),
-            ),
-            const SizedBox(height: 16),
             // Two per row, in [kListableStarKinds] order — one chip per
             // kind, each in its own family's color, so the filter reads
             // the same way the sky does.
@@ -112,7 +104,9 @@ class _KindFilterSheetState extends State<_KindFilterSheet> {
                         child: AppChoiceChip(
                           icon: kListableStarKinds[row * 2 + col].icon,
                           iconColor:
-                              _kinds.contains(kListableStarKinds[row * 2 + col])
+                              _chosen.contains(
+                                kListableStarKinds[row * 2 + col],
+                              )
                               ? starKindColor(
                                   kListableStarKinds[row * 2 + col],
                                   colors,
@@ -121,12 +115,11 @@ class _KindFilterSheetState extends State<_KindFilterSheet> {
                           label: kListableStarKinds[row * 2 + col].plural(
                             strings,
                           ),
-                          selected: _kinds.contains(
+                          selected: _chosen.contains(
                             kListableStarKinds[row * 2 + col],
                           ),
                           onPressed: () =>
                               _toggleKind(kListableStarKinds[row * 2 + col]),
-                          showCheck: true,
                           expand: true,
                         ),
                       ),
@@ -146,7 +139,7 @@ class _KindFilterSheetState extends State<_KindFilterSheet> {
                 runSpacing: 8,
                 children: [
                   TextButton(
-                    onPressed: _allKindsSelected ? null : _clear,
+                    onPressed: _chosen.isEmpty ? null : _clear,
                     child: AppButtonLabel(strings.clearFilterAction),
                   ),
                   ElevatedButton(

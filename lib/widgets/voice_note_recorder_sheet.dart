@@ -191,13 +191,19 @@ class _VoiceNoteRecorderSheetState extends State<_VoiceNoteRecorderSheet> {
                   onPressed: () => Navigator.of(context).pop(),
                   child: AppButtonLabel(strings.cancel, color: colors.muted),
                 ),
-                if (_phase == _Phase.recorded && !_failed) ...[
-                  const SizedBox(width: 12),
-                  ElevatedButton(
-                    onPressed: _keep,
-                    child: AppButtonLabel(strings.recordKeep),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: _phase == _Phase.recorded && !_failed
+                      ? _keep
+                      : null,
+                  // Off, it keeps a visible button background (the theme's off
+                  // colour is the sheet's own, so it would vanish).
+                  style: ElevatedButton.styleFrom(
+                    disabledBackgroundColor: colors.nightBorder,
+                    disabledForegroundColor: colors.muted,
                   ),
-                ],
+                  child: AppButtonLabel(strings.recordKeep),
+                ),
               ],
             ),
           ],

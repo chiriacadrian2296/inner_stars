@@ -20,8 +20,11 @@ class MemoryResetButton extends StatelessWidget {
   /// Off while the field holds nothing.
   final bool canReset;
 
-  /// Height of the row it sits in, so every field's name row is as tall.
-  static const double extent = 28;
+  /// As tall as its icon, so it never makes the field's name row taller than
+  /// the label text itself (then the gap below the name row would differ
+  /// from every other field's); wider than that for an easier tap.
+  static const double extent = 18;
+  static const double width = 28;
 
   @override
   Widget build(BuildContext context) {
@@ -32,9 +35,9 @@ class MemoryResetButton extends StatelessWidget {
       color: colors.gold,
       disabledColor: colors.muted,
       padding: EdgeInsets.zero,
-      constraints: const BoxConstraints.tightFor(width: extent, height: extent),
+      constraints: const BoxConstraints.tightFor(width: width, height: extent),
       // Without this the button claims a 48 px tap target, which made the
-      // whole name row 48 px tall instead of [extent].
+      // whole name row 48 px tall.
       style: IconButton.styleFrom(
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
