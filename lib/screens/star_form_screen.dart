@@ -34,6 +34,7 @@ import '../utils/page_settled.dart';
 import '../widgets/app_field.dart';
 import '../widgets/area_picker.dart';
 import '../widgets/intensity_bolts.dart';
+import '../widgets/memory_field_actions.dart';
 import '../widgets/photo_picker.dart';
 import '../widgets/pill_action_button.dart';
 import '../widgets/project_picker.dart';
@@ -235,6 +236,13 @@ class _StarFormScreenState extends State<StarFormScreen> {
   late LifeArea? _selectedArea = _selectedProject?.area;
   late int _intensity =
       widget.existingStar?.intensity ?? widget.existingHabit?.intensity ?? 3;
+
+  /// Whether the intensity holds a value the person chose (or one already
+  /// saved). Until then the bolts and slider sit inactive, like an empty
+  /// field, even though [_intensity] carries the default.
+  late bool _intensityTouched =
+      widget.existingStar?.intensity != null ||
+      widget.existingHabit?.intensity != null;
 
   /// Null until the user actually picks a date (or, when editing a lit
   /// star, seeded from the date it was lit on).
@@ -715,6 +723,15 @@ class _StarFormScreenState extends State<StarFormScreen> {
     setState(() => _photoPath = null);
   }
 
+  /// The Photos section's Reset: the main photo and every secondary one.
+  void _resetPhotos() {
+    _removePhoto();
+    _onMediaChanged([
+      for (final m in _media)
+        if (m.kind != StarMediaKind.photo) m,
+    ]);
+  }
+
   Future<void> _pickDate() async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -1126,13 +1143,29 @@ class _StarFormScreenState extends State<StarFormScreen> {
                             // neighbors.
                             const SizedBox(height: 6),
                             Center(
-                              child: IntensityBolts(
-                                intensity: _intensity,
-                                size: 26,
-                                spacing: 6,
-                                emphasizeLast: true,
-                                emphasizedScale: 1.6,
-                              ),
+                              child: _intensityTouched
+                                  ? IntensityBolts(
+                                      intensity: _intensity,
+                                      size: 26,
+                                      spacing: 6,
+                                      emphasizeLast: true,
+                                      emphasizedScale: 1.6,
+                                    )
+                                  // Untouched: all small, flat, in the
+                                  // field-label color, none lit.
+                                  // Same height as the emphasized bolt, whose
+                                  // glow copy is drawn 1.15x its size (26 *
+                                  // 1.6 * 1.15) and sets the row's height, so
+                                  // nothing below jumps on first use.
+                                  : SizedBox(
+                                      height: 26 * 1.6 * 1.15,
+                                      child: IntensityBolts(
+                                        intensity: 0,
+                                        size: 26,
+                                        spacing: 6,
+                                        color: context.colors.muted,
+                                      ),
+                                    ),
                             ),
                             const SizedBox(height: 14),
                             Center(
@@ -1148,16 +1181,35 @@ class _StarFormScreenState extends State<StarFormScreen> {
                                 // Zeroing it here makes this widget's own
                                 // bounding box actually match what's visible.
                                 child: SliderTheme(
-                                  data: SliderTheme.of(context)
-                                      .copyWith(padding: EdgeInsets.zero),
+                                  data: _intensityTouched
+                                      ? SliderTheme.of(context)
+                                            .copyWith(padding: EdgeInsets.zero)
+                                      : SliderTheme.of(context).copyWith(
+                                          padding: EdgeInsets.zero,
+                                          activeTrackColor:
+                                              context.colors.muted,
+                                          thumbColor: context.colors.muted,
+                                          activeTickMarkColor:
+                                              context.colors.muted,
+                                          overlayColor: context.colors.muted
+                                              .withValues(alpha: 0.12),
+                                        ),
                                   child: Slider(
                                     value: _intensity.toDouble(),
                                     min: 1,
                                     max: 5,
                                     divisions: 4,
-                                    onChanged: (value) => setState(
-                                      () => _intensity = value.round(),
-                                    ),
+                                    onChangeStart: (_) {
+                                      if (!_intensityTouched) {
+                                        setState(
+                                          () => _intensityTouched = true,
+                                        );
+                                      }
+                                    },
+                                    onChanged: (value) => setState(() {
+                                      _intensityTouched = true;
+                                      _intensity = value.round();
+                                    }),
                                   ),
                                 ),
                               ),
@@ -1375,27 +1427,71 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     StaggeredEntrance(
                       index: 12,
                       replayKey: _kindEpoch,
+                      // The photo section, split in two halves: the main
+                      // photo on the left, the secondary photos (two columns)
+                      // on the right. The main preview keeps 9:16 and the
+                      // secondary grid fills its height so both halves line up.
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          StaggeredEntrance(
-                            index: 0,
-                            replayKey: _kindEpoch,
-                            child: AppFieldLabel(
-                              strings.mainPhotoLabel,
-                              requirement: FieldRequirement.optional,
-                            ),
+                          Row(
+                            children: [
+                              AppFieldLabel(
+                                strings.photosLabel,
+                                requirement: FieldRequirement.optional,
+                              ),
+                              MemoryResetButton(
+                                onReset: _resetPhotos,
+                                canReset:
+                                    _photoPath != null ||
+                                    _media.any(
+                                      (m) => m.kind == StarMediaKind.photo,
+                                    ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 6),
-                          StaggeredEntrance(
-                            index: 1,
-                            replayKey: _kindEpoch,
-                            child: PhotoPicker(
-                              photoPath: _photoPath,
-                              onPick: _pickPhoto,
-                              onRemove: _removePhoto,
-                              compact: true,
-                            ),
+                          // The 28 px row (reset button) already leaves ~6 px
+                          // under the label text, as in every other field.
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              const gap = 12.0;
+                              final half = (constraints.maxWidth - gap) / 2;
+                              // The main photo keeps its 9:16 frame; the secondary
+                              // grid then resizes to fill exactly that height.
+                              final gridHeight = half * 16 / 9;
+                              return Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        PhotoPicker(
+                                          photoPath: _photoPath,
+                                          onPick: _pickPhoto,
+                                          onRemove: _removePhoto,
+                                          compact: true,
+                                          compactWidth: half,
+                                          compactHeight: gridHeight,
+                                        ),
+                                        MemoryCaption(strings.mainPhotoLabel),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: gap),
+                                  Expanded(
+                                    child: StarMediaEditor(
+                                      media: _media,
+                                      onChanged: _onMediaChanged,
+                                      kinds: const [StarMediaKind.photo],
+                                      compact: true,
+                                      gridHeight: gridHeight,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -1407,6 +1503,11 @@ class _StarFormScreenState extends State<StarFormScreen> {
                       child: StarMediaEditor(
                         media: _media,
                         onChanged: _onMediaChanged,
+                        kinds: const [
+                          StarMediaKind.video,
+                          StarMediaKind.voice,
+                          StarMediaKind.link,
+                        ],
                       ),
                     ),
                   ],

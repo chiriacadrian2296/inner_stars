@@ -24,10 +24,23 @@ class StarMediaEditor extends StatelessWidget {
     super.key,
     required this.media,
     required this.onChanged,
+    this.kinds = StarMediaKind.values,
+    this.compact = false,
+    this.gridHeight,
   });
 
   final List<StarMedia> media;
   final ValueChanged<List<StarMedia>> onChanged;
+
+  /// Which kinds this instance shows, so the form can place photos apart
+  /// from the rest; every instance edits the same [media] list.
+  final List<StarMediaKind> kinds;
+
+  /// Half-width layout: photos in two columns, no counter or length note.
+  final bool compact;
+
+  /// With [compact], the exact height the photo grid should fill.
+  final double? gridHeight;
 
   int _countOf(StarMediaKind kind) => media.where((m) => m.kind == kind).length;
 
@@ -171,57 +184,78 @@ class StarMediaEditor extends StatelessWidget {
       if (m.kind != kind) m,
   ]);
 
+  /// Below this width (a phone) voice notes and links stack at full width
+  /// instead of sharing a row.
+  static const _pairedMinWidth = 520.0;
+
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) =>
+          _content(context, wide: constraints.maxWidth >= _pairedMinWidth),
+    );
+  }
+
+  Widget _content(BuildContext context, {required bool wide}) {
     final strings = context.strings;
     final colors = context.colors;
     List<StarMedia> of(StarMediaKind kind) =>
         media.where((m) => m.kind == kind).toList();
 
-    final fields = <Widget>[
+    // Voice notes and links sit side by side, half the width each, whenever
+    // one instance shows both and there is room.
+    final paired =
+        wide &&
+        !compact &&
+        kinds.contains(StarMediaKind.voice) &&
+        kinds.contains(StarMediaKind.link);
+
+    final fields = <_ExtraField>[
       _ExtraField(
         label: strings.extraPhotosLabel,
         kind: StarMediaKind.photo,
+        compact: compact,
         count: _countOf(StarMediaKind.photo),
-        icon: Icons.add_photo_alternate_outlined,
-        onAdd: () => _addPhotos(context),
         onReset: () => _reset(StarMediaKind.photo),
         zone: _MediaTileGrid(
           items: of(StarMediaKind.photo),
+          perRow: compact ? 2 : 5,
+          fitHeight: gridHeight,
           onRemove: _remove,
           ghosts: _remaining(StarMediaKind.photo),
           ghostIcon: Icons.image_outlined,
+          onGhostTap: () => _addPhotos(context),
         ),
       ),
       _ExtraField(
         label: strings.videosLabel,
         kind: StarMediaKind.video,
+        compact: compact,
         count: _countOf(StarMediaKind.video),
         lengthNote: strings.mediaMaxDuration(
           formatVoiceDuration(kMaxVideoDuration),
         ),
-        icon: Icons.videocam_outlined,
-        onAdd: () => _addVideo(context),
         onReset: () => _reset(StarMediaKind.video),
         zone: _MediaTileGrid(
           items: of(StarMediaKind.video),
           onRemove: _remove,
           badgeColor: colors.gold,
+          perRow: compact ? 2 : 5,
           ghosts: _remaining(StarMediaKind.video),
-          ghostIcon: Icons.play_arrow_rounded,
+          ghostIcon: Icons.movie_outlined,
+          onGhostTap: () => _addVideo(context),
         ),
       ),
       _ExtraField(
         label: strings.voiceNotesLabel,
         kind: StarMediaKind.voice,
+        compact: compact,
         count: _countOf(StarMediaKind.voice),
         lengthNote: strings.mediaMaxDuration(
           formatVoiceDuration(kMaxVoiceNote),
         ),
-        icon: Icons.mic_none_rounded,
-        onAdd: () => _addVoice(context),
         onReset: () => _reset(StarMediaKind.voice),
-        zone: _NarrowColumn(
+        zone: Column(
           children: [
             for (final item in of(StarMediaKind.voice))
               _RemovableRow(
@@ -231,44 +265,87 @@ class StarMediaEditor extends StatelessWidget {
                   media: item,
                   framed: false,
                   accent: colors.gold,
+                  badgeSize: 16,
+                  timeSize: 12,
+                  timeInset: 5,
+                  contentColor: Colors.white,
+                  timeColor: colors.gold,
                 ),
               ),
             for (var i = 0; i < _remaining(StarMediaKind.voice); i++)
-              const _KindPlaceholder(kind: StarMediaKind.voice),
+              _KindPlaceholder(
+                kind: StarMediaKind.voice,
+                onTap: () => _addVoice(context),
+              ),
           ],
         ),
       ),
       _ExtraField(
         label: strings.linksLabel,
         kind: StarMediaKind.link,
+        compact: compact,
         count: _countOf(StarMediaKind.link),
-        icon: Icons.link_rounded,
-        onAdd: () => _addLink(context),
         onReset: () => _reset(StarMediaKind.link),
-        zone: _NarrowColumn(
+        zone: Column(
           children: [
             for (final item in of(StarMediaKind.link))
               _RemovableRow(
                 key: ValueKey(item.id),
                 onRemove: () => _remove(item),
-                child: _LeadingText(
-                  icon: Icons.link_rounded,
-                  text: linkDisplayText(item),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 10,
+                  ),
+                  child: _LeadingText(
+                    icon: Icons.link_rounded,
+                    text: linkDisplayText(item),
+                  ),
                 ),
               ),
             for (var i = 0; i < _remaining(StarMediaKind.link); i++)
-              const _KindPlaceholder(kind: StarMediaKind.link),
+              _KindPlaceholder(
+                kind: StarMediaKind.link,
+                onTap: () => _addLink(context),
+              ),
           ],
         ),
       ),
     ];
 
+    final shown = [
+      for (final field in fields)
+        if (kinds.contains(field.kind)) field,
+    ];
+
+    // The voice-note and link fields collapse into one row, placed where the
+    // voice-note field was.
+    final sections = <Widget>[];
+    for (final field in shown) {
+      if (paired && field.kind == StarMediaKind.link) continue;
+      if (paired && field.kind == StarMediaKind.voice) {
+        final link = shown.firstWhere((f) => f.kind == StarMediaKind.link);
+        sections.add(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: field),
+              const SizedBox(width: 12),
+              Expanded(child: link),
+            ],
+          ),
+        );
+      } else {
+        sections.add(field);
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (var i = 0; i < fields.length; i++) ...[
+        for (var i = 0; i < sections.length; i++) ...[
           if (i > 0) const SizedBox(height: 24),
-          fields[i],
+          sections[i],
         ],
       ],
     );
@@ -282,12 +359,11 @@ class StarMediaEditor extends StatelessWidget {
 class _ExtraField extends StatelessWidget {
   const _ExtraField({
     required this.label,
-    required this.icon,
     required this.kind,
     required this.count,
-    required this.onAdd,
     required this.onReset,
     required this.zone,
+    this.compact = false,
     this.lengthNote,
   });
 
@@ -298,43 +374,38 @@ class _ExtraField extends StatelessWidget {
   /// kind's own maximum, right-aligned.
   final int count;
 
-  /// The longest a single item may be, centered on the label row.
+  /// The longest a single item may be, as a centered caption under the zone.
   final String? lengthNote;
-  final IconData icon;
-  final VoidCallback onAdd;
   final VoidCallback onReset;
   final Widget zone;
+
+  /// Half-width column: no name row, no length note.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final note = lengthNote;
-    final max = kMaxStarMediaPerKind[kind]!;
+    if (compact) {
+      // A half-width column of a shared section: no name row of its own, the
+      // name is a discreet caption under the zone.
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [zone, MemoryCaption(label)],
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Stack(
-          alignment: Alignment.center,
+        Row(
           children: [
-            Row(
-              children: [
-                AppFieldLabel(label, requirement: FieldRequirement.optional),
-                const Spacer(),
-                Text('$count/$max', style: fieldLimitStyle(context)),
-              ],
-            ),
-            if (note != null) Text(note, style: fieldLengthNoteStyle(context)),
+            AppFieldLabel(label, requirement: FieldRequirement.optional),
+            MemoryResetButton(onReset: onReset, canReset: count > 0),
           ],
         ),
-        const SizedBox(height: 8),
+        // The 28 px row (reset button) already leaves ~6 px under the label
+        // text, the same label-to-content gap every other field has.
         zone,
-        const SizedBox(height: 12),
-        MemoryFieldActions(
-          addIcon: icon,
-          onAdd: onAdd,
-          onReset: onReset,
-          canAdd: count < max,
-          canReset: count > 0,
-        ),
+        if (note != null) MemoryCaption(note),
       ],
     );
   }
@@ -351,14 +422,27 @@ class _RemovableRow extends StatelessWidget {
     final colors = context.colors;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Expanded(child: child),
-          IconButton(
-            tooltip: context.strings.removeExtraTooltip,
-            visualDensity: VisualDensity.compact,
-            onPressed: onRemove,
-            icon: Icon(Icons.close_rounded, color: colors.gold, size: 20),
+          DecoratedBox(
+            decoration: _tileBody(colors),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: _kTileHeight),
+              child: Center(child: child),
+            ),
+          ),
+          Positioned(
+            top: -6,
+            right: -6,
+            child: Tooltip(
+              message: context.strings.removeExtraTooltip,
+              child: InkWell(
+                onTap: onRemove,
+                customBorder: const CircleBorder(),
+                child: _MediaTileGrid._closeBadge(colors),
+              ),
+            ),
           ),
         ],
       ),
@@ -377,14 +461,33 @@ class _LeadingText extends StatelessWidget {
     final colors = context.colors;
     return Row(
       children: [
-        Icon(icon, color: colors.gold, size: 18),
+        SizedBox(
+          width: 26,
+          height: 26,
+          child: Center(child: Icon(icon, color: colors.gold, size: 16)),
+        ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
+            textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(color: colors.text, fontSize: 14),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Same slot as the icon on the left, so the text stays centered on the
+        // whole tile.
+        SizedBox(
+          width: 26,
+          height: 26,
+          child: Center(
+            child: Icon(
+              Icons.open_in_new_rounded,
+              color: colors.gold,
+              size: 16,
+            ),
           ),
         ),
       ],
@@ -401,6 +504,9 @@ class _MediaTileGrid extends StatelessWidget {
     required this.onRemove,
     required this.ghosts,
     required this.ghostIcon,
+    required this.onGhostTap,
+    required this.perRow,
+    this.fitHeight,
     this.badgeColor = Colors.white,
   });
 
@@ -408,40 +514,49 @@ class _MediaTileGrid extends StatelessWidget {
   final ValueChanged<StarMedia> onRemove;
   final int ghosts;
   final IconData ghostIcon;
+
+  /// Tapping a free slot adds one: the placeholders are the add button.
+  final VoidCallback onGhostTap;
+
+  final int perRow;
+
+  /// When set, the grid is exactly this tall (see [StarMediaEditor.gridHeight]).
+  final double? fitHeight;
   final Color badgeColor;
 
-  static const _perRow = 5;
   static const _gap = 8.0;
 
-  static Widget _closeBadge(AppColors colors) => Container(
-    padding: const EdgeInsets.all(3),
-    decoration: BoxDecoration(
-      color: colors.nightPanel,
-      shape: BoxShape.circle,
-      border: Border.all(color: colors.gold),
-    ),
-    child: Icon(Icons.close_rounded, size: 14, color: colors.gold),
-  );
+  static Widget _closeBadge(AppColors colors) =>
+      RemoveBadge(background: colors.nightPanel);
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Floored so rounding can never push the fifth tile onto a new row.
-        final tile = ((constraints.maxWidth - (_perRow - 1) * _gap) / _perRow)
+        final fit = fitHeight;
+        final rows = ((items.length + ghosts) / perRow).ceil().clamp(1, 99);
+        // Floored so rounding can never push the last tile of a row onto a
+        // new one. With [fitHeight] the tiles stay as wide as the columns
+        // allow but take whatever height makes the rows fill that height
+        // exactly, so they are no longer square.
+        final tileW = ((constraints.maxWidth - (perRow - 1) * _gap) / perRow)
             .floorToDouble();
+        final tileH = fit != null ? (fit - (rows - 1) * _gap) / rows : tileW;
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
+          padding: EdgeInsets.symmetric(vertical: fit != null ? 0 : 4),
           child: Wrap(
+            alignment: fit != null
+                ? WrapAlignment.spaceBetween
+                : WrapAlignment.start,
             spacing: _gap,
             runSpacing: _gap,
             children: [
               for (final item in items)
                 SizedBox(
                   key: ValueKey(item.id),
-                  width: tile,
-                  height: tile,
+                  width: tileW,
+                  height: tileH,
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
@@ -453,7 +568,8 @@ class _MediaTileGrid extends StatelessWidget {
                         ),
                         child: StarMediaTile(
                           media: item,
-                          size: tile,
+                          size: tileW,
+                          height: tileH,
                           badgeColor: badgeColor,
                           badgeSize: 28,
                         ),
@@ -471,16 +587,21 @@ class _MediaTileGrid extends StatelessWidget {
                   ),
                 ),
               for (var i = 0; i < ghosts; i++)
-                ExcludeSemantics(
-                  child: IgnorePointer(
+                Semantics(
+                  button: true,
+                  label: context.strings.addExtraAction,
+                  child: InkWell(
+                    onTap: onGhostTap,
+                    borderRadius: BorderRadius.circular(kRadiusField),
                     child: Container(
-                      width: tile,
-                      height: tile,
+                      width: tileW,
+                      height: tileH,
                       decoration: BoxDecoration(
                         color: colors.nightPanel,
                         borderRadius: BorderRadius.circular(kRadiusField),
                         border: Border.all(color: colors.nightBorder),
                       ),
+                      alignment: Alignment.center,
                       child: Icon(ghostIcon, color: colors.muted, size: 30),
                     ),
                   ),
@@ -520,46 +641,74 @@ class _LinkDialogState extends State<_LinkDialog> {
       setState(() => _invalid = true);
       return;
     }
-    final label = _label.text.trim();
-    Navigator.of(context)
-        .pop((url: uri.toString(), label: label.isEmpty ? null : label));
+    Navigator.of(context).pop((url: uri.toString(), label: _label.text.trim()));
   }
 
   @override
   Widget build(BuildContext context) {
     final strings = context.strings;
+    final colors = context.colors;
     return AppDialog(
       scrollable: true,
+      actionsAlignment: MainAxisAlignment.center,
+      // Top matches the 16 between title and first field, bottom the 24
+      // above the title.
+      actionsPadding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       title: Text(strings.linkTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          AppFieldLabel(
+            strings.linkUrlLabel,
+            requirement: FieldRequirement.required,
+            counterController: _url,
+            counterMax: kMaxLinkUrlLength,
+          ),
+          const SizedBox(height: 6),
           AppTextField(
             controller: _url,
-            autofocus: true,
             maxLength: kMaxLinkUrlLength,
+            showCounter: false,
             hintText: strings.linkUrlHint,
             textInputAction: TextInputAction.next,
             errorText: _invalid ? strings.linkInvalid : null,
-            onChanged: (_) {
-              if (_invalid) setState(() => _invalid = false);
-            },
+            onChanged: (_) => setState(() => _invalid = false),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          AppFieldLabel(
+            strings.linkLabelLabel,
+            requirement: FieldRequirement.required,
+            counterController: _label,
+            counterMax: kMaxLinkLabelLength,
+          ),
+          const SizedBox(height: 6),
           AppTextField(
             controller: _label,
             maxLength: kMaxLinkLabelLength,
+            showCounter: false,
             hintText: strings.linkLabelHint,
             textInputAction: TextInputAction.done,
+            onChanged: (_) => setState(() {}),
           ),
         ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: AppButtonLabel(strings.cancel),
+          child: AppButtonLabel(strings.cancel, color: colors.muted),
         ),
-        TextButton(onPressed: _submit, child: AppButtonLabel(strings.linkAdd)),
+        ElevatedButton(
+          onPressed: _url.text.trim().isEmpty || _label.text.trim().isEmpty
+              ? null
+              : _submit,
+          // Off, it keeps a visible button background (the theme's off
+          // colour is the dialog's own, so it would vanish).
+          style: ElevatedButton.styleFrom(
+            disabledBackgroundColor: colors.nightBorder,
+            disabledForegroundColor: colors.muted,
+          ),
+          child: AppButtonLabel(strings.linkAdd),
+        ),
       ],
     );
   }
@@ -569,35 +718,36 @@ class _LinkDialogState extends State<_LinkDialog> {
 /// play mark, bars and length, or link mark and line of text, and the same
 /// remove button position) but faint and flat, so it reads as a stand-in.
 class _KindPlaceholder extends StatelessWidget {
-  const _KindPlaceholder({required this.kind});
+  const _KindPlaceholder({required this.kind, required this.onTap});
 
   final StarMediaKind kind;
+
+  /// Tapping the stand-in adds one: the placeholder is the add button.
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final ghost = colors.muted;
-    final fill = BoxDecoration(
-      color: colors.nightPanel,
-      borderRadius: BorderRadius.circular(kRadiusField),
-      border: Border.all(color: colors.nightBorder),
-    );
+    final fill = _tileBody(colors);
     final Widget shape = switch (kind) {
       StarMediaKind.voice => Container(
         decoration: fill,
+        constraints: const BoxConstraints(minHeight: _kTileHeight),
+        alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Row(
           children: [
-            Container(
+            // Same 26 px slot as the play badge of a real voice note, so the
+            // bars and length start at the same place.
+            SizedBox(
               width: 26,
               height: 26,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: ghost, width: 2),
+              child: Center(
+                child: Icon(Icons.mic_none_outlined, size: 16, color: ghost),
               ),
-              child: Icon(Icons.play_arrow_rounded, color: ghost, size: 14),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 50),
             Expanded(
               child: SizedBox(
                 height: 18,
@@ -622,13 +772,19 @@ class _KindPlaceholder extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-            Text(
-              '0:00',
-              style: TextStyle(
-                color: ghost,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+            const SizedBox(width: 50),
+            // Same 5 px after the length as a real note (timeInset).
+            Padding(
+              padding: const EdgeInsets.only(right: 5),
+              child: Text(
+                '0:00',
+                maxLines: 1,
+                style: TextStyle(
+                  color: ghost,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
               ),
             ),
           ],
@@ -636,24 +792,35 @@ class _KindPlaceholder extends StatelessWidget {
       ),
       _ => Container(
         decoration: fill,
+        constraints: const BoxConstraints(minHeight: _kTileHeight),
+        alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         child: Row(
           children: [
-            Icon(Icons.link_rounded, color: ghost, size: 18),
-            const SizedBox(width: 8),
+            SizedBox(
+              width: 26,
+              height: 26,
+              child: Center(
+                child: Icon(Icons.link_rounded, color: ghost, size: 16),
+              ),
+            ),
+            const SizedBox(width: 50),
+            // Spans the same stretch as a voice note's bars, centered.
             Expanded(
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: FractionallySizedBox(
-                  widthFactor: 0.55,
-                  child: Container(
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: ghost,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
+              child: Container(
+                height: 5,
+                decoration: BoxDecoration(
+                  color: ghost,
+                  borderRadius: BorderRadius.circular(4),
                 ),
+              ),
+            ),
+            const SizedBox(width: 50),
+            SizedBox(
+              width: 26,
+              height: 26,
+              child: Center(
+                child: Icon(Icons.open_in_new_rounded, color: ghost, size: 16),
               ),
             ),
           ],
@@ -662,36 +829,29 @@ class _KindPlaceholder extends StatelessWidget {
     };
     // No remove button on a stand-in, but its width is held so it lines up
     // with the real rows beside it.
-    return ExcludeSemantics(
-      child: IgnorePointer(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            children: [
-              Expanded(child: shape),
-              const SizedBox(width: 40),
-            ],
-          ),
+    return Semantics(
+      button: true,
+      label: context.strings.addExtraAction,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(kRadiusField),
+          child: shape,
         ),
       ),
     );
   }
 }
 
-/// The voice-note and link rows are short, so they sit centered in a
-/// narrower column instead of stretching across the whole form.
-class _NarrowColumn extends StatelessWidget {
-  const _NarrowColumn({required this.children});
+/// As tall as the single-line fields above (a picker field: 12 of padding
+/// either side of a ~21 px line of text, plus its 1.5 px border each side).
+const double _kTileHeight = 48;
 
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 280),
-        child: Column(children: children),
-      ),
-    );
-  }
-}
+/// The body every voice-note and link row shares, real or placeholder: a
+/// plain field-colored tile with the field border.
+BoxDecoration _tileBody(AppColors colors) => BoxDecoration(
+  color: colors.nightPanel,
+  borderRadius: BorderRadius.circular(kRadiusField),
+  border: Border.all(color: colors.nightBorder),
+);

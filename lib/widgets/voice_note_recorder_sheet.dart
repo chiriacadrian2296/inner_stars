@@ -16,7 +16,7 @@ import '../utils/app_modals.dart';
 typedef VoiceNoteRecording = ({String path, int durationMs});
 
 /// Longest a single voice note can run before it stops by itself.
-const Duration kMaxVoiceNote = Duration(minutes: 2);
+const Duration kMaxVoiceNote = Duration(minutes: 5);
 
 String formatVoiceDuration(Duration d) {
   final minutes = d.inMinutes;
@@ -30,7 +30,6 @@ String formatVoiceDuration(Duration d) {
 Future<VoiceNoteRecording?> showVoiceNoteRecorder(BuildContext context) {
   return showAppSheet<VoiceNoteRecording>(
     context: context,
-    isDismissible: false,
     enableDrag: false,
     builder: (_) => const _VoiceNoteRecorderSheet(),
   );
@@ -94,6 +93,8 @@ class _VoiceNoteRecorderSheetState extends State<_VoiceNoteRecorderSheet> {
         if (!mounted) return;
         final next = _elapsed + const Duration(milliseconds: 250);
         if (next >= kMaxVoiceNote) {
+          // Show (and store) the full limit, not the last tick before it.
+          setState(() => _elapsed = kMaxVoiceNote);
           unawaited(_stop());
         } else {
           setState(() => _elapsed = next);
@@ -150,7 +151,11 @@ class _VoiceNoteRecorderSheetState extends State<_VoiceNoteRecorderSheet> {
               child: Text(
                 formatVoiceDuration(_elapsed),
                 style: TextStyle(
-                  color: recording ? colors.gold : colors.muted,
+                  color: recording
+                      ? colors.text
+                      : _phase == _Phase.recorded
+                      ? colors.gold
+                      : colors.muted,
                   fontSize: 40,
                   fontWeight: FontWeight.w300,
                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -182,9 +187,9 @@ class _VoiceNoteRecorderSheetState extends State<_VoiceNoteRecorderSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ElevatedButton(
+                TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: AppButtonLabel(strings.cancel),
+                  child: AppButtonLabel(strings.cancel, color: colors.muted),
                 ),
                 if (_phase == _Phase.recorded && !_failed) ...[
                   const SizedBox(width: 12),

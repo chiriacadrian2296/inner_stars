@@ -22,6 +22,11 @@ class VoiceNotePlayer extends StatefulWidget {
     required this.media,
     this.framed = true,
     this.accent = Colors.white,
+    this.contentColor,
+    this.timeColor,
+    this.badgeSize = 26,
+    this.timeSize = 14,
+    this.timeInset,
   });
 
   final StarMedia media;
@@ -30,9 +35,25 @@ class VoiceNotePlayer extends StatefulWidget {
   /// white elsewhere.
   final Color accent;
 
+  /// Color of the waveform and the length, when they should differ from the
+  /// [accent] play mark (gold mark, white content in the create form).
+  final Color? contentColor;
+
+  /// Color of the length alone; falls back to [contentColor].
+  final Color? timeColor;
+
   /// Whether it draws its own card — off when it sits inside a field
   /// that already has one.
   final bool framed;
+
+  /// Diameter of the play badge, centered in a 26 px slot either way.
+  final double badgeSize;
+
+  /// Font size of the length.
+  final double timeSize;
+
+  /// Extra space after the length, at its natural size.
+  final double? timeInset;
 
   @override
   State<VoiceNotePlayer> createState() => _VoiceNotePlayerState();
@@ -134,6 +155,15 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
   /// video, since this is a compact row.
   static const _badgeSize = 26.0;
 
+  Widget _withInset(Widget time) {
+    final inset = widget.timeInset;
+    if (inset == null) return time;
+    return Padding(
+      padding: EdgeInsets.only(right: inset),
+      child: time,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -161,12 +191,18 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
           children: [
             _failed
                 ? Icon(Icons.error_outline, color: colors.muted, size: 26)
-                : PlayBadge(
-                    size: _badgeSize,
-                    playing: _playing,
-                    color: widget.accent,
+                : SizedBox(
+                    width: _badgeSize,
+                    height: _badgeSize,
+                    child: Center(
+                      child: PlayBadge(
+                        size: widget.badgeSize,
+                        playing: _playing,
+                        color: widget.accent,
+                      ),
+                    ),
                   ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 50),
             Expanded(
               child: _failed
                   ? Text(
@@ -186,8 +222,9 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
                             painter: _WaveformPainter(
                               seed: widget.media.id.hashCode,
                               progress: progress,
-                              played: widget.accent,
-                              rest: widget.accent.withValues(alpha: 0.4),
+                              played: widget.contentColor ?? widget.accent,
+                              rest: (widget.contentColor ?? widget.accent)
+                                  .withValues(alpha: 0.4),
                             ),
                           ),
                         ),
@@ -195,14 +232,20 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
                     ),
             ),
             if (!_failed) ...[
-              const SizedBox(width: 8),
-              Text(
-                formatVoiceDuration(_playing ? _position : total),
-                style: TextStyle(
-                  color: widget.accent,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  fontFeatures: const [FontFeature.tabularFigures()],
+              const SizedBox(width: 50),
+              _withInset(
+                Text(
+                  formatVoiceDuration(_playing ? _position : total),
+                  maxLines: 1,
+                  style: TextStyle(
+                    color:
+                        widget.timeColor ??
+                        widget.contentColor ??
+                        widget.accent,
+                    fontSize: widget.timeSize,
+                    fontWeight: FontWeight.w600,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
               ),
             ],

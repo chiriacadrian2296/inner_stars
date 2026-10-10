@@ -148,6 +148,7 @@ class AppDialog extends StatelessWidget {
     this.scrollable = false,
     this.actionsAlignment = MainAxisAlignment.end,
     this.actionsOverflowAlignment = OverflowBarAlignment.end,
+    this.actionsPadding = const EdgeInsets.fromLTRB(16, 12, 16, 12),
   });
 
   final Widget? icon;
@@ -158,6 +159,7 @@ class AppDialog extends StatelessWidget {
   final bool scrollable;
   final MainAxisAlignment actionsAlignment;
   final OverflowBarAlignment actionsOverflowAlignment;
+  final EdgeInsetsGeometry actionsPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -176,7 +178,7 @@ class AppDialog extends StatelessWidget {
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       titlePadding: EdgeInsets.fromLTRB(24, icon == null ? 24 : 8, 24, 0),
       contentPadding: EdgeInsets.fromLTRB(24, title == null ? 24 : 16, 24, 0),
-      actionsPadding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      actionsPadding: actionsPadding,
       actionsAlignment: actionsAlignment,
       actionsOverflowAlignment: actionsOverflowAlignment,
       actionsOverflowButtonSpacing: 8,

@@ -1293,7 +1293,9 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get photoLabel => 'Photo';
   @override
-  String get mainPhotoLabel => 'Main Photo';
+  String get mainPhotoLabel => 'Main';
+  @override
+  String get photosLabel => 'Photos';
   @override
   String get addPhotoHint => 'Add a photo';
   @override
@@ -1326,7 +1328,7 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get recordStop => 'Stop';
   @override
-  String get recordKeep => 'Keep It';
+  String get recordKeep => 'Save';
   @override
   String get micPermissionDenied =>
       "Microphone access is off. Enable it in your phone's settings to record.";
@@ -1335,11 +1337,15 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get linkUrlHint => 'https://example.com';
   @override
-  String get linkLabelHint => 'Label (optional)';
+  String get linkUrlLabel => 'Link';
+  @override
+  String get linkLabelLabel => 'Label';
+  @override
+  String get linkLabelHint => 'Shown instead of the link';
   @override
   String get linkInvalid => "That doesn't look like a valid link.";
   @override
-  String get linkAdd => 'Add';
+  String get linkAdd => 'Save';
   @override
   String get mediaError => "Couldn't add that. Try again?";
   @override
@@ -1353,7 +1359,7 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get voiceNotesLabel => 'Voice Notes';
   @override
-  String get extraPhotosLabel => 'Secondary Photos';
+  String get extraPhotosLabel => 'Secondary';
   @override
   String get videosLabel => 'Videos';
   @override

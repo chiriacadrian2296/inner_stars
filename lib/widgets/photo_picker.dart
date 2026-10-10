@@ -5,7 +5,7 @@ import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
-import 'memory_field_actions.dart';
+import 'memory_field_actions.dart' show RemoveBadge;
 import 'photo_image.dart';
 import 'staggered_entrance.dart';
 
@@ -61,6 +61,8 @@ class PhotoPicker extends StatelessWidget {
     required this.onPick,
     required this.onRemove,
     this.compact = false,
+    this.compactWidth,
+    this.compactHeight,
   });
 
   final String? photoPath;
@@ -71,6 +73,11 @@ class PhotoPicker extends StatelessWidget {
   /// form); the reader's quick sheet keeps the full one.
   final bool compact;
 
+  /// With [compact], pins the preview to this exact size (the form sizes it
+  /// to sit level with the secondary photos beside it).
+  final double? compactWidth;
+  final double? compactHeight;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -80,10 +87,10 @@ class PhotoPicker extends StatelessWidget {
     if (compact) {
       // Same grammar as the Memories fields: no panel, just a zone holding a
       // faint stand-in while empty or the photo once chosen, then the
-      // centered Reset/Add pair.
+      // centered Reset. The stand-in is the add button: tap it to pick.
       final radius = BorderRadius.circular(kRadiusField);
-      final width = MediaQuery.sizeOf(context).width * 0.44;
-      final height = width * 16 / 9;
+      final width = compactWidth ?? MediaQuery.sizeOf(context).width * 0.44;
+      final height = compactHeight ?? width * 16 / 9;
       return StaggeredEntrance(
         index: 0,
         child: Column(
@@ -91,19 +98,26 @@ class PhotoPicker extends StatelessWidget {
           children: [
             Center(
               child: path == null
-                  ? ExcludeSemantics(
-                      child: Container(
-                        width: width,
-                        height: height,
-                        decoration: BoxDecoration(
-                          color: colors.nightPanel,
-                          borderRadius: radius,
-                          border: Border.all(color: colors.nightBorder),
-                        ),
-                        child: Icon(
-                          Icons.image_outlined,
-                          color: colors.muted,
-                          size: 36,
+                  ? Semantics(
+                      button: true,
+                      label: strings.addPhotoHint,
+                      child: InkWell(
+                        onTap: onPick,
+                        borderRadius: radius,
+                        child: Container(
+                          width: width,
+                          height: height,
+                          decoration: BoxDecoration(
+                            color: colors.nightPanel,
+                            borderRadius: radius,
+                            border: Border.all(color: colors.nightBorder),
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(
+                            Icons.camera_alt_outlined,
+                            color: colors.muted,
+                            size: 56,
+                          ),
                         ),
                       ),
                     )
@@ -129,30 +143,11 @@ class PhotoPicker extends StatelessWidget {
                           child: InkWell(
                             onTap: onRemove,
                             customBorder: const CircleBorder(),
-                            child: Container(
-                              padding: const EdgeInsets.all(3),
-                              decoration: BoxDecoration(
-                                color: colors.nightPanel,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: colors.gold),
-                              ),
-                              child: Icon(
-                                Icons.close_rounded,
-                                size: 14,
-                                color: colors.gold,
-                              ),
-                            ),
+                            child: RemoveBadge(background: colors.nightPanel),
                           ),
                         ),
                       ],
                     ),
-            ),
-            const SizedBox(height: 12),
-            MemoryFieldActions(
-              addIcon: Icons.add_a_photo_outlined,
-              onAdd: onPick,
-              onReset: onRemove,
-              canReset: path != null,
             ),
           ],
         ),
@@ -172,7 +167,7 @@ class PhotoPicker extends StatelessWidget {
             decoration: fieldDecoration(colors, FieldState.empty),
             child: Column(
               children: [
-                Icon(Icons.add_a_photo_outlined, color: colors.muted, size: 22),
+                Icon(Icons.camera_alt_outlined, color: colors.muted, size: 22),
                 const SizedBox(height: 8),
                 Text(
                   strings.addPhotoHint,
@@ -216,15 +211,7 @@ class PhotoPicker extends StatelessWidget {
                 child: InkWell(
                   onTap: onRemove,
                   customBorder: const CircleBorder(),
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: colors.night,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: colors.gold),
-                    ),
-                    child: Icon(Icons.close, size: 22, color: colors.gold),
-                  ),
+                  child: RemoveBadge(background: colors.night),
                 ),
               ),
             ],

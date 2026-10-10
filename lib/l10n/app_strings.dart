@@ -655,6 +655,7 @@ abstract class AppStrings {
   String get intensityLabel;
   String get photoLabel;
   String get mainPhotoLabel;
+  String get photosLabel;
   String get addPhotoHint;
   String get photoSourceTitle;
   String get takePhotoOption;
@@ -674,6 +675,8 @@ abstract class AppStrings {
   String get micPermissionDenied;
   String get linkTitle;
   String get linkUrlHint;
+  String get linkUrlLabel;
+  String get linkLabelLabel;
   String get linkLabelHint;
   String get linkInvalid;
   String get linkAdd;

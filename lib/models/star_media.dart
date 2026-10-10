@@ -4,9 +4,9 @@ enum StarMediaKind { voice, photo, video, link }
 
 /// Most extras of each kind a single victory can carry.
 const Map<StarMediaKind, int> kMaxStarMediaPerKind = {
-  StarMediaKind.photo: 10,
+  StarMediaKind.photo: 8,
   StarMediaKind.video: 5,
-  StarMediaKind.voice: 1,
+  StarMediaKind.voice: 3,
   StarMediaKind.link: 3,
 };
 

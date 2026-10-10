@@ -241,12 +241,16 @@ class StarMediaTile extends StatelessWidget {
     super.key,
     required this.media,
     this.size = 72,
+    this.height,
     this.badgeColor = Colors.white,
     this.badgeSize = kPlayBadgeSize,
   });
 
   final StarMedia media;
   final double size;
+
+  /// Defaults to [size] (a square); set for a non-square tile.
+  final double? height;
   final Color badgeColor;
   final double badgeSize;
 
@@ -256,9 +260,13 @@ class StarMediaTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(kRadiusField),
       child: SizedBox(
         width: size,
-        height: size,
+        height: height ?? size,
         child: media.kind == StarMediaKind.photo
-            ? StarMediaImage(path: media.path!, width: size, height: size)
+            ? StarMediaImage(
+                path: media.path!,
+                width: size,
+                height: height ?? size,
+              )
             : StarVideoThumb(
                 path: media.path!,
                 badgeColor: badgeColor,

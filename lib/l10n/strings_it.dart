@@ -1303,7 +1303,9 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get photoLabel => 'Foto';
   @override
-  String get mainPhotoLabel => 'Foto Principale';
+  String get mainPhotoLabel => 'Principale';
+  @override
+  String get photosLabel => 'Foto';
   @override
   String get addPhotoHint => 'Aggiungi una foto';
   @override
@@ -1337,7 +1339,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get recordStop => 'Stop';
   @override
-  String get recordKeep => 'Conserva';
+  String get recordKeep => 'Salva';
   @override
   String get micPermissionDenied =>
       "L'accesso al microfono è disattivato. Attivalo nelle impostazioni del telefono per registrare.";
@@ -1346,11 +1348,15 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get linkUrlHint => 'https://esempio.it';
   @override
-  String get linkLabelHint => 'Etichetta (facoltativa)';
+  String get linkUrlLabel => 'Link';
+  @override
+  String get linkLabelLabel => 'Etichetta';
+  @override
+  String get linkLabelHint => 'Mostrata al posto del link';
   @override
   String get linkInvalid => 'Questo non sembra un link valido.';
   @override
-  String get linkAdd => 'Aggiungi';
+  String get linkAdd => 'Salva';
   @override
   String get mediaError => 'Impossibile aggiungerlo. Riprovare?';
   @override
@@ -1364,7 +1370,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get voiceNotesLabel => 'Note Vocali';
   @override
-  String get extraPhotosLabel => 'Foto Secondarie';
+  String get extraPhotosLabel => 'Secondarie';
   @override
   String get videosLabel => 'Video';
   @override

@@ -58,6 +58,16 @@ class AppFieldLabel extends StatelessWidget {
   final TextEditingController? counterController;
   final int? counterMax;
 
+  Widget _labelText(BuildContext context, {required bool expand}) {
+    final text = Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: context.typography.compactSectionLabel,
+    );
+    return expand ? Expanded(child: text) : Flexible(child: text);
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -75,9 +85,11 @@ class AppFieldLabel extends StatelessWidget {
           Icon(requirement._icon, size: 8, color: requirement._color(colors)),
           const SizedBox(width: 5),
         ],
-        Text(label, style: context.typography.compactSectionLabel),
+        // With a counter the label takes the whole row so the counter sits at
+        // its far right edge; a Flexible next to a Spacer would split the
+        // free space and strand the counter mid-row.
+        _labelText(context, expand: hasCounter),
         if (hasCounter) ...[
-          const Spacer(),
           ValueListenableBuilder<TextEditingValue>(
             valueListenable: counter,
             builder: (context, value, _) => Text(

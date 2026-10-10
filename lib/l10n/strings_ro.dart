@@ -1299,7 +1299,9 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get photoLabel => 'Fotografie';
   @override
-  String get mainPhotoLabel => 'Fotografie Principală';
+  String get mainPhotoLabel => 'Principală';
+  @override
+  String get photosLabel => 'Fotografii';
   @override
   String get addPhotoHint => 'Adaugă o fotografie';
   @override
@@ -1333,7 +1335,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get recordStop => 'Oprește';
   @override
-  String get recordKeep => 'Păstrează';
+  String get recordKeep => 'Salvează';
   @override
   String get micPermissionDenied =>
       'Accesul la microfon este dezactivat. Activează-l din setările telefonului pentru a înregistra.';
@@ -1342,11 +1344,15 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get linkUrlHint => 'https://exemplu.ro';
   @override
-  String get linkLabelHint => 'Etichetă (opțional)';
+  String get linkUrlLabel => 'Link';
+  @override
+  String get linkLabelLabel => 'Etichetă';
+  @override
+  String get linkLabelHint => 'Afișată în locul linkului';
   @override
   String get linkInvalid => 'Nu pare un link valid.';
   @override
-  String get linkAdd => 'Adaugă';
+  String get linkAdd => 'Salvează';
   @override
   String get mediaError => 'Nu am putut adăuga. Încerci din nou?';
   @override
@@ -1360,7 +1366,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get voiceNotesLabel => 'Note Vocale';
   @override
-  String get extraPhotosLabel => 'Fotografii Secundare';
+  String get extraPhotosLabel => 'Secundare';
   @override
   String get videosLabel => 'Videoclipuri';
   @override
