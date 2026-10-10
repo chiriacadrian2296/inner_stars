@@ -522,10 +522,18 @@ class SearchStarVisual extends StatelessWidget {
     required this.kind,
     this.pulsarLit = true,
     this.pulsarBothStates = false,
+    this.icon,
+    this.color,
   });
 
   final StarKind kind;
   final bool pulsarLit;
+
+  /// Draws this icon in [color] in place of [kind]'s own glyph — for things
+  /// that are not a star but are shown in the same tile style (a
+  /// constellation in the create form's switch).
+  final IconData? icon;
+  final Color? color;
 
   /// For a pulsar shown as a *kind* rather than as one particular habit
   /// (the star form's tile): a pulsar can be burning or dark, so it's drawn
@@ -536,7 +544,7 @@ class SearchStarVisual extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final color = starKindColor(kind, colors, lit: pulsarLit);
+    final color = this.color ?? starKindColor(kind, colors, lit: pulsarLit);
     final both = pulsarBothStates && kind == StarKind.pulsar;
     final burning = starKindColor(StarKind.pulsar, colors);
     final dark = starKindColor(StarKind.pulsar, colors, lit: false);
@@ -601,6 +609,8 @@ class SearchStarVisual extends StatelessWidget {
               ).createShader(bounds),
               child: Icon(kind.icon, size: 36, color: Colors.white),
             )
+          else if (icon != null)
+            Icon(icon, size: 36, color: color)
           else if (kind == StarKind.pulsar)
             Icon(kind.icon, size: 36, color: color)
           else if (kind == StarKind.dead)

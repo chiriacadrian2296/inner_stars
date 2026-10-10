@@ -39,9 +39,8 @@ import '../widgets/photo_picker.dart';
 import '../widgets/pill_action_button.dart';
 import '../widgets/project_picker.dart';
 import '../widgets/responsive_content.dart';
-import '../widgets/search_result_card.dart' show SearchStarVisual;
+import '../widgets/form_kind_tiles.dart';
 import '../widgets/staggered_entrance.dart';
-import '../widgets/star_glyph.dart';
 import '../widgets/star_media_editor.dart';
 import 'new_project_screen.dart';
 import 'photo_crop_screen.dart';
@@ -154,6 +153,9 @@ class StarFormScreen extends StatefulWidget {
     this.slotSequence,
     this.allowPulsar = true,
     this.hideDelete = false,
+    this.allowConstellation = false,
+    this.startAsConstellation = false,
+    this.presetArea,
   }) : assert(
          existingStar == null || existingHabit == null,
          'A form edits either a star or a pulsar, never both.',
@@ -205,6 +207,18 @@ class StarFormScreen extends StatefulWidget {
   /// dead star" flow, since a dead star has nothing further to delete.
   final bool hideDelete;
 
+  /// Adds a fourth tile, "Constellation", to the kind switch: choosing it
+  /// swaps the star fields for the constellation form, and saving pops a
+  /// [Project] instead of a [StarFormResult]. Only for creating (never
+  /// editing), and needs [projectRepository] and [starsShapeRepository].
+  final bool allowConstellation;
+
+  /// Opens on the constellation tile. Ignored without [allowConstellation].
+  final bool startAsConstellation;
+
+  /// Pre-fills the area, for both the star and the constellation form.
+  final LifeArea? presetArea;
+
   bool get isEditing => existingStar != null || existingHabit != null;
 
   @override
@@ -218,6 +232,22 @@ class _StarFormScreenState extends State<StarFormScreen> {
   );
 
   late StarKind _kind = _resolveInitialKind();
+
+  bool get _canCreateConstellation =>
+      widget.allowConstellation &&
+      !widget.isEditing &&
+      widget.projectRepository != null &&
+      widget.starsShapeRepository != null;
+
+  /// The constellation tile is selected: the star fields give way to the
+  /// embedded constellation form.
+  late bool _constellationMode =
+      _canCreateConstellation && widget.startAsConstellation;
+
+  /// The embedded form is only built once first needed (it starts its own
+  /// tour then), and kept alive after, so switching away and back keeps
+  /// what was typed.
+  late bool _constellationBuilt = _constellationMode;
 
   /// Bumped only when the person picks a kind themselves, so everything
   /// below the switch plays its entrance again for the new kind. The tour
@@ -233,7 +263,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
   /// tracking below the way [_selectedProject] is. Seeded from whichever
   /// project already applies, same as that field; [_openAreaPicker]/
   /// [_openProjectPicker] are what keep the two in sync afterward.
-  late LifeArea? _selectedArea = _selectedProject?.area;
+  late LifeArea? _selectedArea = _selectedProject?.area ?? widget.presetArea;
   late int _intensity =
       widget.existingStar?.intensity ?? widget.existingHabit?.intensity ?? 3;
 
@@ -439,6 +469,9 @@ class _StarFormScreenState extends State<StarFormScreen> {
   /// one that already existed. Drives whether leaving the page needs a
   /// confirmation first.
   bool get _hasUnsavedChanges {
+    // The embedded constellation form keeps its own state and is left
+    // without the discard prompt.
+    if (_constellationMode) return false;
     final trimmedDescription = _descriptionController.text.trim();
     final normalizedDescription = trimmedDescription.isEmpty
         ? null
@@ -796,6 +829,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
     );
     if (picked == null) return;
     setState(() {
+      _customReminder = true;
       _reminderHour = picked.hour;
       _reminderMinute = picked.minute;
     });
@@ -849,13 +883,37 @@ class _StarFormScreenState extends State<StarFormScreen> {
     }
   }
 
-  String _question(AppStrings strings) => switch (_kind) {
-    StarKind.lit => strings.litStarQuestion,
-    StarKind.unlit => strings.unlitStarQuestion,
-    StarKind.pulsar => strings.pulsarQuestion,
-    // Neither is ever the form's own kind — see [_availableKinds].
-    StarKind.nascent || StarKind.dead => strings.litStarQuestion,
-  };
+  /// The tiles at the top: the constellation (when this form can create one)
+  /// and the kinds of star it offers.
+  Widget _kindTiles(List<StarKind> kinds) => FormKindTiles(
+    leading: [
+      if (_canCreateConstellation)
+        FormKindTile.constellation(
+          context,
+          selected: _constellationMode,
+          onTap: () => setState(() {
+            _constellationMode = true;
+            _constellationBuilt = true;
+            _kindEpoch++;
+          }),
+        ),
+    ],
+    trailing: [
+      for (final kind in kinds)
+        FormKindTile.star(
+          context,
+          kind,
+          selected: !_constellationMode && kind == _kind,
+          onTap: kinds.length > 1
+              ? () => setState(() {
+                  _constellationMode = false;
+                  _kind = kind;
+                  _kindEpoch++;
+                })
+              : null,
+        ),
+    ],
+  );
 
   // One running example carried across every kind — see
   // [AppStrings.litTitleHint]'s own doc comment.
@@ -873,16 +931,25 @@ class _StarFormScreenState extends State<StarFormScreen> {
     StarKind.nascent || StarKind.dead => strings.litDetailsHint,
   };
 
+  /// Swiping steps through the tiles in the order shown: the constellation
+  /// first (when the form offers it), then the kinds of star.
   void _switchKindBySwipe(DragEndDetails details) {
     const minimumVelocity = 180.0;
     final velocity = details.primaryVelocity ?? 0;
     if (velocity.abs() < minimumVelocity) return;
     final kinds = _availableKinds;
-    final currentIndex = kinds.indexOf(_kind);
+    final offset = _canCreateConstellation ? 1 : 0;
+    final currentIndex = _constellationMode ? 0 : offset + kinds.indexOf(_kind);
     final nextIndex = currentIndex + (velocity.isNegative ? 1 : -1);
-    if (nextIndex < 0 || nextIndex >= kinds.length) return;
+    if (nextIndex < 0 || nextIndex >= offset + kinds.length) return;
     setState(() {
-      _kind = kinds[nextIndex];
+      if (nextIndex < offset) {
+        _constellationMode = true;
+        _constellationBuilt = true;
+      } else {
+        _constellationMode = false;
+        _kind = kinds[nextIndex - offset];
+      }
       _kindEpoch++;
     });
   }
@@ -906,11 +973,10 @@ class _StarFormScreenState extends State<StarFormScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 16),
-                  // The one control that decides which half of the form
-                  // below shows. Omitted entirely when there's nothing to
-                  // choose (editing a pulsar) — a one-option switch is just
-                  // a label pretending to be a control.
-                  if (kinds.length > 1)
+                  // The row of tiles is always there, however many the form
+                  // offers (one when editing a pulsar). It decides which half
+                  // of the form below shows.
+                  if (kinds.length > 1 || _canCreateConstellation)
                     HintTarget(
                       key: const ValueKey('star-form-kind'),
                       tour: 'star-form',
@@ -919,296 +985,448 @@ class _StarFormScreenState extends State<StarFormScreen> {
                       contentBuilder: appTourStepCard,
                       title: strings.starTourKindTitle,
                       description: strings.starTourKindBody,
-                      child: _StarKindSwitch(
-                        kinds: kinds,
-                        selected: _kind,
-                        onChanged: (kind) => setState(() {
-                          _kind = kind;
-                          _kindEpoch++;
-                        }),
-                      ),
+                      child: _kindTiles(kinds),
                     )
                   else
-                    StaggeredEntrance(
-                      index: 1,
-                      child: Center(
-                        child: _StarKindMeaning(kind: _kind, showGlyph: true),
-                      ),
-                    ),
-                  const SizedBox(height: 18),
-                  // A fixed minimum height, not just a Text — the three
-                  // questions are different lengths and wrap differently, so
-                  // without this everything below them jumps as the kind
-                  // changes. minHeight (not a fixed height) so an
-                  // unexpectedly long translation still isn't clipped.
-                  StaggeredEntrance(
-                    index: 2,
-                    replayKey: _kindEpoch,
-                    child: Container(
-                      constraints: const BoxConstraints(minHeight: 76),
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        _question(strings),
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 24,
-                          color: colors.text,
+                    _kindTiles(kinds),
+                  const SizedBox(height: kFormTilesGap),
+                  if (_constellationBuilt)
+                    Offstage(
+                      offstage: !_constellationMode,
+                      child: TickerMode(
+                        enabled: _constellationMode,
+                        child: NewProjectScreen(
+                          embedded: true,
+                          projectRepository: widget.projectRepository!,
+                          starsShapeRepository: widget.starsShapeRepository!,
+                          presetArea: widget.presetArea,
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  if (widget.lockedProject == null) ...[
-                    StaggeredEntrance(
-                      index: 3,
-                      replayKey: _kindEpoch,
-                      child: AppPickerField(
-                        label: strings.areaLabel,
-                        // Not itself checked by [_save]/`canSave` — picking a
-                        // Constellation fills it in on its own (see
-                        // [_openProjectPicker]) — but there's no real path to
-                        // saving a star without one ending up set, so it reads
-                        // as required same as the field that actually is.
-                        requirement: FieldRequirement.required,
-                        hint: strings.selectASupernova,
-                        icon:
-                            _selectedArea?.icon ?? Icons.auto_awesome_outlined,
-                        text: _selectedArea?.displayName(strings),
-                        onTap: _openAreaPicker,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    StaggeredEntrance(
-                      index: 4,
-                      replayKey: _kindEpoch,
-                      child: AppPickerField(
-                        label: strings.projectLabel,
-                        requirement: FieldRequirement.required,
-                        hint: strings.selectAProject,
-                        icon: _selectedProject == null
-                            ? Icons.insights
-                            : iconForSlug(_selectedProject!.iconSlug),
-                        text: _selectedProject?.name,
-                        onTap: _openProjectPicker,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-                  StaggeredEntrance(
-                    index: 5,
-                    replayKey: _kindEpoch,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppFieldLabel(
-                          strings.titleFieldLabel,
+                  if (!_constellationMode) ...[
+                    if (widget.lockedProject == null) ...[
+                      StaggeredEntrance(
+                        index: 3,
+                        replayKey: _kindEpoch,
+                        child: AppPickerField(
+                          label: strings.areaLabel,
+                          onReset: () => setState(() {
+                            _selectedArea = null;
+                            _selectedProject = null;
+                          }),
+                          // Not itself checked by [_save]/`canSave` — picking a
+                          // Constellation fills it in on its own (see
+                          // [_openProjectPicker]) — but there's no real path to
+                          // saving a star without one ending up set, so it reads
+                          // as required same as the field that actually is.
                           requirement: FieldRequirement.required,
-                          counterController: _titleController,
-                          counterMax: kTitleMaxLength,
+                          hint: strings.selectASupernova,
+                          icon:
+                              _selectedArea?.icon ??
+                              Icons.auto_awesome_outlined,
+                          text: _selectedArea?.displayName(strings),
+                          onTap: _openAreaPicker,
                         ),
-                        const SizedBox(height: kFieldLabelGap),
-                        AppTextField(
-                          controller: _titleController,
-                          maxLength: kTitleMaxLength,
-                          showCounter: false,
-                          textInputAction: TextInputAction.next,
-                          hintText: _titleHint(strings),
-                          onChanged: (_) => setState(() {}),
+                      ),
+                      const SizedBox(height: 20),
+                      StaggeredEntrance(
+                        index: 4,
+                        replayKey: _kindEpoch,
+                        child: AppPickerField(
+                          label: strings.projectLabel,
+                          onReset: () =>
+                              setState(() => _selectedProject = null),
+                          requirement: FieldRequirement.required,
+                          hint: strings.selectAProject,
+                          icon: _selectedProject == null
+                              ? Icons.insights
+                              : iconForSlug(_selectedProject!.iconSlug),
+                          text: _selectedProject?.name,
+                          onTap: _openProjectPicker,
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  StaggeredEntrance(
-                    index: 6,
-                    replayKey: _kindEpoch,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppFieldLabel(
-                          strings.detailsLabel,
-                          requirement: FieldRequirement.optional,
-                          counterController: _descriptionController,
-                          counterMax: kStarDescriptionMaxLength,
-                        ),
-                        const SizedBox(height: kFieldLabelGap),
-                        AppTextField(
-                          controller: _descriptionController,
-                          maxLength: kStarDescriptionMaxLength,
-                          showCounter: false,
-                          minLines: 4,
-                          maxLines: 6,
-                          hintText: _detailsHint(strings),
-                          onChanged: (_) => setState(() {}),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_kind == StarKind.lit) ...[
-                    const SizedBox(height: 20),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: StaggeredEntrance(
-                            index: 7,
-                            replayKey: _kindEpoch,
-                            axis: Axis.horizontal,
-                            child: AppPickerField(
-                              label: strings.dateLabel,
-                              // Not checked by [_save] either — an unset
-                              // date silently becomes `DateTime.now()`
-                              // rather than blocking save — but a lit
-                              // star's whole point is recording *when* the
-                              // victory happened, so this reads as
-                              // required same as Supernova above.
-                              requirement: FieldRequirement.required,
-                              hint: strings.selectADateHint,
-                              icon: Icons.calendar_today,
-                              text: _date == null
-                                  ? null
-                                  : formatDisplayDate(_date!, strings),
-                              onTap: _pickDate,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: StaggeredEntrance(
-                            index: 8,
-                            replayKey: _kindEpoch,
-                            axis: Axis.horizontal,
-                            child: AppPickerField(
-                              label: strings.timeLabel,
-                              requirement: FieldRequirement.required,
-                              hint: strings.selectATimeHint,
-                              icon: Icons.access_time,
-                              text: _date == null
-                                  ? null
-                                  : formatDisplayTime(_date!),
-                              onTap: _pickTime,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ] else if (_kind == StarKind.unlit) ...[
-                    const SizedBox(height: 20),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
                     StaggeredEntrance(
-                      index: 7,
+                      index: 5,
                       replayKey: _kindEpoch,
-                      child: AppPickerField(
-                        label: strings.targetDateLabel,
-                        requirement: FieldRequirement.optional,
-                        hint: strings.selectATargetDateHint,
-                        icon: Icons.flag_outlined,
-                        text: _targetDate == null
-                            ? null
-                            : formatDisplayDate(_targetDate!, strings),
-                        onTap: _pickTargetDate,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AppFieldLabel(
+                            strings.titleFieldLabel,
+                            onReset: () => setState(_titleController.clear),
+                            requirement: FieldRequirement.required,
+                            counterController: _titleController,
+                            counterMax: kTitleMaxLength,
+                          ),
+                          const SizedBox(height: kFieldLabelGap),
+                          AppTextField(
+                            controller: _titleController,
+                            maxLength: kTitleMaxLength,
+                            showCounter: false,
+                            textInputAction: TextInputAction.next,
+                            hintText: _titleHint(strings),
+                            onChanged: (_) => setState(() {}),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                  // Every kind that's already burning carries an intensity —
-                  // a lit star's is what the effort cost once, a pulsar's
-                  // what it costs each day. An unlit star has none yet: it
-                  // gets one the moment it's lit.
-                  if (_kind != StarKind.unlit) ...[
                     const SizedBox(height: 20),
-                    HintTarget(
-                      // Keyed — see the Supernova field's own HintTarget
-                      // above for why.
-                      key: const ValueKey('star-form-intensity'),
-                      tour: 'star-form',
-                      order: 2,
-                      showArrow: true,
-                      contentBuilder: appTourStepCard,
-                      title: strings.starTourIntensityTitle,
-                      description: strings.starTourIntensityBody,
-                      // Label, bolts and slider all inside now — the whole
-                      // section highlights together, not just the slider.
-                      child: StaggeredEntrance(
-                        index: 8,
+                    StaggeredEntrance(
+                      index: 6,
+                      replayKey: _kindEpoch,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AppFieldLabel(
+                            strings.detailsLabel,
+                            onReset: () =>
+                                setState(_descriptionController.clear),
+                            requirement: FieldRequirement.optional,
+                            counterController: _descriptionController,
+                            counterMax: kStarDescriptionMaxLength,
+                          ),
+                          const SizedBox(height: kFieldLabelGap),
+                          AppTextField(
+                            controller: _descriptionController,
+                            maxLength: kStarDescriptionMaxLength,
+                            showCounter: false,
+                            minLines: 4,
+                            maxLines: 6,
+                            hintText: _detailsHint(strings),
+                            onChanged: (_) => setState(() {}),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_kind == StarKind.lit) ...[
+                      const SizedBox(height: 20),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: StaggeredEntrance(
+                              index: 7,
+                              replayKey: _kindEpoch,
+                              axis: Axis.horizontal,
+                              child: AppPickerField(
+                                label: strings.dateLabel,
+                                onReset: () => setState(() => _date = null),
+                                // Not checked by [_save] either — an unset
+                                // date silently becomes `DateTime.now()`
+                                // rather than blocking save — but a lit
+                                // star's whole point is recording *when* the
+                                // victory happened, so this reads as
+                                // required same as Supernova above.
+                                requirement: FieldRequirement.required,
+                                hint: strings.selectADateHint,
+                                icon: Icons.calendar_today,
+                                text: _date == null
+                                    ? null
+                                    : formatDisplayDate(_date!, strings),
+                                onTap: _pickDate,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: StaggeredEntrance(
+                              index: 8,
+                              replayKey: _kindEpoch,
+                              axis: Axis.horizontal,
+                              child: AppPickerField(
+                                label: strings.timeLabel,
+                                onReset: () => setState(() => _date = null),
+                                requirement: FieldRequirement.required,
+                                hint: strings.selectATimeHint,
+                                icon: Icons.access_time,
+                                text: _date == null
+                                    ? null
+                                    : formatDisplayTime(_date!),
+                                onTap: _pickTime,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ] else if (_kind == StarKind.unlit) ...[
+                      const SizedBox(height: 20),
+                      StaggeredEntrance(
+                        index: 7,
+                        replayKey: _kindEpoch,
+                        child: AppPickerField(
+                          label: strings.targetDateLabel,
+                          onReset: () => setState(() => _targetDate = null),
+                          requirement: FieldRequirement.optional,
+                          hint: strings.selectATargetDateHint,
+                          icon: Icons.flag_outlined,
+                          text: _targetDate == null
+                              ? null
+                              : formatDisplayDate(_targetDate!, strings),
+                          onTap: _pickTargetDate,
+                        ),
+                      ),
+                    ],
+                    // Every kind that's already burning carries an intensity —
+                    // a lit star's is what the effort cost once, a pulsar's
+                    // what it costs each day. An unlit star has none yet: it
+                    // gets one the moment it's lit.
+                    if (_kind != StarKind.unlit) ...[
+                      const SizedBox(height: 20),
+                      HintTarget(
+                        // Keyed — see the Supernova field's own HintTarget
+                        // above for why.
+                        key: const ValueKey('star-form-intensity'),
+                        tour: 'star-form',
+                        order: 2,
+                        showArrow: true,
+                        contentBuilder: appTourStepCard,
+                        title: strings.starTourIntensityTitle,
+                        description: strings.starTourIntensityBody,
+                        // Label, bolts and slider all inside now — the whole
+                        // section highlights together, not just the slider.
+                        child: StaggeredEntrance(
+                          index: 8,
+                          replayKey: _kindEpoch,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              AppFieldLabel(
+                                strings.intensityLabel,
+                                canReset: _intensityTouched,
+                                onReset: () => setState(() {
+                                  _intensityTouched = false;
+                                  _intensity = 3;
+                                }),
+                                requirement: FieldRequirement.required,
+                              ),
+                              // The shared label-to-content gap, not this section's own
+                              // one-off 10 — kept it from reading as more loosely
+                              // spaced than its neighbors.
+                              const SizedBox(height: kFieldLabelGap),
+                              Center(
+                                child: _intensityTouched
+                                    ? IntensityBolts(
+                                        intensity: _intensity,
+                                        size: 26,
+                                        spacing: 6,
+                                        emphasizeLast: true,
+                                        emphasizedScale: 1.6,
+                                      )
+                                    // Untouched: all small, flat, in the
+                                    // field-label color, none lit.
+                                    // Same height as the emphasized bolt, whose
+                                    // glow copy is drawn 1.15x its size (26 *
+                                    // 1.6 * 1.15) and sets the row's height, so
+                                    // nothing below jumps on first use.
+                                    : SizedBox(
+                                        height: 26 * 1.6 * 1.15,
+                                        child: IntensityBolts(
+                                          intensity: 0,
+                                          size: 26,
+                                          spacing: 6,
+                                          color: context.colors.muted,
+                                        ),
+                                      ),
+                              ),
+                              const SizedBox(height: 14),
+                              Center(
+                                child: FractionallySizedBox(
+                                  widthFactor: 0.7,
+                                  // A plain [Slider]'s own vertical padding
+                                  // defaults to the height of its overlay shape
+                                  // (the halo around the thumb) — invisible space
+                                  // that made the gap down to whatever field comes
+                                  // next read as much bigger than the standard 20
+                                  // between every other pair of fields, even with
+                                  // the same explicit `SizedBox` in between.
+                                  // Zeroing it here makes this widget's own
+                                  // bounding box actually match what's visible.
+                                  child: SliderTheme(
+                                    data: _intensityTouched
+                                        ? SliderTheme.of(
+                                            context,
+                                          ).copyWith(padding: EdgeInsets.zero)
+                                        : SliderTheme.of(context).copyWith(
+                                            padding: EdgeInsets.zero,
+                                            activeTrackColor:
+                                                context.colors.muted,
+                                            thumbColor: context.colors.muted,
+                                            activeTickMarkColor:
+                                                context.colors.muted,
+                                            overlayColor: context.colors.muted
+                                                .withValues(alpha: 0.12),
+                                          ),
+                                    child: Slider(
+                                      value: _intensity.toDouble(),
+                                      min: 1,
+                                      max: 5,
+                                      divisions: 4,
+                                      onChangeStart: (_) {
+                                        if (!_intensityTouched) {
+                                          setState(
+                                            () => _intensityTouched = true,
+                                          );
+                                        }
+                                      },
+                                      onChanged: (value) => setState(() {
+                                        _intensityTouched = true;
+                                        _intensity = value.round();
+                                      }),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (_kind == StarKind.pulsar) ...[
+                      const SizedBox(height: 20),
+                      StaggeredEntrance(
+                        index: 10,
                         replayKey: _kindEpoch,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            AppFieldLabel(
-                              strings.intensityLabel,
-                              requirement: FieldRequirement.required,
+                            StaggeredEntrance(
+                              index: 0,
+                              replayKey: _kindEpoch,
+                              child: AppFieldLabel(
+                                strings.habitFrequencyLabel,
+                                canReset:
+                                    _habitFrequency != HabitFrequency.daily ||
+                                    _habitTargetPerPeriod != 1,
+                                onReset: () => setState(() {
+                                  _habitFrequency = HabitFrequency.daily;
+                                  _habitTargetPerPeriod = 1;
+                                }),
+                                requirement: FieldRequirement.required,
+                              ),
                             ),
-                            // The shared label-to-content gap, not this section's own
-                            // one-off 10 — kept it from reading as more loosely
-                            // spaced than its neighbors.
                             const SizedBox(height: kFieldLabelGap),
-                            Center(
-                              child: _intensityTouched
-                                  ? IntensityBolts(
-                                      intensity: _intensity,
-                                      size: 26,
-                                      spacing: 6,
-                                      emphasizeLast: true,
-                                      emphasizedScale: 1.6,
-                                    )
-                                  // Untouched: all small, flat, in the
-                                  // field-label color, none lit.
-                                  // Same height as the emphasized bolt, whose
-                                  // glow copy is drawn 1.15x its size (26 *
-                                  // 1.6 * 1.15) and sets the row's height, so
-                                  // nothing below jumps on first use.
-                                  : SizedBox(
-                                      height: 26 * 1.6 * 1.15,
-                                      child: IntensityBolts(
-                                        intensity: 0,
-                                        size: 26,
-                                        spacing: 6,
-                                        color: context.colors.muted,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: StaggeredEntrance(
+                                    index: 1,
+                                    replayKey: _kindEpoch,
+                                    axis: Axis.horizontal,
+                                    child: _HabitFrequencyChip(
+                                      label: strings.habitFrequencyDaily,
+                                      selected:
+                                          _habitFrequency ==
+                                          HabitFrequency.daily,
+                                      onTap: () => setState(() {
+                                        _habitFrequency = HabitFrequency.daily;
+                                        if (_habitTargetPerPeriod > 50) {
+                                          _habitTargetPerPeriod = 50;
+                                        }
+                                      }),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: StaggeredEntrance(
+                                    index: 2,
+                                    replayKey: _kindEpoch,
+                                    axis: Axis.horizontal,
+                                    child: _HabitFrequencyChip(
+                                      label: strings.habitFrequencyWeekly,
+                                      selected:
+                                          _habitFrequency ==
+                                          HabitFrequency.weekly,
+                                      onTap: () => setState(() {
+                                        _habitFrequency = HabitFrequency.weekly;
+                                        if (_habitTargetPerPeriod > 7) {
+                                          _habitTargetPerPeriod = 7;
+                                        }
+                                      }),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                StaggeredEntrance(
+                                  index: 3,
+                                  replayKey: _kindEpoch,
+                                  axis: Axis.horizontal,
+                                  child: IconButton(
+                                    onPressed: _habitTargetPerPeriod > 1
+                                        ? () => setState(
+                                            () => _habitTargetPerPeriod--,
+                                          )
+                                        : null,
+                                    icon: Icon(
+                                      Icons.remove_circle_outline,
+                                      color: colors.gold,
+                                    ),
+                                  ),
+                                ),
+                                StaggeredEntrance(
+                                  index: 4,
+                                  replayKey: _kindEpoch,
+                                  axis: Axis.horizontal,
+                                  child: SizedBox(
+                                    width: 48,
+                                    child: Text(
+                                      '$_habitTargetPerPeriod',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w700,
+                                        color: colors.text,
                                       ),
                                     ),
+                                  ),
+                                ),
+                                StaggeredEntrance(
+                                  index: 5,
+                                  replayKey: _kindEpoch,
+                                  axis: Axis.horizontal,
+                                  child: IconButton(
+                                    onPressed:
+                                        _habitTargetPerPeriod <
+                                            (_habitFrequency ==
+                                                    HabitFrequency.weekly
+                                                ? 7
+                                                : 50)
+                                        ? () => setState(
+                                            () => _habitTargetPerPeriod++,
+                                          )
+                                        : null,
+                                    icon: Icon(
+                                      Icons.add_circle_outline,
+                                      color: colors.gold,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 4),
                             Center(
-                              child: FractionallySizedBox(
-                                widthFactor: 0.7,
-                                // A plain [Slider]'s own vertical padding
-                                // defaults to the height of its overlay shape
-                                // (the halo around the thumb) — invisible space
-                                // that made the gap down to whatever field comes
-                                // next read as much bigger than the standard 20
-                                // between every other pair of fields, even with
-                                // the same explicit `SizedBox` in between.
-                                // Zeroing it here makes this widget's own
-                                // bounding box actually match what's visible.
-                                child: SliderTheme(
-                                  data: _intensityTouched
-                                      ? SliderTheme.of(context)
-                                            .copyWith(padding: EdgeInsets.zero)
-                                      : SliderTheme.of(context).copyWith(
-                                          padding: EdgeInsets.zero,
-                                          activeTrackColor:
-                                              context.colors.muted,
-                                          thumbColor: context.colors.muted,
-                                          activeTickMarkColor:
-                                              context.colors.muted,
-                                          overlayColor: context.colors.muted
-                                              .withValues(alpha: 0.12),
+                              child: StaggeredEntrance(
+                                index: 6,
+                                replayKey: _kindEpoch,
+                                child: Text(
+                                  _habitFrequency == HabitFrequency.daily
+                                      ? strings.habitFrequencySummaryDaily(
+                                          _habitTargetPerPeriod,
+                                        )
+                                      : strings.habitFrequencySummaryWeekly(
+                                          _habitTargetPerPeriod,
                                         ),
-                                  child: Slider(
-                                    value: _intensity.toDouble(),
-                                    min: 1,
-                                    max: 5,
-                                    divisions: 4,
-                                    onChangeStart: (_) {
-                                      if (!_intensityTouched) {
-                                        setState(
-                                          () => _intensityTouched = true,
-                                        );
-                                      }
-                                    },
-                                    onChanged: (value) => setState(() {
-                                      _intensityTouched = true;
-                                      _intensity = value.round();
-                                    }),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: colors.muted,
                                   ),
                                 ),
                               ),
@@ -1216,353 +1434,173 @@ class _StarFormScreenState extends State<StarFormScreen> {
                           ],
                         ),
                       ),
-                    ),
-                  ],
-                  if (_kind == StarKind.pulsar) ...[
-                    const SizedBox(height: 20),
-                    StaggeredEntrance(
-                      index: 10,
-                      replayKey: _kindEpoch,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          StaggeredEntrance(
-                            index: 0,
-                            replayKey: _kindEpoch,
-                            child: AppFieldLabel(
-                              strings.habitFrequencyLabel,
-                              requirement: FieldRequirement.required,
-                            ),
-                          ),
-                          const SizedBox(height: kFieldLabelGap),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: StaggeredEntrance(
-                                  index: 1,
-                                  replayKey: _kindEpoch,
-                                  axis: Axis.horizontal,
-                                  child: _HabitFrequencyChip(
-                                    label: strings.habitFrequencyDaily,
-                                    selected:
-                                        _habitFrequency == HabitFrequency.daily,
-                                    onTap: () => setState(() {
-                                      _habitFrequency = HabitFrequency.daily;
-                                      if (_habitTargetPerPeriod > 50) {
-                                        _habitTargetPerPeriod = 50;
-                                      }
-                                    }),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: StaggeredEntrance(
-                                  index: 2,
-                                  replayKey: _kindEpoch,
-                                  axis: Axis.horizontal,
-                                  child: _HabitFrequencyChip(
-                                    label: strings.habitFrequencyWeekly,
-                                    selected:
-                                        _habitFrequency ==
-                                        HabitFrequency.weekly,
-                                    onTap: () => setState(() {
-                                      _habitFrequency = HabitFrequency.weekly;
-                                      if (_habitTargetPerPeriod > 7) {
-                                        _habitTargetPerPeriod = 7;
-                                      }
-                                    }),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              StaggeredEntrance(
-                                index: 3,
-                                replayKey: _kindEpoch,
-                                axis: Axis.horizontal,
-                                child: IconButton(
-                                  onPressed: _habitTargetPerPeriod > 1
-                                      ? () => setState(
-                                          () => _habitTargetPerPeriod--,
-                                        )
-                                      : null,
-                                  icon: Icon(
-                                    Icons.remove_circle_outline,
-                                    color: colors.gold,
-                                  ),
-                                ),
-                              ),
-                              StaggeredEntrance(
-                                index: 4,
-                                replayKey: _kindEpoch,
-                                axis: Axis.horizontal,
-                                child: SizedBox(
-                                  width: 48,
-                                  child: Text(
-                                    '$_habitTargetPerPeriod',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w700,
-                                      color: colors.text,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              StaggeredEntrance(
-                                index: 5,
-                                replayKey: _kindEpoch,
-                                axis: Axis.horizontal,
-                                child: IconButton(
-                                  onPressed:
-                                      _habitTargetPerPeriod <
-                                          (_habitFrequency ==
-                                                  HabitFrequency.weekly
-                                              ? 7
-                                              : 50)
-                                      ? () => setState(
-                                          () => _habitTargetPerPeriod++,
-                                        )
-                                      : null,
-                                  icon: Icon(
-                                    Icons.add_circle_outline,
-                                    color: colors.gold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Center(
-                            child: StaggeredEntrance(
-                              index: 6,
-                              replayKey: _kindEpoch,
-                              child: Text(
-                                _habitFrequency == HabitFrequency.daily
-                                    ? strings.habitFrequencySummaryDaily(
-                                        _habitTargetPerPeriod,
-                                      )
-                                    : strings.habitFrequencySummaryWeekly(
-                                        _habitTargetPerPeriod,
-                                      ),
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: colors.muted,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                      const SizedBox(height: 20),
+                      StaggeredEntrance(
+                        index: 11,
+                        replayKey: _kindEpoch,
+                        // Like every other field: a name with its dot, a picker
+                        // that is empty until a time is chosen (then the app's
+                        // single reminder time applies), and a reset.
+                        child: AppPickerField(
+                          label: strings.reminderTimeLabel,
+                          requirement: FieldRequirement.optional,
+                          hint: strings.selectATimeHint,
+                          icon: Icons.notifications_none,
+                          text: _customReminder
+                              ? TimeOfDay(
+                                  hour: _reminderHour,
+                                  minute: _reminderMinute,
+                                ).format(context)
+                              : null,
+                          onTap: _pickReminderTime,
+                          onReset: () =>
+                              setState(() => _customReminder = false),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
+                    ],
+                    if (_kind == StarKind.lit) ...[
+                      const SizedBox(height: 20),
+                      StaggeredEntrance(
+                        index: 12,
+                        replayKey: _kindEpoch,
+                        // The photo section, split in two halves: the main
+                        // photo on the left, the secondary photos (two columns)
+                        // on the right. The main preview keeps 9:16 and the
+                        // secondary grid fills its height so both halves line up.
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                AppFieldLabel(
+                                  strings.photosLabel,
+                                  requirement: FieldRequirement.optional,
+                                ),
+                                FieldResetButton(
+                                  onReset: _resetPhotos,
+                                  canReset:
+                                      _photoPath != null ||
+                                      _media.any(
+                                        (m) => m.kind == StarMediaKind.photo,
+                                      ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: kFieldLabelGap),
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                const gap = 12.0;
+                                final half = (constraints.maxWidth - gap) / 2;
+                                // The main photo keeps its 9:16 frame; the secondary
+                                // grid then resizes to fill exactly that height.
+                                final gridHeight = half * 16 / 9;
+                                return Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          PhotoPicker(
+                                            photoPath: _photoPath,
+                                            onPick: _pickPhoto,
+                                            onRemove: _removePhoto,
+                                            compact: true,
+                                            compactWidth: half,
+                                            compactHeight: gridHeight,
+                                          ),
+                                          MemoryCaption(strings.mainPhotoLabel),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: gap),
+                                    Expanded(
+                                      child: StarMediaEditor(
+                                        media: _media,
+                                        onChanged: _onMediaChanged,
+                                        kinds: const [StarMediaKind.photo],
+                                        compact: true,
+                                        gridHeight: gridHeight,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      StaggeredEntrance(
+                        index: 13,
+                        replayKey: _kindEpoch,
+                        child: StarMediaEditor(
+                          media: _media,
+                          onChanged: _onMediaChanged,
+                          kinds: const [
+                            StarMediaKind.video,
+                            StarMediaKind.voice,
+                            StarMediaKind.link,
+                          ],
+                        ),
+                      ),
+                    ],
+                    // Wider than the standard 20 between fields — this is the
+                    // form's own action row, not one more field, and reads as
+                    // such better with a bit of extra air separating it from
+                    // whatever field happens to be last above it.
+                    const SizedBox(height: 44),
                     StaggeredEntrance(
-                      index: 11,
+                      index: 14,
                       replayKey: _kindEpoch,
-                      child: Container(
-                        decoration: panelDecoration(colors),
-                        child: Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(kRadiusCard),
-                          clipBehavior: Clip.antiAlias,
-                          child: Column(
-                            children: [
+                      child: Center(
+                        child: Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 16,
+                          runSpacing: 12,
+                          children: [
+                            if (widget.isEditing && !widget.hideDelete)
                               StaggeredEntrance(
                                 index: 0,
-                                replayKey: _kindEpoch,
-                                child: SwitchListTile(
-                                  value: _customReminder,
-                                  onChanged: (value) =>
-                                      setState(() => _customReminder = value),
-                                  title: Text(
-                                    strings.customReminderToggleLabel,
-                                    style: TextStyle(
-                                      color: colors.text,
-                                      fontSize: 14,
-                                    ),
-                                  ),
+                                axis: Axis.horizontal,
+                                child: PillActionButton(
+                                  icon: Icons.delete_outline,
+                                  label: strings.deleteStarAction,
+                                  onTap: _confirmAndDelete,
+                                  danger: true,
                                 ),
                               ),
-                              if (_customReminder)
-                                StaggeredEntrance(
-                                  index: 0,
-                                  replayKey: _kindEpoch,
-                                  child: ListTile(
-                                    onTap: _pickReminderTime,
-                                    title: Text(
-                                      strings.reminderTimeLabel,
-                                      style: TextStyle(
-                                        color: colors.muted,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                    trailing: Text(
-                                      TimeOfDay(
-                                        hour: _reminderHour,
-                                        minute: _reminderMinute,
-                                      ).format(context),
-                                      style: TextStyle(
-                                        color: colors.gold,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 15,
-                                      ),
-                                    ),
+                            ValueListenableBuilder<TextEditingValue>(
+                              valueListenable: _titleController,
+                              builder: (context, value, child) {
+                                final canSave =
+                                    value.text.trim().isNotEmpty &&
+                                    _selectedProject != null &&
+                                    (!widget.isEditing || _hasUnsavedChanges);
+                                return StaggeredEntrance(
+                                  index: 1,
+                                  axis: Axis.horizontal,
+                                  child: SaveActionButton(
+                                    label: widget.isEditing
+                                        ? strings.saveChanges
+                                        : (_kind == StarKind.lit
+                                              ? strings.lightThisStar
+                                              : strings.placeThisStarAction),
+                                    lit: canSave,
+                                    onPressed: canSave
+                                        ? _save
+                                        : _showCannotSaveMessage,
                                   ),
-                                ),
-                            ],
-                          ),
+                                );
+                              },
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ],
-                  if (_kind == StarKind.lit) ...[
-                    const SizedBox(height: 20),
-                    StaggeredEntrance(
-                      index: 12,
-                      replayKey: _kindEpoch,
-                      // The photo section, split in two halves: the main
-                      // photo on the left, the secondary photos (two columns)
-                      // on the right. The main preview keeps 9:16 and the
-                      // secondary grid fills its height so both halves line up.
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              AppFieldLabel(
-                                strings.photosLabel,
-                                requirement: FieldRequirement.optional,
-                              ),
-                              MemoryResetButton(
-                                onReset: _resetPhotos,
-                                canReset:
-                                    _photoPath != null ||
-                                    _media.any(
-                                      (m) => m.kind == StarMediaKind.photo,
-                                    ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: kFieldLabelGap),
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              const gap = 12.0;
-                              final half = (constraints.maxWidth - gap) / 2;
-                              // The main photo keeps its 9:16 frame; the secondary
-                              // grid then resizes to fill exactly that height.
-                              final gridHeight = half * 16 / 9;
-                              return Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        PhotoPicker(
-                                          photoPath: _photoPath,
-                                          onPick: _pickPhoto,
-                                          onRemove: _removePhoto,
-                                          compact: true,
-                                          compactWidth: half,
-                                          compactHeight: gridHeight,
-                                        ),
-                                        MemoryCaption(strings.mainPhotoLabel),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: gap),
-                                  Expanded(
-                                    child: StarMediaEditor(
-                                      media: _media,
-                                      onChanged: _onMediaChanged,
-                                      kinds: const [StarMediaKind.photo],
-                                      compact: true,
-                                      gridHeight: gridHeight,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    StaggeredEntrance(
-                      index: 13,
-                      replayKey: _kindEpoch,
-                      child: StarMediaEditor(
-                        media: _media,
-                        onChanged: _onMediaChanged,
-                        kinds: const [
-                          StarMediaKind.video,
-                          StarMediaKind.voice,
-                          StarMediaKind.link,
-                        ],
-                      ),
-                    ),
-                  ],
-                  // Wider than the standard 20 between fields — this is the
-                  // form's own action row, not one more field, and reads as
-                  // such better with a bit of extra air separating it from
-                  // whatever field happens to be last above it.
-                  const SizedBox(height: 44),
-                  StaggeredEntrance(
-                    index: 14,
-                    replayKey: _kindEpoch,
-                    child: Center(
-                      child: Wrap(
-                        alignment: WrapAlignment.center,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 16,
-                        runSpacing: 12,
-                        children: [
-                          if (widget.isEditing && !widget.hideDelete)
-                            StaggeredEntrance(
-                              index: 0,
-                              axis: Axis.horizontal,
-                              child: PillActionButton(
-                                icon: Icons.delete_outline,
-                                label: strings.deleteStarAction,
-                                onTap: _confirmAndDelete,
-                                danger: true,
-                              ),
-                            ),
-                          ValueListenableBuilder<TextEditingValue>(
-                            valueListenable: _titleController,
-                            builder: (context, value, child) {
-                              final canSave =
-                                  value.text.trim().isNotEmpty &&
-                                  _selectedProject != null &&
-                                  (!widget.isEditing || _hasUnsavedChanges);
-                              return StaggeredEntrance(
-                                index: 1,
-                                axis: Axis.horizontal,
-                                child: SaveActionButton(
-                                  label: widget.isEditing
-                                      ? strings.saveChanges
-                                      : (_kind == StarKind.lit
-                                            ? strings.lightThisStar
-                                            : strings.placeThisStarAction),
-                                  lit: canSave,
-                                  onPressed: canSave
-                                      ? _save
-                                      : _showCannotSaveMessage,
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -1616,173 +1654,6 @@ class _HabitFrequencyChip extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// The kind switch at the top of the form — one card per available kind,
-/// each showing that kind the way the sky shows it ([StarGlyph]) above its
-/// name and what it means. Deliberately not a `SegmentedButton`: the whole
-/// point is that the three kinds are three *different things in time*
-/// (past, present, future), which needs more than three words in a row to
-/// land.
-class _StarKindSwitch extends StatelessWidget {
-  const _StarKindSwitch({
-    required this.kinds,
-    required this.selected,
-    required this.onChanged,
-  });
-
-  final List<StarKind> kinds;
-  final StarKind selected;
-  final ValueChanged<StarKind> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final strings = context.strings;
-
-    // This Row sits in an unconstrained Column (the form's own scroll
-    // view), which hands it unbounded height — `CrossAxisAlignment.stretch`
-    // alone in that context tries to stretch every tile to *infinite*
-    // height (a real crash, confirmed live: it blanked the whole screen).
-    // `IntrinsicHeight` measures the row's children first and hands the
-    // Row back a finite height equal to the tallest of them, which is what
-    // stretch actually needs to work — without this, each `Expanded` sized
-    // to its own content, so three meaning texts of different lengths
-    // (wrapping to one line here, two there) left the tiles visibly uneven.
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onHorizontalDragEnd: (details) {
-        const minimumVelocity = 180.0;
-        final velocity = details.primaryVelocity ?? 0;
-        if (velocity.abs() < minimumVelocity) return;
-        final currentIndex = kinds.indexOf(selected);
-        final nextIndex = currentIndex + (velocity.isNegative ? 1 : -1);
-        if (nextIndex < 0 || nextIndex >= kinds.length) return;
-        onChanged(kinds[nextIndex]);
-      },
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (var i = 0; i < kinds.length; i++) ...[
-              if (i > 0) const SizedBox(width: 8),
-              Expanded(
-                // The tour step for this whole switch now lives on the
-                // caller's side (see where `_StarKindSwitch` gets built) —
-                // wrapping the switch as a whole, not one specific tile,
-                // since the point of this step is showing that all three
-                // kinds exist.
-                child: StaggeredEntrance(
-                  index: i + 1,
-                  axis: Axis.horizontal,
-                  child: InkWell(
-                    onTap: () => onChanged(kinds[i]),
-                    borderRadius: BorderRadius.circular(kRadiusField),
-                    child: Container(
-                      // The visual runs to the tile's edges, so it's clipped to
-                      // the same rounded corners as the border around it.
-                      clipBehavior: Clip.antiAlias,
-                      decoration: selectableDecoration(
-                        colors,
-                        selected: kinds[i] == selected,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // The same picture the Search cards show for this kind
-                          // of star, in place of the lines of text that used to
-                          // explain it (the full meaning is still in the
-                          // metaphor guide).
-                          // 8 above, the same as the title has below, with
-                          // the picture's box 8 shorter so the tile keeps its
-                          // height and the picture sits lower, nearer the
-                          // title.
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: SizedBox(
-                              // Full width of the tile, not just as wide as the
-                              // picture inside it — otherwise the glow was cut
-                              // off at the picture's own narrow edges.
-                              width: double.infinity,
-                              height: 68,
-                              child: Opacity(
-                                opacity: kinds[i] == selected ? 1 : 0.55,
-                                child: SearchStarVisual(
-                                  kind: kinds[i],
-                                  pulsarBothStates: true,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: Text(
-                              kinds[i].label(strings),
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: kinds[i] == selected
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                                color: kinds[i] == selected
-                                    ? colors.text
-                                    : colors.muted,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The static stand-in for [_StarKindSwitch] when there's only one possible
-/// kind — the same glyph, name and meaning, minus the pretense of a choice.
-class _StarKindMeaning extends StatelessWidget {
-  const _StarKindMeaning({required this.kind, this.showGlyph = false});
-
-  final StarKind kind;
-  final bool showGlyph;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final strings = context.strings;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (showGlyph) ...[
-          StarGlyph(kind: kind, size: 22),
-          const SizedBox(width: 6),
-        ],
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              kind.label(strings),
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: colors.text,
-              ),
-            ),
-            Text(
-              kind.meaning(strings),
-              style: TextStyle(fontSize: 12, color: colors.muted),
-            ),
-          ],
-        ),
-      ],
     );
   }
 }

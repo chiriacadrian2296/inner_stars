@@ -400,7 +400,7 @@ class _ExtraField extends StatelessWidget {
         Row(
           children: [
             AppFieldLabel(label, requirement: FieldRequirement.optional),
-            MemoryResetButton(onReset: onReset, canReset: count > 0),
+            FieldResetButton(onReset: onReset, canReset: count > 0),
           ],
         ),
         const SizedBox(height: kFieldLabelGap),

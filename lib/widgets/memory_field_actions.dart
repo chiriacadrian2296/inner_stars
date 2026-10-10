@@ -1,50 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import 'app_field.dart' show fieldLimitStyle;
-
-/// The small Reset icon at the right end of a photo/memories field's name
-/// row. One widget so the main photo and every Memories field carry the same
-/// one. There is no Add button: like every other field in the form, the
-/// field's own space (here, its placeholders) is what you tap to add.
-class MemoryResetButton extends StatelessWidget {
-  const MemoryResetButton({
-    super.key,
-    required this.onReset,
-    this.canReset = true,
-  });
-
-  final VoidCallback onReset;
-
-  /// Off while the field holds nothing.
-  final bool canReset;
-
-  /// As tall as its icon, so it never makes the field's name row taller than
-  /// the label text itself (then the gap below the name row would differ
-  /// from every other field's); wider than that for an easier tap.
-  static const double extent = 18;
-  static const double width = 28;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return IconButton(
-      tooltip: context.strings.resetExtraAction,
-      onPressed: canReset ? onReset : null,
-      color: colors.gold,
-      disabledColor: colors.muted,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints.tightFor(width: width, height: extent),
-      // Without this the button claims a 48 px tap target, which made the
-      // whole name row 48 px tall.
-      style: IconButton.styleFrom(
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-      icon: const Icon(Icons.restart_alt_rounded, size: 18),
-    );
-  }
-}
 
 /// A placeholder icon with a small "+" at its lower right, for the kinds of
 /// memory whose Material icon has no ready-made "add" variant.

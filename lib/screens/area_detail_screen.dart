@@ -6,6 +6,7 @@ import 'package:hint_kit/hint_kit.dart';
 
 import '../data/area_vision_repository.dart';
 import '../data/custom_constellation_repository.dart';
+import '../data/habit_repository.dart';
 import '../data/project_repository.dart';
 import '../data/star_repository.dart';
 import '../data/reflection_answer_repository.dart';
@@ -19,6 +20,7 @@ import '../theme/app_style.dart';
 import '../tutorials/tour_step_card.dart';
 import '../utils/area_hero_art.dart';
 import '../utils/area_hero_art_tone.dart';
+import '../widgets/app_action_disc.dart';
 import '../widgets/balanced_title.dart';
 import '../widgets/area_section_header.dart';
 import '../widgets/moodboard_grid.dart';
@@ -30,7 +32,7 @@ import '../widgets/staggered_entrance.dart';
 import '../widgets/vision_markdown.dart';
 import 'vision_editor_screen.dart';
 import 'moodboard_screen.dart';
-import 'new_project_screen.dart';
+import 'create_flow.dart';
 
 /// How wide the area's artwork is drawn on wide layouts (web/desktop).
 const double _kWideArtWidth = 460;
@@ -171,17 +173,22 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
     }
   }
 
-  Future<void> _openNewConstellation() async {
+  Future<void> _openNewConstellation() => _create(constellation: true);
+
+  /// The same creation page as every other add button, with this area
+  /// pre-filled.
+  Future<void> _create({bool constellation = false}) async {
     final starsShapeRepository = await _starsShapes;
+    final habitRepository = await HabitRepository.create();
     if (!mounted) return;
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) => NewProjectScreen(
-          projectRepository: widget.projectRepository,
-          starsShapeRepository: starsShapeRepository,
-          presetArea: _area,
-        ),
-      ),
+    await showCreatePage(
+      context,
+      projectRepository: widget.projectRepository,
+      starsShapeRepository: starsShapeRepository,
+      starRepository: widget.starRepository,
+      habitRepository: habitRepository,
+      constellation: constellation,
+      area: _area,
     );
     if (mounted) setState(() {});
   }
@@ -479,6 +486,19 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                       ),
                       onNewConstellation: _openNewConstellation,
                     ),
+                  ),
+                ),
+                // Always there, just above the dock (its content is 34 px
+                // tall with 16 above and below).
+                Positioned(
+                  right: 16,
+                  bottom: 66 + MediaQuery.paddingOf(context).bottom + 12,
+                  child: AppActionDisc(
+                    icon: Icons.auto_awesome,
+                    lit: true,
+                    onPressed: _create,
+                    heroTag: 'area-detail-create',
+                    tooltip: strings.addExtraAction,
                   ),
                 ),
               ],

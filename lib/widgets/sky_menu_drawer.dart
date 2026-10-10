@@ -18,6 +18,16 @@ import 'staggered_entrance.dart';
 /// this back on to restore it exactly as it was.
 const _kShowMetaphorMenuEntry = false;
 
+/// Parks the menu's "Sky" (search) and "Light Your Sky" entries: the Sky's
+/// add button now opens the one creation page, and the Sky itself is the
+/// home screen. Their callbacks and the chooser sheet are left wired up,
+/// just not drawn — flip this back on to restore them.
+const _kShowSkyAndCreateEntries = false;
+
+/// Parks the menu's "Shooting Stars" and "Friends" entries, both sketched in
+/// ahead of the features existing. Callbacks stay wired; flip on to restore.
+const _kShowSocialMenuEntries = false;
+
 /// The Sky's side menu — the app's only navigation. There's exactly one
 /// screen now (the Sky itself); everything else opens from here as a page
 /// on top of it, so the sky is never something you have to come *back* to.
@@ -416,40 +426,42 @@ class SkyMenuContent extends StatelessWidget {
             ),
           ),
         ),
-        if (!detailed) Divider(color: colors.nightBorder, height: 1),
-        sectionHeader(strings.menuSearchSection, 1),
-        if (!detailed) const SizedBox(height: 8),
-        entry(
-          index: 1,
-          icon: Icons.saved_search,
-          label: strings.menuSearch,
-          description: strings.menuSearchDescription,
-          onTap: onSearch,
-          closeOnTap: false,
-        ),
+        if (_kShowSkyAndCreateEntries) ...[
+          if (!detailed) Divider(color: colors.nightBorder, height: 1),
+          sectionHeader(strings.menuSearchSection, 1),
+          if (!detailed) const SizedBox(height: 8),
+          entry(
+            index: 1,
+            icon: Icons.saved_search,
+            label: strings.menuSearch,
+            description: strings.menuSearchDescription,
+            onTap: onSearch,
+            closeOnTap: false,
+          ),
 
-        if (!detailed) Divider(color: colors.nightBorder, height: 1),
-        sectionHeader(strings.menuActivitySection, 2),
-        if (!detailed) const SizedBox(height: 8),
-        entry(
-          index: 2,
-          icon: Icons.auto_awesome,
-          label: strings.menuLightYourSky,
-          description: strings.menuLightYourSkyDescription,
-          onTap: () {
-            // Reopening on the next frame: in compact mode (the
-            // Drawer), the menu's own Navigator.pop (in entry()'s
-            // onTap) has to finish closing it first, or the sheet
-            // opens behind the closing menu instead of on top of
-            // the Sky. Detailed mode (the modal) doesn't pop at
-            // all any more, so there's nothing to race there — the
-            // one-frame defer is just harmless overhead in that
-            // case, not worth a separate code path to skip it.
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _openLightYourSkyChooser(context);
-            });
-          },
-        ),
+          if (!detailed) Divider(color: colors.nightBorder, height: 1),
+          sectionHeader(strings.menuActivitySection, 2),
+          if (!detailed) const SizedBox(height: 8),
+          entry(
+            index: 2,
+            icon: Icons.auto_awesome,
+            label: strings.menuLightYourSky,
+            description: strings.menuLightYourSkyDescription,
+            onTap: () {
+              // Reopening on the next frame: in compact mode (the
+              // Drawer), the menu's own Navigator.pop (in entry()'s
+              // onTap) has to finish closing it first, or the sheet
+              // opens behind the closing menu instead of on top of
+              // the Sky. Detailed mode (the modal) doesn't pop at
+              // all any more, so there's nothing to race there — the
+              // one-frame defer is just harmless overhead in that
+              // case, not worth a separate code path to skip it.
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _openLightYourSkyChooser(context);
+              });
+            },
+          ),
+        ],
 
         if (!detailed) Divider(color: colors.nightBorder, height: 1),
         sectionHeader(strings.menuNightlightSection, 3),
@@ -462,16 +474,18 @@ class SkyMenuContent extends StatelessWidget {
           onTap: onNightlight,
         ),
 
-        if (!detailed) Divider(color: colors.nightBorder, height: 1),
-        sectionHeader(strings.menuChallengesSection, 4),
-        if (!detailed) const SizedBox(height: 8),
-        entry(
-          index: 4,
-          icon: Icons.auto_fix_high,
-          label: strings.menuShootingStars,
-          description: strings.menuShootingStarsDescription,
-          onTap: onShootingStars,
-        ),
+        if (_kShowSocialMenuEntries) ...[
+          if (!detailed) Divider(color: colors.nightBorder, height: 1),
+          sectionHeader(strings.menuChallengesSection, 4),
+          if (!detailed) const SizedBox(height: 8),
+          entry(
+            index: 4,
+            icon: Icons.auto_fix_high,
+            label: strings.menuShootingStars,
+            description: strings.menuShootingStarsDescription,
+            onTap: onShootingStars,
+          ),
+        ],
 
         if (!detailed) Divider(color: colors.nightBorder, height: 1),
         sectionHeader(strings.menuDataSection, 5),
@@ -484,16 +498,18 @@ class SkyMenuContent extends StatelessWidget {
           onTap: onStatistics,
         ),
 
-        if (!detailed) Divider(color: colors.nightBorder, height: 1),
-        sectionHeader(strings.socialSection, 6),
-        if (!detailed) const SizedBox(height: 8),
-        entry(
-          index: 6,
-          icon: Icons.people,
-          label: strings.menuFriends,
-          description: strings.menuFriendsDescription,
-          onTap: onFriends,
-        ),
+        if (_kShowSocialMenuEntries) ...[
+          if (!detailed) Divider(color: colors.nightBorder, height: 1),
+          sectionHeader(strings.socialSection, 6),
+          if (!detailed) const SizedBox(height: 8),
+          entry(
+            index: 6,
+            icon: Icons.people,
+            label: strings.menuFriends,
+            description: strings.menuFriendsDescription,
+            onTap: onFriends,
+          ),
+        ],
 
         if (_kShowMetaphorMenuEntry) ...[
           if (!detailed) Divider(color: colors.nightBorder, height: 1),

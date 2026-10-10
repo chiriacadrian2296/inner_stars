@@ -25,6 +25,7 @@ import '../settings/settings_controller.dart';
 import '../settings/sky_grid_size.dart';
 import '../screens/area_detail_screen.dart';
 import '../screens/constellation_screen.dart';
+import '../screens/create_flow.dart';
 import '../screens/moodboard_screen.dart';
 import '../screens/new_project_screen.dart';
 import '../screens/share_preview_screen.dart';
@@ -989,80 +990,37 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     }
   }
 
-  Future<void> _openNewConstellation(LifeArea area) async {
-    final shapes = await StarsShapeRepository.create();
-    if (!mounted) return;
-    final project = await Navigator.of(context).push<Project>(
-      MaterialPageRoute(
-        builder: (_) => NewProjectScreen(
-          projectRepository: widget.projectRepository,
-          starsShapeRepository: shapes,
-          presetArea: area,
-        ),
-      ),
+  Future<void> _openNewConstellation(LifeArea area) =>
+      _create(constellation: true, area: area);
+
+  /// The one creation page behind the Sky's add button: a constellation or a
+  /// star of any kind, chosen at its top. The search-level route deliberately
+  /// has no constellation preselected: this is the one place that sees the
+  /// whole sky, so the form's picker is the right place to choose where a
+  /// new star belongs. [constellation] opens on the constellation tile and
+  /// [area] pre-fills the area.
+  Future<void> _create({bool constellation = false, LifeArea? area}) async {
+    final shapes = widget.starsShapeRepository;
+    final created = await showCreatePage(
+      context,
+      projectRepository: widget.projectRepository,
+      starsShapeRepository: shapes,
+      starRepository: widget.starRepository,
+      habitRepository: widget.habitRepository,
+      constellation: constellation,
+      area: area,
     );
+    if (created == null) return;
     _refreshAndRebuild();
-    if (project != null && mounted) _announceConstellationCreated(project);
-  }
-
-  /// The search-level creation route deliberately has no area or
-  /// constellation preselected: this is the one place that sees the whole
-  /// sky, so the form's picker is the right place to choose where the new
-  /// star belongs.
-  Future<void> _createStar() async {
-    final result = await Navigator.of(context).push<Object>(
-      MaterialPageRoute(
-        builder: (_) => StarFormScreen(
-          projectRepository: widget.projectRepository,
-          starsShapeRepository: widget.starsShapeRepository,
-        ),
-      ),
-    );
-    if (result is! StarFormResult) return;
-
-    if (result.kind == StarKind.pulsar) {
-      final habit = await widget.habitRepository.add(
-        title: result.title,
-        description: result.description,
-        projectId: result.projectId,
-        intensity: result.intensity ?? 3,
-        frequency: result.habitFrequency ?? HabitFrequency.daily,
-        targetPerPeriod: result.habitTargetPerPeriod ?? 1,
-        reminderHour: result.reminderHour,
-        reminderMinute: result.reminderMinute,
-      );
-      _refreshAndRebuild();
-      if (mounted) _announcePulsarCreated(habit);
-    } else {
-      final star = await widget.starRepository.add(
-        title: result.title,
-        description: result.description,
-        projectId: result.projectId,
-        slotSequence: result.slotSequence,
-        targetDate: result.targetDate,
-        achievedDate: result.achievedDate,
-        intensity: result.intensity,
-        photoPath: result.photoPath,
-        media: result.media,
-      );
-      _refreshAndRebuild();
-      if (mounted) _announceStarCreated(star);
+    if (!mounted) return;
+    switch (created) {
+      case final Project project:
+        _announceConstellationCreated(project);
+      case final Habit habit:
+        _announcePulsarCreated(habit);
+      case final Star star:
+        _announceStarCreated(star);
     }
-  }
-
-  Future<void> _createConstellation() async {
-    final shapes = await StarsShapeRepository.create();
-    if (!mounted) return;
-    final project = await Navigator.of(context).push<Project>(
-      MaterialPageRoute(
-        builder: (_) => NewProjectScreen(
-          projectRepository: widget.projectRepository,
-          starsShapeRepository: shapes,
-        ),
-      ),
-    );
-    _refreshAndRebuild();
-    if (project != null && mounted) _announceConstellationCreated(project);
   }
 
   void _announceStarCreated(Star star) {
@@ -1134,20 +1092,15 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     );
   }
 
+  /// The same add button in every mode, opening the same creation page; only
+  /// the tile it opens on follows the mode.
   ({IconData icon, String tooltip, VoidCallback onPressed})? get _modeAction =>
-      switch (_mode) {
-        _SkyMode.stars => (
-          icon: Icons.add,
-          tooltip: 'Aggiungi stella',
-          onPressed: _createStar,
-        ),
-        _SkyMode.constellations => (
-          icon: Icons.add,
-          tooltip: 'Aggiungi costellazione',
-          onPressed: _createConstellation,
-        ),
-        _SkyMode.supernovas => null,
-      };
+      (
+        icon: Icons.auto_awesome,
+        tooltip: context.strings.addExtraAction,
+        onPressed: () =>
+            _create(constellation: _mode == _SkyMode.constellations),
+      );
 
   Future<void> _openAreaReflections(LifeArea area) =>
       Navigator.of(context)
@@ -2053,7 +2006,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                         builder: (context) {
                           final searchField = StaggeredEntrance(
                             index: 2,
-                            child: AppTextField(
+                            child: AppSearchField(
                               controller: _queryController,
                               hintText: strings.searchHint,
                               onChanged: (value) {
@@ -2061,27 +2014,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                                 setState(() => _query = value);
                                 _saveSession();
                               },
-                              prefixIcon: Icon(
-                                Icons.search,
-                                color: colors.muted,
-                                size: 20,
-                              ),
-                              suffixIcon: _query.isEmpty
-                                  ? null
-                                  : IconButton(
-                                      tooltip: strings.clearSearchTooltip,
-                                      onPressed: () {
-                                        _queryController.clear();
-                                        _cardMenuController.closeAll();
-                                        setState(() => _query = '');
-                                        _saveSession();
-                                      },
-                                      icon: Icon(
-                                        Icons.close,
-                                        color: colors.muted,
-                                        size: 20,
-                                      ),
-                                    ),
                             ),
                           );
 
@@ -2345,7 +2277,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                         ),
                         child: AppActionDisc(
                           icon: action.icon,
-                          boldPlus: true,
                           onPressed: action.onPressed,
                           heroTag: 'sky-search-${_mode.name}-action',
                           tooltip: action.tooltip,

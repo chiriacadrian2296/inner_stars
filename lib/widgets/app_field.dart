@@ -51,10 +51,18 @@ class AppFieldLabel extends StatelessWidget {
     this.requirement,
     this.counterController,
     this.counterMax,
+    this.onReset,
+    this.canReset,
   });
 
   final String label;
   final FieldRequirement? requirement;
+
+  /// With this set, a small reset icon sits right after the name; tapping it
+  /// puts the field back to empty. [canReset] says whether there is
+  /// something to reset — left null, it follows [counterController]'s text.
+  final VoidCallback? onReset;
+  final bool? canReset;
 
   /// With both set, the row also shows "length/max" of this controller's
   /// text, right-aligned in the label's own style — the field below then
@@ -79,30 +87,91 @@ class AppFieldLabel extends StatelessWidget {
     final counter = counterController;
     final max = counterMax;
     final hasCounter = counter != null && max != null;
-    return Row(
-      mainAxisSize: hasCounter ? MainAxisSize.max : MainAxisSize.min,
-      children: [
-        // Before the text, not after — so the dot sits in the same column
-        // for every field regardless of how long each one's own label is,
-        // rather than trailing off at a different point per field.
-        if (requirement != null) ...[
-          Icon(requirement._icon, size: 8, color: requirement._color(colors)),
-          const SizedBox(width: 5),
+    final reset = onReset;
+
+    Widget row(String text) {
+      final nameAndReset = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _labelText(context, expand: false),
+          if (reset != null)
+            FieldResetButton(
+              onReset: reset,
+              canReset: canReset ?? text.isNotEmpty,
+            ),
         ],
-        // With a counter the label takes the whole row so the counter sits at
-        // its far right edge; a Flexible next to a Spacer would split the
-        // free space and strand the counter mid-row.
-        _labelText(context, expand: hasCounter),
-        if (hasCounter) ...[
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: counter,
-            builder: (context, value, _) => Text(
-              '${value.text.characters.length}/$max',
+      );
+      return Row(
+        mainAxisSize: hasCounter ? MainAxisSize.max : MainAxisSize.min,
+        children: [
+          // Before the text, not after — so the dot sits in the same column
+          // for every field regardless of how long each one's own label is,
+          // rather than trailing off at a different point per field.
+          if (requirement != null) ...[
+            Icon(requirement._icon, size: 8, color: requirement._color(colors)),
+            const SizedBox(width: 5),
+          ],
+          // With a counter the name and reset icon take the whole row, so the
+          // counter sits at its far right edge. (A Flexible name beside a
+          // Spacer would split the free space and strand the counter mid-row.)
+          if (hasCounter)
+            Expanded(child: nameAndReset)
+          else
+            Flexible(child: nameAndReset),
+          if (hasCounter) ...[
+            Text(
+              '${text.characters.length}/$max',
               style: fieldLimitStyle(context),
             ),
-          ),
+          ],
         ],
-      ],
+      );
+    }
+
+    if (counter == null) return row('');
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: counter,
+      builder: (context, value, _) => row(value.text),
+    );
+  }
+}
+
+/// The small reset icon right after a field's name: puts that field back to
+/// empty. One widget so every field, whatever its kind, carries the same one.
+class FieldResetButton extends StatelessWidget {
+  const FieldResetButton({
+    super.key,
+    required this.onReset,
+    this.canReset = true,
+  });
+
+  final VoidCallback onReset;
+
+  /// Off while the field holds nothing.
+  final bool canReset;
+
+  /// As tall as its icon, so it never makes the field's name row taller than
+  /// the label text itself (then the gap below the name row would differ
+  /// from every other field's); wider than that for an easier tap.
+  static const double extent = 18;
+  static const double width = 28;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return IconButton(
+      tooltip: context.strings.resetExtraAction,
+      onPressed: canReset ? onReset : null,
+      color: colors.gold,
+      disabledColor: colors.muted,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: width, height: extent),
+      // Without this the button claims a 48 px tap target, which made the
+      // whole name row 48 px tall.
+      style: IconButton.styleFrom(
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      icon: const Icon(Icons.restart_alt_rounded, size: 18),
     );
   }
 }
@@ -306,6 +375,47 @@ class _AppTextFieldState extends State<AppTextField> {
   }
 }
 
+/// The app's one search box: an [AppTextField] with a magnifier in front and,
+/// once there is text, an X that clears it. Every search bar uses this so they
+/// all look and behave the same. [onChanged] is also called with an empty
+/// string when the X is tapped.
+class AppSearchField extends StatelessWidget {
+  const AppSearchField({
+    super.key,
+    required this.controller,
+    required this.hintText,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final String hintText;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, _) => AppTextField(
+        controller: controller,
+        hintText: hintText,
+        onChanged: onChanged,
+        prefixIcon: Icon(Icons.search, color: colors.muted, size: 20),
+        suffixIcon: value.text.isEmpty
+            ? null
+            : IconButton(
+                tooltip: context.strings.clearSearchTooltip,
+                onPressed: () {
+                  controller.clear();
+                  onChanged('');
+                },
+                icon: Icon(Icons.close, color: colors.muted, size: 20),
+              ),
+      ),
+    );
+  }
+}
+
 /// The app's one "tap to choose" field — a date, a constellation, a life
 /// area, an icon. Looks and lights exactly like [AppTextField], because to
 /// a user it's the same object: a box that's either empty or holds your
@@ -328,7 +438,12 @@ class AppPickerField extends StatelessWidget {
     this.iconOnly = false,
     this.enabled = true,
     this.errorText,
+    this.onReset,
   });
+
+  /// Shows a reset icon after the name (see [AppFieldLabel.onReset]); it is
+  /// off while the field is empty. Needs [label].
+  final VoidCallback? onReset;
 
   /// Omitted when the surrounding form already labels this field some other
   /// way (a section heading, a row of two).
@@ -417,7 +532,12 @@ class AppPickerField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppFieldLabel(label!, requirement: requirement),
+        AppFieldLabel(
+          label!,
+          requirement: requirement,
+          onReset: onReset,
+          canReset: filled,
+        ),
         const SizedBox(height: kFieldLabelGap),
         fieldWithError,
       ],

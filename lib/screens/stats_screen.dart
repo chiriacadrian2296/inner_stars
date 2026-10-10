@@ -1146,11 +1146,10 @@ class _DayDetailSheetState extends State<_DayDetailSheet> {
             const SizedBox(height: 20),
             StaggeredEntrance(
               index: 1,
-              child: AppTextField(
+              child: AppSearchField(
                 controller: _queryController,
                 hintText: strings.searchHint,
                 onChanged: (value) => setState(() => _query = value),
-                prefixIcon: Icon(Icons.search, color: colors.muted, size: 20),
               ),
             ),
             const SizedBox(height: 12),

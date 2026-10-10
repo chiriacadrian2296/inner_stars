@@ -14,6 +14,7 @@ import '../utils/app_modals.dart';
 import '../utils/date_format.dart';
 import '../utils/icon_for_slug.dart';
 import 'app_choice_chip.dart';
+import 'app_field.dart' show AppSearchField;
 import 'area_filter_sheet.dart';
 import 'date_range_filter_sheet.dart';
 import 'results_count_row.dart';
@@ -172,6 +173,14 @@ class _FlatProjectPickerSheet extends StatefulWidget {
 
 class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
   String _query = '';
+  final _queryController = TextEditingController();
+
+  @override
+  void dispose() {
+    _queryController.dispose();
+    super.dispose();
+  }
+
   late Set<int> _selectedIds = {...?widget.filterIds};
   Set<LifeArea> _areaFilter = {...LifeArea.values};
   DateTimeRange? _dateRangeFilter;
@@ -416,17 +425,10 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: TextField(
+                      child: AppSearchField(
+                        controller: _queryController,
+                        hintText: strings.searchHint,
                         onChanged: (value) => setState(() => _query = value),
-                        style: TextStyle(color: colors.text, fontSize: 15),
-                        decoration: InputDecoration(
-                          hintText: strings.searchHint,
-                          prefixIcon: Icon(
-                            Icons.search,
-                            color: colors.muted,
-                            size: 20,
-                          ),
-                        ),
                       ),
                     ),
                     const SizedBox(width: 10),

@@ -1,3 +1,4 @@
+import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:flutter/material.dart';
 import 'package:hint_kit/hint_kit.dart';
 
@@ -20,6 +21,7 @@ import '../widgets/app_field.dart';
 import '../widgets/area_picker.dart';
 import '../utils/icon_for_slug.dart';
 import '../widgets/constellation_editor_painter.dart';
+import '../widgets/form_kind_tiles.dart';
 import '../widgets/pill_action_button.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
@@ -48,12 +50,18 @@ class NewProjectScreen extends StatefulWidget {
     required this.starsShapeRepository,
     this.presetArea,
     this.existingProject,
+    this.embedded = false,
   });
 
   final ProjectRepository projectRepository;
   final StarsShapeRepository starsShapeRepository;
   final LifeArea? presetArea;
   final Project? existingProject;
+
+  /// Just the form's own column — no scaffold, scroll view or back handling —
+  /// for placing it under the star form's kind switch, which supplies those.
+  /// Saving still pops the enclosing route with the new [Project].
+  final bool embedded;
 
   @override
   State<NewProjectScreen> createState() => _NewProjectScreenState();
@@ -213,6 +221,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   Widget _buildIconField(AppColors colors, AppStrings strings) {
     return AppPickerField(
       label: strings.iconLabel,
+      onReset: () => setState(() => _selectedIconSlug = null),
       requirement: FieldRequirement.required,
       hint: strings.iconLabel,
       // A fixed representative glyph while unselected — like the calendar/
@@ -230,6 +239,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   Widget _buildAreaField(AppColors colors, AppStrings strings) {
     return AppPickerField(
       label: strings.areaLabel,
+      onReset: () => setState(() => _selectedArea = null),
       requirement: FieldRequirement.required,
       hint: strings.areaLabel,
       icon: _selectedArea?.icon ?? Icons.explore_outlined,
@@ -586,254 +596,231 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     final colors = context.colors;
     final strings = context.strings;
 
+    final column = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // The same tile row every form starts with — here just the
+        // constellation. Embedded in the star form, that form's own row is
+        // above instead.
+        if (!widget.embedded) ...[
+          FormKindTiles(
+            leading: [FormKindTile.constellation(context, selected: true)],
+          ),
+          const SizedBox(height: kFormTilesGap),
+        ],
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 3,
+              child: StaggeredEntrance(
+                index: 2,
+                axis: Axis.horizontal,
+                child: _buildAreaField(colors, strings),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 1,
+              child: StaggeredEntrance(
+                index: 3,
+                axis: Axis.horizontal,
+                child: _buildIconField(colors, strings),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        StaggeredEntrance(
+          index: 4,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppFieldLabel(
+                strings.titleFieldLabel,
+                onReset: () => setState(_nameController.clear),
+                requirement: FieldRequirement.required,
+                counterController: _nameController,
+                counterMax: kTitleMaxLength,
+              ),
+              const SizedBox(height: kFieldLabelGap),
+              AppTextField(
+                controller: _nameController,
+                maxLength: kTitleMaxLength,
+                showCounter: false,
+                hintText: strings.newProjectNameHint,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        StaggeredEntrance(
+          index: 5,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppFieldLabel(
+                strings.projectDescriptionLabel,
+                onReset: () => setState(_descriptionController.clear),
+                requirement: FieldRequirement.optional,
+                counterController: _descriptionController,
+                counterMax: kProjectDescriptionMaxLength,
+              ),
+              const SizedBox(height: kFieldLabelGap),
+              AppTextField(
+                controller: _descriptionController,
+                maxLength: kProjectDescriptionMaxLength,
+                showCounter: false,
+                maxLines: 3,
+                hintText: strings.projectDescriptionHint,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        // The shape being committed to, on the left — always on
+        // screen, always editable (tapping it, blank or not,
+        // opens the same editor `_editSelectedShape` always did)
+        // — sized to the same width as the Area field above it
+        // (same 3:1 split, same gap, over the same total row
+        // width) so the two line up rather than matching by
+        // coincidence. The three ways to change it fill the
+        // space that leaves on the right, stacked to match
+        // whatever height that makes the preview (square, so
+        // wider now also means taller) via [IntrinsicHeight] +
+        // `stretch` rather than a guessed fixed height.
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const gap = 12.0;
+            final side = (constraints.maxWidth - gap) * 3 / 4;
+            return IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Label + preview together, separate from each of
+                  // the three buttons on the right — each gets its
+                  // own tour step now instead of one combined
+                  // highlight over the whole section.
+                  HintTarget(
+                    tour: 'constellation-form',
+                    order: 1,
+                    showArrow: true,
+                    contentBuilder: appTourStepCard,
+                    title: strings.constellationTourCanvasTitle,
+                    description: strings.constellationTourCanvasBody,
+                    child: StaggeredEntrance(
+                      index: 6,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AppFieldLabel(
+                            strings.chooseShapeLabel,
+                            canReset: _hasShape,
+                            onReset: _resetShape,
+                            requirement: FieldRequirement.required,
+                          ),
+                          const SizedBox(height: kFieldLabelGap),
+                          _SelectedShapePreview(
+                            shape: _selectedShape,
+                            label: _selectedShapeName(strings),
+                            onEdit: _editSelectedShape,
+                            side: side,
+                            replayKey: _shapeEpoch,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: gap),
+                  Expanded(
+                    // `stretch`, not the Column default `center`
+                    // — [Expanded] alone only shares out the
+                    // *height* between the three buttons; without
+                    // this each one would still shrink-wrap to
+                    // its own icon+label width and sit centered
+                    // in the middle of this slot instead of
+                    // actually filling it edge to edge, the same
+                    // width as the icon field above.
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Invisible — reserves exactly the label's
+                        // own height above the preview on the left
+                        // (see the `HintTarget` above), so this
+                        // side stays the same height as *just the
+                        // square*, matching it the way the three
+                        // buttons are meant to (see the comment on
+                        // the `LayoutBuilder` above). Without this,
+                        // `IntrinsicHeight` balances the row
+                        // against label-plus-square on the left —
+                        // taller than the square alone — and
+                        // stretches these buttons to that taller
+                        // height too, leaving them visibly taller
+                        // than the preview they're supposed to
+                        // match. `Visibility.maintainSize` over a
+                        // real (if invisible) `AppFieldLabel`
+                        // guarantees the exact same height as the
+                        // real one, regardless of locale or text
+                        // scale — a bare `SizedBox` would have to
+                        // guess that number instead of matching it.
+                        Visibility(
+                          visible: false,
+                          maintainSize: true,
+                          maintainAnimation: true,
+                          maintainState: true,
+                          child: AppFieldLabel(
+                            strings.chooseShapeLabel,
+                            requirement: FieldRequirement.required,
+                          ),
+                        ),
+                        const SizedBox(height: kFieldLabelGap),
+                        Expanded(
+                          child: StaggeredEntrance(
+                            index: 6,
+                            child: _ShapeLibraryTile(
+                              label: strings.pickFromLibraryShort,
+                              onTap: _openLibrary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 28),
+        StaggeredEntrance(
+          index: 8,
+          child: Center(
+            child: ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _nameController,
+              builder: (context, value, child) {
+                final canSave =
+                    value.text.trim().isNotEmpty &&
+                    _selectedArea != null &&
+                    _selectedIconSlug != null &&
+                    _hasShape;
+                return SaveActionButton(
+                  label: strings.saveChanges,
+                  lit: canSave,
+                  onPressed: canSave ? _save : _showCannotSaveMessage,
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+    if (widget.embedded) return column;
+
     final scaffold = Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-          child: ResponsiveContent(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                StaggeredEntrance(
-                  index: 0,
-                  child: Text(
-                    widget.existingProject == null
-                        ? strings.newProjectQuestion
-                        : strings.newProjectQuestion,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 24,
-                      color: colors.text,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: StaggeredEntrance(
-                        index: 2,
-                        axis: Axis.horizontal,
-                        child: _buildAreaField(colors, strings),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 1,
-                      child: StaggeredEntrance(
-                        index: 3,
-                        axis: Axis.horizontal,
-                        child: _buildIconField(colors, strings),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                StaggeredEntrance(
-                  index: 4,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppFieldLabel(
-                        strings.titleFieldLabel,
-                        requirement: FieldRequirement.required,
-                        counterController: _nameController,
-                        counterMax: kTitleMaxLength,
-                      ),
-                      const SizedBox(height: kFieldLabelGap),
-                      AppTextField(
-                        controller: _nameController,
-                        maxLength: kTitleMaxLength,
-                        showCounter: false,
-                        hintText: strings.newProjectNameHint,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                StaggeredEntrance(
-                  index: 5,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppFieldLabel(
-                        strings.projectDescriptionLabel,
-                        requirement: FieldRequirement.optional,
-                        counterController: _descriptionController,
-                        counterMax: kProjectDescriptionMaxLength,
-                      ),
-                      const SizedBox(height: kFieldLabelGap),
-                      AppTextField(
-                        controller: _descriptionController,
-                        maxLength: kProjectDescriptionMaxLength,
-                        showCounter: false,
-                        maxLines: 3,
-                        hintText: strings.projectDescriptionHint,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // The shape being committed to, on the left — always on
-                // screen, always editable (tapping it, blank or not,
-                // opens the same editor `_editSelectedShape` always did)
-                // — sized to the same width as the Area field above it
-                // (same 3:1 split, same gap, over the same total row
-                // width) so the two line up rather than matching by
-                // coincidence. The three ways to change it fill the
-                // space that leaves on the right, stacked to match
-                // whatever height that makes the preview (square, so
-                // wider now also means taller) via [IntrinsicHeight] +
-                // `stretch` rather than a guessed fixed height.
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    const gap = 12.0;
-                    final side = (constraints.maxWidth - gap) * 3 / 4;
-                    return IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Label + preview together, separate from each of
-                          // the three buttons on the right — each gets its
-                          // own tour step now instead of one combined
-                          // highlight over the whole section.
-                          HintTarget(
-                            tour: 'constellation-form',
-                            order: 1,
-                            showArrow: true,
-                            contentBuilder: appTourStepCard,
-                            title: strings.constellationTourCanvasTitle,
-                            description: strings.constellationTourCanvasBody,
-                            child: StaggeredEntrance(
-                              index: 6,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  AppFieldLabel(
-                                    strings.chooseShapeLabel,
-                                    requirement: FieldRequirement.required,
-                                  ),
-                                  const SizedBox(height: kFieldLabelGap),
-                                  _SelectedShapePreview(
-                                    shape: _selectedShape,
-                                    label: _selectedShapeName(strings),
-                                    onEdit: _editSelectedShape,
-                                    side: side,
-                                    replayKey: _shapeEpoch,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: gap),
-                          Expanded(
-                            // `stretch`, not the Column default `center`
-                            // — [Expanded] alone only shares out the
-                            // *height* between the three buttons; without
-                            // this each one would still shrink-wrap to
-                            // its own icon+label width and sit centered
-                            // in the middle of this slot instead of
-                            // actually filling it edge to edge, the same
-                            // width as the icon field above.
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                // Invisible — reserves exactly the label's
-                                // own height above the preview on the left
-                                // (see the `HintTarget` above), so this
-                                // side stays the same height as *just the
-                                // square*, matching it the way the three
-                                // buttons are meant to (see the comment on
-                                // the `LayoutBuilder` above). Without this,
-                                // `IntrinsicHeight` balances the row
-                                // against label-plus-square on the left —
-                                // taller than the square alone — and
-                                // stretches these buttons to that taller
-                                // height too, leaving them visibly taller
-                                // than the preview they're supposed to
-                                // match. `Visibility.maintainSize` over a
-                                // real (if invisible) `AppFieldLabel`
-                                // guarantees the exact same height as the
-                                // real one, regardless of locale or text
-                                // scale — a bare `SizedBox` would have to
-                                // guess that number instead of matching it.
-                                Visibility(
-                                  visible: false,
-                                  maintainSize: true,
-                                  maintainAnimation: true,
-                                  maintainState: true,
-                                  child: AppFieldLabel(
-                                    strings.chooseShapeLabel,
-                                    requirement: FieldRequirement.required,
-                                  ),
-                                ),
-                                const SizedBox(height: kFieldLabelGap),
-                                Expanded(
-                                  child: StaggeredEntrance(
-                                    index: 6,
-                                    child: _ShapeSideButton(
-                                      icon: Icons.edit_outlined,
-                                      label: strings.drawShapeShort,
-                                      onTap: _editSelectedShape,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Expanded(
-                                  child: StaggeredEntrance(
-                                    index: 7,
-                                    child: _ShapeSideButton(
-                                      icon: Icons.insights,
-                                      label: strings.pickFromLibraryShort,
-                                      onTap: _openLibrary,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Expanded(
-                                  child: StaggeredEntrance(
-                                    index: 8,
-                                    child: _ShapeSideButton(
-                                      icon: Icons.refresh,
-                                      label: strings.resetShapeShort,
-                                      onTap: _hasShape ? _resetShape : null,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 28),
-                StaggeredEntrance(
-                  index: 8,
-                  child: Center(
-                    child: ValueListenableBuilder<TextEditingValue>(
-                      valueListenable: _nameController,
-                      builder: (context, value, child) {
-                        final canSave =
-                            value.text.trim().isNotEmpty &&
-                            _selectedArea != null &&
-                            _selectedIconSlug != null &&
-                            _hasShape;
-                        return SaveActionButton(
-                          label: strings.saveChanges,
-                          lit: canSave,
-                          onPressed: canSave ? _save : _showCannotSaveMessage,
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          child: ResponsiveContent(child: column),
         ),
       ),
     );
@@ -968,48 +955,48 @@ class _ShapePickerTabsState extends State<_ShapePickerTabs> {
     final colors = context.colors;
     final strings = context.strings;
 
-    Widget tabButton(_ShapePickerTab tab, String label) {
-      final active = _tab == tab;
-      return Expanded(
-        child: StaggeredEntrance(
-          index: tab == _ShapePickerTab.library ? 2 : 3,
-          axis: Axis.horizontal,
-          child: Material(
-            color: active ? colors.gold : Colors.transparent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(kRadiusField),
-              side: BorderSide(color: colors.nightBorder),
-            ),
-            child: InkWell(
-              onTap: () => setState(() => _tab = tab),
-              borderRadius: BorderRadius.circular(kRadiusField),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: active ? colors.onGold : colors.muted,
-                    fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                    fontSize: 13,
+    final label = {
+      _ShapePickerTab.library: strings.shapeLibraryTabLabel,
+      _ShapePickerTab.yourShapes: strings.yourShapesTabLabel,
+    };
+
+    // The same rolling switch as the Sky's mode and view switches; the
+    // names are tooltips since the switch itself is icons only.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        StaggeredEntrance(
+          index: 2,
+          child: Center(
+            child: SizedBox(
+              width: 104,
+              child: AnimatedToggleSwitch<_ShapePickerTab>.rolling(
+                height: 40,
+                current: _tab,
+                values: _ShapePickerTab.values,
+                onChanged: (tab) => setState(() => _tab = tab),
+                borderWidth: kBorderWidth,
+                iconOpacity: 1.0,
+                iconBuilder: (value, size) => Tooltip(
+                  message: label[value]!,
+                  child: Icon(
+                    value == _ShapePickerTab.library
+                        ? Icons.grid_view_rounded
+                        : Icons.draw_outlined,
+                    size: 20,
+                    color: value == _tab ? colors.night : colors.muted,
                   ),
+                ),
+                style: ToggleStyle(
+                  backgroundColor: colors.nightPanel,
+                  indicatorColor: colors.gold,
+                  borderColor: colors.nightBorder,
+                  borderRadius: BorderRadius.circular(kRadiusField),
+                  indicatorBorderRadius: BorderRadius.circular(kRadiusField),
                 ),
               ),
             ),
           ),
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            tabButton(_ShapePickerTab.library, strings.shapeLibraryTabLabel),
-            const SizedBox(width: 8),
-            tabButton(_ShapePickerTab.yourShapes, strings.yourShapesTabLabel),
-          ],
         ),
         const SizedBox(height: 12),
         switch (_tab) {
@@ -1208,33 +1195,28 @@ class _SelectedShapePreview extends StatelessWidget {
   }
 }
 
-/// One of the three ways to change the shape, beside the preview — icon
-/// above a short label, filling whatever cell height
-/// [Expanded]/[IntrinsicHeight] give it in the column of three these stack
-/// in (see the shape picker's own build code). A disabled (null [onTap])
-/// one — Reset with nothing to reset — dims to [AppColors.muted] the same
-/// way every other disabled control in this app does.
-class _ShapeSideButton extends StatelessWidget {
-  const _ShapeSideButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
+/// The one button beside the shape preview: opens the shape library. A panel
+/// showing four of the library's own shapes, one per row, with its name
+/// under them, so it reads as "a collection to browse" rather than a plain
+/// button. (Drawing is a tap on the preview, resetting is the icon beside
+/// the field's name.)
+class _ShapeLibraryTile extends StatelessWidget {
+  const _ShapeLibraryTile({required this.label, required this.onTap});
 
-  final IconData icon;
   final String label;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
+
+  /// Which library shapes the tile shows, spread across it so they differ.
+  static const _sampleIndices = [0, 24, 48, 72];
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final enabled = onTap != null;
-    final foreground = enabled ? colors.gold : colors.muted;
-
-    // The same flat panel + border every other tappable tile in this app
-    // uses (see `panelDecoration`) — a plain [InkWell] with no surface of
-    // its own read as three loose icons floating beside the preview
-    // rather than three buttons.
+    final shapes = [
+      for (final i in _sampleIndices)
+        starsShapePresets[i % starsShapePresets.length].shape,
+    ];
+    Widget cell(int i) => Expanded(child: _MiniShape(shape: shapes[i]));
     return Container(
       decoration: panelDecoration(colors),
       clipBehavior: Clip.antiAlias,
@@ -1242,24 +1224,95 @@ class _ShapeSideButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: foreground, size: 22),
-              const SizedBox(height: 4),
-              AppButtonLabel(
-                label,
-                color: enabled ? colors.text : colors.muted,
-                fontSize: 11,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(6, 8, 6, 8),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [for (var i = 0; i < shapes.length; i++) cell(i)],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                AppButtonLabel(
+                  label,
+                  color: colors.text,
+                  fontSize: 11,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+/// A shape drawn tiny, for [_ShapeLibraryTile]'s grid. Painted straight from
+/// the size it is given rather than through a `LayoutBuilder`, which cannot be
+/// measured by the `IntrinsicHeight` this tile sits under.
+class _MiniShape extends StatelessWidget {
+  const _MiniShape({required this.shape});
+
+  final ConstellationShape shape;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return CustomPaint(
+      painter: _MiniShapePainter(
+        shape: shape,
+        pointColor: colors.text,
+        highlightColor: colors.gold,
+        lineColor: colors.muted.withValues(alpha: 0.6),
+      ),
+    );
+  }
+}
+
+class _MiniShapePainter extends CustomPainter {
+  const _MiniShapePainter({
+    required this.shape,
+    required this.pointColor,
+    required this.highlightColor,
+    required this.lineColor,
+  });
+
+  final ConstellationShape shape;
+  final Color pointColor;
+  final Color highlightColor;
+  final Color lineColor;
+
+  static const _inset = 5.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // A square as large as the cell allows, centred, so a shape keeps its
+    // proportions whatever the cell's.
+    final side = (size.shortestSide - _inset * 2).clamp(0.0, double.infinity);
+    final left = (size.width - side) / 2;
+    final top = (size.height - side) / 2;
+    ConstellationEditorPainter(
+      points: [
+        for (final p in shape.points)
+          Offset(left + p.dx * side, top + p.dy * side),
+      ],
+      edges: shape.edges,
+      highlightedIndex: null,
+      pointColor: pointColor,
+      highlightColor: highlightColor,
+      lineColor: lineColor,
+      pointRadius: 1.5,
+    ).paint(canvas, size);
+  }
+
+  @override
+  bool shouldRepaint(_MiniShapePainter old) =>
+      old.shape != shape ||
+      old.pointColor != pointColor ||
+      old.lineColor != lineColor;
 }
 
 /// Footprint of every saved-shape preview tile. Big enough that a shape's
@@ -1400,6 +1453,14 @@ class _SearchablePickerSheet<T> extends StatefulWidget {
 
 class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
   String _query = '';
+  final _queryController = TextEditingController();
+
+  @override
+  void dispose() {
+    _queryController.dispose();
+    super.dispose();
+  }
+
   late T? _selected = widget.initialSelection;
 
   List<T> get _filtered {
@@ -1429,17 +1490,10 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
                 const SizedBox(height: 20),
                 StaggeredEntrance(
                   index: 1,
-                  child: TextField(
+                  child: AppSearchField(
+                    controller: _queryController,
+                    hintText: widget.searchHint ?? strings.searchHint,
                     onChanged: (value) => setState(() => _query = value),
-                    style: TextStyle(color: colors.text, fontSize: 15),
-                    decoration: InputDecoration(
-                      hintText: widget.searchHint ?? strings.searchHint,
-                      prefixIcon: Icon(
-                        Icons.search,
-                        color: colors.muted,
-                        size: 20,
-                      ),
-                    ),
                   ),
                 ),
               ],

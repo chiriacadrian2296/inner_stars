@@ -64,9 +64,11 @@ class AppActionDisc extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final background = _danger
-        ? colors.danger
-        : (lit ? colors.gold : colors.muted);
+    // Navy like the page, with the icon and a rim in gold (muted while it is
+    // not available); the danger variant keeps its solid red.
+    final accent = lit ? colors.gold : colors.muted;
+    final background = _danger ? colors.danger : colors.night;
+    final foreground = _danger ? colors.night : accent;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -77,10 +79,13 @@ class AppActionDisc extends StatelessWidget {
         heroTag: heroTag,
         onPressed: onPressed,
         backgroundColor: background,
+        shape: _danger
+            ? const CircleBorder()
+            : CircleBorder(side: BorderSide(color: accent, width: 2)),
         tooltip: tooltip,
         child: boldPlus
-            ? _BoldPlus(color: colors.night)
-            : Icon(icon, color: colors.night),
+            ? _BoldPlus(color: foreground)
+            : Icon(icon, color: foreground),
       ),
     );
   }
