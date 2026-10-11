@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 
 import '../data/constellation_shape.dart';
 import '../models/habit.dart';
@@ -11,6 +10,7 @@ import '../models/life_area.dart';
 import '../models/project.dart';
 import '../models/star.dart';
 import 'constellation_painter.dart';
+import 'sky_clock.dart';
 
 /// One project's constellation, already built (see
 /// `buildConstellationRenderStars`) and given a stable spot in the shared
@@ -1453,6 +1453,33 @@ String _truncateLabel(String text) {
   return '${text.substring(0, _kLabelMaxChars - 1)}…';
 }
 
+// A label is laid out once and reused while its text, size and (zoom-driven)
+// fade stay the same — which is every frame the camera isn't zooming. Laying
+// text out is the dear part of drawing a label, and the sky draws many.
+final Map<(String, double, int), TextPainter> _labelPainters = {};
+
+TextPainter _labelPainterFor(String text, double fontSize, double alpha) {
+  final alphaStep = (alpha * 50).round();
+  final key = (text, fontSize, alphaStep);
+  final cached = _labelPainters[key];
+  if (cached != null) return cached;
+  // Zooming walks the fade through every step for every label: keep the
+  // cache from growing without bound.
+  if (_labelPainters.length > 400) _labelPainters.clear();
+  return _labelPainters[key] = TextPainter(
+    text: TextSpan(
+      text: _truncateLabel(text),
+      style: TextStyle(
+        color: const Color(0xFF0D1220).withValues(alpha: alphaStep / 50),
+        fontSize: fontSize,
+        fontWeight: FontWeight.w600,
+        height: 1,
+      ),
+    ),
+    textDirection: TextDirection.ltr,
+  )..layout();
+}
+
 void _drawPillLabel(
   Canvas canvas,
   Offset anchor,
@@ -1462,18 +1489,7 @@ void _drawPillLabel(
 ) {
   if (alpha <= 0.01 || text.isEmpty) return;
 
-  final textPainter = TextPainter(
-    text: TextSpan(
-      text: _truncateLabel(text),
-      style: TextStyle(
-        color: const Color(0xFF0D1220).withValues(alpha: alpha),
-        fontSize: fontSize,
-        fontWeight: FontWeight.w600,
-        height: 1,
-      ),
-    ),
-    textDirection: TextDirection.ltr,
-  )..layout();
+  final textPainter = _labelPainterFor(text, fontSize, alpha);
 
   final paddingH = fontSize * 0.55;
   final paddingV = fontSize * 0.3;
@@ -1510,15 +1526,15 @@ void _drawPillLabel(
 /// local 0..1 space onto wherever [_projectConstellationTransform] puts
 /// it — including that transform's rotation/skew, not just its position.
 class ConstellationFieldPainter extends CustomPainter {
-  const ConstellationFieldPainter({
+  ConstellationFieldPainter({
     required this.placed,
     required this.camera,
     required this.zoom,
     required this.flareProgram,
     required this.palette,
     required this.revision,
-    this.time = 0,
-  });
+    required this.clock,
+  }) : super(repaint: clock);
 
   final List<PlacedConstellation> placed;
   final SkyCamera camera;
@@ -1534,9 +1550,11 @@ class ConstellationFieldPainter extends CustomPainter {
 
   final int revision;
 
+  final SkyClock clock;
+
   /// Forwarded straight through to [ConstellationPainter.time] — see its
   /// own doc comment.
-  final double time;
+  double get time => clock.seconds;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1592,6 +1610,15 @@ class ConstellationFieldPainter extends CustomPainter {
       if (transform == null) continue;
       final localSizePx =
           (transform.right.distance + transform.up.distance) / 2;
+
+      // Off to the side of the view, nothing of it (shape, flare glow or
+      // labels) can land on screen: don't record its draw calls or run its
+      // flare shaders. The margin covers the shape's own footprint plus the
+      // flare glow around it and a label's width.
+      final margin = localSizePx * 1.6 + 220;
+      if (!(Offset.zero & size).inflate(margin).contains(transform.center)) {
+        continue;
+      }
 
       canvas.save();
       // Maps this constellation's own local 0..localSizePx square (top-left
@@ -1705,8 +1732,7 @@ class ConstellationFieldPainter extends CustomPainter {
         camera != oldDelegate.camera ||
         zoom != oldDelegate.zoom ||
         flareProgram != oldDelegate.flareProgram ||
-        placed.length != oldDelegate.placed.length ||
-        time != oldDelegate.time;
+        placed.length != oldDelegate.placed.length;
   }
 }
 
@@ -1724,6 +1750,7 @@ class AnimatedConstellationField extends StatefulWidget {
     required this.flareProgram,
     required this.palette,
     required this.revision,
+    required this.clock,
   });
 
   final List<PlacedConstellation> placed;
@@ -1733,29 +1760,16 @@ class AnimatedConstellationField extends StatefulWidget {
   final StarPalette palette;
   final int revision;
 
+  /// Drives the flare rays' animation — see [SkyClock].
+  final SkyClock clock;
+
   @override
   State<AnimatedConstellationField> createState() =>
       _AnimatedConstellationFieldState();
 }
 
-class _AnimatedConstellationFieldState extends State<AnimatedConstellationField>
-    with SingleTickerProviderStateMixin {
-  late final Ticker _ticker;
-  Duration _elapsed = Duration.zero;
-
-  @override
-  void initState() {
-    super.initState();
-    _ticker = createTicker((elapsed) => setState(() => _elapsed = elapsed))
-      ..start();
-  }
-
-  @override
-  void dispose() {
-    _ticker.dispose();
-    super.dispose();
-  }
-
+class _AnimatedConstellationFieldState
+    extends State<AnimatedConstellationField> {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
@@ -1766,7 +1780,7 @@ class _AnimatedConstellationFieldState extends State<AnimatedConstellationField>
         flareProgram: widget.flareProgram,
         palette: widget.palette,
         revision: widget.revision,
-        time: _elapsed.inMicroseconds / Duration.microsecondsPerSecond,
+        clock: widget.clock,
       ),
     );
   }

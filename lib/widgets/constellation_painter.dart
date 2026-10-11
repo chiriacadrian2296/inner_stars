@@ -62,6 +62,7 @@ class ConstellationStar {
     required this.entityId,
     required this.position,
     required this.kind,
+    this.originalKind,
     required this.lit,
     required this.label,
     this.slotSequence,
@@ -77,6 +78,9 @@ class ConstellationStar {
 
   final Offset position;
   final StarKind kind;
+
+  /// The activity type retained by archived map entries.
+  final StarKind? originalKind;
 
   /// Whether this star is currently giving light. Always true for
   /// [StarKind.lit], always false for [StarKind.unlit]/[StarKind.nascent]/

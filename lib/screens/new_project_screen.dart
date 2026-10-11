@@ -23,6 +23,7 @@ import '../utils/icon_for_slug.dart';
 import '../widgets/constellation_editor_painter.dart';
 import '../widgets/form_kind_tiles.dart';
 import '../widgets/filters_trigger_button.dart';
+import '../widgets/area_icon.dart';
 import '../widgets/pill_action_button.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
@@ -248,6 +249,9 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
       requirement: FieldRequirement.required,
       hint: strings.selectASupernova,
       icon: _selectedArea?.icon ?? Icons.flare,
+      leading: _selectedArea == null
+          ? null
+          : AreaIcon(area: _selectedArea!, size: 20),
       text: _selectedArea?.displayName(strings),
       onTap: _openAreaPicker,
     );

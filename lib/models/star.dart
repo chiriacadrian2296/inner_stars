@@ -103,6 +103,10 @@ class Star {
   StarKind get kind =>
       dead ? StarKind.dead : (isLit ? StarKind.lit : StarKind.unlit);
 
+  /// The activity type retained when the star is archived.
+  StarKind get originalKind =>
+      achievedDate != null ? StarKind.lit : StarKind.unlit;
+
   Star copyWith({
     int? id,
     int? projectId,

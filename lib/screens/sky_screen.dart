@@ -71,6 +71,7 @@ import '../widgets/shareable_pulsar_card.dart';
 import '../widgets/sky_area_backdrop.dart';
 import '../widgets/sky_area_sigils.dart';
 import '../widgets/sky_area_tooltip.dart';
+import '../widgets/sky_clock.dart';
 import '../widgets/sky_constellation_tooltip.dart';
 import '../widgets/sky_menu_drawer.dart';
 import '../widgets/sky_nascent_star_tooltip.dart';
@@ -100,6 +101,7 @@ import 'star_reader_screen.dart';
 import 'stats_screen.dart';
 import 'ui_sandbox_screen.dart';
 import 'area_icon_lab_screen.dart';
+import '../widgets/galaxy_exit_guard.dart';
 import 'visions_screen.dart';
 import 'vision_editor_screen.dart';
 
@@ -545,6 +547,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// listener behind. [_flyStartCamera]/[_flyTargetForward] are read by
   /// [_onFlyTick] on every frame; null between flights.
   late final AnimationController _flyController;
+
+  /// The shared, throttled clock behind the sky's ambient animation — see
+  /// [SkyClock].
+  late final SkyClock _skyClock;
   SkyCamera? _flyStartCamera;
   (double, double, double)? _flyTargetForward;
   double _flyStartZoom = 0;
@@ -609,6 +615,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _skyClock = SkyClock(this);
     _flyController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
@@ -671,6 +678,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _holdRingController.dispose();
     _inertiaTicker?.dispose();
     _skyTooltipController.dispose();
+    _skyClock.dispose();
     super.dispose();
   }
 
@@ -1413,7 +1421,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       title: strings.deleteStarConfirmTitle,
       body: strings.deleteStarConfirmBody,
       cancelLabel: strings.cancel,
-      confirmLabel: strings.deleteStarAction,
+      confirmLabel: strings.archiveAction,
       tone: AppConfirmationTone.destructive,
     );
     if (!confirmed) return;
@@ -3439,13 +3447,17 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // [_showRotationControl] preference.
     final showRotation = _showRotationControl && !isTouchOnlyMobile;
 
-    return PopScope(
-      // The quick-look panel isn't a route of its own — a back gesture/
-      // button with it open should close it (same as tapping its own X)
-      // rather than leaving the sky screen entirely.
-      canPop: _quickLookConstellation == null,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _closeSkyTooltip();
+    return GalaxyExitGuard(
+      consumeBack: () {
+        if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+          _scaffoldKey.currentState!.closeDrawer();
+          return true;
+        }
+        if (_quickLookConstellation != null) {
+          _closeSkyTooltip();
+          return true;
+        }
+        return false;
       },
       child: Scaffold(
         key: _scaffoldKey,
@@ -3504,6 +3516,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                       NebulaBackground(
                         camera: _camera,
                         zoom: _zoom,
+                        clock: _skyClock,
                         showGrid: widget.settings.showGrid,
                       ),
                       if (widget.settings.artworkLayer ==
@@ -3517,6 +3530,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                         SkyAreaSigils(
                           camera: _camera,
                           zoom: _zoom,
+                          clock: _skyClock,
                           sizeFactor: widget.settings.supernovaScale,
                         ),
                       // Alternative takes on this slot, tried in order —
@@ -3530,6 +3544,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                         SkySupernova(
                           camera: _camera,
                           zoom: _zoom,
+                          clock: _skyClock,
                           scale: widget.settings.supernovaScale,
                           intensity: widget.settings.supernovaIntensity,
                         ),
@@ -3537,6 +3552,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                         placed: _placed,
                         camera: _camera,
                         zoom: _zoom,
+                        clock: _skyClock,
                         flareProgram: _flareProgram,
                         // See [kSkyStarPalette]: a white core with a gold glow
                         // around it for anything burning, matching `SkySupernova`'s
@@ -4117,6 +4133,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                                   description: context.strings.skyTourMenuBody,
                                   child: _MenuStarButton(
                                     key: _menuStarButtonKey,
+                                    clock: _skyClock,
                                     onTap: _openMenuModal,
                                     onQuickTap: _openSkyFromMenuButton,
                                     onDismissSkyTooltip:
@@ -4728,7 +4745,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       title: strings.deletePulsarConfirmTitle,
       body: strings.deletePulsarConfirmBody,
       cancelLabel: strings.cancel,
-      confirmLabel: strings.deleteStarAction,
+      confirmLabel: strings.archiveAction,
       tone: AppConfirmationTone.destructive,
     );
     if (!confirmed) return;
@@ -4868,8 +4885,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     final project = constellation.project;
     final confirmed = await showAppConfirmation(
       context: context,
-      title: 'Eliminare questa costellazione?',
-      body: 'Verranno eliminati definitivamente stelle, pulsar, completamenti e foto. Questa azione non può essere annullata.',
+      title: strings.deleteProjectConfirmTitle,
+      body: strings.deleteProjectConfirmBody,
       cancelLabel: strings.cancel,
       confirmLabel: strings.deleteStarAction,
       tone: AppConfirmationTone.destructive,
@@ -5570,11 +5587,15 @@ class _SkyOverlayButton extends StatelessWidget {
 class _MenuStarButton extends StatefulWidget {
   const _MenuStarButton({
     super.key,
+    required this.clock,
     required this.onTap,
     required this.onQuickTap,
     this.onDismissSkyTooltip,
     this.onPressChanged,
   });
+
+  /// Drives the glow's animation — see [SkyClock].
+  final SkyClock clock;
 
   final VoidCallback onTap;
 
@@ -5648,13 +5669,11 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   final _pressWatch = Stopwatch();
 
   ui.FragmentShader? _shader;
-  late final Ticker _ticker;
-  Duration _elapsed = Duration.zero;
   // A press doesn't open the menu itself — it charges this for as long
   // as the finger stays down, and the menu only opens once it reaches
   // 1.0 (see the status listener in initState); let go early and it
   // reverses back to 0 instead of firing. Its own value, read straight
-  // in build() below (already rebuilding every frame off [_ticker]), is
+  // by the glow painter (which repaints off it and off [widget.clock]), is
   // what drives `supernovaGlow`'s own [chargeGlow].
   late final AnimationController _chargeController;
   // Used to show this briefly whenever a press let go before the charge
@@ -5711,8 +5730,6 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   @override
   void initState() {
     super.initState();
-    _ticker = createTicker((elapsed) => setState(() => _elapsed = elapsed))
-      ..start();
     _chargeController =
         AnimationController(vsync: this, duration: _chargeDuration)
           ..addStatusListener((status) {
@@ -5791,7 +5808,6 @@ class _MenuStarButtonState extends State<_MenuStarButton>
 
   @override
   void dispose() {
-    _ticker.dispose();
     _chargeController.dispose();
     _hintTimer?.cancel();
     _stopHoldHaptic();
@@ -5904,11 +5920,9 @@ class _MenuStarButtonState extends State<_MenuStarButton>
                   child: CustomPaint(
                     painter: _MenuStarGlowPainter(
                       shader: shader,
-                      time:
-                          _elapsed.inMicroseconds /
-                          Duration.microsecondsPerSecond,
+                      clock: widget.clock,
                       scale: _scale,
-                      charge: _chargeController.value,
+                      charge: _chargeController,
                     ),
                   ),
                 ),
@@ -6292,27 +6306,27 @@ class _QuickAccessButton extends StatelessWidget {
 // for a blur+blend bug there); all of that went with the logo, so this
 // canvas is nothing but the shader now, identical on every platform.
 class _MenuStarGlowPainter extends CustomPainter {
-  const _MenuStarGlowPainter({
+  _MenuStarGlowPainter({
     required this.shader,
-    required this.time,
+    required this.clock,
     required this.scale,
     required this.charge,
-  });
+  }) : super(repaint: Listenable.merge([clock, charge]));
 
   final ui.FragmentShader shader;
-  final double time;
+  final SkyClock clock;
   final double scale;
   // 0..1 — see `_MenuStarButtonState._chargeController`.
-  final double charge;
+  final Animation<double> charge;
 
   @override
   void paint(Canvas canvas, Size size) {
     shader
       ..setFloat(0, size.width)
       ..setFloat(1, size.height)
-      ..setFloat(2, time)
+      ..setFloat(2, clock.seconds)
       ..setFloat(3, scale)
-      ..setFloat(4, charge);
+      ..setFloat(4, charge.value);
 
     canvas.drawRect(
       Offset.zero & size,
@@ -6324,9 +6338,7 @@ class _MenuStarGlowPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _MenuStarGlowPainter oldDelegate) =>
-      oldDelegate.time != time ||
-      oldDelegate.scale != scale ||
-      oldDelegate.charge != charge;
+      oldDelegate.scale != scale;
 }
 
 /// A two-finger rotate gesture (see `_handleScaleUpdate`) is touch-only —

@@ -439,6 +439,7 @@ class AppPickerField extends StatelessWidget {
     this.enabled = true,
     this.errorText,
     this.onReset,
+    this.leading,
   });
 
   /// Shows a reset icon after the name (see [AppFieldLabel.onReset]); it is
@@ -454,6 +455,7 @@ class AppPickerField extends StatelessWidget {
 
   final String hint;
   final IconData icon;
+  final Widget? leading;
 
   /// Null means empty — which is exactly what decides whether this field
   /// is lit.
@@ -491,11 +493,12 @@ class AppPickerField extends StatelessWidget {
             ? Center(child: Icon(icon, size: 22, color: colors.gold))
             : Row(
                 children: [
-                  Icon(
-                    icon,
-                    size: filled ? 20 : 16,
-                    color: filled ? colors.gold : colors.muted,
-                  ),
+                  leading ??
+                      Icon(
+                        icon,
+                        size: filled ? 20 : 16,
+                        color: filled ? colors.gold : colors.muted,
+                      ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(

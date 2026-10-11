@@ -15,6 +15,7 @@ import '../badge_rows.dart';
 import '../constellation_painter.dart' show ConstellationStar;
 import '../photo_image.dart';
 import '../star_glyph.dart';
+import '../star_type_text.dart';
 
 /// Cosmo's Gallery tiles: miniature, portrait (2:3) versions of the single
 /// pages — a star's reader page, a constellation's page, an area's cover —
@@ -197,8 +198,12 @@ class GalleryStarTile extends StatelessWidget {
                       ),
                       SizedBox(height: 4 * u),
                     ],
-                    Text(
+                    StarTypeText(
                       kind.label(strings).toUpperCase(),
+                      compact: true,
+                      originalKind: kind == StarKind.dead
+                          ? data.star?.originalKind ?? StarKind.pulsar
+                          : null,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

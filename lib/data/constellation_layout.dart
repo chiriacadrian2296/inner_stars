@@ -286,6 +286,7 @@ buildConstellationRenderStars({
             ? layout.points[index]
             : seededOverflowPosition(star.id),
         kind: star.kind,
+        originalKind: star.originalKind,
         lit: star.isLit,
         label: star.title,
         slotSequence: star.slotSequence,
@@ -333,6 +334,7 @@ buildConstellationRenderStars({
         // A deleted pulsar keeps its scattered spot and becomes a dead
         // star, the same way a deleted star does — see [Habit.dead].
         kind: habit.dead ? StarKind.dead : StarKind.pulsar,
+        originalKind: StarKind.pulsar,
         lit: !habit.dead && isHabitLit(habit, countsByDay),
         label: habit.title,
         intensity: habit.intensity,

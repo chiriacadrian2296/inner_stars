@@ -20,7 +20,6 @@ import '../theme/app_style.dart';
 import '../tutorials/tour_step_card.dart';
 import '../utils/area_hero_art.dart';
 import '../utils/area_hero_art_tone.dart';
-import '../widgets/app_action_disc.dart';
 import '../widgets/balanced_title.dart';
 import '../widgets/area_section_header.dart';
 import '../widgets/moodboard_grid.dart';
@@ -488,19 +487,6 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                     ),
                   ),
                 ),
-                // Always there, just above the dock (its content is 34 px
-                // tall with 16 above and below).
-                Positioned(
-                  right: 16,
-                  bottom: 66 + MediaQuery.paddingOf(context).bottom + 12,
-                  child: AppActionDisc(
-                    icon: Icons.auto_awesome,
-                    lit: true,
-                    onPressed: _create,
-                    heroTag: 'area-detail-create',
-                    tooltip: strings.addExtraAction,
-                  ),
-                ),
               ],
             ),
           ),
@@ -799,13 +785,18 @@ class _AreaSection extends StatelessWidget {
   );
 
   static const _fadeHeight = 66.0;
+  static const _scrollbarGutter = 12.0;
 
   Widget _previewBox(BuildContext context) {
     final box = SizedBox(
       height: 300,
       child: ClipRect(
         child: ScrollbarTheme(
-          data: ScrollbarTheme.of(context).copyWith(minThumbLength: 10),
+          // The app theme's dark-blue thumb was made for the web; on a phone
+          // these previews keep the stock scrollbar they had before.
+          data: isTouchOnlyMobile
+              ? const ScrollbarThemeData(minThumbLength: 10)
+              : ScrollbarTheme.of(context).copyWith(minThumbLength: 10),
           // The thumb is painted after the Stack, while the fades still
           // stay above the preview content. Its track can therefore run
           // to the real bottom edge of the preview.
@@ -830,13 +821,18 @@ class _AreaSection extends StatelessWidget {
                         ),
                       ),
                     ),
-                  _ChainedPreviewScroll(
-                    outer: pageScroll,
-                    initialOffset: previewOffsets?[index] ?? 0,
-                    onOffsetChanged: previewOffsets == null
-                        ? null
-                        : (offset) => previewOffsets![index] = offset,
-                    child: preview,
+                  // The right gutter is the scrollbar's lane, so its thumb
+                  // sits beside the content instead of over it.
+                  Padding(
+                    padding: const EdgeInsets.only(right: _scrollbarGutter),
+                    child: _ChainedPreviewScroll(
+                      outer: pageScroll,
+                      initialOffset: previewOffsets?[index] ?? 0,
+                      onOffsetChanged: previewOffsets == null
+                          ? null
+                          : (offset) => previewOffsets![index] = offset,
+                      child: preview,
+                    ),
                   ),
                   // The fades are only as tall as the fade itself. As
                   // full-box gradients clamped past their last stop, they
@@ -1020,15 +1016,14 @@ class _SectionButton extends StatelessWidget {
     axis: Axis.horizontal,
     reverse: reverse,
     child: Center(
-      child: ElevatedButton.icon(
+      child: ElevatedButton(
         // Flat: these sit among text, so no lit-button glow.
         style: ElevatedButton.styleFrom(
           elevation: 0,
           shadowColor: Colors.transparent,
         ),
         onPressed: onPressed,
-        icon: const Icon(Icons.edit_outlined, size: 20),
-        label: AppButtonLabel(label),
+        child: AppButtonLabel(label),
       ),
     ),
   );

@@ -48,7 +48,7 @@ void main() {
                 ),
           ),
         );
-        expect(tiles, findsNWidgets(13));
+        expect(tiles, findsNWidgets(14));
         for (final tile in tiles.evaluate()) {
           final tileRect = tester.getRect(find.byWidget(tile.widget));
           expect(tileRect.top, greaterThanOrEqualTo(rect.top));

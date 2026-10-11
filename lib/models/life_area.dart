@@ -121,12 +121,9 @@ extension LifeAreaX on LifeArea {
     for (final group in reflectionGroups(s)) ...group.questions,
   ];
 
-  /// A generic icon representing the area itself — distinct from a
-  /// project's own [Project.iconSlug]-based constellation icon, and
-  /// deliberately never offered as a project icon choice (see [iconSlug])
-  /// so the two never get visually confused. Used wherever an area is
-  /// shown as a single UI element (the Sky hub cards, the area picker when
-  /// creating a project) rather than browsed into.
+  /// The legacy Material glyph, retained for Lab comparisons and the
+  /// reserved [iconSlug] catalogue. Visible area symbols use [AreaIcon]'s
+  /// small artwork assets instead.
   IconData get icon {
     switch (this) {
       case LifeArea.physical:

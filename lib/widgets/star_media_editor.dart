@@ -157,10 +157,15 @@ class StarMediaEditor extends StatelessWidget {
 
   Future<void> _addLink(BuildContext context) async {
     if (!_checkLimit(context, StarMediaKind.link)) return;
-    final result = await showAppDialog<({String url, String? label})>(
-      context: context,
-      builder: (_) => const _LinkDialog(),
-    );
+    final result = kLinkAsSheet
+        ? await showFixedAppSheet<({String url, String? label})>(
+            context: context,
+            builder: (_) => const _LinkDialog(asSheet: true),
+          )
+        : await showAppDialog<({String url, String? label})>(
+            context: context,
+            builder: (_) => const _LinkDialog(),
+          );
     if (result == null) return;
     _addAll([
       StarMedia(
@@ -626,10 +631,17 @@ class _MediaTileGrid extends StatelessWidget {
   }
 }
 
-/// Link entry as a dialog (not a bottom sheet) so it moves clear of the
-/// keyboard by itself.
+/// Whether "add link" opens as a bottom sheet (true) or as the original
+/// dialog (false). Both are built from the same [_LinkDialog] form.
+const bool kLinkAsSheet = true;
+
+/// Link entry: a dialog, so it moves clear of the keyboard by itself, or
+/// (see [kLinkAsSheet]) a fixed bottom sheet the keyboard covers instead.
 class _LinkDialog extends StatefulWidget {
-  const _LinkDialog();
+  const _LinkDialog({this.asSheet = false});
+
+  /// Lays the same form out as a bottom sheet instead of a dialog.
+  final bool asSheet;
 
   @override
   State<_LinkDialog> createState() => _LinkDialogState();
@@ -660,6 +672,88 @@ class _LinkDialogState extends State<_LinkDialog> {
   Widget build(BuildContext context) {
     final strings = context.strings;
     final colors = context.colors;
+    final fields = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppFieldLabel(
+          strings.linkUrlLabel,
+          requirement: FieldRequirement.required,
+          counterController: _url,
+          counterMax: kMaxLinkUrlLength,
+        ),
+        const SizedBox(height: kFieldLabelGap),
+        AppTextField(
+          controller: _url,
+          maxLength: kMaxLinkUrlLength,
+          showCounter: false,
+          hintText: strings.linkUrlHint,
+          textInputAction: TextInputAction.next,
+          errorText: _invalid ? strings.linkInvalid : null,
+          onChanged: (_) => setState(() => _invalid = false),
+        ),
+        const SizedBox(height: 16),
+        AppFieldLabel(
+          strings.linkLabelLabel,
+          requirement: FieldRequirement.required,
+          counterController: _label,
+          counterMax: kMaxLinkLabelLength,
+        ),
+        const SizedBox(height: kFieldLabelGap),
+        AppTextField(
+          controller: _label,
+          maxLength: kMaxLinkLabelLength,
+          showCounter: false,
+          hintText: strings.linkLabelHint,
+          textInputAction: TextInputAction.done,
+          onChanged: (_) => setState(() {}),
+        ),
+      ],
+    );
+    final actions = [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: AppButtonLabel(strings.cancel, color: colors.muted),
+      ),
+      ElevatedButton(
+        onPressed: _url.text.trim().isEmpty || _label.text.trim().isEmpty
+            ? null
+            : _submit,
+        // Off, it keeps a visible button background (the theme's off
+        // colour is the dialog's own, so it would vanish).
+        style: ElevatedButton.styleFrom(
+          disabledBackgroundColor: colors.nightBorder,
+          disabledForegroundColor: colors.muted,
+        ),
+        child: AppButtonLabel(strings.linkAdd),
+      ),
+    ];
+    if (widget.asSheet) {
+      // Fixed height, fields at the top: the keyboard covers the empty
+      // lower part and the sheet never moves.
+      return SizedBox(
+        height: MediaQuery.sizeOf(context).height * 0.7,
+        child: AppSheetFrame(
+          expandChild: true,
+          title: AppSheetTitle(strings.linkTitle),
+          // Buttons sit right under the fields; the empty space is below
+          // them, where the keyboard covers the sheet.
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                fields,
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [actions[0], const SizedBox(width: 8), actions[1]],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     return AppDialog(
       scrollable: true,
       actionsAlignment: MainAxisAlignment.center,
@@ -667,61 +761,8 @@ class _LinkDialogState extends State<_LinkDialog> {
       // above the title.
       actionsPadding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       title: Text(strings.linkTitle),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppFieldLabel(
-            strings.linkUrlLabel,
-            requirement: FieldRequirement.required,
-            counterController: _url,
-            counterMax: kMaxLinkUrlLength,
-          ),
-          const SizedBox(height: kFieldLabelGap),
-          AppTextField(
-            controller: _url,
-            maxLength: kMaxLinkUrlLength,
-            showCounter: false,
-            hintText: strings.linkUrlHint,
-            textInputAction: TextInputAction.next,
-            errorText: _invalid ? strings.linkInvalid : null,
-            onChanged: (_) => setState(() => _invalid = false),
-          ),
-          const SizedBox(height: 16),
-          AppFieldLabel(
-            strings.linkLabelLabel,
-            requirement: FieldRequirement.required,
-            counterController: _label,
-            counterMax: kMaxLinkLabelLength,
-          ),
-          const SizedBox(height: kFieldLabelGap),
-          AppTextField(
-            controller: _label,
-            maxLength: kMaxLinkLabelLength,
-            showCounter: false,
-            hintText: strings.linkLabelHint,
-            textInputAction: TextInputAction.done,
-            onChanged: (_) => setState(() {}),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: AppButtonLabel(strings.cancel, color: colors.muted),
-        ),
-        ElevatedButton(
-          onPressed: _url.text.trim().isEmpty || _label.text.trim().isEmpty
-              ? null
-              : _submit,
-          // Off, it keeps a visible button background (the theme's off
-          // colour is the dialog's own, so it would vanish).
-          style: ElevatedButton.styleFrom(
-            disabledBackgroundColor: colors.nightBorder,
-            disabledForegroundColor: colors.muted,
-          ),
-          child: AppButtonLabel(strings.linkAdd),
-        ),
-      ],
+      content: fields,
+      actions: actions,
     );
   }
 }

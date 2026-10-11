@@ -3,6 +3,9 @@ import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
+
+import '../widgets/area_icon.dart';
+
 import 'package:hint_kit/hint_kit.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -533,7 +536,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
       body: isPulsar
           ? strings.deletePulsarConfirmBody
           : strings.deleteStarConfirmBody,
-      confirmLabel: strings.deleteStarAction,
+      confirmLabel: strings.archiveAction,
       destructive: true,
     );
     if (confirmed && mounted) {
@@ -1034,6 +1037,9 @@ class _StarFormScreenState extends State<StarFormScreen> {
                           requirement: FieldRequirement.required,
                           hint: strings.selectASupernova,
                           icon: _selectedArea?.icon ?? Icons.flare,
+                          leading: _selectedArea == null
+                              ? null
+                              : AreaIcon(area: _selectedArea!, size: 20),
                           text: _selectedArea?.displayName(strings),
                           onTap: _openAreaPicker,
                         ),
@@ -1577,7 +1583,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                                 axis: Axis.horizontal,
                                 child: PillActionButton(
                                   icon: Icons.delete_outline,
-                                  label: strings.deleteStarAction,
+                                  label: strings.archiveAction,
                                   onTap: _confirmAndDelete,
                                   danger: true,
                                 ),

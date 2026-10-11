@@ -2,6 +2,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../widgets/area_icon.dart';
+
 import '../l10n/app_strings.dart';
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
@@ -344,7 +346,7 @@ class _KindCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    kind.label(strings),
+                    '${kind.galaxyLabel(strings)} · ${kind.label(strings)}',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -411,7 +413,11 @@ class _SupernovaPicture extends StatelessWidget {
           ),
         ],
       ),
-      child: Icon(LifeArea.physical.icon, color: Colors.white, size: 38),
+      child: const AreaIcon(
+        area: LifeArea.physical,
+        size: 38,
+        color: Colors.white,
+      ),
     );
   }
 }

@@ -54,10 +54,13 @@ class SkyPulsarTooltip extends StatelessWidget {
       baseBodyHeight: SearchResultCard.bodyHeightFor(badges),
       visual: SearchStarVisual(kind: StarKind.pulsar, pulsarLit: isLit),
       content: SearchCardTextContent(
-        eyebrow: StarKind.pulsar.label(strings),
+        eyebrow: (habit.dead ? StarKind.dead : StarKind.pulsar).galaxyLabel(
+          strings,
+        ),
         eyebrowColor: habit.dead
             ? starKindColor(StarKind.dead, context.colors)
             : starKindColor(StarKind.pulsar, context.colors, lit: isLit),
+        archivedOriginalKind: habit.dead ? StarKind.pulsar : null,
         title: habit.title,
         breadcrumb: project == null
             ? null
@@ -92,7 +95,7 @@ class SkyPulsarTooltip extends StatelessWidget {
         if (onDelete != null)
           SearchCardAction(
             icon: Icons.delete_outline_rounded,
-            label: strings.deleteStarAction,
+            label: strings.archiveAction,
             onTap: onDelete!,
           ),
       ],

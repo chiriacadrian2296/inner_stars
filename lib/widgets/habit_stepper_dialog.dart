@@ -115,7 +115,7 @@ class _HabitStepperDialogState extends State<_HabitStepperDialog> {
               const SizedBox(width: 8),
               IconButton(
                 key: const Key('habit-stepper-plus'),
-                tooltip: strings.actionLight,
+                tooltip: strings.completeActivityAction,
                 onPressed: _saving ? null : () => setState(() => _count++),
                 iconSize: 30,
                 visualDensity: VisualDensity.compact,

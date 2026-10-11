@@ -13,6 +13,7 @@ class AppChoiceChip extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.iconColor,
+    this.leading,
     this.expand = false,
   });
 
@@ -20,6 +21,7 @@ class AppChoiceChip extends StatelessWidget {
   final bool selected;
   final VoidCallback? onPressed;
   final IconData? icon;
+  final Widget? leading;
   final Color? iconColor;
   final bool expand;
 
@@ -29,16 +31,17 @@ class AppChoiceChip extends StatelessWidget {
     final enabled = onPressed != null;
     final content = Row(
       mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
-      mainAxisAlignment: icon == null
+      mainAxisAlignment: icon == null && leading == null
           ? MainAxisAlignment.center
           : MainAxisAlignment.start,
       children: [
-        if (icon != null) ...[
-          Icon(
-            icon,
-            size: 16,
-            color: iconColor ?? (selected ? colors.gold : colors.muted),
-          ),
+        if (icon != null || leading != null) ...[
+          leading ??
+              Icon(
+                icon,
+                size: 16,
+                color: iconColor ?? (selected ? colors.gold : colors.muted),
+              ),
           const SizedBox(width: 8),
         ],
         if (expand)
@@ -78,7 +81,9 @@ class AppChoiceChip extends StatelessWidget {
       // An expanded text-only choice still reads as a centered button.
       // Choices with a leading icon keep their label aligned beside it
       // instead.
-      textAlign: expand && icon != null ? TextAlign.start : TextAlign.center,
+      textAlign: expand && (icon != null || leading != null)
+          ? TextAlign.start
+          : TextAlign.center,
       style: context.typography.controlLabel.copyWith(
         color: selected ? colors.text : colors.muted,
         fontWeight: selected ? FontWeight.w600 : FontWeight.w400,

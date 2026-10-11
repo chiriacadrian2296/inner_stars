@@ -13,6 +13,7 @@ import 'intensity_bolts.dart';
 import 'staggered_entrance.dart';
 import 'star_glyph.dart';
 import 'star_media_views.dart';
+import 'star_type_text.dart';
 
 /// How a reader page's blocks arrive — see `StarReaderScreen`: the same
 /// staggered cascade for every kind of page, half as spread out (and held
@@ -83,6 +84,7 @@ class ReaderPage extends StatelessWidget {
   const ReaderPage({
     super.key,
     required this.kind,
+    this.originalKind,
     this.lit = true,
     required this.entrance,
     this.createdAt,
@@ -99,6 +101,7 @@ class ReaderPage extends StatelessWidget {
   });
 
   final StarKind kind;
+  final StarKind? originalKind;
 
   /// Only matters for a pulsar (burning or dark).
   final bool lit;
@@ -148,8 +151,9 @@ class ReaderPage extends StatelessWidget {
         const SizedBox(height: 10),
         entrance(
           2,
-          Text(
+          StarTypeText(
             kind.label(strings),
+            originalKind: kind == StarKind.dead ? originalKind : null,
             textAlign: TextAlign.center,
             // Sized to the icon above it.
             style: TextStyle(
@@ -425,6 +429,7 @@ class StarReaderContent extends StatelessWidget {
 
     return ReaderPage(
       kind: star.kind,
+      originalKind: star.originalKind,
       entrance: entrance,
       reserveExtraSlot: !star.dead,
       createdAt: star.createdAt,
@@ -555,6 +560,7 @@ class PulsarReaderContent extends StatelessWidget {
 
     return ReaderPage(
       kind: habit.dead ? StarKind.dead : StarKind.pulsar,
+      originalKind: StarKind.pulsar,
       lit: lit,
       entrance: entrance,
       reserveExtraSlot: !habit.dead,

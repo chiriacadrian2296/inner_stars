@@ -29,7 +29,7 @@ class SkyNascentStarTooltip extends StatelessWidget {
       onTap: onView,
       visual: const SearchStarVisual(kind: StarKind.nascent),
       content: SearchCardTextContent(
-        eyebrow: strings.starKindNascentName,
+        eyebrow: StarKind.nascent.galaxyLabel(strings),
         title: strings.starKindNascentMeaning,
         breadcrumb: '${project.area.displayName(strings)} → ${project.name}',
         metrics: const [],

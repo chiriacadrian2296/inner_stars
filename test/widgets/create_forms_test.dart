@@ -53,7 +53,7 @@ void main() {
       ),
     );
     expect(tester.takeException(), isNull);
-    expect(find.text('Constellation'), findsWidgets);
+    expect(find.text('Project'), findsWidgets);
   });
 
   testWidgets('star form switches to the constellation tile and back', (
@@ -72,7 +72,7 @@ void main() {
     await tester.tap(
       find.descendant(
         of: find.byType(FormKindTiles),
-        matching: find.text('Constellation'),
+        matching: find.text('Project'),
       ),
     );
     await tester.pump(const Duration(seconds: 2));

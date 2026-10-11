@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../widgets/area_icon.dart';
+
 import '../data/custom_constellation_repository.dart';
 import '../data/project_repository.dart';
 import '../data/star_repository.dart';
@@ -68,7 +70,7 @@ class _AdmireStarsScreenState extends State<AdmireStarsScreen>
     final strings = context.strings;
     return _AreaChip(
       label: area.displayName(strings),
-      icon: area.icon,
+      area: area,
       selected: _selected.contains(area),
       onTap: () => _toggleArea(area),
     );
@@ -374,11 +376,11 @@ class _AreaChip extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
-    this.icon,
+    this.area,
   });
 
   final String label;
-  final IconData? icon;
+  final LifeArea? area;
   final bool selected;
   final VoidCallback onTap;
 
@@ -394,11 +396,14 @@ class _AreaChip extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              selected ? Icons.check_circle : (icon ?? Icons.circle_outlined),
-              size: 16,
-              color: selected ? Colors.white : colors.nightlightMuted,
-            ),
+            if (!selected && area != null)
+              AreaIcon(area: area!, size: 16, color: colors.nightlightMuted)
+            else
+              Icon(
+                selected ? Icons.check_circle : Icons.circle_outlined,
+                size: 16,
+                color: selected ? Colors.white : colors.nightlightMuted,
+              ),
             const SizedBox(width: 7),
             Flexible(
               child: Text(

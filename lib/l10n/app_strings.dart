@@ -195,6 +195,9 @@ abstract class AppStrings {
   String get cancel;
   String get deleteEverything;
   String get allDataCleared;
+  String get exitAppTitle;
+  String get exitAppBody;
+  String get exitAppConfirm;
   String get archiveEmpty;
 
   // Sound Lab — its own screen (not a Settings section anymore), opened
@@ -939,6 +942,8 @@ abstract class AppStrings {
   String get moodboardQuoteAuthorLabel;
   String get moodboardQuoteAuthorHint;
   String get moodboardQuoteStyleLabel;
+  String get moodboardQuoteSampleText;
+  String get moodboardQuoteSampleAuthor;
   String get moodboardQuoteStyleCelestial;
   String get moodboardQuoteStyleAurora;
   String get moodboardQuoteStyleEditorial;
@@ -1136,4 +1141,19 @@ abstract class AppStrings {
   String get dateInputInvalidMonth;
   String dateInputInvalidYear(int firstYear, int lastYear);
   String get dateInputOutsideRange;
+
+  // Galaxy tooltips name the celestial representation; Sky uses domain labels.
+  String get galaxyAreaLabel;
+  String get galaxyProjectLabel;
+  String get galaxyNascentLabel;
+  String get galaxyLitLabel;
+  String get galaxyUnlitLabel;
+  String get galaxyPulsarLabel;
+  String get galaxyDeadLabel;
+  String get archiveAction;
+
+  String get completeActivityAction;
+  String get undoCompletionAction;
+  String get deleteProjectConfirmTitle;
+  String get deleteProjectConfirmBody;
 }

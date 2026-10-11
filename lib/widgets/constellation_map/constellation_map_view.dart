@@ -13,6 +13,7 @@ import '../constellation_painter.dart';
 import '../intensity_dots.dart';
 import '../photo_image.dart';
 import '../star_glyph.dart';
+import '../star_type_text.dart';
 import 'constellation_label_layout.dart';
 
 // Font size and size of a map card at zoom-neutral scale; both then
@@ -1062,8 +1063,12 @@ class _StarMapCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  StarTypeText(
                     star.kind.label(strings).toUpperCase(),
+                    compact: true,
+                    originalKind: star.kind == StarKind.dead
+                        ? star.originalKind
+                        : null,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

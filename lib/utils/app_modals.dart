@@ -46,11 +46,13 @@ class AppSheetAction extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.iconColor,
+    this.leading,
     this.uppercase = true,
     this.selected = false,
   });
 
   final IconData icon;
+  final Widget? leading;
   final String label;
   final VoidCallback onPressed;
   final Color? iconColor;
@@ -77,7 +79,8 @@ class AppSheetAction extends StatelessWidget {
           child: ExcludeSemantics(
             child: Row(
               children: [
-                Icon(icon, size: 18, color: iconColor ?? colors.gold),
+                leading ??
+                    Icon(icon, size: 18, color: iconColor ?? colors.gold),
                 const SizedBox(width: 10),
                 Expanded(
                   child: AppButtonLabel(
@@ -196,12 +199,21 @@ class AppSheetFrame extends StatelessWidget {
     required this.child,
     this.footer,
     this.showHandle = true,
+    this.footerDivider = true,
+    this.expandChild = false,
   });
+
+  /// Makes [child] fill the height it is given (a fixed-height sheet) instead
+  /// of shrinking to its content.
+  final bool expandChild;
 
   final Widget title;
   final Widget child;
   final Widget? footer;
   final bool showHandle;
+
+  /// The line between the content and the [footer].
+  final bool footerDivider;
 
   @override
   Widget build(BuildContext context) {
@@ -227,9 +239,9 @@ class AppSheetFrame extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
             child: Align(alignment: Alignment.centerLeft, child: title),
           ),
-          Flexible(child: child),
+          if (expandChild) Expanded(child: child) else Flexible(child: child),
           if (footer != null) ...[
-            Divider(height: 1, color: divider),
+            if (footerDivider) Divider(height: 1, color: divider),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
               child: footer!,

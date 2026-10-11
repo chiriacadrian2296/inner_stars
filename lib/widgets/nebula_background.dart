@@ -1,10 +1,10 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 
 import '../theme/app_colors.dart';
 import 'constellation_field.dart';
+import 'sky_clock.dart';
 
 /// A fullscreen animated nebula/starfield, rendered entirely on the GPU by
 /// `shaders/nebula_particles.frag` — no image assets, no 3D engine, just a
@@ -18,9 +18,12 @@ class NebulaBackground extends StatefulWidget {
     super.key,
     required this.camera,
     required this.zoom,
+    required this.clock,
     this.showGrid = false,
   });
 
+  /// Drives the shader's animation — see [SkyClock].
+  final SkyClock clock;
   final SkyCamera camera;
   final double zoom;
 
@@ -33,17 +36,12 @@ class NebulaBackground extends StatefulWidget {
   State<NebulaBackground> createState() => _NebulaBackgroundState();
 }
 
-class _NebulaBackgroundState extends State<NebulaBackground>
-    with SingleTickerProviderStateMixin {
+class _NebulaBackgroundState extends State<NebulaBackground> {
   ui.FragmentShader? _shader;
-  late final Ticker _ticker;
-  Duration _elapsed = Duration.zero;
 
   @override
   void initState() {
     super.initState();
-    _ticker = createTicker((elapsed) => setState(() => _elapsed = elapsed))
-      ..start();
     _loadShader();
   }
 
@@ -57,7 +55,6 @@ class _NebulaBackgroundState extends State<NebulaBackground>
 
   @override
   void dispose() {
-    _ticker.dispose();
     _shader?.dispose();
     super.dispose();
   }
@@ -76,7 +73,7 @@ class _NebulaBackgroundState extends State<NebulaBackground>
       size: Size.infinite,
       painter: _NebulaPainter(
         shader: shader,
-        time: _elapsed.inMicroseconds / Duration.microsecondsPerSecond,
+        clock: widget.clock,
         camera: widget.camera,
         zoom: widget.zoom,
         showGrid: widget.showGrid,
@@ -86,16 +83,16 @@ class _NebulaBackgroundState extends State<NebulaBackground>
 }
 
 class _NebulaPainter extends CustomPainter {
-  const _NebulaPainter({
+  _NebulaPainter({
     required this.shader,
-    required this.time,
+    required this.clock,
     required this.camera,
     required this.zoom,
     required this.showGrid,
-  });
+  }) : super(repaint: clock);
 
   final ui.FragmentShader shader;
-  final double time;
+  final SkyClock clock;
   final SkyCamera camera;
   final double zoom;
   final bool showGrid;
@@ -105,7 +102,7 @@ class _NebulaPainter extends CustomPainter {
     shader
       ..setFloat(0, size.width)
       ..setFloat(1, size.height)
-      ..setFloat(2, time)
+      ..setFloat(2, clock.seconds)
       ..setFloat(3, camera.forward.$1)
       ..setFloat(4, camera.forward.$2)
       ..setFloat(5, camera.forward.$3)
@@ -144,7 +141,6 @@ class _NebulaPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _NebulaPainter oldDelegate) =>
-      oldDelegate.time != time ||
       oldDelegate.camera != camera ||
       oldDelegate.zoom != zoom ||
       oldDelegate.showGrid != showGrid;

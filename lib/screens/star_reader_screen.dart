@@ -699,7 +699,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
           actions.add(
             ReaderAction(
               icon: Icons.power_settings_new,
-              label: strings.actionLight,
+              label: strings.completeActivityAction,
               onTap: _markAchieved,
               off: true,
             ),
@@ -777,7 +777,9 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                 // Dark and beckoning until it's done (today, or — for a weekly
                 // habit — the week's goal); then the normal white button.
                 off: !done && !weekGoalMet,
-                label: done ? strings.actionTurnOff : strings.actionLight,
+                label: done
+                    ? strings.undoCompletionAction
+                    : strings.completeActivityAction,
                 onTap: () => _toggleToday(habit, done),
               ),
             );
@@ -820,7 +822,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
 
   ReaderAction _deleteAction() => ReaderAction(
     icon: Icons.delete_outline,
-    label: context.strings.deleteStarAction,
+    label: context.strings.archiveAction,
     onTap: _deleteCurrent,
   );
 
@@ -839,7 +841,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
           ? strings.deletePulsarConfirmBody
           : strings.deleteStarConfirmBody,
       cancelLabel: strings.cancel,
-      confirmLabel: strings.deleteStarAction,
+      confirmLabel: strings.archiveAction,
       tone: AppConfirmationTone.destructive,
     );
     if (!confirmed) return;

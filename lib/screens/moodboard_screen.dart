@@ -9,7 +9,7 @@ import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
-import '../utils/responsive.dart';
+import '../widgets/app_field.dart';
 import '../widgets/area_section_header.dart';
 import '../widgets/moodboard_grid.dart';
 import '../widgets/logo_watermark.dart';
@@ -88,15 +88,73 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
     }
   }
 
-  Future<void> _quote([MoodboardItem? existing]) async {
-    final result = await showAppSheet<_QuoteDraft>(
+  /// Asks which kind to add, in the same sheet as the menu's Light Your Sky.
+  Future<void> _add() async {
+    final strings = context.strings;
+    final kind = await showAppSheet<String>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      constraints: BoxConstraints(
-        maxWidth: kResponsiveContentMaxWidth,
-        maxHeight: MediaQuery.sizeOf(context).height * 0.92,
-      ),
+      builder: (sheetContext) {
+        Widget choice(IconData icon, String label, String value, int index) =>
+            StaggeredEntrance(
+              index: index,
+              child: AppSheetAction(
+                icon: icon,
+                label: label,
+                onPressed: () => Navigator.of(sheetContext).pop(value),
+              ),
+            );
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppSheetTitle(strings.moodboardAddLabel),
+                const SizedBox(height: 20),
+                choice(
+                  Icons.add_photo_alternate_outlined,
+                  strings.photoLabel,
+                  'photo',
+                  0,
+                ),
+                const SizedBox(height: 10),
+                choice(
+                  Icons.video_library_outlined,
+                  strings.moodboardVideo,
+                  'video',
+                  1,
+                ),
+                const SizedBox(height: 10),
+                choice(Icons.format_quote, strings.moodboardQuote, 'quote', 2),
+                const SizedBox(height: 24),
+                Align(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                    child: AppButtonLabel(strings.cancel),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (!mounted) return;
+    switch (kind) {
+      case 'photo':
+        await _addMedia(MoodboardKind.photo);
+      case 'video':
+        await _addMedia(MoodboardKind.video);
+      case 'quote':
+        await _quote();
+    }
+  }
+
+  Future<void> _quote([MoodboardItem? existing]) async {
+    // Fixed sheet: the keyboard covers its lower part instead of moving it.
+    final result = await showFixedAppSheet<_QuoteDraft>(
+      context: context,
       builder: (_) => _QuoteEditorSheet(existing: existing),
     );
     if (result == null || !mounted) return;
@@ -197,29 +255,6 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
   @override
   Widget build(BuildContext context) {
     final strings = context.strings;
-    final addActions = <Widget>[
-      OutlinedButton.icon(
-        onPressed: _busy ? null : () => _addMedia(MoodboardKind.photo),
-        icon: const Icon(Icons.add_photo_alternate_outlined),
-        label: AppButtonLabel(strings.photoLabel),
-      ),
-      OutlinedButton.icon(
-        onPressed: _busy ? null : () => _addMedia(MoodboardKind.video),
-        icon: const Icon(Icons.video_library_outlined),
-        label: AppButtonLabel(strings.moodboardVideo),
-      ),
-      OutlinedButton.icon(
-        onPressed: _busy ? null : _quote,
-        icon: const Icon(Icons.format_quote),
-        label: AppButtonLabel(strings.moodboardQuote),
-      ),
-    ];
-    // Side by side, so they slide in from the side rather than rising.
-    final sideBySideActions = StaggeredEntrance.all(
-      addActions,
-      start: 2,
-      axis: Axis.horizontal,
-    );
     return Scaffold(
       backgroundColor: context.colors.night,
       body: SafeArea(
@@ -231,7 +266,7 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
               right: 0,
               // Keep the mark inside the canvas that begins below the
               // heading and the add-media controls.
-              top: 220,
+              top: 150,
               bottom: 0,
               child: LogoWatermark(
                 scale: logoWatermarkScale(StarKind.unlit),
@@ -242,7 +277,7 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
               Positioned(
                 left: 24,
                 right: 24,
-                top: 220,
+                top: 150,
                 bottom: 0,
                 child: Center(
                   child: StaggeredEntrance(
@@ -280,45 +315,6 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          StaggeredEntrance(
-                            index: 1,
-                            child: Center(
-                              child: Text(
-                                strings.moodboardAddLabel,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          if (isTouchOnlyMobile)
-                            SizedBox(
-                              width: double.infinity,
-                              child: Row(
-                                children: [
-                                  for (
-                                    var i = 0;
-                                    i < sideBySideActions.length;
-                                    i++
-                                  ) ...[
-                                    if (i > 0) const SizedBox(width: 8),
-                                    Expanded(child: sideBySideActions[i]),
-                                  ],
-                                ],
-                              ),
-                            )
-                          else
-                            Center(
-                              child: Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                alignment: WrapAlignment.center,
-                                children: sideBySideActions,
-                              ),
-                            ),
-                          const SizedBox(height: 20),
                           // The grid staggers its own tiles (see MoodboardGrid).
                           MoodboardGrid(
                             items: _items,
@@ -334,18 +330,27 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                   index: 5,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                    child: Center(
-                      child: TextButton.icon(
-                        onPressed: _busy ? null : _share,
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 22,
-                            vertical: 14,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        TextButton(
+                          onPressed: _busy ? null : _share,
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 22,
+                              vertical: 14,
+                            ),
+                          ),
+                          child: AppButtonLabel(
+                            strings.starQuickLookShareAction,
                           ),
                         ),
-                        icon: const Icon(Icons.share_outlined),
-                        label: AppButtonLabel(strings.starQuickLookShareAction),
-                      ),
+                        const SizedBox(width: 12),
+                        ElevatedButton(
+                          onPressed: _busy ? null : _add,
+                          child: AppButtonLabel(strings.moodboardAddLabel),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -379,7 +384,40 @@ class _QuoteEditorSheet extends StatefulWidget {
   State<_QuoteEditorSheet> createState() => _QuoteEditorSheetState();
 }
 
-class _QuoteEditorSheetState extends State<_QuoteEditorSheet> {
+/// A quote is a caption on a card, not an essay.
+const int _kQuoteMaxLength = 250;
+const int _kQuoteAuthorMaxLength = 50;
+
+class _QuoteEditorSheetState extends State<_QuoteEditorSheet>
+    with WidgetsBindingObserver {
+  /// The real keyboard height. The sheet itself ignores it (so it never
+  /// moves); it only pads the scroll content so every field can be scrolled
+  /// above the keyboard.
+  double _keyboard = 0;
+  final _frameKey = GlobalKey();
+  double? _fitted;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Measured once, before the keyboard opens, so the sheet is exactly as
+    // tall as its content (no gap) and then stays that height.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final box = _frameKey.currentContext?.findRenderObject() as RenderBox?;
+      if (mounted && box != null && box.hasSize) {
+        setState(() => _fitted = box.size.height);
+      }
+    });
+  }
+
+  @override
+  void didChangeMetrics() {
+    final view = View.of(context);
+    final keyboard = view.viewInsets.bottom / view.devicePixelRatio;
+    if (keyboard != _keyboard) setState(() => _keyboard = keyboard);
+  }
+
   late final TextEditingController _text = TextEditingController(
     text: widget.existing?.content ?? '',
   );
@@ -391,6 +429,7 @@ class _QuoteEditorSheetState extends State<_QuoteEditorSheet> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _text.dispose();
     _author.dispose();
     super.dispose();
@@ -431,135 +470,173 @@ class _QuoteEditorSheetState extends State<_QuoteEditorSheet> {
   Widget build(BuildContext context) {
     final strings = context.strings;
     final colors = context.colors;
-    final previewText = _text.text.trim().isEmpty
-        ? strings.moodboardQuoteDescription
-        : _text.text.trim();
-    return AppSheetFrame(
-      title: AppSheetTitle(strings.moodboardQuote),
-      footer: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: AppButtonLabel(strings.cancel),
-          ),
-          const SizedBox(width: 8),
-          ListenableBuilder(
-            listenable: Listenable.merge([_text, _author]),
-            builder: (context, _) => ElevatedButton(
-              onPressed: _canSave ? _save : null,
-              child: AppButtonLabel(strings.saveChanges),
-            ),
-          ),
-        ],
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              strings.moodboardQuoteDescription,
-              style: TextStyle(color: colors.muted),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              key: const ValueKey('quote-text-field'),
-              controller: _text,
-              autofocus: widget.existing == null,
-              minLines: 3,
-              maxLines: 6,
-              maxLength: 1000,
-              decoration: InputDecoration(
-                labelText: strings.moodboardQuoteTextLabel,
-                alignLabelWithHint: true,
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.85;
+    final fitted = _fitted;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: SizedBox(
+        height: fitted,
+        child: AppSheetFrame(
+          key: _frameKey,
+          expandChild: fitted != null,
+          title: AppSheetTitle(strings.moodboardQuote),
+          footerDivider: false,
+          footer: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: AppButtonLabel(strings.cancel, color: colors.muted),
               ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              key: const ValueKey('quote-author-field'),
-              controller: _author,
-              maxLines: 1,
-              maxLength: 100,
-              textInputAction: TextInputAction.done,
-              decoration: InputDecoration(
-                labelText: strings.moodboardQuoteAuthorLabel,
-                hintText: strings.moodboardQuoteAuthorHint,
+              const SizedBox(width: 8),
+              ListenableBuilder(
+                listenable: Listenable.merge([_text, _author]),
+                builder: (context, _) => ElevatedButton(
+                  onPressed: _canSave ? _save : null,
+                  child: AppButtonLabel(strings.saveChanges),
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              strings.moodboardQuoteStyleLabel,
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              height: 172,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: MoodboardQuoteStyle.values.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 10),
-                itemBuilder: (context, index) {
-                  final style = MoodboardQuoteStyle.values[index];
-                  final selected = style == _style;
-                  return Semantics(
-                    button: true,
-                    selected: selected,
-                    label: _styleLabel(style),
-                    child: InkWell(
-                      key: ValueKey('quote-style-${style.name}'),
-                      onTap: () => setState(() => _style = style),
-                      borderRadius: BorderRadius.circular(14),
-                      child: SizedBox(
-                        width: 116,
-                        child: Column(
-                          children: [
-                            Expanded(
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 160),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
+            ],
+          ),
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + _keyboard),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  strings.moodboardQuoteDescription,
+                  style: TextStyle(color: colors.muted),
+                ),
+                const SizedBox(height: 16),
+                AppFieldLabel(
+                  strings.moodboardQuoteTextLabel,
+                  requirement: FieldRequirement.required,
+                  counterController: _text,
+                  counterMax: _kQuoteMaxLength,
+                ),
+                const SizedBox(height: kFieldLabelGap),
+                AppTextField(
+                  key: const ValueKey('quote-text-field'),
+                  controller: _text,
+                  minLines: 3,
+                  maxLines: 6,
+                  maxLength: _kQuoteMaxLength,
+                  showCounter: false,
+                ),
+                const SizedBox(height: 16),
+                AppFieldLabel(
+                  strings.moodboardQuoteAuthorLabel,
+                  requirement: FieldRequirement.optional,
+                  counterController: _author,
+                  counterMax: _kQuoteAuthorMaxLength,
+                ),
+                const SizedBox(height: kFieldLabelGap),
+                AppTextField(
+                  key: const ValueKey('quote-author-field'),
+                  controller: _author,
+                  maxLength: _kQuoteAuthorMaxLength,
+                  showCounter: false,
+                  hintText: strings.moodboardQuoteAuthorHint,
+                  textInputAction: TextInputAction.done,
+                ),
+                const SizedBox(height: 16),
+                AppFieldLabel(
+                  strings.moodboardQuoteStyleLabel,
+                  requirement: FieldRequirement.required,
+                ),
+                const SizedBox(height: kFieldLabelGap + 4),
+                SizedBox(
+                  height: 172,
+                  // The previews are fixed samples, not the text being typed.
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: MoodboardQuoteStyle.values.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 10),
+                    itemBuilder: (context, index) {
+                      final style = MoodboardQuoteStyle.values[index];
+                      final selected = style == _style;
+                      return Semantics(
+                        button: true,
+                        selected: selected,
+                        label: _styleLabel(style),
+                        child: InkWell(
+                          key: ValueKey('quote-style-${style.name}'),
+                          onTap: () => setState(() => _style = style),
+                          borderRadius: BorderRadius.circular(14),
+                          splashFactory: NoSplash.splashFactory,
+                          highlightColor: Colors.transparent,
+                          child: SizedBox(
+                            width: 116,
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  // The card never changes size or radius; the
+                                  // border is painted over it, so selecting a
+                                  // style cannot shift anything inside.
+                                  child: Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(14),
+                                        child: MoodboardQuoteCard(
+                                          item: MoodboardItem(
+                                            id: 'preview',
+                                            kind: MoodboardKind.quote,
+                                            content: strings
+                                                .moodboardQuoteSampleText,
+                                            author: strings
+                                                .moodboardQuoteSampleAuthor,
+                                            quoteStyle: style,
+                                          ),
+                                        ),
+                                      ),
+                                      IgnorePointer(
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 160,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                            border: Border.all(
+                                              color: selected
+                                                  ? colors.gold
+                                                  : colors.nightBorder,
+                                              width: selected ? 2 : 1,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  _styleLabel(style),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
                                     color: selected
                                         ? colors.gold
-                                        : colors.nightBorder,
-                                    width: selected ? 2 : 1,
+                                        : colors.muted,
+                                    fontSize: 12,
+                                    fontWeight: selected
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
                                   ),
                                 ),
-                                clipBehavior: Clip.antiAlias,
-                                child: MoodboardQuoteCard(
-                                  item: MoodboardItem(
-                                    id: 'preview',
-                                    kind: MoodboardKind.quote,
-                                    content: previewText,
-                                    author: _author.text.trim(),
-                                    quoteStyle: style,
-                                  ),
-                                ),
-                              ),
+                              ],
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              _styleLabel(style),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: selected ? colors.gold : colors.muted,
-                                fontSize: 12,
-                                fontWeight: selected
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

@@ -21,6 +21,7 @@ import '../widgets/responsive_content.dart';
 import '../widgets/shareable_pulsar_card.dart';
 import '../widgets/staggered_entrance.dart';
 import '../widgets/star_glyph.dart';
+import '../widgets/star_type_text.dart';
 import '../widgets/stats/stats_widgets.dart';
 import 'star_form_screen.dart';
 import 'share_preview_screen.dart';
@@ -410,8 +411,9 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
                               StaggeredEntrance(
                                 index: 2,
                                 replayKey: _habit.dead,
-                                child: Text(
+                                child: StarTypeText(
                                   StarKind.dead.label(strings),
+                                  originalKind: StarKind.pulsar,
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: 24,

@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:video_player/video_player.dart';
 
 import '../data/moodboard_repository.dart';
@@ -383,7 +382,7 @@ class MoodboardQuoteCard extends StatelessWidget {
       ),
       MoodboardQuoteStyle.minimal => colors.night.withValues(alpha: 0.055),
     };
-    final brandColor = isMinimal ? colors.night : colors.gold;
+    final brandColor = isMinimal ? Colors.black : Colors.white;
 
     return DecoratedBox(
       decoration: decoration,
@@ -437,48 +436,58 @@ class MoodboardQuoteCard extends StatelessWidget {
                 ),
               ),
             ),
-          Align(
-            alignment: alignment,
-            child: Padding(
-              padding: EdgeInsets.all(expanded ? 32 : 18),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: isEditorial
-                    ? CrossAxisAlignment.start
-                    : CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    item.content,
-                    textAlign: textAlign,
-                    maxLines: expanded ? null : 4,
-                    overflow: expanded ? null : TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: fontFamily,
-                      fontSize: expanded ? 34 : 16,
-                      fontStyle: style == MoodboardQuoteStyle.celestial
-                          ? FontStyle.italic
-                          : FontStyle.normal,
-                      fontWeight: isMinimal ? FontWeight.w600 : FontWeight.w500,
-                      height: 1.2,
-                      color: textColor,
-                    ),
-                  ),
-                  if (item.author.isNotEmpty) ...[
-                    SizedBox(height: expanded ? 20 : 8),
-                    Text(
-                      '— ${item.author}',
-                      textAlign: textAlign,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: textColor.withValues(alpha: 0.72),
-                        fontFamily: kFontMono,
-                        fontSize: expanded ? 16 : 11,
-                        letterSpacing: 0.4,
+          Padding(
+            padding: EdgeInsets.all(expanded ? 32 : 18),
+            // Shrinks the text block to fit when a long quote would overflow
+            // its tile (small tiles, previews, small screens).
+            child: LayoutBuilder(
+              builder: (context, box) => FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: alignment,
+                child: SizedBox(
+                  width: box.maxWidth,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: isEditorial
+                        ? CrossAxisAlignment.start
+                        : CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        item.content,
+                        textAlign: textAlign,
+                        maxLines: expanded ? null : 4,
+                        overflow: expanded ? null : TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: fontFamily,
+                          fontSize: expanded ? 34 : 16,
+                          fontStyle: style == MoodboardQuoteStyle.celestial
+                              ? FontStyle.italic
+                              : FontStyle.normal,
+                          fontWeight: isMinimal
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          height: 1.2,
+                          color: textColor,
+                        ),
                       ),
-                    ),
-                  ],
-                ],
+                      if (item.author.isNotEmpty) ...[
+                        SizedBox(height: expanded ? 20 : 8),
+                        Text(
+                          '— ${item.author}',
+                          textAlign: textAlign,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: textColor.withValues(alpha: 0.72),
+                            fontFamily: kFontMono,
+                            fontSize: expanded ? 16 : 11,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -505,38 +514,18 @@ class _QuoteBrand extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final markSize = expanded ? 15.0 : 10.0;
+    // Name only: the logo is already the card's watermark.
     return FittedBox(
       fit: BoxFit.scaleDown,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox.square(
-            dimension: markSize,
-            child: OverflowBox(
-              maxWidth: markSize * 1.9,
-              maxHeight: markSize * 1.9,
-              child: SvgPicture.asset(
-                'assets/icon/Logo.svg',
-                width: markSize * 1.9,
-                height: markSize * 1.9,
-                colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-              ),
-            ),
-          ),
-          SizedBox(width: expanded ? 7 : 4),
-          Text(
-            'VICTORY STARS',
-            style: TextStyle(
-              color: color,
-              fontFamily: kFontBranding,
-              fontSize: expanded ? 11 : 7,
-              fontWeight: FontWeight.w600,
-              letterSpacing: expanded ? 1.6 : 0.8,
-            ),
-          ),
-        ],
+      child: Text(
+        'INNER STARS',
+        style: TextStyle(
+          color: color,
+          fontFamily: kFontBranding,
+          fontSize: expanded ? 11 : 7,
+          fontWeight: FontWeight.w600,
+          letterSpacing: expanded ? 1.6 : 0.8,
+        ),
       ),
     );
   }

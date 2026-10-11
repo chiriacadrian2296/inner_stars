@@ -6,6 +6,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import 'staggered_entrance.dart';
+import 'area_icon.dart';
 
 /// The canonical single-area picker shared by star and constellation forms.
 /// [selected] is outlined in gold as the current choice. With [onCleared]
@@ -42,6 +43,13 @@ Future<LifeArea?> pickArea(
                       uppercase: false,
                       selected: LifeArea.values[index] == selected,
                       icon: LifeArea.values[index].icon,
+                      leading: AreaIcon(
+                        area: LifeArea.values[index],
+                        size: 18,
+                        color: LifeArea.values[index] == selected
+                            ? context.colors.gold
+                            : context.colors.muted,
+                      ),
                       label: LifeArea.values[index].displayName(strings),
                       onPressed: () =>
                           Navigator.of(sheetContext)

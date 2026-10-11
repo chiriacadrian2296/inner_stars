@@ -322,8 +322,8 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
     final strings = context.strings;
     final confirmed = await showAppConfirmation(
       context: context,
-      title: 'Eliminare questa costellazione?',
-      body: 'Verranno eliminati definitivamente stelle, pulsar, completamenti e foto. Questa azione non può essere annullata.',
+      title: strings.deleteProjectConfirmTitle,
+      body: strings.deleteProjectConfirmBody,
       cancelLabel: strings.cancel,
       confirmLabel: strings.deleteStarAction,
       tone: AppConfirmationTone.destructive,

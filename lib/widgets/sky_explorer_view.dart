@@ -1216,8 +1216,8 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     final strings = context.strings;
     final confirmed = await showAppConfirmation(
       context: context,
-      title: 'Eliminare questa costellazione?',
-      body: 'Verranno eliminati definitivamente stelle, pulsar, completamenti e foto. Questa azione non può essere annullata.',
+      title: strings.deleteProjectConfirmTitle,
+      body: strings.deleteProjectConfirmBody,
       cancelLabel: strings.cancel,
       confirmLabel: strings.deleteStarAction,
       tone: AppConfirmationTone.destructive,
@@ -1501,7 +1501,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       title: strings.deletePulsarConfirmTitle,
       body: strings.deletePulsarConfirmBody,
       cancelLabel: strings.cancel,
-      confirmLabel: strings.deleteStarAction,
+      confirmLabel: strings.archiveAction,
       tone: AppConfirmationTone.destructive,
     );
     if (!confirmed) return;
@@ -1516,7 +1516,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       title: strings.deleteStarConfirmTitle,
       body: strings.deleteStarConfirmBody,
       cancelLabel: strings.cancel,
-      confirmLabel: strings.deleteStarAction,
+      confirmLabel: strings.archiveAction,
       tone: AppConfirmationTone.destructive,
     );
     if (!confirmed) return;
@@ -2749,7 +2749,7 @@ extension on _FlatList {
     if (entry.star != null && !entry.star!.isLit) {
       return SearchCardAction(
         icon: Icons.power_settings_new_rounded,
-        label: strings.actionLight,
+        label: strings.completeActivityAction,
         onTap: () => onLightStar(entry.star!),
       );
     }
@@ -2770,7 +2770,9 @@ extension on _FlatList {
                 habitDailyProgress(habit, habitCounts),
                 habit.targetPerPeriod,
               )
-            : (done ? strings.actionTurnOff : strings.actionLight),
+            : (done
+                  ? strings.undoCompletionAction
+                  : strings.completeActivityAction),
         onTap: () => onHabitToday(habit),
       );
     }
@@ -2818,9 +2820,7 @@ class _SearchStarCard extends StatelessWidget {
     final descriptionMatched =
         normalizedQuery.isNotEmpty &&
         (description?.toLowerCase().contains(normalizedQuery) ?? false);
-    final eyebrow = kind == StarKind.dead && entry.habit != null
-        ? '${kind.label(strings)} · ${strings.formerPulsarLabel}'
-        : kind.label(strings);
+    final eyebrow = kind.label(strings);
     final actions = <SearchCardAction>[
       ?kindAction,
       if (onShare != null)
@@ -2844,7 +2844,7 @@ class _SearchStarCard extends StatelessWidget {
       if (onDelete != null)
         SearchCardAction(
           icon: Icons.delete_outline_rounded,
-          label: strings.deleteStarAction,
+          label: strings.archiveAction,
           onTap: onDelete!,
         ),
     ];
@@ -2859,6 +2859,9 @@ class _SearchStarCard extends StatelessWidget {
       visual: SearchStarVisual(kind: kind, pulsarLit: pulsarLit),
       content: SearchCardTextContent(
         eyebrow: eyebrow,
+        archivedOriginalKind: kind == StarKind.dead
+            ? entry.star?.originalKind ?? StarKind.pulsar
+            : null,
         eyebrowColor: starKindColor(kind, context.colors, lit: pulsarLit),
         title: entry.title,
         breadcrumb: project == null

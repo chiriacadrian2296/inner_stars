@@ -78,7 +78,8 @@ class SkyStarTooltip extends StatelessWidget {
       baseBodyHeight: SearchResultCard.bodyHeightFor(badges),
       fillVisualHeight: photoPath != null,
       content: SearchCardTextContent(
-        eyebrow: kind.label(strings),
+        eyebrow: kind.galaxyLabel(strings),
+        archivedOriginalKind: star.dead ? star.originalKind : null,
         eyebrowColor: starKindColor(kind, context.colors),
         title: star.title,
         breadcrumb: project == null
@@ -114,7 +115,7 @@ class SkyStarTooltip extends StatelessWidget {
         if (onDelete != null)
           SearchCardAction(
             icon: Icons.delete_outline_rounded,
-            label: strings.deleteStarAction,
+            label: strings.archiveAction,
             onTap: onDelete!,
           ),
       ],

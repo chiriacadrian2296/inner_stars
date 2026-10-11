@@ -41,6 +41,15 @@ const kListableStarKinds = [
 ];
 
 extension StarKindX on StarKind {
+  /// The celestial representation named by Galaxy tooltips.
+  String galaxyLabel(AppStrings s) => switch (this) {
+    StarKind.nascent => s.galaxyNascentLabel,
+    StarKind.lit => s.galaxyLitLabel,
+    StarKind.unlit => s.galaxyUnlitLabel,
+    StarKind.pulsar => s.galaxyPulsarLabel,
+    StarKind.dead => s.galaxyDeadLabel,
+  };
+
   /// The one icon that stands for this kind everywhere it's named in text
   /// (cards, filter chips, the form's switch, the metaphor guide) — one
   /// distinct glyph per kind, never shared.

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
 import '../theme/app_colors.dart';
+import 'area_icon.dart';
 
 /// The standard way a [LifeArea] is shown wherever it appears as a small
 /// piece of context (win cards, the reader, the add/edit form): icon + name
@@ -40,7 +41,7 @@ class AreaTag extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(area.icon, size: iconSize, color: iconColor ?? colors.gold),
+        AreaIcon(area: area, size: iconSize, color: iconColor),
         const SizedBox(width: 6),
         Text(
           area.displayName(context.strings),

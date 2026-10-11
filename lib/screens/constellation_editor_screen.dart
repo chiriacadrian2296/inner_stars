@@ -1834,7 +1834,6 @@ class _NameConstellationDialogState extends State<_NameConstellationDialog> {
             const SizedBox(height: 12),
             TextField(
               controller: _controller,
-              autofocus: true,
               textCapitalization: TextCapitalization.sentences,
               style: TextStyle(color: colors.text),
               decoration: InputDecoration(

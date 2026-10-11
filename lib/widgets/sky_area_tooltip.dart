@@ -47,7 +47,7 @@ class SkyAreaTooltip extends StatelessWidget {
         framed: true,
       ),
       content: SearchCardTextContent(
-        eyebrow: strings.areaLabel,
+        eyebrow: strings.galaxyAreaLabel,
         eyebrowColor: context.colors.gold,
         title: area.displayName(strings),
         breadcrumb: strings.galaxyLabel,

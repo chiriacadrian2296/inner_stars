@@ -13,6 +13,7 @@ import 'badge_icon.dart';
 import 'badge_rows.dart';
 import 'constellation_editor_painter.dart';
 import 'star_glyph.dart';
+import 'star_type_text.dart';
 
 class SearchCardMenuController extends ChangeNotifier {
   SearchCardMenuController({Object? initialOpenId}) : _openId = initialOpenId;
@@ -265,6 +266,7 @@ class SearchCardTextContent extends StatelessWidget {
     this.badges,
     this.eyebrow,
     this.eyebrowColor,
+    this.archivedOriginalKind,
     this.breadcrumb,
     this.description,
     this.descriptionMatched = false,
@@ -272,6 +274,7 @@ class SearchCardTextContent extends StatelessWidget {
 
   final String? eyebrow;
   final Color? eyebrowColor;
+  final StarKind? archivedOriginalKind;
   final String title;
   final String? breadcrumb;
   final String? description;
@@ -301,8 +304,10 @@ class SearchCardTextContent extends StatelessWidget {
           ),
           const SizedBox(height: 3),
         ] else if (eyebrow != null) ...[
-          Text(
+          StarTypeText(
             eyebrow!.toUpperCase(),
+            originalKind: archivedOriginalKind,
+            compact: true,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(

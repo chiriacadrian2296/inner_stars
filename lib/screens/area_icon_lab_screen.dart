@@ -7,6 +7,7 @@ import '../theme/app_style.dart';
 import '../utils/area_hero_art.dart';
 import '../utils/icon_for_slug.dart';
 import '../utils/app_modals.dart';
+import '../widgets/area_icon.dart';
 
 typedef _Proposal = ({String slug, IconData icon, String note, bool art});
 
@@ -373,9 +374,15 @@ class _AreaIconLabScreenState extends State<AreaIconLabScreen> {
 
   List<_Proposal> _choices(LifeArea area) => [
     (
+      slug: 'art_${area.name}',
+      icon: area.icon,
+      note: 'Art attuale dell’area, in versione compatta.',
+      art: true,
+    ),
+    (
       slug: area.iconSlug,
       icon: area.icon,
-      note: 'Icona attuale dell’area.',
+      note: 'Precedente icona Material dell’area.',
       art: false,
     ),
     ..._proposals[area]!,
@@ -438,7 +445,7 @@ class _AreaIconLabScreenState extends State<AreaIconLabScreen> {
   Widget _areaPanel(LifeArea area) {
     final colors = context.colors;
     final choices = _choices(area);
-    final selectedSlug = _chosen[area]?.slug ?? area.iconSlug;
+    final selectedSlug = _chosen[area]?.slug ?? 'art_${area.name}';
     return Container(
       key: ValueKey('area-panel-${area.name}'),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
@@ -477,7 +484,7 @@ class _AreaIconLabScreenState extends State<AreaIconLabScreen> {
                         ),
                       ),
                     ),
-                    Icon(area.icon, size: roomy ? 20 : 14, color: colors.muted),
+                    AreaIcon(area: area, size: roomy ? 20 : 14),
                     const SizedBox(width: 4),
                     Text(
                       'attuale',
@@ -525,7 +532,7 @@ class _AreaIconLabScreenState extends State<AreaIconLabScreen> {
                               borderRadius: BorderRadius.circular(6),
                               onTap: () {
                                 setState(() {
-                                  if (proposal.slug == area.iconSlug) {
+                                  if (proposal.slug == 'art_${area.name}') {
                                     _chosen.remove(area);
                                   } else {
                                     _chosen[area] = proposal;
@@ -548,13 +555,23 @@ class _AreaIconLabScreenState extends State<AreaIconLabScreen> {
                                       child: Column(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Icon(
-                                            proposal.icon,
-                                            size: showNames ? 28 : iconSize,
-                                            color: selected
-                                                ? colors.gold
-                                                : colors.text,
-                                          ),
+                                          if (proposal.slug ==
+                                              'art_${area.name}')
+                                            AreaIcon(
+                                              area: area,
+                                              size: showNames ? 28 : iconSize,
+                                              color: selected
+                                                  ? colors.gold
+                                                  : colors.muted,
+                                            )
+                                          else
+                                            Icon(
+                                              proposal.icon,
+                                              size: showNames ? 28 : iconSize,
+                                              color: selected
+                                                  ? colors.gold
+                                                  : colors.muted,
+                                            ),
                                           if (showNames)
                                             Text(
                                               proposal.slug,
@@ -629,18 +646,24 @@ class _AreaIconLabScreenState extends State<AreaIconLabScreen> {
                     Expanded(
                       child: Column(
                         children: [
-                          Icon(proposal.icon, size: 56, color: colors.gold),
+                          if (proposal.slug == 'art_${area.name}')
+                            AreaIcon(area: area, size: 56)
+                          else
+                            Icon(proposal.icon, size: 56, color: colors.gold),
                           const SizedBox(height: 12),
                           Wrap(
                             spacing: 16,
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               for (final size in [18.0, 24.0, 32.0])
-                                Icon(
-                                  proposal.icon,
-                                  size: size,
-                                  color: colors.text,
-                                ),
+                                if (proposal.slug == 'art_${area.name}')
+                                  AreaIcon(area: area, size: size)
+                                else
+                                  Icon(
+                                    proposal.icon,
+                                    size: size,
+                                    color: colors.text,
+                                  ),
                             ],
                           ),
                         ],

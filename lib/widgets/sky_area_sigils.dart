@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 
 import '../models/life_area.dart';
 import 'constellation_field.dart';
+import 'sky_clock.dart';
 
 /// An ornate circular "seal" behind each supernova — one or two outer
 /// rings, an inner motif (see [_InnerMotif]) slowly turning inside them —
@@ -34,9 +34,12 @@ class SkyAreaSigils extends StatefulWidget {
     super.key,
     required this.camera,
     required this.zoom,
+    required this.clock,
     this.sizeFactor = 1,
   });
 
+  /// Drives the sigils' pulse and rotation — see [SkyClock].
+  final SkyClock clock;
   final SkyCamera camera;
   final double zoom;
   final double sizeFactor;
@@ -45,24 +48,7 @@ class SkyAreaSigils extends StatefulWidget {
   State<SkyAreaSigils> createState() => _SkyAreaSigilsState();
 }
 
-class _SkyAreaSigilsState extends State<SkyAreaSigils>
-    with SingleTickerProviderStateMixin {
-  late final Ticker _ticker;
-  Duration _elapsed = Duration.zero;
-
-  @override
-  void initState() {
-    super.initState();
-    _ticker = createTicker((elapsed) => setState(() => _elapsed = elapsed))
-      ..start();
-  }
-
-  @override
-  void dispose() {
-    _ticker.dispose();
-    super.dispose();
-  }
-
+class _SkyAreaSigilsState extends State<SkyAreaSigils> {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
@@ -71,7 +57,7 @@ class _SkyAreaSigilsState extends State<SkyAreaSigils>
         camera: widget.camera,
         zoom: widget.zoom,
         sizeFactor: widget.sizeFactor,
-        time: _elapsed.inMicroseconds / Duration.microsecondsPerSecond,
+        clock: widget.clock,
       ),
     );
   }
@@ -249,16 +235,17 @@ class _SigilRecipe {
 }
 
 class _SkyAreaSigilsPainter extends CustomPainter {
-  const _SkyAreaSigilsPainter({
+  _SkyAreaSigilsPainter({
     required this.camera,
     required this.zoom,
-    required this.time,
+    required this.clock,
     required this.sizeFactor,
-  });
+  }) : super(repaint: clock);
 
   final SkyCamera camera;
   final double zoom;
-  final double time;
+  final SkyClock clock;
+  double get time => clock.seconds;
   final double sizeFactor;
 
   // A bit bigger than an earlier pass (0.030) — still deliberately well
@@ -311,6 +298,15 @@ class _SkyAreaSigilsPainter extends CustomPainter {
       // [_lightRingCenterWorldRadius]'s own comment.
       final anchorRadius =
           _lightRingCenterWorldRadius * zoom * size.height * scale * sizeFactor;
+      // Nothing of this sigil can reach the view once its center is further
+      // out than a couple of radii (the sigil itself is smaller than the
+      // anchor ring): skip it rather than record dozens of draw calls the
+      // clip below would throw away.
+      if (!(Offset.zero & size)
+          .inflate(anchorRadius * 2 + 8)
+          .contains(screenCenter)) {
+        continue;
+      }
       _paintAnchorRing(canvas, screenCenter, anchorRadius, i);
 
       final axisA = _axisAFor(center);
@@ -575,21 +571,37 @@ class _SkyAreaSigilsPainter extends CustomPainter {
     IconData icon,
     Color color,
   ) {
-    final painter = TextPainter(textDirection: TextDirection.ltr)
-      ..text = TextSpan(
-        text: String.fromCharCode(icon.codePoint),
-        style: TextStyle(
-          fontSize: size,
-          fontFamily: icon.fontFamily,
-          package: icon.fontPackage,
-          color: color,
-        ),
-      )
-      ..layout();
+    final painter = _iconPainterFor(icon, size, color);
     painter.paint(
       canvas,
       center - Offset(painter.width / 2, painter.height / 2),
     );
+  }
+
+  // Laying out a glyph is by far the dearest thing this painter does, and
+  // the same few (icon, size, color) combinations repeat every frame while
+  // the camera rests — so each is laid out once and reused. Size is rounded
+  // to a quarter pixel, so a slow zoom reuses entries rather than
+  // minting a new one per frame.
+  static final Map<(int, int, int), TextPainter> _iconPainters = {};
+
+  static TextPainter _iconPainterFor(IconData icon, double size, Color color) {
+    final key = (icon.codePoint, (size * 4).round(), color.toARGB32());
+    final cached = _iconPainters[key];
+    if (cached != null) return cached;
+    if (_iconPainters.length > 96) _iconPainters.clear();
+    return _iconPainters[key] = TextPainter(
+      textDirection: TextDirection.ltr,
+      text: TextSpan(
+        text: String.fromCharCode(icon.codePoint),
+        style: TextStyle(
+          fontSize: (size * 4).round() / 4,
+          fontFamily: icon.fontFamily,
+          package: icon.fontPackage,
+          color: color,
+        ),
+      ),
+    )..layout();
   }
 
   /// A small petal/leaf shape stretched along [angle] (its "outward"
@@ -622,16 +634,20 @@ class _SkyAreaSigilsPainter extends CustomPainter {
   /// same gold family of stars" (matching `sky_supernova.frag`'s own
   /// deliberate choice to share one gold across every supernova) while
   /// still being tellable apart at a glance.
-  Color _sigilColor(int index) {
-    final hsl = HSLColor.fromColor(kConstellationGold);
-    final hueShift = (index - (LifeArea.values.length - 1) / 2) * 7.0;
-    return hsl.withHue((hsl.hue + hueShift) % 360).toColor();
-  }
+  Color _sigilColor(int index) => _sigilColors[index];
+
+  static final List<Color> _sigilColors = [
+    for (var index = 0; index < LifeArea.values.length; index++)
+      () {
+        final hsl = HSLColor.fromColor(kConstellationGold);
+        final hueShift = (index - (LifeArea.values.length - 1) / 2) * 7.0;
+        return hsl.withHue((hsl.hue + hueShift) % 360).toColor();
+      }(),
+  ];
 
   @override
   bool shouldRepaint(covariant _SkyAreaSigilsPainter oldDelegate) =>
       oldDelegate.camera != camera ||
       oldDelegate.zoom != zoom ||
-      oldDelegate.sizeFactor != sizeFactor ||
-      oldDelegate.time != time;
+      oldDelegate.sizeFactor != sizeFactor;
 }

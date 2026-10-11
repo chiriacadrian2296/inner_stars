@@ -22,7 +22,7 @@ import 'star_kind_label.dart';
 ///
 /// Built from either a tombstoned [Star] or a tombstoned [Habit] — both
 /// really are dead stars, and both render identically here except for
-/// [wasPulsar], which is the whole reason they're kept apart: a dead star
+/// [originalKind], which is the whole reason they're kept apart: a dead star
 /// can only ever be reignited as the kind it was, so the card has to say
 /// which that is.
 class DeadStarCard extends StatelessWidget {
@@ -30,7 +30,7 @@ class DeadStarCard extends StatelessWidget {
     required this.title,
     required this.createdAt,
     required this.deadDate,
-    required this.wasPulsar,
+    required this.originalKind,
     this.onTap,
     this.project,
     this.onNavigateTo,
@@ -47,7 +47,7 @@ class DeadStarCard extends StatelessWidget {
       title: star.title,
       createdAt: star.createdAt,
       deadDate: star.deadDate,
-      wasPulsar: false,
+      originalKind: star.originalKind,
       project: project,
       onTap: onTap,
       onNavigateTo: onNavigateTo,
@@ -65,7 +65,7 @@ class DeadStarCard extends StatelessWidget {
       title: habit.title,
       createdAt: habit.createdAt,
       deadDate: habit.deadDate,
-      wasPulsar: true,
+      originalKind: StarKind.pulsar,
       project: project,
       onTap: onTap,
       onNavigateTo: onNavigateTo,
@@ -76,9 +76,8 @@ class DeadStarCard extends StatelessWidget {
   final DateTime createdAt;
   final DateTime? deadDate;
 
-  /// Whether this used to be a pulsar rather than a star on a
-  /// constellation's shape — which is exactly what it will come back as.
-  final bool wasPulsar;
+  /// The activity type retained when this item was archived.
+  final StarKind originalKind;
 
   final VoidCallback? onTap;
   final Project? project;
@@ -106,16 +105,7 @@ class DeadStarCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const StarKindLabel(kind: StarKind.dead),
-                if (wasPulsar) ...[
-                  const SizedBox(height: 4),
-                  Center(
-                    child: Text(
-                      StarKind.pulsar.label(strings),
-                      style: TextStyle(fontSize: 12, color: colors.muted),
-                    ),
-                  ),
-                ],
+                StarKindLabel(kind: StarKind.dead, originalKind: originalKind),
                 if (project != null) ...[
                   const SizedBox(height: 10),
                   Center(

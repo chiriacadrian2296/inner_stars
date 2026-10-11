@@ -73,6 +73,7 @@ List<ConstellationStar> spreadScatteredStars(
             points[i].dy / canvasSize.height,
           ),
           kind: stars[i].kind,
+          originalKind: stars[i].originalKind,
           lit: stars[i].lit,
           label: stars[i].label,
           slotSequence: stars[i].slotSequence,

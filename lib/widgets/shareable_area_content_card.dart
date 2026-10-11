@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'area_icon.dart';
+
 import '../data/moodboard_repository.dart';
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
@@ -38,7 +40,7 @@ class ShareableVisionCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'VICTORY STARS',
+                  'INNER STARS',
                   style: TextStyle(
                     color: colors.gold,
                     fontFamily: kFontMono,
@@ -48,7 +50,7 @@ class ShareableVisionCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                Icon(area.icon, color: colors.gold, size: 38),
+                AreaIcon(area: area, size: 38),
                 const SizedBox(height: 16),
                 Text(
                   '${strings.visionSection} · ${area.displayName(strings)}',
@@ -69,10 +71,10 @@ class ShareableVisionCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(area.icon, color: colors.gold, size: 54),
+                    AreaIcon(area: area, size: 54),
                     const Spacer(),
                     Text(
-                      'VICTORY STARS',
+                      'INNER STARS',
                       style: TextStyle(
                         color: colors.gold,
                         fontFamily: kFontMono,
@@ -112,10 +114,10 @@ class ShareableVisionCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(area.icon, color: colors.gold, size: 30),
+                    AreaIcon(area: area, size: 30),
                     const Spacer(),
                     Text(
-                      'VICTORY STARS',
+                      'INNER STARS',
                       style: TextStyle(
                         color: colors.gold,
                         fontFamily: kFontMono,
@@ -189,7 +191,7 @@ class ShareableMoodboardCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'VICTORY STARS',
+                  'INNER STARS',
                   style: TextStyle(
                     color: colors.gold,
                     fontFamily: kFontMono,
@@ -249,10 +251,10 @@ class ShareableMoodboardCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(area.icon, color: colors.gold, size: 32),
+                    AreaIcon(area: area, size: 32),
                     const Spacer(),
                     Text(
-                      'VICTORY STARS',
+                      'INNER STARS',
                       style: TextStyle(
                         color: colors.gold,
                         fontFamily: kFontMono,

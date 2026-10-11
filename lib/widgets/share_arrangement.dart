@@ -90,7 +90,7 @@ class ShareableStoryLayout extends StatelessWidget {
     return Align(
       alignment: alignment,
       child: Text(
-        'VICTORY STARS',
+        'INNER STARS',
         style: TextStyle(
           color: context.colors.gold,
           fontFamily: kFontMono,

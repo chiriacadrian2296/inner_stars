@@ -30,7 +30,11 @@ class StringsEn implements AppStrings {
   @override
   String get moodboardQuoteAuthorHint => 'Optional';
   @override
-  String get moodboardQuoteStyleLabel => 'Choose a style';
+  String get moodboardQuoteStyleLabel => 'Style';
+  @override
+  String get moodboardQuoteSampleText => 'Shine like the whole universe';
+  @override
+  String get moodboardQuoteSampleAuthor => 'Author';
   @override
   String get moodboardQuoteStyleCelestial => 'Celestial';
   @override
@@ -62,7 +66,7 @@ class StringsEn implements AppStrings {
   @override
   String get moodboardPause => 'Pause';
   @override
-  String get areaSectionOpen => 'Open & Edit';
+  String get areaSectionOpen => 'Manage';
   @override
   String get areaReflectionsTitle => 'Reflections';
 
@@ -194,11 +198,11 @@ class StringsEn implements AppStrings {
   @override
   String get menuLightYourSky => 'Light Your Sky';
   @override
-  String get menuLightAStar => 'Stars';
+  String get menuLightAStar => 'Activities';
   @override
-  String get menuNewConstellation => 'Constellations';
+  String get menuNewConstellation => 'Projects';
   @override
-  String get lightYourSkyChooserSupernovaOption => 'Supernovas';
+  String get lightYourSkyChooserSupernovaOption => 'Life areas';
   @override
   String get menuShootingStars => 'Shooting Stars';
   @override
@@ -236,7 +240,7 @@ class StringsEn implements AppStrings {
       "For when you're in the dark and need some light.";
   @override
   String get menuSearchDescription =>
-      'Find any star, constellation, or supernova.';
+      'Find life areas, projects, victories, goals and habits.';
   @override
   String get skyViewModeTooltip => 'View';
   @override
@@ -257,10 +261,10 @@ class StringsEn implements AppStrings {
   String get skyViewSizeExtraLarge => 'Extra Large';
   @override
   String get menuStatisticsDescription =>
-      "Today's star, your calendar, and your all-time numbers.";
+      'Today’s victory, your calendar and your overall numbers.';
   @override
   String get menuFriendsDescription =>
-      "Shared constellations and celebrating wins together — coming soon.";
+      'Shared projects and victories celebrated together — coming soon.';
   @override
   String get menuMetaphorDescription => 'What every word in the sky means.';
   @override
@@ -284,8 +288,7 @@ class StringsEn implements AppStrings {
       'sky before your window closes.';
   @override
   String get friendsBody =>
-      "Shared constellations, messages, and celebrating each other's wins "
-      'together — the social side of the sky is still ahead.';
+      'Shared projects, messages and victories celebrated together: social features are coming soon.';
 
   @override
   String get profileSection => 'Profile & Account';
@@ -313,23 +316,23 @@ class StringsEn implements AppStrings {
   String get statsTitle => 'Statistics';
 
   @override
-  String get todayStarSectionLabel => "Today's star";
+  String get todayStarSectionLabel => 'Today’s victory';
   @override
-  String get litTodayTitle => "Congrats, you've lit a star today!";
+  String get litTodayTitle => 'Well done, you recorded a victory today!';
   @override
-  String get litTodayTitleHighlight => 'star';
+  String get litTodayTitleHighlight => 'victory';
   @override
   String get litTodaySubtitle => "- you've brought new light to your life -";
   @override
   String get litTodaySubtitleHighlight => 'light';
   @override
-  String get notLitTodayLabel => 'No star lit today yet';
+  String get notLitTodayLabel => 'No victory recorded today yet';
   @override
-  String get notLitTodayHighlight => 'star';
+  String get notLitTodayHighlight => 'victory';
   @override
-  String get lightStarCta => 'Light One';
+  String get lightStarCta => 'Record a victory';
   @override
-  String get totalStarsLabel => 'Total stars';
+  String get totalStarsLabel => 'Total victories';
   @override
   String get streaksSectionLabel => 'Streaks';
   @override
@@ -339,18 +342,18 @@ class StringsEn implements AppStrings {
   @override
   String get activityLabel => 'Activity';
   @override
-  String get dayDetailEmpty => 'No stars lit this day.';
+  String get dayDetailEmpty => 'No victories recorded on this day.';
   @override
   String get addStarForDayLabel => 'Add';
 
   @override
-  String get firstStarLabel => 'First star';
+  String get firstStarLabel => 'First victory';
   @override
-  String get mostRecentStarLabel => 'Most recent star';
+  String get mostRecentStarLabel => 'Most recent victory';
   @override
   String get combinedIntensityLabel => 'Combined intensity';
   @override
-  String get starsByAreaLabel => 'By supernova';
+  String get starsByAreaLabel => 'By life area';
   @override
   String get streakFromLabel => 'From';
   @override
@@ -358,65 +361,65 @@ class StringsEn implements AppStrings {
   @override
   String get todayLabel => 'Today';
   @override
-  String get starsLoggedLabel => 'Stars logged';
+  String get starsLoggedLabel => 'Recorded victories';
   @override
   String get noCurrentStreakBody =>
-      'No streak going right now. Light a star today to start one.';
+      'No current streak. Record a victory today to start one.';
 
   @override
-  String get searchHint => 'Search by title or description';
+  String get searchHint => 'Search life areas, projects and activities.';
   @override
-  String get noSearchResults => 'No stars match your search.';
+  String get noSearchResults => 'No activities match your search.';
   @override
-  String get noSearchResultsSupernovas => 'No supernovas match your search.';
+  String get noSearchResultsSupernovas => 'No life areas match your search.';
   @override
-  String get noSearchResultsConstellations =>
-      'No constellations match your search.';
+  String get noSearchResultsConstellations => 'No projects match your search.';
   @override
-  String get noSearchResultsStars => 'No stars match your search.';
+  String get noSearchResultsStars => 'No activities match your search.';
   @override
-  String get skyEmptyConstellations => 'No constellations yet.';
+  String get skyEmptyConstellations => 'No projects yet.';
   @override
-  String get skyEmptyStars => 'No stars yet.';
+  String get skyEmptyStars => 'No activities yet.';
   @override
   String intensityCount(int value) => '$value intensity';
   @override
   String createdOnLabel(String date) => 'Created $date';
   @override
-  String lastStarLabel(String date) => 'Last star $date';
+  String lastStarLabel(String date) => 'Last victory $date';
   @override
-  String get constellationsModeLabel => 'Constellations';
+  String get constellationsModeLabel => 'Projects';
   @override
-  String get listModeLabel => 'Stars';
+  String get listModeLabel => 'Activities';
   @override
-  String get skyModeSupernovas => 'Supernovas';
+  String get skyModeSupernovas => 'Life areas';
   @override
   String get filtersAction => 'Filters';
   @override
-  String get filterAreasAction => 'Filter areas';
+  String get filterAreasAction => 'Filter life areas';
   @override
-  String get areaFilterDefaultLabel => 'Areas';
+  String get areaFilterDefaultLabel => 'Life areas';
   @override
-  String activeAreasCount(int count) => count == 1 ? '1 area' : '$count areas';
+  String activeAreasCount(int count) =>
+      count == 1 ? '1 life area' : '$count life areas';
   @override
   String activeProjectsCount(int count) =>
-      count == 1 ? '1 constellation' : '$count constellations';
+      count == 1 ? '1 project' : '$count projects';
   @override
-  String resultsAreasWord(int count) => count == 1 ? 'area' : 'areas';
+  String resultsAreasWord(int count) => count == 1 ? 'life area' : 'life areas';
   @override
   String resultsConstellationsWord(int count) =>
-      count == 1 ? 'constellation' : 'constellations';
+      count == 1 ? 'project' : 'projects';
   @override
-  String resultsStarsWord(int count) => count == 1 ? 'star' : 'stars';
+  String resultsStarsWord(int count) => count == 1 ? 'activity' : 'activities';
   @override
   String get filterKindAction => 'Filter kinds';
   @override
-  String get filterKindSectionTitle => 'Star Kinds';
+  String get filterKindSectionTitle => 'Activity type';
   @override
-  String get kindFilterDefaultLabel => 'Star Kinds';
+  String get kindFilterDefaultLabel => 'Activity types';
   @override
   String activeKindsCount(int count) =>
-      count == 1 ? '1 star kind' : '$count star kinds';
+      count == 1 ? '1 activity type' : '$count activity types';
   @override
   String get applyFilterAction => 'Apply';
   @override
@@ -478,7 +481,7 @@ class StringsEn implements AppStrings {
   @override
   String get actionTurnOff => 'Turn off';
   @override
-  String get actionReignite => 'Reignite';
+  String get actionReignite => 'Reactivate';
   @override
   String get noDateShortLabel => 'No date';
   @override
@@ -835,12 +838,12 @@ My contribution meets a real need and is something I can sustain.
   String get skyTourSkyHintTitle => 'Sky';
   @override
   String get skyTourSkyHintBody =>
-      'Find and add supernovas, constellations, and stars.';
+      'Browse your life areas, projects and activities.';
   @override
-  String get starTourKindTitle => 'Three kinds of stars';
+  String get starTourKindTitle => 'Three activity types';
   @override
   String get starTourKindBody =>
-      'Choose between a Victory (already done), a Goal (still to do, an unlit star) and a Habit (a pulsar you repeat). Each one asks for different details.';
+      'Choose Victory (already done), Goal (to do) or Habit (to repeat). Each type asks for different details.';
   @override
   String get starTourIntensityTitle => 'How much it cost';
   @override
@@ -851,7 +854,7 @@ My contribution meets a real need and is something I can sustain.
   String get searchTourModeTitle => 'Three levels';
   @override
   String get searchTourModeBody =>
-      'Switch between Supernovas (your life areas), Constellations (your projects) and Stars (single efforts).';
+      'Switch between Life areas, Projects and Activities. Activities include victories, goals and habits.';
   @override
   String get searchTourFilterButtonTitle => 'View, filters and sorting';
   @override
@@ -919,7 +922,7 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get tutorialReplayConfirmAction => 'Yes, Show Me';
   @override
-  String get tutorialEntrySkyNavigationTitle => 'Navigating the Cosmo';
+  String get tutorialEntrySkyNavigationTitle => 'Navigating Galaxy';
   @override
   String get tutorialEntrySkyNavigationBody =>
       'Move through the sky, zoom, and open the menu.';
@@ -927,9 +930,9 @@ My contribution meets a real need and is something I can sustain.
   String get tutorialEntryLightYourSkyTitle => 'Light Your Sky';
   @override
   String get tutorialEntryLightYourSkyBody =>
-      'Supernovas, constellations and stars: what you can create.';
+      'Life areas, projects and activities: what you can create.';
   @override
-  String get tutorialEntryStarFormTitle => 'Recording a Star';
+  String get tutorialEntryStarFormTitle => 'Recording an activity';
   @override
   String get tutorialEntryStarFormBody =>
       'Victories, goals and habits: choosing the right kind.';
@@ -939,12 +942,12 @@ My contribution meets a real need and is something I can sustain.
   String get tutorialEntryShapeEditorBody =>
       'Place, connect and move stars in the shape editor.';
   @override
-  String get tutorialEntryConstellationFormTitle => 'Creating a Constellation';
+  String get tutorialEntryConstellationFormTitle => 'Creating a project';
   @override
   String get tutorialEntryConstellationFormBody =>
       'Pick an area and give your project a shape.';
   @override
-  String get tutorialEntrySearchStarsTitle => 'Browsing the Sky';
+  String get tutorialEntrySearchStarsTitle => 'Exploring Sky';
   @override
   String get tutorialEntrySearchStarsBody =>
       'Search, filter and switch between the three levels.';
@@ -954,10 +957,10 @@ My contribution meets a real need and is something I can sustain.
   String get tutorialEntrySupernovaVisionBody =>
       'Reflect on each area and write your vision.';
   @override
-  String get tutorialEntryStarReaderTitle => 'Reading a Star';
+  String get tutorialEntryStarReaderTitle => 'Reading an activity';
   @override
   String get tutorialEntryStarReaderBody =>
-      'Browse your stars and see what you can do with them.';
+      'Browse victories, goals and habits and discover their actions.';
   @override
   String get quickSettingsButtonTooltip => 'Quick Settings';
   @override
@@ -1075,17 +1078,17 @@ My contribution meets a real need and is something I can sustain.
   String get whooshVolumeLabel => 'Movement';
 
   @override
-  String starsCount(int count) => '$count star${count == 1 ? '' : 's'}';
+  String starsCount(int count) => count == 1 ? '1 victory' : '$count victories';
   @override
   String areaEmptyProjects(String areaName) =>
-      'No constellations yet in $areaName. Start one to begin lighting stars here.';
+      'No projects in $areaName yet. Create one to add your first activities.';
   @override
   String get noProjectsYet =>
-      'No constellations yet. Start one to begin lighting stars.';
+      'No projects yet. Create one to add your first activities.';
 
   @override
   String get constellationShapeMissing =>
-      "This constellation's shape couldn't be found.";
+      'The shape for this project could not be found.';
 
   @override
   String get drawYourOwnConstellation => 'Draw Your Own Stars Shape';
@@ -1151,7 +1154,7 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get constellationEditorHelpClose => 'Got it';
   @override
-  String get chooseShapeLabel => 'Constellation shape';
+  String get chooseShapeLabel => 'Project shape';
   @override
   String get shapeLibraryTitle => 'Constellation Shape';
   @override
@@ -1179,11 +1182,11 @@ My contribution meets a real need and is something I can sustain.
   String get optionalFieldLegend => 'Optional';
 
   @override
-  String get newProjectEyebrow => 'NEW CONSTELLATION';
+  String get newProjectEyebrow => 'NEW PROJECT';
   @override
-  String get newProjectQuestion => 'What constellation is this?';
+  String get newProjectQuestion => 'What is the project?';
   @override
-  String get areaLabel => 'Supernova';
+  String get areaLabel => 'Life area';
   @override
   String get galaxyLabel => 'Galaxy';
   @override
@@ -1199,6 +1202,13 @@ My contribution meets a real need and is something I can sustain.
   String get iconLabel => 'Icon';
   @override
   String get chooseIconTitle => 'Icon';
+  @override
+  String get exitAppTitle => 'Exit the app?';
+  @override
+  String get exitAppBody =>
+      'You’re about to leave the app. Do you want to continue?';
+  @override
+  String get exitAppConfirm => 'Confirm';
   @override
   String get menuAreaIconLab => 'Area icons';
   @override
@@ -1216,18 +1226,18 @@ My contribution meets a real need and is something I can sustain.
   String get displaySettingsDescription =>
       'Choose which controls are visible in the sky.';
   @override
-  String get createProject => 'Create constellation';
+  String get createProject => 'Create project';
   @override
-  String get newProject => 'New constellation';
+  String get newProject => 'New project';
   @override
   String get newAction => 'New';
 
   @override
-  String get newStarEyebrow => 'NEW STAR';
+  String get newStarEyebrow => 'NEW ACTIVITY';
   @override
-  String get editStarEyebrow => 'EDIT STAR';
+  String get editStarEyebrow => 'EDIT ACTIVITY';
   @override
-  String get configureStarEyebrow => 'CONFIGURE THIS STAR';
+  String get configureStarEyebrow => 'CONFIGURE THIS ACTIVITY';
   @override
   String get litStarQuestion => 'What did you get through?';
   @override
@@ -1235,11 +1245,11 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get pulsarQuestion => 'What do you want to keep doing, day by day?';
   @override
-  String get projectLabel => 'Constellation';
+  String get projectLabel => 'Project';
   @override
-  String get selectAProject => 'Select a constellation';
+  String get selectAProject => 'Select a project';
   @override
-  String get selectASupernova => 'Select a supernova';
+  String get selectASupernova => 'Select a life area';
   @override
   String get dateLabel => 'Date';
   @override
@@ -1369,27 +1379,27 @@ My contribution meets a real need and is something I can sustain.
   String get cannotSaveMissingInfo =>
       'Complete the required fields shown below before saving.';
   @override
-  String get constellationFullTitle => 'Constellation full';
+  String get constellationFullTitle => 'Project full';
   @override
   String get constellationFullCreateNew => 'Create';
   @override
   String constellationFullStars(int max) =>
-      'This constellation already holds its $max stars. Start a new one in the same area to keep going?';
+      'This project already holds its $max one-time activities. Start a new one in the same life area to continue?';
   @override
   String constellationFullPulsars(int max) =>
-      'This constellation already holds its $max pulsars. Start a new one in the same area to keep going?';
+      'This project already holds its $max habits. Start a new one in the same life area to continue?';
   @override
   String get gotIt => 'OK';
   @override
-  String get deleteStarConfirmTitle => 'Delete this star?';
+  String get deleteStarConfirmTitle => 'Archive this activity?';
   @override
   String get deleteStarConfirmBody =>
-      "This turns the star into a failure — it leaves here, but stays in its spot in the sky, and you can reignite it later.";
+      'The activity will be archived. It will keep its place in Galaxy and you can reactivate it later.';
   @override
-  String get deletePulsarConfirmTitle => 'Delete this habit?';
+  String get deletePulsarConfirmTitle => 'Archive this habit?';
   @override
   String get deletePulsarConfirmBody =>
-      'The habit becomes a failure — it stops beating, but stays in its spot in the sky, and you can reignite it later as a habit again.';
+      'The habit will be archived and stop pulsing. It will stay in Galaxy and you can reactivate it as a new habit.';
   @override
   String get deleteStarAction => 'Delete';
   @override
@@ -1408,7 +1418,7 @@ My contribution meets a real need and is something I can sustain.
   String goalTargetLabel(String date) => 'Goal for $date';
 
   @override
-  String starSlotLabel(int slot) => 'Star #$slot';
+  String starSlotLabel(int slot) => 'Activity #$slot';
 
   @override
   String pulsarNumberLabel(int number) => 'Habit #$number';
@@ -1422,12 +1432,12 @@ My contribution meets a real need and is something I can sustain.
   String get undoAchievedAction => 'Mark as not achieved';
   @override
   String get deadStarBody =>
-      'This star was deleted. You can reignite it as a brand new star, in the same spot in the sky.';
+      'This activity is archived. You can reactivate it as a new activity in the same spot in Galaxy.';
   @override
   String get deadPulsarBody =>
-      'This habit was deleted. You can reignite it as a brand new habit, in the same spot in the sky — its old streak stays behind.';
+      'This habit is archived. You can reactivate it as a new habit in the same spot in Galaxy; its previous streak and completions will be reset.';
   @override
-  String get reigniteAction => 'Reignite';
+  String get reigniteAction => 'Reactivate';
 
   @override
   String get habitFrequencyLabel => 'Frequency';
@@ -1468,19 +1478,19 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get cardBadgeLinks => 'Links';
   @override
-  String get cardBadgeLitStars => 'Lit stars';
+  String get cardBadgeLitStars => 'Victories';
   @override
   String get cardBadgeGoals => 'Goals';
   @override
   String get cardBadgeEmptySlots => 'Empty slots';
   @override
-  String get cardBadgePulsarsToday => 'Habits lit today';
+  String get cardBadgePulsarsToday => 'Habits completed today';
   @override
   String get cardBadgeHabits => 'Habits';
   @override
-  String get cardBadgeDeadStars => 'Dead stars';
+  String get cardBadgeDeadStars => 'Archived';
   @override
-  String get cardBadgeConstellations => 'Constellations';
+  String get cardBadgeConstellations => 'Projects';
   @override
   String habitProgressToday(int done, int target) => '$done/$target today';
   @override
@@ -1490,9 +1500,9 @@ My contribution meets a real need and is something I can sustain.
   String habitThisWeekCaption(bool doneToday) =>
       doneToday ? 'This week · today done' : 'This week · not today yet';
   @override
-  String get habitStatsSectionTitle => 'Pulsars';
+  String get habitStatsSectionTitle => 'Habits';
   @override
-  String get starsStatsSectionTitle => 'Stars';
+  String get starsStatsSectionTitle => 'Victories';
   @override
   String get habitStatsActiveLabel => 'Active';
   @override
@@ -1517,9 +1527,9 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get habitStatsArchiveAction => 'Archive';
   @override
-  String get habitStatsArchiveTitle => 'Past pulsars';
+  String get habitStatsArchiveTitle => 'Archived habits';
   @override
-  String get habitStatsArchiveEmpty => 'No past pulsars yet.';
+  String get habitStatsArchiveEmpty => 'No archived habits yet.';
   @override
   String habitStatsDays(int count) => count == 1 ? '1 day' : '$count days';
   @override
@@ -1565,21 +1575,21 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get starKindPulsarExample => 'Ten minutes of stretching, every day.';
   @override
-  String get starKindDeadName => 'Failure';
+  String get starKindDeadName => 'Archived';
   @override
-  String get starKindDeadPlural => 'Failures';
+  String get starKindDeadPlural => 'Archived';
   @override
-  String get starKindDeadMeaning => 'Deleted — can be reignited';
+  String get starKindDeadMeaning => 'Archived — can be reactivated';
   @override
   String get starKindDeadExample =>
-      'A goal you let go of — still there, still yours to reignite.';
+      'A goal you set aside: you can reactivate it whenever you want.';
 
   @override
   String get photoBadgeLabel => 'Photo';
   @override
   String get targetDateBadgeLabel => 'Target';
   @override
-  String get deadDateBadgeLabel => 'Died';
+  String get deadDateBadgeLabel => 'Archived';
   @override
   String get streakBadgeLabel => 'Streak';
   @override
@@ -1590,14 +1600,13 @@ My contribution meets a real need and is something I can sustain.
   String get noDeadDateLabel => 'No death date';
 
   @override
-  String get chooseSupernovasToInclude => 'Choose which supernovas to include';
+  String get chooseSupernovasToInclude => 'Choose life areas to include';
   @override
   String get admireAllAreasLabel => 'All';
   @override
-  String get pickAtLeastOneArea => 'Pick at least one supernova to continue.';
+  String get pickAtLeastOneArea => 'Choose at least one life area to continue.';
   @override
-  String get noStarsInSelection =>
-      "No stars lit yet in the supernovas you picked.";
+  String get noStarsInSelection => 'No victories in the selected life areas.';
   @override
   String get viewYourStars => 'View';
 
@@ -1660,18 +1669,17 @@ My contribution meets a real need and is something I can sustain.
   String get nightlightBreathingCheckInProceed => 'Proceed';
 
   @override
-  String get newConstellationOption => 'New constellation';
+  String get newConstellationOption => 'New project';
 
   @override
   String get visionsEyebrow => 'THE BIGGEST PICTURE';
   @override
   String get visionsTitle => 'Your Visions';
   @override
-  String get areasTitle => 'Areas';
+  String get areasTitle => 'Life areas';
   @override
   String get visionsSubtitle =>
-      'One vision per supernova — the reality you want in that area of your '
-      'life. Come back to read them, and rewrite them as you change.';
+      'A vision for each life area: the reality you want. Revisit and rewrite them as you change.';
   @override
   String get visionEmptyLabel => 'No vision written yet';
 
@@ -1764,9 +1772,9 @@ My contribution meets a real need and is something I can sustain.
   @override
   String indexOfCount(int index, int total) => '$index of $total';
   @override
-  String get shareStarLabel => 'Share this Star';
+  String get shareStarLabel => 'Share this activity';
   @override
-  String get shareStarError => "Couldn't share that star. Try again?";
+  String get shareStarError => 'Could not share this activity. Try again?';
   @override
   String get shareContentError => "Couldn't share that. Try again?";
   @override
@@ -1782,15 +1790,15 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get shareNowAction => 'Share';
   @override
-  String get starReaderTourIntroTitle => 'Moving between stars';
+  String get starReaderTourIntroTitle => 'Moving between activities';
   @override
   String get starReaderTourIntroBody =>
-      'Swipe sideways to go to the previous or next star. On a star with a photo, tap an empty spot to see just the photo.';
+      'Swipe sideways to the previous or next activity. On a victory with a photo, tap an empty spot to see only the photo.';
   @override
   String get starReaderTourDockTitle => 'Everything you can do';
   @override
   String get starReaderTourDockBody =>
-      'These buttons change with the star: light it, share it, edit it, delete it, or bring it back.';
+      'Actions depend on the activity: complete, share, edit, archive or reactivate it.';
 
   @override
   String get starQuickLookViewAction => 'View';
@@ -1815,16 +1823,14 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get creationSuccessEyebrow => 'Congrats!';
   @override
-  String get creationSuccessLitMessage => 'A star has been lit in your sky.';
+  String get creationSuccessLitMessage => 'You recorded a new victory.';
   @override
-  String get creationSuccessUnlitMessage =>
-      'A new goal has been set in your sky.';
+  String get creationSuccessUnlitMessage => 'You added a new goal.';
   @override
-  String get creationSuccessPulsarMessage =>
-      'A new habit has begun pulsing in your sky.';
+  String get creationSuccessPulsarMessage => 'You added a new habit.';
   @override
   String get creationSuccessConstellationMessage =>
-      'A new constellation has been added to your sky.';
+      'A new project has been added.';
   @override
   String areaTooltipStarCount(int count) =>
       '$count star${count == 1 ? '' : 's'} lit';
@@ -2042,6 +2048,43 @@ My contribution meets a real need and is something I can sustain.
       'The year must be between $firstYear and $lastYear.';
   @override
   String get dateInputOutsideRange => 'This date is outside the allowed range.';
+
+  @override
+  String get galaxyAreaLabel => 'Supernova';
+
+  @override
+  String get galaxyProjectLabel => 'Constellation';
+
+  @override
+  String get galaxyNascentLabel => 'Nascent star';
+
+  @override
+  String get galaxyLitLabel => 'Lit star';
+
+  @override
+  String get galaxyUnlitLabel => 'Unlit star';
+
+  @override
+  String get galaxyPulsarLabel => 'Pulsar';
+
+  @override
+  String get galaxyDeadLabel => 'Extinguished star';
+
+  @override
+  String get archiveAction => 'Archive';
+
+  @override
+  String get completeActivityAction => 'Complete';
+
+  @override
+  String get undoCompletionAction => 'Undo completion';
+
+  @override
+  String get deleteProjectConfirmTitle => 'Delete this project?';
+
+  @override
+  String get deleteProjectConfirmBody =>
+      'Activities, habits, completions and photos will be permanently deleted. This action cannot be undone.';
 }
 
 const _fullMonths = [

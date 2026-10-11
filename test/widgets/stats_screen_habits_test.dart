@@ -13,7 +13,7 @@ import 'package:inner_stars/theme/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('statistics separates pulsars from stars and opens archive', (
+  testWidgets('statistics separates habits from victories and opens archive', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -40,14 +40,14 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 800));
 
-    expect(find.text('Pulsars'), findsOneWidget);
-    expect(find.text('Stars'), findsOneWidget);
+    expect(find.text('Habits'), findsOneWidget);
+    expect(find.text('Victories'), findsOneWidget);
     expect(find.widgetWithText(AppChoiceChip, '7 days'), findsOneWidget);
     expect(find.widgetWithText(AppChoiceChip, '30 days'), findsOneWidget);
     expect(find.widgetWithText(AppChoiceChip, '90 days'), findsOneWidget);
 
     await tester.tap(find.text('ARCHIVE'));
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('No past pulsars yet.'), findsOneWidget);
+    expect(find.text('No archived habits yet.'), findsOneWidget);
   });
 }

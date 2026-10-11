@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
 import '../theme/app_style.dart';
+import '../theme/app_colors.dart';
 import '../utils/app_modals.dart';
 import 'app_choice_chip.dart';
 import 'results_count_row.dart';
 import 'staggered_entrance.dart';
+import 'area_icon.dart';
 
 /// Opens the area filter used by Sky's Constellations/Stars views — a
 /// multi-select chip grid, one chip per [LifeArea]. Nothing chosen means no
@@ -95,7 +97,14 @@ class _AreaFilterSheetState extends State<_AreaFilterSheet> {
                         index: 2 + row + col,
                         axis: Axis.horizontal,
                         child: AppChoiceChip(
-                          icon: LifeArea.values[row * 2 + col].icon,
+                          leading: AreaIcon(
+                            area: LifeArea.values[row * 2 + col],
+                            size: 16,
+                            color:
+                                _chosen.contains(LifeArea.values[row * 2 + col])
+                                ? context.colors.gold
+                                : context.colors.muted,
+                          ),
                           label: LifeArea.values[row * 2 + col].displayName(
                             strings,
                           ),

@@ -28,6 +28,10 @@ class ReflectionQuestionsSection extends StatefulWidget {
 
 class ReflectionQuestionsSectionState
     extends State<ReflectionQuestionsSection> {
+  /// The groups currently open. All start closed, so a long list of
+  /// questions never greets the reader all at once.
+  final Set<int> _open = {};
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -42,9 +46,8 @@ class ReflectionQuestionsSectionState
       offsets.add(running);
       running += group.questions.length;
     }
-    final answeredCount = widget.repository
-        .getAnswersForArea(widget.area)
-        .length;
+    final answers = widget.repository.getAnswersForArea(widget.area);
+    final answeredCount = answers.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,32 +92,70 @@ class ReflectionQuestionsSectionState
           if (g > 0) const SizedBox(height: 10),
           StaggeredEntrance(
             index: 2 + offsets[g] + g,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 10),
-              child: Text(
-                groups[g].title,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.4,
-                  color: colors.muted,
+            child: InkWell(
+              onTap: () => setState(
+                () => _open.contains(g) ? _open.remove(g) : _open.add(g),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        groups[g].title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.4,
+                          color: colors.text,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${[for (var q = 0; q < groups[g].questions.length; q++)
+                        if (answers.containsKey('${offsets[g] + q}')) q].length}/${groups[g].questions.length}',
+                      style: TextStyle(fontSize: 16, color: colors.text),
+                    ),
+                    const SizedBox(width: 6),
+                    AnimatedRotation(
+                      duration: const Duration(milliseconds: 200),
+                      turns: _open.contains(g) ? 0.5 : 0,
+                      child: Icon(
+                        Icons.keyboard_arrow_down,
+                        size: 24,
+                        color: colors.text,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-          for (var q = 0; q < groups[g].questions.length; q++) ...[
-            StaggeredEntrance(
-              index: 3 + offsets[g] + g + q,
-              child: _ReflectionQuestionTile(
-                area: widget.area,
-                questionId: '${offsets[g] + q}',
-                questionText: groups[g].questions[q],
-                repository: widget.repository,
-                onSaved: () => setState(() {}),
-              ),
-            ),
-            if (q != groups[g].questions.length - 1) const SizedBox(height: 10),
-          ],
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: _open.contains(g)
+                ? Column(
+                    children: [
+                      for (var q = 0; q < groups[g].questions.length; q++) ...[
+                        StaggeredEntrance(
+                          index: q,
+                          child: _ReflectionQuestionTile(
+                            area: widget.area,
+                            questionId: '${offsets[g] + q}',
+                            questionText: groups[g].questions[q],
+                            repository: widget.repository,
+                            onSaved: () => setState(() {}),
+                          ),
+                        ),
+                        if (q != groups[g].questions.length - 1)
+                          const SizedBox(height: 10),
+                      ],
+                    ],
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
         ],
       ],
     );

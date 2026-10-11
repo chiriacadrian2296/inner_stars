@@ -2,10 +2,10 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 
 import '../models/life_area.dart';
 import 'constellation_field.dart';
+import 'sky_clock.dart';
 
 /// Another alternative take on the same slot [SkyDecorations]/[SkyWisps]/
 /// `SkyBlackHole` filled before it (see `NebulaScreen.build` — only one is
@@ -37,10 +37,13 @@ class SkySupernova extends StatefulWidget {
     super.key,
     required this.camera,
     required this.zoom,
+    required this.clock,
     this.scale = 1,
     this.intensity = 1,
   });
 
+  /// Drives the shader's animation — see [SkyClock].
+  final SkyClock clock;
   final SkyCamera camera;
   final double zoom;
   final double scale;
@@ -50,17 +53,12 @@ class SkySupernova extends StatefulWidget {
   State<SkySupernova> createState() => _SkySupernovaState();
 }
 
-class _SkySupernovaState extends State<SkySupernova>
-    with SingleTickerProviderStateMixin {
+class _SkySupernovaState extends State<SkySupernova> {
   ui.FragmentShader? _shader;
-  late final Ticker _ticker;
-  Duration _elapsed = Duration.zero;
 
   @override
   void initState() {
     super.initState();
-    _ticker = createTicker((elapsed) => setState(() => _elapsed = elapsed))
-      ..start();
     _loadShader();
   }
 
@@ -74,7 +72,6 @@ class _SkySupernovaState extends State<SkySupernova>
 
   @override
   void dispose() {
-    _ticker.dispose();
     _shader?.dispose();
     super.dispose();
   }
@@ -88,7 +85,7 @@ class _SkySupernovaState extends State<SkySupernova>
       size: Size.infinite,
       painter: _SkySupernovaPainter(
         shader: shader,
-        time: _elapsed.inMicroseconds / Duration.microsecondsPerSecond,
+        clock: widget.clock,
         camera: widget.camera,
         zoom: widget.zoom,
         scale: widget.scale,
@@ -145,17 +142,18 @@ double _dot3(_Vec3 a, _Vec3 b) => a.$1 * b.$1 + a.$2 * b.$2 + a.$3 * b.$3;
 const bool _kShowSupernovaIcons = false;
 
 class _SkySupernovaPainter extends CustomPainter {
-  const _SkySupernovaPainter({
+  _SkySupernovaPainter({
     required this.shader,
-    required this.time,
+    required this.clock,
     required this.camera,
     required this.zoom,
     required this.scale,
     required this.intensity,
-  });
+  }) : super(repaint: clock);
 
   final ui.FragmentShader shader;
-  final double time;
+  final SkyClock clock;
+  double get time => clock.seconds;
   final SkyCamera camera;
   final double zoom;
   final double scale;
@@ -332,7 +330,6 @@ class _SkySupernovaPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _SkySupernovaPainter oldDelegate) =>
-      oldDelegate.time != time ||
       oldDelegate.camera != camera ||
       oldDelegate.zoom != zoom ||
       oldDelegate.scale != scale ||

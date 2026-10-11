@@ -53,7 +53,7 @@ class SkyConstellationTooltip extends StatelessWidget {
         verticalInset: 20,
       ),
       content: SearchCardTextContent(
-        eyebrow: strings.projectLabel,
+        eyebrow: strings.galaxyProjectLabel,
         eyebrowColor: context.colors.gold,
         title: project.name,
         breadcrumb: project.area.displayName(strings),

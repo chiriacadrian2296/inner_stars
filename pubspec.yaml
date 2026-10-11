@@ -117,6 +117,7 @@ flutter:
     - assets/images/8. Philanthropic.png
     - assets/images/royal_symbols_preview/
     - assets/images/royal_symbols_negative_final/
+    - assets/images/area_icons/
   shaders:
     - shaders/nebula_particles.frag
     - shaders/constellation_flare.frag
