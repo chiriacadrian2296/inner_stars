@@ -21,6 +21,7 @@ class ConstellationEditorPainter extends CustomPainter {
     required this.lineColor,
     this.pointRadius = 6.0,
     this.ringRadius = 11.0,
+    this.lineWidth = 1.5,
   });
 
   final List<Offset> points;
@@ -37,12 +38,13 @@ class ConstellationEditorPainter extends CustomPainter {
   /// hide the connecting lines between them.
   final double pointRadius;
   final double ringRadius;
+  final double lineWidth;
 
   @override
   void paint(Canvas canvas, Size size) {
     final linePaint = Paint()
       ..color = lineColor
-      ..strokeWidth = 1.5
+      ..strokeWidth = lineWidth
       ..style = PaintingStyle.stroke;
     for (final (a, b) in edges) {
       if (a >= points.length || b >= points.length) continue;
@@ -73,6 +75,7 @@ class ConstellationEditorPainter extends CustomPainter {
         highlightColor != oldDelegate.highlightColor ||
         lineColor != oldDelegate.lineColor ||
         pointRadius != oldDelegate.pointRadius ||
+        lineWidth != oldDelegate.lineWidth ||
         ringRadius != oldDelegate.ringRadius;
   }
 }

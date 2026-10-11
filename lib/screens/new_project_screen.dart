@@ -22,6 +22,7 @@ import '../widgets/area_picker.dart';
 import '../utils/icon_for_slug.dart';
 import '../widgets/constellation_editor_painter.dart';
 import '../widgets/form_kind_tiles.dart';
+import '../widgets/filters_trigger_button.dart';
 import '../widgets/pill_action_button.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
@@ -68,6 +69,10 @@ class NewProjectScreen extends StatefulWidget {
 }
 
 class _NewProjectScreenState extends State<NewProjectScreen> {
+  // Remember each picker's filter for this app session, across form visits.
+  static PresetCategory? _rememberedShapeCategory;
+  static PresetCategory? _rememberedIconCategory;
+
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   late LifeArea? _selectedArea = widget.presetArea;
@@ -241,8 +246,8 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
       label: strings.areaLabel,
       onReset: () => setState(() => _selectedArea = null),
       requirement: FieldRequirement.required,
-      hint: strings.areaLabel,
-      icon: _selectedArea?.icon ?? Icons.explore_outlined,
+      hint: strings.selectASupernova,
+      icon: _selectedArea?.icon ?? Icons.flare,
       text: _selectedArea?.displayName(strings),
       onTap: _openAreaPicker,
     );
@@ -328,7 +333,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   /// see [_editSelectedShape] for where that moved to instead). One
   /// combined, searchable sheet either way, reusing the same picker shell
   /// the area and icon fields already use.
-  Future<void> _openLibrary() async {
+  Future<void> _openLibrary({_ShapePickerTab? initialTab}) async {
     final strings = context.strings;
     final language = strings.languageCode;
     final customs = widget.starsShapeRepository.getAll();
@@ -342,19 +347,46 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
         ? _CustomChoice(_selectedStarsShape!)
         : null;
 
-    // Opens on whichever tab already holds the current selection — no
-    // reason to land on the library if what's picked right now is one of
-    // this user's own shapes.
+    // Opens on the tab asked for, else on whichever already holds the current
+    // selection — no reason to land on the library if what is picked right
+    // now is one of this user's own shapes.
     final tab = ValueNotifier(
-      currentSelection is _CustomChoice
-          ? _ShapePickerTab.yourShapes
-          : _ShapePickerTab.library,
+      initialTab ??
+          (currentSelection is _CustomChoice
+              ? _ShapePickerTab.yourShapes
+              : _ShapePickerTab.library),
     );
+    final category = ValueNotifier<PresetCategory?>(_rememberedShapeCategory);
     final picked = await _showSearchablePicker<_ShapePickerChoice>(
       context: context,
       title: strings.shapeLibraryTitle,
       searchHint: strings.shapeSearchHint,
       header: _ShapePickerSwitch(tab: tab),
+      filterListenable: category,
+      additionalMatches: (choice) =>
+          choice is! _PresetChoice ||
+          category.value == null ||
+          choice.preset.category == category.value,
+      searchTrailing: ListenableBuilder(
+        listenable: Listenable.merge([tab, category]),
+        builder: (context, _) => tab.value == _ShapePickerTab.yourShapes
+            ? const SizedBox.shrink()
+            : Padding(
+                padding: const EdgeInsets.only(left: 10),
+                child: FiltersTriggerButton(
+                  active: category.value != null,
+                  tooltip: strings.filtersAction,
+                  onTap: () async {
+                    final pickedCategory = await _pickShapeCategory(
+                      context,
+                      selected: category.value,
+                      onCleared: () => category.value = null,
+                    );
+                    if (pickedCategory != null) category.value = pickedCategory;
+                  },
+                ),
+              ),
+      ),
       onSwipe: (direction) {
         final tabs = _ShapePickerTab.values;
         final next = tab.value.index + direction;
@@ -465,6 +497,9 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
         );
       },
     );
+    _rememberedShapeCategory = category.value;
+    category.dispose();
+    tab.dispose();
     if (picked == null || !mounted) return;
     switch (picked) {
       case _PresetChoice(:final preset):
@@ -482,30 +517,86 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   }
 
   Future<void> _openIconPicker() async {
+    final language = context.strings.languageCode;
+    final category = ValueNotifier<PresetCategory?>(_rememberedIconCategory);
+    final presetsBySlug = {
+      for (final preset in starsShapePresets) preset.iconSlug: preset,
+    };
     final picked = await _showSearchablePicker<String>(
       context: context,
       title: context.strings.chooseIconTitle,
       searchHint: context.strings.searchHint,
+      filterListenable: category,
+      additionalMatches: (slug) =>
+          category.value == null ||
+          presetsBySlug[slug]!.category == category.value,
+      searchTrailing: ValueListenableBuilder<PresetCategory?>(
+        valueListenable: category,
+        builder: (context, selectedCategory, _) => Padding(
+          padding: const EdgeInsets.only(left: 10),
+          child: FiltersTriggerButton(
+            active: selectedCategory != null,
+            tooltip: context.strings.filtersAction,
+            onTap: () async {
+              final pickedCategory = await _pickShapeCategory(
+                context,
+                selected: category.value,
+                onCleared: () => category.value = null,
+              );
+              if (pickedCategory != null) category.value = pickedCategory;
+            },
+          ),
+        ),
+      ),
       items: _orderedIconSlugs(_selectedArea),
-      matches: (slug, query) => slug.toLowerCase().contains(query),
+      matches: (slug, query) =>
+          slug.toLowerCase().contains(query) ||
+          presetsBySlug[slug]!.name
+              .of(language)
+              .toLowerCase()
+              .contains(query) ||
+          presetsBySlug[slug]!.category.name
+              .of(language)
+              .toLowerCase()
+              .contains(query),
       initialSelection: _selectedIconSlug,
       bodyBuilder: (context, filtered, selected, onSelect) {
-        return GridView.count(
-          crossAxisCount: 6,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (final (i, slug) in filtered.indexed)
-              StaggeredEntrance(
-                index: i + 1,
-                child: _IconOption(
-                  slug: slug,
-                  selected: selected == slug,
-                  onTap: () => onSelect(slug),
+            for (final category in PresetCategory.values)
+              if (filtered.any(
+                (slug) => presetsBySlug[slug]!.category == category,
+              )) ...[
+                _ShapeSectionHeading(category.name.of(language)),
+                Builder(
+                  builder: (context) {
+                    final slugs = filtered
+                        .where(
+                          (slug) => presetsBySlug[slug]!.category == category,
+                        )
+                        .toList();
+                    return _StretchedTileWrap(
+                      minTileWidth: _shapeTileMinSide,
+                      columnCount: 5,
+                      itemCount: slugs.length,
+                      itemBuilder: (context, index, tileWidth) {
+                        final slug = slugs[index];
+                        return StaggeredEntrance(
+                          index: index + 1,
+                          child: _IconOption(
+                            slug: slug,
+                            label: presetsBySlug[slug]!.name.of(language),
+                            side: tileWidth,
+                            selected: selected == slug,
+                            onTap: () => onSelect(slug),
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
-              ),
+              ],
           ],
         );
       },
@@ -513,6 +604,8 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     if (picked != null && mounted) {
       setState(() => _selectedIconSlug = picked);
     }
+    _rememberedIconCategory = category.value;
+    category.dispose();
   }
 
   Future<void> _save() async {
@@ -681,94 +774,56 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        // The shape being committed to, on the left — always on
-        // screen, always editable (tapping it, blank or not,
-        // opens the same editor `_editSelectedShape` always did)
-        // — sized to the same width as the Area field above it
-        // (same 3:1 split, same gap, over the same total row
-        // width) so the two line up rather than matching by
-        // coincidence. The way into the shape library fills the
-        // space that leaves on the right, stretched to match
-        // whatever height that makes the preview (square, so
-        // wider now also means taller) via [IntrinsicHeight] +
-        // `stretch` rather than a guessed fixed height.
+        // The shape being committed to — always on screen, always editable
+        // (tapping it, blank or not, opens the same editor
+        // `_editSelectedShape` always did) — as wide as the page, with the
+        // way into the shapes library as a button under it.
         LayoutBuilder(
           builder: (context, constraints) {
-            const gap = 12.0;
-            final side = (constraints.maxWidth - gap) * 3 / 4;
-            return IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  HintTarget(
-                    tour: 'constellation-form',
-                    order: 1,
-                    showArrow: true,
-                    contentBuilder: appTourStepCard,
-                    title: strings.constellationTourCanvasTitle,
-                    description: strings.constellationTourCanvasBody,
-                    child: StaggeredEntrance(
-                      index: 6,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AppFieldLabel(
-                            strings.chooseShapeLabel,
-                            canReset: _hasShape,
-                            onReset: _resetShape,
-                            requirement: FieldRequirement.required,
-                          ),
-                          const SizedBox(height: kFieldLabelGap),
-                          _SelectedShapePreview(
-                            shape: _selectedShape,
-                            label: _selectedShapeName(strings),
-                            onEdit: _editSelectedShape,
-                            side: side,
-                            replayKey: _shapeEpoch,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: gap),
-                  Expanded(
-                    // `stretch`, not the Column default `center`: the tile
-                    // must fill this slot edge to edge, not shrink-wrap.
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                HintTarget(
+                  tour: 'constellation-form',
+                  order: 1,
+                  showArrow: true,
+                  contentBuilder: appTourStepCard,
+                  title: strings.constellationTourCanvasTitle,
+                  description: strings.constellationTourCanvasBody,
+                  child: StaggeredEntrance(
+                    index: 6,
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Invisible — reserves exactly the label's own
-                        // height above the preview on the left, so this
-                        // side matches *just the square*; otherwise
-                        // `IntrinsicHeight` stretches the tile to the
-                        // taller label-plus-square. `Visibility` over a real
-                        // `AppFieldLabel` matches it for any locale or text
-                        // scale, where a bare `SizedBox` would guess.
-                        Visibility(
-                          visible: false,
-                          maintainSize: true,
-                          maintainAnimation: true,
-                          maintainState: true,
-                          child: AppFieldLabel(
-                            strings.chooseShapeLabel,
-                            requirement: FieldRequirement.required,
-                          ),
+                        AppFieldLabel(
+                          strings.chooseShapeLabel,
+                          canReset: _hasShape,
+                          onReset: _resetShape,
+                          requirement: FieldRequirement.required,
                         ),
                         const SizedBox(height: kFieldLabelGap),
-                        Expanded(
-                          child: StaggeredEntrance(
-                            index: 6,
-                            child: _ShapeLibraryTile(
-                              label: strings.pickFromLibraryShort,
-                              onTap: _openLibrary,
-                            ),
-                          ),
+                        _SelectedShapePreview(
+                          shape: _selectedShape,
+                          label: _selectedShapeName(strings),
+                          onEdit: _editSelectedShape,
+                          side: constraints.maxWidth,
+                          replayKey: _shapeEpoch,
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: StaggeredEntrance(
+                    index: 7,
+                    child: _ShapeLibraryButton(
+                      label: strings.shapesLibraryButtonLabel,
+                      onTap: _openLibrary,
+                    ),
+                  ),
+                ),
+              ],
             );
           },
         ),
@@ -817,14 +872,79 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   }
 }
 
+Future<PresetCategory?> _pickShapeCategory(
+  BuildContext context, {
+  required PresetCategory? selected,
+  required VoidCallback onCleared,
+}) {
+  final strings = context.strings;
+  return showAppSheet<PresetCategory>(
+    context: context,
+    isScrollControlled: true,
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppSheetTitle(strings.shapeCategoryFilterTitle),
+            const SizedBox(height: 20),
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: PresetCategory.values.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final category = PresetCategory.values[index];
+                  final preset = starsShapePresets.firstWhere(
+                    (preset) => preset.category == category,
+                  );
+                  return StaggeredEntrance(
+                    index: index + 1,
+                    child: AppSheetAction(
+                      uppercase: false,
+                      selected: category == selected,
+                      icon: iconForSlug(preset.iconSlug),
+                      label: category.name.of(strings.languageCode),
+                      onPressed: () => Navigator.of(sheetContext).pop(category),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 24),
+            Align(
+              alignment: Alignment.center,
+              child: ElevatedButton(
+                onPressed: selected == null
+                    ? null
+                    : () {
+                        Navigator.of(sheetContext).pop();
+                        onCleared();
+                      },
+                child: AppButtonLabel(strings.clearFilterAction),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 class _IconOption extends StatelessWidget {
   const _IconOption({
     required this.slug,
+    required this.label,
+    required this.side,
     required this.selected,
     required this.onTap,
   });
 
   final String slug;
+  final String label;
+  final double side;
   final bool selected;
   final VoidCallback onTap;
 
@@ -834,12 +954,35 @@ class _IconOption extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(kRadiusField),
-      child: Container(
-        decoration: selectableDecoration(colors, selected: selected),
-        child: Icon(
-          iconForSlug(slug),
-          color: selected ? colors.gold : colors.muted,
-          size: 20,
+      child: SizedBox(
+        width: side,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: side,
+              height: side,
+              decoration: selectableDecoration(colors, selected: selected),
+              child: Icon(
+                iconForSlug(slug),
+                color: selected ? colors.gold : colors.muted,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                height: 1.2,
+                color: selected ? colors.gold : colors.muted,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -853,10 +996,19 @@ class _IconOption extends StatelessWidget {
 /// by every place a shape is shown at thumbnail size: the library's tiles,
 /// the current-selection preview, and the user's own saved shapes.
 class _ShapeThumbnail extends StatelessWidget {
-  const _ShapeThumbnail({required this.shape, required this.side});
+  const _ShapeThumbnail({
+    required this.shape,
+    required this.side,
+    this.pointRadius = 2.5,
+    this.lineWidth = 1.5,
+  });
 
   final ConstellationShape shape;
   final double side;
+
+  /// Heavier for the big canvas than for the small picker tiles.
+  final double pointRadius;
+  final double lineWidth;
 
   static const _inset = 14.0;
 
@@ -878,7 +1030,8 @@ class _ShapeThumbnail extends StatelessWidget {
         pointColor: colors.text,
         highlightColor: colors.gold,
         lineColor: colors.muted.withValues(alpha: 0.6),
-        pointRadius: 2.5,
+        pointRadius: pointRadius,
+        lineWidth: lineWidth,
       ),
     );
   }
@@ -1147,23 +1300,26 @@ class _SelectedShapePreview extends StatelessWidget {
         child: Stack(
           children: [
             if (chosen == null)
-              // Same [Icons.insights] as the "Shapes" button beside it —
-              // no separate caption under it any more ("No shape chosen
-              // yet" was redundant once this whole tile visibly matched
-              // the empty canvas it opens), bigger now that it's carrying
-              // the empty state on its own.
+              // The insights glyph alone carries the empty state, sized like the
+              // camera icon of the empty main photo field (no caption: the whole
+              // tile visibly matches the empty canvas it opens).
               StaggeredEntrance(
                 index: 0,
                 replayKey: replayKey,
                 child: Center(
-                  child: Icon(Icons.insights, color: colors.muted, size: 44),
+                  child: Icon(Icons.insights, color: colors.muted, size: 56),
                 ),
               )
             else
               StaggeredEntrance(
                 index: 0,
                 replayKey: replayKey,
-                child: _ShapeThumbnail(shape: chosen, side: side),
+                child: _ShapeThumbnail(
+                  shape: chosen,
+                  side: side,
+                  pointRadius: 4,
+                  lineWidth: 2.5,
+                ),
               ),
             // The name, not a pencil badge — the whole tile already opens
             // the editor on tap (see `onEdit` above), so a dedicated edit
@@ -1203,124 +1359,57 @@ class _SelectedShapePreview extends StatelessWidget {
   }
 }
 
-/// The one button beside the shape preview: opens the shape library. A panel
-/// showing four of the library's own shapes, one per row, with its name
-/// under them, so it reads as "a collection to browse" rather than a plain
-/// button. (Drawing is a tap on the preview, resetting is the icon beside
-/// the field's name.)
-class _ShapeLibraryTile extends StatelessWidget {
-  const _ShapeLibraryTile({required this.label, required this.onTap});
+/// The one button beside the shape preview: opens the shape picker. Shows
+/// the picker's two tab icons side by side (the same ones as its switch)
+/// over its name, as the picker holds both the presets and the user's own
+/// shapes.
+class _ShapeLibraryButton extends StatelessWidget {
+  const _ShapeLibraryButton({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
 
-  /// Which library shapes the tile shows, spread across it so they differ.
-  static const _sampleIndices = [0, 24, 48, 72];
+  static const _padding = 14.0;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final shapes = [
-      for (final i in _sampleIndices)
-        starsShapePresets[i % starsShapePresets.length].shape,
-    ];
-    Widget cell(int i) => Expanded(child: _MiniShape(shape: shapes[i]));
-    return Container(
-      decoration: panelDecoration(colors),
-      clipBehavior: Clip.antiAlias,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(6, 8, 6, 8),
-            child: Column(
-              children: [
-                Expanded(
-                  child: Column(
-                    children: [for (var i = 0; i < shapes.length; i++) cell(i)],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                AppButtonLabel(
-                  label,
-                  color: colors.text,
-                  fontSize: 11,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
+    // The same panel fill and hairline border as the shape preview above it,
+    // with muted icons and text.
+    return TextButton(
+      style: TextButton.styleFrom(
+        foregroundColor: colors.muted,
+        backgroundColor: colors.nightPanel,
+        side: BorderSide(color: colors.nightBorder, width: kBorderWidth),
+        padding: const EdgeInsets.all(_padding),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kRadiusField),
         ),
       ),
-    );
-  }
-}
-
-/// A shape drawn tiny, for [_ShapeLibraryTile]'s grid. Painted straight from
-/// the size it is given rather than through a `LayoutBuilder`, which cannot be
-/// measured by the `IntrinsicHeight` this tile sits under.
-class _MiniShape extends StatelessWidget {
-  const _MiniShape({required this.shape});
-
-  final ConstellationShape shape;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return CustomPaint(
-      painter: _MiniShapePainter(
-        shape: shape,
-        pointColor: colors.text,
-        highlightColor: colors.gold,
-        lineColor: colors.muted.withValues(alpha: 0.6),
+      onPressed: onTap,
+      child: Builder(
+        builder: (context) {
+          final color = IconTheme.of(context).color;
+          const iconSize = 18.0;
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.grid_view_rounded, size: iconSize),
+              Container(
+                width: 1.5,
+                height: iconSize * 0.7,
+                margin: const EdgeInsets.symmetric(horizontal: 10),
+                color: color?.withValues(alpha: 0.6),
+              ),
+              const Icon(Icons.draw_outlined, size: iconSize),
+              const SizedBox(width: 14),
+              AppButtonLabel(label, color: colors.muted),
+            ],
+          );
+        },
       ),
     );
   }
-}
-
-class _MiniShapePainter extends CustomPainter {
-  const _MiniShapePainter({
-    required this.shape,
-    required this.pointColor,
-    required this.highlightColor,
-    required this.lineColor,
-  });
-
-  final ConstellationShape shape;
-  final Color pointColor;
-  final Color highlightColor;
-  final Color lineColor;
-
-  static const _inset = 5.0;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // A square as large as the cell allows, centred, so a shape keeps its
-    // proportions whatever the cell's.
-    final side = (size.shortestSide - _inset * 2).clamp(0.0, double.infinity);
-    final left = (size.width - side) / 2;
-    final top = (size.height - side) / 2;
-    ConstellationEditorPainter(
-      points: [
-        for (final p in shape.points)
-          Offset(left + p.dx * side, top + p.dy * side),
-      ],
-      edges: shape.edges,
-      highlightedIndex: null,
-      pointColor: pointColor,
-      highlightColor: highlightColor,
-      lineColor: lineColor,
-      pointRadius: 1.5,
-    ).paint(canvas, size);
-  }
-
-  @override
-  bool shouldRepaint(_MiniShapePainter old) =>
-      old.shape != shape ||
-      old.pointColor != pointColor ||
-      old.lineColor != lineColor;
 }
 
 /// Footprint of every saved-shape preview tile. Big enough that a shape's
@@ -1352,10 +1441,12 @@ class _StretchedTileWrap extends StatelessWidget {
     required this.itemCount,
     required this.minTileWidth,
     required this.itemBuilder,
+    this.columnCount,
   });
 
   final int itemCount;
   final double minTileWidth;
+  final int? columnCount;
   final Widget Function(BuildContext context, int index, double tileWidth)
   itemBuilder;
 
@@ -1367,9 +1458,13 @@ class _StretchedTileWrap extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final maxWidth = constraints.maxWidth;
-        final columns = ((maxWidth + _spacing) / (minTileWidth + _spacing))
-            .floor()
-            .clamp(1, itemCount);
+        // Keep tile widths stable when filtering leaves a partly filled row.
+        final columns =
+            columnCount ??
+            ((maxWidth + _spacing) / (minTileWidth + _spacing)).floor().clamp(
+              1,
+              1000,
+            );
         final tileWidth = (maxWidth - _spacing * (columns - 1)) / columns;
         return Wrap(
           spacing: _spacing,
@@ -1407,6 +1502,9 @@ Future<T?> _showSearchablePicker<T>({
   String? searchHint,
   Widget? header,
   ValueChanged<int>? onSwipe,
+  Widget? searchTrailing,
+  Listenable? filterListenable,
+  bool Function(T item)? additionalMatches,
 }) {
   final sheetHeight = MediaQuery.sizeOf(context).height * 0.85;
   return showFixedAppSheet<T>(
@@ -1422,6 +1520,9 @@ Future<T?> _showSearchablePicker<T>({
       sheetHeight: sheetHeight,
       header: header,
       onSwipe: onSwipe,
+      searchTrailing: searchTrailing,
+      filterListenable: filterListenable,
+      additionalMatches: additionalMatches,
     ),
   );
 }
@@ -1438,6 +1539,9 @@ class _SearchablePickerSheet<T> extends StatefulWidget {
     required this.sheetHeight,
     this.header,
     this.onSwipe,
+    this.searchTrailing,
+    this.filterListenable,
+    this.additionalMatches,
   });
 
   final String title;
@@ -1452,6 +1556,9 @@ class _SearchablePickerSheet<T> extends StatefulWidget {
   bodyBuilder;
   final T? initialSelection;
   final bool showSearch;
+  final Widget? searchTrailing;
+  final Listenable? filterListenable;
+  final bool Function(T item)? additionalMatches;
 
   /// Optional fixed row between the title and the search field (the shape
   /// picker's library / your-shapes switch).
@@ -1490,8 +1597,13 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
 
   List<T> get _filtered {
     final query = _query.trim().toLowerCase();
-    if (query.isEmpty) return widget.items;
-    return widget.items.where((item) => widget.matches(item, query)).toList();
+    return widget.items
+        .where(
+          (item) =>
+              (widget.additionalMatches?.call(item) ?? true) &&
+              (query.isEmpty || widget.matches(item, query)),
+        )
+        .toList();
   }
 
   @override
@@ -1518,10 +1630,17 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
                 const SizedBox(height: 20),
                 StaggeredEntrance(
                   index: 1,
-                  child: AppSearchField(
-                    controller: _queryController,
-                    hintText: widget.searchHint ?? strings.searchHint,
-                    onChanged: (_) {},
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: AppSearchField(
+                          controller: _queryController,
+                          hintText: widget.searchHint ?? strings.searchHint,
+                          onChanged: (_) {},
+                        ),
+                      ),
+                      if (widget.searchTrailing != null) widget.searchTrailing!,
+                    ],
                   ),
                 ),
               ],
@@ -1540,9 +1659,13 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
                           widget.onSwipe!(velocity < 0 ? 1 : -1);
                         },
                   child: ClipRect(
-                    child: ValueListenableBuilder<TextEditingValue>(
-                      valueListenable: _queryController,
-                      builder: (context, _, _) {
+                    child: ListenableBuilder(
+                      listenable: Listenable.merge([
+                        _queryController,
+                        if (widget.filterListenable != null)
+                          widget.filterListenable!,
+                      ]),
+                      builder: (context, _) {
                         final filtered = _filtered;
                         return filtered.isEmpty
                             ? StaggeredEntrance(

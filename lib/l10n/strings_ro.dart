@@ -1174,6 +1174,8 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get myShapesSectionTitle => 'Formele mele';
   @override
+  String get shapesLibraryButtonLabel => 'Colecția de Forme';
+  @override
   String get noCustomShapesYetHint => 'Nu ai desenat încă nicio formă';
   @override
   String get editSelectedShapeAction => 'Editează';
@@ -1206,6 +1208,13 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get iconLabel => 'Pictogramă';
   @override
   String get chooseIconTitle => 'Pictogramă';
+  @override
+  String get menuAreaIconLab => 'Pictogramele domeniilor';
+  @override
+  String get menuAreaIconLabDescription =>
+      'Compară propunerile cu imaginile supernovelor.';
+  @override
+  String get shapeCategoryFilterTitle => 'Categorii';
   @override
   String get pickerConfirmAction => 'OK';
   @override

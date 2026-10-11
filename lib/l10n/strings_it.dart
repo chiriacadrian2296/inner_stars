@@ -1176,6 +1176,8 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get myShapesSectionTitle => 'Le mie forme';
   @override
+  String get shapesLibraryButtonLabel => 'Raccolta Forme';
+  @override
   String get noCustomShapesYetHint => 'Non hai ancora disegnato nessuna forma';
   @override
   String get editSelectedShapeAction => 'Modifica';
@@ -1208,6 +1210,13 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get iconLabel => 'Icona';
   @override
   String get chooseIconTitle => 'Icona';
+  @override
+  String get menuAreaIconLab => 'Icone delle aree';
+  @override
+  String get menuAreaIconLabDescription =>
+      'Confronta le proposte con le art delle supernove.';
+  @override
+  String get shapeCategoryFilterTitle => 'Categorie';
   @override
   String get pickerConfirmAction => 'OK';
   @override

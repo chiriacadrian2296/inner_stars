@@ -1169,6 +1169,8 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get myShapesSectionTitle => 'My Shapes';
   @override
+  String get shapesLibraryButtonLabel => 'Shapes Library';
+  @override
   String get noCustomShapesYetHint => "You haven't drawn any shapes yet";
   @override
   String get editSelectedShapeAction => 'Edit';
@@ -1201,6 +1203,13 @@ My contribution meets a real need and is something I can sustain.
   String get iconLabel => 'Icon';
   @override
   String get chooseIconTitle => 'Icon';
+  @override
+  String get menuAreaIconLab => 'Area icons';
+  @override
+  String get menuAreaIconLabDescription =>
+      'Compare proposals with the supernova artwork.';
+  @override
+  String get shapeCategoryFilterTitle => 'Categories';
   @override
   String get pickerConfirmAction => 'OK';
   @override

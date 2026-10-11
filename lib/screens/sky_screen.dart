@@ -99,6 +99,7 @@ import 'star_form_screen.dart';
 import 'star_reader_screen.dart';
 import 'stats_screen.dart';
 import 'ui_sandbox_screen.dart';
+import 'area_icon_lab_screen.dart';
 import 'visions_screen.dart';
 import 'vision_editor_screen.dart';
 
@@ -1859,6 +1860,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         .push(MaterialPageRoute(builder: (_) => const UiSandboxScreen()));
   }
 
+  void _openAreaIconLab() {
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const AreaIconLabScreen()));
+  }
+
   /// The FAB's own way into the same menu the drawer opens — same content
   /// ([SkyMenuContent], same callbacks), just as a modal sheet from the
   /// bottom instead of a panel from the side. An alternative entry point
@@ -1933,6 +1939,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
               onSettings: _openSettings,
               onMetaphor: _openMetaphor,
               onMoonLab: _openUiSandbox,
+              onAreaIconLab: _openAreaIconLab,
               detailed: true,
               scrollController: scrollController,
               physics: physics,
@@ -3458,6 +3465,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
           onSettings: _openSettings,
           onMetaphor: _openMetaphor,
           onMoonLab: _openUiSandbox,
+          onAreaIconLab: _openAreaIconLab,
         ),
         // Its own [Overlay]: the sky tooltip (see [_buildSkyTooltipOverlay])
         // lives in it, below any route pushed on top, so it is still there

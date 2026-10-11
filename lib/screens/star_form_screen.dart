@@ -1033,9 +1033,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                           // as required same as the field that actually is.
                           requirement: FieldRequirement.required,
                           hint: strings.selectASupernova,
-                          icon:
-                              _selectedArea?.icon ??
-                              Icons.auto_awesome_outlined,
+                          icon: _selectedArea?.icon ?? Icons.flare,
                           text: _selectedArea?.displayName(strings),
                           onTap: _openAreaPicker,
                         ),

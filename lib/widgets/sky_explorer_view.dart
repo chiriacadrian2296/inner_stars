@@ -49,6 +49,7 @@ import 'app_action_disc.dart';
 import 'app_field.dart';
 import 'app_footer_mark.dart';
 import 'filter_button.dart';
+import 'filters_trigger_button.dart';
 import 'project_picker.dart';
 import 'gallery/gallery_cards.dart';
 import 'area_filter_sheet.dart';
@@ -180,7 +181,7 @@ class _SkyEntry {
 /// [_filteredSupernovaAreas]), area + date + sort in Constellations, area +
 /// kind + date + sort in Stars. On a wide layout each filter is its own
 /// button/sheet beside the search field; on a narrow one they're all
-/// collected behind a single trigger instead (see [_ControlsTriggerButton]/
+/// collected behind a single trigger instead (see [FiltersTriggerButton]/
 /// [_ControlsSheet]) so a phone doesn't carry a second permanent row under
 /// the search field on every visit. Either way, each filter is its own
 /// sheet — area
@@ -1696,7 +1697,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
 
   /// Whether any of the filters that actually apply to [_mode] right now is
   /// narrowed/non-default — lights up the mobile "Filtri" trigger button
-  /// (see [_ControlsTriggerButton]) exactly when opening it would reveal at
+  /// (see [FiltersTriggerButton]) exactly when opening it would reveal at
   /// least one button already lit, same "lit vs dark" rule each of those
   /// buttons already follows on its own.
   bool get _isAnyFilterActive =>
@@ -2047,7 +2048,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                                   title: strings.searchTourFilterButtonTitle,
                                   description:
                                       strings.searchTourFilterButtonBody,
-                                  child: _ControlsTriggerButton(
+                                  child: FiltersTriggerButton(
                                     active: _isAnyFilterActive,
                                     tooltip: strings.filtersAction,
                                     onTap: () => _openControlsSheet(context),
@@ -2378,51 +2379,7 @@ class _AreaCard extends StatelessWidget {
   }
 }
 
-/// The one icon button beside the search field. It opens [_ControlsSheet],
-/// and lights up (gold ring, same "lit vs dark" rule as every other filter
-/// button via [selectableDecoration]) whenever a real filter is applied or the
-/// sort differs from its default. The list/grid choice never lights it: that
-/// is a way of looking, not a narrowing of what's shown.
-class _ControlsTriggerButton extends StatelessWidget {
-  const _ControlsTriggerButton({
-    required this.active,
-    required this.tooltip,
-    required this.onTap,
-  });
-
-  final bool active;
-  final String tooltip;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(kRadiusField),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(kRadiusField),
-          child: Container(
-            width: 48,
-            height: 48,
-            alignment: Alignment.center,
-            decoration: selectableDecoration(colors, selected: active),
-            child: Icon(
-              Icons.filter_list,
-              size: 20,
-              color: active ? colors.gold : colors.muted,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// [_ControlsTriggerButton]'s own destination, in three sections: View
+/// [FiltersTriggerButton]'s destination in Sky, in three sections: View
 /// ([SkyViewModeSection]), Filters (every [FilterButton] that applies to the
 /// current mode, two to a row) and Sort. Aree has no filters or sort, so it
 /// shows the view section alone.

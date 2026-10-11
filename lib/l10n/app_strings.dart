@@ -116,6 +116,8 @@ abstract class AppStrings {
   String get menuSettingsDescription;
   String get menuLabSection;
   String get menuMoonLab;
+  String get menuAreaIconLab;
+  String get menuAreaIconLabDescription;
   String get menuMoonLabDescription;
 
   // Placeholder screens — features sketched into the menu ahead of the
@@ -577,6 +579,7 @@ abstract class AppStrings {
   String get drawShapeShort;
   String get resetShapeShort;
   String get shapeSearchHint;
+  String get shapeCategoryFilterTitle;
 
   /// The picker sheet's own two tabs — every ready-made shape vs. the
   /// ones this user has already drawn/saved themselves (formerly a
@@ -585,6 +588,7 @@ abstract class AppStrings {
   String get shapeLibraryTabLabel;
   String get yourShapesTabLabel;
   String get myShapesSectionTitle;
+  String get shapesLibraryButtonLabel;
   String get noCustomShapesYetHint;
   String get editSelectedShapeAction;
 
@@ -631,9 +635,7 @@ abstract class AppStrings {
   String get projectLabel;
   String get selectAProject;
 
-  /// The star form's own supernova field — separate from [areaLabel]
-  /// (the new-project screen's own field for the same thing) only because
-  /// this one needs its own hint text alongside [selectAProject]'s.
+  /// Shared placeholder for the supernova field in every creation tab.
   String get selectASupernova;
   String get dateLabel;
   String get selectADateHint;
