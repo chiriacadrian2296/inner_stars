@@ -1155,10 +1155,6 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get shapeLibraryTitle => 'Constellation Shape';
   @override
-  String get pickFromLibraryShort => 'Shapes';
-  @override
-  String get drawShapeShort => 'Draw';
-  @override
   String get resetShapeShort => 'Reset';
   @override
   String get shapeSearchHint => 'Search shapes';

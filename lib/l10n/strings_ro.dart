@@ -1160,10 +1160,6 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get shapeLibraryTitle => 'Forma Constelației';
   @override
-  String get pickFromLibraryShort => 'Forme';
-  @override
-  String get drawShapeShort => 'Desenează';
-  @override
   String get resetShapeShort => 'Reset';
   @override
   String get shapeSearchHint => 'Caută o formă';

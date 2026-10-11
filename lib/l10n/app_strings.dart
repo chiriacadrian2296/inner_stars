@@ -575,8 +575,6 @@ abstract class AppStrings {
   // same way seed_data.dart owns its own translated project names.
   String get chooseShapeLabel;
   String get shapeLibraryTitle;
-  String get pickFromLibraryShort;
-  String get drawShapeShort;
   String get resetShapeShort;
   String get shapeSearchHint;
   String get shapeCategoryFilterTitle;

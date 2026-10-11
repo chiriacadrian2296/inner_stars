@@ -1162,10 +1162,6 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get shapeLibraryTitle => 'Forma Costellazione';
   @override
-  String get pickFromLibraryShort => 'Forme';
-  @override
-  String get drawShapeShort => 'Disegna';
-  @override
   String get resetShapeShort => 'Reset';
   @override
   String get shapeSearchHint => 'Cerca una forma';
