@@ -468,6 +468,14 @@ class _StarFormScreenState extends State<StarFormScreen> {
   /// as soon as the user's typed or picked anything, not just when editing
   /// one that already existed. Drives whether leaving the page needs a
   /// confirmation first.
+  /// What the last build used for the back-gesture guard. Typing only needs a
+  /// rebuild of the whole form when this flips, not on every keystroke.
+  bool _builtDirty = false;
+
+  void _onTextEdited() {
+    if (_hasUnsavedChanges != _builtDirty) setState(() {});
+  }
+
   bool get _hasUnsavedChanges {
     // The embedded constellation form keeps its own state and is left
     // without the discard prompt.
@@ -964,6 +972,10 @@ class _StarFormScreenState extends State<StarFormScreen> {
     final scaffold = GestureDetector(
       behavior: HitTestBehavior.translucent,
       onHorizontalDragEnd: _switchKindBySwipe,
+      // Claims vertical drags too. A page too short to scroll (Goal) does not
+      // compete for them, so the slightest sideways drift in an up/down drag
+      // used to be the only gesture left and read as a swipe between tiles.
+      onVerticalDragUpdate: (_) {},
       child: Scaffold(
         body: SafeArea(
           child: SingleChildScrollView(
@@ -1067,7 +1079,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                             showCounter: false,
                             textInputAction: TextInputAction.next,
                             hintText: _titleHint(strings),
-                            onChanged: (_) => setState(() {}),
+                            onChanged: (_) => _onTextEdited(),
                           ),
                         ],
                       ),
@@ -1095,7 +1107,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                             minLines: 4,
                             maxLines: 6,
                             hintText: _detailsHint(strings),
-                            onChanged: (_) => setState(() {}),
+                            onChanged: (_) => _onTextEdited(),
                           ),
                         ],
                       ),
@@ -1609,8 +1621,9 @@ class _StarFormScreenState extends State<StarFormScreen> {
       ),
     );
 
+    _builtDirty = _hasUnsavedChanges;
     return PopScope(
-      canPop: !_hasUnsavedChanges,
+      canPop: !_builtDirty,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         await _handleBack();

@@ -1,4 +1,5 @@
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
+import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 import 'package:hint_kit/hint_kit.dart';
 
@@ -325,6 +326,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   late Map<int, ConstellationShape> _shapesByIdCache;
 
   void _refreshDataCache() {
+    _allEntriesMemo.clear();
     _projectsCache = widget.projectRepository.getAll();
     // A constellation deleted since the filter was set can't match anything.
     _projectFilterIds.removeWhere(
@@ -483,7 +485,16 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   /// flat list itself are both drawn from.
   List<_SkyEntry> get _allEntries => _allEntriesFor(_areaFilter);
 
+  // Building and sorting every entry of the sky is the expensive part of
+  // typing in the search box, which asks for it several times per keystroke
+  // (list, count, filter previews) while neither the data nor the areas
+  // change. Callers must treat the result as read-only.
+  final Map<Set<LifeArea>, List<_SkyEntry>> _allEntriesMemo = {};
+
   List<_SkyEntry> _allEntriesFor(Set<LifeArea> areas) {
+    for (final cached in _allEntriesMemo.entries) {
+      if (setEquals(cached.key, areas)) return cached.value;
+    }
     final projectIds = _areaProjectsFor(areas).map((p) => p.id).toSet();
     final entries = <_SkyEntry>[
       for (final star in _starsCache)
@@ -492,6 +503,8 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         if (projectIds.contains(habit.projectId)) _SkyEntry.fromHabit(habit),
     ];
     entries.sort((a, b) => b.sortKey.compareTo(a.sortKey));
+    // The key is copied: the live filter set is mutated in place elsewhere.
+    _allEntriesMemo[{...areas}] = entries;
     return entries;
   }
 

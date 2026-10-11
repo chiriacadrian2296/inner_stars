@@ -1,4 +1,6 @@
+import '../models/reflection_group.dart';
 import 'app_strings.dart';
+import 'reflection_groups_ro.dart';
 
 class StringsRo implements AppStrings {
   @override
@@ -144,61 +146,28 @@ class StringsRo implements AppStrings {
       'Impactul tău — a dărui, a sluji și viețile celorlalți.';
 
   @override
-  List<String> get reflectionQuestionsPhysical => const [
-    'Cum te simți în corpul tău în perioada asta?',
-    'Ce faci în mod regulat pentru a avea grijă de sănătatea ta?',
-    'Care este un obicei fizic pe care ai vrea să-l construiești, și ce te oprește?',
-    'Când te simți cel mai energic în timpul zilei? Ce provoacă asta?',
-  ];
+  List<ReflectionGroup> get reflectionGroupsPhysical =>
+      reflectionGroupsPhysicalRo;
   @override
-  List<String> get reflectionQuestionsPsychological => const [
-    'Ce te apasă cel mai mult din punct de vedere mental acum?',
-    'Cum gestionezi stresul când apare?',
-    'Ce gând recurent ai vrea să lași să plece?',
-    'Ce te face să te simți calm și centrat?',
-  ];
+  List<ReflectionGroup> get reflectionGroupsPsychological =>
+      reflectionGroupsPsychologicalRo;
   @override
-  List<String> get reflectionQuestionsProfessional => const [
-    'Te simți împlinit în munca pe care o faci? De ce?',
-    'Care este următoarea abilitate pe care vrei să o dezvolți?',
-    'Ce ar face munca ta mai plină de sens?',
-    'Unde te vezi profesional peste un an?',
-  ];
+  List<ReflectionGroup> get reflectionGroupsProfessional =>
+      reflectionGroupsProfessionalRo;
   @override
-  List<String> get reflectionQuestionsFinancial => const [
-    'Ce relație ai cu banii?',
-    'Ce te îngrijorează cel mai mult în privința finanțelor tale?',
-    'Care este un obiectiv financiar concret pentru lunile următoare?',
-    'Ce ar însemna pentru tine siguranța financiară?',
-  ];
+  List<ReflectionGroup> get reflectionGroupsFinancial =>
+      reflectionGroupsFinancialRo;
   @override
-  List<String> get reflectionQuestionsPersonal => const [
-    'Ce înveți despre tine în ultima vreme?',
-    'Ce valoare te ghidează cel mai mult în alegerile tale?',
-    'Ce ai vrea să nu mai amâni?',
-    'De ce ești mândru, chiar dacă e ceva mic?',
-  ];
+  List<ReflectionGroup> get reflectionGroupsPersonal =>
+      reflectionGroupsPersonalRo;
   @override
-  List<String> get reflectionQuestionsSocial => const [
-    'Cu cine ai vrea să petreci mai mult timp?',
-    'Cum ai grijă de relațiile tale cele mai importante?',
-    'Există o relație care are nevoie de atenția ta acum?',
-    'Ce cauți cu adevărat la oamenii din jurul tău?',
-  ];
+  List<ReflectionGroup> get reflectionGroupsSocial => reflectionGroupsSocialRo;
   @override
-  List<String> get reflectionQuestionsSpiritual => const [
-    'Ce dă sens zilelor tale?',
-    'În ce momente te simți conectat la ceva mai mare decât tine?',
-    'Cum cultivi pacea interioară?',
-    'Ce înseamnă pentru tine să trăiești autentic?',
-  ];
+  List<ReflectionGroup> get reflectionGroupsSpiritual =>
+      reflectionGroupsSpiritualRo;
   @override
-  List<String> get reflectionQuestionsPhilanthropic => const [
-    'Cum contribui la ceva mai mare decât tine?',
-    'Pe cine ai ajutat recent, și cum te-a făcut să te simți?',
-    'Ce cauză îți este dragă, și de ce?',
-    'Ce ai putea oferi — timp, abilități, energie — pe care nu-l oferi încă?',
-  ];
+  List<ReflectionGroup> get reflectionGroupsPhilanthropic =>
+      reflectionGroupsPhilanthropicRo;
   @override
   String get reflectionQuestionsSectionLabel => 'Întrebări';
   @override
@@ -392,7 +361,6 @@ class StringsRo implements AppStrings {
   String get todayLabel => 'Azi';
   @override
   String get starsLoggedLabel => 'Stele notate';
-  @override
   @override
   String get noCurrentStreakBody =>
       'Nicio serie activă acum. Aprinde o stea azi ca să începi una.';
@@ -1204,6 +1172,8 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get yourShapesTabLabel => 'Formele tale';
   @override
+  String get myShapesSectionTitle => 'Formele mele';
+  @override
   String get noCustomShapesYetHint => 'Nu ai desenat încă nicio formă';
   @override
   String get editSelectedShapeAction => 'Editează';
@@ -1387,6 +1357,9 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get cropPhotoHint =>
       'Ciupește și trage pentru a încadra fotografia în cadru';
+  @override
+  String get cropSafeZoneHint =>
+      'Păstrează ce contează între linii: telefoanele înalte arată doar acea parte';
   @override
   String get saveChanges => 'Salvează';
   @override

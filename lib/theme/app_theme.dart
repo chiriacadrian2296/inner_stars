@@ -116,9 +116,50 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
     colorScheme: ColorScheme.dark(
       primary: palette.gold,
       onPrimary: palette.onGold,
+      primaryContainer: palette.gold,
+      onPrimaryContainer: palette.onGold,
+      primaryFixed: palette.gold,
+      primaryFixedDim: palette.gold,
+      onPrimaryFixed: palette.onGold,
+      onPrimaryFixedVariant: palette.onGold,
+      // Define every accent role centrally: Material defaults must never
+      // introduce teal or purple into new controls.
+      secondary: palette.gold,
+      onSecondary: palette.onGold,
+      secondaryContainer: palette.gold,
+      onSecondaryContainer: palette.onGold,
+      secondaryFixed: palette.gold,
+      secondaryFixedDim: palette.gold,
+      onSecondaryFixed: palette.onGold,
+      onSecondaryFixedVariant: palette.onGold,
+      tertiary: palette.gold,
+      onTertiary: palette.onGold,
+      tertiaryContainer: palette.gold,
+      onTertiaryContainer: palette.onGold,
+      tertiaryFixed: palette.gold,
+      tertiaryFixedDim: palette.gold,
+      onTertiaryFixed: palette.onGold,
+      onTertiaryFixedVariant: palette.onGold,
       surface: palette.nightPanel,
       onSurface: palette.text,
+      surfaceDim: palette.night,
+      surfaceBright: palette.nightPanel,
+      surfaceContainerLowest: palette.night,
+      surfaceContainerLow: palette.nightPanel,
+      surfaceContainer: palette.nightPanel,
+      surfaceContainerHigh: palette.nightPanel,
+      surfaceContainerHighest: palette.nightBorder,
+      onSurfaceVariant: palette.muted,
+      outline: palette.muted,
+      outlineVariant: palette.nightBorder,
+      inverseSurface: palette.text,
+      onInverseSurface: palette.night,
+      inversePrimary: palette.onGold,
+      surfaceTint: palette.gold,
       error: palette.danger,
+      onError: palette.night,
+      errorContainer: palette.dangerBackground,
+      onErrorContainer: palette.text,
     ),
     // Instrument Sans is the app's one default typeface — every widget that
     // doesn't ask for [kFontStarTitle], [kFontBranding] or [kFontMono] by
@@ -306,10 +347,7 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
     ),
     dividerTheme: DividerThemeData(color: palette.nightBorder, thickness: 1),
     iconTheme: IconThemeData(color: palette.muted),
-    // Material 3's default (teal, from an unset colorScheme.secondary) shows
-    // through on the time picker's AM/PM and hour/minute toggles otherwise —
-    // themed explicitly here so any time/date picker anywhere in the app
-    // stays on-brand, not just the one screen that first surfaced it.
+    // Picker surfaces and toggles share the app's night/gold palette.
     timePickerTheme: TimePickerThemeData(
       // The dialog is the deepest surface; its internal controls sit one
       // level above it, matching fields/cards elsewhere in the app.
@@ -353,9 +391,7 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
       ),
       entryModeIconColor: palette.muted,
     ),
-    // Same reasoning as timePickerTheme above: keep the date picker (used
-    // when backdating a star, and for the search date-range filter) on-brand
-    // instead of Material 3's default teal.
+    // Match the date picker to the same surfaces and selected states.
     datePickerTheme: DatePickerThemeData(
       backgroundColor: palette.night,
       surfaceTintColor: Colors.transparent,
@@ -372,11 +408,7 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
       ),
       cancelButtonStyle: pickerCancelButtonStyle,
       confirmButtonStyle: pickerConfirmButtonStyle,
-      // The connecting band `showDateRangePicker` paints behind an in-range
-      // day (confirmed live: without this it defaults to
-      // `colorScheme.secondaryContainer`, which `ColorScheme.dark()` leaves
-      // at Material's own hardcoded teal since this app never sets it) — a
-      // light wash of the same gold everything else here burns with.
+      // A translucent gold band keeps the range readable behind day labels.
       rangeSelectionBackgroundColor: palette.gold.withValues(alpha: 0.22),
       // Selected wins over "is today" — otherwise the day number renders
       // gold-on-gold (invisible) when today happens to be the selected day,

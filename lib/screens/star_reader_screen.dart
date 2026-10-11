@@ -1050,7 +1050,15 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                               Positioned.fill(
                                 child: Center(
                                   child: SingleChildScrollView(
-                                    padding: EdgeInsets.fromLTRB(12, 0, 12, 24),
+                                    // Roomier in the wide frame, where the text
+                                    // would otherwise run edge to edge of the
+                                    // photo.
+                                    padding: EdgeInsets.fromLTRB(
+                                      wideFrameWidth != null ? 32 : 12,
+                                      0,
+                                      wideFrameWidth != null ? 32 : 12,
+                                      24,
+                                    ),
                                     child: ResponsiveContent(
                                       maxWidth: contentMaxWidth,
                                       // Fade-through: the star leaving fades out

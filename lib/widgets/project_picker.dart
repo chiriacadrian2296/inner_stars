@@ -172,8 +172,11 @@ class _FlatProjectPickerSheet extends StatefulWidget {
 }
 
 class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
-  String _query = '';
   final _queryController = TextEditingController();
+
+  // Read from the controller, not mirrored into state: typing then rebuilds
+  // only the list (see [build]) instead of the whole sheet on every key.
+  String get _query => _queryController.text;
 
   @override
   void dispose() {
@@ -379,6 +382,22 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
 
   bool get _canApply => !setEquals(_selectedIds, widget.filterIds);
 
+  // The preview counts the whole sky, which is far too much work to repeat on
+  // every keystroke of the search box — and typing never changes it, only the
+  // selection does. So it is recomputed only when the selection differs from
+  // the one it was last computed for.
+  Set<int>? _previewSelection;
+  Widget? _previewRow;
+
+  Widget _previewRowFor(FilterPreview<Set<int>> preview) {
+    final cached = _previewRow;
+    if (cached != null && setEquals(_previewSelection, _selectedIds)) {
+      return cached;
+    }
+    _previewSelection = {..._selectedIds};
+    return _previewRow = preview.rowFor(_selectedIds);
+  }
+
   void _apply() => Navigator.of(context).pop(_ProjectIdsChosen(_selectedIds));
 
   /// The filter's chip: tapping toggles it; Apply commits.
@@ -405,7 +424,6 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final strings = context.strings;
-    final filtered = _filtered;
     return SafeArea(
       child: SizedBox(
         height: _sheetHeight(context),
@@ -428,7 +446,7 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
                       child: AppSearchField(
                         controller: _queryController,
                         hintText: strings.searchHint,
-                        onChanged: (value) => setState(() => _query = value),
+                        onChanged: (_) {},
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -443,63 +461,72 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
               const SizedBox(height: 20),
               Expanded(
                 child: ClipRect(
-                  child: filtered.isEmpty
-                      ? StaggeredEntrance(
-                          index: 3,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 24),
-                            child: Center(
-                              child: Text(
-                                _query.isEmpty
-                                    ? strings.noProjectsYet
-                                    : strings.noSearchResults,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: colors.muted,
-                                  fontSize: 14,
+                  child: ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _queryController,
+                    builder: (context, _, _) {
+                      final filtered = _filtered;
+                      return filtered.isEmpty
+                          ? StaggeredEntrance(
+                              index: 3,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 24,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    _query.isEmpty
+                                        ? strings.noProjectsYet
+                                        : strings.noSearchResults,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: colors.muted,
+                                      fontSize: 14,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                        )
-                      : _instantPick
-                      ? ListView.separated(
-                          itemCount: filtered.length,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: 10),
-                          itemBuilder: (context, index) => StaggeredEntrance(
-                            index: index + 3,
-                            child: _projectRow(filtered[index]),
-                          ),
-                        )
-                      : ListView.separated(
-                          itemCount: (filtered.length + 1) ~/ 2,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: 10),
-                          itemBuilder: (context, row) => Row(
-                            children: [
-                              for (var col = 0; col < 2; col++) ...[
-                                if (col > 0) const SizedBox(width: 10),
-                                Expanded(
-                                  child: row * 2 + col < filtered.length
-                                      ? StaggeredEntrance(
-                                          index: row + col + 3,
-                                          axis: Axis.horizontal,
-                                          child: _projectChip(
-                                            filtered[row * 2 + col],
-                                          ),
-                                        )
-                                      : const SizedBox.shrink(),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
+                            )
+                          : _instantPick
+                          ? ListView.separated(
+                              itemCount: filtered.length,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(height: 10),
+                              itemBuilder: (context, index) =>
+                                  StaggeredEntrance(
+                                    index: index + 3,
+                                    child: _projectRow(filtered[index]),
+                                  ),
+                            )
+                          : ListView.separated(
+                              itemCount: (filtered.length + 1) ~/ 2,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(height: 10),
+                              itemBuilder: (context, row) => Row(
+                                children: [
+                                  for (var col = 0; col < 2; col++) ...[
+                                    if (col > 0) const SizedBox(width: 10),
+                                    Expanded(
+                                      child: row * 2 + col < filtered.length
+                                          ? StaggeredEntrance(
+                                              index: row + col + 3,
+                                              axis: Axis.horizontal,
+                                              child: _projectChip(
+                                                filtered[row * 2 + col],
+                                              ),
+                                            )
+                                          : const SizedBox.shrink(),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            );
+                    },
+                  ),
                 ),
               ),
               if (_showPreview) ...[
                 const SizedBox(height: 20),
-                Align(child: widget.preview!.rowFor(_selectedIds)),
+                Align(child: _previewRowFor(widget.preview!)),
                 const SizedBox(height: 16),
               ] else
                 const SizedBox(height: 24),

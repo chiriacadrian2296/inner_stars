@@ -38,6 +38,7 @@ import 'pulsar_reader_screen.dart';
 import 'star_form_screen.dart';
 import 'star_reader_screen.dart';
 import 'stat_detail_screen.dart';
+import 'celebration_stats_screen.dart';
 
 /// In-memory working context of the Statistics page. Owned by Cosmo (like
 /// [SkyExplorerSession] for the Sky) so leaving the page and coming back
@@ -422,6 +423,22 @@ class _StatsScreenState extends State<StatsScreen> {
                     child: Text(
                       strings.statsTitle,
                       style: context.typography.utilityPageTitle,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.auto_awesome),
+                    label: Text(switch (strings.languageCode) {
+                      'it' => 'Prova le nuove statistiche',
+                      'ro' => 'Încearcă noile statistici',
+                      _ => 'Try the new statistics',
+                    }),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(builder: (_) => CelebrationStatsScreen(
+                        starRepository: widget.starRepository,
+                        habitRepository: widget.habitRepository,
+                        completionRepository: widget.habitCompletionRepository,
+                      )),
                     ),
                   ),
                   ..._pulsarSection(context),

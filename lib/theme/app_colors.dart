@@ -32,11 +32,8 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color nightBorder;
   final Color gold;
 
-  /// A dim, muted blue — the app's one "secondary accent": eyebrow labels,
-  /// menu section headers, and other small, quiet text/icons that need to
-  /// read as present but not as burning. Deliberately blue, not a dimmed
-  /// gold — gold is reserved for what's actually lit, so a merely
-  /// informational label was never really a dim gold to begin with.
+  /// A warm neutral for secondary labels and informational text. Gold is
+  /// reserved for lit elements and interactive accents.
   final Color accentDim;
   final Color text;
   final Color muted;
@@ -96,7 +93,7 @@ class AppColors extends ThemeExtension<AppColors> {
     nightPanel: Color(0xFF161D30),
     nightBorder: Color(0xFF232C44),
     gold: Color(0xFFF2B84B),
-    accentDim: Color(0xFF7C8FC4),
+    accentDim: Color(0xFFADA79C),
     text: Color(0xFFF4F1E8),
     muted: Color(0xFF7C8699),
     onGold: Color(0xFF241A04),

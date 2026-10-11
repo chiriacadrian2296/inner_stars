@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../data/reflection_answer_repository.dart';
@@ -30,7 +32,16 @@ class ReflectionQuestionsSectionState
   Widget build(BuildContext context) {
     final colors = context.colors;
     final strings = context.strings;
+    final groups = widget.area.reflectionGroups(strings);
     final questions = widget.area.reflectionQuestions(strings);
+    // Where each group's first question sits in the flattened list; a
+    // question's id is that flat position.
+    final offsets = <int>[];
+    var running = 0;
+    for (final group in groups) {
+      offsets.add(running);
+      running += group.questions.length;
+    }
     final answeredCount = widget.repository
         .getAnswersForArea(widget.area)
         .length;
@@ -74,18 +85,36 @@ class ReflectionQuestionsSectionState
           ),
         ),
         const SizedBox(height: 14),
-        for (var i = 0; i < questions.length; i++) ...[
+        for (var g = 0; g < groups.length; g++) ...[
+          if (g > 0) const SizedBox(height: 10),
           StaggeredEntrance(
-            index: 2 + i,
-            child: _ReflectionQuestionTile(
-              area: widget.area,
-              questionId: '$i',
-              questionText: questions[i],
-              repository: widget.repository,
-              onSaved: () => setState(() {}),
+            index: 2 + offsets[g] + g,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 10),
+              child: Text(
+                groups[g].title,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.4,
+                  color: colors.muted,
+                ),
+              ),
             ),
           ),
-          if (i != questions.length - 1) const SizedBox(height: 10),
+          for (var q = 0; q < groups[g].questions.length; q++) ...[
+            StaggeredEntrance(
+              index: 3 + offsets[g] + g + q,
+              child: _ReflectionQuestionTile(
+                area: widget.area,
+                questionId: '${offsets[g] + q}',
+                questionText: groups[g].questions[q],
+                repository: widget.repository,
+                onSaved: () => setState(() {}),
+              ),
+            ),
+            if (q != groups[g].questions.length - 1) const SizedBox(height: 10),
+          ],
         ],
       ],
     );
@@ -137,7 +166,19 @@ class _ReflectionQuestionTileState extends State<_ReflectionQuestionTile> {
     if (!_focusNode.hasFocus) _save();
   }
 
+  // Typing saves after a pause rather than on every key: the write and the
+  // parent's rebuild (onSaved) are far heavier than a keystroke should cost.
+  // Losing focus, collapsing and dispose all still flush it immediately.
+  Timer? _saveDebounce;
+
+  void _saveSoon() {
+    _saveDebounce?.cancel();
+    _saveDebounce = Timer(const Duration(milliseconds: 600), _save);
+  }
+
   Future<void> _save() async {
+    _saveDebounce?.cancel();
+    _saveDebounce = null;
     await widget.repository.setAnswer(
       widget.area,
       widget.questionId,
@@ -158,6 +199,15 @@ class _ReflectionQuestionTileState extends State<_ReflectionQuestionTile> {
 
   @override
   void dispose() {
+    if (_saveDebounce?.isActive ?? false) {
+      _saveDebounce!.cancel();
+      widget.repository.setAnswer(
+        widget.area,
+        widget.questionId,
+        answerText: _controller.text,
+        intensity: _intensity,
+      );
+    }
     _focusNode.removeListener(_handleFocusChange);
     _focusNode.dispose();
     _controller.dispose();
@@ -230,7 +280,7 @@ class _ReflectionQuestionTileState extends State<_ReflectionQuestionTile> {
                           index: 0,
                           child: TextField(
                             controller: _controller,
-                            onChanged: (_) => _save(),
+                            onChanged: (_) => _saveSoon(),
                             focusNode: _focusNode,
                             minLines: 3,
                             maxLines: null,

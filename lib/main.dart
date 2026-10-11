@@ -67,8 +67,30 @@ Future<void> main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+  // TEMP-PERF: frame timing probe, remove after the keyboard-lag diagnosis.
+  WidgetsBinding.instance.addTimingsCallback((timings) {
+    final view = WidgetsBinding.instance.platformDispatcher.views.first;
+    final kb = view.viewInsets.bottom > 0;
+    var route = '?';
+    _probeNav?.currentState?.popUntil((r) {
+      route = '${r.settings.name ?? r.runtimeType}';
+      return true;
+    });
+    for (final t in timings) {
+      final build = t.buildDuration.inMicroseconds / 1000;
+      final raster = t.rasterDuration.inMicroseconds / 1000;
+      if (build > 8 || raster > 8) {
+        debugPrint(
+          'FT kb=$kb route=$route build=${build.toStringAsFixed(1)} '
+          'raster=${raster.toStringAsFixed(1)}',
+        );
+      }
+    }
+  });
   runApp(const InnerStarsApp());
 }
+
+GlobalKey<NavigatorState>? _probeNav; // TEMP-PERF
 
 class InnerStarsApp extends StatefulWidget {
   const InnerStarsApp({super.key});
@@ -104,6 +126,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
   @override
   void initState() {
     super.initState();
+    _probeNav = _navigatorKey; // TEMP-PERF
     _load();
   }
 

@@ -322,7 +322,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
 
   /// The shape picker sheet — presets ([starsShapePresets], grouped by
   /// [PresetCategory]) and this user's own already-saved shapes, switched
-  /// between by [_ShapePickerTabs] rather than living in two separate
+  /// between by [_ShapePickerSwitch] rather than living in two separate
   /// places on the form (a saved shape used to have its own "Your
   /// constellations" section below, each tile with its own edit pencil —
   /// see [_editSelectedShape] for where that moved to instead). One
@@ -342,10 +342,24 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
         ? _CustomChoice(_selectedStarsShape!)
         : null;
 
+    // Opens on whichever tab already holds the current selection — no
+    // reason to land on the library if what's picked right now is one of
+    // this user's own shapes.
+    final tab = ValueNotifier(
+      currentSelection is _CustomChoice
+          ? _ShapePickerTab.yourShapes
+          : _ShapePickerTab.library,
+    );
     final picked = await _showSearchablePicker<_ShapePickerChoice>(
       context: context,
       title: strings.shapeLibraryTitle,
       searchHint: strings.shapeSearchHint,
+      header: _ShapePickerSwitch(tab: tab),
+      onSwipe: (direction) {
+        final tabs = _ShapePickerTab.values;
+        final next = tab.value.index + direction;
+        if (next >= 0 && next < tabs.length) tab.value = tabs[next];
+      },
       items: items,
       matches: (choice, query) => switch (choice) {
         _PresetChoice(:final preset) =>
@@ -357,13 +371,8 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
       },
       initialSelection: currentSelection,
       bodyBuilder: (context, filtered, selected, onSelect) {
-        return _ShapePickerTabs(
-          // Opens on whichever tab already holds the current selection —
-          // no reason to land on the library if what's picked right now
-          // is one of this user's own shapes.
-          initialTab: currentSelection is _CustomChoice
-              ? _ShapePickerTab.yourShapes
-              : _ShapePickerTab.library,
+        return _ShapePickerBody(
+          tab: tab,
           libraryBuilder: (context) => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -374,21 +383,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                 if (filtered.any(
                   (c) => c is _PresetChoice && c.preset.category == category,
                 )) ...[
-                  StaggeredEntrance(
-                    index: 1,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(2, 12, 2, 8),
-                      child: Text(
-                        category.name.of(language),
-                        style: TextStyle(
-                          fontSize: 12,
-                          letterSpacing: 1.2,
-                          fontWeight: FontWeight.w600,
-                          color: context.colors.gold,
-                        ),
-                      ),
-                    ),
-                  ),
+                  _ShapeSectionHeading(category.name.of(language)),
                   Builder(
                     builder: (context) {
                       final categoryItems = filtered
@@ -439,24 +434,32 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                 ),
               );
             }
-            return _StretchedTileWrap(
-              minTileWidth: _constellationPreviewSide,
-              itemCount: customItems.length,
-              itemBuilder: (context, index, tileWidth) {
-                final custom = customItems[index].custom;
-                return StaggeredEntrance(
-                  index: index + 2,
-                  child: _ShapeTile(
-                    shape: custom.shape,
-                    label: custom.name,
-                    selected:
-                        selected is _CustomChoice &&
-                        selected.custom.id == custom.id,
-                    onTap: () => onSelect(_CustomChoice(custom)),
-                    side: tileWidth,
-                  ),
-                );
-              },
+            // One "My Shapes" section, headed like a library category purely
+            // for visual consistency between the two tabs.
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _ShapeSectionHeading(strings.myShapesSectionTitle),
+                _StretchedTileWrap(
+                  minTileWidth: _shapeTileMinSide,
+                  itemCount: customItems.length,
+                  itemBuilder: (context, index, tileWidth) {
+                    final custom = customItems[index].custom;
+                    return StaggeredEntrance(
+                      index: index + 2,
+                      child: _ShapeTile(
+                        shape: custom.shape,
+                        label: custom.name,
+                        selected:
+                            selected is _CustomChoice &&
+                            selected.custom.id == custom.id,
+                        onTap: () => onSelect(_CustomChoice(custom)),
+                        side: tileWidth,
+                      ),
+                    );
+                  },
+                ),
+              ],
             );
           },
         );
@@ -684,8 +687,8 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
         // — sized to the same width as the Area field above it
         // (same 3:1 split, same gap, over the same total row
         // width) so the two line up rather than matching by
-        // coincidence. The three ways to change it fill the
-        // space that leaves on the right, stacked to match
+        // coincidence. The way into the shape library fills the
+        // space that leaves on the right, stretched to match
         // whatever height that makes the preview (square, so
         // wider now also means taller) via [IntrinsicHeight] +
         // `stretch` rather than a guessed fixed height.
@@ -697,10 +700,6 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Label + preview together, separate from each of
-                  // the three buttons on the right — each gets its
-                  // own tour step now instead of one combined
-                  // highlight over the whole section.
                   HintTarget(
                     tour: 'constellation-form',
                     order: 1,
@@ -733,36 +732,18 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                   ),
                   const SizedBox(width: gap),
                   Expanded(
-                    // `stretch`, not the Column default `center`
-                    // — [Expanded] alone only shares out the
-                    // *height* between the three buttons; without
-                    // this each one would still shrink-wrap to
-                    // its own icon+label width and sit centered
-                    // in the middle of this slot instead of
-                    // actually filling it edge to edge, the same
-                    // width as the icon field above.
+                    // `stretch`, not the Column default `center`: the tile
+                    // must fill this slot edge to edge, not shrink-wrap.
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Invisible — reserves exactly the label's
-                        // own height above the preview on the left
-                        // (see the `HintTarget` above), so this
-                        // side stays the same height as *just the
-                        // square*, matching it the way the three
-                        // buttons are meant to (see the comment on
-                        // the `LayoutBuilder` above). Without this,
-                        // `IntrinsicHeight` balances the row
-                        // against label-plus-square on the left —
-                        // taller than the square alone — and
-                        // stretches these buttons to that taller
-                        // height too, leaving them visibly taller
-                        // than the preview they're supposed to
-                        // match. `Visibility.maintainSize` over a
-                        // real (if invisible) `AppFieldLabel`
-                        // guarantees the exact same height as the
-                        // real one, regardless of locale or text
-                        // scale — a bare `SizedBox` would have to
-                        // guess that number instead of matching it.
+                        // Invisible — reserves exactly the label's own
+                        // height above the preview on the left, so this
+                        // side matches *just the square*; otherwise
+                        // `IntrinsicHeight` stretches the tile to the
+                        // taller label-plus-square. `Visibility` over a real
+                        // `AppFieldLabel` matches it for any locale or text
+                        // scale, where a bare `SizedBox` would guess.
                         Visibility(
                           visible: false,
                           maintainSize: true,
@@ -907,7 +888,7 @@ class _ShapeThumbnail extends StatelessWidget {
 /// [StarsShapePreset] or one of this user's own saved
 /// [StarsShape]s — wrapped in a common type so
 /// `_NewProjectScreenState._openLibrary`'s single searchable sheet (see
-/// [_ShapePickerTabs]) can hold both kinds of item without the picker
+/// [_ShapePickerSwitch]) can hold both kinds of item without the picker
 /// shell itself needing to know shapes come from two different places.
 sealed class _ShapePickerChoice {
   const _ShapePickerChoice();
@@ -925,30 +906,15 @@ class _CustomChoice extends _ShapePickerChoice {
 
 enum _ShapePickerTab { library, yourShapes }
 
-/// The shape picker sheet's own body: a small segmented switch between
-/// [_ShapePickerTab.library] (every ready-made [StarsShapePreset]) and
-/// [_ShapePickerTab.yourShapes] (this user's own saved ones) — a local
-/// [StatefulWidget] rather than plumbing the active tab up through
-/// `_NewProjectScreenState` itself, since which tab is showing is purely
-/// this sheet's own transient UI state, gone the moment it closes either
-/// way.
-class _ShapePickerTabs extends StatefulWidget {
-  const _ShapePickerTabs({
-    required this.initialTab,
-    required this.libraryBuilder,
-    required this.yourShapesBuilder,
-  });
+/// The shape picker sheet's switch between [_ShapePickerTab.library] (every
+/// ready-made [StarsShapePreset]) and [_ShapePickerTab.yourShapes] (this
+/// user's own saved ones). It sits above the search field, like the Sky's
+/// mode switch; the active tab lives in a [ValueNotifier] owned by
+/// `_NewProjectScreenState._openLibrary` so [_ShapePickerBody] can follow it.
+class _ShapePickerSwitch extends StatelessWidget {
+  const _ShapePickerSwitch({required this.tab});
 
-  final _ShapePickerTab initialTab;
-  final WidgetBuilder libraryBuilder;
-  final WidgetBuilder yourShapesBuilder;
-
-  @override
-  State<_ShapePickerTabs> createState() => _ShapePickerTabsState();
-}
-
-class _ShapePickerTabsState extends State<_ShapePickerTabs> {
-  late _ShapePickerTab _tab = widget.initialTab;
+  final ValueNotifier<_ShapePickerTab> tab;
 
   @override
   Widget build(BuildContext context) {
@@ -962,19 +928,17 @@ class _ShapePickerTabsState extends State<_ShapePickerTabs> {
 
     // The same rolling switch as the Sky's mode and view switches; the
     // names are tooltips since the switch itself is icons only.
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        StaggeredEntrance(
-          index: 2,
-          child: Center(
-            child: SizedBox(
-              width: 104,
-              child: AnimatedToggleSwitch<_ShapePickerTab>.rolling(
+    return Center(
+      child: SizedBox(
+        width: 104,
+        child: ValueListenableBuilder<_ShapePickerTab>(
+          valueListenable: tab,
+          builder: (context, current, _) =>
+              AnimatedToggleSwitch<_ShapePickerTab>.rolling(
                 height: 40,
-                current: _tab,
+                current: current,
                 values: _ShapePickerTab.values,
-                onChanged: (tab) => setState(() => _tab = tab),
+                onChanged: (value) => tab.value = value,
                 borderWidth: kBorderWidth,
                 iconOpacity: 1.0,
                 iconBuilder: (value, size) => Tooltip(
@@ -984,7 +948,7 @@ class _ShapePickerTabsState extends State<_ShapePickerTabs> {
                         ? Icons.grid_view_rounded
                         : Icons.draw_outlined,
                     size: 20,
-                    color: value == _tab ? colors.night : colors.muted,
+                    color: value == current ? colors.night : colors.muted,
                   ),
                 ),
                 style: ToggleStyle(
@@ -995,15 +959,59 @@ class _ShapePickerTabsState extends State<_ShapePickerTabs> {
                   indicatorBorderRadius: BorderRadius.circular(kRadiusField),
                 ),
               ),
-            ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The shape picker sheet's scrolling body: whichever tab [tab] currently
+/// names.
+class _ShapePickerBody extends StatelessWidget {
+  const _ShapePickerBody({
+    required this.tab,
+    required this.libraryBuilder,
+    required this.yourShapesBuilder,
+  });
+
+  final ValueNotifier<_ShapePickerTab> tab;
+  final WidgetBuilder libraryBuilder;
+  final WidgetBuilder yourShapesBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<_ShapePickerTab>(
+      valueListenable: tab,
+      builder: (context, current, _) => switch (current) {
+        _ShapePickerTab.library => libraryBuilder(context),
+        _ShapePickerTab.yourShapes => yourShapesBuilder(context),
+      },
+    );
+  }
+}
+
+/// A category-style heading in the shape picker ("Nature", "My Shapes", ...).
+class _ShapeSectionHeading extends StatelessWidget {
+  const _ShapeSectionHeading(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return StaggeredEntrance(
+      index: 1,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(2, 12, 2, 8),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 12,
+            letterSpacing: 1.2,
+            fontWeight: FontWeight.w600,
+            color: context.colors.gold,
           ),
         ),
-        const SizedBox(height: 12),
-        switch (_tab) {
-          _ShapePickerTab.library => widget.libraryBuilder(context),
-          _ShapePickerTab.yourShapes => widget.yourShapesBuilder(context),
-        },
-      ],
+      ),
     );
   }
 }
@@ -1397,6 +1405,8 @@ Future<T?> _showSearchablePicker<T>({
   T? initialSelection,
   bool showSearch = true,
   String? searchHint,
+  Widget? header,
+  ValueChanged<int>? onSwipe,
 }) {
   final sheetHeight = MediaQuery.sizeOf(context).height * 0.85;
   return showFixedAppSheet<T>(
@@ -1410,6 +1420,8 @@ Future<T?> _showSearchablePicker<T>({
       showSearch: showSearch,
       searchHint: searchHint,
       sheetHeight: sheetHeight,
+      header: header,
+      onSwipe: onSwipe,
     ),
   );
 }
@@ -1424,6 +1436,8 @@ class _SearchablePickerSheet<T> extends StatefulWidget {
     required this.showSearch,
     required this.searchHint,
     required this.sheetHeight,
+    this.header,
+    this.onSwipe,
   });
 
   final String title;
@@ -1439,6 +1453,14 @@ class _SearchablePickerSheet<T> extends StatefulWidget {
   final T? initialSelection;
   final bool showSearch;
 
+  /// Optional fixed row between the title and the search field (the shape
+  /// picker's library / your-shapes switch).
+  final Widget? header;
+
+  /// Called with +1 (next) or -1 (previous) on a horizontal swipe over the
+  /// results.
+  final ValueChanged<int>? onSwipe;
+
   /// What the search box says when empty — the sheet is shared by pickers
   /// searching quite different things (icons, shapes), so the generic
   /// "search by title or description" doesn't fit all of them. Falls back to
@@ -1452,8 +1474,11 @@ class _SearchablePickerSheet<T> extends StatefulWidget {
 }
 
 class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
-  String _query = '';
   final _queryController = TextEditingController();
+
+  // Read from the controller, not mirrored into state: typing then rebuilds
+  // only the results (see [build]) instead of the whole sheet on every key.
+  String get _query => _queryController.text;
 
   @override
   void dispose() {
@@ -1473,7 +1498,6 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final strings = context.strings;
-    final filtered = _filtered;
     // Fixed, not just capped: filtering changes only the scrollable body.
     // The route itself deliberately ignores keyboard insets, so neither
     // this height nor the footer's position changes while typing.
@@ -1486,6 +1510,10 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               StaggeredEntrance(index: 0, child: AppSheetTitle(widget.title)),
+              if (widget.header != null) ...[
+                const SizedBox(height: 16),
+                StaggeredEntrance(index: 1, child: widget.header!),
+              ],
               if (widget.showSearch) ...[
                 const SizedBox(height: 20),
                 StaggeredEntrance(
@@ -1493,7 +1521,7 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
                   child: AppSearchField(
                     controller: _queryController,
                     hintText: widget.searchHint ?? strings.searchHint,
-                    onChanged: (value) => setState(() => _query = value),
+                    onChanged: (_) {},
                   ),
                 ),
               ],
@@ -1502,31 +1530,49 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
                 // The results are the only scrolling region. Clip them at
                 // this boundary so cards never paint behind the fixed title,
                 // search field, or footer actions during scroll/animation.
-                child: ClipRect(
-                  child: filtered.isEmpty
-                      ? StaggeredEntrance(
-                          index: 0,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 24),
-                            child: Center(
-                              child: Text(
-                                strings.noSearchResults,
-                                style: TextStyle(
-                                  color: colors.muted,
-                                  fontSize: 14,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onHorizontalDragEnd: widget.onSwipe == null
+                      ? null
+                      : (details) {
+                          final velocity = details.primaryVelocity ?? 0;
+                          if (velocity.abs() < 180) return;
+                          widget.onSwipe!(velocity < 0 ? 1 : -1);
+                        },
+                  child: ClipRect(
+                    child: ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: _queryController,
+                      builder: (context, _, _) {
+                        final filtered = _filtered;
+                        return filtered.isEmpty
+                            ? StaggeredEntrance(
+                                index: 0,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 24,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      strings.noSearchResults,
+                                      style: TextStyle(
+                                        color: colors.muted,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ),
-                        )
-                      : SingleChildScrollView(
-                          child: widget.bodyBuilder(
-                            context,
-                            filtered,
-                            _selected,
-                            (item) => setState(() => _selected = item),
-                          ),
-                        ),
+                              )
+                            : SingleChildScrollView(
+                                child: widget.bodyBuilder(
+                                  context,
+                                  filtered,
+                                  _selected,
+                                  (item) => setState(() => _selected = item),
+                                ),
+                              );
+                      },
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),

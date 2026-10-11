@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_strings.dart';
+import 'reflection_group.dart';
 
 /// The 8 fixed areas of life a [Project] (and, through it, every [Star]) can
 /// belong to. Fixed and closed — not user-extensible.
@@ -89,31 +90,36 @@ extension LifeAreaX on LifeArea {
     }
   }
 
-  /// The four prepared reflection prompts for this area, shown as an
-  /// accordion on its Supernova page. Order is fixed and doubles as each
-  /// question's id (see [ReflectionAnswer.questionId]) — never reorder this
-  /// list, only ever append past index 3, or an existing answer will attach
-  /// itself to the wrong prompt.
-  List<String> reflectionQuestions(AppStrings s) {
+  /// The prepared reflection prompts for this area, grouped by theme and
+  /// shown as accordions on its Supernova page.
+  List<ReflectionGroup> reflectionGroups(AppStrings s) {
     switch (this) {
       case LifeArea.physical:
-        return s.reflectionQuestionsPhysical;
+        return s.reflectionGroupsPhysical;
       case LifeArea.psychological:
-        return s.reflectionQuestionsPsychological;
+        return s.reflectionGroupsPsychological;
       case LifeArea.professional:
-        return s.reflectionQuestionsProfessional;
+        return s.reflectionGroupsProfessional;
       case LifeArea.financial:
-        return s.reflectionQuestionsFinancial;
+        return s.reflectionGroupsFinancial;
       case LifeArea.personal:
-        return s.reflectionQuestionsPersonal;
+        return s.reflectionGroupsPersonal;
       case LifeArea.social:
-        return s.reflectionQuestionsSocial;
+        return s.reflectionGroupsSocial;
       case LifeArea.spiritual:
-        return s.reflectionQuestionsSpiritual;
+        return s.reflectionGroupsSpiritual;
       case LifeArea.philanthropic:
-        return s.reflectionQuestionsPhilanthropic;
+        return s.reflectionGroupsPhilanthropic;
     }
   }
+
+  /// [reflectionGroups] flattened in display order. A prompt's position here
+  /// is its id (see [ReflectionAnswer.questionId]), so reordering or
+  /// inserting prompts re-attaches stored answers to different questions.
+  /// Every language must keep the same groups and counts for that reason.
+  List<String> reflectionQuestions(AppStrings s) => [
+    for (final group in reflectionGroups(s)) ...group.questions,
+  ];
 
   /// A generic icon representing the area itself — distinct from a
   /// project's own [Project.iconSlug]-based constellation icon, and

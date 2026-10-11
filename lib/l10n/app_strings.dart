@@ -1,3 +1,5 @@
+import '../models/reflection_group.dart';
+
 /// Every user-facing piece of text in the app, in one interface — resolved
 /// per [SettingsController.locale] via `context.strings` (see
 /// `strings_scope.dart`). Kept as a hand-written interface + one
@@ -46,14 +48,14 @@ abstract class AppStrings {
   // alongside its free-form vision. Kept as one `List<String>` getter per
   // area (index = question id) rather than one getter per question, so
   // adding/reordering doesn't grow the interface further.
-  List<String> get reflectionQuestionsPhysical;
-  List<String> get reflectionQuestionsPsychological;
-  List<String> get reflectionQuestionsProfessional;
-  List<String> get reflectionQuestionsFinancial;
-  List<String> get reflectionQuestionsPersonal;
-  List<String> get reflectionQuestionsSocial;
-  List<String> get reflectionQuestionsSpiritual;
-  List<String> get reflectionQuestionsPhilanthropic;
+  List<ReflectionGroup> get reflectionGroupsPhysical;
+  List<ReflectionGroup> get reflectionGroupsPsychological;
+  List<ReflectionGroup> get reflectionGroupsProfessional;
+  List<ReflectionGroup> get reflectionGroupsFinancial;
+  List<ReflectionGroup> get reflectionGroupsPersonal;
+  List<ReflectionGroup> get reflectionGroupsSocial;
+  List<ReflectionGroup> get reflectionGroupsSpiritual;
+  List<ReflectionGroup> get reflectionGroupsPhilanthropic;
   String get reflectionQuestionsSectionLabel;
   String get reflectionQuestionsSubtitle;
   String get reflectionsPageDescription;
@@ -582,6 +584,7 @@ abstract class AppStrings {
   /// into this same sheet).
   String get shapeLibraryTabLabel;
   String get yourShapesTabLabel;
+  String get myShapesSectionTitle;
   String get noCustomShapesYetHint;
   String get editSelectedShapeAction;
 
@@ -696,6 +699,7 @@ abstract class AppStrings {
   String get cropPhotoTitle;
   String get cropPhotoConfirm;
   String get cropPhotoHint;
+  String get cropSafeZoneHint;
   String get saveChanges;
   String get lightThisStar;
 

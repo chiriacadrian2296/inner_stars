@@ -1,4 +1,6 @@
+import '../models/reflection_group.dart';
 import 'app_strings.dart';
+import 'reflection_groups_it.dart';
 
 class StringsIt implements AppStrings {
   @override
@@ -144,61 +146,28 @@ class StringsIt implements AppStrings {
       'Il tuo impatto — dare, servire e la vita degli altri.';
 
   @override
-  List<String> get reflectionQuestionsPhysical => const [
-    'Come ti senti nel tuo corpo in questo periodo?',
-    'Cosa fai regolarmente per prenderti cura della tua salute?',
-    "Qual è un'abitudine fisica che vorresti costruire, e cosa te lo impedisce?",
-    'Quando ti senti più energico durante la giornata? Cosa lo provoca?',
-  ];
+  List<ReflectionGroup> get reflectionGroupsPhysical =>
+      reflectionGroupsPhysicalIt;
   @override
-  List<String> get reflectionQuestionsPsychological => const [
-    'Cosa ti pesa di più mentalmente in questo momento?',
-    'Come gestisci lo stress quando arriva?',
-    'Quale pensiero ricorrente vorresti lasciar andare?',
-    'Cosa ti fa sentire calmo e centrato?',
-  ];
+  List<ReflectionGroup> get reflectionGroupsPsychological =>
+      reflectionGroupsPsychologicalIt;
   @override
-  List<String> get reflectionQuestionsProfessional => const [
-    'Ti senti realizzato nel lavoro che fai? Perché?',
-    'Qual è la prossima competenza che vuoi sviluppare?',
-    'Cosa renderebbe il tuo lavoro più significativo?',
-    'Dove ti vedi professionalmente tra un anno?',
-  ];
+  List<ReflectionGroup> get reflectionGroupsProfessional =>
+      reflectionGroupsProfessionalIt;
   @override
-  List<String> get reflectionQuestionsFinancial => const [
-    'Che rapporto hai con il denaro?',
-    'Cosa ti preoccupa di più riguardo alle tue finanze?',
-    'Qual è un obiettivo finanziario concreto per i prossimi mesi?',
-    'Cosa significherebbe per te la sicurezza economica?',
-  ];
+  List<ReflectionGroup> get reflectionGroupsFinancial =>
+      reflectionGroupsFinancialIt;
   @override
-  List<String> get reflectionQuestionsPersonal => const [
-    'Cosa stai imparando su te stesso ultimamente?',
-    'Quale valore ti guida di più nelle scelte che fai?',
-    'Cosa vorresti smettere di rimandare?',
-    'Di cosa sei orgoglioso, anche se piccolo?',
-  ];
+  List<ReflectionGroup> get reflectionGroupsPersonal =>
+      reflectionGroupsPersonalIt;
   @override
-  List<String> get reflectionQuestionsSocial => const [
-    'Con chi vorresti passare più tempo?',
-    'Come ti prendi cura delle tue relazioni più importanti?',
-    "C'è una relazione che ha bisogno di attenzione in questo momento?",
-    'Cosa cerchi davvero nelle persone che ti circondano?',
-  ];
+  List<ReflectionGroup> get reflectionGroupsSocial => reflectionGroupsSocialIt;
   @override
-  List<String> get reflectionQuestionsSpiritual => const [
-    'Cosa dà senso alle tue giornate?',
-    'In quali momenti ti senti connesso a qualcosa di più grande di te?',
-    'Come coltivi la pace interiore?',
-    'Cosa significa per te vivere in modo autentico?',
-  ];
+  List<ReflectionGroup> get reflectionGroupsSpiritual =>
+      reflectionGroupsSpiritualIt;
   @override
-  List<String> get reflectionQuestionsPhilanthropic => const [
-    'In che modo contribuisci a qualcosa più grande di te?',
-    'Chi hai aiutato di recente, e come ti ha fatto sentire?',
-    'Quale causa ti sta a cuore, e perché?',
-    'Cosa potresti dare — tempo, competenze, energie — che non stai ancora dando?',
-  ];
+  List<ReflectionGroup> get reflectionGroupsPhilanthropic =>
+      reflectionGroupsPhilanthropicIt;
   @override
   String get reflectionQuestionsSectionLabel => 'Domande';
   @override
@@ -392,7 +361,6 @@ class StringsIt implements AppStrings {
   String get todayLabel => 'Oggi';
   @override
   String get starsLoggedLabel => 'Stelle registrate';
-  @override
   @override
   String get noCurrentStreakBody =>
       'Nessuna serie in corso al momento. Accendi una stella oggi per iniziarne una.';
@@ -1206,6 +1174,8 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get yourShapesTabLabel => 'Le tue forme';
   @override
+  String get myShapesSectionTitle => 'Le mie forme';
+  @override
   String get noCustomShapesYetHint => 'Non hai ancora disegnato nessuna forma';
   @override
   String get editSelectedShapeAction => 'Modifica';
@@ -1391,6 +1361,9 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get cropPhotoHint =>
       'Pizzica e trascina per adattare la foto alla cornice';
+  @override
+  String get cropSafeZoneHint =>
+      'Tieni ciò che conta dentro le linee: i telefoni più alti mostrano solo quella parte';
   @override
   String get saveChanges => 'Salva';
   @override

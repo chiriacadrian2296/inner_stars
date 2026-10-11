@@ -70,6 +70,10 @@ class PhotoCropScreen extends StatefulWidget {
 
 class _PhotoCropScreenState extends State<PhotoCropScreen> {
   static const _aspectRatio = 9 / 16;
+  // Phones are taller than 9:16 (up to roughly 9:21), and the reader covers
+  // the screen with the photo, trimming the sides. This is the width share
+  // that stays visible even on the tallest of them.
+  static const _safeWidthFraction = (9 / 21) / _aspectRatio;
   // Smaller on web: every photo there is a base64 string sharing a few MB of
   // total localStorage quota with the rest of the app's data (see
   // `PhotoStorage`), so it needs to be far more frugal than native's own
@@ -192,40 +196,57 @@ class _PhotoCropScreenState extends State<PhotoCropScreen> {
                     child: Center(
                       child: StaggeredEntrance(
                         index: 0,
-                        child: RepaintBoundary(
-                          key: _boundaryKey,
-                          child: ClipRect(
-                            child: SizedBox(
-                              width: width,
-                              height: height,
-                              // boundaryMargin: zero plus minScale set to the
-                              // exact "cover" scale keeps the image edges from
-                              // ever panning past the frame, so the frame is
-                              // always fully covered no matter how the user
-                              // drags or pinches. constrained: false is what
-                              // lets the child actually lay out at its own
-                              // (much larger) natural size instead of being
-                              // squashed down to this frame's — without it,
-                              // InteractiveViewer applies our zoom on top of
-                              // an already-shrunk child, leaving the photo a
-                              // tiny fragment stuck in one corner.
-                              child: InteractiveViewer(
-                                transformationController: _transformController,
-                                constrained: false,
-                                minScale: _minScale,
-                                maxScale: _minScale * 4,
-                                boundaryMargin: EdgeInsets.zero,
+                        child: Stack(
+                          children: [
+                            RepaintBoundary(
+                              key: _boundaryKey,
+                              child: ClipRect(
                                 child: SizedBox(
-                                  width: image.width.toDouble(),
-                                  height: image.height.toDouble(),
-                                  child: RawImage(
-                                    image: image,
-                                    fit: BoxFit.fill,
+                                  width: width,
+                                  height: height,
+                                  // boundaryMargin: zero plus minScale set to the
+                                  // exact "cover" scale keeps the image edges from
+                                  // ever panning past the frame, so the frame is
+                                  // always fully covered no matter how the user
+                                  // drags or pinches. constrained: false is what
+                                  // lets the child actually lay out at its own
+                                  // (much larger) natural size instead of being
+                                  // squashed down to this frame's — without it,
+                                  // InteractiveViewer applies our zoom on top of
+                                  // an already-shrunk child, leaving the photo a
+                                  // tiny fragment stuck in one corner.
+                                  child: InteractiveViewer(
+                                    transformationController:
+                                        _transformController,
+                                    constrained: false,
+                                    minScale: _minScale,
+                                    maxScale: _minScale * 4,
+                                    boundaryMargin: EdgeInsets.zero,
+                                    child: SizedBox(
+                                      width: image.width.toDouble(),
+                                      height: image.height.toDouble(),
+                                      child: RawImage(
+                                        image: image,
+                                        fit: BoxFit.fill,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
+                            // Outside the RepaintBoundary so it never ends up
+                            // in the saved photo.
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: CustomPaint(
+                                  painter: _SafeZonePainter(
+                                    visibleFraction: _safeWidthFraction,
+                                    color: colors.gold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -235,7 +256,7 @@ class _PhotoCropScreenState extends State<PhotoCropScreen> {
                     child: Padding(
                       padding: const EdgeInsets.all(20),
                       child: Text(
-                        strings.cropPhotoHint,
+                        '${strings.cropPhotoHint}\n${strings.cropSafeZoneHint}',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: colors.muted, fontSize: 13),
                       ),
@@ -273,4 +294,38 @@ class _PhotoCropScreenState extends State<PhotoCropScreen> {
       ),
     );
   }
+}
+
+/// Dims the strips at both sides of the crop frame that tall phones trim
+/// away, with a thin line along the inner edge of each. Purely a guide: it
+/// is drawn over (not into) the cropped frame.
+class _SafeZonePainter extends CustomPainter {
+  const _SafeZonePainter({required this.visibleFraction, required this.color});
+
+  final double visibleFraction;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final inset = size.width * (1 - visibleFraction) / 2;
+    final dim = Paint()..color = Colors.black.withValues(alpha: 0.35);
+    canvas.drawRect(Rect.fromLTWH(0, 0, inset, size.height), dim);
+    canvas.drawRect(
+      Rect.fromLTWH(size.width - inset, 0, inset, size.height),
+      dim,
+    );
+    final line = Paint()
+      ..color = color.withValues(alpha: 0.8)
+      ..strokeWidth = 1.5;
+    canvas.drawLine(Offset(inset, 0), Offset(inset, size.height), line);
+    canvas.drawLine(
+      Offset(size.width - inset, 0),
+      Offset(size.width - inset, size.height),
+      line,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_SafeZonePainter old) =>
+      old.visibleFraction != visibleFraction || old.color != color;
 }

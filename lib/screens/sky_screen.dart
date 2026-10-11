@@ -597,6 +597,14 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     (double, double, double) b,
   ) => a.$1 * b.$1 + a.$2 * b.$2 + a.$3 * b.$3;
 
+  /// [angle] folded into (-pi, pi] — the shortest signed turn that ends up
+  /// at the same orientation.
+  static double _wrapAngle(double angle) {
+    final turn = 2 * math.pi;
+    final wrapped = angle % turn;
+    return wrapped > math.pi ? wrapped - turn : wrapped;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -2227,17 +2235,26 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // which way is up; landing on the *opposite* pole of that reading is
     // what actually matches the shape editor's own orientation.
     final backdropArea = straightenBackdropArea;
-    final rollCorrection = straightenRoll
-        ? math.pi -
-              cameraRollAngle(
-                _camera.rotatedToAlign(_camera.forward, targetForward),
-              )
-        : backdropArea != null
-        ? -areaBackdropRollReading(
-            backdropArea,
-            _camera.rotatedToAlign(_camera.forward, targetForward),
-          )
-        : 0.0;
+    //
+    // Wrapped to (-pi, pi] — both readings are plain angles, so the raw
+    // difference can land anywhere in a full turn (`math.pi - reading`
+    // alone spans 0..2pi), and ramping the camera through e.g. +350° when
+    // -10° lands in the exact same place spun the whole sky all the way
+    // round. The shortest way round is always the right one: it ends at an
+    // identical orientation.
+    final rollCorrection = _wrapAngle(
+      straightenRoll
+          ? math.pi -
+                cameraRollAngle(
+                  _camera.rotatedToAlign(_camera.forward, targetForward),
+                )
+          : backdropArea != null
+          ? -areaBackdropRollReading(
+              backdropArea,
+              _camera.rotatedToAlign(_camera.forward, targetForward),
+            )
+          : 0.0,
+    );
 
     // Nothing to actually fly — the camera is already aimed here (a retap
     // on whatever's already focused, most commonly). See

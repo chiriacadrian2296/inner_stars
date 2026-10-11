@@ -474,7 +474,6 @@ class _QuoteEditorSheetState extends State<_QuoteEditorSheet> {
                 labelText: strings.moodboardQuoteTextLabel,
                 alignLabelWithHint: true,
               ),
-              onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 8),
             TextField(
@@ -487,7 +486,6 @@ class _QuoteEditorSheetState extends State<_QuoteEditorSheet> {
                 labelText: strings.moodboardQuoteAuthorLabel,
                 hintText: strings.moodboardQuoteAuthorHint,
               ),
-              onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 8),
             Text(
