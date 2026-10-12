@@ -508,7 +508,7 @@ class StringsRo implements AppStrings {
   @override
   String get clearSearchTooltip => 'Șterge căutarea';
   @override
-  String get sortAction => 'Sortează rezultatele';
+  String get sortAction => 'Sortează';
   @override
   String get sortButtonDefaultLabel => 'Sortează';
   @override

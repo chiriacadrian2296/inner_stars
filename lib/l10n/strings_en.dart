@@ -503,7 +503,7 @@ class StringsEn implements AppStrings {
   @override
   String get clearSearchTooltip => 'Clear search';
   @override
-  String get sortAction => 'Sort results';
+  String get sortAction => 'Sort';
   @override
   String get sortButtonDefaultLabel => 'Sort';
   @override

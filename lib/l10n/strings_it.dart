@@ -509,7 +509,7 @@ class StringsIt implements AppStrings {
   @override
   String get clearSearchTooltip => 'Cancella ricerca';
   @override
-  String get sortAction => 'Ordina risultati';
+  String get sortAction => 'Ordina';
   @override
   String get sortButtonDefaultLabel => 'Ordina';
   @override

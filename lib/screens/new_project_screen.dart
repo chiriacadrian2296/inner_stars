@@ -72,7 +72,6 @@ class NewProjectScreen extends StatefulWidget {
 class _NewProjectScreenState extends State<NewProjectScreen> {
   // Remember each picker's filter for this app session, across form visits.
   static PresetCategory? _rememberedShapeCategory;
-  static PresetCategory? _rememberedIconCategory;
 
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -261,24 +260,6 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   /// project can never pick one, so an area and a project never render with
   /// the same icon and get visually confused.
   static final _areaOnlySlugs = LifeArea.values.map((a) => a.iconSlug).toSet();
-
-  /// Suggestions for [area] first, then the rest of the set. Deliberately
-  /// *not* re-sorted alphabetically: [availableIconSlugs] already comes in
-  /// the order `icon_for_slug.dart` declares it, which is the shape
-  /// library's own category order (nature, animals, body & sport, ...), so
-  /// scrolling the icon grid reads like scrolling the shape library rather
-  /// than like a phone book.
-  List<String> _orderedIconSlugs(LifeArea? area) {
-    final all = availableIconSlugs
-        .where((slug) => !_areaOnlySlugs.contains(slug))
-        .toList();
-    if (area == null) return all;
-    final suggested =
-        (suggestedIconsByArea[area.suggestedIconsKey] ?? const <String>[])
-            .where((slug) => !_areaOnlySlugs.contains(slug));
-    final rest = all.where((slug) => !suggested.contains(slug)).toList();
-    return [...suggested, ...rest];
-  }
 
   /// Opens the editor on a brand new, blank canvas ([existing] and
   /// [initialShape] both null — the "Draw your own" button), on a shape
@@ -525,95 +506,12 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   }
 
   Future<void> _openIconPicker() async {
-    final language = context.strings.languageCode;
-    final category = ValueNotifier<PresetCategory?>(_rememberedIconCategory);
-    final presetsBySlug = {
-      for (final preset in starsShapePresets) preset.iconSlug: preset,
-    };
-    final picked = await _showSearchablePicker<String>(
-      context: context,
-      title: context.strings.chooseIconTitle,
-      searchHint: context.strings.searchIconsHint,
-      filterListenable: category,
-      additionalMatches: (slug) =>
-          category.value == null ||
-          presetsBySlug[slug]!.category == category.value,
-      searchTrailing: ValueListenableBuilder<PresetCategory?>(
-        valueListenable: category,
-        builder: (context, selectedCategory, _) => Padding(
-          padding: const EdgeInsets.only(left: 10),
-          child: FiltersTriggerButton(
-            active: selectedCategory != null,
-            tooltip: context.strings.filtersAction,
-            onTap: () async {
-              final pickedCategory = await _pickShapeCategory(
-                context,
-                selected: category.value,
-                onCleared: () => category.value = null,
-              );
-              if (pickedCategory != null) category.value = pickedCategory;
-            },
-          ),
-        ),
-      ),
-      items: _orderedIconSlugs(_selectedArea),
-      matches: (slug, query) =>
-          slug.toLowerCase().contains(query) ||
-          presetsBySlug[slug]!.name
-              .of(language)
-              .toLowerCase()
-              .contains(query) ||
-          presetsBySlug[slug]!.category.name
-              .of(language)
-              .toLowerCase()
-              .contains(query),
-      initialSelection: _selectedIconSlug,
-      bodyBuilder: (context, filtered, selected, onSelect) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            for (final category in PresetCategory.values)
-              if (filtered.any(
-                (slug) => presetsBySlug[slug]!.category == category,
-              )) ...[
-                _ShapeSectionHeading(category.name.of(language)),
-                Builder(
-                  builder: (context) {
-                    final slugs = filtered
-                        .where(
-                          (slug) => presetsBySlug[slug]!.category == category,
-                        )
-                        .toList();
-                    return _StretchedTileWrap(
-                      minTileWidth: _shapeTileMinSide,
-                      columnCount: 5,
-                      itemCount: slugs.length,
-                      itemBuilder: (context, index, tileWidth) {
-                        final slug = slugs[index];
-                        return StaggeredEntrance(
-                          index: index + 1,
-                          child: _IconOption(
-                            slug: slug,
-                            label: presetsBySlug[slug]!.name.of(language),
-                            side: tileWidth,
-                            selected: selected == slug,
-                            onTap: () => onSelect(slug),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ],
-          ],
-        );
-      },
+    final picked = await pickIconSlug(
+      context,
+      selected: _selectedIconSlug,
+      area: _selectedArea,
     );
-    if (picked != null && mounted) {
-      setState(() => _selectedIconSlug = picked);
-    }
-    _rememberedIconCategory = category.value;
-    category.dispose();
+    if (picked != null && mounted) setState(() => _selectedIconSlug = picked);
   }
 
   Future<void> _save() async {
@@ -1672,4 +1570,115 @@ class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
       ),
     );
   }
+}
+
+PresetCategory? _lastIconCategory;
+
+/// Area icons are reserved for areas (see [LifeAreaX.iconSlug]).
+final _areaOnlyIconSlugs = LifeArea.values.map((a) => a.iconSlug).toSet();
+
+/// Suggestions for [area] first, then the rest of the icon set.
+List<String> _orderedIconSlugs(LifeArea? area) {
+  final all = availableIconSlugs
+      .where((slug) => !_areaOnlyIconSlugs.contains(slug))
+      .toList();
+  if (area == null) return all;
+  final suggested =
+      (suggestedIconsByArea[area.suggestedIconsKey] ?? const <String>[]).where(
+        (slug) => !_areaOnlyIconSlugs.contains(slug),
+      );
+  final rest = all.where((slug) => !suggested.contains(slug)).toList();
+  return [...suggested, ...rest];
+}
+
+/// The shared searchable icon picker sheet (constellation and activity forms).
+Future<String?> pickIconSlug(
+  BuildContext context, {
+  required String? selected,
+  LifeArea? area,
+}) async {
+  final language = context.strings.languageCode;
+  final category = ValueNotifier<PresetCategory?>(_lastIconCategory);
+  final presetsBySlug = {
+    for (final preset in starsShapePresets) preset.iconSlug: preset,
+  };
+  final picked = await _showSearchablePicker<String>(
+    context: context,
+    title: context.strings.chooseIconTitle,
+    searchHint: context.strings.searchIconsHint,
+    filterListenable: category,
+    additionalMatches: (slug) =>
+        category.value == null ||
+        presetsBySlug[slug]!.category == category.value,
+    searchTrailing: ValueListenableBuilder<PresetCategory?>(
+      valueListenable: category,
+      builder: (context, selectedCategory, _) => Padding(
+        padding: const EdgeInsets.only(left: 10),
+        child: FiltersTriggerButton(
+          active: selectedCategory != null,
+          tooltip: context.strings.filtersAction,
+          onTap: () async {
+            final pickedCategory = await _pickShapeCategory(
+              context,
+              selected: category.value,
+              onCleared: () => category.value = null,
+            );
+            if (pickedCategory != null) category.value = pickedCategory;
+          },
+        ),
+      ),
+    ),
+    items: _orderedIconSlugs(area),
+    matches: (slug, query) =>
+        slug.toLowerCase().contains(query) ||
+        presetsBySlug[slug]!.name.of(language).toLowerCase().contains(query) ||
+        presetsBySlug[slug]!.category.name
+            .of(language)
+            .toLowerCase()
+            .contains(query),
+    initialSelection: selected,
+    bodyBuilder: (context, filtered, current, onSelect) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final category in PresetCategory.values)
+            if (filtered.any(
+              (slug) => presetsBySlug[slug]!.category == category,
+            )) ...[
+              _ShapeSectionHeading(category.name.of(language)),
+              Builder(
+                builder: (context) {
+                  final slugs = filtered
+                      .where(
+                        (slug) => presetsBySlug[slug]!.category == category,
+                      )
+                      .toList();
+                  return _StretchedTileWrap(
+                    minTileWidth: _shapeTileMinSide,
+                    columnCount: 5,
+                    itemCount: slugs.length,
+                    itemBuilder: (context, index, tileWidth) {
+                      final slug = slugs[index];
+                      return StaggeredEntrance(
+                        index: index + 1,
+                        child: _IconOption(
+                          slug: slug,
+                          label: presetsBySlug[slug]!.name.of(language),
+                          side: tileWidth,
+                          selected: current == slug,
+                          onTap: () => onSelect(slug),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ],
+        ],
+      );
+    },
+  );
+  _lastIconCategory = category.value;
+  category.dispose();
+  return picked;
 }

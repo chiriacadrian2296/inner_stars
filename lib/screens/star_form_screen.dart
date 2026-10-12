@@ -1,4 +1,3 @@
-import '../widgets/activity_icon_picker.dart';
 import '../models/display_text.dart';
 
 import 'dart:async';
@@ -238,8 +237,41 @@ class _StarFormScreenState extends State<StarFormScreen> {
       widget.existingHabit?.iconSlug ?? widget.existingStar?.iconSlug ?? '';
 
   Future<void> _pickActivityIcon() async {
-    final selected = await pickActivityIcon(context, selected: _iconSlug);
+    final selected = await pickIconSlug(
+      context,
+      selected: _iconSlug.isEmpty ? null : _iconSlug,
+      area: _selectedArea,
+    );
     if (selected != null && mounted) setState(() => _iconSlug = selected);
+  }
+
+  /// The compact icon field beside the area field, the same one the
+  /// constellation form uses, for every kind of star.
+  Widget _buildActivityIconField(AppStrings strings) => AppPickerField(
+    key: const ValueKey('activity-icon-field'),
+    label: strings.iconLabel,
+    hint: strings.iconLabel,
+    requirement: FieldRequirement.optional,
+    icon: _iconSlug.isEmpty ? Icons.apps_outlined : iconForSlug(_iconSlug),
+    text: _iconSlug.isEmpty ? null : _iconSlug,
+    onReset: () => setState(() => _iconSlug = ''),
+    onTap: _pickActivityIcon,
+    iconOnly: true,
+  );
+
+  /// With the project already decided (area and project fields hidden), the
+  /// icon field sits to the right of the title, as it does beside the area
+  /// field everywhere else.
+  Widget _withIconBeside(AppStrings strings, Widget title) {
+    if (widget.lockedProject == null) return title;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(flex: 3, child: title),
+        const SizedBox(width: 12),
+        Expanded(flex: 1, child: _buildActivityIconField(strings)),
+      ],
+    );
   }
 
   late final _titleController = TextEditingController(text: _initialTitle);
@@ -842,11 +874,15 @@ class _StarFormScreenState extends State<StarFormScreen> {
 
   Future<void> _pickTargetDate() async {
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final current = _targetDate;
+    // A goal looks forward: today included, nothing earlier. A target that
+    // has already slipped into the past opens on today.
     final picked = await showAppDatePicker(
       context: context,
-      initialDate: _targetDate ?? now,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(now.year + 20),
+      initialDate: current == null || current.isBefore(today) ? today : current,
+      firstDate: today,
+      lastDate: DateTime(now.year + 20, 12, 31),
     );
     if (picked == null) return;
     setState(() => _targetDate = picked);
@@ -1042,25 +1078,38 @@ class _StarFormScreenState extends State<StarFormScreen> {
                       StaggeredEntrance(
                         index: 3,
                         replayKey: _kindEpoch,
-                        child: AppPickerField(
-                          label: strings.areaLabel,
-                          onReset: () => setState(() {
-                            _selectedArea = null;
-                            _selectedProject = null;
-                          }),
-                          // Not itself checked by [_save]/`canSave` — picking a
-                          // Constellation fills it in on its own (see
-                          // [_openProjectPicker]) — but there's no real path to
-                          // saving a star without one ending up set, so it reads
-                          // as required same as the field that actually is.
-                          requirement: FieldRequirement.required,
-                          hint: strings.selectASupernova,
-                          icon: _selectedArea?.icon ?? Icons.flare,
-                          leading: _selectedArea == null
-                              ? null
-                              : AreaIcon(area: _selectedArea!, size: 20),
-                          text: _selectedArea?.displayName(strings),
-                          onTap: _openAreaPicker,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: AppPickerField(
+                                label: strings.areaLabel,
+                                onReset: () => setState(() {
+                                  _selectedArea = null;
+                                  _selectedProject = null;
+                                }),
+                                // Not itself checked by [_save]/`canSave` — picking a
+                                // Constellation fills it in on its own (see
+                                // [_openProjectPicker]) — but there's no real path to
+                                // saving a star without one ending up set, so it reads
+                                // as required same as the field that actually is.
+                                requirement: FieldRequirement.required,
+                                hint: strings.selectASupernova,
+                                icon: _selectedArea?.icon ?? Icons.flare,
+                                leading: _selectedArea == null
+                                    ? null
+                                    : AreaIcon(area: _selectedArea!, size: 20),
+                                text: _selectedArea?.displayName(strings),
+                                onTap: _openAreaPicker,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              flex: 1,
+                              child: _buildActivityIconField(strings),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -1085,26 +1134,29 @@ class _StarFormScreenState extends State<StarFormScreen> {
                     StaggeredEntrance(
                       index: 5,
                       replayKey: _kindEpoch,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AppFieldLabel(
-                            strings.titleFieldLabel,
-                            onReset: () => setState(_titleController.clear),
-                            requirement: FieldRequirement.required,
-                            counterController: _titleController,
-                            counterMax: kTitleMaxLength,
-                          ),
-                          const SizedBox(height: kFieldLabelGap),
-                          AppTextField(
-                            controller: _titleController,
-                            maxLength: kTitleMaxLength,
-                            showCounter: false,
-                            textInputAction: TextInputAction.next,
-                            hintText: _titleHint(strings),
-                            onChanged: (_) => _onTextEdited(),
-                          ),
-                        ],
+                      child: _withIconBeside(
+                        strings,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            AppFieldLabel(
+                              strings.titleFieldLabel,
+                              onReset: () => setState(_titleController.clear),
+                              requirement: FieldRequirement.required,
+                              counterController: _titleController,
+                              counterMax: kTitleMaxLength,
+                            ),
+                            const SizedBox(height: kFieldLabelGap),
+                            AppTextField(
+                              controller: _titleController,
+                              maxLength: kTitleMaxLength,
+                              showCounter: false,
+                              textInputAction: TextInputAction.next,
+                              hintText: _titleHint(strings),
+                              onChanged: (_) => _onTextEdited(),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -1499,23 +1551,6 @@ class _StarFormScreenState extends State<StarFormScreen> {
                           onReset: () =>
                               setState(() => _customReminder = false),
                         ),
-                      ),
-                    ],
-                    if (_kind == StarKind.pulsar ||
-                        _kind == StarKind.unlit) ...[
-                      const SizedBox(height: 20),
-                      AppPickerField(
-                        key: const ValueKey('activity-icon-field'),
-                        label: strings.iconLabel,
-                        hint: strings.iconLabel,
-                        requirement: FieldRequirement.optional,
-                        icon: _iconSlug.isEmpty
-                            ? _kind.icon
-                            : iconForSlug(_iconSlug),
-                        text: _iconSlug.isEmpty ? null : _iconSlug,
-                        onReset: () => setState(() => _iconSlug = ''),
-                        onTap: _pickActivityIcon,
-                        iconOnly: true,
                       ),
                     ],
                     if (_kind == StarKind.lit) ...[
