@@ -1,3 +1,6 @@
+import '../widgets/activity_icon_picker.dart';
+import '../models/display_text.dart';
+
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -56,6 +59,7 @@ class StarFormResult {
   const StarFormResult({
     required this.kind,
     required this.title,
+    this.iconSlug = '',
     this.description,
     required this.projectId,
     this.slotSequence,
@@ -77,6 +81,7 @@ class StarFormResult {
   final StarKind kind;
 
   final String title;
+  final String iconSlug;
   final String? description;
   final int projectId;
 
@@ -229,6 +234,14 @@ class StarFormScreen extends StatefulWidget {
 }
 
 class _StarFormScreenState extends State<StarFormScreen> {
+  late String _iconSlug =
+      widget.existingHabit?.iconSlug ?? widget.existingStar?.iconSlug ?? '';
+
+  Future<void> _pickActivityIcon() async {
+    final selected = await pickActivityIcon(context, selected: _iconSlug);
+    if (selected != null && mounted) setState(() => _iconSlug = selected);
+  }
+
   late final _titleController = TextEditingController(text: _initialTitle);
   late final _descriptionController = TextEditingController(
     text: _initialDescription,
@@ -279,9 +292,20 @@ class _StarFormScreenState extends State<StarFormScreen> {
 
   /// Null until the user actually picks a date (or, when editing a lit
   /// star, seeded from the date it was lit on).
-  late DateTime? _date =
-      widget.existingStar?.achievedDate ??
-      (_kind == StarKind.lit ? widget.initialDate : null);
+  ///
+  /// Date and time are independent: this holds the day only (midnight), and
+  /// [_time] the time of day. Each is set and reset on its own; an unset one
+  /// falls back to today / now when saving.
+  late DateTime? _date = _dayOnly(
+    widget.existingStar?.achievedDate ??
+        (_kind == StarKind.lit ? widget.initialDate : null),
+  );
+  late TimeOfDay? _time = widget.existingStar?.achievedDate == null
+      ? null
+      : TimeOfDay.fromDateTime(widget.existingStar!.achievedDate!);
+
+  static DateTime? _dayOnly(DateTime? value) =>
+      value == null ? null : DateTime(value.year, value.month, value.day);
   late DateTime? _targetDate = widget.existingStar?.targetDate;
   late String? _photoPath = widget.existingStar?.photoPath;
   late List<StarMedia> _media = widget.existingStar?.media ?? const [];
@@ -307,6 +331,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
   late final StarKind _initialKind = _kind;
   late final int _initialIntensity = _intensity;
   late final DateTime? _initialDateValue = _date;
+  late final TimeOfDay? _initialTimeValue = _time;
   late final DateTime? _initialTargetDate = widget.existingStar?.targetDate;
   late final String? _initialPhotoPath = widget.existingStar?.photoPath;
   late final bool _initialCustomReminder = _customReminder;
@@ -490,13 +515,18 @@ class _StarFormScreenState extends State<StarFormScreen> {
     final normalizedInitialDescription = _initialDescription.isEmpty
         ? null
         : _initialDescription;
-    return _titleController.text.trim() != _initialTitle ||
+    return _iconSlug !=
+            (widget.existingHabit?.iconSlug ??
+                widget.existingStar?.iconSlug ??
+                '') ||
+        _titleController.text.trim() != _initialTitle ||
         normalizedDescription != normalizedInitialDescription ||
         _selectedProject?.id != _initialProjectId ||
         _kind != _initialKind ||
         (_kind != StarKind.unlit && _intensity != _initialIntensity) ||
         (_kind == StarKind.lit &&
             (_date != _initialDateValue ||
+                _time != _initialTimeValue ||
                 _photoPath != _initialPhotoPath ||
                 !listEquals(_media, _initialMedia))) ||
         (_kind == StarKind.unlit && _targetDate != _initialTargetDate) ||
@@ -661,12 +691,13 @@ class _StarFormScreenState extends State<StarFormScreen> {
       StarFormResult(
         kind: _kind,
         title: title,
+        iconSlug: _iconSlug,
         description: _descriptionController.text,
         projectId: project.id,
         // A slot belongs to the constellation it was tapped on.
         slotSequence: _movedToNewConstellation ? null : widget.slotSequence,
         targetDate: _kind == StarKind.unlit ? _targetDate : null,
-        achievedDate: _kind == StarKind.lit ? (_date ?? DateTime.now()) : null,
+        achievedDate: _kind == StarKind.lit ? _combinedDateTime() : null,
         intensity: _kind == StarKind.unlit ? null : _intensity,
         photoPath: _kind == StarKind.lit ? _photoPath : null,
         media: _kind == StarKind.lit ? _media : const [],
@@ -776,6 +807,15 @@ class _StarFormScreenState extends State<StarFormScreen> {
     ]);
   }
 
+  /// The day and time the person set, each defaulting on its own to today /
+  /// now when left empty.
+  DateTime _combinedDateTime() {
+    final now = DateTime.now();
+    final day = _date ?? DateTime(now.year, now.month, now.day);
+    final time = _time ?? TimeOfDay.fromDateTime(now);
+    return DateTime(day.year, day.month, day.day, time.hour, time.minute);
+  }
+
   Future<void> _pickDate() async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -787,38 +827,17 @@ class _StarFormScreenState extends State<StarFormScreen> {
       lastDate: today,
     );
     if (picked == null) return;
-    setState(() {
-      _date = DateTime(
-        picked.year,
-        picked.month,
-        picked.day,
-        current?.hour ?? now.hour,
-        current?.minute ?? now.minute,
-      );
-    });
+    setState(() => _date = DateTime(picked.year, picked.month, picked.day));
   }
 
   Future<void> _pickTime() async {
     final now = DateTime.now();
-    final current = _date;
     final picked = await showAppTimePicker(
       context: context,
-      initialTime: TimeOfDay(
-        hour: current?.hour ?? now.hour,
-        minute: current?.minute ?? now.minute,
-      ),
+      initialTime: _time ?? TimeOfDay.fromDateTime(now),
     );
     if (picked == null) return;
-    final base = current ?? DateTime(now.year, now.month, now.day);
-    setState(() {
-      _date = DateTime(
-        base.year,
-        base.month,
-        base.day,
-        picked.hour,
-        picked.minute,
-      );
-    });
+    setState(() => _time = picked);
   }
 
   Future<void> _pickTargetDate() async {
@@ -1057,7 +1076,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                           icon: _selectedProject == null
                               ? Icons.insights
                               : iconForSlug(_selectedProject!.iconSlug),
-                          text: _selectedProject?.name,
+                          text: _selectedProject?.displayName,
                           onTap: _openProjectPicker,
                         ),
                       ),
@@ -1153,13 +1172,21 @@ class _StarFormScreenState extends State<StarFormScreen> {
                               axis: Axis.horizontal,
                               child: AppPickerField(
                                 label: strings.timeLabel,
-                                onReset: () => setState(() => _date = null),
+                                onReset: () => setState(() => _time = null),
                                 requirement: FieldRequirement.required,
                                 hint: strings.selectATimeHint,
                                 icon: Icons.access_time,
-                                text: _date == null
+                                text: _time == null
                                     ? null
-                                    : formatDisplayTime(_date!),
+                                    : formatDisplayTime(
+                                        DateTime(
+                                          2000,
+                                          1,
+                                          1,
+                                          _time!.hour,
+                                          _time!.minute,
+                                        ),
+                                      ),
                                 onTap: _pickTime,
                               ),
                             ),
@@ -1474,6 +1501,23 @@ class _StarFormScreenState extends State<StarFormScreen> {
                         ),
                       ),
                     ],
+                    if (_kind == StarKind.pulsar ||
+                        _kind == StarKind.unlit) ...[
+                      const SizedBox(height: 20),
+                      AppPickerField(
+                        key: const ValueKey('activity-icon-field'),
+                        label: strings.iconLabel,
+                        hint: strings.iconLabel,
+                        requirement: FieldRequirement.optional,
+                        icon: _iconSlug.isEmpty
+                            ? _kind.icon
+                            : iconForSlug(_iconSlug),
+                        text: _iconSlug.isEmpty ? null : _iconSlug,
+                        onReset: () => setState(() => _iconSlug = ''),
+                        onTap: _pickActivityIcon,
+                        iconOnly: true,
+                      ),
+                    ],
                     if (_kind == StarKind.lit) ...[
                       const SizedBox(height: 20),
                       StaggeredEntrance(
@@ -1594,7 +1638,11 @@ class _StarFormScreenState extends State<StarFormScreen> {
                                 final canSave =
                                     value.text.trim().isNotEmpty &&
                                     _selectedProject != null &&
-                                    (!widget.isEditing || _hasUnsavedChanges);
+                                    // Reigniting (hideDelete) is the one edit
+                                    // that is worth saving unchanged.
+                                    (!widget.isEditing ||
+                                        widget.hideDelete ||
+                                        _hasUnsavedChanges);
                                 return StaggeredEntrance(
                                   index: 1,
                                   axis: Axis.horizontal,

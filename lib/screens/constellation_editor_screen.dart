@@ -43,6 +43,7 @@ class StarsShapeEditorScreen extends StatefulWidget {
     this.initialShape,
     this.initialShapeName,
     this.replayHelp = false,
+    this.onOpenLibrary,
   }) : assert(
          existing == null || initialShape == null,
          'Pass at most one of existing/initialShape — existing already '
@@ -62,6 +63,11 @@ class StarsShapeEditorScreen extends StatefulWidget {
   /// preference says, leaves that preference untouched, and closes the
   /// editor once the help is dismissed.
   final bool replayHelp;
+
+  /// Opens the shapes library over the editor; resolves true when a shape
+  /// was picked there, in which case the editor closes (the pick has
+  /// already been applied by the caller). Null hides the library button.
+  final Future<bool> Function()? onOpenLibrary;
 
   /// Starts the canvas pre-filled with these points/edges, same as
   /// [existing] would, but *without* tying [_save] to updating some
@@ -771,6 +777,11 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
   /// only for a genuinely blank canvas, which has no name to show yet.
   String? get _shapeName => widget.existing?.name ?? widget.initialShapeName;
 
+  Future<void> _openLibrary() async {
+    final picked = await widget.onOpenLibrary!();
+    if (picked && mounted) Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -795,96 +806,40 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                 index: 0,
                 child: Row(
                   children: [
-                    IconButton(
-                      onPressed: _handleBack,
-                      icon: Icon(Icons.arrow_back, color: colors.muted),
+                    Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: _EditorRoundButton(
+                        icon: Icons.help_outline,
+                        tooltip: strings.constellationEditorHelpAction,
+                        onTap: _showHelp,
+                      ),
                     ),
+                    // No app bar title: the shape's name leads instead,
+                    // "New Shape" until the person names it on saving.
                     Expanded(
                       child: Text(
-                        widget.existing == null
-                            ? strings.constellationEditorTitle
-                            : strings.constellationEditorEditTitle,
+                        _shapeName ?? strings.newShapeName,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 20,
                           color: colors.text,
                         ),
                       ),
                     ),
-                    IconButton(
-                      onPressed: _showHelp,
-                      icon: Icon(Icons.help_outline, color: colors.muted),
-                      tooltip: strings.constellationEditorHelpAction,
+                    Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: widget.onOpenLibrary == null
+                          ? const SizedBox(width: _EditorRoundButton.size)
+                          : _EditorRoundButton(
+                              icon: Icons.grid_view_rounded,
+                              tooltip: strings.shapesLibraryButtonLabel,
+                              onTap: _openLibrary,
+                            ),
                     ),
                   ],
-                ),
-              ),
-              // The name of the shape being edited — an already-saved
-              // one's own name, or a preset's (not yet owned, but already
-              // named in the library it came from) — shown either way;
-              // only a genuinely blank canvas has nothing to show here,
-              // since only then is there truly no name yet (only entered
-              // at save time). Used to live inside the canvas's own
-              // layout, given a fixed slot above it; moved up here, right
-              // under the app bar, now that this region is otherwise just
-              // a stack of header rows anyway. Its space stays reserved
-              // (`maintainSize`) even with nothing to show — otherwise a
-              // blank canvas's header content is shorter than a named
-              // one's, which shifts how much room is left below for the
-              // switches/canvas/buttons block to center itself in, moving
-              // the canvas up or down depending on whether a name happens
-              // to be showing above it.
-              Visibility(
-                visible: _shapeName != null,
-                maintainSize: true,
-                maintainAnimation: true,
-                maintainState: true,
-                child: StaggeredEntrance(
-                  index: 1,
-                  child: _ShapeNameHeader(name: _shapeName ?? ''),
-                ),
-              ),
-              // The two pieces of at-a-glance status this screen has — how
-              // many stars are placed (out of [_maxEditorPoints]) and how
-              // many of those aren't wired into the shape yet — as one
-              // line, bigger and with real breathing room between the two
-              // (rather than the small, tight caption this started as),
-              // with just the *changing* numbers in bold gold (never
-              // [_maxEditorPoints] itself, which never moves) so the two
-              // figures that actually matter moment to moment stand out
-              // from the words around them. The disconnected count stays
-              // on screen even at zero now — always there at the same
-              // spot rather than popping in only once it has something to
-              // warn about.
-              StaggeredEntrance(
-                index: 2,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-                  child: Text.rich(
-                    TextSpan(
-                      children: [
-                        ..._highlightFirstNumber(
-                          strings.constellationEditorStarCount(
-                            _points.length,
-                            _maxEditorPoints,
-                          ),
-                          colors,
-                        ),
-                        TextSpan(
-                          text: '     ',
-                          style: TextStyle(color: colors.muted),
-                        ),
-                        ..._highlightFirstNumber(
-                          strings.constellationEditorDisconnectedWarning(
-                            disconnected,
-                          ),
-                          colors,
-                        ),
-                      ],
-                    ),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 15, color: colors.muted),
-                  ),
                 ),
               ),
               // Grid/Mirror/Axis, the canvas, and undo/redo/delete as one
@@ -916,6 +871,51 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // The two pieces of at-a-glance status this screen has — how
+                      // many stars are placed (out of [_maxEditorPoints]) and how
+                      // many of those aren't wired into the shape yet — as one
+                      // line, bigger and with real breathing room between the two
+                      // (rather than the small, tight caption this started as),
+                      // with just the *changing* numbers in bold gold (never
+                      // [_maxEditorPoints] itself, which never moves) so the two
+                      // figures that actually matter moment to moment stand out
+                      // from the words around them. The disconnected count stays
+                      // on screen even at zero now — always there at the same
+                      // spot rather than popping in only once it has something to
+                      // warn about.
+                      StaggeredEntrance(
+                        index: 2,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+                          child: Text.rich(
+                            TextSpan(
+                              children: [
+                                ..._highlightFirstNumber(
+                                  strings.constellationEditorStarCount(
+                                    _points.length,
+                                    _maxEditorPoints,
+                                  ),
+                                  colors,
+                                ),
+                                TextSpan(
+                                  text: '     ',
+                                  style: TextStyle(color: colors.muted),
+                                ),
+                                ..._highlightFirstNumber(
+                                  strings
+                                      .constellationEditorDisconnectedWarning(
+                                        disconnected,
+                                      ),
+                                  colors,
+                                ),
+                              ],
+                            ),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 15, color: colors.muted),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Row(
@@ -1199,10 +1199,6 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                       spacing: 12,
                       runSpacing: 8,
                       children: [
-                        TextButton(
-                          onPressed: _handleBack,
-                          child: AppButtonLabel(strings.cancel),
-                        ),
                         SaveActionButton(
                           label: strings.saveConstellationAction,
                           lit: canSave,
@@ -1311,33 +1307,38 @@ class _MirrorAxisPainter extends CustomPainter {
       vertical != oldDelegate.vertical || color != oldDelegate.color;
 }
 
-/// The name of the shape being edited, shown above the canvas — see
-/// [_StarsShapeEditorScreenState._shapeName] for where it comes from
-/// (an already-saved shape's own name, or a preset's). A shape only ever
-/// has a name — no description (see [StarsShape]'s own doc
-/// comment: the same shape can be reused across several projects, so
-/// "what it means" belongs to the project, not the shape).
-class _ShapeNameHeader extends StatelessWidget {
-  const _ShapeNameHeader({required this.name});
+/// A round icon button drawn like a shape-library tile: panel fill and
+/// hairline border.
+class _EditorRoundButton extends StatelessWidget {
+  const _EditorRoundButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
 
-  final String name;
+  static const double size = 44;
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-
-    return Center(
-      child: Padding(
-        // Symmetric top/bottom — was 4/14 before, which pushed the title
-        // toward the top of its own block instead of centering it there.
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: Text(
-          name,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 24,
-            color: colors.text,
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: colors.nightPanel,
+        shape: CircleBorder(
+          side: BorderSide(color: colors.nightBorder, width: kBorderWidth),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: Icon(icon, size: 20, color: colors.muted),
           ),
         ),
       ),

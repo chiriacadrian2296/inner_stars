@@ -71,7 +71,16 @@ class PillActionButton extends StatelessWidget {
             children: [
               Icon(icon, color: foreground, size: iconSize),
               SizedBox(width: gap),
-              AppButtonLabel(label, color: foreground, fontSize: fontSize),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: AppButtonLabel(
+                    label,
+                    color: foreground,
+                    fontSize: fontSize,
+                  ),
+                ),
+              ),
             ],
           ),
         ),

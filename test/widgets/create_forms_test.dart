@@ -100,14 +100,23 @@ void main() {
             starsShapeRepository: shapes,
           ),
         );
+        if (!icons) {
+          final preview = find.widgetWithIcon(InkWell, Icons.insights).last;
+          await tester.ensureVisible(preview);
+          await tester.tap(preview);
+          await tester.pumpAndSettle();
+          await tester.tap(
+            find.text(
+              const StringsEn().constellationEditorHelpClose.toUpperCase(),
+            ),
+          );
+          await tester.pumpAndSettle();
+        }
         final picker = icons
             ? find.byWidgetPredicate(
                 (widget) => widget is AppPickerField && widget.iconOnly,
               )
-            : find.ancestor(
-                of: find.byIcon(Icons.draw_outlined),
-                matching: find.byType(TextButton),
-              );
+            : find.byTooltip(const StringsEn().shapesLibraryButtonLabel);
         await tester.ensureVisible(picker);
         await tester.tap(picker);
         await tester.pumpAndSettle();

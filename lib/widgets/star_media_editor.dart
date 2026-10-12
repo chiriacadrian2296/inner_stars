@@ -158,8 +158,9 @@ class StarMediaEditor extends StatelessWidget {
   Future<void> _addLink(BuildContext context) async {
     if (!_checkLimit(context, StarMediaKind.link)) return;
     final result = kLinkAsSheet
-        ? await showFixedAppSheet<({String url, String? label})>(
+        ? await showAppSheet<({String url, String? label})>(
             context: context,
+            isScrollControlled: true,
             builder: (_) => const _LinkDialog(asSheet: true),
           )
         : await showAppDialog<({String url, String? label})>(
@@ -647,13 +648,26 @@ class _LinkDialog extends StatefulWidget {
   State<_LinkDialog> createState() => _LinkDialogState();
 }
 
-class _LinkDialogState extends State<_LinkDialog> {
+class _LinkDialogState extends State<_LinkDialog> with WidgetsBindingObserver {
   final _url = TextEditingController();
   final _label = TextEditingController();
   bool _invalid = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  // Rebuilds as the keyboard opens or closes so the sheet follows it.
+  @override
+  void didChangeMetrics() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _url.dispose();
     _label.dispose();
     super.dispose();
@@ -687,6 +701,7 @@ class _LinkDialogState extends State<_LinkDialog> {
           maxLength: kMaxLinkUrlLength,
           showCounter: false,
           hintText: strings.linkUrlHint,
+          textCapitalization: TextCapitalization.none,
           textInputAction: TextInputAction.next,
           errorText: _invalid ? strings.linkInvalid : null,
           onChanged: (_) => setState(() => _invalid = false),
@@ -728,15 +743,12 @@ class _LinkDialogState extends State<_LinkDialog> {
       ),
     ];
     if (widget.asSheet) {
-      // Fixed height, fields at the top: the keyboard covers the empty
-      // lower part and the sheet never moves.
-      return SizedBox(
-        height: MediaQuery.sizeOf(context).height * 0.7,
+      // As tall as its content, lifted clear of the keyboard.
+      final keyboard = MediaQueryData.fromView(View.of(context)).viewInsets;
+      return Padding(
+        padding: EdgeInsets.only(bottom: keyboard.bottom),
         child: AppSheetFrame(
-          expandChild: true,
           title: AppSheetTitle(strings.linkTitle),
-          // Buttons sit right under the fields; the empty space is below
-          // them, where the keyboard covers the sheet.
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
             child: Column(

@@ -33,6 +33,7 @@ class StaggeredEntrance extends StatefulWidget {
     this.enabled = true,
     this.reverse = false,
     this.drift = 0.06,
+    this.extraDelay = Duration.zero,
   });
 
   final int index;
@@ -54,6 +55,10 @@ class StaggeredEntrance extends StatefulWidget {
   /// How far a vertical entrance rises from, as a fraction of the child's own
   /// height. Small text blocks need a larger value than cards to read at all.
   final double drift;
+
+  /// Added on top of the [index] delay (which is capped), for something that
+  /// should arrive after the cascade has all but finished.
+  final Duration extraDelay;
 
   /// Delay between consecutive items.
   static const step = Duration(milliseconds: 40);
@@ -137,7 +142,7 @@ class _StaggeredEntranceState extends State<StaggeredEntrance>
       );
       setState(() => _progress = curved);
       final steps = widget.index.clamp(0, StaggeredEntrance.maxDelaySteps);
-      final delay = StaggeredEntrance.step * steps;
+      final delay = StaggeredEntrance.step * steps + widget.extraDelay;
       if (delay == Duration.zero) {
         controller.forward(from: 0);
       } else {

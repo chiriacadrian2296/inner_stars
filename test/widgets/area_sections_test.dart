@@ -82,6 +82,10 @@ void main() {
     final question = LifeArea.physical
         .reflectionQuestions(const StringsIt())
         .first;
+    final group = LifeArea.physical.reflectionGroups(const StringsIt()).first;
+    await tester.tap(find.text(group.title));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text(question));
     await tester.tap(find.text(question));
     await tester.pumpAndSettle();
     await tester.enterText(
@@ -114,7 +118,14 @@ void main() {
         ),
       ),
     );
-    await tester.tap(find.text('FRASE'));
+    await tester.tap(
+      find.widgetWithText(
+        ElevatedButton,
+        const StringsIt().moodboardAddLabel.toUpperCase(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(const StringsIt().moodboardQuote.toUpperCase()));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('quote-text-field')),
@@ -124,7 +135,12 @@ void main() {
       find.byKey(const ValueKey('quote-author-field')),
       'Ursula K. Le Guin',
     );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('quote-style-aurora')),
+    );
     await tester.tap(find.byKey(const ValueKey('quote-style-aurora')));
+    await tester.pumpAndSettle();
     final quoteTheme = Theme.of(
       tester.element(find.byKey(const ValueKey('quote-text-field'))),
     );

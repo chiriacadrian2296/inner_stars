@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'icon_with_new_badge.dart';
 import '../data/constellation_shape.dart';
 import '../l10n/strings_scope.dart';
 import '../models/star_kind.dart';
@@ -47,11 +48,22 @@ class SearchCardAction {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.group = 0,
+    this.isNew = false,
   });
 
+  /// Shows the small "new" glyph under the icon (+ Constellation, + Star).
+  final bool isNew;
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+
+  /// Consecutive actions that share a [group] sit together; the drawer
+  /// separates one group from the next (a gap on cards, nothing drawn on
+  /// tooltips). The same rule at every level: the kind's particular action
+  /// (reignite, light, add star, add constellation) is a group of its own,
+  /// share is a group of its own, and fly / edit / archive go together.
+  final int group;
 }
 
 class SearchResultCard extends StatelessWidget {
@@ -68,7 +80,13 @@ class SearchResultCard extends StatelessWidget {
     this.baseBodyHeight = _bodyHeight,
     this.fillVisualHeight = false,
     this.centerVisual = false,
+    this.groupSeparators = true,
   });
+
+  /// Whether the drawer visibly separates its action groups (an empty gap).
+  /// The tooltips turn it off: the groups stay in the data, ready for later,
+  /// but are not drawn.
+  final bool groupSeparators;
 
   static const visualSize = 88.0;
   static const _bodyHeight = 88.0;
@@ -154,6 +172,7 @@ class SearchResultCard extends StatelessWidget {
                             ? () {}
                             : menuController.closeAll,
                         progress: progress,
+                        groupSeparators: groupSeparators,
                       ),
                     ),
                   ),
@@ -707,14 +726,19 @@ class _SearchQuickMenuToggle extends StatelessWidget {
   }
 }
 
+/// Empty space between two action groups in the drawer.
+const double _groupGap = 14;
+
 class _SearchQuickMenu extends StatelessWidget {
   const _SearchQuickMenu({
     required this.actions,
     required this.onActionSelected,
     required this.progress,
+    required this.groupSeparators,
   });
 
   final List<SearchCardAction> actions;
+  final bool groupSeparators;
   final VoidCallback onActionSelected;
 
   /// How far the drawer is open, 0 to 1 and linear (closing runs it back
@@ -746,7 +770,11 @@ class _SearchQuickMenu extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            for (var i = 0; i < actions.length; i++)
+            for (var i = 0; i < actions.length; i++) ...[
+              if (groupSeparators &&
+                  i > 0 &&
+                  actions[i].group != actions[i - 1].group)
+                const SizedBox(width: _groupGap),
               Expanded(
                 child: _cascadeIn(
                   context,
@@ -759,6 +787,7 @@ class _SearchQuickMenu extends StatelessWidget {
                   ),
                 ),
               ),
+            ],
           ],
         ),
       ),
@@ -807,7 +836,14 @@ class _SearchQuickMenuAction extends StatelessWidget {
           action.onTap();
         },
         child: Center(
-          child: Icon(action.icon, size: 26, color: colors.nightPanel),
+          child: action.isNew
+              ? IconWithNewBadge(
+                  icon: action.icon,
+                  size: 22,
+                  color: colors.nightPanel,
+                  lift: 2,
+                )
+              : Icon(action.icon, size: 26, color: colors.nightPanel),
         ),
       ),
     );

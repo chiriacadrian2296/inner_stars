@@ -1,3 +1,5 @@
+import '../models/display_text.dart';
+
 import 'package:flutter/material.dart';
 
 import '../data/constellation_shape.dart';
@@ -59,7 +61,7 @@ class ShareableConstellationCard extends StatelessWidget {
       ),
     );
     return ShareableStoryLayout(
-      title: project.name,
+      title: project.displayName,
       description: project.description,
       hero: shapeGraphic,
       context: Wrap(

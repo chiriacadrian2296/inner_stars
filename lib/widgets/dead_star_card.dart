@@ -1,3 +1,5 @@
+import '../models/display_text.dart';
+
 import 'package:flutter/material.dart';
 
 import '../l10n/strings_scope.dart';
@@ -44,7 +46,7 @@ class DeadStarCard extends StatelessWidget {
     VoidCallback? onNavigateTo,
   }) {
     return DeadStarCard._(
-      title: star.title,
+      title: star.displayTitle,
       createdAt: star.createdAt,
       deadDate: star.deadDate,
       originalKind: star.originalKind,
@@ -62,7 +64,7 @@ class DeadStarCard extends StatelessWidget {
     VoidCallback? onNavigateTo,
   }) {
     return DeadStarCard._(
-      title: habit.title,
+      title: habit.displayTitle,
       createdAt: habit.createdAt,
       deadDate: habit.deadDate,
       originalKind: StarKind.pulsar,

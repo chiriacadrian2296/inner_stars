@@ -1,3 +1,5 @@
+import '../models/display_text.dart';
+
 import 'package:flutter/material.dart';
 
 import '../l10n/strings_scope.dart';
@@ -29,7 +31,7 @@ class ShareableLitStarCard extends StatelessWidget {
     final strings = context.strings;
     final photoPath = star.photoPath;
     return ShareableStoryLayout(
-      title: star.title,
+      title: star.displayTitle,
       description: star.description,
       meta: formatDisplayDateTime(star.achievedDate!, strings),
       background: photoPath == null

@@ -1,3 +1,5 @@
+import '../models/display_text.dart';
+
 import 'package:flutter/material.dart';
 
 import '../l10n/strings_scope.dart';
@@ -82,7 +84,7 @@ class LitStarCard extends StatelessWidget {
                 ],
                 const SizedBox(height: 12),
                 Text(
-                  star.title,
+                  star.displayTitle,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: kFontStarTitle,

@@ -1,3 +1,7 @@
+import 'repository_write.dart';
+
+import 'package:flutter/foundation.dart';
+
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,7 +19,7 @@ import 'star_media_storage.dart';
 ///
 /// The whole list is small (personal milestones, not a high-volume log) and
 /// is always read/written together, so there's no need for a real database.
-class StarRepository {
+class StarRepository extends ChangeNotifier {
   StarRepository(this._prefs);
 
   static const _storageKey = 'stars-list-v1';
@@ -88,6 +92,7 @@ class StarRepository {
   /// Nth victory") is assigned only if [achievedDate] is given.
   Future<Star> add({
     required String title,
+    String? iconSlug,
     String? description,
     required int projectId,
     int? slotSequence,
@@ -132,6 +137,7 @@ class StarRepository {
       slotSequence: nextSlot,
       number: achievedDate == null ? null : _nextNumber(stars),
       title: title.trim(),
+      iconSlug: iconSlug ?? '',
       description: (trimmedDescription == null || trimmedDescription.isEmpty)
           ? null
           : trimmedDescription,
@@ -159,6 +165,7 @@ class StarRepository {
   Future<Star> update({
     required int id,
     required String title,
+    String? iconSlug,
     String? description,
     required int projectId,
     DateTime? targetDate,
@@ -189,6 +196,7 @@ class StarRepository {
       slotSequence: existing.slotSequence,
       number: number,
       title: title.trim(),
+      iconSlug: iconSlug ?? existing.iconSlug,
       description: (trimmedDescription == null || trimmedDescription.isEmpty)
           ? null
           : trimmedDescription,
@@ -236,6 +244,7 @@ class StarRepository {
       slotSequence: existing.slotSequence,
       number: _nextNumber(stars),
       title: existing.title,
+      iconSlug: existing.iconSlug,
       description: existing.description,
       createdAt: existing.createdAt,
       targetDate: existing.targetDate,
@@ -268,6 +277,7 @@ class StarRepository {
       projectId: existing.projectId,
       slotSequence: existing.slotSequence,
       title: existing.title,
+      iconSlug: existing.iconSlug,
       description: existing.description,
       createdAt: existing.createdAt,
       targetDate: existing.targetDate,
@@ -308,6 +318,7 @@ class StarRepository {
   Future<Star> resurrect(
     int id, {
     required String title,
+    String? iconSlug,
     String? description,
     required int projectId,
     DateTime? targetDate,
@@ -331,6 +342,7 @@ class StarRepository {
       slotSequence: existing.slotSequence,
       number: achievedDate == null ? null : _nextNumber(stars),
       title: title.trim(),
+      iconSlug: iconSlug ?? existing.iconSlug,
       description: (trimmedDescription == null || trimmedDescription.isEmpty)
           ? null
           : trimmedDescription,
@@ -357,7 +369,8 @@ class StarRepository {
   /// there's no undo. Unlike [delete], this really does erase everything;
   /// tombstoning has no purpose once the whole archive is being wiped.
   Future<void> clear() async {
-    await _prefs.remove(_storageKey);
+    await writeRepositoryValue(_prefs, _storageKey, null);
+    notifyListeners();
     await StarMediaStorage.clear();
   }
 
@@ -395,6 +408,7 @@ class StarRepository {
 
   Future<void> _saveAll(List<Star> stars) async {
     final encoded = jsonEncode(stars.map((s) => s.toJson()).toList());
-    await _prefs.setString(_storageKey, encoded);
+    await writeRepositoryValue(_prefs, _storageKey, encoded);
+    notifyListeners();
   }
 }

@@ -1,3 +1,6 @@
+import '../utils/entity_insights.dart';
+import '../models/display_text.dart';
+
 import 'package:flutter/material.dart';
 
 import '../l10n/strings_scope.dart';
@@ -47,6 +50,7 @@ class SkyStarTooltip extends StatelessWidget {
     final badges = starCardBadges(star, context.colors, strings);
     final photoPath = kind == StarKind.lit ? star.photoPath : null;
     return SkySearchTooltipCard(
+      entity: InsightEntity.star(star.id),
       menuId: 'tooltip-star:${star.id}',
       onTap: onView,
       // A lit star with a photo shows it (the middle square, cropped) where
@@ -81,7 +85,7 @@ class SkyStarTooltip extends StatelessWidget {
         eyebrow: kind.galaxyLabel(strings),
         archivedOriginalKind: star.dead ? star.originalKind : null,
         eyebrowColor: starKindColor(kind, context.colors),
-        title: star.title,
+        title: star.displayTitle,
         breadcrumb: project == null
             ? null
             : '${project!.area.displayName(strings)} → ${project!.name}',
@@ -105,18 +109,21 @@ class SkyStarTooltip extends StatelessWidget {
             icon: Icons.share_outlined,
             label: strings.starQuickLookShareAction,
             onTap: onShare!,
+            group: 1,
           ),
         if (!star.dead)
           SearchCardAction(
             icon: Icons.edit_rounded,
             label: strings.starQuickLookEditAction,
             onTap: onEdit,
+            group: 2,
           ),
         if (onDelete != null)
           SearchCardAction(
             icon: Icons.delete_outline_rounded,
             label: strings.archiveAction,
             onTap: onDelete!,
+            group: 2,
           ),
       ],
     );

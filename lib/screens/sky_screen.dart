@@ -1,3 +1,6 @@
+import '../widgets/entity_insights_scope.dart';
+import '../models/display_text.dart';
+
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -655,9 +658,17 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _tourController = Tour.read(context)..addListener(_handleTourChanged);
   }
 
+  EntityInsightsController? _insightsController;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final insights = EntityInsightsScope.maybeOf(context);
+    if (insights != _insightsController) {
+      _insightsController?.removeListener(_refreshOpenTooltip);
+      _insightsController = insights;
+      insights?.addListener(_refreshOpenTooltip);
+    }
     // Only actually rebuilds [_skyTooltipOverlay] when something it reads
     // (theme, screen size) really changed — see that field's own doc
     // comment. Reading `context.colors`/`MediaQuery.sizeOf` here (rather
@@ -669,6 +680,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _insightsController?.removeListener(_refreshOpenTooltip);
     _tourController?.removeListener(_handleTourChanged);
     _holdTimer?.cancel();
     _holdRingArmTimer?.cancel();
@@ -1363,6 +1375,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       final resurrected = await widget.starRepository.resurrect(
         star.id,
         title: result.title,
+        iconSlug: result.iconSlug,
         description: result.description,
         projectId: result.projectId,
         targetDate: result.targetDate,
@@ -1398,6 +1411,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     await widget.starRepository.update(
       id: star.id,
       title: addResult.title,
+      iconSlug: addResult.iconSlug,
       description: addResult.description,
       projectId: addResult.projectId,
       targetDate: addResult.targetDate,
@@ -1442,7 +1456,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         content: star.isLit
             ? ShareableLitStarCard(star: star, project: project)
             : ShareableGoalCard(star: star, project: project),
-        shareText: star.title,
+        shareText: star.displayTitle,
         fileName: 'star_${star.id}.png',
       );
     } finally {
@@ -1457,9 +1471,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     try {
       if (!mounted) return;
       final text = switch (subject) {
-        _StarShare(:final star) => star.title,
-        _PulsarShare(:final habit) => habit.title,
-        _ConstellationShare(:final project) => project.name,
+        _StarShare(:final star) => star.displayTitle,
+        _PulsarShare(:final habit) => habit.displayTitle,
+        _ConstellationShare(:final project) => project.displayName,
       };
       final content = switch (subject) {
         _StarShare(:final star, :final project) =>
@@ -1671,6 +1685,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     if (result is! StarFormResult) return;
     final created = await widget.starRepository.add(
       title: result.title,
+      iconSlug: result.iconSlug,
       description: result.description,
       projectId: result.projectId,
       slotSequence: result.slotSequence,
@@ -1700,6 +1715,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     if (result.kind == StarKind.pulsar) {
       final created = await widget.habitRepository.add(
         title: result.title,
+        iconSlug: result.iconSlug,
         description: result.description,
         projectId: result.projectId,
         intensity: result.intensity ?? 3,
@@ -1713,6 +1729,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     } else {
       final created = await widget.starRepository.add(
         title: result.title,
+        iconSlug: result.iconSlug,
         description: result.description,
         projectId: result.projectId,
         targetDate: result.targetDate,
@@ -4647,7 +4664,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         habit: habit,
         project: constellation.project,
       ),
-      shareText: habit.title,
+      shareText: habit.displayTitle,
       fileName: 'pulsar_${habit.id}.png',
     );
   }
@@ -4710,6 +4727,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       final resurrected = await widget.habitRepository.resurrect(
         habit.id,
         title: result.title,
+        iconSlug: result.iconSlug,
         description: result.description,
         projectId: result.projectId,
         intensity: result.intensity ?? habit.intensity,
@@ -4726,6 +4744,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       await widget.habitRepository.update(
         id: habit.id,
         title: result.title,
+        iconSlug: result.iconSlug,
         description: result.description,
         projectId: result.projectId,
         intensity: result.intensity ?? habit.intensity,
@@ -4820,6 +4839,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     if (result.kind == StarKind.pulsar) {
       final created = await widget.habitRepository.add(
         title: result.title,
+        iconSlug: result.iconSlug,
         description: result.description,
         projectId: result.projectId,
         intensity: result.intensity ?? 3,
@@ -4833,6 +4853,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     } else {
       final created = await widget.starRepository.add(
         title: result.title,
+        iconSlug: result.iconSlug,
         description: result.description,
         projectId: result.projectId,
         slotSequence: result.slotSequence,
@@ -4858,7 +4879,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         project: constellation.project,
         shape: shape,
       ),
-      shareText: constellation.project.name,
+      shareText: constellation.project.displayName,
       fileName: 'constellation_${constellation.project.id}.png',
     );
   }

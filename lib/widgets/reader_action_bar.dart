@@ -5,7 +5,9 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_style.dart';
 import 'reader_entry_content.dart' show ReaderEntrance;
+import 'grouped_action_layout.dart';
 
 /// One button in the reader's bottom bar.
 class ReaderAction {
@@ -15,12 +17,17 @@ class ReaderAction {
     required this.onTap,
     this.loading = false,
     this.off = false,
+    this.group = 0,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
   final bool loading;
+
+  /// Consecutive actions sharing a group sit together; a wider gap separates
+  /// one group from the next (see [kActionGroupGap]).
+  final int group;
 
   /// Drawn dark instead of white: the star this belongs to is off, and this is
   /// what switches it on (or, on a burning pulsar, off). A dark button that
@@ -47,17 +54,19 @@ class ReaderActionBar extends StatelessWidget {
   /// How each button arrives — see [ReaderEntrance].
   final ReaderEntrance entrance;
 
-  static const _gap = 8.0;
-
   @override
   Widget build(BuildContext context) {
     if (actions.isEmpty) return const SizedBox.shrink();
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: _gap,
-      runSpacing: _gap,
+    return GroupedActionLayout(
+      separatorBuilder: (dot) => entrance.rising(
+        7 + (reverseOrder ? 0 : actions.length - 1),
+        dot,
+        drift: 0,
+        extraDelay: kActionGroupDotDelay,
+      ),
+      groups: [for (final action in actions) action.group],
       children: [
-        for (var i = 0; i < actions.length; i++)
+        for (var i = 0; i < actions.length; i++) ...[
           entrance(
             7 + (reverseOrder ? actions.length - 1 - i : i),
             ReaderActionButton(
@@ -68,6 +77,7 @@ class ReaderActionBar extends StatelessWidget {
               off: actions[i].off,
             ),
           ),
+        ],
       ],
     );
   }

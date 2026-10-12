@@ -1,3 +1,6 @@
+import '../utils/entity_insights.dart';
+import '../models/display_text.dart';
+
 import 'package:flutter/material.dart';
 
 import '../data/constellation_shape.dart';
@@ -41,6 +44,7 @@ class SkyConstellationTooltip extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = context.strings;
     return SkySearchTooltipCard(
+      entity: InsightEntity.project(project.id),
       menuId: 'tooltip-project:${project.id}',
       onTap: onView,
       baseBodyHeight: SearchResultCard.bodyHeightFor(badges),
@@ -55,7 +59,7 @@ class SkyConstellationTooltip extends StatelessWidget {
       content: SearchCardTextContent(
         eyebrow: strings.galaxyProjectLabel,
         eyebrowColor: context.colors.gold,
-        title: project.name,
+        title: project.displayName,
         breadcrumb: project.area.displayName(strings),
         badges: badges,
       ),
@@ -64,21 +68,25 @@ class SkyConstellationTooltip extends StatelessWidget {
           icon: Icons.star_rounded,
           label: strings.constellationQuickLookAddStarAction,
           onTap: onAddStar,
+          isNew: true,
         ),
         SearchCardAction(
           icon: Icons.share_outlined,
           label: strings.starQuickLookShareAction,
           onTap: onShare,
+          group: 1,
         ),
         SearchCardAction(
           icon: Icons.edit_outlined,
           label: strings.starQuickLookEditAction,
           onTap: onEdit,
+          group: 2,
         ),
         SearchCardAction(
           icon: Icons.delete_outline_rounded,
           label: strings.deleteStarAction,
           onTap: onDelete,
+          group: 2,
         ),
       ],
     );

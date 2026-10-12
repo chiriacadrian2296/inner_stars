@@ -5,13 +5,13 @@ Galaxy is the visual universe (`SkyScreen`). Sky is the searchable browser
 
 | Meaning | Sky and management flows | Galaxy tooltip |
 | --- | --- | --- |
-| Life domain | Life area / Area di vita | Supernova |
+| Life domain | Area / Area | Supernova |
 | Group of related activities | Project / Progetto | Constellation / Costellazione |
 | Completed effort | Victory / Vittoria | Lit star / Stella accesa |
 | Future effort | Goal / Obiettivo | Unlit star / Stella da accendere |
 | Repeated effort | Habit / Abitudine | Pulsar |
 | Unconfigured slot | Opportunity / Opportunità | Nascent star / Stella nascente |
-| Archived activity | Archived / Archiviato | Extinguished star / Stella spenta |
+| Archived activity | Archived / Archiviato | Dead star / Stella spenta |
 
 Use domain names in forms, readers, statistics, search, filters and counts.
 “Activities” / “Attività” is the umbrella for victories, goals and habits.

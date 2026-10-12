@@ -1,3 +1,5 @@
+import '../../models/display_text.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../l10n/strings_scope.dart';
@@ -63,7 +65,7 @@ class GalleryStarData {
   /// The entry's badges (see `starCardBadges` / `habitCardBadges`).
   final CardBadges badges;
 
-  String get title => star?.title ?? habit!.title;
+  String get title => star?.displayTitle ?? habit!.displayTitle;
   String get key => star != null ? 's${star!.id}' : 'p${habit!.id}';
   DateTime? get deadDate => star?.deadDate ?? habit?.deadDate;
 }
@@ -362,7 +364,7 @@ class GalleryProjectTile extends StatelessWidget {
                 ),
                 SizedBox(height: 4 * u),
                 Text(
-                  data.project.name,
+                  data.project.displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(

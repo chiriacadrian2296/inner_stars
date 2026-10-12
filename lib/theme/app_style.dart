@@ -110,6 +110,9 @@ class AppButtonLabel extends StatelessWidget {
 const double kBorderWidth = 1.5;
 const double kBorderWidthActive = 2;
 
+/// Master switch for [goldGlow]; off keeps every button flat.
+const bool kButtonGlow = false;
+
 /// The one glow in the app: gold, soft, centered. Scaled by [strength]
 /// (0 = none, 1 = a resting lit control, >1 = something actively pressed or
 /// pulsing) and by [size], which should be roughly the control's own extent
@@ -124,7 +127,8 @@ List<BoxShadow> goldGlow(
   double strength = 1,
   double size = 48,
 }) {
-  if (strength <= 0) return const [];
+  // Buttons are flat and essential: no glow (decided 2026-10-12).
+  if (strength <= 0 || !kButtonGlow) return const [];
   return [
     BoxShadow(
       color: colors.gold.withValues(alpha: 0.16 * strength),
@@ -250,3 +254,12 @@ BoxDecoration skyControlDecoration(
     border: Border.all(color: colors.gold, width: kBorderWidthActive),
   );
 }
+
+/// Space between two groups of action buttons (a dock or a reader bar), wider
+/// than the gap between buttons of one group. The groups are the same at every
+/// level: the kind's particular action, share, then fly / edit / archive.
+const double kActionGroupGap = 18;
+
+/// How long after the last button of a dock or reader bar starts entering the
+/// group dots fade in: the buttons (320 ms each) are all but done.
+const Duration kActionGroupDotDelay = Duration(milliseconds: 240);

@@ -27,8 +27,19 @@ class ResultsCountRow extends StatelessWidget {
       children: [
         Icon(icon, size: 18, color: count == 0 ? colors.muted : colors.gold),
         const SizedBox(width: 6),
-        Text(
-          '$count ${word.isEmpty ? word : word[0].toUpperCase() + word.substring(1)}',
+        Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: '$count',
+                style: TextStyle(color: colors.text),
+              ),
+              TextSpan(
+                text:
+                    ' ${word.isEmpty ? word : word[0].toUpperCase() + word.substring(1)}',
+              ),
+            ],
+          ),
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,

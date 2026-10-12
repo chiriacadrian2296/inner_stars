@@ -1,3 +1,10 @@
+import '../utils/entity_insights.dart';
+import '../widgets/entity_insights_scope.dart';
+import '../widgets/grouped_action_layout.dart';
+import 'entity_stats_screen.dart';
+
+import '../widgets/icon_with_new_badge.dart';
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -178,7 +185,10 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
   /// pre-filled.
   Future<void> _create({bool constellation = false}) async {
     final starsShapeRepository = await _starsShapes;
-    final habitRepository = await HabitRepository.create();
+    if (!mounted) return;
+    final habitRepository =
+        EntityInsightsScope.maybeOf(context)?.habits ??
+        await HabitRepository.create();
     if (!mounted) return;
     await showCreatePage(
       context,
@@ -468,6 +478,12 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                   child: ResponsiveContent(
                     shrinkHeight: true,
                     child: _AreaDock(
+                      onStatistics: EntityInsightsScope.maybeOf(context) == null
+                          ? null
+                          : () => openEntityStatistics(
+                              context,
+                              InsightEntity.area(area),
+                            ),
                       animate: !_hasNavigatedAreas,
                       onVision: () => _open(
                         VisionEditorScreen(
@@ -598,96 +614,92 @@ class _AreaDock extends StatelessWidget {
     required this.onNewConstellation,
     required this.onReflections,
     required this.onFly,
+    this.onStatistics,
   });
-
   final bool animate;
   final VoidCallback onVision;
   final VoidCallback onMoodboard;
   final VoidCallback onNewConstellation;
   final VoidCallback onReflections;
   final VoidCallback onFly;
-
+  final VoidCallback? onStatistics;
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      color: context.colors.night,
-      boxShadow: [
-        BoxShadow(
-          color: context.colors.night.withValues(alpha: 0.9),
-          blurRadius: 32,
-          spreadRadius: 6,
-          offset: const Offset(0, -10),
-        ),
-      ],
-    ),
-    child: Padding(
-      padding: EdgeInsets.fromLTRB(
-        12,
-        16,
-        12,
-        16 + MediaQuery.paddingOf(context).bottom,
+  Widget build(BuildContext context) {
+    final actions = <Widget>[
+      _AreaDockAction(
+        icon: Icons.insights,
+        label: context.strings.areaQuickLookNewConstellationAction,
+        onTap: onNewConstellation,
+        isNew: true,
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          StaggeredEntrance(
-            index: 0,
-            enabled: animate,
-            drift: 0.7,
-            child: _AreaDockAction(
-              icon: Icons.edit_outlined,
-              label: 'Vision',
-              onTap: onVision,
-            ),
-          ),
-          const SizedBox(width: 8),
-          StaggeredEntrance(
-            index: 1,
-            enabled: animate,
-            drift: 0.7,
-            child: _AreaDockAction(
-              icon: Icons.photo_library_outlined,
-              label: 'Moodboard',
-              onTap: onMoodboard,
-            ),
-          ),
-          const SizedBox(width: 8),
-          StaggeredEntrance(
-            index: 2,
-            enabled: animate,
-            drift: 0.7,
-            child: _AreaDockAction(
-              icon: Icons.auto_stories_outlined,
-              label: 'Riflessioni',
-              onTap: onReflections,
-            ),
-          ),
-          const SizedBox(width: 8),
-          StaggeredEntrance(
-            index: 3,
-            enabled: animate,
-            drift: 0.7,
-            child: _AreaDockAction(
-              icon: Icons.insights,
-              label: '+ Costellazione',
-              onTap: onNewConstellation,
-            ),
-          ),
-          const SizedBox(width: 8),
-          StaggeredEntrance(
-            index: 4,
-            enabled: animate,
-            drift: 0.7,
-            child: _AreaDockAction(
-              icon: Icons.navigation,
-              label: 'Vola',
-              onTap: onFly,
-            ),
+      _AreaDockAction(
+        icon: Icons.edit_outlined,
+        label: context.strings.visionPageTitle,
+        onTap: onVision,
+      ),
+      _AreaDockAction(
+        icon: Icons.photo_library_outlined,
+        label: context.strings.moodboardTitle,
+        onTap: onMoodboard,
+      ),
+      _AreaDockAction(
+        icon: Icons.auto_stories_outlined,
+        label: context.strings.areaQuickLookReflectionsAction,
+        onTap: onReflections,
+      ),
+      if (onStatistics != null)
+        _AreaDockAction(
+          icon: Icons.bar_chart,
+          label: context.strings.statsTitle,
+          onTap: onStatistics!,
+        ),
+      _AreaDockAction(
+        icon: Icons.navigation,
+        label: context.strings.actionFly,
+        onTap: onFly,
+      ),
+    ];
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: context.colors.night,
+        boxShadow: [
+          BoxShadow(
+            color: context.colors.night.withValues(alpha: 0.9),
+            blurRadius: 32,
+            spreadRadius: 6,
+            offset: const Offset(0, -10),
           ),
         ],
       ),
-    ),
-  );
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          12,
+          16,
+          12,
+          16 + MediaQuery.paddingOf(context).bottom,
+        ),
+        child: GroupedActionLayout(
+          separatorBuilder: (dot) => StaggeredEntrance(
+            index: 4,
+            enabled: animate,
+            drift: 0,
+            extraDelay: kActionGroupDotDelay,
+            child: dot,
+          ),
+          groups: [0, 1, 1, 1, if (onStatistics != null) 2, 3],
+          children: [
+            for (var i = 0; i < actions.length; i++)
+              StaggeredEntrance(
+                index: i,
+                enabled: animate,
+                drift: 0.7,
+                child: actions[i],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// Same white disc as the Star Reader and constellation docks.
@@ -696,8 +708,11 @@ class _AreaDockAction extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.isNew = false,
   });
 
+  /// Adds the small "new" glyph under the icon (see [IconWithNewBadge]).
+  final bool isNew;
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -715,7 +730,14 @@ class _AreaDockAction extends StatelessWidget {
           width: 34,
           height: 34,
           child: Center(
-            child: Icon(icon, size: 18, color: context.colors.night),
+            child: isNew
+                ? IconWithNewBadge(
+                    icon: icon,
+                    size: 16,
+                    color: context.colors.night,
+                    lift: 2,
+                  )
+                : Icon(icon, size: 18, color: context.colors.night),
           ),
         ),
       ),

@@ -28,6 +28,7 @@ class Star {
     required this.slotSequence,
     this.number,
     required this.title,
+    this.iconSlug = '',
     this.description,
     required this.createdAt,
     this.targetDate,
@@ -51,6 +52,9 @@ class Star {
   final int slotSequence;
   final int? number;
   final String title;
+
+  /// An empty slug keeps the original activity icon for older records.
+  final String iconSlug;
   final String? description;
   final DateTime createdAt;
 
@@ -113,6 +117,7 @@ class Star {
     int? slotSequence,
     int? number,
     String? title,
+    String? iconSlug,
     String? description,
     DateTime? createdAt,
     DateTime? targetDate,
@@ -129,6 +134,7 @@ class Star {
       slotSequence: slotSequence ?? this.slotSequence,
       number: number ?? this.number,
       title: title ?? this.title,
+      iconSlug: iconSlug ?? this.iconSlug,
       description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
       targetDate: targetDate ?? this.targetDate,
@@ -148,6 +154,7 @@ class Star {
       slotSequence: json['slotSequence'] as int,
       number: json['number'] as int?,
       title: json['title'] as String,
+      iconSlug: json['iconSlug'] as String? ?? '',
       description: json['description'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       targetDate: (json['targetDate'] as String?).let(DateTime.parse),
@@ -170,6 +177,7 @@ class Star {
       'slotSequence': slotSequence,
       'number': number,
       'title': title,
+      'iconSlug': iconSlug,
       'description': description,
       'createdAt': createdAt.toIso8601String(),
       'targetDate': targetDate?.toIso8601String(),
@@ -190,6 +198,7 @@ class Star {
         other.slotSequence == slotSequence &&
         other.number == number &&
         other.title == title &&
+        other.iconSlug == iconSlug &&
         other.description == description &&
         other.createdAt == createdAt &&
         other.targetDate == targetDate &&
@@ -208,6 +217,7 @@ class Star {
     slotSequence,
     number,
     title,
+    iconSlug,
     description,
     createdAt,
     targetDate,

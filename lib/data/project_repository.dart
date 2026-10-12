@@ -1,3 +1,7 @@
+import 'repository_write.dart';
+
+import 'package:flutter/foundation.dart';
+
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,7 +13,7 @@ import '../models/project.dart';
 /// one [SharedPreferences] key, newest first — mirrors [StarRepository]'s
 /// shape exactly, since the same "small list, always read/written whole"
 /// reasoning applies here.
-class ProjectRepository {
+class ProjectRepository extends ChangeNotifier {
   ProjectRepository(this._prefs);
 
   static const _storageKey = 'projects-list';
@@ -167,11 +171,13 @@ class ProjectRepository {
   /// Permanently deletes every project. Used by the "reset all data" action
   /// — there's no undo.
   Future<void> clear() async {
-    await _prefs.remove(_storageKey);
+    await writeRepositoryValue(_prefs, _storageKey, null);
+    notifyListeners();
   }
 
   Future<void> _saveAll(List<Project> projects) async {
     final encoded = jsonEncode(projects.map((p) => p.toJson()).toList());
-    await _prefs.setString(_storageKey, encoded);
+    await writeRepositoryValue(_prefs, _storageKey, encoded);
+    notifyListeners();
   }
 }

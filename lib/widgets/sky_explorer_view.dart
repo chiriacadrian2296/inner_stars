@@ -1,3 +1,8 @@
+import '../utils/entity_insights.dart';
+import 'entity_flip_card.dart';
+import 'entity_insights_scope.dart';
+import '../models/display_text.dart';
+
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
@@ -161,7 +166,7 @@ class _SkyEntry {
   final StarKind kind;
   final DateTime sortKey;
 
-  String get title => (star?.title ?? habit!.title);
+  String get title => (star?.displayTitle ?? habit!.displayTitle);
   String? get description => star?.description ?? habit?.description;
 
   /// What "sort by intensity" means for this entry — a lit star's own
@@ -241,6 +246,30 @@ class SkyExplorerView extends StatefulWidget {
 
 class _SkyExplorerViewState extends State<SkyExplorerView>
     with SingleTickerProviderStateMixin {
+  InsightEntity? _flippedEntity;
+  EntityInsightsController? _insightsController;
+
+  Widget _flipTile(InsightEntity entity, Widget front) => EntityFlipCard(
+    key: ValueKey(entity),
+    entity: entity,
+    front: front,
+    flipped: _flippedEntity == entity,
+    onFlip: () => setState(
+      () => _flippedEntity = _flippedEntity == entity ? null : entity,
+    ),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final controller = EntityInsightsScope.maybeOf(context);
+    if (controller != _insightsController) {
+      _insightsController?.removeListener(_refreshAndRebuild);
+      _insightsController = controller;
+      controller?.addListener(_refreshAndRebuild);
+    }
+  }
+
   late _SkyMode _mode;
   bool _modeReverse = false;
   late final _modeAnimation = AnimationController(
@@ -251,6 +280,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
 
   void _selectMode(_SkyMode mode) {
     if (mode == _mode) return;
+    _flippedEntity = null;
     _cardMenuController.closeAll();
     setState(() {
       _modeReverse = mode.index < _mode.index;
@@ -608,6 +638,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     for (final controller in _scrollControllers) {
       controller.dispose();
     }
+    _insightsController?.removeListener(_refreshAndRebuild);
     _cardMenuController.dispose();
     super.dispose();
   }
@@ -682,6 +713,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   /// sheet): rebuild with the new view, closing any quick menu that belonged
   /// to the old one.
   void _onSettingsChanged() {
+    _flippedEntity = null;
     _cardMenuController.closeAll();
     if (mounted) setState(() {});
   }
@@ -877,7 +909,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       controller: _scrollControllers[0],
       items: areas,
       emptyText: strings.noSearchResultsSupernovas,
-      tile: (item, onTap) => GalleryAreaTile(data: item, onTap: onTap),
+      tile: (item, onTap) => _flipTile(
+        InsightEntity.area(item.area),
+        GalleryAreaTile(data: item, onTap: onTap),
+      ),
       onTap: (index) => _openArea(areas[index].area),
       footer: true,
     );
@@ -891,7 +926,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       controller: _scrollControllers[1],
       items: projects,
       emptyText: strings.noSearchResultsConstellations,
-      tile: (item, onTap) => GalleryProjectTile(data: item, onTap: onTap),
+      tile: (item, onTap) => _flipTile(
+        InsightEntity.project(item.project.id),
+        GalleryProjectTile(data: item, onTap: onTap),
+      ),
       onTap: (index) => _openProject(projects[index].project),
       footer: true,
     );
@@ -903,7 +941,12 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       controller: _scrollControllers[2],
       items: stars,
       emptyText: strings.noSearchResultsStars,
-      tile: (item, onTap) => GalleryStarTile(data: item, onTap: onTap),
+      tile: (item, onTap) => _flipTile(
+        item.star != null
+            ? InsightEntity.star(item.star!.id)
+            : InsightEntity.habit(item.habit!.id),
+        GalleryStarTile(data: item, onTap: onTap),
+      ),
       onTap: (index) => _openStarReader(stars[index].key),
       footer: true,
     );
@@ -1055,7 +1098,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         content: star.isLit
             ? ShareableLitStarCard(star: star, project: project)
             : ShareableGoalCard(star: star, project: project),
-        shareText: star.title,
+        shareText: star.displayTitle,
         fileName: 'star_${star.id}.png',
       ),
     );
@@ -1075,7 +1118,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       onShare: () => showSharePreview(
         context: context,
         content: ShareablePulsarCard(habit: habit, project: project),
-        shareText: habit.title,
+        shareText: habit.displayTitle,
         fileName: 'pulsar_${habit.id}.png',
       ),
     );
@@ -1100,7 +1143,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                 project: project,
                 shape: shape,
               ),
-              shareText: project.name,
+              shareText: project.displayName,
               fileName: 'constellation_${project.id}.png',
             ),
     );
@@ -1159,6 +1202,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     if (result.kind == StarKind.pulsar) {
       final habit = await widget.habitRepository.add(
         title: result.title,
+        iconSlug: result.iconSlug,
         description: result.description,
         projectId: result.projectId,
         intensity: result.intensity ?? 3,
@@ -1173,6 +1217,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     }
     final star = await widget.starRepository.add(
       title: result.title,
+      iconSlug: result.iconSlug,
       description: result.description,
       projectId: result.projectId,
       slotSequence: result.slotSequence,
@@ -1207,7 +1252,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     await showSharePreview(
       context: context,
       content: ShareableConstellationCard(project: project, shape: shape),
-      shareText: project.name,
+      shareText: project.displayName,
       fileName: 'constellation_${project.id}.png',
     );
   }
@@ -1352,6 +1397,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       final resurrected = await widget.starRepository.resurrect(
         star.id,
         title: result.title,
+        iconSlug: result.iconSlug,
         description: result.description,
         projectId: result.projectId,
         targetDate: result.targetDate,
@@ -1449,6 +1495,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       final resurrected = await widget.habitRepository.resurrect(
         habit.id,
         title: result.title,
+        iconSlug: result.iconSlug,
         description: result.description,
         projectId: result.projectId,
         intensity: result.intensity ?? habit.intensity,
@@ -1579,7 +1626,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       ),
     );
     if (result == null) return;
-    setState(() => _areaFilter = result);
+    setState(() {
+      _flippedEntity = null;
+      _areaFilter = result;
+    });
     _saveSession();
   }
 
@@ -1596,7 +1646,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       ),
     );
     if (picked == null) return;
-    setState(() => _projectFilterIds = picked);
+    setState(() {
+      _flippedEntity = null;
+      _projectFilterIds = picked;
+    });
     _saveSession();
   }
 
@@ -1611,7 +1664,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       ),
     );
     if (result == null) return;
-    setState(() => _kindFilter = result);
+    setState(() {
+      _flippedEntity = null;
+      _kindFilter = result;
+    });
     _saveSession();
   }
 
@@ -1628,6 +1684,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     );
     if (result == null) return;
     setState(() {
+      _flippedEntity = null;
       _dateRangeFilter = result.range;
       _dateRangePreset = result.preset;
     });
@@ -1642,6 +1699,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     );
     if (result == null) return;
     setState(() {
+      _flippedEntity = null;
       _sortField = result.field;
       _sortDirection = result.direction;
     });
@@ -1686,7 +1744,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       return strings.activeProjectsCount(_projectFilterIds.length);
     }
     for (final project in _projectsCache) {
-      if (_projectFilterIds.contains(project.id)) return project.name;
+      if (_projectFilterIds.contains(project.id)) return project.displayName;
     }
     return strings.projectLabel;
   }
@@ -1719,8 +1777,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       _areaFilter = {...LifeArea.values};
       _projectFilterIds = {};
       _kindFilter = {...kListableStarKinds};
+      _flippedEntity = null;
       _dateRangeFilter = null;
       _dateRangePreset = DateRangePreset.allTime;
+      _flippedEntity = null;
       _sortField = SortField.date;
       _sortDirection = SortDirection.descending;
     });
@@ -2022,10 +2082,18 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                             index: 2,
                             child: AppSearchField(
                               controller: _queryController,
-                              hintText: strings.searchHint,
+                              hintText: switch (_mode) {
+                                _SkyMode.supernovas => strings.searchAreasHint,
+                                _SkyMode.constellations =>
+                                  strings.searchProjectsHint,
+                                _SkyMode.stars => strings.searchActivitiesHint,
+                              },
                               onChanged: (value) {
                                 _cardMenuController.closeAll();
-                                setState(() => _query = value);
+                                setState(() {
+                                  _flippedEntity = null;
+                                  _query = value;
+                                });
                                 _saveSession();
                               },
                             ),
@@ -2350,29 +2418,33 @@ class _AreaCard extends StatelessWidget {
       ),
       actions: [
         SearchCardAction(
-          icon: Icons.edit_outlined,
-          label: 'Vision',
-          onTap: onVision,
-        ),
-        SearchCardAction(
-          icon: Icons.photo_library_outlined,
-          label: 'Moodboard',
-          onTap: onMoodboard,
-        ),
-        SearchCardAction(
-          icon: Icons.auto_stories_outlined,
-          label: 'Riflessioni',
-          onTap: onReflections,
-        ),
-        SearchCardAction(
           icon: Icons.insights,
           label: '+ Costellazione',
           onTap: onNewConstellation,
         ),
         SearchCardAction(
+          icon: Icons.edit_outlined,
+          label: 'Vision',
+          onTap: onVision,
+          group: 1,
+        ),
+        SearchCardAction(
+          icon: Icons.photo_library_outlined,
+          label: 'Moodboard',
+          onTap: onMoodboard,
+          group: 1,
+        ),
+        SearchCardAction(
+          icon: Icons.auto_stories_outlined,
+          label: 'Riflessioni',
+          onTap: onReflections,
+          group: 1,
+        ),
+        SearchCardAction(
           icon: Icons.navigation,
           label: 'Vola',
           onTap: onNavigateTo,
+          group: 2,
         ),
       ],
     );
@@ -2828,24 +2900,28 @@ class _SearchStarCard extends StatelessWidget {
           icon: Icons.share_outlined,
           label: strings.starQuickLookShareAction,
           onTap: onShare!,
+          group: 1,
         ),
       if (onNavigateTo != null)
         SearchCardAction(
           icon: Icons.navigation_rounded,
           label: strings.actionFly,
           onTap: onNavigateTo!,
+          group: 2,
         ),
       if (onEdit != null)
         SearchCardAction(
           icon: Icons.edit_rounded,
           label: strings.starQuickLookEditAction,
           onTap: onEdit!,
+          group: 2,
         ),
       if (onDelete != null)
         SearchCardAction(
           icon: Icons.delete_outline_rounded,
           label: strings.archiveAction,
           onTap: onDelete!,
+          group: 2,
         ),
     ];
     return SearchResultCard(
@@ -2918,7 +2994,7 @@ class _ProjectCard extends StatelessWidget {
       content: SearchCardTextContent(
         eyebrow: strings.projectLabel,
         eyebrowColor: context.colors.gold,
-        title: project.name,
+        title: project.displayName,
         breadcrumb: project.area.displayName(strings),
         badges: badges,
       ),
@@ -2928,21 +3004,25 @@ class _ProjectCard extends StatelessWidget {
           icon: Icons.share_outlined,
           label: 'Condividi',
           onTap: onShare,
+          group: 1,
         ),
         SearchCardAction(
           icon: Icons.navigation,
           label: 'Vola',
           onTap: onNavigateTo,
+          group: 2,
         ),
         SearchCardAction(
           icon: Icons.edit_outlined,
           label: 'Modifica',
           onTap: onEdit,
+          group: 2,
         ),
         SearchCardAction(
           icon: Icons.delete_outline,
           label: 'Elimina',
           onTap: onDelete,
+          group: 2,
         ),
       ],
     );

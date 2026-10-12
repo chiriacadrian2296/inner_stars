@@ -1,3 +1,11 @@
+import '../utils/entity_insights.dart';
+import '../widgets/entity_insights_scope.dart';
+import '../widgets/grouped_action_layout.dart';
+import 'entity_stats_screen.dart';
+
+import '../widgets/icon_with_new_badge.dart';
+import '../models/display_text.dart';
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -19,6 +27,7 @@ import '../models/star.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
+import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import '../widgets/constellation_map/constellation_map_view.dart';
 import '../widgets/constellation_map/pulsar_spacing.dart';
@@ -363,7 +372,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
     await showSharePreview(
       context: context,
       content: ShareableConstellationCard(project: _project, shape: shape),
-      shareText: _project.name,
+      shareText: _project.displayName,
       fileName: 'constellation_${_project.id}.png',
     );
   }
@@ -392,6 +401,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
       if (result.kind == StarKind.pulsar) {
         await widget.habitRepository.add(
           title: result.title,
+          iconSlug: result.iconSlug,
           description: result.description,
           projectId: result.projectId,
           intensity: result.intensity ?? 3,
@@ -403,6 +413,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
       } else {
         await widget.starRepository.add(
           title: result.title,
+          iconSlug: result.iconSlug,
           description: result.description,
           projectId: result.projectId,
           slotSequence: result.slotSequence,
@@ -472,7 +483,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                                   key: ValueKey(
                                     'constellation-title-${_project.id}',
                                   ),
-                                  title: _project.name,
+                                  title: _project.displayName,
                                   style: TextStyle(
                                     fontFamily: kFontStarTitle,
                                     fontSize: 24,
@@ -586,8 +597,22 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                     12,
                     16 + MediaQuery.paddingOf(context).bottom,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: GroupedActionLayout(
+                    separatorBuilder: (dot) => StaggeredEntrance(
+                      index: 4,
+                      enabled: !_hasNavigatedConstellations,
+                      drift: 0,
+                      extraDelay: kActionGroupDotDelay,
+                      child: dot,
+                    ),
+                    groups: [
+                      0,
+                      1,
+                      if (EntityInsightsScope.maybeOf(context) != null) 2,
+                      2,
+                      2,
+                      3,
+                    ],
                     children: [
                       StaggeredEntrance(
                         index: 0,
@@ -597,9 +622,10 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                           icon: Icons.star,
                           label: 'Nuova stella',
                           onTap: _addStar,
+                          isNew: true,
                         ),
                       ),
-                      const SizedBox(width: 8),
+
                       StaggeredEntrance(
                         index: 1,
                         enabled: !_hasNavigatedConstellations,
@@ -610,18 +636,22 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                           onTap: _share,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      StaggeredEntrance(
-                        index: 2,
-                        enabled: !_hasNavigatedConstellations,
-                        drift: 0.7,
-                        child: _ConstellationDockAction(
-                          icon: Icons.navigation,
-                          label: 'Vola',
-                          onTap: () => Navigator.of(context).pop(_project),
+
+                      if (EntityInsightsScope.maybeOf(context) != null)
+                        StaggeredEntrance(
+                          index: 2,
+                          enabled: !_hasNavigatedConstellations,
+                          drift: 0.7,
+                          child: _ConstellationDockAction(
+                            icon: Icons.bar_chart,
+                            label: strings.statsTitle,
+                            onTap: () => openEntityStatistics(
+                              context,
+                              InsightEntity.project(_project.id),
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
+
                       StaggeredEntrance(
                         index: 3,
                         enabled: !_hasNavigatedConstellations,
@@ -632,7 +662,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                           onTap: _editProject,
                         ),
                       ),
-                      const SizedBox(width: 8),
+
                       StaggeredEntrance(
                         index: 4,
                         enabled: !_hasNavigatedConstellations,
@@ -641,6 +671,16 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                           icon: Icons.delete_outline,
                           label: 'Elimina',
                           onTap: _deleteProject,
+                        ),
+                      ),
+                      StaggeredEntrance(
+                        index: 5,
+                        enabled: !_hasNavigatedConstellations,
+                        drift: 0.7,
+                        child: _ConstellationDockAction(
+                          icon: Icons.navigation,
+                          label: strings.actionFly,
+                          onTap: () => Navigator.of(context).pop(_project),
                         ),
                       ),
                     ],
@@ -844,8 +884,11 @@ class _ConstellationDockAction extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.isNew = false,
   });
 
+  /// Adds the small "new" glyph under the icon (see [IconWithNewBadge]).
+  final bool isNew;
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -863,7 +906,14 @@ class _ConstellationDockAction extends StatelessWidget {
           width: 34,
           height: 34,
           child: Center(
-            child: Icon(icon, size: 18, color: context.colors.night),
+            child: isNew
+                ? IconWithNewBadge(
+                    icon: icon,
+                    size: 16,
+                    color: context.colors.night,
+                    lift: 2,
+                  )
+                : Icon(icon, size: 18, color: context.colors.night),
           ),
         ),
       ),

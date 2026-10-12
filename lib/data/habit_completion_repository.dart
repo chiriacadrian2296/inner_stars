@@ -1,3 +1,7 @@
+import 'repository_write.dart';
+
+import 'package:flutter/foundation.dart';
+
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,7 +16,7 @@ DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
 /// to read/write years of accumulated completion dates, and so stats
 /// utilities can bucket by day the same way `star_stats.dart` already does
 /// for stars.
-class HabitCompletionRepository {
+class HabitCompletionRepository extends ChangeNotifier {
   HabitCompletionRepository(this._prefs);
 
   static const _storageKey = 'habit-completions-list-v1';
@@ -136,11 +140,13 @@ class HabitCompletionRepository {
   }
 
   Future<void> clear() async {
-    await _prefs.remove(_storageKey);
+    await writeRepositoryValue(_prefs, _storageKey, null);
+    notifyListeners();
   }
 
   Future<void> _saveAll(List<HabitCompletion> completions) async {
     final encoded = jsonEncode(completions.map((c) => c.toJson()).toList());
-    await _prefs.setString(_storageKey, encoded);
+    await writeRepositoryValue(_prefs, _storageKey, encoded);
+    notifyListeners();
   }
 }

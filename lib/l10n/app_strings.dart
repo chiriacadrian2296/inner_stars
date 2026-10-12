@@ -8,6 +8,24 @@ import '../models/reflection_group.dart';
 /// string set is small enough that a plain Dart class is simpler to read,
 /// grep, and keep in sync than generated code.
 abstract class AppStrings {
+  String get manageHabits;
+  String get manageGoals;
+  String get manageGoalsEmpty;
+  String get insightFlip;
+  String get insightReturn;
+  String get insightTodayHabits;
+  String get insightNoHabits;
+  String get insightNoData;
+  String get insightUnavailable;
+  String get insightCreated;
+  String get insightAchieved;
+  String get insightArchived;
+  String get insightElapsed;
+  String get insightDuration;
+  String get insightRecentVictories;
+  String get insightSaveError;
+  String get insightIncrement;
+  String get insightDecrement;
   String get viewAreaImageAction;
   String get visionUndo;
   String get visionRedo;
@@ -173,6 +191,10 @@ abstract class AppStrings {
 
   // Area detail (constellations / list view switch)
   String get searchHint;
+  String get searchAreasHint;
+  String get searchProjectsHint;
+  String get searchActivitiesHint;
+  String get searchIconsHint;
   String get noSearchResults;
   String get noSearchResultsSupernovas;
   String get noSearchResultsConstellations;
@@ -182,7 +204,7 @@ abstract class AppStrings {
 
   // Constellation card stats (Sky > area > Constellations view)
   String intensityCount(int value);
-  String createdOnLabel(String date);
+  String createdOnLabel(String date, String time);
   String lastStarLabel(String date);
 
   // Settings — data section (seed/reset, moved here from the old Home)
@@ -590,6 +612,7 @@ abstract class AppStrings {
   String get yourShapesTabLabel;
   String get myShapesSectionTitle;
   String get shapesLibraryButtonLabel;
+  String get newShapeName;
   String get noCustomShapesYetHint;
   String get editSelectedShapeAction;
 

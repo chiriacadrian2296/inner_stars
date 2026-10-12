@@ -1,3 +1,5 @@
+import '../models/display_text.dart';
+
 import 'package:flutter/material.dart';
 
 import '../data/habit_completion_repository.dart';
@@ -45,7 +47,7 @@ class _HabitStepperDialog extends StatefulWidget {
 }
 
 class _HabitStepperDialogState extends State<_HabitStepperDialog> {
-  late final int _initial = habitDailyProgress(
+  late int _initial = habitDailyProgress(
     widget.habit,
     habitCompletionCountsByDay(
       widget.repository.getAllForHabit(widget.habit.id),
@@ -57,17 +59,36 @@ class _HabitStepperDialogState extends State<_HabitStepperDialog> {
   bool get _changed => _count != _initial;
 
   Future<void> _save() async {
+    if (_saving) return;
     setState(() => _saving = true);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    for (var i = _initial; i < _count; i++) {
-      await widget.repository.logInstance(widget.habit.id);
+    try {
+      for (var i = _initial; i < _count; i++) {
+        await widget.repository.logInstance(widget.habit.id, date: today);
+      }
+      for (var i = _initial; i > _count; i--) {
+        await widget.repository.unlogLastInstance(widget.habit.id, today);
+      }
+      widget.onChanged?.call();
+      if (mounted) Navigator.of(context).pop();
+    } catch (_) {
+      widget.onChanged?.call();
+      if (!mounted) return;
+      setState(() {
+        _initial = habitDailyProgress(
+          widget.habit,
+          habitCompletionCountsByDay(
+            widget.repository.getAllForHabit(widget.habit.id),
+          ),
+        );
+        _count = _initial;
+        _saving = false;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.strings.insightSaveError)));
     }
-    for (var i = _initial; i > _count; i--) {
-      await widget.repository.unlogLastInstance(widget.habit.id, today);
-    }
-    widget.onChanged?.call();
-    if (mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -76,7 +97,7 @@ class _HabitStepperDialogState extends State<_HabitStepperDialog> {
     final strings = context.strings;
     return AppDialog(
       title: Text(
-        widget.habit.title,
+        widget.habit.displayTitle,
         textAlign: TextAlign.center,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,

@@ -1,3 +1,5 @@
+import '../models/display_text.dart';
+
 import 'package:flutter/material.dart';
 
 import '../models/project.dart';
@@ -43,7 +45,7 @@ class ProjectTag extends StatelessWidget {
         const SizedBox(width: 6),
         Flexible(
           child: Text(
-            project.name,
+            project.displayName,
             style: TextStyle(
               fontSize: fontSize,
               color: textColor ?? colors.muted,

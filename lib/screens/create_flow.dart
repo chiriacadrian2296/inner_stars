@@ -43,6 +43,7 @@ Future<Object?> showCreatePage(
   if (result.kind == StarKind.pulsar) {
     return habitRepository.add(
       title: result.title,
+      iconSlug: result.iconSlug,
       description: result.description,
       projectId: result.projectId,
       intensity: result.intensity ?? 3,
@@ -54,6 +55,7 @@ Future<Object?> showCreatePage(
   }
   return starRepository.add(
     title: result.title,
+    iconSlug: result.iconSlug,
     description: result.description,
     projectId: result.projectId,
     slotSequence: result.slotSequence,

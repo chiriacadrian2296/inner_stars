@@ -1,3 +1,6 @@
+import '../utils/entity_insights.dart';
+import '../models/display_text.dart';
+
 import 'package:flutter/material.dart';
 
 import '../l10n/strings_scope.dart';
@@ -49,6 +52,7 @@ class SkyPulsarTooltip extends StatelessWidget {
     final strings = context.strings;
     final badges = habitCardBadges(habit, countsByDay, context.colors, strings);
     return SkySearchTooltipCard(
+      entity: InsightEntity.habit(habit.id),
       menuId: 'tooltip-habit:${habit.id}',
       onTap: onView,
       baseBodyHeight: SearchResultCard.bodyHeightFor(badges),
@@ -61,7 +65,7 @@ class SkyPulsarTooltip extends StatelessWidget {
             ? starKindColor(StarKind.dead, context.colors)
             : starKindColor(StarKind.pulsar, context.colors, lit: isLit),
         archivedOriginalKind: habit.dead ? StarKind.pulsar : null,
-        title: habit.title,
+        title: habit.displayTitle,
         breadcrumb: project == null
             ? null
             : '${project!.area.displayName(strings)} → ${project!.name}',
@@ -85,18 +89,21 @@ class SkyPulsarTooltip extends StatelessWidget {
             icon: Icons.share_outlined,
             label: strings.starQuickLookShareAction,
             onTap: onShare!,
+            group: 1,
           ),
         if (!habit.dead)
           SearchCardAction(
             icon: Icons.edit_rounded,
             label: strings.starQuickLookEditAction,
             onTap: onEdit,
+            group: 2,
           ),
         if (onDelete != null)
           SearchCardAction(
             icon: Icons.delete_outline_rounded,
             label: strings.archiveAction,
             onTap: onDelete!,
+            group: 2,
           ),
       ],
     );

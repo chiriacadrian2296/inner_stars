@@ -33,7 +33,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Anteprima condivisione'), findsOneWidget);
+    expect(find.text('Anteprima Condivisione'), findsOneWidget);
     expect(find.text('Editoriale'), findsOneWidget);
     expect(find.text('Fotografica'), findsOneWidget);
     expect(find.text('Frase'), findsOneWidget);

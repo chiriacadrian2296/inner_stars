@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../l10n/strings_scope.dart';
+import 'proper_case.dart';
 
 Future<TimeOfDay?> showAppTimePicker({
   required BuildContext context,
@@ -89,7 +91,10 @@ class _AppTimePickerDialogState extends State<_AppTimePickerDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                material.timePickerDialHelpText,
+                toProperCase(
+                  material.timePickerDialHelpText,
+                  context.strings.languageCode,
+                ),
                 style: TextStyle(
                   color: colors.gold,
                   fontSize: 20,
@@ -234,7 +239,10 @@ class _AppTimeInputDialogState extends State<_AppTimeInputDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                material.timePickerInputHelpText,
+                toProperCase(
+                  material.timePickerInputHelpText,
+                  context.strings.languageCode,
+                ),
                 style: TextStyle(
                   color: colors.gold,
                   fontSize: 20,

@@ -1,3 +1,5 @@
+import '../models/display_text.dart';
+
 import 'package:flutter/material.dart';
 
 import '../l10n/strings_scope.dart';
@@ -28,7 +30,7 @@ class ShareableGoalCard extends StatelessWidget {
     final strings = context.strings;
 
     return ShareableStoryLayout(
-      title: star.title,
+      title: star.displayTitle,
       description: star.description,
       meta: star.targetDate == null
           ? strings.noTargetDateLabel

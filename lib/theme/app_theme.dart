@@ -67,10 +67,8 @@ class _SheetOutline extends ShapeBorder {
 ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
   const brightness = Brightness.dark;
 
-  /// A filled gold button's glow, expressed the one way a [ButtonStyle]
-  /// can express it: a colored elevation shadow. Same idea as [goldGlow],
-  /// which the hand-built surfaces use.
-  const litElevation = 6.0;
+  /// Filled gold buttons are flat: no elevation shadow, so no glow.
+  const litElevation = 0.0;
 
   OutlineInputBorder inputBorder(Color color, double width) {
     return OutlineInputBorder(
@@ -228,7 +226,7 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
         disabledBackgroundColor: palette.nightPanel,
         disabledForegroundColor: palette.muted,
         elevation: litElevation,
-        shadowColor: palette.gold.withValues(alpha: 0.55),
+        shadowColor: Colors.transparent,
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
         minimumSize: const Size(0, 48),
         alignment: Alignment.center,

@@ -1,3 +1,5 @@
+import '../models/display_text.dart';
+
 import 'package:flutter/material.dart';
 
 import '../models/habit.dart';
@@ -26,7 +28,7 @@ class ShareablePulsarCard extends StatelessWidget {
     final colors = context.colors;
 
     return ShareableStoryLayout(
-      title: habit.title,
+      title: habit.displayTitle,
       description: habit.description,
       hero: Icon(StarKind.pulsar.icon, size: 44, color: colors.gold),
       context: project == null

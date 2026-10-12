@@ -1,3 +1,7 @@
+import 'repository_write.dart';
+
+import 'package:flutter/foundation.dart';
+
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,7 +13,7 @@ import 'habit_completion_repository.dart';
 /// Reads and writes the user's pulsars (habits) as a single JSON-encoded
 /// list under one [SharedPreferences] key — mirrors [StarRepository]'s shape
 /// exactly, tombstoning included.
-class HabitRepository {
+class HabitRepository extends ChangeNotifier {
   HabitRepository(this._prefs);
 
   static const _storageKey = 'habits-list-v1';
@@ -54,6 +58,7 @@ class HabitRepository {
 
   Future<Habit> add({
     required String title,
+    String? iconSlug,
     String? description,
     required int projectId,
     int intensity = 3,
@@ -75,6 +80,7 @@ class HabitRepository {
       id: DateTime.now().millisecondsSinceEpoch,
       projectId: projectId,
       title: title.trim(),
+      iconSlug: iconSlug ?? '',
       description: (trimmedDescription == null || trimmedDescription.isEmpty)
           ? null
           : trimmedDescription,
@@ -93,6 +99,7 @@ class HabitRepository {
   Future<Habit> update({
     required int id,
     required String title,
+    String? iconSlug,
     String? description,
     required int projectId,
     int intensity = 3,
@@ -112,6 +119,7 @@ class HabitRepository {
       id: existing.id,
       projectId: projectId,
       title: title.trim(),
+      iconSlug: iconSlug ?? existing.iconSlug,
       description: (trimmedDescription == null || trimmedDescription.isEmpty)
           ? null
           : trimmedDescription,
@@ -163,6 +171,7 @@ class HabitRepository {
   Future<Habit> resurrect(
     int id, {
     required String title,
+    String? iconSlug,
     String? description,
     required int projectId,
     int intensity = 3,
@@ -183,6 +192,7 @@ class HabitRepository {
       id: existing.id,
       projectId: projectId,
       title: title.trim(),
+      iconSlug: iconSlug ?? existing.iconSlug,
       description: (trimmedDescription == null || trimmedDescription.isEmpty)
           ? null
           : trimmedDescription,
@@ -201,7 +211,8 @@ class HabitRepository {
   }
 
   Future<void> clear() async {
-    await _prefs.remove(_storageKey);
+    await writeRepositoryValue(_prefs, _storageKey, null);
+    notifyListeners();
   }
 
   /// Physically removes a constellation's pulsars. Their completion history
@@ -219,6 +230,7 @@ class HabitRepository {
 
   Future<void> _saveAll(List<Habit> habits) async {
     final encoded = jsonEncode(habits.map((h) => h.toJson()).toList());
-    await _prefs.setString(_storageKey, encoded);
+    await writeRepositoryValue(_prefs, _storageKey, encoded);
+    notifyListeners();
   }
 }

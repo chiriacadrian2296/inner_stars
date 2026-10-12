@@ -1,3 +1,7 @@
+import '../widgets/activity_check_card.dart';
+import '../utils/icon_for_slug.dart';
+import '../models/display_text.dart';
+
 import 'dart:async';
 import 'dart:math' show pi, sin;
 import 'dart:ui' as ui;
@@ -262,6 +266,7 @@ class _StatsScreenState extends State<StatsScreen> {
     if (result.kind == StarKind.pulsar) {
       await widget.habitRepository.add(
         title: result.title,
+        iconSlug: result.iconSlug,
         description: result.description,
         projectId: result.projectId,
         intensity: result.intensity ?? 3,
@@ -273,6 +278,7 @@ class _StatsScreenState extends State<StatsScreen> {
     } else {
       await widget.starRepository.add(
         title: result.title,
+        iconSlug: result.iconSlug,
         description: result.description,
         projectId: result.projectId,
         targetDate: result.targetDate,
@@ -434,11 +440,14 @@ class _StatsScreenState extends State<StatsScreen> {
                       _ => 'Try the new statistics',
                     }),
                     onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(builder: (_) => CelebrationStatsScreen(
-                        starRepository: widget.starRepository,
-                        habitRepository: widget.habitRepository,
-                        completionRepository: widget.habitCompletionRepository,
-                      )),
+                      MaterialPageRoute<void>(
+                        builder: (_) => CelebrationStatsScreen(
+                          starRepository: widget.starRepository,
+                          habitRepository: widget.habitRepository,
+                          completionRepository:
+                              widget.habitCompletionRepository,
+                        ),
+                      ),
                     ),
                   ),
                   ..._pulsarSection(context),
@@ -704,86 +713,42 @@ class _PulsarTile extends StatelessWidget {
     final best = weekly
         ? strings.habitStatsWeeks(summary.longestStreak)
         : strings.habitStatsDays(summary.longestStreak);
-    return Container(
-      decoration: panelDecoration(colors),
-      clipBehavior: Clip.antiAlias,
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: kSpaceMd,
-              vertical: kSpaceMd - 2,
-            ),
-            child: Row(
-              children: [
-                // Lit (on track) pulsars burn gold; one that needs attention
-                // stays dark and muted — the same lit/dark reading the Sky uses.
-                Icon(
-                  StarKind.pulsar.icon,
-                  color: entry.isLit ? colors.gold : colors.muted,
-                  size: 22,
-                ),
-                const SizedBox(width: kSpaceSm + 2),
-                Expanded(
-                  child: Text(
-                    habit.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.typography.body.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: entry.isLit ? colors.text : colors.muted,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: kSpaceSm + 2),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '${(summary.completionRate * 100).round()}%',
-                      style: context.typography.body.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: entry.isLit ? colors.gold : colors.muted,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${summary.currentStreak} / $best',
-                      style: context.typography.supporting.copyWith(
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-                if (onToggleToday != null) ...[
-                  const SizedBox(width: 4),
-                  Tooltip(
-                    message: doneToday
-                        ? strings.habitUncheckAction
-                        : strings.habitCheckAction,
-                    child: IconButton(
-                      onPressed: onToggleToday,
-                      icon: Icon(
-                        _isStepper(habit)
-                            ? Icons.add_circle_outline
-                            : (doneToday
-                                  ? Icons.check_circle
-                                  : Icons.radio_button_unchecked),
-                        color: doneToday ? colors.gold : colors.muted,
-                      ),
-                    ),
-                  ),
-                ] else ...[
-                  const SizedBox(width: 4),
-                  Icon(Icons.chevron_right, color: colors.muted),
-                ],
-              ],
+    return ActivityCheckCard(
+      icon: habit.iconSlug.isEmpty
+          ? StarKind.pulsar.icon
+          : iconForSlug(habit.iconSlug),
+      title: habit.displayTitle,
+      lit: entry.isLit,
+      actionLit: doneToday,
+      onTap: onTap,
+      figures: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            '${(summary.completionRate * 100).round()}%',
+            style: context.typography.body.copyWith(
+              fontWeight: FontWeight.w700,
+              color: entry.isLit ? colors.gold : colors.muted,
             ),
           ),
-        ),
+          const SizedBox(height: 2),
+          Text(
+            '${summary.currentStreak} / $best',
+            style: context.typography.supporting.copyWith(fontSize: 12),
+          ),
+        ],
       ),
+      actionIcon: onToggleToday == null
+          ? null
+          : _isStepper(habit)
+          ? Icons.add_circle_outline
+          : doneToday
+          ? Icons.check_circle
+          : Icons.radio_button_unchecked,
+      actionLabel: doneToday
+          ? strings.habitUncheckAction
+          : strings.habitCheckAction,
+      onAction: onToggleToday,
     );
   }
 }
@@ -1032,23 +997,10 @@ class _TodayStarHeroState extends State<_TodayStarHero>
         const SizedBox(height: 18),
         StaggeredEntrance(
           index: 2,
-          child: AnimatedBuilder(
-            animation: _glowController,
-            builder: (context, child) => DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(kRadiusPill),
-                boxShadow: [
-                  ...goldGlow(colors, strength: 1.1, size: 56),
-                  ..._glow(colors.gold, 44),
-                ],
-              ),
-              child: child,
-            ),
-            child: PillActionButton(
-              icon: Icons.star,
-              label: strings.lightStarCta,
-              onTap: widget.onTap,
-            ),
+          child: PillActionButton(
+            icon: Icons.star,
+            label: strings.lightStarCta,
+            onTap: widget.onTap,
           ),
         ),
       ],
@@ -1165,7 +1117,7 @@ class _DayDetailSheetState extends State<_DayDetailSheet> {
               index: 1,
               child: AppSearchField(
                 controller: _queryController,
-                hintText: strings.searchHint,
+                hintText: strings.searchActivitiesHint,
                 onChanged: (value) => setState(() => _query = value),
               ),
             ),

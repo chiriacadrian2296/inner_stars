@@ -1,3 +1,8 @@
+import '../utils/entity_insights.dart';
+import '../widgets/entity_insights_scope.dart';
+import 'entity_stats_screen.dart';
+import '../models/display_text.dart';
+
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -306,7 +311,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                   star: star,
                   project: widget.projectsById[star.projectId],
                 ),
-          star.title,
+          star.displayTitle,
           'star_${star.id}.png',
         ),
         PulsarEntry(:final habit) => (
@@ -314,7 +319,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
             habit: habit,
             project: widget.projectsById[habit.projectId],
           ),
-          habit.title,
+          habit.displayTitle,
           'pulsar_${habit.id}.png',
         ),
         NascentEntry() => throw StateError('A nascent star is not shareable'),
@@ -385,6 +390,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
     if (result is! StarFormResult) return;
     await widget.repository.add(
       title: result.title,
+      iconSlug: result.iconSlug,
       description: result.description,
       projectId: result.projectId,
       slotSequence: result.slotSequence,
@@ -421,6 +427,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
       await habits.resurrect(
         habit.id,
         title: result.title,
+        iconSlug: result.iconSlug,
         description: result.description,
         projectId: result.projectId,
         intensity: result.intensity ?? habit.intensity,
@@ -454,6 +461,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
     await habits.update(
       id: habit.id,
       title: formResult.title,
+      iconSlug: formResult.iconSlug,
       description: formResult.description,
       projectId: formResult.projectId,
       intensity: formResult.intensity ?? habit.intensity,
@@ -526,6 +534,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
       await widget.repository.resurrect(
         current.id,
         title: result.title,
+        iconSlug: result.iconSlug,
         description: result.description,
         projectId: result.projectId,
         targetDate: result.targetDate,
@@ -560,6 +569,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
     await widget.repository.update(
       id: current.id,
       title: addResult.title,
+      iconSlug: addResult.iconSlug,
       description: addResult.description,
       projectId: addResult.projectId,
       targetDate: addResult.targetDate,
@@ -712,11 +722,9 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
               label: strings.starQuickLookShareAction,
               onTap: _sharing ? null : _shareCurrent,
               loading: _sharing,
+              group: 1,
             ),
           );
-        }
-        if (widget.onNavigateTo != null && project != null) {
-          actions.add(_takeMeThere(project, starId: star.id));
         }
         if (canEdit && !star.dead) {
           actions.add(_editAction());
@@ -734,9 +742,6 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                 off: true,
               ),
             );
-          }
-          if (widget.onNavigateTo != null && project != null) {
-            actions.add(_takeMeThere(project, habitId: habit.id));
           }
           break;
         }
@@ -791,15 +796,42 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
             label: strings.starQuickLookShareAction,
             onTap: _sharing ? null : _shareCurrent,
             loading: _sharing,
+            group: 1,
           ),
         );
-        if (widget.onNavigateTo != null && project != null) {
-          actions.add(_takeMeThere(project, habitId: habit.id));
-        }
         if (canEdit) {
           actions.add(_editAction());
           actions.add(_deleteAction());
         }
+    }
+    final entity = switch (entry) {
+      StarEntry(:final star) => InsightEntity.star(star.id),
+      PulsarEntry(:final habit) => InsightEntity.habit(habit.id),
+      _ => null,
+    };
+    if (entity != null && EntityInsightsScope.maybeOf(context) != null) {
+      final insertion = actions.indexWhere((action) => action.group == 2);
+      actions.insert(
+        insertion < 0 ? actions.length : insertion,
+        ReaderAction(
+          icon: Icons.bar_chart,
+          label: strings.statsTitle,
+          group: 2,
+          onTap: () async {
+            await openEntityStatistics(context, entity);
+            if (mounted && canRefresh) _refreshFrom(entry);
+          },
+        ),
+      );
+    }
+    if (entity != null && widget.onNavigateTo != null && project != null) {
+      actions.add(
+        _takeMeThere(
+          project,
+          starId: entry is StarEntry ? entry.star.id : null,
+          habitId: entry is PulsarEntry ? entry.habit.id : null,
+        ),
+      );
     }
     return actions;
   }
@@ -812,18 +844,21 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
           Navigator.of(context).pop();
           widget.onNavigateTo!(project, starId: starId, habitId: habitId);
         },
+        group: 3,
       );
 
   ReaderAction _editAction() => ReaderAction(
     icon: Icons.edit_outlined,
     label: context.strings.starQuickLookEditAction,
     onTap: _editOrResurrectCurrent,
+    group: 2,
   );
 
   ReaderAction _deleteAction() => ReaderAction(
     icon: Icons.delete_outline,
     label: context.strings.archiveAction,
     onTap: _deleteCurrent,
+    group: 2,
   );
 
   /// Asks first, then deletes: a star or pulsar isn't erased, it stays in the
@@ -864,8 +899,8 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
     final colors = context.colors;
     final strings = context.strings;
     final headerTitle = switch (entry) {
-      StarEntry(:final star) => star.title,
-      PulsarEntry(:final habit) => habit.title,
+      StarEntry(:final star) => star.displayTitle,
+      PulsarEntry(:final habit) => habit.displayTitle,
       NascentEntry(:final slot) => strings.starSlotLabel(slot),
     };
 

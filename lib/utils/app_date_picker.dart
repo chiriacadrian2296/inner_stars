@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import 'proper_case.dart';
 
 Future<DateTime?> showAppDatePicker({
   required BuildContext context,
@@ -68,7 +69,10 @@ class _AppDatePickerDialogState extends State<_AppDatePickerDialog> {
     final colors = context.colors;
     final material = MaterialLocalizations.of(context);
     return _PickerShell(
-      title: material.datePickerHelpText,
+      title: toProperCase(
+        material.datePickerHelpText,
+        context.strings.languageCode,
+      ),
       modeButton: IconButton(
         tooltip: material.inputDateModeButtonLabel,
         onPressed: () =>
@@ -246,7 +250,10 @@ class _AppDateInputDialogState extends State<_AppDateInputDialog> {
       invalid: _invalidParts.contains(_DatePart.year),
     );
     return _PickerShell(
-      title: material.dateInputLabel,
+      title: toProperCase(
+        material.dateInputLabel,
+        context.strings.languageCode,
+      ),
       modeButton: IconButton(
         tooltip: material.calendarModeButtonLabel,
         onPressed: _switchingMode ? null : _switchToCalendar,

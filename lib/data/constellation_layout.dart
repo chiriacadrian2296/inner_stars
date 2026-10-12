@@ -1,3 +1,5 @@
+import '../models/display_text.dart';
+
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -288,7 +290,7 @@ buildConstellationRenderStars({
         kind: star.kind,
         originalKind: star.originalKind,
         lit: star.isLit,
-        label: star.title,
+        label: star.displayTitle,
         slotSequence: star.slotSequence,
         intensity: star.intensity,
         photoPath: star.photoPath,
@@ -336,7 +338,7 @@ buildConstellationRenderStars({
         kind: habit.dead ? StarKind.dead : StarKind.pulsar,
         originalKind: StarKind.pulsar,
         lit: !habit.dead && isHabitLit(habit, countsByDay),
-        label: habit.title,
+        label: habit.displayTitle,
         intensity: habit.intensity,
       ),
     );

@@ -1,3 +1,8 @@
+import '../utils/entity_insights.dart';
+import '../widgets/entity_insights_scope.dart';
+import 'entity_stats_screen.dart';
+import '../models/display_text.dart';
+
 import 'package:flutter/material.dart';
 
 import '../data/custom_constellation_repository.dart';
@@ -57,8 +62,9 @@ class PulsarReaderScreen extends StatefulWidget {
   State<PulsarReaderScreen> createState() => _PulsarReaderScreenState();
 }
 
-class _HabitAnalytics extends StatelessWidget {
-  const _HabitAnalytics({
+class HabitAnalytics extends StatelessWidget {
+  const HabitAnalytics({
+    super.key,
     required this.habit,
     required this.summary,
     required this.range,
@@ -243,7 +249,7 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
   Future<void> _share() => showSharePreview(
     context: context,
     content: ShareablePulsarCard(habit: _habit, project: widget.project),
-    shareText: _habit.title,
+    shareText: _habit.displayTitle,
     fileName: 'pulsar_${_habit.id}.png',
   );
 
@@ -273,6 +279,7 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
     final updated = await widget.habitRepository.update(
       id: _habit.id,
       title: formResult.title,
+      iconSlug: formResult.iconSlug,
       description: formResult.description,
       projectId: formResult.projectId,
       intensity: formResult.intensity ?? _habit.intensity,
@@ -304,6 +311,7 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
     final updated = await widget.habitRepository.resurrect(
       _habit.id,
       title: result.title,
+      iconSlug: result.iconSlug,
       description: result.description,
       projectId: result.projectId,
       intensity: result.intensity ?? _habit.intensity,
@@ -366,7 +374,7 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
                             StaggeredEntrance(
                               index: 0,
                               child: Text(
-                                _habit.title,
+                                _habit.displayTitle,
                                 style: context.typography.utilityPageTitle,
                               ),
                             ),
@@ -437,7 +445,7 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
                                 ),
                               ),
                               const SizedBox(height: 24),
-                              _HabitAnalytics(
+                              HabitAnalytics(
                                 habit: _habit,
                                 summary: summary,
                                 range: _statsRange,
@@ -658,7 +666,7 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
                                 ),
                               ),
                               const SizedBox(height: 24),
-                              _HabitAnalytics(
+                              HabitAnalytics(
                                 habit: _habit,
                                 summary: summary,
                                 range: _statsRange,
@@ -687,7 +695,8 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
                     ],
                   ),
                 ),
-                if (!_habit.dead)
+                if (!_habit.dead ||
+                    EntityInsightsScope.maybeOf(context) != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: kSpaceSm),
                     child: ReaderActionBar(
@@ -698,16 +707,30 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
                         lead: 0,
                       ),
                       actions: [
-                        ReaderAction(
-                          icon: Icons.share_outlined,
-                          label: strings.starQuickLookShareAction,
-                          onTap: _share,
-                        ),
-                        ReaderAction(
-                          icon: Icons.edit_outlined,
-                          label: strings.starQuickLookEditAction,
-                          onTap: _edit,
-                        ),
+                        if (!_habit.dead)
+                          ReaderAction(
+                            icon: Icons.share_outlined,
+                            label: strings.starQuickLookShareAction,
+                            onTap: _share,
+                            group: 1,
+                          ),
+                        if (EntityInsightsScope.maybeOf(context) != null)
+                          ReaderAction(
+                            icon: Icons.bar_chart,
+                            label: strings.statsTitle,
+                            group: 2,
+                            onTap: () => openEntityStatistics(
+                              context,
+                              InsightEntity.habit(_habit.id),
+                            ),
+                          ),
+                        if (!_habit.dead)
+                          ReaderAction(
+                            icon: Icons.edit_outlined,
+                            label: strings.starQuickLookEditAction,
+                            onTap: _edit,
+                            group: 2,
+                          ),
                       ],
                     ),
                   ),

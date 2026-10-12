@@ -1,3 +1,5 @@
+import '../utils/entity_insights.dart';
+
 import 'package:flutter/material.dart';
 
 import '../l10n/strings_scope.dart';
@@ -36,6 +38,7 @@ class SkyAreaTooltip extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = context.strings;
     return SkySearchTooltipCard(
+      entity: InsightEntity.area(area),
       menuId: 'tooltip-area:${area.name}',
       onTap: onView,
       baseBodyHeight: SearchResultCard.bodyHeightFor(badges),
@@ -55,24 +58,28 @@ class SkyAreaTooltip extends StatelessWidget {
       ),
       actions: [
         SearchCardAction(
+          icon: Icons.insights,
+          label: strings.areaQuickLookNewConstellationAction,
+          onTap: onNewConstellation,
+          isNew: true,
+        ),
+        SearchCardAction(
           icon: Icons.edit_outlined,
           label: strings.visionPageTitle,
           onTap: onVision,
+          group: 1,
         ),
         SearchCardAction(
           icon: Icons.photo_library_outlined,
           label: strings.moodboardTitle,
           onTap: onMoodboard,
+          group: 1,
         ),
         SearchCardAction(
           icon: Icons.auto_stories_outlined,
           label: strings.areaQuickLookReflectionsAction,
           onTap: onReflections,
-        ),
-        SearchCardAction(
-          icon: Icons.insights,
-          label: strings.areaQuickLookNewConstellationAction,
-          onTap: onNewConstellation,
+          group: 1,
         ),
       ],
     );

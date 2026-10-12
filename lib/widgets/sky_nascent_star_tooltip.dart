@@ -1,3 +1,5 @@
+import '../models/display_text.dart';
+
 import 'package:flutter/material.dart';
 
 import '../l10n/strings_scope.dart';
@@ -31,7 +33,8 @@ class SkyNascentStarTooltip extends StatelessWidget {
       content: SearchCardTextContent(
         eyebrow: StarKind.nascent.galaxyLabel(strings),
         title: strings.starKindNascentMeaning,
-        breadcrumb: '${project.area.displayName(strings)} → ${project.name}',
+        breadcrumb:
+            '${project.area.displayName(strings)} → ${project.displayName}',
         metrics: const [],
       ),
       actions: [

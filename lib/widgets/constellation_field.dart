@@ -1,3 +1,5 @@
+import '../models/display_text.dart';
+
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -1674,7 +1676,7 @@ class ConstellationFieldPainter extends CustomPainter {
         _drawPillLabel(
           canvas,
           transform.center + Offset(0, localSizePx * 0.55 + 10),
-          constellation.project.name,
+          constellation.project.displayName,
           _kLabelFontSize,
           constellationLabelAlpha,
         );

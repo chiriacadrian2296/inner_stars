@@ -1,3 +1,5 @@
+import '../models/display_text.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -403,7 +405,7 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
   /// The filter's chip: tapping toggles it; Apply commits.
   Widget _projectChip(Project project) => AppChoiceChip(
     icon: iconForSlug(project.iconSlug),
-    label: project.name,
+    label: project.displayName,
     selected: _selectedIds.contains(project.id),
     onPressed: () => setState(() {
       if (!_selectedIds.remove(project.id)) _selectedIds.add(project.id);
@@ -414,7 +416,7 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
   /// One tap chooses it and closes the sheet, same as the area picker.
   Widget _projectRow(Project project) => AppSheetAction(
     icon: iconForSlug(project.iconSlug),
-    label: project.name,
+    label: project.displayName,
     uppercase: false,
     selected: project.id == widget.initialId,
     onPressed: () => Navigator.of(context).pop(project),
@@ -445,7 +447,7 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
                     Expanded(
                       child: AppSearchField(
                         controller: _queryController,
-                        hintText: strings.searchHint,
+                        hintText: strings.searchProjectsHint,
                         onChanged: (_) {},
                       ),
                     ),
@@ -524,12 +526,25 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
                   ),
                 ),
               ),
-              if (_showPreview) ...[
-                const SizedBox(height: 20),
-                Align(child: _previewRowFor(widget.preview!)),
-                const SizedBox(height: 16),
-              ] else
-                const SizedBox(height: 24),
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _queryController,
+                builder: (context, _, _) {
+                  // A search with no matches hides the count: it describes
+                  // the whole sky, not what is being searched for here.
+                  final noMatches =
+                      _query.trim().isNotEmpty && _filtered.isEmpty;
+                  if (_showPreview && !noMatches) {
+                    return Column(
+                      children: [
+                        const SizedBox(height: 20),
+                        Align(child: _previewRowFor(widget.preview!)),
+                        const SizedBox(height: 16),
+                      ],
+                    );
+                  }
+                  return const SizedBox(height: 24);
+                },
+              ),
               Align(
                 alignment: Alignment.center,
                 child: Wrap(

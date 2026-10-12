@@ -302,6 +302,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
           existing: existing,
           initialShape: initialShape,
           initialShapeName: initialShapeName,
+          onOpenLibrary: _openLibrary,
         ),
       ),
     );
@@ -337,7 +338,9 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   /// see [_editSelectedShape] for where that moved to instead). One
   /// combined, searchable sheet either way, reusing the same picker shell
   /// the area and icon fields already use.
-  Future<void> _openLibrary({_ShapePickerTab? initialTab}) async {
+  ///
+  /// Resolves true when a shape was picked and applied.
+  Future<bool> _openLibrary({_ShapePickerTab? initialTab}) async {
     final strings = context.strings;
     final language = strings.languageCode;
     final customs = widget.starsShapeRepository.getAll();
@@ -504,13 +507,14 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     _rememberedShapeCategory = category.value;
     category.dispose();
     tab.dispose();
-    if (picked == null || !mounted) return;
+    if (picked == null || !mounted) return false;
     switch (picked) {
       case _PresetChoice(:final preset):
         _selectPreset(preset);
       case _CustomChoice(:final custom):
         _selectCustom(custom);
     }
+    return true;
   }
 
   Future<void> _openAreaPicker() async {
@@ -529,7 +533,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     final picked = await _showSearchablePicker<String>(
       context: context,
       title: context.strings.chooseIconTitle,
-      searchHint: context.strings.searchHint,
+      searchHint: context.strings.searchIconsHint,
       filterListenable: category,
       additionalMatches: (slug) =>
           category.value == null ||
@@ -814,16 +818,6 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                           replayKey: _shapeEpoch,
                         ),
                       ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Center(
-                  child: StaggeredEntrance(
-                    index: 7,
-                    child: _ShapeLibraryButton(
-                      label: strings.shapesLibraryButtonLabel,
-                      onTap: _openLibrary,
                     ),
                   ),
                 ),
@@ -1358,59 +1352,6 @@ class _SelectedShapePreview extends StatelessWidget {
               ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// The one button beside the shape preview: opens the shape picker. Shows
-/// the picker's two tab icons side by side (the same ones as its switch)
-/// over its name, as the picker holds both the presets and the user's own
-/// shapes.
-class _ShapeLibraryButton extends StatelessWidget {
-  const _ShapeLibraryButton({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  static const _padding = 14.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    // The same panel fill and hairline border as the shape preview above it,
-    // with muted icons and text.
-    return TextButton(
-      style: TextButton.styleFrom(
-        foregroundColor: colors.muted,
-        backgroundColor: colors.nightPanel,
-        side: BorderSide(color: colors.nightBorder, width: kBorderWidth),
-        padding: const EdgeInsets.all(_padding),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(kRadiusField),
-        ),
-      ),
-      onPressed: onTap,
-      child: Builder(
-        builder: (context) {
-          final color = IconTheme.of(context).color;
-          const iconSize = 18.0;
-          return Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.grid_view_rounded, size: iconSize),
-              Container(
-                width: 1.5,
-                height: iconSize * 0.7,
-                margin: const EdgeInsets.symmetric(horizontal: 10),
-                color: color?.withValues(alpha: 0.6),
-              ),
-              const Icon(Icons.draw_outlined, size: iconSize),
-              const SizedBox(width: 14),
-              AppButtonLabel(label, color: colors.muted),
-            ],
-          );
-        },
       ),
     );
   }

@@ -23,6 +23,7 @@ class Habit {
     required this.id,
     required this.projectId,
     required this.title,
+    this.iconSlug = '',
     this.description,
     required this.createdAt,
     this.frequency = HabitFrequency.daily,
@@ -40,6 +41,9 @@ class Habit {
   final int id;
   final int projectId;
   final String title;
+
+  /// An empty slug keeps the original activity icon for older records.
+  final String iconSlug;
   final String? description;
   final DateTime createdAt;
 
@@ -78,6 +82,7 @@ class Habit {
     int? id,
     int? projectId,
     String? title,
+    String? iconSlug,
     String? description,
     DateTime? createdAt,
     HabitFrequency? frequency,
@@ -92,6 +97,7 @@ class Habit {
       id: id ?? this.id,
       projectId: projectId ?? this.projectId,
       title: title ?? this.title,
+      iconSlug: iconSlug ?? this.iconSlug,
       description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
       frequency: frequency ?? this.frequency,
@@ -109,6 +115,7 @@ class Habit {
       id: json['id'] as int,
       projectId: json['projectId'] as int,
       title: json['title'] as String,
+      iconSlug: json['iconSlug'] as String? ?? '',
       description: json['description'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       frequency: HabitFrequency.values.byName(
@@ -133,6 +140,7 @@ class Habit {
       'id': id,
       'projectId': projectId,
       'title': title,
+      'iconSlug': iconSlug,
       'description': description,
       'createdAt': createdAt.toIso8601String(),
       'frequency': frequency.name,
@@ -151,6 +159,7 @@ class Habit {
         other.id == id &&
         other.projectId == projectId &&
         other.title == title &&
+        other.iconSlug == iconSlug &&
         other.description == description &&
         other.createdAt == createdAt &&
         other.frequency == frequency &&
@@ -167,6 +176,7 @@ class Habit {
     id,
     projectId,
     title,
+    iconSlug,
     description,
     createdAt,
     frequency,

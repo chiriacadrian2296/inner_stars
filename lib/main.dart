@@ -1,3 +1,5 @@
+import 'widgets/entity_insights_scope.dart';
+
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
@@ -382,8 +384,17 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        builder: (context, child) =>
-            StringsScope(strings: strings, child: child!),
+        builder: (context, child) => StringsScope(
+          strings: strings,
+          child: EntityInsightsHost(
+            projects: projectRepository,
+            stars: starRepository,
+            habits: habitRepository,
+            completions: habitCompletionRepository,
+            shapes: starsShapeRepository,
+            child: child!,
+          ),
+        ),
         home: AnnotatedRegion<SystemUiOverlayStyle>(
           // Android draws its own status/navigation bars over the app by
           // default with a plain white background regardless of the app's

@@ -2,6 +2,17 @@
 
 ## UI conventions
 
+- Do not add app bars to new pages. Put page titles in the page content,
+  following the existing screens.
+
+- In “Vedi”, keep Statistics, Edit and Archive/Delete together. Fly is the
+  last action on the right, in its own group, because it returns to Galaxy.
+
+- Group separator dots in “Vedi” use their delayed fade entrance after the
+  buttons, without drift.
+- Personal activity icons appear in management and statistics cards;
+  Galaxy keeps its astronomical glyphs.
+
 - Cancel actions are always secondary and grey (`colors.muted`), including
   their text labels. Never use gold for Cancel.
 
@@ -16,8 +27,8 @@
 - Use these names in discussion, documentation, and new code comments even
   where older class names have not yet been migrated.
 - Galaxy tooltip entity labels use astronomical names: supernova,
-  constellation, lit/unlit star, pulsar, nascent/extinguished star.
-- Sky and management flows use life area, project, victory, goal, habit,
+  constellation, lit/unlit star, pulsar, nascent/dead star.
+- Sky and management flows use area, project, victory, goal, habit,
   opportunity and archived. Activities is the umbrella for victories,
   goals and habits. See `docs/terminology.md` for the full mapping.
 - Archiving an activity is distinct from permanently deleting a project.
