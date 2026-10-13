@@ -39,9 +39,20 @@ class SkyViewModeSection extends StatelessWidget {
         final grid = !kShowSkyListView || settings.skyGridView;
         final step = settings.skyGridSizeStep;
         return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (!kShowSkyListView)
-              Icon(Icons.grid_view_rounded, size: 20, color: colors.muted)
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: selectableDecoration(colors, selected: false),
+                child: Icon(
+                  Icons.grid_view_rounded,
+                  size: 20,
+                  color: colors.muted,
+                ),
+              )
             else
               SizedBox(
                 width: 104,
@@ -71,19 +82,24 @@ class SkyViewModeSection extends StatelessWidget {
                   ),
                 ),
               ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Opacity(
-                opacity: grid ? 1 : 0.45,
-                child: Slider(
-                  value: step.toDouble(),
-                  min: 0,
-                  max: (kSkyGridTileExtents.length - 1).toDouble(),
-                  divisions: kSkyGridTileExtents.length - 1,
-                  label: sizeNames[step],
-                  onChanged: grid
-                      ? (v) => settings.setSkyGridSizeStep(v.round())
-                      : null,
+            // The slider has its own inner padding; pull it closer to the icon.
+            const SizedBox(width: 0),
+            Transform.translate(
+              offset: const Offset(-8, 0),
+              child: SizedBox(
+                width: 215,
+                child: Opacity(
+                  opacity: grid ? 1 : 0.45,
+                  child: Slider(
+                    value: step.toDouble(),
+                    min: 0,
+                    max: (kSkyGridTileExtents.length - 1).toDouble(),
+                    divisions: kSkyGridTileExtents.length - 1,
+                    label: sizeNames[step],
+                    onChanged: grid
+                        ? (v) => settings.setSkyGridSizeStep(v.round())
+                        : null,
+                  ),
                 ),
               ),
             ),

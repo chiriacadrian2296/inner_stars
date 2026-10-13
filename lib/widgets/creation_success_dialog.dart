@@ -87,7 +87,10 @@ class CreationSuccessDialog extends StatelessWidget {
           ),
         ),
       ),
-      content: StaggeredEntrance(index: 1, child: Text(message, textAlign: TextAlign.center)),
+      content: StaggeredEntrance(
+        index: 1,
+        child: Text(message, textAlign: TextAlign.center),
+      ),
       actionsAlignment: MainAxisAlignment.center,
       actionsOverflowAlignment: OverflowBarAlignment.center,
       actions: [

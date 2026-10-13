@@ -108,6 +108,9 @@ class SkyTabView {
   DateRangePreset dateRangePreset = DateRangePreset.allTime;
   SortField sortField = SortField.date;
   SortDirection sortDirection = SortDirection.descending;
+
+  /// The cards turned face down on this tab; kept like the filters.
+  final flipped = <InsightEntity>{};
 }
 
 sealed class SkyResume {
@@ -246,17 +249,18 @@ class SkyExplorerView extends StatefulWidget {
 
 class _SkyExplorerViewState extends State<SkyExplorerView>
     with SingleTickerProviderStateMixin {
-  InsightEntity? _flippedEntity;
   EntityInsightsController? _insightsController;
 
   Widget _flipTile(InsightEntity entity, Widget front) => EntityFlipCard(
     key: ValueKey(entity),
     entity: entity,
     front: front,
-    flipped: _flippedEntity == entity,
-    onFlip: () => setState(
-      () => _flippedEntity = _flippedEntity == entity ? null : entity,
-    ),
+    flipped: _tab.flipped.contains(entity),
+    onFlip: () {
+      setState(() {
+        if (!_tab.flipped.remove(entity)) _tab.flipped.add(entity);
+      });
+    },
   );
 
   @override
@@ -280,7 +284,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
 
   void _selectMode(_SkyMode mode) {
     if (mode == _mode) return;
-    _flippedEntity = null;
     _cardMenuController.closeAll();
     setState(() {
       _modeReverse = mode.index < _mode.index;
@@ -596,6 +599,27 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   }
 
   /// How many cards the current mode shows right now.
+  /// How many of the cards this tab shows are turned face down.
+  int _flippedCount(AppStrings strings) => switch (_mode) {
+    _SkyMode.supernovas => _filteredSupernovaAreas(
+      strings,
+    ).where((a) => _tab.flipped.contains(InsightEntity.area(a))).length,
+    _SkyMode.constellations =>
+      _projectsMatching()
+          .where((p) => _tab.flipped.contains(InsightEntity.project(p.id)))
+          .length,
+    _SkyMode.stars =>
+      _entriesMatching()
+          .where(
+            (e) => _tab.flipped.contains(
+              e.star != null
+                  ? InsightEntity.star(e.star!.id)
+                  : InsightEntity.habit(e.habit!.id),
+            ),
+          )
+          .length,
+  };
+
   int _resultCount(AppStrings strings) => switch (_mode) {
     _SkyMode.supernovas => _filteredSupernovaAreas(strings).length,
     _SkyMode.constellations => _projectsMatching().length,
@@ -713,7 +737,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   /// sheet): rebuild with the new view, closing any quick menu that belonged
   /// to the old one.
   void _onSettingsChanged() {
-    _flippedEntity = null;
     _cardMenuController.closeAll();
     if (mounted) setState(() {});
   }
@@ -1627,7 +1650,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     );
     if (result == null) return;
     setState(() {
-      _flippedEntity = null;
       _areaFilter = result;
     });
     _saveSession();
@@ -1647,7 +1669,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     );
     if (picked == null) return;
     setState(() {
-      _flippedEntity = null;
       _projectFilterIds = picked;
     });
     _saveSession();
@@ -1665,7 +1686,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     );
     if (result == null) return;
     setState(() {
-      _flippedEntity = null;
       _kindFilter = result;
     });
     _saveSession();
@@ -1684,7 +1704,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     );
     if (result == null) return;
     setState(() {
-      _flippedEntity = null;
       _dateRangeFilter = result.range;
       _dateRangePreset = result.preset;
     });
@@ -1699,7 +1718,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     );
     if (result == null) return;
     setState(() {
-      _flippedEntity = null;
       _sortField = result.field;
       _sortDirection = result.direction;
     });
@@ -1777,10 +1795,8 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       _areaFilter = {...LifeArea.values};
       _projectFilterIds = {};
       _kindFilter = {...kListableStarKinds};
-      _flippedEntity = null;
       _dateRangeFilter = null;
       _dateRangePreset = DateRangePreset.allTime;
-      _flippedEntity = null;
       _sortField = SortField.date;
       _sortDirection = SortDirection.descending;
     });
@@ -2091,7 +2107,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                               onChanged: (value) {
                                 _cardMenuController.closeAll();
                                 setState(() {
-                                  _flippedEntity = null;
                                   _query = value;
                                 });
                                 _saveSession();
@@ -2139,6 +2154,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                             );
                           },
                         ),
+                      ),
+                      FlippedCardsRow(
+                        count: _flippedCount(strings),
+                        onReset: () => setState(_tab.flipped.clear),
                       ),
                     ],
                   ),
@@ -2485,7 +2504,7 @@ class _ControlsSheet extends StatelessWidget {
           children: [
             StaggeredEntrance(
               index: 0,
-              child: AppSheetTitle(strings.skyViewModeTitle),
+              child: Center(child: AppSheetTitle(strings.skyViewModeTitle)),
             ),
             const SizedBox(height: 14),
             SkyViewModeSection(settings: settings),

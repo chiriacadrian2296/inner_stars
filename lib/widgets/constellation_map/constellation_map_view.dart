@@ -1,37 +1,29 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/rendering.dart';
 
-import '../../l10n/strings_scope.dart';
 import '../../models/star_kind.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_style.dart';
+import '../sky_search_tooltip_card.dart';
+import '../search_result_card.dart';
 import '../constellation_painter.dart';
 import '../intensity_dots.dart';
 import '../photo_image.dart';
 import '../star_glyph.dart';
-import '../star_type_text.dart';
 import 'constellation_label_layout.dart';
 
-// Font size and size of a map card at zoom-neutral scale; both then
-// grow/shrink with the view's own [_uiScale] and the layout's card scale.
-const double _kLabelFontSize = 12;
-// Cards stay part of the same zoom-scaled map, but begin noticeably smaller
-// than the nodes and constellation they annotate. This makes the shape read
-// first at the overview zoom without changing the camera's single scale.
-const double _kMapCardWidth = 124;
-const double _kMapCardHeight = 36;
-// Search cards use a soft radius on a much taller surface. Keep that same
-// visual proportion here rather than making these compact labels pill-shaped.
-const double _kMapCardRadius = 6;
+// Render the real Galaxy tooltip at native dimensions. Only this explicit
+// factor and the map's camera scale reduce it; the solver never shrinks it.
 
-/// The constellation is the map's primary structure: its edges and the
-/// stars' own outlines deliberately retain the strongest white stroke.
+/// The constellation uses dark navy edges and thin muted node outlines.
 const double _kConstellationEdgeWidth = 3.5;
-const double _kNodeStrokeWidth = 2.5;
+const double _kNodeStrokeWidth = 0.5;
 
 /// Cards are annotations, not another graph. Leaders inherit their star's
 /// color but remain much lighter and thinner than constellation edges.
@@ -74,6 +66,8 @@ class ConstellationMapView extends StatefulWidget {
     required this.canvasSize,
     required this.fitScale,
     required this.onStarTap,
+    this.cardBuilder,
+    this.tooltipScale = 0.45,
   });
 
   final List<ConstellationStar> stars;
@@ -103,6 +97,11 @@ class ConstellationMapView extends StatefulWidget {
   static const double initialZoomFactor = 0.55;
 
   final ValueChanged<ConstellationStar> onStarTap;
+  final Widget Function(BuildContext, ConstellationStar)? cardBuilder;
+
+  /// 1 renders Galaxy's native tooltip dimensions at the fit zoom. The map
+  /// uses a smaller uniform scale while keeping all tooltip geometry intact.
+  final double tooltipScale;
 
   @override
   State<ConstellationMapView> createState() => _ConstellationMapViewState();
@@ -111,12 +110,16 @@ class ConstellationMapView extends StatefulWidget {
 class _ConstellationMapViewState extends State<ConstellationMapView>
     with TickerProviderStateMixin {
   // The layout is a function of the zoom (and the stars), not of the pan.
+  final _menuController = SearchCardMenuController();
   double? _layoutZoom;
   Object? _layoutStars;
+  Size? _layoutEnvironment;
+  final Map<(int, int?), Size> _tooltipSizes = {};
+  final Map<(int, int?), Size> _pendingTooltipSizes = {};
+  Timer? _tooltipResizeTimer;
   _MapGeometry? _geometry;
   Offset _translation = Offset.zero;
 
-  final Map<(int, double), Size> _labelSizes = {};
   Map<int, int> _previousCandidates = const {};
   LabelLayout? _lockedLayout;
   double? _layoutReferenceZoom;
@@ -198,6 +201,8 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
   @override
   void dispose() {
     _inertiaTicker?.dispose();
+    _menuController.dispose();
+    _tooltipResizeTimer?.cancel();
     _cameraAnimation.dispose();
     super.dispose();
   }
@@ -362,9 +367,9 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
   void didUpdateWidget(ConstellationMapView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.stars, widget.stars) ||
-        oldWidget.edges != widget.edges) {
+        oldWidget.edges != widget.edges ||
+        oldWidget.tooltipScale != widget.tooltipScale) {
       _layoutStars = null;
-      _labelSizes.clear();
       _lockedLayout = null;
       _layoutReferenceZoom = null;
     }
@@ -387,45 +392,32 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: IgnorePointer(
-            child: ClipRect(
-              child: AnimatedBuilder(
-                animation: widget.transformation,
-                builder: (context, _) => _buildOverlay(context),
-              ),
-            ),
+    return Listener(
+      onPointerSignal: _onPointerSignal,
+      onPointerDown: _onPointerDown,
+      onPointerUp: _onPointerEnd,
+      onPointerCancel: _onPointerEnd,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onScaleStart: _onScaleStart,
+        onScaleUpdate: _onScaleUpdate,
+        onScaleEnd: _onScaleEnd,
+        onDoubleTapDown: (details) =>
+            _lastDoubleTapPosition = details.localPosition,
+        onDoubleTap: () => _onDoubleTap(_lastDoubleTapPosition),
+        onTapUp: (details) => _lastTapPosition = details.localPosition,
+        onTap: () {
+          if (_gestureUsedMultiplePointers) return;
+          final star = _hitTest(_lastTapPosition);
+          if (star != null) widget.onStarTap(star);
+        },
+        child: ClipRect(
+          child: AnimatedBuilder(
+            animation: widget.transformation,
+            builder: (context, _) => _buildOverlay(context),
           ),
         ),
-        Positioned.fill(
-          child: Listener(
-            onPointerSignal: _onPointerSignal,
-            onPointerDown: _onPointerDown,
-            onPointerUp: _onPointerEnd,
-            onPointerCancel: _onPointerEnd,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onScaleStart: _onScaleStart,
-              onScaleUpdate: _onScaleUpdate,
-              onScaleEnd: _onScaleEnd,
-              onDoubleTapDown: (details) =>
-                  _lastDoubleTapPosition = details.localPosition,
-              onDoubleTap: () => _onDoubleTap(_lastDoubleTapPosition),
-              onTapUp: (details) => _lastTapPosition = details.localPosition,
-              // `onTap`, unlike `onTapUp`, waits for Flutter to rule out a
-              // double tap. A double tap on a star therefore zooms the map
-              // instead of opening that star on its first touch.
-              onTap: () {
-                if (_gestureUsedMultiplePointers) return;
-                final star = _hitTest(_lastTapPosition);
-                if (star != null) widget.onStarTap(star);
-              },
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -445,35 +437,61 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
       }
     }
     if (best != null) return best;
-    for (final node in geometry.nodes) {
-      final placement = geometry.layout.placements[node.index];
-      if (placement != null && placement.rect.inflate(4).contains(point)) {
-        return widget.stars[node.index];
-      }
-    }
     return null;
   }
 
-  Size _measureLabel(BuildContext context, int index, double fontSize) {
-    final key = (index, fontSize);
-    // Pinching walks through a continuum of font sizes; don't keep them all.
-    if (_labelSizes.length > 1500) _labelSizes.clear();
-    return _labelSizes.putIfAbsent(key, () {
-      final scale =
-          MediaQuery.textScalerOf(context).scale(fontSize) / _kLabelFontSize;
-      return Size(_kMapCardWidth * scale, _kMapCardHeight * scale);
-    });
+  (int, int?) _tooltipId(ConstellationStar star) =>
+      (star.entityId, star.slotSequence);
+
+  double _mapTooltipWidth(BuildContext context) =>
+      galaxyTooltipWidth(context) - SearchResultCard.visualSize;
+
+  Size _nativeTooltipSize(BuildContext context, ConstellationStar star) {
+    final width = _mapTooltipWidth(context);
+    final measured = _tooltipSizes[_tooltipId(star)];
+    if (measured != null && (measured.width - width).abs() < 0.1) {
+      return measured;
+    }
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    return Size(
+      width,
+      SearchResultCard.defaultBodyHeight +
+          math.max(0.0, textScale - 1) * 66 +
+          galaxyTooltipPadding * 2,
+    );
   }
 
-  TextStyle _labelStyle(BuildContext context, double fontSize) {
-    return DefaultTextStyle.of(context).style.merge(
-      TextStyle(
-        fontSize: fontSize,
-        height: 1.15,
-        fontWeight: FontWeight.w600,
-        color: context.colors.text,
-      ),
-    );
+  void _onTooltipSize((int, int?) id, Size size) {
+    if (!mounted || size.isEmpty) return;
+    if (_tooltipSizes[id] == size) {
+      _pendingTooltipSizes.remove(id);
+      if (_pendingTooltipSizes.isEmpty) _tooltipResizeTimer?.cancel();
+      return;
+    }
+    _pendingTooltipSizes[id] = size;
+    // Initial measurements settle together in the next frame. Later changes
+    // wait for drawer/flip animation to stop instead of solving every tick.
+    if (!_tooltipSizes.containsKey(id)) {
+      _commitTooltipSizes();
+    } else {
+      _tooltipResizeTimer?.cancel();
+      _tooltipResizeTimer = Timer(
+        const Duration(milliseconds: 120),
+        _commitTooltipSizes,
+      );
+    }
+  }
+
+  void _commitTooltipSizes() {
+    if (!mounted || _pendingTooltipSizes.isEmpty) return;
+    setState(() {
+      _tooltipSizes.addAll(_pendingTooltipSizes);
+      _pendingTooltipSizes.clear();
+      _geometry = null;
+      _layoutStars = null;
+      _lockedLayout = null;
+      _layoutReferenceZoom = null;
+    });
   }
 
   _MapGeometry _ensureGeometry(
@@ -482,6 +500,19 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
     double ui,
     double nodeScale,
   ) {
+    final nativeSize = Size(
+      _mapTooltipWidth(context),
+      MediaQuery.textScalerOf(context).scale(1),
+    );
+    if (_layoutEnvironment != nativeSize) {
+      _layoutEnvironment = nativeSize;
+      _tooltipSizes.clear();
+      _pendingTooltipSizes.clear();
+      _tooltipResizeTimer?.cancel();
+      _lockedLayout = null;
+      _layoutReferenceZoom = null;
+      _geometry = null;
+    }
     final cached = _geometry;
     if (cached != null &&
         _layoutZoom == zoom &&
@@ -584,9 +615,9 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
             priority: -(node.center - anchor).distance,
           ),
       ],
-      labelSize: (id, labelScale) => stars[id].label.isEmpty
-          ? null
-          : _measureLabel(context, id, _kLabelFontSize * ui * labelScale),
+      labelSize: (id, _) =>
+          _nativeTooltipSize(context, stars[id]) * (widget.tooltipScale * ui),
+      labelScales: const [1],
       edges: segments,
       anchor: anchor,
       symmetryAxisX: symmetryAxisX,
@@ -621,7 +652,7 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
   /// reuses its finished map without even entering the placement solver.
   String _layoutCacheKey(BuildContext context, double zoom) {
     String number(double value) => value.toStringAsFixed(3);
-    final textScale = MediaQuery.textScalerOf(context).scale(_kLabelFontSize);
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
     final starData = widget.stars
         .map((star) {
           return [
@@ -633,6 +664,7 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
             star.label,
             star.slotSequence,
             star.intensity,
+            number(_nativeTooltipSize(context, star).height),
           ].join('~');
         })
         .join('|');
@@ -644,6 +676,8 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
       number(widget.canvasSize.height),
       number(zoom),
       number(textScale),
+      number(_mapTooltipWidth(context)),
+      number(widget.tooltipScale),
       starData,
       edgeData,
     ].join('#');
@@ -746,7 +780,12 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
               top: node.center.dy + translation.dy - node.outer,
               width: node.outer * 2,
               height: node.outer * 2,
-              child: _StarGlow(star: stars[node.index], metrics: node.metrics),
+              child: IgnorePointer(
+                child: _StarGlow(
+                  star: stars[node.index],
+                  metrics: node.metrics,
+                ),
+              ),
             ),
         Positioned.fill(
           child: CustomPaint(
@@ -755,7 +794,7 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
                 for (final (a, b) in geometry.segments)
                   (a + translation, b + translation),
               ],
-              edgeColor: colors.text,
+              edgeColor: colors.night,
               edgeWidth: _kConstellationEdgeWidth * geometry.uiScale,
               leaderWidth: _kLabelLeaderWidth * geometry.uiScale,
               leaders: leaders,
@@ -768,21 +807,100 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
             top: node.center.dy + translation.dy - node.outer,
             width: node.outer * 2,
             height: node.outer * 2,
-            child: _StarButton(star: stars[node.index], metrics: node.metrics),
+            child: IgnorePointer(
+              child: _StarButton(
+                star: stars[node.index],
+                metrics: node.metrics,
+              ),
+            ),
           ),
         for (final placement in layout.placements.values)
           Positioned.fromRect(
+            key: ValueKey((
+              stars[placement.id].entityId,
+              stars[placement.id].slotSequence,
+            )),
             rect: placement.rect.shift(translation),
-            child: _StarMapCard(
-              star: stars[placement.id],
-              style: _labelStyle(
-                context,
-                _kLabelFontSize * geometry.uiScale * layout.labelScale,
+            child: FittedBox(
+              child: SizedBox(
+                width: _nativeTooltipSize(context, stars[placement.id]).width,
+                height: _nativeTooltipSize(context, stars[placement.id]).height,
+                child: OverflowBox(
+                  minWidth: _mapTooltipWidth(context),
+                  maxWidth: _mapTooltipWidth(context),
+                  minHeight: 0,
+                  maxHeight: double.infinity,
+                  child: _TooltipSizeObserver(
+                    onSize: (size) =>
+                        _onTooltipSize(_tooltipId(stars[placement.id]), size),
+                    child: Material(
+                      color: colors.night,
+                      elevation: 8,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          kRadiusCard + galaxyTooltipPadding,
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(galaxyTooltipPadding),
+                        child: SkyTooltipMenuScope(
+                          controller: _menuController,
+                          showVisual: false,
+                          menuId: (
+                            stars[placement.id].entityId,
+                            stars[placement.id].slotSequence,
+                          ),
+                          child:
+                              widget.cardBuilder?.call(
+                                context,
+                                stars[placement.id],
+                              ) ??
+                              Text(stars[placement.id].label),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
       ],
     );
+  }
+}
+
+/// Measures native tooltip bounds before the map's uniform zoom transform.
+class _TooltipSizeObserver extends SingleChildRenderObjectWidget {
+  const _TooltipSizeObserver({required this.onSize, required super.child});
+  final ValueChanged<Size> onSize;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _TooltipSizeRenderBox(onSize);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _TooltipSizeRenderBox renderObject,
+  ) {
+    renderObject.onSize = onSize;
+  }
+}
+
+class _TooltipSizeRenderBox extends RenderProxyBox {
+  _TooltipSizeRenderBox(this.onSize);
+  ValueChanged<Size> onSize;
+  Size? _lastSize;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    if (size == _lastSize) return;
+    _lastSize = size;
+    final measured = size;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (attached) onSize(measured);
+    });
   }
 }
 
@@ -839,13 +957,13 @@ class _NodeMetrics {
       // An empty slot is a little smaller: it's a place, not yet a star.
       case StarKind.nascent:
         return _NodeMetrics(
-          diameter: 32 * ui,
+          diameter: (32 + _kConstellationEdgeWidth * 2) * ui,
           strokeWidth: _kNodeStrokeWidth * ui,
           glowStrength: 0,
         );
       case StarKind.dead:
         return _NodeMetrics(
-          diameter: 40 * ui,
+          diameter: (40 + _kConstellationEdgeWidth * 2) * ui,
           strokeWidth: _kNodeStrokeWidth * ui,
           glowStrength: 0,
         );
@@ -857,7 +975,7 @@ class _NodeMetrics {
       case StarKind.pulsar:
         final intensity = (star.intensity ?? 1).clamp(1, 5).toInt();
         return _NodeMetrics(
-          diameter: 40 * ui,
+          diameter: (40 + _kConstellationEdgeWidth * 2) * ui,
           strokeWidth: _kNodeStrokeWidth * ui,
           glowStrength: _glowStrengths[intensity - 1],
         );
@@ -890,65 +1008,78 @@ class _StarButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final kind = star.kind;
-    // Navy and white throughout, like the constellation editor and the shape
-    // previews: the only colors are the kind's own (its icon — gold when it
-    // burns, blue when it doesn't) and gold for the intensity dots.
+    // The same nesting as a tooltip: dark navy frame, card border, then
+    // the lighter card surface. Keep the glyph and its inner disc unchanged.
     final kindColor = starKindColor(kind, colors, lit: star.lit);
     final diameter = metrics.diameter;
     final nascent = kind == StarKind.nascent;
     final photoPath = star.photoPath;
+    final ui = metrics.strokeWidth / _kNodeStrokeWidth;
+    final frameWidth = _kConstellationEdgeWidth * ui;
+    final innerDiameter = diameter - frameWidth * 2;
 
     final disc = Container(
       width: diameter,
       height: diameter,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: colors.night,
-        border: Border.all(color: colors.text, width: metrics.strokeWidth),
-      ),
-      // The star's photo, if it has one, fills the disc behind everything
-      // else at half strength — its center, cropped to the circle.
-      child: ClipOval(
-        child: Stack(
-          fit: StackFit.expand,
-          alignment: Alignment.center,
-          children: [
-            if (photoPath != null && photoPath.isNotEmpty)
-              Opacity(
-                opacity: 0.5,
-                child: PhotoImage(
-                  photoPath: photoPath,
-                  fit: BoxFit.cover,
-                  // Never shown bigger than the biggest button, however
-                  // sharp the camera photo it came from.
-                  cacheWidth: 400,
+      padding: EdgeInsets.all(frameWidth),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: colors.night),
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: colors.nightPanel,
+          border: Border.all(
+            color: colors.nightBorder,
+            width: metrics.strokeWidth,
+            strokeAlign: BorderSide.strokeAlignInside,
+          ),
+        ),
+        // The star's photo, if it has one, fills the disc behind everything
+        // else at half strength — its center, cropped to the circle.
+        child: ClipOval(
+          child: Stack(
+            fit: StackFit.expand,
+            alignment: Alignment.center,
+            children: [
+              if (photoPath != null && photoPath.isNotEmpty)
+                Opacity(
+                  opacity: 0.5,
+                  child: PhotoImage(
+                    photoPath: photoPath,
+                    fit: BoxFit.cover,
+                    // Never shown bigger than the biggest button, however
+                    // sharp the camera photo it came from.
+                    cacheWidth: 400,
+                  ),
                 ),
-              ),
-            Center(
-              child: nascent
-                  ? Icon(
-                      kind.icon,
-                      size: diameter * 0.5,
-                      color: colors.text.withValues(alpha: 0.5),
-                    )
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(kind.icon, size: diameter * 0.4, color: kindColor),
-                        Padding(
-                          padding: EdgeInsets.only(top: diameter * 0.04),
-                          child: IntensityDots(
-                            intensity: star.intensity,
-                            color: colors.gold,
-                            dotSize: diameter * 0.038,
-                            spacing: diameter * 0.024,
+              Center(
+                child: nascent
+                    ? Icon(
+                        kind.icon,
+                        size: innerDiameter * 0.5,
+                        color: colors.text.withValues(alpha: 0.5),
+                      )
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            kind.icon,
+                            size: innerDiameter * 0.4,
+                            color: kindColor,
                           ),
-                        ),
-                      ],
-                    ),
-            ),
-          ],
+                          Padding(
+                            padding: EdgeInsets.only(top: innerDiameter * 0.04),
+                            child: IntensityDots(
+                              intensity: star.intensity,
+                              color: colors.gold,
+                              dotSize: innerDiameter * 0.038,
+                              spacing: innerDiameter * 0.024,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1027,88 +1158,6 @@ class _IntensityGlowPainter extends CustomPainter {
       color != old.color ||
       baseRadius != old.baseRadius ||
       strength != old.strength;
-}
-
-/// Search-result card treatment, stripped of its quick-action drawer: on a
-/// constellation map the star itself remains the single tap target.
-class _StarMapCard extends StatelessWidget {
-  const _StarMapCard({required this.star, required this.style});
-
-  final ConstellationStar star;
-  final TextStyle style;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typeColor = starKindColor(star.kind, colors, lit: star.lit);
-    final strings = context.strings;
-    final scale = (style.fontSize ?? _kLabelFontSize) / _kLabelFontSize;
-    return Container(
-      decoration: BoxDecoration(
-        // The card still reads as a surface, while the constellation's
-        // connectors remain subtly visible underneath it.
-        color: colors.nightPanel.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(_kMapCardRadius * scale),
-        border: Border.all(color: typeColor, width: kBorderWidth * scale),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: 7 * scale,
-                vertical: scale,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  StarTypeText(
-                    star.kind.label(strings).toUpperCase(),
-                    compact: true,
-                    originalKind: star.kind == StarKind.dead
-                        ? star.originalKind
-                        : null,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 5 * scale,
-                      letterSpacing: 0.7 * scale,
-                      fontWeight: FontWeight.w700,
-                      color: typeColor,
-                    ),
-                  ),
-                  SizedBox(height: scale),
-                  Text(
-                    star.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: style.copyWith(
-                      fontSize: 7.5 * scale,
-                      height: 1.1,
-                      fontWeight: FontWeight.w700,
-                      color: colors.text,
-                    ),
-                  ),
-                  SizedBox(height: scale),
-                  Text(
-                    strings.intensityCount(star.intensity ?? 0),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 6 * scale,
-                      fontWeight: FontWeight.w600,
-                      color: colors.gold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _Leader {

@@ -88,6 +88,22 @@ class AppColors extends ThemeExtension<AppColors> {
     stops: const [0.0, 0.55, 1.0],
   );
 
+  /// A lighter slate-blue backdrop for the constellation map, with the
+  /// same radial geometry as the reader's night gradient.
+  RadialGradient get constellationGradient {
+    final base = nightlightGradient;
+    return RadialGradient(
+      center: base.center,
+      radius: base.radius,
+      stops: base.stops,
+      tileMode: base.tileMode,
+      focal: base.focal,
+      focalRadius: base.focalRadius,
+      transform: base.transform,
+      colors: const [Color(0xFF465B79), Color(0xFF2D3D56), Color(0xFF202B3E)],
+    );
+  }
+
   static const dark = AppColors(
     night: Color(0xFF0D1220),
     nightPanel: Color(0xFF161D30),

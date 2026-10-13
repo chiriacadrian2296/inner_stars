@@ -1,3 +1,5 @@
+import '../widgets/sky_search_tooltip_card.dart'
+    show galaxyTooltipWidth, galaxyTooltipPadding;
 import '../widgets/entity_insights_scope.dart';
 import '../models/display_text.dart';
 
@@ -117,7 +119,7 @@ import 'vision_editor_screen.dart';
 /// squared-off rectangle.
 const double _bottomPillHeight = 44.0;
 const double _bottomPillRadius = 22.0;
-const double _skyTooltipPadding = 8.0;
+const double _skyTooltipPadding = galaxyTooltipPadding;
 
 /// Shared by every hold-to-activate gesture on this screen — the sky's own
 /// hold-to-peek (see `_SkyScreenState._holdDuration`) and the menu button's
@@ -4436,9 +4438,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       child: TooltipCard.builder(
         controller: _skyTooltipController,
         placementSide: TooltipCardPlacementSide.bottom,
-        flyoutBackgroundColor: colors.nightPanel,
+        flyoutBackgroundColor: colors.night,
         borderColor: Colors.transparent,
-        beakColor: colors.nightPanel,
+        borderWidth: 0,
+        beakColor: colors.night,
         // The outer curve stays concentric with the card's own 16 px curve:
         // its radius grows by exactly the space between the two surfaces.
         borderRadius: BorderRadius.circular(kRadiusCard + _skyTooltipPadding),
@@ -4456,9 +4459,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         // small clamp margin) is what actually keeps it on
         // screen instead.
         fitToViewport: false,
-        constraints: BoxConstraints(
-          maxWidth: math.min(480, MediaQuery.sizeOf(context).width - 12),
-        ),
+        constraints: BoxConstraints(maxWidth: galaxyTooltipWidth(context)),
         padding: const EdgeInsets.all(_skyTooltipPadding),
         // `TooltipCard`'s own default (`WhenContentHide.goAway`) auto-closes
         // on the pointer leaving the panel — meant for a *hover*-triggered

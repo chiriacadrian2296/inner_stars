@@ -1,3 +1,11 @@
+import '../widgets/sky_star_tooltip.dart';
+import '../widgets/sky_pulsar_tooltip.dart';
+import '../widgets/sky_nascent_star_tooltip.dart';
+import '../widgets/habit_stepper_dialog.dart';
+import '../widgets/shareable_lit_star_card.dart';
+import '../widgets/shareable_goal_card.dart';
+import '../widgets/shareable_pulsar_card.dart';
+import '../utils/habit_stats.dart';
 import '../utils/entity_insights.dart';
 import '../widgets/entity_insights_scope.dart';
 import '../widgets/grouped_action_layout.dart';
@@ -225,7 +233,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
   }
 
   void _refresh() {
-    setState(_loadData);
+    if (mounted) setState(_loadData);
   }
 
   /// The constellation's watermark follows the light currently visible on
@@ -285,6 +293,301 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
               .pop(SkyStarTarget(project, starId: starId, habitId: habitId)),
         ),
       ),
+    );
+    _refresh();
+  }
+
+  Widget _buildMapCard(BuildContext context, ConstellationStar entry) {
+    if (entry.kind == StarKind.nascent) {
+      return SkyNascentStarTooltip(
+        project: _project,
+        onClose: () {},
+        onView: () => _openStar(entry),
+        onConfigure: () => _configureNascent(
+          NascentEntry(projectId: _project.id, slot: entry.slotSequence!),
+        ),
+      );
+    }
+    if (entry.slotSequence == null) {
+      final habit = _habits
+          .where((value) => value.id == entry.entityId)
+          .firstOrNull;
+      if (habit == null) return const SizedBox.shrink();
+      final counts = habitCompletionCountsByDay(
+        widget.habitCompletionRepository.getAllForHabit(habit.id),
+      );
+      final now = DateTime.now();
+      final doneToday = counts.containsKey(
+        DateTime(now.year, now.month, now.day),
+      );
+      final stepper =
+          habit.frequency == HabitFrequency.daily && habit.targetPerPeriod > 1;
+      return SkyPulsarTooltip(
+        habit: habit,
+        project: _project,
+        countsByDay: counts,
+        isLit: !habit.dead && isHabitLit(habit, counts),
+        onClose: () {},
+        onView: () => _openStar(entry),
+        onToday: () => _toggleHabitToday(habit),
+        todayActionIcon: stepper
+            ? Icons.import_export
+            : Icons.local_fire_department_rounded,
+        todayActionLabel: stepper
+            ? context.strings.habitProgressToday(
+                habitDailyProgress(habit, counts),
+                habit.targetPerPeriod,
+              )
+            : doneToday
+            ? context.strings.actionTurnOff
+            : context.strings.actionLight,
+        onEdit: () => _editOrResurrectPulsar(habit),
+        onDelete: habit.dead ? null : () => _archiveActivity(habit: habit),
+        onShare: habit.dead ? null : () => _shareActivity(habit: habit),
+      );
+    }
+    final star = _stars
+        .where((value) => value.id == entry.entityId)
+        .firstOrNull;
+    if (star == null) return const SizedBox.shrink();
+    return SkyStarTooltip(
+      star: star,
+      project: _project,
+      onClose: () {},
+      onView: () => _openStar(entry),
+      onEdit: () => _editOrResurrectStar(star),
+      onLight: star.isUnlit ? () => _lightStar(star) : null,
+      onDelete: star.dead ? null : () => _archiveActivity(star: star),
+      onShare: star.dead ? null : () => _shareActivity(star: star),
+    );
+  }
+
+  Future<void> _lightStar(Star star) async {
+    final result = await showMarkAchievedSheet(context);
+    if (result == null) return;
+    await widget.starRepository.markAchieved(
+      star.id,
+      intensity: result.intensity,
+      photoPath: result.photoPath,
+    );
+    _refresh();
+  }
+
+  Future<void> _toggleHabitToday(Habit habit) async {
+    final repository = widget.habitCompletionRepository;
+    if (habit.frequency == HabitFrequency.daily && habit.targetPerPeriod > 1) {
+      await showHabitStepperDialog(
+        context: context,
+        habit: habit,
+        repository: repository,
+        onChanged: _refresh,
+      );
+      return;
+    }
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final counts = habitCompletionCountsByDay(
+      repository.getAllForHabit(habit.id),
+    );
+    if (counts.containsKey(today)) {
+      await repository.unmarkDone(habit.id, today);
+    } else {
+      await repository.markDone(habit.id);
+    }
+    _refresh();
+  }
+
+  Future<void> _archiveActivity({Star? star, Habit? habit}) async {
+    final strings = context.strings;
+    final confirmed = await showAppConfirmation(
+      context: context,
+      title: habit != null
+          ? strings.deletePulsarConfirmTitle
+          : strings.deleteStarConfirmTitle,
+      body: habit != null
+          ? strings.deletePulsarConfirmBody
+          : strings.deleteStarConfirmBody,
+      cancelLabel: strings.cancel,
+      confirmLabel: strings.archiveAction,
+      tone: AppConfirmationTone.destructive,
+    );
+    if (!confirmed) return;
+    if (habit != null) {
+      await widget.habitRepository.delete(habit.id);
+    } else {
+      await widget.starRepository.delete(star!.id);
+    }
+    _refresh();
+  }
+
+  Future<void> _shareActivity({Star? star, Habit? habit}) async {
+    await showSharePreview(
+      context: context,
+      content: habit != null
+          ? ShareablePulsarCard(habit: habit, project: _project)
+          : star!.isLit
+          ? ShareableLitStarCard(star: star, project: _project)
+          : ShareableGoalCard(star: star, project: _project),
+      shareText: habit?.displayTitle ?? star!.displayTitle,
+      fileName: habit != null
+          ? 'pulsar_${habit.id}.png'
+          : 'star_${star!.id}.png',
+    );
+  }
+
+  Future<void> _configureNascent(NascentEntry entry) async {
+    final project = _project;
+    final result = await Navigator.of(context).push<Object>(
+      MaterialPageRoute(
+        builder: (_) => StarFormScreen(
+          lockedProject: project,
+          slotSequence: entry.slot,
+          allowPulsar: false,
+        ),
+      ),
+    );
+    if (result is! StarFormResult) return;
+    await widget.starRepository.add(
+      title: result.title,
+      iconSlug: result.iconSlug,
+      description: result.description,
+      projectId: result.projectId,
+      slotSequence: result.slotSequence,
+      targetDate: result.targetDate,
+      achievedDate: result.achievedDate,
+      intensity: result.intensity,
+      photoPath: result.photoPath,
+      media: result.media,
+    );
+    _refresh();
+  }
+
+  Future<void> _editOrResurrectPulsar(Habit habit) async {
+    final habits = widget.habitRepository;
+    final completions = widget.habitCompletionRepository;
+
+    if (habit.dead) {
+      final result = await Navigator.of(context).push<Object>(
+        MaterialPageRoute(
+          builder: (_) => StarFormScreen(
+            existingHabit: habit,
+            contextProject: _project,
+            projectRepository: widget.projectRepository,
+            starsShapeRepository: widget.starsShapeRepository,
+            hideDelete: true,
+          ),
+        ),
+      );
+      if (result is! StarFormResult) return;
+      await habits.resurrect(
+        habit.id,
+        title: result.title,
+        iconSlug: result.iconSlug,
+        description: result.description,
+        projectId: result.projectId,
+        intensity: result.intensity ?? habit.intensity,
+        frequency: result.habitFrequency ?? habit.frequency,
+        targetPerPeriod: result.habitTargetPerPeriod ?? habit.targetPerPeriod,
+        reminderHour: result.reminderHour,
+        reminderMinute: result.reminderMinute,
+        completionRepository: completions,
+      );
+      _refresh();
+      return;
+    }
+
+    final result = await Navigator.of(context).push<Object>(
+      MaterialPageRoute(
+        builder: (_) => StarFormScreen(
+          existingHabit: habit,
+          contextProject: _project,
+          projectRepository: widget.projectRepository,
+          starsShapeRepository: widget.starsShapeRepository,
+        ),
+      ),
+    );
+    if (result == null) return;
+    if (result is StarFormDeleteRequested) {
+      await habits.delete(habit.id);
+      _refresh();
+      return;
+    }
+    final formResult = result as StarFormResult;
+    await habits.update(
+      id: habit.id,
+      title: formResult.title,
+      iconSlug: formResult.iconSlug,
+      description: formResult.description,
+      projectId: formResult.projectId,
+      intensity: formResult.intensity ?? habit.intensity,
+      frequency: formResult.habitFrequency ?? habit.frequency,
+      targetPerPeriod: formResult.habitTargetPerPeriod ?? habit.targetPerPeriod,
+      reminderHour: formResult.reminderHour,
+      reminderMinute: formResult.reminderMinute,
+    );
+    _refresh();
+  }
+
+  Future<void> _editOrResurrectStar(Star current) async {
+    if (current.dead) {
+      final result = await Navigator.of(context).push<Object>(
+        MaterialPageRoute(
+          builder: (_) => StarFormScreen(
+            existingStar: current,
+            contextProject: _project,
+            projectRepository: widget.projectRepository,
+            starsShapeRepository: widget.starsShapeRepository,
+            hideDelete: true,
+          ),
+        ),
+      );
+      if (result is! StarFormResult) return;
+      await widget.starRepository.resurrect(
+        current.id,
+        title: result.title,
+        iconSlug: result.iconSlug,
+        description: result.description,
+        projectId: result.projectId,
+        targetDate: result.targetDate,
+        achievedDate: result.achievedDate,
+        intensity: result.intensity,
+        photoPath: result.photoPath,
+        media: result.media,
+      );
+      _refresh();
+      return;
+    }
+
+    final result = await Navigator.of(context).push<Object>(
+      MaterialPageRoute(
+        builder: (_) => StarFormScreen(
+          existingStar: current,
+          contextProject: _project,
+          projectRepository: widget.projectRepository,
+          starsShapeRepository: widget.starsShapeRepository,
+        ),
+      ),
+    );
+    if (result == null) return;
+
+    if (result is StarFormDeleteRequested) {
+      await widget.starRepository.delete(current.id);
+      _refresh();
+      return;
+    }
+
+    final addResult = result as StarFormResult;
+    await widget.starRepository.update(
+      id: current.id,
+      title: addResult.title,
+      iconSlug: addResult.iconSlug,
+      description: addResult.description,
+      projectId: addResult.projectId,
+      targetDate: addResult.targetDate,
+      achievedDate: addResult.achievedDate,
+      intensity: addResult.intensity,
+      photoPath: addResult.photoPath,
+      media: addResult.media,
     );
     _refresh();
   }
@@ -443,9 +746,9 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
         // Edge-to-edge lets the night sky continue behind the status icons.
         backgroundColor: Colors.black,
         body: DecoratedBox(
-          // The same night gradient as the Star Reader, so the transparent dock
-          // shows the sky instead of a black end to the gradient.
-          decoration: BoxDecoration(gradient: colors.nightlightGradient),
+          // Lighter tones distinguish the dark tooltips, while the radial
+          // gradient keeps the same shape and continues behind the dock.
+          decoration: BoxDecoration(gradient: colors.constellationGradient),
           child: SafeArea(
             bottom: false,
             child: Column(
@@ -568,6 +871,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                                       canvasSize: _canvasSize,
                                       fitScale: _fitScaleFor(viewportSize),
                                       onStarTap: _openStar,
+                                      cardBuilder: _buildMapCard,
                                     ),
                                   );
                                 },

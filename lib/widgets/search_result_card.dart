@@ -80,13 +80,20 @@ class SearchResultCard extends StatelessWidget {
     this.baseBodyHeight = _bodyHeight,
     this.fillVisualHeight = false,
     this.centerVisual = false,
+    this.showVisual = true,
     this.groupSeparators = true,
+    this.toggleAtBottom = false,
   });
 
   /// Whether the drawer visibly separates its action groups (an empty gap).
   /// The tooltips turn it off: the groups stay in the data, ready for later,
   /// but are not drawn.
   final bool groupSeparators;
+
+  /// Tooltip layout: the drawer toggle sits at the card's bottom-right, with
+  /// the same margin below as to its right (the flip button takes the top
+  /// right), and the content leaves a little more room for both.
+  final bool toggleAtBottom;
 
   static const visualSize = 88.0;
   static const _bodyHeight = 88.0;
@@ -105,10 +112,16 @@ class SearchResultCard extends StatelessWidget {
   static const _drawerHeight = 68.0;
   static const _drawerUnderlap = 18.0;
   static const _toggleZoneWidth = 44.0;
+  static const _roundSize = 28.0;
+  static const _roundMargin = 10.0;
+  static const _roundZoneWidth = _roundSize + 2 * _roundMargin;
 
   final Object menuId;
   final SearchCardMenuController menuController;
   final Widget visual;
+
+  /// Hide the visual column on compact constellation-map tooltips.
+  final bool showVisual;
   final Widget content;
   final List<SearchCardAction> actions;
   final VoidCallback onTap;
@@ -200,27 +213,28 @@ class SearchResultCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(kRadiusCard),
                           child: Stack(
                             children: [
+                              if (showVisual)
+                                Positioned(
+                                  left: centerVisual ? _textGap / 2 : 0,
+                                  top: fillVisualHeight
+                                      ? 0
+                                      : (bodyHeight - visualSize) / 2,
+                                  width: visualSize,
+                                  height: fillVisualHeight
+                                      ? bodyHeight
+                                      : visualSize,
+                                  child: visual,
+                                ),
                               Positioned(
-                                left: centerVisual ? _textGap / 2 : 0,
-                                top: fillVisualHeight
-                                    ? 0
-                                    : (bodyHeight - visualSize) / 2,
-                                width: visualSize,
-                                height: fillVisualHeight
-                                    ? bodyHeight
-                                    : visualSize,
-                                child: visual,
-                              ),
-                              Positioned(
-                                left: visualSize,
+                                left: showVisual ? visualSize : 0,
                                 top: 0,
                                 right: 0,
                                 height: bodyHeight,
                                 child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(
+                                  padding: EdgeInsets.fromLTRB(
                                     12,
                                     3,
-                                    40,
+                                    toggleAtBottom ? _roundZoneWidth + 8 : 40,
                                     3,
                                   ),
                                   child: content,
@@ -250,20 +264,31 @@ class SearchResultCard extends StatelessWidget {
                   ),
                 ),
                 // The toggle is small by design, so its tap zone is the whole
-                // right-hand strip of the card, full body height.
+                // right-hand strip of the card (in tooltips its lower half, the
+                // flip button taking the upper half).
                 Positioned(
                   right: 0,
-                  top: 0,
-                  width: _toggleZoneWidth,
-                  height: bodyHeight,
+                  top: toggleAtBottom ? bodyHeight / 2 : 0,
+                  width: toggleAtBottom ? _roundZoneWidth : _toggleZoneWidth,
+                  height: toggleAtBottom ? bodyHeight / 2 : bodyHeight,
                   child: GestureDetector(
                     key: const Key('search-card-quick-menu-toggle-zone'),
                     behavior: HitTestBehavior.opaque,
                     onTap: () => menuController.toggle(menuId),
-                    child: Center(
-                      child: _SearchQuickMenuToggle(
-                        isOpen: isMenuOpen,
-                        onTap: () => menuController.toggle(menuId),
+                    child: Align(
+                      alignment: toggleAtBottom
+                          ? Alignment.bottomRight
+                          : Alignment.center,
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          bottom: toggleAtBottom ? _roundMargin : 0,
+                          right: toggleAtBottom ? _roundMargin : 0,
+                        ),
+                        child: _SearchQuickMenuToggle(
+                          isOpen: isMenuOpen,
+                          round: toggleAtBottom,
+                          onTap: () => menuController.toggle(menuId),
+                        ),
                       ),
                     ),
                   ),
@@ -671,8 +696,14 @@ class SearchMissingVisual extends StatelessWidget {
 }
 
 class _SearchQuickMenuToggle extends StatelessWidget {
-  const _SearchQuickMenuToggle({required this.isOpen, required this.onTap});
+  const _SearchQuickMenuToggle({
+    required this.isOpen,
+    required this.onTap,
+    this.round = false,
+  });
 
+  /// Tooltips: a 28 circle, the size of the flip button.
+  final bool round;
   final bool isOpen;
   final VoidCallback onTap;
 
@@ -695,11 +726,11 @@ class _SearchQuickMenuToggle extends StatelessWidget {
           child: AnimatedContainer(
             duration: motionDuration(context, kMotionBase),
             curve: kMotionEnter,
-            width: 20,
-            height: 48,
+            width: round ? _roundSize : 20,
+            height: round ? _roundSize : 48,
             decoration: BoxDecoration(
               color: isOpen ? AppColors.dark.gold : colors.night,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(round ? _roundSize / 2 : 10),
               border: Border.all(
                 // The drawer trigger belongs to its card rather than being
                 // a primary action itself, so it keeps the card's quiet
@@ -728,6 +759,7 @@ class _SearchQuickMenuToggle extends StatelessWidget {
 
 /// Empty space between two action groups in the drawer.
 const double _groupGap = 14;
+const double _roundSize = SearchResultCard._roundSize;
 
 class _SearchQuickMenu extends StatelessWidget {
   const _SearchQuickMenu({
