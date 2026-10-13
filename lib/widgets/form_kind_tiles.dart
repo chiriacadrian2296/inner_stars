@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/strings_scope.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_motion.dart';
 import '../theme/app_style.dart';
 import 'search_result_card.dart' show SearchStarVisual;
 import 'staggered_entrance.dart';
@@ -69,6 +70,10 @@ class FormKindTiles extends StatelessWidget {
     this.leading = const [],
     this.trailing = const [],
     this.onSwipe,
+    this.tileOffset = Offset.zero,
+    this.dividerOpacity = 1,
+    this.tileEntranceAxis = Axis.horizontal,
+    this.animateDividerEntrance = false,
   });
 
   final List<FormKindTile> leading;
@@ -76,6 +81,20 @@ class FormKindTiles extends StatelessWidget {
 
   /// Called with -1 or 1 on a horizontal swipe over the row.
   final ValueChanged<int>? onSwipe;
+
+  /// Moves only the selectable tiles, leaving the separator in place.
+  final Offset tileOffset;
+
+  /// Lets a rearranging chooser hide and restore its separator without
+  /// translating it alongside the selectable tiles.
+  final double dividerOpacity;
+
+  /// The neutral chooser arrives from the side; its single focused choice
+  /// later rises vertically with the rest of its transition.
+  final Axis tileEntranceAxis;
+
+  /// Delays the separator's first fade-in until the tiles have entered.
+  final bool animateDividerEntrance;
 
   static const double _gap = 8;
 
@@ -97,63 +116,66 @@ class FormKindTiles extends StatelessWidget {
         var index = 0;
         Widget tile(FormKindTile t) {
           final i = index++;
-          return StaggeredEntrance(
-            index: i + 1,
-            axis: Axis.horizontal,
-            child: SizedBox(
-              width: side,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  InkWell(
-                    onTap: t.onTap,
-                    borderRadius: BorderRadius.circular(kRadiusField),
-                    child: Container(
-                      width: side,
-                      height: side,
-                      // The picture is clipped to the tile's rounded corners.
-                      clipBehavior: Clip.antiAlias,
-                      decoration: selectableDecoration(
-                        colors,
-                        selected: t.selected,
-                      ),
-                      // Drawn smaller than the tile so it has room to breathe.
-                      child: Opacity(
-                        opacity: t.selected ? 1 : 0.55,
-                        child: Transform.scale(
-                          scale: 0.72,
-                          child: SizedBox.expand(child: t.visual),
+          return Transform.translate(
+            offset: tileOffset,
+            child: StaggeredEntrance(
+              index: i + 1,
+              axis: tileEntranceAxis,
+              child: SizedBox(
+                width: side,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    InkWell(
+                      onTap: t.onTap,
+                      borderRadius: BorderRadius.circular(kRadiusField),
+                      child: Container(
+                        width: side,
+                        height: side,
+                        // The picture is clipped to the tile's rounded corners.
+                        clipBehavior: Clip.antiAlias,
+                        decoration: selectableDecoration(
+                          colors,
+                          selected: t.selected,
+                        ),
+                        // Drawn smaller than the tile so it has room to breathe.
+                        child: Opacity(
+                          opacity: t.selected ? 1 : 0.55,
+                          child: Transform.scale(
+                            scale: 0.72,
+                            child: SizedBox.expand(child: t.visual),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  // The name selects the tile too, not just the square above it.
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: t.onTap,
-                    child: SizedBox(
-                      width: side,
-                      child: Center(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            t.label,
-                            maxLines: 1,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: t.selected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              color: t.selected ? colors.text : colors.muted,
+                    const SizedBox(height: 6),
+                    // The name selects the tile too, not just the square above it.
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: t.onTap,
+                      child: SizedBox(
+                        width: side,
+                        child: Center(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              t.label,
+                              maxLines: 1,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: t.selected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                                color: t.selected ? colors.text : colors.muted,
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
@@ -190,10 +212,22 @@ class FormKindTiles extends StatelessWidget {
                   width: _dividerWidth,
                   height: side,
                   child: Center(
-                    child: Container(
-                      width: kBorderWidth,
-                      height: side * 0.7,
-                      color: colors.nightBorder,
+                    child: StaggeredEntrance(
+                      index: 4,
+                      enabled: animateDividerEntrance,
+                      drift: 0,
+                      extraDelay: kActionGroupDotDelay,
+                      child: AnimatedOpacity(
+                        key: const ValueKey('form-kind-divider'),
+                        opacity: dividerOpacity,
+                        duration: motionDuration(context, kMotionBase),
+                        curve: dividerOpacity == 0 ? kMotionExit : kMotionEnter,
+                        child: Container(
+                          width: kBorderWidth,
+                          height: side * 0.7,
+                          color: colors.nightBorder,
+                        ),
+                      ),
                     ),
                   ),
                 ),

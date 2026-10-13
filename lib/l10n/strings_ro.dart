@@ -1,3 +1,4 @@
+import '../models/star_kind.dart';
 import '../models/reflection_group.dart';
 import 'app_strings.dart';
 import 'reflection_groups_ro.dart';
@@ -504,6 +505,14 @@ class StringsRo implements AppStrings {
   @override
   String get dateRangeToLabel => 'Până la';
   @override
+  String get dateFieldSectionTitle => 'Tip Dată';
+  @override
+  String get dateFieldCreated => 'Creare';
+  @override
+  String get dateFieldModified => 'Modificare';
+  @override
+  String get dateFieldOccurred => 'Eveniment';
+  @override
   String get clearFilterAction => 'Resetează';
   @override
   String get clearSearchTooltip => 'Șterge căutarea';
@@ -512,7 +521,7 @@ class StringsRo implements AppStrings {
   @override
   String get sortButtonDefaultLabel => 'Sortează';
   @override
-  String get sortSheetTitle => 'Sortează După';
+  String get sortSheetTitle => 'Sortează';
   @override
   String get sortFieldDate => 'Dată';
   @override
@@ -1375,6 +1384,8 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get addExtraAction => 'Adaugă';
   @override
+  String get createChooserQuestion => 'Ce ai vrea să adaugi în galaxia ta?';
+  @override
   String mediaMaxDuration(String duration) => 'Max $duration';
   @override
   String get recordVoiceTitle => 'Înregistrează o Notă Vocală';
@@ -1478,6 +1489,12 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get discardChangesConfirmBody => 'Vei pierde modificările făcute.';
   @override
   String get discardChangesAction => 'Renunță';
+  @override
+  String get continueEditingAction => 'Anulează';
+  @override
+  String get discardAndChooseAnotherAction => 'Schimbă';
+  @override
+  String get discardAndExitAction => 'Ieși';
 
   @override
   String get targetDateLabel => 'Dată Țintă';
@@ -1649,6 +1666,9 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
       'Zece minute de stretching, în fiecare zi.';
   @override
   String get starKindDeadName => 'Arhivat';
+  @override
+  String archivedKindName(StarKind original) =>
+      '${original.label(this)} ${original == StarKind.lit ? 'Arhivată' : 'Arhivat'}';
   @override
   String get starKindDeadPlural => 'Arhivate';
   @override

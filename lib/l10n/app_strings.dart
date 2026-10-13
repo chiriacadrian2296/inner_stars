@@ -1,4 +1,5 @@
 import '../models/reflection_group.dart';
+import '../models/star_kind.dart';
 
 /// Every user-facing piece of text in the app, in one interface — resolved
 /// per [SettingsController.locale] via `context.strings` (see
@@ -494,6 +495,10 @@ abstract class AppStrings {
   String get dateRangeStepForwardAction;
   String get dateRangeFromLabel;
   String get dateRangeToLabel;
+  String get dateFieldSectionTitle;
+  String get dateFieldCreated;
+  String get dateFieldModified;
+  String get dateFieldOccurred;
   String get clearFilterAction;
   String get clearSearchTooltip;
   String get sortAction;
@@ -696,6 +701,7 @@ abstract class AppStrings {
   String get extraLink;
   String get resetExtraAction;
   String get addExtraAction;
+  String get createChooserQuestion;
   String mediaMaxDuration(String duration);
   String get recordVoiceTitle;
   String get recordStart;
@@ -749,6 +755,9 @@ abstract class AppStrings {
   String get discardChangesConfirmTitle;
   String get discardChangesConfirmBody;
   String get discardChangesAction;
+  String get continueEditingAction;
+  String get discardAndChooseAnotherAction;
+  String get discardAndExitAction;
 
   String get targetDateLabel;
   String get selectATargetDateHint;
@@ -869,6 +878,10 @@ abstract class AppStrings {
   String get starKindPulsarPlural;
   String get starKindPulsarMeaning;
   String get starKindPulsarExample;
+
+  /// "Archived Goal" / "Obiettivo Archiviato": the name of an archived
+  /// element of the [original] kind, in the order and gender of the language.
+  String archivedKindName(StarKind original);
   String get starKindDeadName;
   String get starKindDeadPlural;
   String get starKindDeadMeaning;

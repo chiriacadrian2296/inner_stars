@@ -23,11 +23,16 @@ class FilterButton extends StatelessWidget {
     required this.tooltip,
     required this.onTap,
     this.horizontal = false,
+    this.caption,
   });
 
   final IconData icon;
   final bool active;
   final String label;
+
+  /// Optional qualifier shown in small muted text just under the button
+  /// (e.g. which date a range applies to), so the button face stays short.
+  final String? caption;
   final String tooltip;
   final bool horizontal;
   final VoidCallback onTap;
@@ -35,6 +40,27 @@ class FilterButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final button = _button(colors);
+    final caption = this.caption;
+    if (caption == null) return button;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        button,
+        const SizedBox(height: 4),
+        Text(
+          caption,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 10.5, color: colors.muted),
+        ),
+      ],
+    );
+  }
+
+  Widget _button(AppColors colors) {
     return Tooltip(
       message: tooltip,
       child: Material(

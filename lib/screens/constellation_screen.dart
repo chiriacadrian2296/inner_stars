@@ -1,3 +1,4 @@
+import '../widgets/position_counter.dart';
 import '../widgets/sky_star_tooltip.dart';
 import '../widgets/sky_pulsar_tooltip.dart';
 import '../widgets/sky_nascent_star_tooltip.dart';
@@ -731,11 +732,20 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
     }
   }
 
+  /// This constellation's place among all of them (1-based), as the
+  /// previous/next arrows walk them.
+  ({int index, int total}) get _projectPosition {
+    final projects = widget.projectRepository.getAll();
+    final current = projects.indexWhere((project) => project.id == _project.id);
+    return (index: current + 1, total: projects.length);
+  }
+
   @override
   Widget build(BuildContext context) {
     final shape = _shape;
     final colors = context.colors;
     final strings = context.strings;
+    final projectPosition = _projectPosition;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
@@ -901,91 +911,104 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                     12,
                     16 + MediaQuery.paddingOf(context).bottom,
                   ),
-                  child: GroupedActionLayout(
-                    separatorBuilder: (dot) => StaggeredEntrance(
-                      index: 4,
-                      enabled: !_hasNavigatedConstellations,
-                      drift: 0,
-                      extraDelay: kActionGroupDotDelay,
-                      child: dot,
-                    ),
-                    groups: [
-                      0,
-                      1,
-                      if (EntityInsightsScope.maybeOf(context) != null) 2,
-                      2,
-                      2,
-                      3,
-                    ],
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      StaggeredEntrance(
-                        index: 0,
-                        enabled: !_hasNavigatedConstellations,
-                        drift: 0.7,
-                        child: _ConstellationDockAction(
-                          icon: Icons.star,
-                          label: 'Nuova stella',
-                          onTap: _addStar,
-                          isNew: true,
+                      if (projectPosition.total > 1) ...[
+                        PositionCounter(
+                          index: projectPosition.index,
+                          total: projectPosition.total,
+                          icon: Icons.insights,
                         ),
-                      ),
-
-                      StaggeredEntrance(
-                        index: 1,
-                        enabled: !_hasNavigatedConstellations,
-                        drift: 0.7,
-                        child: _ConstellationDockAction(
-                          icon: Icons.share_outlined,
-                          label: 'Condividi',
-                          onTap: _share,
-                        ),
-                      ),
-
-                      if (EntityInsightsScope.maybeOf(context) != null)
-                        StaggeredEntrance(
-                          index: 2,
+                        const SizedBox(height: PositionCounter.gapBelow),
+                      ],
+                      GroupedActionLayout(
+                        separatorBuilder: (dot) => StaggeredEntrance(
+                          index: 4,
                           enabled: !_hasNavigatedConstellations,
-                          drift: 0.7,
-                          child: _ConstellationDockAction(
-                            icon: Icons.bar_chart,
-                            label: strings.statsTitle,
-                            onTap: () => openEntityStatistics(
-                              context,
-                              InsightEntity.project(_project.id),
+                          drift: 0,
+                          extraDelay: kActionGroupDotDelay,
+                          child: dot,
+                        ),
+                        groups: [
+                          0,
+                          1,
+                          if (EntityInsightsScope.maybeOf(context) != null) 2,
+                          2,
+                          2,
+                          3,
+                        ],
+                        children: [
+                          StaggeredEntrance(
+                            index: 0,
+                            enabled: !_hasNavigatedConstellations,
+                            drift: 0.7,
+                            child: _ConstellationDockAction(
+                              icon: Icons.auto_awesome,
+                              label: 'Nuova stella',
+                              onTap: _addStar,
+                              isNew: true,
                             ),
                           ),
-                        ),
 
-                      StaggeredEntrance(
-                        index: 3,
-                        enabled: !_hasNavigatedConstellations,
-                        drift: 0.7,
-                        child: _ConstellationDockAction(
-                          icon: Icons.edit_outlined,
-                          label: 'Modifica',
-                          onTap: _editProject,
-                        ),
-                      ),
+                          StaggeredEntrance(
+                            index: 1,
+                            enabled: !_hasNavigatedConstellations,
+                            drift: 0.7,
+                            child: _ConstellationDockAction(
+                              icon: Icons.share_outlined,
+                              label: 'Condividi',
+                              onTap: _share,
+                            ),
+                          ),
 
-                      StaggeredEntrance(
-                        index: 4,
-                        enabled: !_hasNavigatedConstellations,
-                        drift: 0.7,
-                        child: _ConstellationDockAction(
-                          icon: Icons.delete_outline,
-                          label: 'Elimina',
-                          onTap: _deleteProject,
-                        ),
-                      ),
-                      StaggeredEntrance(
-                        index: 5,
-                        enabled: !_hasNavigatedConstellations,
-                        drift: 0.7,
-                        child: _ConstellationDockAction(
-                          icon: Icons.navigation,
-                          label: strings.actionFly,
-                          onTap: () => Navigator.of(context).pop(_project),
-                        ),
+                          if (EntityInsightsScope.maybeOf(context) != null)
+                            StaggeredEntrance(
+                              index: 2,
+                              enabled: !_hasNavigatedConstellations,
+                              drift: 0.7,
+                              child: _ConstellationDockAction(
+                                icon: Icons.bar_chart,
+                                label: strings.statsTitle,
+                                onTap: () => openEntityStatistics(
+                                  context,
+                                  InsightEntity.project(_project.id),
+                                ),
+                              ),
+                            ),
+
+                          StaggeredEntrance(
+                            index: 3,
+                            enabled: !_hasNavigatedConstellations,
+                            drift: 0.7,
+                            child: _ConstellationDockAction(
+                              icon: Icons.edit_outlined,
+                              label: 'Modifica',
+                              onTap: _editProject,
+                            ),
+                          ),
+
+                          StaggeredEntrance(
+                            index: 4,
+                            enabled: !_hasNavigatedConstellations,
+                            drift: 0.7,
+                            child: _ConstellationDockAction(
+                              icon: Icons.delete_outline,
+                              label: 'Elimina',
+                              onTap: _deleteProject,
+                            ),
+                          ),
+                          StaggeredEntrance(
+                            index: 5,
+                            enabled: !_hasNavigatedConstellations,
+                            drift: 0.7,
+                            child: _ConstellationDockAction(
+                              icon: Icons.navigation,
+                              label: strings.actionFly,
+                              onTap: () => Navigator.of(context).pop(_project),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

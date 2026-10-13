@@ -31,6 +31,7 @@ class Star {
     this.iconSlug = '',
     this.description,
     required this.createdAt,
+    this.updatedAt,
     this.targetDate,
     this.achievedDate,
     this.intensity,
@@ -57,6 +58,13 @@ class Star {
   final String iconSlug;
   final String? description;
   final DateTime createdAt;
+
+  /// Stamped by the repository on every save. Null on records stored before
+  /// this field existed; read it through [lastModified].
+  final DateTime? updatedAt;
+
+  /// When this star was last edited, falling back to [createdAt].
+  DateTime get lastModified => updatedAt ?? createdAt;
 
   /// Optional, aspirational only — set while the star is still unlit.
   /// Never affects [slotSequence], and isn't cleared once lit (it can still
@@ -120,6 +128,7 @@ class Star {
     String? iconSlug,
     String? description,
     DateTime? createdAt,
+    DateTime? updatedAt,
     DateTime? targetDate,
     DateTime? achievedDate,
     int? intensity,
@@ -137,6 +146,7 @@ class Star {
       iconSlug: iconSlug ?? this.iconSlug,
       description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       targetDate: targetDate ?? this.targetDate,
       achievedDate: achievedDate ?? this.achievedDate,
       intensity: intensity ?? this.intensity,
@@ -157,6 +167,7 @@ class Star {
       iconSlug: json['iconSlug'] as String? ?? '',
       description: json['description'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: (json['updatedAt'] as String?).let(DateTime.parse),
       targetDate: (json['targetDate'] as String?).let(DateTime.parse),
       achievedDate: (json['achievedDate'] as String?).let(DateTime.parse),
       intensity: json['intensity'] as int?,
@@ -180,6 +191,7 @@ class Star {
       'iconSlug': iconSlug,
       'description': description,
       'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
       'targetDate': targetDate?.toIso8601String(),
       'achievedDate': achievedDate?.toIso8601String(),
       'intensity': intensity,
@@ -201,6 +213,7 @@ class Star {
         other.iconSlug == iconSlug &&
         other.description == description &&
         other.createdAt == createdAt &&
+        other.updatedAt == updatedAt &&
         other.targetDate == targetDate &&
         other.achievedDate == achievedDate &&
         other.intensity == intensity &&
@@ -220,6 +233,7 @@ class Star {
     iconSlug,
     description,
     createdAt,
+    updatedAt,
     targetDate,
     achievedDate,
     intensity,

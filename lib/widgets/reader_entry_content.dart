@@ -9,6 +9,7 @@ import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../utils/date_format.dart';
+import '../utils/icon_for_slug.dart';
 import 'intensity_bolts.dart';
 import 'staggered_entrance.dart';
 import 'star_glyph.dart';
@@ -92,6 +93,7 @@ class ReaderPage extends StatelessWidget {
     this.originalKind,
     this.lit = true,
     required this.entrance,
+    this.itemIcon,
     this.createdAt,
     this.project,
     this.numberLabel,
@@ -107,6 +109,12 @@ class ReaderPage extends StatelessWidget {
 
   final StarKind kind;
   final StarKind? originalKind;
+
+  /// The element's own icon, shown before the type name in the kind's colour.
+  /// Only set when the user picked one: otherwise it would repeat the big kind
+  /// icon above. An archived element has it
+  /// too, before the name, with its original kind's icon still after it.
+  final IconData? itemIcon;
 
   /// Only matters for a pulsar (burning or dark).
   final bool lit;
@@ -142,6 +150,32 @@ class ReaderPage extends StatelessWidget {
 
   static const _iconSize = 64.0;
 
+  /// The element's icon in the kind's colour, then the kind's name.
+  Widget _typeLine(BuildContext context, Color tint) {
+    final colors = context.colors;
+    final fontSize = _iconSize * 0.42; // sized to the icon above it
+    final label = StarTypeText(
+      kind.label(context.strings),
+      originalKind: kind == StarKind.dead ? originalKind : null,
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w600,
+        color: colors.text,
+      ),
+    );
+    final icon = itemIcon;
+    if (icon == null) return label;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: fontSize, color: tint),
+        SizedBox(width: fontSize * 0.3),
+        Flexible(child: label),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -154,20 +188,7 @@ class ReaderPage extends StatelessWidget {
         // 1. What it is.
         entrance(1, Icon(kind.icon, size: _iconSize, color: tint)),
         const SizedBox(height: 10),
-        entrance(
-          2,
-          StarTypeText(
-            kind.label(strings),
-            originalKind: kind == StarKind.dead ? originalKind : null,
-            textAlign: TextAlign.center,
-            // Sized to the icon above it.
-            style: TextStyle(
-              fontSize: _iconSize * 0.42,
-              fontWeight: FontWeight.w600,
-              color: colors.text,
-            ),
-          ),
-        ),
+        entrance(2, _typeLine(context, tint)),
         const SizedBox(height: 6),
         entrance(
           2,
@@ -372,6 +393,35 @@ class _DataBlock extends StatelessWidget {
   }
 }
 
+/// The date an element was archived, laid out like a goal's target date.
+Widget _archivedDateBlock(BuildContext context, DateTime? date) {
+  final colors = context.colors;
+  final strings = context.strings;
+  final tint = starKindColor(StarKind.dead, colors);
+  return _DataBlock(
+    value: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.delete_outline_rounded, size: 28, color: tint),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            date == null ? '—' : formatDisplayDate(date, strings),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: tint,
+            ),
+          ),
+        ),
+      ],
+    ),
+    caption: strings.starKindDeadName,
+  );
+}
+
 /// A star's page in the star reader: a victory, a goal, or (deleted) a
 /// failure.
 class StarReaderContent extends StatelessWidget {
@@ -393,7 +443,7 @@ class StarReaderContent extends StatelessWidget {
 
     Widget? extra;
     if (star.dead) {
-      extra = null;
+      extra = _archivedDateBlock(context, star.deadDate);
     } else if (star.isLit) {
       extra = _DataBlock(
         value: IntensityBolts(
@@ -436,8 +486,9 @@ class StarReaderContent extends StatelessWidget {
     return ReaderPage(
       kind: star.kind,
       originalKind: star.originalKind,
+      itemIcon: star.iconSlug.isEmpty ? null : iconForSlug(star.iconSlug),
       entrance: entrance,
-      reserveExtraSlot: !star.dead,
+      reserveExtraSlot: true,
       createdAt: star.createdAt,
       project: project,
       numberLabel: strings.starSlotLabel(star.slotSequence),
@@ -496,7 +547,9 @@ class PulsarReaderContent extends StatelessWidget {
     final tint = starKindColor(StarKind.pulsar, colors, lit: lit);
 
     Widget? extra;
-    if (!habit.dead) {
+    if (habit.dead) {
+      extra = _archivedDateBlock(context, habit.deadDate);
+    } else {
       final isWeekly = habit.frequency == HabitFrequency.weekly;
       // The streak is gold from the moment the period's goal is reached (for
       // a weekly habit: the week's count) and blue again when a new one
@@ -567,11 +620,14 @@ class PulsarReaderContent extends StatelessWidget {
     return ReaderPage(
       kind: habit.dead ? StarKind.dead : StarKind.pulsar,
       originalKind: StarKind.pulsar,
+      itemIcon: habit.iconSlug.isEmpty ? null : iconForSlug(habit.iconSlug),
       lit: lit,
       entrance: entrance,
-      reserveExtraSlot: !habit.dead,
+      reserveExtraSlot: true,
       extraSlotHeight:
-          (todayProgress == null && habit.frequency != HabitFrequency.weekly)
+          (habit.dead ||
+              (todayProgress == null &&
+                  habit.frequency != HabitFrequency.weekly))
           ? ReaderPage.extraHeight
           : _stackedExtraHeight,
       createdAt: habit.createdAt,

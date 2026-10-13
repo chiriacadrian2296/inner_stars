@@ -27,6 +27,7 @@ import '../models/star.dart';
 import '../models/star_kind.dart';
 import '../models/star_media.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_motion.dart';
 import '../theme/app_style.dart';
 import '../tutorials/tour_step_card.dart';
 import '../tutorials/tutorial_replay.dart';
@@ -126,6 +127,8 @@ class StarFormDeleteRequested {
   const StarFormDeleteRequested();
 }
 
+enum _CreateFlowDiscardChoice { chooseAnother, exit }
+
 /// The one place any star is created or edited, whichever kind it is — a
 /// lit star (a past victory), a pulsar (a present habit), or an unlit star
 /// (a future goal). They're all the same thing at heart, *one effort*, so
@@ -162,6 +165,7 @@ class StarFormScreen extends StatefulWidget {
     this.hideDelete = false,
     this.allowConstellation = false,
     this.startAsConstellation = false,
+    this.startWithoutSelection = false,
     this.presetArea,
   }) : assert(
          existingStar == null || existingHabit == null,
@@ -223,6 +227,11 @@ class StarFormScreen extends StatefulWidget {
   /// Opens on the constellation tile. Ignored without [allowConstellation].
   final bool startAsConstellation;
 
+  /// Starts with no creation tile selected and no form visible. Intended for
+  /// the global create entry point, where no kind is implied yet. Editing and
+  /// [startAsConstellation] always keep their explicit initial selection.
+  final bool startWithoutSelection;
+
   /// Pre-fills the area, for both the star and the constellation form.
   final LifeArea? presetArea;
 
@@ -251,7 +260,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
     key: const ValueKey('activity-icon-field'),
     label: strings.iconLabel,
     hint: strings.iconLabel,
-    requirement: FieldRequirement.optional,
+    requirement: FieldRequirement.required,
     icon: _iconSlug.isEmpty ? Icons.apps_outlined : iconForSlug(_iconSlug),
     text: _iconSlug.isEmpty ? null : _iconSlug,
     onReset: () => setState(() => _iconSlug = ''),
@@ -292,10 +301,31 @@ class _StarFormScreenState extends State<StarFormScreen> {
   late bool _constellationMode =
       _canCreateConstellation && widget.startAsConstellation;
 
+  /// The global create page can begin as a neutral chooser. [_kind] still
+  /// carries the eventual default internally so all kind-specific state can
+  /// stay non-null, but it is not selected and its fields stay hidden.
+  late bool _hasKindSelection =
+      !widget.startWithoutSelection ||
+      widget.isEditing ||
+      widget.startAsConstellation;
+
   /// The embedded form is only built once first needed (it starts its own
   /// tour then), and kept alive after, so switching away and back keeps
   /// what was typed.
   late bool _constellationBuilt = _constellationMode;
+
+  /// The star tutorial is deferred until a star kind is first chosen from a
+  /// neutral page; the constellation form owns its separate tutorial.
+  late bool _starFormWasOpened = _hasKindSelection && !_constellationMode;
+
+  /// The global chooser leaves the center in two beats: its question fades,
+  /// then the tiles rise to their normal form position. Fields wait for the
+  /// second beat so they do not appear underneath moving controls.
+  bool _chooserQuestionVisible = true;
+  bool _chooserTransitioning = false;
+  late bool _chooserSettled = _hasKindSelection;
+  bool _embeddedConstellationDirty = false;
+  int _constellationFormEpoch = 0;
 
   /// Bumped only when the person picks a kind themselves, so everything
   /// below the switch plays its entrance again for the new kind. The tour
@@ -418,7 +448,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
     // editing an existing one isn't the "how do I add a goal" moment this
     // tour is for, and `Tour.start` itself already no-ops once the user has
     // seen it (see `PrefsTourStorage`).
-    if (!widget.isEditing) {
+    if (!widget.isEditing && _starFormWasOpened) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) whenPageSettled(context, _maybeStartTour);
       });
@@ -485,6 +515,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
   /// [_primeKindDependentTourSteps] already guarantees every order this
   /// tour has is registered before the tour starts.
   void _syncKindToTour(BuildContext context) {
+    if (!_hasKindSelection || _constellationMode) return;
     final TourController controller = Tour.of(context);
     if (controller.activeTour != 'star-form') return;
     final int? order = TourScope.of(context)
@@ -537,9 +568,8 @@ class _StarFormScreenState extends State<StarFormScreen> {
   }
 
   bool get _hasUnsavedChanges {
-    // The embedded constellation form keeps its own state and is left
-    // without the discard prompt.
-    if (_constellationMode) return false;
+    if (!_hasKindSelection) return false;
+    if (_constellationMode) return _embeddedConstellationDirty;
     final trimmedDescription = _descriptionController.text.trim();
     final normalizedDescription = trimmedDescription.isEmpty
         ? null
@@ -554,7 +584,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
         _titleController.text.trim() != _initialTitle ||
         normalizedDescription != normalizedInitialDescription ||
         _selectedProject?.id != _initialProjectId ||
-        _kind != _initialKind ||
+        (!widget.startWithoutSelection && _kind != _initialKind) ||
         (_kind != StarKind.unlit && _intensity != _initialIntensity) ||
         (_kind == StarKind.lit &&
             (_date != _initialDateValue ||
@@ -575,6 +605,20 @@ class _StarFormScreenState extends State<StarFormScreen> {
   /// unsaved changes needs confirmation first, everything else pops right
   /// away.
   Future<void> _handleBack() async {
+    if (widget.startWithoutSelection && _hasKindSelection) {
+      if (!_hasUnsavedChanges) {
+        _returnToKindChooser();
+        return;
+      }
+      final choice = await _showCreateFlowDiscardDialog();
+      if (!mounted || choice == null) return;
+      if (choice == _CreateFlowDiscardChoice.chooseAnother) {
+        _returnToKindChooser();
+      } else {
+        Navigator.of(context).pop();
+      }
+      return;
+    }
     if (!_hasUnsavedChanges) {
       Navigator.of(context).pop();
       return;
@@ -586,6 +630,76 @@ class _StarFormScreenState extends State<StarFormScreen> {
       destructive: true,
     );
     if (discard && mounted) Navigator.of(context).pop();
+  }
+
+  Future<_CreateFlowDiscardChoice?> _showCreateFlowDiscardDialog() {
+    final strings = context.strings;
+    final colors = context.colors;
+    return showAppDialog<_CreateFlowDiscardChoice>(
+      context: context,
+      builder: (dialogContext) => AppDialog(
+        title: Text(strings.discardChangesConfirmTitle),
+        content: Text(strings.discardChangesConfirmBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            style: TextButton.styleFrom(foregroundColor: colors.muted),
+            child: AppButtonLabel(strings.continueEditingAction),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.of(dialogContext)
+                    .pop(_CreateFlowDiscardChoice.chooseAnother),
+            style: TextButton.styleFrom(foregroundColor: colors.danger),
+            child: AppButtonLabel(strings.discardAndChooseAnotherAction),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.of(dialogContext).pop(_CreateFlowDiscardChoice.exit),
+            style: TextButton.styleFrom(foregroundColor: colors.danger),
+            child: AppButtonLabel(strings.discardAndExitAction),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _returnToKindChooser() {
+    _discardUnsavedMedia();
+    _titleController.clear();
+    _descriptionController.clear();
+    setState(() {
+      _iconSlug =
+          widget.existingHabit?.iconSlug ?? widget.existingStar?.iconSlug ?? '';
+      _kind = _initialKind;
+      _hasKindSelection = false;
+      _constellationMode = false;
+      _constellationBuilt = false;
+      _embeddedConstellationDirty = false;
+      _constellationFormEpoch++;
+      _chooserQuestionVisible = true;
+      _chooserTransitioning = false;
+      _chooserSettled = false;
+      _selectedProject = widget.lockedProject ?? widget.contextProject;
+      _selectedArea = _selectedProject?.area ?? widget.presetArea;
+      _intensity = _initialIntensity;
+      _intensityTouched =
+          widget.existingStar?.intensity != null ||
+          widget.existingHabit?.intensity != null;
+      _date = _initialDateValue;
+      _time = _initialTimeValue;
+      _targetDate = _initialTargetDate;
+      _photoPath = _initialPhotoPath;
+      _media = _initialMedia;
+      _movedToNewConstellation = false;
+      _customReminder = _initialCustomReminder;
+      _reminderHour = _initialReminderHour;
+      _reminderMinute = _initialReminderMinute;
+      _habitFrequency = _initialHabitFrequency;
+      _habitTargetPerPeriod = _initialHabitTargetPerPeriod;
+      _kindEpoch++;
+      _builtDirty = false;
+    });
   }
 
   Future<void> _confirmAndDelete() async {
@@ -708,7 +822,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
   Future<void> _save() async {
     final title = _titleController.text.trim();
     final project = _selectedProject;
-    if (title.isEmpty || project == null) return;
+    if (title.isEmpty || project == null || _iconSlug.isEmpty) return;
 
     if (await _targetIsFull(project)) {
       if (!mounted) return;
@@ -951,35 +1065,104 @@ class _StarFormScreenState extends State<StarFormScreen> {
 
   /// The tiles at the top: the constellation (when this form can create one)
   /// and the kinds of star it offers.
-  Widget _kindTiles(List<StarKind> kinds) => FormKindTiles(
-    leading: [
-      if (_canCreateConstellation)
-        FormKindTile.constellation(
-          context,
-          selected: _constellationMode,
-          onTap: () => setState(() {
-            _constellationMode = true;
-            _constellationBuilt = true;
-            _kindEpoch++;
-          }),
-        ),
-    ],
-    trailing: [
-      for (final kind in kinds)
-        FormKindTile.star(
-          context,
-          kind,
-          selected: !_constellationMode && kind == _kind,
-          onTap: kinds.length > 1
-              ? () => setState(() {
-                  _constellationMode = false;
-                  _kind = kind;
-                  _kindEpoch++;
-                })
-              : null,
-        ),
-    ],
-  );
+  Widget _kindTiles(
+    List<StarKind> kinds, {
+    double verticalOffset = 0,
+    double dividerOpacity = 1,
+  }) {
+    final focused = widget.startWithoutSelection && _hasKindSelection;
+    return FormKindTiles(
+      tileOffset: Offset(0, verticalOffset),
+      dividerOpacity: dividerOpacity,
+      tileEntranceAxis: focused ? Axis.vertical : Axis.horizontal,
+      animateDividerEntrance:
+          widget.startWithoutSelection &&
+          !_hasKindSelection &&
+          _chooserQuestionVisible,
+      leading: [
+        if (_canCreateConstellation && (!focused || _constellationMode))
+          FormKindTile.constellation(
+            context,
+            selected: _constellationMode,
+            onTap: focused ? null : () => _selectCreationKind(),
+          ),
+      ],
+      trailing: [
+        for (final kind in kinds)
+          if (!focused || (!_constellationMode && kind == _kind))
+            FormKindTile.star(
+              context,
+              kind,
+              selected:
+                  _hasKindSelection && !_constellationMode && kind == _kind,
+              onTap: focused || kinds.length <= 1
+                  ? null
+                  : () => _selectCreationKind(starKind: kind),
+            ),
+      ],
+    );
+  }
+
+  Future<void> _selectCreationKind({StarKind? starKind}) async {
+    if (_chooserTransitioning) return;
+    final risesFromCenter = !_hasKindSelection && widget.startWithoutSelection;
+    if (risesFromCenter) {
+      setState(() {
+        _chooserTransitioning = true;
+        _chooserQuestionVisible = false;
+      });
+      await Future<void>.delayed(motionDuration(context, kMotionBase));
+      if (!mounted) return;
+    }
+
+    final shouldStartTour = starKind != null && !_starFormWasOpened;
+    setState(() {
+      _hasKindSelection = true;
+      _chooserTransitioning = false;
+      if (risesFromCenter) _chooserSettled = false;
+      if (starKind == null) {
+        _constellationMode = true;
+        _constellationBuilt = true;
+      } else {
+        _starFormWasOpened = true;
+        _constellationMode = false;
+        _kind = starKind;
+      }
+      _kindEpoch++;
+    });
+    if (shouldStartTour) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) whenPageSettled(context, _maybeStartTour);
+      });
+    }
+  }
+
+  Widget _kindChooser(
+    List<StarKind> kinds,
+    AppStrings strings, {
+    double verticalOffset = 0,
+    double dividerOpacity = 1,
+  }) {
+    final tiles = _kindTiles(
+      kinds,
+      verticalOffset: verticalOffset,
+      dividerOpacity: dividerOpacity,
+    );
+    if (widget.startWithoutSelection ||
+        (kinds.length <= 1 && !_canCreateConstellation)) {
+      return tiles;
+    }
+    return HintTarget(
+      key: const ValueKey('star-form-kind'),
+      tour: 'star-form',
+      order: 1,
+      showArrow: true,
+      contentBuilder: appTourStepCard,
+      title: strings.starTourKindTitle,
+      description: strings.starTourKindBody,
+      child: tiles,
+    );
+  }
 
   // One running example carried across every kind — see
   // [AppStrings.litTitleHint]'s own doc comment.
@@ -1000,6 +1183,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
   /// Swiping steps through the tiles in the order shown: the constellation
   /// first (when the form offers it), then the kinds of star.
   void _switchKindBySwipe(DragEndDetails details) {
+    if (!_hasKindSelection) return;
     const minimumVelocity = 180.0;
     final velocity = details.primaryVelocity ?? 0;
     if (velocity.abs() < minimumVelocity) return;
@@ -1036,339 +1220,550 @@ class _StarFormScreenState extends State<StarFormScreen> {
       onVerticalDragUpdate: (_) {},
       child: Scaffold(
         body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-            child: ResponsiveContent(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  // The row of tiles is always there, however many the form
-                  // offers (one when editing a pulsar). It decides which half
-                  // of the form below shows.
-                  if (kinds.length > 1 || _canCreateConstellation)
-                    HintTarget(
-                      key: const ValueKey('star-form-kind'),
-                      tour: 'star-form',
-                      order: 1,
-                      showArrow: true,
-                      contentBuilder: appTourStepCard,
-                      title: strings.starTourKindTitle,
-                      description: strings.starTourKindBody,
-                      child: _kindTiles(kinds),
-                    )
-                  else
-                    _kindTiles(kinds),
-                  const SizedBox(height: kFormTilesGap),
-                  if (_constellationBuilt)
-                    Offstage(
-                      offstage: !_constellationMode,
-                      child: TickerMode(
-                        enabled: _constellationMode,
-                        child: NewProjectScreen(
-                          embedded: true,
-                          projectRepository: widget.projectRepository!,
-                          starsShapeRepository: widget.starsShapeRepository!,
-                          presetArea: widget.presetArea,
-                        ),
-                      ),
-                    ),
-                  if (!_constellationMode) ...[
-                    if (widget.lockedProject == null) ...[
-                      StaggeredEntrance(
-                        index: 3,
-                        replayKey: _kindEpoch,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+          child: LayoutBuilder(
+            builder: (context, viewport) => SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+              child: ResponsiveContent(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!_hasKindSelection)
+                      SizedBox(
+                        width: double.infinity,
+                        height: viewport.maxHeight > 40
+                            ? viewport.maxHeight - 40
+                            : 0,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Expanded(
-                              flex: 3,
-                              child: AppPickerField(
-                                label: strings.areaLabel,
-                                onReset: () => setState(() {
-                                  _selectedArea = null;
-                                  _selectedProject = null;
-                                }),
-                                // Not itself checked by [_save]/`canSave` — picking a
-                                // Constellation fills it in on its own (see
-                                // [_openProjectPicker]) — but there's no real path to
-                                // saving a star without one ending up set, so it reads
-                                // as required same as the field that actually is.
-                                requirement: FieldRequirement.required,
-                                hint: strings.selectASupernova,
-                                icon: _selectedArea?.icon ?? Icons.flare,
-                                leading: _selectedArea == null
-                                    ? null
-                                    : AreaIcon(area: _selectedArea!, size: 20),
-                                text: _selectedArea?.displayName(strings),
-                                onTap: _openAreaPicker,
+                            AnimatedOpacity(
+                              key: const ValueKey('create-chooser-question'),
+                              opacity: _chooserQuestionVisible ? 1 : 0,
+                              duration: motionDuration(context, kMotionBase),
+                              curve: kMotionExit,
+                              child: Text(
+                                strings.createChooserQuestion,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: colors.text,
+                                  fontSize: 21,
+                                  height: 1.3,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              flex: 1,
-                              child: _buildActivityIconField(strings),
+                            const SizedBox(height: 28),
+                            _kindChooser(
+                              kinds,
+                              strings,
+                              dividerOpacity: _chooserQuestionVisible ? 1 : 0,
                             ),
                           ],
                         ),
+                      )
+                    else ...[
+                      const SizedBox(height: 16),
+                      TweenAnimationBuilder<double>(
+                        tween: Tween(
+                          begin: _chooserSettled
+                              ? 0
+                              : viewport.maxHeight * 0.42,
+                          end: 0,
+                        ),
+                        duration: motionDuration(context, kMotionSlow),
+                        curve: kMotionEnter,
+                        onEnd: () {
+                          if (!_chooserSettled && mounted) {
+                            setState(() => _chooserSettled = true);
+                          }
+                        },
+                        builder: (context, offset, child) => _kindChooser(
+                          kinds,
+                          strings,
+                          verticalOffset: offset,
+                          dividerOpacity: _chooserSettled ? 1 : 0,
+                        ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: kFormTilesGap),
+                    ],
+                    if (_chooserSettled && _constellationBuilt)
+                      Offstage(
+                        offstage: !_constellationMode,
+                        child: TickerMode(
+                          enabled: _constellationMode,
+                          child: NewProjectScreen(
+                            key: ValueKey(_constellationFormEpoch),
+                            embedded: true,
+                            projectRepository: widget.projectRepository!,
+                            starsShapeRepository: widget.starsShapeRepository!,
+                            presetArea: widget.presetArea,
+                            onDirtyChanged: (dirty) {
+                              if (_embeddedConstellationDirty != dirty &&
+                                  mounted) {
+                                setState(
+                                  () => _embeddedConstellationDirty = dirty,
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    if (_chooserSettled &&
+                        _hasKindSelection &&
+                        !_constellationMode) ...[
+                      if (widget.lockedProject == null) ...[
+                        StaggeredEntrance(
+                          index: 3,
+                          replayKey: _kindEpoch,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: AppPickerField(
+                                  label: strings.areaLabel,
+                                  onReset: () => setState(() {
+                                    _selectedArea = null;
+                                    _selectedProject = null;
+                                  }),
+                                  // Not itself checked by [_save]/`canSave` — picking a
+                                  // Constellation fills it in on its own (see
+                                  // [_openProjectPicker]) — but there's no real path to
+                                  // saving a star without one ending up set, so it reads
+                                  // as required same as the field that actually is.
+                                  requirement: FieldRequirement.required,
+                                  hint: strings.selectASupernova,
+                                  icon: _selectedArea?.icon ?? Icons.flare,
+                                  leading: _selectedArea == null
+                                      ? null
+                                      : AreaIcon(
+                                          area: _selectedArea!,
+                                          size: 20,
+                                        ),
+                                  text: _selectedArea?.displayName(strings),
+                                  onTap: _openAreaPicker,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                flex: 1,
+                                child: _buildActivityIconField(strings),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        StaggeredEntrance(
+                          index: 4,
+                          replayKey: _kindEpoch,
+                          child: AppPickerField(
+                            label: strings.projectLabel,
+                            onReset: () =>
+                                setState(() => _selectedProject = null),
+                            requirement: FieldRequirement.required,
+                            hint: strings.selectAProject,
+                            icon: _selectedProject == null
+                                ? Icons.insights
+                                : iconForSlug(_selectedProject!.iconSlug),
+                            text: _selectedProject?.displayName,
+                            onTap: _openProjectPicker,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
                       StaggeredEntrance(
-                        index: 4,
+                        index: 5,
                         replayKey: _kindEpoch,
-                        child: AppPickerField(
-                          label: strings.projectLabel,
-                          onReset: () =>
-                              setState(() => _selectedProject = null),
-                          requirement: FieldRequirement.required,
-                          hint: strings.selectAProject,
-                          icon: _selectedProject == null
-                              ? Icons.insights
-                              : iconForSlug(_selectedProject!.iconSlug),
-                          text: _selectedProject?.displayName,
-                          onTap: _openProjectPicker,
+                        child: _withIconBeside(
+                          strings,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              AppFieldLabel(
+                                strings.titleFieldLabel,
+                                onReset: () => setState(_titleController.clear),
+                                requirement: FieldRequirement.required,
+                                counterController: _titleController,
+                                counterMax: kTitleMaxLength,
+                              ),
+                              const SizedBox(height: kFieldLabelGap),
+                              AppTextField(
+                                controller: _titleController,
+                                maxLength: kTitleMaxLength,
+                                showCounter: false,
+                                textInputAction: TextInputAction.next,
+                                hintText: _titleHint(strings),
+                                onChanged: (_) => _onTextEdited(),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
-                    ],
-                    StaggeredEntrance(
-                      index: 5,
-                      replayKey: _kindEpoch,
-                      child: _withIconBeside(
-                        strings,
-                        Column(
+                      StaggeredEntrance(
+                        index: 6,
+                        replayKey: _kindEpoch,
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             AppFieldLabel(
-                              strings.titleFieldLabel,
-                              onReset: () => setState(_titleController.clear),
-                              requirement: FieldRequirement.required,
-                              counterController: _titleController,
-                              counterMax: kTitleMaxLength,
+                              strings.detailsLabel,
+                              onReset: () =>
+                                  setState(_descriptionController.clear),
+                              requirement: FieldRequirement.optional,
+                              counterController: _descriptionController,
+                              counterMax: kStarDescriptionMaxLength,
                             ),
                             const SizedBox(height: kFieldLabelGap),
                             AppTextField(
-                              controller: _titleController,
-                              maxLength: kTitleMaxLength,
+                              controller: _descriptionController,
+                              maxLength: kStarDescriptionMaxLength,
                               showCounter: false,
-                              textInputAction: TextInputAction.next,
-                              hintText: _titleHint(strings),
+                              minLines: 4,
+                              maxLines: 6,
+                              hintText: _detailsHint(strings),
                               onChanged: (_) => _onTextEdited(),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    StaggeredEntrance(
-                      index: 6,
-                      replayKey: _kindEpoch,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AppFieldLabel(
-                            strings.detailsLabel,
-                            onReset: () =>
-                                setState(_descriptionController.clear),
-                            requirement: FieldRequirement.optional,
-                            counterController: _descriptionController,
-                            counterMax: kStarDescriptionMaxLength,
-                          ),
-                          const SizedBox(height: kFieldLabelGap),
-                          AppTextField(
-                            controller: _descriptionController,
-                            maxLength: kStarDescriptionMaxLength,
-                            showCounter: false,
-                            minLines: 4,
-                            maxLines: 6,
-                            hintText: _detailsHint(strings),
-                            onChanged: (_) => _onTextEdited(),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (_kind == StarKind.lit) ...[
-                      const SizedBox(height: 20),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: StaggeredEntrance(
-                              index: 7,
-                              replayKey: _kindEpoch,
-                              axis: Axis.horizontal,
-                              child: AppPickerField(
-                                label: strings.dateLabel,
-                                onReset: () => setState(() => _date = null),
-                                // Not checked by [_save] either — an unset
-                                // date silently becomes `DateTime.now()`
-                                // rather than blocking save — but a lit
-                                // star's whole point is recording *when* the
-                                // victory happened, so this reads as
-                                // required same as Supernova above.
-                                requirement: FieldRequirement.required,
-                                hint: strings.selectADateHint,
-                                icon: Icons.calendar_today,
-                                text: _date == null
-                                    ? null
-                                    : formatDisplayDate(_date!, strings),
-                                onTap: _pickDate,
+                      if (_kind == StarKind.lit) ...[
+                        const SizedBox(height: 20),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: StaggeredEntrance(
+                                index: 7,
+                                replayKey: _kindEpoch,
+                                axis: Axis.horizontal,
+                                child: AppPickerField(
+                                  label: strings.dateLabel,
+                                  onReset: () => setState(() => _date = null),
+                                  // Not checked by [_save] either — an unset
+                                  // date silently becomes `DateTime.now()`
+                                  // rather than blocking save — but a lit
+                                  // star's whole point is recording *when* the
+                                  // victory happened, so this reads as
+                                  // required same as Supernova above.
+                                  requirement: FieldRequirement.required,
+                                  hint: strings.selectADateHint,
+                                  icon: Icons.calendar_today,
+                                  text: _date == null
+                                      ? null
+                                      : formatDisplayDate(_date!, strings),
+                                  onTap: _pickDate,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: StaggeredEntrance(
-                              index: 8,
-                              replayKey: _kindEpoch,
-                              axis: Axis.horizontal,
-                              child: AppPickerField(
-                                label: strings.timeLabel,
-                                onReset: () => setState(() => _time = null),
-                                requirement: FieldRequirement.required,
-                                hint: strings.selectATimeHint,
-                                icon: Icons.access_time,
-                                text: _time == null
-                                    ? null
-                                    : formatDisplayTime(
-                                        DateTime(
-                                          2000,
-                                          1,
-                                          1,
-                                          _time!.hour,
-                                          _time!.minute,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: StaggeredEntrance(
+                                index: 8,
+                                replayKey: _kindEpoch,
+                                axis: Axis.horizontal,
+                                child: AppPickerField(
+                                  label: strings.timeLabel,
+                                  onReset: () => setState(() => _time = null),
+                                  requirement: FieldRequirement.required,
+                                  hint: strings.selectATimeHint,
+                                  icon: Icons.access_time,
+                                  text: _time == null
+                                      ? null
+                                      : formatDisplayTime(
+                                          DateTime(
+                                            2000,
+                                            1,
+                                            1,
+                                            _time!.hour,
+                                            _time!.minute,
+                                          ),
                                         ),
-                                      ),
-                                onTap: _pickTime,
+                                  onTap: _pickTime,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ] else if (_kind == StarKind.unlit) ...[
-                      const SizedBox(height: 20),
-                      StaggeredEntrance(
-                        index: 7,
-                        replayKey: _kindEpoch,
-                        child: AppPickerField(
-                          label: strings.targetDateLabel,
-                          onReset: () => setState(() => _targetDate = null),
-                          requirement: FieldRequirement.optional,
-                          hint: strings.selectATargetDateHint,
-                          icon: Icons.flag_outlined,
-                          text: _targetDate == null
-                              ? null
-                              : formatDisplayDate(_targetDate!, strings),
-                          onTap: _pickTargetDate,
+                          ],
                         ),
-                      ),
-                    ],
-                    // Every kind that's already burning carries an intensity —
-                    // a lit star's is what the effort cost once, a pulsar's
-                    // what it costs each day. An unlit star has none yet: it
-                    // gets one the moment it's lit.
-                    if (_kind != StarKind.unlit) ...[
-                      const SizedBox(height: 20),
-                      HintTarget(
-                        // Keyed — see the Supernova field's own HintTarget
-                        // above for why.
-                        key: const ValueKey('star-form-intensity'),
-                        tour: 'star-form',
-                        order: 2,
-                        showArrow: true,
-                        contentBuilder: appTourStepCard,
-                        title: strings.starTourIntensityTitle,
-                        description: strings.starTourIntensityBody,
-                        // Label, bolts and slider all inside now — the whole
-                        // section highlights together, not just the slider.
-                        child: StaggeredEntrance(
-                          index: 8,
+                      ] else if (_kind == StarKind.unlit) ...[
+                        const SizedBox(height: 20),
+                        StaggeredEntrance(
+                          index: 7,
+                          replayKey: _kindEpoch,
+                          child: AppPickerField(
+                            label: strings.targetDateLabel,
+                            onReset: () => setState(() => _targetDate = null),
+                            requirement: FieldRequirement.optional,
+                            hint: strings.selectATargetDateHint,
+                            icon: Icons.flag_outlined,
+                            text: _targetDate == null
+                                ? null
+                                : formatDisplayDate(_targetDate!, strings),
+                            onTap: _pickTargetDate,
+                          ),
+                        ),
+                      ],
+                      // Every kind that's already burning carries an intensity —
+                      // a lit star's is what the effort cost once, a pulsar's
+                      // what it costs each day. An unlit star has none yet: it
+                      // gets one the moment it's lit.
+                      if (_kind != StarKind.unlit) ...[
+                        const SizedBox(height: 20),
+                        HintTarget(
+                          // Keyed — see the Supernova field's own HintTarget
+                          // above for why.
+                          key: const ValueKey('star-form-intensity'),
+                          tour: 'star-form',
+                          order: 2,
+                          showArrow: true,
+                          contentBuilder: appTourStepCard,
+                          title: strings.starTourIntensityTitle,
+                          description: strings.starTourIntensityBody,
+                          // Label, bolts and slider all inside now — the whole
+                          // section highlights together, not just the slider.
+                          child: StaggeredEntrance(
+                            index: 8,
+                            replayKey: _kindEpoch,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                AppFieldLabel(
+                                  strings.intensityLabel,
+                                  canReset: _intensityTouched,
+                                  onReset: () => setState(() {
+                                    _intensityTouched = false;
+                                    _intensity = 3;
+                                  }),
+                                  requirement: FieldRequirement.required,
+                                ),
+                                // The shared label-to-content gap, not this section's own
+                                // one-off 10 — kept it from reading as more loosely
+                                // spaced than its neighbors.
+                                const SizedBox(height: kFieldLabelGap),
+                                Center(
+                                  child: _intensityTouched
+                                      ? IntensityBolts(
+                                          intensity: _intensity,
+                                          size: 26,
+                                          spacing: 6,
+                                          emphasizeLast: true,
+                                          emphasizedScale: 1.6,
+                                        )
+                                      // Untouched: all small, flat, in the
+                                      // field-label color, none lit.
+                                      // Same height as the emphasized bolt, whose
+                                      // glow copy is drawn 1.15x its size (26 *
+                                      // 1.6 * 1.15) and sets the row's height, so
+                                      // nothing below jumps on first use.
+                                      : SizedBox(
+                                          height: 26 * 1.6 * 1.15,
+                                          child: IntensityBolts(
+                                            intensity: 0,
+                                            size: 26,
+                                            spacing: 6,
+                                            color: context.colors.muted,
+                                          ),
+                                        ),
+                                ),
+                                const SizedBox(height: 14),
+                                Center(
+                                  child: FractionallySizedBox(
+                                    widthFactor: 0.7,
+                                    // A plain [Slider]'s own vertical padding
+                                    // defaults to the height of its overlay shape
+                                    // (the halo around the thumb) — invisible space
+                                    // that made the gap down to whatever field comes
+                                    // next read as much bigger than the standard 20
+                                    // between every other pair of fields, even with
+                                    // the same explicit `SizedBox` in between.
+                                    // Zeroing it here makes this widget's own
+                                    // bounding box actually match what's visible.
+                                    child: SliderTheme(
+                                      data: _intensityTouched
+                                          ? SliderTheme.of(
+                                              context,
+                                            ).copyWith(padding: EdgeInsets.zero)
+                                          : SliderTheme.of(context).copyWith(
+                                              padding: EdgeInsets.zero,
+                                              activeTrackColor:
+                                                  context.colors.muted,
+                                              thumbColor: context.colors.muted,
+                                              activeTickMarkColor:
+                                                  context.colors.muted,
+                                              overlayColor: context.colors.muted
+                                                  .withValues(alpha: 0.12),
+                                            ),
+                                      child: Slider(
+                                        value: _intensity.toDouble(),
+                                        min: 1,
+                                        max: 5,
+                                        divisions: 4,
+                                        onChangeStart: (_) {
+                                          if (!_intensityTouched) {
+                                            setState(
+                                              () => _intensityTouched = true,
+                                            );
+                                          }
+                                        },
+                                        onChanged: (value) => setState(() {
+                                          _intensityTouched = true;
+                                          _intensity = value.round();
+                                        }),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                      if (_kind == StarKind.pulsar) ...[
+                        const SizedBox(height: 20),
+                        StaggeredEntrance(
+                          index: 10,
                           replayKey: _kindEpoch,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              AppFieldLabel(
-                                strings.intensityLabel,
-                                canReset: _intensityTouched,
-                                onReset: () => setState(() {
-                                  _intensityTouched = false;
-                                  _intensity = 3;
-                                }),
-                                requirement: FieldRequirement.required,
+                              StaggeredEntrance(
+                                index: 0,
+                                replayKey: _kindEpoch,
+                                child: AppFieldLabel(
+                                  strings.habitFrequencyLabel,
+                                  canReset:
+                                      _habitFrequency != HabitFrequency.daily ||
+                                      _habitTargetPerPeriod != 1,
+                                  onReset: () => setState(() {
+                                    _habitFrequency = HabitFrequency.daily;
+                                    _habitTargetPerPeriod = 1;
+                                  }),
+                                  requirement: FieldRequirement.required,
+                                ),
                               ),
-                              // The shared label-to-content gap, not this section's own
-                              // one-off 10 — kept it from reading as more loosely
-                              // spaced than its neighbors.
                               const SizedBox(height: kFieldLabelGap),
-                              Center(
-                                child: _intensityTouched
-                                    ? IntensityBolts(
-                                        intensity: _intensity,
-                                        size: 26,
-                                        spacing: 6,
-                                        emphasizeLast: true,
-                                        emphasizedScale: 1.6,
-                                      )
-                                    // Untouched: all small, flat, in the
-                                    // field-label color, none lit.
-                                    // Same height as the emphasized bolt, whose
-                                    // glow copy is drawn 1.15x its size (26 *
-                                    // 1.6 * 1.15) and sets the row's height, so
-                                    // nothing below jumps on first use.
-                                    : SizedBox(
-                                        height: 26 * 1.6 * 1.15,
-                                        child: IntensityBolts(
-                                          intensity: 0,
-                                          size: 26,
-                                          spacing: 6,
-                                          color: context.colors.muted,
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: StaggeredEntrance(
+                                      index: 1,
+                                      replayKey: _kindEpoch,
+                                      axis: Axis.horizontal,
+                                      child: _HabitFrequencyChip(
+                                        label: strings.habitFrequencyDaily,
+                                        selected:
+                                            _habitFrequency ==
+                                            HabitFrequency.daily,
+                                        onTap: () => setState(() {
+                                          _habitFrequency =
+                                              HabitFrequency.daily;
+                                          if (_habitTargetPerPeriod > 50) {
+                                            _habitTargetPerPeriod = 50;
+                                          }
+                                        }),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: StaggeredEntrance(
+                                      index: 2,
+                                      replayKey: _kindEpoch,
+                                      axis: Axis.horizontal,
+                                      child: _HabitFrequencyChip(
+                                        label: strings.habitFrequencyWeekly,
+                                        selected:
+                                            _habitFrequency ==
+                                            HabitFrequency.weekly,
+                                        onTap: () => setState(() {
+                                          _habitFrequency =
+                                              HabitFrequency.weekly;
+                                          if (_habitTargetPerPeriod > 7) {
+                                            _habitTargetPerPeriod = 7;
+                                          }
+                                        }),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  StaggeredEntrance(
+                                    index: 3,
+                                    replayKey: _kindEpoch,
+                                    axis: Axis.horizontal,
+                                    child: IconButton(
+                                      onPressed: _habitTargetPerPeriod > 1
+                                          ? () => setState(
+                                              () => _habitTargetPerPeriod--,
+                                            )
+                                          : null,
+                                      icon: Icon(
+                                        Icons.remove_circle_outline,
+                                        color: colors.gold,
+                                      ),
+                                    ),
+                                  ),
+                                  StaggeredEntrance(
+                                    index: 4,
+                                    replayKey: _kindEpoch,
+                                    axis: Axis.horizontal,
+                                    child: SizedBox(
+                                      width: 48,
+                                      child: Text(
+                                        '$_habitTargetPerPeriod',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w700,
+                                          color: colors.text,
                                         ),
                                       ),
+                                    ),
+                                  ),
+                                  StaggeredEntrance(
+                                    index: 5,
+                                    replayKey: _kindEpoch,
+                                    axis: Axis.horizontal,
+                                    child: IconButton(
+                                      onPressed:
+                                          _habitTargetPerPeriod <
+                                              (_habitFrequency ==
+                                                      HabitFrequency.weekly
+                                                  ? 7
+                                                  : 50)
+                                          ? () => setState(
+                                              () => _habitTargetPerPeriod++,
+                                            )
+                                          : null,
+                                      icon: Icon(
+                                        Icons.add_circle_outline,
+                                        color: colors.gold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 14),
+                              const SizedBox(height: 4),
                               Center(
-                                child: FractionallySizedBox(
-                                  widthFactor: 0.7,
-                                  // A plain [Slider]'s own vertical padding
-                                  // defaults to the height of its overlay shape
-                                  // (the halo around the thumb) — invisible space
-                                  // that made the gap down to whatever field comes
-                                  // next read as much bigger than the standard 20
-                                  // between every other pair of fields, even with
-                                  // the same explicit `SizedBox` in between.
-                                  // Zeroing it here makes this widget's own
-                                  // bounding box actually match what's visible.
-                                  child: SliderTheme(
-                                    data: _intensityTouched
-                                        ? SliderTheme.of(
-                                            context,
-                                          ).copyWith(padding: EdgeInsets.zero)
-                                        : SliderTheme.of(context).copyWith(
-                                            padding: EdgeInsets.zero,
-                                            activeTrackColor:
-                                                context.colors.muted,
-                                            thumbColor: context.colors.muted,
-                                            activeTickMarkColor:
-                                                context.colors.muted,
-                                            overlayColor: context.colors.muted
-                                                .withValues(alpha: 0.12),
+                                child: StaggeredEntrance(
+                                  index: 6,
+                                  replayKey: _kindEpoch,
+                                  child: Text(
+                                    _habitFrequency == HabitFrequency.daily
+                                        ? strings.habitFrequencySummaryDaily(
+                                            _habitTargetPerPeriod,
+                                          )
+                                        : strings.habitFrequencySummaryWeekly(
+                                            _habitTargetPerPeriod,
                                           ),
-                                    child: Slider(
-                                      value: _intensity.toDouble(),
-                                      min: 1,
-                                      max: 5,
-                                      divisions: 4,
-                                      onChangeStart: (_) {
-                                        if (!_intensityTouched) {
-                                          setState(
-                                            () => _intensityTouched = true,
-                                          );
-                                        }
-                                      },
-                                      onChanged: (value) => setState(() {
-                                        _intensityTouched = true;
-                                        _intensity = value.round();
-                                      }),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: colors.muted,
                                     ),
                                   ),
                                 ),
@@ -1376,331 +1771,183 @@ class _StarFormScreenState extends State<StarFormScreen> {
                             ],
                           ),
                         ),
-                      ),
-                    ],
-                    if (_kind == StarKind.pulsar) ...[
-                      const SizedBox(height: 20),
-                      StaggeredEntrance(
-                        index: 10,
-                        replayKey: _kindEpoch,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            StaggeredEntrance(
-                              index: 0,
-                              replayKey: _kindEpoch,
-                              child: AppFieldLabel(
-                                strings.habitFrequencyLabel,
-                                canReset:
-                                    _habitFrequency != HabitFrequency.daily ||
-                                    _habitTargetPerPeriod != 1,
-                                onReset: () => setState(() {
-                                  _habitFrequency = HabitFrequency.daily;
-                                  _habitTargetPerPeriod = 1;
-                                }),
-                                requirement: FieldRequirement.required,
-                              ),
-                            ),
-                            const SizedBox(height: kFieldLabelGap),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: StaggeredEntrance(
-                                    index: 1,
-                                    replayKey: _kindEpoch,
-                                    axis: Axis.horizontal,
-                                    child: _HabitFrequencyChip(
-                                      label: strings.habitFrequencyDaily,
-                                      selected:
-                                          _habitFrequency ==
-                                          HabitFrequency.daily,
-                                      onTap: () => setState(() {
-                                        _habitFrequency = HabitFrequency.daily;
-                                        if (_habitTargetPerPeriod > 50) {
-                                          _habitTargetPerPeriod = 50;
-                                        }
-                                      }),
-                                    ),
+                        const SizedBox(height: 20),
+                        StaggeredEntrance(
+                          index: 11,
+                          replayKey: _kindEpoch,
+                          // Like every other field: a name with its dot, a picker
+                          // that is empty until a time is chosen (then the app's
+                          // single reminder time applies), and a reset.
+                          child: AppPickerField(
+                            label: strings.reminderTimeLabel,
+                            requirement: FieldRequirement.optional,
+                            hint: strings.selectATimeHint,
+                            icon: Icons.notifications_none,
+                            text: _customReminder
+                                ? TimeOfDay(
+                                    hour: _reminderHour,
+                                    minute: _reminderMinute,
+                                  ).format(context)
+                                : null,
+                            onTap: _pickReminderTime,
+                            onReset: () =>
+                                setState(() => _customReminder = false),
+                          ),
+                        ),
+                      ],
+                      if (_kind == StarKind.lit) ...[
+                        const SizedBox(height: 20),
+                        StaggeredEntrance(
+                          index: 12,
+                          replayKey: _kindEpoch,
+                          // The photo section, split in two halves: the main
+                          // photo on the left, the secondary photos (two columns)
+                          // on the right. The main preview keeps 9:16 and the
+                          // secondary grid fills its height so both halves line up.
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  AppFieldLabel(
+                                    strings.photosLabel,
+                                    requirement: FieldRequirement.optional,
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: StaggeredEntrance(
-                                    index: 2,
-                                    replayKey: _kindEpoch,
-                                    axis: Axis.horizontal,
-                                    child: _HabitFrequencyChip(
-                                      label: strings.habitFrequencyWeekly,
-                                      selected:
-                                          _habitFrequency ==
-                                          HabitFrequency.weekly,
-                                      onTap: () => setState(() {
-                                        _habitFrequency = HabitFrequency.weekly;
-                                        if (_habitTargetPerPeriod > 7) {
-                                          _habitTargetPerPeriod = 7;
-                                        }
-                                      }),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                StaggeredEntrance(
-                                  index: 3,
-                                  replayKey: _kindEpoch,
-                                  axis: Axis.horizontal,
-                                  child: IconButton(
-                                    onPressed: _habitTargetPerPeriod > 1
-                                        ? () => setState(
-                                            () => _habitTargetPerPeriod--,
-                                          )
-                                        : null,
-                                    icon: Icon(
-                                      Icons.remove_circle_outline,
-                                      color: colors.gold,
-                                    ),
-                                  ),
-                                ),
-                                StaggeredEntrance(
-                                  index: 4,
-                                  replayKey: _kindEpoch,
-                                  axis: Axis.horizontal,
-                                  child: SizedBox(
-                                    width: 48,
-                                    child: Text(
-                                      '$_habitTargetPerPeriod',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w700,
-                                        color: colors.text,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                StaggeredEntrance(
-                                  index: 5,
-                                  replayKey: _kindEpoch,
-                                  axis: Axis.horizontal,
-                                  child: IconButton(
-                                    onPressed:
-                                        _habitTargetPerPeriod <
-                                            (_habitFrequency ==
-                                                    HabitFrequency.weekly
-                                                ? 7
-                                                : 50)
-                                        ? () => setState(
-                                            () => _habitTargetPerPeriod++,
-                                          )
-                                        : null,
-                                    icon: Icon(
-                                      Icons.add_circle_outline,
-                                      color: colors.gold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Center(
-                              child: StaggeredEntrance(
-                                index: 6,
-                                replayKey: _kindEpoch,
-                                child: Text(
-                                  _habitFrequency == HabitFrequency.daily
-                                      ? strings.habitFrequencySummaryDaily(
-                                          _habitTargetPerPeriod,
-                                        )
-                                      : strings.habitFrequencySummaryWeekly(
-                                          _habitTargetPerPeriod,
+                                  FieldResetButton(
+                                    onReset: _resetPhotos,
+                                    canReset:
+                                        _photoPath != null ||
+                                        _media.any(
+                                          (m) => m.kind == StarMediaKind.photo,
                                         ),
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: colors.muted,
                                   ),
-                                ),
+                                ],
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      StaggeredEntrance(
-                        index: 11,
-                        replayKey: _kindEpoch,
-                        // Like every other field: a name with its dot, a picker
-                        // that is empty until a time is chosen (then the app's
-                        // single reminder time applies), and a reset.
-                        child: AppPickerField(
-                          label: strings.reminderTimeLabel,
-                          requirement: FieldRequirement.optional,
-                          hint: strings.selectATimeHint,
-                          icon: Icons.notifications_none,
-                          text: _customReminder
-                              ? TimeOfDay(
-                                  hour: _reminderHour,
-                                  minute: _reminderMinute,
-                                ).format(context)
-                              : null,
-                          onTap: _pickReminderTime,
-                          onReset: () =>
-                              setState(() => _customReminder = false),
-                        ),
-                      ),
-                    ],
-                    if (_kind == StarKind.lit) ...[
-                      const SizedBox(height: 20),
-                      StaggeredEntrance(
-                        index: 12,
-                        replayKey: _kindEpoch,
-                        // The photo section, split in two halves: the main
-                        // photo on the left, the secondary photos (two columns)
-                        // on the right. The main preview keeps 9:16 and the
-                        // secondary grid fills its height so both halves line up.
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                AppFieldLabel(
-                                  strings.photosLabel,
-                                  requirement: FieldRequirement.optional,
-                                ),
-                                FieldResetButton(
-                                  onReset: _resetPhotos,
-                                  canReset:
-                                      _photoPath != null ||
-                                      _media.any(
-                                        (m) => m.kind == StarMediaKind.photo,
+                              const SizedBox(height: kFieldLabelGap),
+                              LayoutBuilder(
+                                builder: (context, constraints) {
+                                  const gap = 12.0;
+                                  final half = (constraints.maxWidth - gap) / 2;
+                                  // The main photo keeps its 9:16 frame; the secondary
+                                  // grid then resizes to fill exactly that height.
+                                  final gridHeight = half * 16 / 9;
+                                  return Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            PhotoPicker(
+                                              photoPath: _photoPath,
+                                              onPick: _pickPhoto,
+                                              onRemove: _removePhoto,
+                                              compact: true,
+                                              compactWidth: half,
+                                              compactHeight: gridHeight,
+                                            ),
+                                            MemoryCaption(
+                                              strings.mainPhotoLabel,
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: kFieldLabelGap),
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                const gap = 12.0;
-                                final half = (constraints.maxWidth - gap) / 2;
-                                // The main photo keeps its 9:16 frame; the secondary
-                                // grid then resizes to fill exactly that height.
-                                final gridHeight = half * 16 / 9;
-                                return Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          PhotoPicker(
-                                            photoPath: _photoPath,
-                                            onPick: _pickPhoto,
-                                            onRemove: _removePhoto,
-                                            compact: true,
-                                            compactWidth: half,
-                                            compactHeight: gridHeight,
-                                          ),
-                                          MemoryCaption(strings.mainPhotoLabel),
-                                        ],
+                                      const SizedBox(width: gap),
+                                      Expanded(
+                                        child: StarMediaEditor(
+                                          media: _media,
+                                          onChanged: _onMediaChanged,
+                                          kinds: const [StarMediaKind.photo],
+                                          compact: true,
+                                          gridHeight: gridHeight,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(width: gap),
-                                    Expanded(
-                                      child: StarMediaEditor(
-                                        media: _media,
-                                        onChanged: _onMediaChanged,
-                                        kinds: const [StarMediaKind.photo],
-                                        compact: true,
-                                        gridHeight: gridHeight,
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      StaggeredEntrance(
-                        index: 13,
-                        replayKey: _kindEpoch,
-                        child: StarMediaEditor(
-                          media: _media,
-                          onChanged: _onMediaChanged,
-                          kinds: const [
-                            StarMediaKind.video,
-                            StarMediaKind.voice,
-                            StarMediaKind.link,
-                          ],
-                        ),
-                      ),
-                    ],
-                    // Wider than the standard 20 between fields — this is the
-                    // form's own action row, not one more field, and reads as
-                    // such better with a bit of extra air separating it from
-                    // whatever field happens to be last above it.
-                    const SizedBox(height: 44),
-                    StaggeredEntrance(
-                      index: 14,
-                      replayKey: _kindEpoch,
-                      child: Center(
-                        child: Wrap(
-                          alignment: WrapAlignment.center,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 16,
-                          runSpacing: 12,
-                          children: [
-                            if (widget.isEditing && !widget.hideDelete)
-                              StaggeredEntrance(
-                                index: 0,
-                                axis: Axis.horizontal,
-                                child: PillActionButton(
-                                  icon: Icons.delete_outline,
-                                  label: strings.archiveAction,
-                                  onTap: _confirmAndDelete,
-                                  danger: true,
-                                ),
+                                    ],
+                                  );
+                                },
                               ),
-                            ValueListenableBuilder<TextEditingValue>(
-                              valueListenable: _titleController,
-                              builder: (context, value, child) {
-                                final canSave =
-                                    value.text.trim().isNotEmpty &&
-                                    _selectedProject != null &&
-                                    // Reigniting (hideDelete) is the one edit
-                                    // that is worth saving unchanged.
-                                    (!widget.isEditing ||
-                                        widget.hideDelete ||
-                                        _hasUnsavedChanges);
-                                return StaggeredEntrance(
-                                  index: 1,
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        StaggeredEntrance(
+                          index: 13,
+                          replayKey: _kindEpoch,
+                          child: StarMediaEditor(
+                            media: _media,
+                            onChanged: _onMediaChanged,
+                            kinds: const [
+                              StarMediaKind.video,
+                              StarMediaKind.voice,
+                              StarMediaKind.link,
+                            ],
+                          ),
+                        ),
+                      ],
+                      // Wider than the standard 20 between fields — this is the
+                      // form's own action row, not one more field, and reads as
+                      // such better with a bit of extra air separating it from
+                      // whatever field happens to be last above it.
+                      const SizedBox(height: 44),
+                      StaggeredEntrance(
+                        index: 14,
+                        replayKey: _kindEpoch,
+                        child: Center(
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 16,
+                            runSpacing: 12,
+                            children: [
+                              if (widget.isEditing && !widget.hideDelete)
+                                StaggeredEntrance(
+                                  index: 0,
                                   axis: Axis.horizontal,
-                                  child: SaveActionButton(
-                                    label: widget.isEditing
-                                        ? strings.saveChanges
-                                        : (_kind == StarKind.lit
-                                              ? strings.lightThisStar
-                                              : strings.placeThisStarAction),
-                                    lit: canSave,
-                                    onPressed: canSave
-                                        ? _save
-                                        : _showCannotSaveMessage,
+                                  child: PillActionButton(
+                                    icon: Icons.delete_outline,
+                                    label: strings.archiveAction,
+                                    onTap: _confirmAndDelete,
+                                    danger: true,
                                   ),
-                                );
-                              },
-                            ),
-                          ],
+                                ),
+                              ValueListenableBuilder<TextEditingValue>(
+                                valueListenable: _titleController,
+                                builder: (context, value, child) {
+                                  final canSave =
+                                      value.text.trim().isNotEmpty &&
+                                      _selectedProject != null &&
+                                      _iconSlug.isNotEmpty &&
+                                      // Reigniting (hideDelete) is the one edit
+                                      // that is worth saving unchanged.
+                                      (!widget.isEditing ||
+                                          widget.hideDelete ||
+                                          _hasUnsavedChanges);
+                                  return StaggeredEntrance(
+                                    index: 1,
+                                    axis: Axis.horizontal,
+                                    child: SaveActionButton(
+                                      label: widget.isEditing
+                                          ? strings.saveChanges
+                                          : (_kind == StarKind.lit
+                                                ? strings.lightThisStar
+                                                : strings.placeThisStarAction),
+                                      lit: canSave,
+                                      onPressed: canSave
+                                          ? _save
+                                          : _showCannotSaveMessage,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
@@ -1709,8 +1956,10 @@ class _StarFormScreenState extends State<StarFormScreen> {
     );
 
     _builtDirty = _hasUnsavedChanges;
+    final shouldReturnToChooser =
+        widget.startWithoutSelection && _hasKindSelection;
     return PopScope(
-      canPop: !_builtDirty,
+      canPop: !_builtDirty && !shouldReturnToChooser,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         await _handleBack();

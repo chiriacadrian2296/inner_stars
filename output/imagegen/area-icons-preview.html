@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="it"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Icone delle aree — proposta</title>
+<style>
+body{background:#111521;color:#ece6d7;font:16px system-ui;margin:0;padding:32px}h1{font-size:26px}p{color:#aaa6a2}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px}article{background:#1b2030;border:1px solid #34394a;border-radius:18px;padding:20px}h2{font-size:17px;font-weight:500}.large{display:block;width:160px;height:160px;object-fit:contain;margin:20px auto}.sizes{display:flex;gap:24px;align-items:center;justify-content:center}.sizes span{display:flex;flex-direction:column;gap:10px;align-items:center;color:#aaa;font-size:12px}.sizes img{object-fit:contain}a{color:#d6b574}
+</style>
+<h1>Icone delle aree</h1><p>Proposta nello stile della seconda prova dell’area fisica. Le versioni piccole sono mostrate a 24 e 32 px.</p><main class="grid" id="grid"></main>
+<script>
+const areas=[['physical','Fisica'],['psychological','Psicologica'],['professional','Professionale'],['financial','Finanziaria'],['personal','Personale'],['social','Sociale'],['spiritual','Spirituale'],['philanthropic','Filantropica']];
+document.getElementById('grid').innerHTML=areas.map(([slug,title])=>`<article><h2>${title}</h2><a href="${slug}-icon-v2.png"><img class="large" src="${slug}-icon-v2.png" alt="Icona ${title}"></a><div class="sizes"><span><img src="${slug}-icon-v2.png" width="24" height="24" alt="">24 px</span><span><img src="${slug}-icon-v2.png" width="32" height="32" alt="">32 px</span></div></article>`).join('');
+</script></html>

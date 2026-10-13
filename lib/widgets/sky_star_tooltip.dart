@@ -83,9 +83,11 @@ class SkyStarTooltip extends StatelessWidget {
       baseBodyHeight: SearchResultCard.bodyHeightFor(badges),
       fillVisualHeight: photoPath != null,
       content: SearchCardTextContent(
+        // An archived element reads "DEAD STAR - GOAL" in every language: its
+        // state, then what it was.
         eyebrow: kind.galaxyLabel(strings),
-        archivedOriginalKind: star.dead ? star.originalKind : null,
-        eyebrowIcon: EyebrowIconRow.iconFor(star.iconSlug, kind),
+        eyebrowSecond: star.dead ? star.originalKind.label(strings) : null,
+        eyebrowIcon: EyebrowIconRow.chosenIcon(star.iconSlug),
         eyebrowColor: starKindColor(kind, context.colors),
         title: star.displayTitle,
         breadcrumb: project == null

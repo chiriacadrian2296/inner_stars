@@ -18,6 +18,7 @@ class Project {
     this.starsShapeId,
     this.description,
     required this.createdAt,
+    this.updatedAt,
   });
 
   final int id;
@@ -31,6 +32,13 @@ class Project {
   final String? description;
   final DateTime createdAt;
 
+  /// Stamped by the repository on every save. Null on records stored before
+  /// this field existed; read it through [lastModified].
+  final DateTime? updatedAt;
+
+  /// When this project was last edited, falling back to [createdAt].
+  DateTime get lastModified => updatedAt ?? createdAt;
+
   Project copyWith({
     int? id,
     String? name,
@@ -39,6 +47,7 @@ class Project {
     int? starsShapeId,
     String? description,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return Project(
       id: id ?? this.id,
@@ -48,6 +57,7 @@ class Project {
       starsShapeId: starsShapeId ?? this.starsShapeId,
       description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -64,6 +74,10 @@ class Project {
       starsShapeId: json['customConstellationId'] as int?,
       description: json['description'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: switch (json['updatedAt'] as String?) {
+        final value? => DateTime.parse(value),
+        null => null,
+      },
     );
   }
 
@@ -77,6 +91,7 @@ class Project {
       if (starsShapeId != null) 'customConstellationId': starsShapeId,
       if (description != null) 'description': description,
       'createdAt': createdAt.toIso8601String(),
+      if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
     };
   }
 
@@ -89,7 +104,8 @@ class Project {
         other.iconSlug == iconSlug &&
         other.starsShapeId == starsShapeId &&
         other.description == description &&
-        other.createdAt == createdAt;
+        other.createdAt == createdAt &&
+        other.updatedAt == updatedAt;
   }
 
   @override
@@ -101,5 +117,6 @@ class Project {
     starsShapeId,
     description,
     createdAt,
+    updatedAt,
   );
 }

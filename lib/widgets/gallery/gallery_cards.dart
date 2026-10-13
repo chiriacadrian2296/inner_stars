@@ -19,7 +19,6 @@ import '../eyebrow_icon_row.dart';
 import '../constellation_painter.dart' show ConstellationStar;
 import '../photo_image.dart';
 import '../star_glyph.dart';
-import '../star_type_text.dart';
 
 /// Cosmo's Gallery tiles: miniature, portrait (2:3) versions of the single
 /// pages — a star's reader page, a constellation's page, an area's cover —
@@ -205,20 +204,18 @@ class GalleryStarTile extends StatelessWidget {
                     _withItemIcon(
                       u: u,
                       color: color,
-                      // An archived element already ends in its original
-                      // type's icon.
-                      icon: kind == StarKind.dead
-                          ? null
-                          : EyebrowIconRow.iconFor(
-                              data.star?.iconSlug ?? data.habit?.iconSlug ?? '',
-                              kind,
-                            ),
-                      label: StarTypeText(
-                        kind.label(strings).toUpperCase(),
-                        compact: true,
-                        originalKind: kind == StarKind.dead
-                            ? data.star?.originalKind ?? StarKind.pulsar
-                            : null,
+                      icon: EyebrowIconRow.chosenIcon(
+                        data.star?.iconSlug ?? data.habit?.iconSlug ?? '',
+                      ),
+                      // An archived element reads "ARCHIVED GOAL" / "OBIETTIVO
+                      // ARCHIVIATO": its whole name, in the language's order.
+                      label: Text(
+                        (kind == StarKind.dead
+                                ? strings.archivedKindName(
+                                    data.star?.originalKind ?? StarKind.pulsar,
+                                  )
+                                : kind.label(strings))
+                            .toUpperCase(),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -582,7 +579,7 @@ class GalleryAreaTile extends StatelessWidget {
                   SizedBox(height: 4 * u),
                 ],
                 if (data.badges.title != null)
-                  EyebrowWithBadge(
+                  EyebrowIconRow.forBadge(
                     label: strings.areaLabel,
                     color: colors.gold,
                     badge: data.badges.title!,
@@ -650,5 +647,5 @@ Widget _withItemIcon({
         icon: icon,
         color: color,
         fontSize: 9.5 * u,
-        scale: u,
+        scale: u * _kTileBadgeScale,
       );

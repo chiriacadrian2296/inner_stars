@@ -180,11 +180,15 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
     }
   }
 
-  Future<void> _openNewConstellation() => _create(constellation: true);
+  Future<void> _openNewConstellation() =>
+      _create(constellation: true, constellationOnly: true);
 
   /// The same creation page as every other add button, with this area
   /// pre-filled.
-  Future<void> _create({bool constellation = false}) async {
+  Future<void> _create({
+    bool constellation = false,
+    bool constellationOnly = false,
+  }) async {
     final starsShapeRepository = await _starsShapes;
     if (!mounted) return;
     final habitRepository =
@@ -198,6 +202,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
       starRepository: widget.starRepository,
       habitRepository: habitRepository,
       constellation: constellation,
+      constellationOnly: constellationOnly,
       area: _area,
     );
     if (mounted) setState(() {});

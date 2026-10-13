@@ -154,6 +154,7 @@ class ProjectRepository extends ChangeNotifier {
           ? null
           : trimmedDescription,
       createdAt: existing.createdAt,
+      updatedAt: DateTime.now(),
     );
     projects[index] = updated;
     await _saveAll(projects);

@@ -1,13 +1,16 @@
 """Generate small, transparent Flutter resolution variants from the area art."""
 
+import argparse
 from pathlib import Path
+import shutil
 
 from PIL import Image
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "assets/images/royal_symbols_negative_final"
+SOURCE = ROOT / "assets/images/area_icon_sources"
 OUTPUT = ROOT / "assets/images/area_icons"
+BACKUP = ROOT / "output/area_icons_before_redesign"
 AREAS = (
     "physical", "psychological", "professional", "financial",
     "personal", "social", "spiritual", "philanthropic",
@@ -15,10 +18,21 @@ AREAS = (
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--restore", action="store_true", help="Restore the exact icons saved before the redesign")
+    args = parser.parse_args()
+    if args.restore:
+        if not BACKUP.is_dir():
+            raise ValueError(f"No original icon backup: {BACKUP}")
+        shutil.copytree(BACKUP, OUTPUT, dirs_exist_ok=True)
+        print("Restored original area icons")
+        return
+    if not BACKUP.exists():
+        shutil.copytree(OUTPUT, BACKUP)
     total = 0
     original = 0
     for index, area in enumerate(AREAS, 1):
-        source = SOURCE / f"{index:02}-{area}.png"
+        source = SOURCE / f"{area}.png"
         original += source.stat().st_size
         image = Image.open(source).convert("RGBA")
         # Remove the hero canvas margin; every emblem fills its icon box.

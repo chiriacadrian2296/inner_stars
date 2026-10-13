@@ -3,12 +3,14 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../l10n/strings_scope.dart';
+import '../models/sky_date_field.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import '../utils/date_format.dart';
 import '../utils/responsive.dart';
 import 'app_choice_chip.dart';
+import 'date_field_chips.dart';
 import 'responsive_content.dart';
 import 'results_count_row.dart';
 import 'staggered_entrance.dart';
@@ -30,19 +32,29 @@ import 'staggered_entrance.dart';
 /// this reopens, so the right chip is still highlighted — see
 /// [DateRangePreset]'s own doc for why the filter button itself doesn't use
 /// it.
-Future<({DateTimeRange? range, DateRangePreset preset})?>
+///
+/// [availableFields] lists which dates the range can be applied to; with
+/// fewer than two the "Date By" chips are hidden and `field` just echoes
+/// [initialField].
+Future<({DateTimeRange? range, DateRangePreset preset, SkyDateField field})?>
 showDateRangeFilterSheet(
   BuildContext context, {
   required DateTimeRange? initialRange,
   required DateRangePreset initialPreset,
-  FilterPreview<DateTimeRange?>? preview,
+  SkyDateField initialField = SkyDateField.created,
+  List<SkyDateField> availableFields = const [],
+  FilterPreview<({DateTimeRange? range, SkyDateField field})>? preview,
 }) {
-  return showAppSheet<({DateTimeRange? range, DateRangePreset preset})>(
+  return showAppSheet<
+    ({DateTimeRange? range, DateRangePreset preset, SkyDateField field})
+  >(
     context: context,
     isScrollControlled: true,
     builder: (_) => _DateRangeFilterSheet(
       initialRange: initialRange,
       initialPreset: initialPreset,
+      initialField: initialField,
+      availableFields: availableFields,
       preview: preview,
     ),
   );
@@ -64,12 +76,16 @@ class _DateRangeFilterSheet extends StatefulWidget {
   const _DateRangeFilterSheet({
     required this.initialRange,
     required this.initialPreset,
+    required this.initialField,
+    required this.availableFields,
     this.preview,
   });
 
   final DateTimeRange? initialRange;
   final DateRangePreset initialPreset;
-  final FilterPreview<DateTimeRange?>? preview;
+  final SkyDateField initialField;
+  final List<SkyDateField> availableFields;
+  final FilterPreview<({DateTimeRange? range, SkyDateField field})>? preview;
 
   @override
   State<_DateRangeFilterSheet> createState() => _DateRangeFilterSheetState();
@@ -78,6 +94,7 @@ class _DateRangeFilterSheet extends StatefulWidget {
 class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
   late DateTimeRange? _range = widget.initialRange;
   late DateRangePreset _preset = widget.initialPreset;
+  late SkyDateField _field = widget.initialField;
 
   /// How many whole units of [_preset] (week/month/year) the current
   /// [_range] sits behind "now" — 0 is the most recent period (ending
@@ -90,6 +107,7 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
 
   bool get _hasChanges =>
       _preset != widget.initialPreset ||
+      (_range != null && _field != widget.initialField) ||
       _range?.start != widget.initialRange?.start ||
       _range?.end != widget.initialRange?.end;
 
@@ -328,8 +346,14 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
                   to: _range?.end,
                   onTap: _pickCustom,
                 ),
+                DateFieldChips(
+                  fields: widget.availableFields,
+                  selected: _field,
+                  onChanged: (field) => setState(() => _field = field),
+                ),
                 const SizedBox(height: 20),
-                if (widget.preview != null) widget.preview!.rowFor(_range),
+                if (widget.preview != null)
+                  widget.preview!.rowFor((range: _range, field: _field)),
                 const SizedBox(height: 16),
                 StaggeredEntrance(
                   index: 7,
@@ -346,9 +370,14 @@ class _DateRangeFilterSheetState extends State<_DateRangeFilterSheet> {
                         ),
                         ElevatedButton(
                           onPressed: _hasChanges
-                              ? () =>
-                                    Navigator.of(context)
-                                        .pop((range: _range, preset: _preset))
+                              ? () => Navigator.of(context).pop((
+                                  range: _range,
+                                  preset: _preset,
+                                  // The date means nothing without a range.
+                                  field: _range == null
+                                      ? SkyDateField.created
+                                      : _field,
+                                ))
                               : null,
                           child: AppButtonLabel(strings.applyFilterAction),
                         ),

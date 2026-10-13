@@ -53,6 +53,7 @@ class NewProjectScreen extends StatefulWidget {
     this.presetArea,
     this.existingProject,
     this.embedded = false,
+    this.onDirtyChanged,
   });
 
   final ProjectRepository projectRepository;
@@ -64,6 +65,10 @@ class NewProjectScreen extends StatefulWidget {
   /// for placing it under the star form's kind switch, which supplies those.
   /// Saving still pops the enclosing route with the new [Project].
   final bool embedded;
+
+  /// Reports draft changes when this form is embedded in another creation
+  /// flow, whose back action owns the discard decision.
+  final ValueChanged<bool>? onDirtyChanged;
 
   @override
   State<NewProjectScreen> createState() => _NewProjectScreenState();
@@ -89,6 +94,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   /// Bumped whenever the person changes the shape selection, so the preview
   /// swaps its drawing (and name) in with the entrance rather than silently.
   int _shapeEpoch = 0;
+  bool? _lastReportedDirty;
 
   bool get _hasShape => _selectedStarsShape != null || _selectedPreset != null;
 
@@ -145,6 +151,8 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
         _selectedStarsShape = widget.starsShapeRepository.getById(shapeId);
       }
     }
+    _nameController.addListener(_reportControllerDirtyChange);
+    _descriptionController.addListener(_reportControllerDirtyChange);
     // The "constellation-form" tour — see its steps in [build] below.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -156,9 +164,18 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
 
   @override
   void dispose() {
+    _nameController.removeListener(_reportControllerDirtyChange);
+    _descriptionController.removeListener(_reportControllerDirtyChange);
     _nameController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  void _reportControllerDirtyChange() {
+    final dirty = _hasUnsavedChanges;
+    if (dirty == _lastReportedDirty) return;
+    _lastReportedDirty = dirty;
+    widget.onDirtyChanged?.call(dirty);
   }
 
   /// Everything on this form starts blank/unset, so unlike
@@ -595,6 +612,13 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final dirty = _hasUnsavedChanges;
+    if (dirty != _lastReportedDirty) {
+      _lastReportedDirty = dirty;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) widget.onDirtyChanged?.call(dirty);
+      });
+    }
     final colors = context.colors;
     final strings = context.strings;
 
@@ -994,7 +1018,7 @@ class _ShapePickerSwitch extends StatelessWidget {
                   message: label[value]!,
                   child: Icon(
                     value == _ShapePickerTab.library
-                        ? Icons.grid_view_outlined
+                        ? Icons.widgets_outlined
                         : Icons.dashboard_customize_outlined,
                     size: 20,
                     color: value == current ? colors.night : colors.muted,

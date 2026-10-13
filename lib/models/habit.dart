@@ -26,6 +26,7 @@ class Habit {
     this.iconSlug = '',
     this.description,
     required this.createdAt,
+    this.updatedAt,
     this.frequency = HabitFrequency.daily,
     this.targetPerPeriod = 1,
     this.intensity = 3,
@@ -46,6 +47,13 @@ class Habit {
   final String iconSlug;
   final String? description;
   final DateTime createdAt;
+
+  /// Stamped by the repository on every save. Null on records stored before
+  /// this field existed; read it through [lastModified].
+  final DateTime? updatedAt;
+
+  /// When this habit was last edited, falling back to [createdAt].
+  DateTime get lastModified => updatedAt ?? createdAt;
 
   final HabitFrequency frequency;
 
@@ -85,6 +93,7 @@ class Habit {
     String? iconSlug,
     String? description,
     DateTime? createdAt,
+    DateTime? updatedAt,
     HabitFrequency? frequency,
     int? targetPerPeriod,
     int? intensity,
@@ -100,6 +109,7 @@ class Habit {
       iconSlug: iconSlug ?? this.iconSlug,
       description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       frequency: frequency ?? this.frequency,
       targetPerPeriod: targetPerPeriod ?? this.targetPerPeriod,
       intensity: intensity ?? this.intensity,
@@ -118,6 +128,10 @@ class Habit {
       iconSlug: json['iconSlug'] as String? ?? '',
       description: json['description'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: switch (json['updatedAt'] as String?) {
+        final value? => DateTime.parse(value),
+        null => null,
+      },
       frequency: HabitFrequency.values.byName(
         json['frequency'] as String? ?? 'daily',
       ),
@@ -143,6 +157,7 @@ class Habit {
       'iconSlug': iconSlug,
       'description': description,
       'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
       'frequency': frequency.name,
       'targetPerPeriod': targetPerPeriod,
       'intensity': intensity,
@@ -162,6 +177,7 @@ class Habit {
         other.iconSlug == iconSlug &&
         other.description == description &&
         other.createdAt == createdAt &&
+        other.updatedAt == updatedAt &&
         other.frequency == frequency &&
         other.targetPerPeriod == targetPerPeriod &&
         other.intensity == intensity &&
@@ -179,6 +195,7 @@ class Habit {
     iconSlug,
     description,
     createdAt,
+    updatedAt,
     frequency,
     targetPerPeriod,
     intensity,

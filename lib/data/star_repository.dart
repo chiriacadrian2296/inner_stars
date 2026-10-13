@@ -201,6 +201,7 @@ class StarRepository extends ChangeNotifier {
           ? null
           : trimmedDescription,
       createdAt: existing.createdAt,
+      updatedAt: DateTime.now(),
       targetDate: targetDate,
       achievedDate: achievedDate,
       intensity: achievedDate == null ? null : intensity,
@@ -247,6 +248,7 @@ class StarRepository extends ChangeNotifier {
       iconSlug: existing.iconSlug,
       description: existing.description,
       createdAt: existing.createdAt,
+      updatedAt: DateTime.now(),
       targetDate: existing.targetDate,
       achievedDate: achievedDate ?? DateTime.now(),
       intensity: intensity,
@@ -280,6 +282,7 @@ class StarRepository extends ChangeNotifier {
       iconSlug: existing.iconSlug,
       description: existing.description,
       createdAt: existing.createdAt,
+      updatedAt: DateTime.now(),
       targetDate: existing.targetDate,
       photoPath: existing.photoPath,
       media: existing.media,
@@ -304,7 +307,12 @@ class StarRepository extends ChangeNotifier {
     if (index == -1) {
       throw StateError('No star found with id $id');
     }
-    final updated = stars[index].copyWith(dead: true, deadDate: DateTime.now());
+    final now = DateTime.now();
+    final updated = stars[index].copyWith(
+      dead: true,
+      deadDate: now,
+      updatedAt: now,
+    );
     final nextStars = [...stars]..[index] = updated;
     await _saveAll(nextStars);
     return updated;
@@ -347,6 +355,7 @@ class StarRepository extends ChangeNotifier {
           ? null
           : trimmedDescription,
       createdAt: existing.createdAt,
+      updatedAt: DateTime.now(),
       targetDate: targetDate,
       achievedDate: achievedDate,
       intensity: achievedDate == null ? null : intensity,

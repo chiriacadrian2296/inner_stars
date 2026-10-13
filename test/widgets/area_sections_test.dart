@@ -12,12 +12,56 @@ import 'package:inner_stars/l10n/strings_scope.dart';
 import 'package:inner_stars/models/life_area.dart';
 import 'package:inner_stars/screens/area_detail_screen.dart';
 import 'package:inner_stars/screens/moodboard_screen.dart';
+import 'package:inner_stars/screens/new_project_screen.dart';
+import 'package:inner_stars/screens/star_form_screen.dart';
 import 'package:inner_stars/screens/vision_editor_screen.dart';
 import 'package:inner_stars/widgets/reflection_questions_section.dart';
 import 'package:inner_stars/theme/app_colors.dart';
 import 'package:inner_stars/theme/app_theme.dart';
 
 void main() {
+  testWidgets('new constellation from an area opens only its dedicated form', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final tourStorage = InMemoryTourStorage();
+    await tourStorage.markCompleted('constellation-form');
+
+    await tester.pumpWidget(
+      StringsScope(
+        strings: const StringsIt(),
+        child: TourScope(
+          storage: tourStorage,
+          child: MaterialApp(
+            theme: buildAppTheme(),
+            home: AreaDetailScreen(
+              area: LifeArea.physical,
+              areaVisionRepository: AreaVisionRepository(prefs),
+              reflectionAnswerRepository: ReflectionAnswerRepository(prefs),
+              projectRepository: ProjectRepository(prefs),
+              starRepository: StarRepository(prefs),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('+ Costellazione'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NewProjectScreen), findsOneWidget);
+    expect(find.byType(StarFormScreen), findsNothing);
+    expect(find.text('Fisica'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('area has three compact sections and direct editors', (
     tester,
   ) async {

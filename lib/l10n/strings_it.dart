@@ -1,3 +1,4 @@
+import '../models/star_kind.dart';
 import '../models/reflection_group.dart';
 import 'app_strings.dart';
 import 'reflection_groups_it.dart';
@@ -505,6 +506,14 @@ class StringsIt implements AppStrings {
   @override
   String get dateRangeToLabel => 'A';
   @override
+  String get dateFieldSectionTitle => 'Tipo Data';
+  @override
+  String get dateFieldCreated => 'Creazione';
+  @override
+  String get dateFieldModified => 'Modifica';
+  @override
+  String get dateFieldOccurred => 'Avvenimento';
+  @override
   String get clearFilterAction => 'Reset';
   @override
   String get clearSearchTooltip => 'Cancella ricerca';
@@ -513,7 +522,7 @@ class StringsIt implements AppStrings {
   @override
   String get sortButtonDefaultLabel => 'Ordina';
   @override
-  String get sortSheetTitle => 'Ordina per';
+  String get sortSheetTitle => 'Ordina';
   @override
   String get sortFieldDate => 'Data';
   @override
@@ -1378,6 +1387,9 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get addExtraAction => 'Aggiungi';
   @override
+  String get createChooserQuestion =>
+      'Cosa vorresti aggiungere alla tua galassia?';
+  @override
   String mediaMaxDuration(String duration) => 'Max $duration';
   @override
   String get recordVoiceTitle => 'Registra una Nota Vocale';
@@ -1481,6 +1493,12 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get discardChangesConfirmBody => 'Perderai le modifiche effettuate.';
   @override
   String get discardChangesAction => 'Scarta';
+  @override
+  String get continueEditingAction => 'Annulla';
+  @override
+  String get discardAndChooseAnotherAction => 'Cambia';
+  @override
+  String get discardAndExitAction => 'Esci';
 
   @override
   String get targetDateLabel => 'Data Obiettivo';
@@ -1653,6 +1671,9 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
       'Dieci minuti di stretching, ogni giorno.';
   @override
   String get starKindDeadName => 'Archiviato';
+  @override
+  String archivedKindName(StarKind original) =>
+      '${original.label(this)} ${original == StarKind.lit || original == StarKind.pulsar ? 'Archiviata' : 'Archiviato'}';
   @override
   String get starKindDeadPlural => 'Archiviati';
   @override

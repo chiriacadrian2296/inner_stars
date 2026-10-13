@@ -59,14 +59,15 @@ class SkyPulsarTooltip extends StatelessWidget {
       baseBodyHeight: SearchResultCard.bodyHeightFor(badges),
       visual: SearchStarVisual(kind: StarKind.pulsar, pulsarLit: isLit),
       content: SearchCardTextContent(
+        // An archived habit reads "DEAD STAR - HABIT" in every language.
         eyebrow: (habit.dead ? StarKind.dead : StarKind.pulsar).galaxyLabel(
           strings,
         ),
+        eyebrowSecond: habit.dead ? StarKind.pulsar.label(strings) : null,
         eyebrowColor: habit.dead
             ? starKindColor(StarKind.dead, context.colors)
             : starKindColor(StarKind.pulsar, context.colors, lit: isLit),
-        archivedOriginalKind: habit.dead ? StarKind.pulsar : null,
-        eyebrowIcon: EyebrowIconRow.iconFor(habit.iconSlug, StarKind.pulsar),
+        eyebrowIcon: EyebrowIconRow.chosenIcon(habit.iconSlug),
         title: habit.displayTitle,
         breadcrumb: project == null
             ? null

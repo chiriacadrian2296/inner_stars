@@ -70,7 +70,6 @@ class SkySearchTooltipCard extends StatefulWidget {
   /// The visual is centred between the card's edge and the text.
   final bool centerVisual;
   final InsightEntity? entity;
-
   @override
   State<SkySearchTooltipCard> createState() => _SkySearchTooltipCardState();
 }
@@ -80,12 +79,29 @@ class _SkySearchTooltipCardState extends State<SkySearchTooltipCard> {
   bool _flipped = false;
 
   @override
+  void initState() {
+    super.initState();
+    _openDrawerAfterLayout();
+  }
+
+  @override
   void didUpdateWidget(covariant SkySearchTooltipCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.menuId != widget.menuId) {
       _flipped = false;
       _localMenuController.closeAll();
+      _openDrawerAfterLayout();
     }
+  }
+
+  /// A Galaxy tooltip opens with its drawer open. Tooltips on a
+  /// constellation's own map (which share one controller through
+  /// [SkyTooltipMenuScope]) start closed.
+  void _openDrawerAfterLayout() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || SkyTooltipMenuScope.maybeOf(context) != null) return;
+      _localMenuController.open(widget.menuId);
+    });
   }
 
   @override
@@ -152,8 +168,9 @@ class _SkySearchTooltipCardState extends State<SkySearchTooltipCard> {
       animation: menuController,
       builder: (context, _) {
         final drawerOpen = menuController.isOpen(menuId);
-        final frontHeight = drawerOpen ? openHeight : openHeight - 50;
-        final height = (_flipped ? math.max(openHeight, 280.0) : frontHeight)
+        // The back keeps the front's height (its body scrolls), so turning a
+        // tooltip over never makes it grow or jump above its anchor.
+        final height = (drawerOpen ? openHeight : openHeight - 50)
             .clamp(0.0, maxHeight)
             .toDouble();
         return AnimatedContainer(

@@ -7,8 +7,10 @@ import 'package:inner_stars/l10n/strings_en.dart';
 import 'package:inner_stars/l10n/strings_scope.dart';
 import 'package:inner_stars/screens/new_project_screen.dart';
 import 'package:inner_stars/screens/star_form_screen.dart';
+import 'package:inner_stars/theme/app_style.dart';
 import 'package:inner_stars/theme/app_theme.dart';
 import 'package:inner_stars/widgets/form_kind_tiles.dart';
+import 'package:inner_stars/widgets/staggered_entrance.dart';
 import 'package:inner_stars/widgets/app_field.dart';
 import 'package:inner_stars/widgets/filters_trigger_button.dart';
 import 'package:inner_stars/utils/app_modals.dart';
@@ -17,6 +19,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 Future<void> _pump(WidgetTester tester, Widget Function() home) async {
   final tourStorage = InMemoryTourStorage();
   await tourStorage.markCompleted('constellation-form');
+  await tourStorage.markCompleted('star-form');
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
@@ -87,6 +90,154 @@ void main() {
     );
     await tester.pump(const Duration(seconds: 2));
     expect(tester.takeException(), isNull, reason: 'back to a star');
+  });
+
+  testWidgets('global create form can start with no kind selected', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      () => StarFormScreen(
+        projectRepository: projects,
+        starsShapeRepository: shapes,
+        allowConstellation: true,
+        startWithoutSelection: true,
+      ),
+    );
+
+    final tiles = tester.widget<FormKindTiles>(find.byType(FormKindTiles));
+    expect([...tiles.leading, ...tiles.trailing], hasLength(4));
+    expect(tiles.tileEntranceAxis, Axis.horizontal);
+    expect(tiles.animateDividerEntrance, isTrue);
+    final dividerEntrance = tester.widget<StaggeredEntrance>(
+      find
+          .ancestor(
+            of: find.byKey(const ValueKey('form-kind-divider')),
+            matching: find.byType(StaggeredEntrance),
+          )
+          .first,
+    );
+    expect(dividerEntrance.index, 4);
+    expect(dividerEntrance.drift, 0);
+    expect(dividerEntrance.extraDelay, kActionGroupDotDelay);
+    expect(
+      [...tiles.leading, ...tiles.trailing].where((tile) => tile.selected),
+      isEmpty,
+    );
+    expect(find.byType(NewProjectScreen), findsNothing);
+    expect(find.byType(AppTextField), findsNothing);
+
+    expect(
+      find.text('What would you like to add to your galaxy?'),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<AnimatedOpacity>(
+            find.byKey(const ValueKey('form-kind-divider')),
+          )
+          .opacity,
+      1,
+    );
+    await tester.tap(
+      find.descendant(
+        of: find.byType(FormKindTiles),
+        matching: find.text('Goal'),
+      ),
+    );
+    await tester.pump();
+    expect(
+      find.text('What would you like to add to your galaxy?'),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<AnimatedOpacity>(
+            find.byKey(const ValueKey('form-kind-divider')),
+          )
+          .opacity,
+      0,
+    );
+    expect(find.byType(AppTextField), findsNothing);
+
+    await tester.pump(const Duration(milliseconds: 220));
+    await tester.pump();
+    expect(
+      find.text('What would you like to add to your galaxy?'),
+      findsNothing,
+    );
+    expect(find.byType(AppTextField), findsNothing);
+
+    await tester.pumpAndSettle();
+    expect(find.byType(AppTextField), findsWidgets);
+    final focusedTiles = tester.widget<FormKindTiles>(
+      find.byType(FormKindTiles),
+    );
+    expect(focusedTiles.tileEntranceAxis, Axis.vertical);
+    expect([...focusedTiles.leading, ...focusedTiles.trailing], hasLength(1));
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(
+      find.text('What would you like to add to your galaxy?'),
+      findsOneWidget,
+    );
+    final resetTiles = tester.widget<FormKindTiles>(find.byType(FormKindTiles));
+    expect([...resetTiles.leading, ...resetTiles.trailing], hasLength(4));
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(FormKindTiles),
+        matching: find.text('Goal'),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 220));
+    await tester.pump();
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(AppTextField).first, 'A draft goal');
+    await tester.pump();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('CANCEL'), findsOneWidget);
+    expect(find.text('CHANGE'), findsOneWidget);
+    expect(find.text('EXIT'), findsOneWidget);
+    final actionCenters = [
+      tester.getCenter(find.text('CANCEL')),
+      tester.getCenter(find.text('CHANGE')),
+      tester.getCenter(find.text('EXIT')),
+    ];
+    expect(
+      actionCenters.map((center) => center.dy).toSet(),
+      hasLength(1),
+      reason: 'The shortened actions should fit on one row.',
+    );
+
+    await tester.tap(find.text('CHANGE'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('What would you like to add to your galaxy?'),
+      findsOneWidget,
+    );
+    expect(find.text('A draft goal'), findsNothing);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(FormKindTiles),
+        matching: find.text('Project'),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 220));
+    await tester.pump();
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(AppTextField).first, 'A draft project');
+    await tester.pump();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('CHANGE'), findsOneWidget);
+    await tester.tap(find.text('CANCEL'));
+    await tester.pumpAndSettle();
+    expect(find.text('A draft project'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   for (final icons in [false, true]) {

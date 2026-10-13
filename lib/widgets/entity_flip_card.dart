@@ -330,12 +330,18 @@ class _FlipButton extends StatelessWidget {
       ),
       child: Icon(Icons.flip, size: iconSize, color: colors.muted),
     );
+    // An InkWell (not a bare GestureDetector) so the button can take keyboard
+    // focus and be activated with Enter or Space.
     Widget tappable(Widget child) => Tooltip(
       message: tooltip,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: child,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          child: child,
+        ),
       ),
     );
     if (style == FlipButtonStyle.grid) {

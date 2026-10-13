@@ -1,3 +1,4 @@
+import '../models/star_kind.dart';
 import '../models/reflection_group.dart';
 import 'app_strings.dart';
 import 'reflection_groups_en.dart';
@@ -499,6 +500,14 @@ class StringsEn implements AppStrings {
   @override
   String get dateRangeToLabel => 'To';
   @override
+  String get dateFieldSectionTitle => 'Date Type';
+  @override
+  String get dateFieldCreated => 'Created';
+  @override
+  String get dateFieldModified => 'Modified';
+  @override
+  String get dateFieldOccurred => 'Occurred';
+  @override
   String get clearFilterAction => 'Reset';
   @override
   String get clearSearchTooltip => 'Clear search';
@@ -507,7 +516,7 @@ class StringsEn implements AppStrings {
   @override
   String get sortButtonDefaultLabel => 'Sort';
   @override
-  String get sortSheetTitle => 'Sort by';
+  String get sortSheetTitle => 'Sort';
   @override
   String get sortFieldDate => 'Date';
   @override
@@ -1366,6 +1375,9 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get addExtraAction => 'Add';
   @override
+  String get createChooserQuestion =>
+      'What would you like to add to your galaxy?';
+  @override
   String mediaMaxDuration(String duration) => 'Max $duration';
   @override
   String get recordVoiceTitle => 'Record a Voice Note';
@@ -1468,6 +1480,12 @@ My contribution meets a real need and is something I can sustain.
   String get discardChangesConfirmBody => "You'll lose the changes you made.";
   @override
   String get discardChangesAction => 'Discard';
+  @override
+  String get continueEditingAction => 'Cancel';
+  @override
+  String get discardAndChooseAnotherAction => 'Change';
+  @override
+  String get discardAndExitAction => 'Exit';
 
   @override
   String get targetDateLabel => 'Target Date';
@@ -1636,6 +1654,9 @@ My contribution meets a real need and is something I can sustain.
   String get starKindPulsarExample => 'Ten minutes of stretching, every day.';
   @override
   String get starKindDeadName => 'Archived';
+  @override
+  String archivedKindName(StarKind original) =>
+      '$starKindDeadName ${original.label(this)}';
   @override
   String get starKindDeadPlural => 'Archived';
   @override

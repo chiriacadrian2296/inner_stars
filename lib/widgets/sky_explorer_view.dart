@@ -26,6 +26,7 @@ import '../models/habit.dart';
 import '../models/habit_completion.dart';
 import '../models/life_area.dart';
 import '../models/project.dart';
+import '../models/sky_date_field.dart';
 import '../models/star.dart';
 import '../models/star_kind.dart';
 import '../settings/settings_controller.dart';
@@ -110,6 +111,12 @@ class SkyTabView {
   SortField sortField = SortField.date;
   SortDirection sortDirection = SortDirection.descending;
 
+  /// Which date the range filter looks at, and which one "sort by date"
+  /// uses — chosen separately, since filtering by when something happened
+  /// and ordering by when it was made are different questions.
+  SkyDateField rangeDateField = SkyDateField.created;
+  SkyDateField sortDateField = SkyDateField.created;
+
   /// The cards turned face down on this tab; kept like the filters.
   final flipped = <InsightEntity>{};
 }
@@ -148,27 +155,39 @@ class ResumeStar extends SkyResume {
 
 /// One flat-list row — either a [Star] (lit, unlit or dead) or a [Habit]
 /// (a pulsar, or dead if it's been deleted) — wrapped with a shared
-/// [sortKey] so the two can be merged into one newest-first list without
-/// either side needing to know about the other's shape.
+/// [dateFor] so the two can be merged into one list without either side
+/// needing to know about the other's shape.
 class _SkyEntry {
-  _SkyEntry.fromStar(Star star)
-    : star = star,
-      habit = null,
-      kind = star.kind,
-      sortKey = star.achievedDate ?? star.createdAt;
+  _SkyEntry.fromStar(Star star) : star = star, habit = null, kind = star.kind;
 
   _SkyEntry.fromHabit(Habit habit)
     : star = null,
       habit = habit,
       // A deleted pulsar is a dead star like any other — it just remembers
       // what it was, which is what [DeadStarCard.fromHabit] shows.
-      kind = habit.dead ? StarKind.dead : StarKind.pulsar,
-      sortKey = habit.createdAt;
+      kind = habit.dead ? StarKind.dead : StarKind.pulsar;
 
   final Star? star;
   final Habit? habit;
   final StarKind kind;
-  final DateTime sortKey;
+
+  DateTime get createdAt => star?.createdAt ?? habit!.createdAt;
+
+  /// The entry's date for [field], or null when it has none: a victory's
+  /// achieved date and a goal's target date are the only "occurred" dates —
+  /// habits and archived entries have no such date.
+  DateTime? dateFor(SkyDateField field) {
+    final star = this.star;
+    return switch (field) {
+      SkyDateField.created => createdAt,
+      SkyDateField.modified => star?.lastModified ?? habit!.lastModified,
+      SkyDateField.occurred => switch (kind) {
+        StarKind.lit => star?.achievedDate,
+        StarKind.unlit => star?.targetDate,
+        _ => null,
+      },
+    };
+  }
 
   String get title => (star?.displayTitle ?? habit!.displayTitle);
   String? get description => star?.description ?? habit?.description;
@@ -351,6 +370,33 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   set _sortField(SortField value) => _tab.sortField = value;
   SortDirection get _sortDirection => _tab.sortDirection;
   set _sortDirection(SortDirection value) => _tab.sortDirection = value;
+
+  /// The dates the current tab can filter/sort by: creation and
+  /// modification always, "occurred" only when something visible has one
+  /// (any constellation; a victory or goal among the Stars kinds).
+  List<SkyDateField> _availableDateFields({Set<StarKind>? kinds}) {
+    final hasOccurred =
+        _mode == _SkyMode.constellations ||
+        (kinds ?? _kindFilter).any(
+          (k) => k == StarKind.lit || k == StarKind.unlit,
+        );
+    return [
+      SkyDateField.created,
+      SkyDateField.modified,
+      if (hasOccurred) SkyDateField.occurred,
+    ];
+  }
+
+  /// [field] if this tab can use it right now, otherwise creation — keeps a
+  /// stored "occurred" choice harmless after the kind filter drops every
+  /// kind that has one.
+  SkyDateField _usableDateField(SkyDateField field, {Set<StarKind>? kinds}) =>
+      _availableDateFields(kinds: kinds).contains(field)
+      ? field
+      : SkyDateField.created;
+
+  SkyDateField get _rangeDateField => _usableDateField(_tab.rangeDateField);
+  SkyDateField get _sortDateField => _usableDateField(_tab.sortDateField);
   late List<Project> _projectsCache;
   late List<Star> _starsCache;
   late List<Habit> _habitsCache;
@@ -450,16 +496,31 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     return _completionCountsCache[habitId] ?? const <DateTime, int>{};
   }
 
-  /// What "sort by date" means for a project — the most recent of its own
-  /// lit stars, or [Project.createdAt] itself when it has none yet (its own
-  /// birth is the only date it has to offer at that point).
-  DateTime _projectSortDate(Project project) {
-    final litDates = _starsForProject(project.id)
-        .where((s) => s.isLit)
-        .map((s) => s.achievedDate!);
-    return litDates.isEmpty
-        ? project.createdAt
-        : litDates.reduce((a, b) => a.isAfter(b) ? a : b);
+  /// A project's date for [field]. "Occurred" is the most recent of its own
+  /// lit stars, and null when it has none yet.
+  DateTime? _projectDate(Project project, SkyDateField field) {
+    switch (field) {
+      case SkyDateField.created:
+        return project.createdAt;
+      case SkyDateField.modified:
+        return project.lastModified;
+      case SkyDateField.occurred:
+        final litDates = _starsForProject(project.id)
+            .where((s) => s.isLit)
+            .map((s) => s.achievedDate!);
+        return litDates.isEmpty
+            ? null
+            : litDates.reduce((a, b) => a.isAfter(b) ? a : b);
+    }
+  }
+
+  /// Orders two possibly-missing dates by [_sortDirection], always putting
+  /// the missing ones last whichever way the list runs.
+  int _compareDates(DateTime? a, DateTime? b) {
+    if (a == null && b == null) return 0;
+    if (a == null) return 1;
+    if (b == null) return -1;
+    return _directed(a.compareTo(b));
   }
 
   /// What "sort by intensity" means for a project — the same combined
@@ -470,8 +531,12 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           .fold<int>(0, (sum, s) => sum + s.intensity!);
 
   int _compareProjects(Project a, Project b) {
+    if (_sortField == SortField.date) {
+      final field = _sortDateField;
+      return _compareDates(_projectDate(a, field), _projectDate(b, field));
+    }
     final ascending = switch (_sortField) {
-      SortField.date => _projectSortDate(a).compareTo(_projectSortDate(b)),
+      SortField.date => 0,
       SortField.intensity => _projectIntensity(
         a,
       ).compareTo(_projectIntensity(b)),
@@ -483,29 +548,23 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   List<Project> get _filteredProjects =>
       _projectsMatching()..sort(_compareProjects);
 
-  /// The constellations the filters leave, unsorted. [areas] and [range] stand
-  /// in for the live filters, so a filter sheet can ask what a not-yet-applied
-  /// choice would show ([range] is a record because null is a valid range).
+  /// The constellations the filters leave, unsorted. [areas] and [dateRange]
+  /// stand in for the live filters, so a filter sheet can ask what a
+  /// not-yet-applied choice would show ([dateRange] is a record because null
+  /// is a valid range).
   List<Project> _projectsMatching({
     Set<LifeArea>? areas,
-    ({DateTimeRange? range})? dateRange,
+    ({DateTimeRange? range, SkyDateField field})? dateRange,
   }) {
     final query = _query.trim().toLowerCase();
     final range = dateRange != null ? dateRange.range : _dateRangeFilter;
+    final field = dateRange != null ? dateRange.field : _rangeDateField;
     var projects = _areaProjectsFor(areas ?? _areaFilter);
-    // A project has no date of its own to compare — it's kept only if at
-    // least one of its stars/pulsars actually falls inside the range,
-    // same idea as the kind filter but resolved through [_allEntries]
-    // rather than a field on [Project] itself.
     if (range != null) {
-      final projectIdsInRange = _allEntriesFor(areas ?? _areaFilter)
-          .where((e) => _isWithinRange(e.sortKey, range))
-          .map((e) => e.star?.projectId ?? e.habit?.projectId)
-          .whereType<int>()
-          .toSet();
-      projects = projects
-          .where((p) => projectIdsInRange.contains(p.id))
-          .toList();
+      projects = projects.where((p) {
+        final date = _projectDate(p, field);
+        return date != null && _isWithinRange(date, range);
+      }).toList();
     }
     if (query.isNotEmpty) {
       projects = projects
@@ -537,15 +596,19 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       for (final habit in _habitsCache)
         if (projectIds.contains(habit.projectId)) _SkyEntry.fromHabit(habit),
     ];
-    entries.sort((a, b) => b.sortKey.compareTo(a.sortKey));
+    entries.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     // The key is copied: the live filter set is mutated in place elsewhere.
     _allEntriesMemo[{...areas}] = entries;
     return entries;
   }
 
   int _compareEntries(_SkyEntry a, _SkyEntry b) {
+    if (_sortField == SortField.date) {
+      final field = _sortDateField;
+      return _compareDates(a.dateFor(field), b.dateFor(field));
+    }
     final ascending = switch (_sortField) {
-      SortField.date => a.sortKey.compareTo(b.sortKey),
+      SortField.date => 0,
       SortField.intensity => a.intensityValue.compareTo(b.intensityValue),
       SortField.name => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
     };
@@ -560,12 +623,16 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   List<_SkyEntry> _entriesMatching({
     Set<LifeArea>? areas,
     Set<StarKind>? kinds,
-    ({DateTimeRange? range})? dateRange,
+    ({DateTimeRange? range, SkyDateField field})? dateRange,
     Set<int>? projects,
   }) {
     final query = _query.trim().toLowerCase();
     final range = dateRange != null ? dateRange.range : _dateRangeFilter;
     final kindFilter = kinds ?? _kindFilter;
+    final field = _usableDateField(
+      dateRange != null ? dateRange.field : _tab.rangeDateField,
+      kinds: kindFilter,
+    );
     final projectFilter = projects ?? _projectFilterIds;
     return _allEntriesFor(areas ?? _areaFilter).where((e) {
       if (!kindFilter.contains(e.kind)) {
@@ -575,7 +642,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           !projectFilter.contains(e.star?.projectId ?? e.habit!.projectId)) {
         return false;
       }
-      if (range != null && !_isWithinRange(e.sortKey, range)) return false;
+      if (range != null) {
+        final date = e.dateFor(field);
+        if (date == null || !_isWithinRange(date, range)) return false;
+      }
       if (query.isEmpty) return true;
       return e.title.toLowerCase().contains(query) ||
           (e.description?.toLowerCase().contains(query) ?? false);
@@ -585,7 +655,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   IconData get _modeIcon => switch (_mode) {
     _SkyMode.supernovas => Icons.flare,
     _SkyMode.constellations => Icons.insights,
-    _SkyMode.stars => Icons.star,
+    _SkyMode.stars => Icons.auto_awesome,
   };
 
   /// The current mode's level word for [count] cards (area, constellation or
@@ -632,7 +702,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   int _previewCount({
     Set<LifeArea>? areas,
     Set<StarKind>? kinds,
-    ({DateTimeRange? range})? dateRange,
+    ({DateTimeRange? range, SkyDateField field})? dateRange,
     Set<int>? projects,
   }) => _mode == _SkyMode.stars
       ? _entriesMatching(
@@ -1072,7 +1142,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   }
 
   Future<void> _openNewConstellation(LifeArea area) =>
-      _create(constellation: true, area: area);
+      _create(constellation: true, constellationOnly: true, area: area);
 
   /// The one creation page behind the Sky's add button: a constellation or a
   /// star of any kind, chosen at its top. The search-level route deliberately
@@ -1080,7 +1150,12 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   /// whole sky, so the form's picker is the right place to choose where a
   /// new star belongs. [constellation] opens on the constellation tile and
   /// [area] pre-fills the area.
-  Future<void> _create({bool constellation = false, LifeArea? area}) async {
+  Future<void> _create({
+    bool constellation = false,
+    bool constellationOnly = false,
+    bool startWithoutSelection = false,
+    LifeArea? area,
+  }) async {
     final shapes = widget.starsShapeRepository;
     final created = await showCreatePage(
       context,
@@ -1089,6 +1164,8 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       starRepository: widget.starRepository,
       habitRepository: widget.habitRepository,
       constellation: constellation,
+      constellationOnly: constellationOnly,
+      startWithoutSelection: startWithoutSelection,
       area: area,
     );
     if (created == null) return;
@@ -1177,10 +1254,9 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   /// the tile it opens on follows the mode.
   ({IconData icon, String tooltip, VoidCallback onPressed})? get _modeAction =>
       (
-        icon: Icons.auto_awesome,
+        icon: Icons.rocket_launch,
         tooltip: context.strings.addExtraAction,
-        onPressed: () =>
-            _create(constellation: _mode == _SkyMode.constellations),
+        onPressed: () => _create(startWithoutSelection: true),
       );
 
   Future<void> _openAreaReflections(LifeArea area) =>
@@ -1697,9 +1773,11 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       context,
       initialRange: _dateRangeFilter,
       initialPreset: _dateRangePreset,
-      preview: FilterPreview<DateTimeRange?>(
+      initialField: _rangeDateField,
+      availableFields: _availableDateFields(),
+      preview: FilterPreview<({DateTimeRange? range, SkyDateField field})>(
         icon: _modeIcon,
-        countFor: (range) => _previewCount(dateRange: (range: range)),
+        countFor: (selection) => _previewCount(dateRange: selection),
         wordFor: _resultsWord,
       ),
     );
@@ -1707,6 +1785,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     setState(() {
       _dateRangeFilter = result.range;
       _dateRangePreset = result.preset;
+      _tab.rangeDateField = result.field;
     });
     _saveSession();
   }
@@ -1716,22 +1795,27 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       context,
       initialField: _sortField,
       initialDirection: _sortDirection,
+      initialDateField: _sortDateField,
+      availableDateFields: _availableDateFields(),
     );
     if (result == null) return;
     setState(() {
       _sortField = result.field;
       _sortDirection = result.direction;
+      _tab.sortDateField = result.dateField;
     });
     _saveSession();
   }
 
   /// Whether the current sort differs from this file's own long-standing
-  /// default (newest first) — the button only lights up gold when it does,
-  /// same "neutral vs. narrowed" reading the other three filter buttons use
-  /// even though, unlike them, sorting itself is never actually "off".
+  /// default (newest first, by creation date) — the button only lights up
+  /// gold when it does, same "neutral vs. narrowed" reading the other three
+  /// filter buttons use even though, unlike them, sorting itself is never
+  /// actually "off".
   bool get _isSortNonDefault =>
       _sortField != SortField.date ||
-      _sortDirection != SortDirection.descending;
+      _sortDirection != SortDirection.descending ||
+      _sortDateField != SkyDateField.created;
 
   /// The sort button's own label — a neutral prompt at the default, otherwise
   /// the field's name plus an arrow standing in for the direction (e.g.
@@ -1800,6 +1884,8 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       _dateRangePreset = DateRangePreset.allTime;
       _sortField = SortField.date;
       _sortDirection = SortDirection.descending;
+      _tab.rangeDateField = SkyDateField.created;
+      _tab.sortDateField = SkyDateField.created;
     });
     _saveSession();
   }
@@ -1834,6 +1920,20 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     final format = needsYear ? formatShortDateWithYear : formatShortDate;
     return '${format(range.start)} - ${format(range.end)}';
   }
+
+  /// Which date the range applies to, shown under the date button — only
+  /// while a range is set and the date isn't the default (creation).
+  String? _dateRangeButtonCaption(AppStrings strings) =>
+      _dateRangeFilter == null || _rangeDateField == SkyDateField.created
+      ? null
+      : _rangeDateField.label(strings);
+
+  /// Which date "sort by date" uses, shown under the sort button when it
+  /// isn't the default.
+  String? _sortButtonCaption(AppStrings strings) =>
+      _sortField != SortField.date || _sortDateField == SkyDateField.created
+      ? null
+      : _sortDateField.label(strings);
 
   /// Whether [date] falls on or between [range]'s two days — inclusive of
   /// all of [DateTimeRange.end]'s own day, since the picker only ever hands
@@ -1955,6 +2055,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         icon: Icons.calendar_month,
         active: _dateRangeFilter != null,
         label: _dateRangeButtonLabel(strings),
+        caption: _dateRangeButtonCaption(strings),
         tooltip: strings.filterDateRangeAction,
         horizontal: horizontal,
         onTap: () => wrap(_openDateRangeFilter),
@@ -1963,6 +2064,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         icon: Icons.sort,
         active: _isSortNonDefault,
         label: _sortButtonLabel(strings),
+        caption: _sortButtonCaption(strings),
         tooltip: strings.sortAction,
         horizontal: horizontal,
         onTap: () => wrap(_openSortFilter),
@@ -2070,7 +2172,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                                     switch (value) {
                                       _SkyMode.supernovas => Icons.flare,
                                       _SkyMode.constellations => Icons.insights,
-                                      _SkyMode.stars => Icons.star,
+                                      _SkyMode.stars => Icons.auto_awesome,
                                     },
                                     size: 20,
                                     color: value == _mode
@@ -2516,6 +2618,7 @@ class _ControlsSheet extends StatelessWidget {
               for (var i = 0; i < filterButtons.length; i += 2) ...[
                 if (i > 0) const SizedBox(height: 10),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: StaggeredEntrance(
@@ -3019,7 +3122,11 @@ class _ProjectCard extends StatelessWidget {
         badges: badges,
       ),
       actions: [
-        SearchCardAction(icon: Icons.star, label: '+ Stella', onTap: onAddStar),
+        SearchCardAction(
+          icon: Icons.auto_awesome,
+          label: '+ Stella',
+          onTap: onAddStar,
+        ),
         SearchCardAction(
           icon: Icons.share_outlined,
           label: 'Condividi',

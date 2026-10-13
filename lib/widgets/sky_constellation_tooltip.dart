@@ -67,7 +67,7 @@ class SkyConstellationTooltip extends StatelessWidget {
       ),
       actions: [
         SearchCardAction(
-          icon: Icons.star_rounded,
+          icon: Icons.auto_awesome,
           label: strings.constellationQuickLookAddStarAction,
           onTap: onAddStar,
           isNew: true,

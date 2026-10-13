@@ -11,6 +11,7 @@ import '../models/habit.dart';
 import '../models/project.dart';
 import '../models/star_media.dart';
 import '../utils/date_math.dart';
+import '../utils/icon_for_slug.dart';
 import 'seed_area_content.dart';
 
 /// How many stars each seed project (by spec index) is filled up to the first
@@ -215,7 +216,11 @@ Future<int> seedSampleData({
     if (isNewProject) {
       for (final goalTitle in spec.goals) {
         if (remaining() <= 0) break;
-        await starRepository.add(title: goalTitle, projectId: project.id);
+        await starRepository.add(
+          title: goalTitle,
+          iconSlug: _sampleIcon(spec.area, goalTitle.length + specIndex),
+          projectId: project.id,
+        );
         await Future.delayed(const Duration(milliseconds: 2));
       }
 
@@ -225,6 +230,7 @@ Future<int> seedSampleData({
         // delete one by hand first.
         final deadSeed = await starRepository.add(
           title: deadStarTitle,
+          iconSlug: _sampleIcon(spec.area, specIndex),
           projectId: project.id,
         );
         await Future.delayed(const Duration(milliseconds: 2));
@@ -248,6 +254,7 @@ Future<int> seedSampleData({
       await starRepository.add(
         title: phrase.title,
         description: _sampleDescription(phrase, specIndex, position),
+        iconSlug: _sampleIcon(spec.area, position + specIndex * 3),
         projectId: project.id,
         achievedDate: date,
         intensity: 1 + position % 5,
@@ -270,6 +277,7 @@ Future<int> seedSampleData({
     for (final habitSeed in spec.habits) {
       final habit = await habitRepository.add(
         title: habitSeed.title,
+        iconSlug: _sampleIcon(spec.area, habitSeed.title.length + specIndex),
         projectId: project.id,
         intensity: habitSeed.intensity,
       );
@@ -358,6 +366,7 @@ Future<void> _seedStarHistory({
     await starRepository.add(
       title: phrase.title,
       description: _sampleDescription(phrase, specIndex, position),
+      iconSlug: _sampleIcon(spec.area, position + specIndex),
       projectId: project.id,
       achievedDate: date,
       intensity: 1 + (position * 3 + specIndex) % 5,
@@ -365,6 +374,25 @@ Future<void> _seedStarHistory({
     );
     await Future.delayed(const Duration(milliseconds: 2));
   }
+}
+
+/// An icon for a sample activity: one suggested for its area (never an icon
+/// reserved for an area itself), varied by [salt] so a constellation does not
+/// repeat one glyph. Every activity has an icon of its own now.
+String _sampleIcon(LifeArea area, int salt) {
+  final reserved = {for (final a in LifeArea.values) a.iconSlug};
+  final themed = [
+    for (final slug
+        in suggestedIconsByArea[area.suggestedIconsKey] ?? const <String>[])
+      if (!reserved.contains(slug)) slug,
+  ];
+  final pool = themed.isEmpty
+      ? [
+          for (final slug in availableIconSlugs)
+            if (!reserved.contains(slug)) slug,
+        ]
+      : themed;
+  return pool[salt % pool.length];
 }
 
 /// Cheap deterministic "randomness" 0..100 from two small ints — pure
@@ -520,6 +548,10 @@ Future<void> _seedHabitHistory({
 
     final habit = await habitRepository.add(
       title: seed.titleFor(languageCode),
+      iconSlug: _sampleIcon(
+        projects[seed.projectIndex].area,
+        seed.projectIndex,
+      ),
       projectId: projects[seed.projectIndex].id,
       intensity: seed.intensity,
       frequency: seed.frequency,

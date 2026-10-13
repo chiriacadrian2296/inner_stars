@@ -51,6 +51,7 @@ class SkyMenuDrawer extends StatelessWidget {
     required this.onMetaphor,
     required this.onMoonLab,
     this.onAreaIconLab,
+    this.onFabIconLab,
     required this.onSettings,
   });
 
@@ -65,6 +66,7 @@ class SkyMenuDrawer extends StatelessWidget {
   final VoidCallback onMetaphor;
   final VoidCallback onMoonLab;
   final VoidCallback? onAreaIconLab;
+  final VoidCallback? onFabIconLab;
   final VoidCallback onSettings;
 
   @override
@@ -83,6 +85,7 @@ class SkyMenuDrawer extends StatelessWidget {
           onMetaphor: onMetaphor,
           onMoonLab: onMoonLab,
           onAreaIconLab: onAreaIconLab,
+          onFabIconLab: onFabIconLab,
           onSettings: onSettings,
         ),
       ),
@@ -151,6 +154,7 @@ class SkyMenuContent extends StatelessWidget {
     required this.onMetaphor,
     required this.onMoonLab,
     this.onAreaIconLab,
+    this.onFabIconLab,
     required this.onSettings,
     this.detailed = false,
     this.scrollController,
@@ -168,6 +172,7 @@ class SkyMenuContent extends StatelessWidget {
   final VoidCallback onMetaphor;
   final VoidCallback onMoonLab;
   final VoidCallback? onAreaIconLab;
+  final VoidCallback? onFabIconLab;
   final VoidCallback onSettings;
 
   /// See the class doc comment — off for the drawer, on for the modal.
@@ -546,6 +551,14 @@ class SkyMenuContent extends StatelessWidget {
             label: strings.menuAreaIconLab,
             description: strings.menuAreaIconLabDescription,
             onTap: onAreaIconLab!,
+          ),
+        if (onFabIconLab != null)
+          entry(
+            index: 9,
+            icon: Icons.add_circle_outline,
+            label: 'FAB icon lab',
+            description: 'Candidate icons for the Sky add button.',
+            onTap: onFabIconLab!,
           ),
 
         // In [detailed] mode (the modal), Settings is just one more

@@ -1,3 +1,4 @@
+import '../widgets/position_counter.dart';
 import '../utils/entity_insights.dart';
 import '../widgets/entity_insights_scope.dart';
 import 'entity_stats_screen.dart';
@@ -1107,17 +1108,6 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                                       child: Column(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Text(
-                                            strings.indexOfCount(
-                                              _index + 1,
-                                              _entries.length,
-                                            ),
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 12),
                                           AnimatedSwitcher(
                                             duration: _kContentSwapDuration,
                                             // Eased both ends, so the old text
@@ -1174,6 +1164,11 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
           _ReaderDock(
             key: const ValueKey('reader-dock'),
             hidden: photoPath != null && _photoOnly,
+            counter: PositionCounter(
+              index: _index + 1,
+              total: _entries.length,
+              icon: Icons.auto_awesome,
+            ),
             child: ResponsiveContent(
               maxWidth: contentMaxWidth,
               child: Row(
@@ -1390,16 +1385,25 @@ class _ZoomablePhotoLayerState extends State<_ZoomablePhotoLayer>
 /// edge over a fully transparent background — the buttons carry their own
 /// discs. Like the rest of the chrome it hides in photo-only mode.
 class _ReaderDock extends StatelessWidget {
-  const _ReaderDock({super.key, required this.hidden, required this.child});
+  const _ReaderDock({
+    super.key,
+    required this.hidden,
+    required this.counter,
+    required this.child,
+  });
 
   final bool hidden;
+
+  /// "23 of 123" above the buttons.
+  final Widget counter;
   final Widget child;
 
   /// Its height without the system inset: the margin above the buttons,
   /// the buttons themselves, and the margin below.
   static const _bandAbove = 16.0;
   static const _below = 16.0;
-  static const height = _bandAbove + 34 + _below;
+  static const _counterBand = PositionCounter.height + PositionCounter.gapBelow;
+  static const height = _counterBand + _bandAbove + 34 + _below;
 
   @override
   Widget build(BuildContext context) {
@@ -1421,7 +1425,14 @@ class _ReaderDock extends StatelessWidget {
               12,
               _below + MediaQuery.paddingOf(context).bottom,
             ),
-            child: child,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                counter,
+                const SizedBox(height: PositionCounter.gapBelow),
+                child,
+              ],
+            ),
           ),
         ),
       ),

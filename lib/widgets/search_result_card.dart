@@ -313,6 +313,7 @@ class SearchCardTextContent extends StatelessWidget {
     this.eyebrow,
     this.eyebrowColor,
     this.eyebrowIcon,
+    this.eyebrowSecond,
     this.archivedOriginalKind,
     this.breadcrumb,
     this.description,
@@ -324,6 +325,10 @@ class SearchCardTextContent extends StatelessWidget {
 
   /// The element's own icon, shown in gold after the label (" - icon").
   final IconData? eyebrowIcon;
+
+  /// A second label after the eyebrow, joined by a dash: an archived
+  /// element reads "DEAD STAR - GOAL" in every language.
+  final String? eyebrowSecond;
   final StarKind? archivedOriginalKind;
   final String title;
   final String? breadcrumb;
@@ -347,7 +352,7 @@ class SearchCardTextContent extends StatelessWidget {
           const SizedBox(height: 3),
         ],
         if (eyebrow != null && badges?.title != null) ...[
-          EyebrowWithBadge(
+          EyebrowIconRow.forBadge(
             label: eyebrow!,
             color: eyebrowColor ?? colors.accentDim,
             badge: badges!.title!,
@@ -355,27 +360,33 @@ class SearchCardTextContent extends StatelessWidget {
           const SizedBox(height: 3),
         ] else if (eyebrow != null) ...[
           () {
+            final style = TextStyle(
+              fontSize: 9.5,
+              letterSpacing: 0.7,
+              fontWeight: FontWeight.w700,
+              color: eyebrowColor ?? colors.accentDim,
+            );
             final label = StarTypeText(
               eyebrow!.toUpperCase(),
               originalKind: archivedOriginalKind,
-              compact: true,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 9.5,
-                letterSpacing: 0.7,
-                fontWeight: FontWeight.w700,
-                color: eyebrowColor ?? colors.accentDim,
-              ),
+              style: style,
             );
-            // An archived element already ends in its original type's icon.
-            return eyebrowIcon == null || archivedOriginalKind != null
-                ? label
-                : EyebrowIconRow(
-                    label: label,
-                    icon: eyebrowIcon!,
-                    color: eyebrowColor ?? colors.accentDim,
-                  );
+            if (eyebrowIcon == null && eyebrowSecond == null) return label;
+            return EyebrowIconRow(
+              label: label,
+              secondLabel: eyebrowSecond == null
+                  ? null
+                  : Text(
+                      eyebrowSecond!.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: style,
+                    ),
+              icon: eyebrowIcon,
+              color: eyebrowColor ?? colors.accentDim,
+            );
           }(),
           const SizedBox(height: 3),
         ],

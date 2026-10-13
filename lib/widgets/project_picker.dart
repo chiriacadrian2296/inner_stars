@@ -9,6 +9,7 @@ import '../l10n/app_strings.dart';
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
 import '../models/project.dart';
+import '../models/sky_date_field.dart';
 import '../screens/new_project_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
@@ -19,6 +20,7 @@ import 'app_choice_chip.dart';
 import 'app_field.dart' show AppSearchField;
 import 'area_filter_sheet.dart';
 import 'date_range_filter_sheet.dart';
+import 'filter_button.dart';
 import 'results_count_row.dart';
 import 'sort_filter_sheet.dart';
 import 'staggered_entrance.dart';
@@ -192,6 +194,14 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
   DateRangePreset _dateRangePreset = DateRangePreset.allTime;
   SortField _sortField = SortField.date;
   SortDirection _sortDirection = SortDirection.descending;
+  SkyDateField _rangeDateField = SkyDateField.created;
+  SkyDateField _sortDateField = SkyDateField.created;
+
+  /// Projects have no "occurred" date, so only these two apply here.
+  static const _dateFields = [SkyDateField.created, SkyDateField.modified];
+
+  DateTime _dateOf(Project project, SkyDateField field) =>
+      field == SkyDateField.modified ? project.lastModified : project.createdAt;
 
   List<Project> get _filtered {
     final query = _query.trim().toLowerCase();
@@ -199,7 +209,8 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
         .where((project) => _areaFilter.contains(project.area))
         .where((project) {
           final range = _dateRangeFilter;
-          return range == null || _isWithinRange(project.createdAt, range);
+          return range == null ||
+              _isWithinRange(_dateOf(project, _rangeDateField), range);
         })
         .where(
           (project) =>
@@ -214,13 +225,17 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
       _areaFilter.length != LifeArea.values.length;
   bool get _isSortNonDefault =>
       _sortField != SortField.date ||
-      _sortDirection != SortDirection.descending;
+      _sortDirection != SortDirection.descending ||
+      _sortDateField != SkyDateField.created;
   bool get _hasFilters =>
       _isAreaFilterNarrowed || _dateRangeFilter != null || _isSortNonDefault;
 
   int _compareProjects(Project a, Project b) {
     final ascending = switch (_sortField) {
-      SortField.date => a.createdAt.compareTo(b.createdAt),
+      SortField.date => _dateOf(
+        a,
+        _sortDateField,
+      ).compareTo(_dateOf(b, _sortDateField)),
       SortField.intensity => _shapePointCount(a).compareTo(_shapePointCount(b)),
       SortField.name => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
     };
@@ -265,11 +280,14 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
       context,
       initialRange: _dateRangeFilter,
       initialPreset: _dateRangePreset,
+      initialField: _rangeDateField,
+      availableFields: _dateFields,
     );
     if (result == null || !mounted) return;
     setState(() {
       _dateRangeFilter = result.range;
       _dateRangePreset = result.preset;
+      _rangeDateField = result.field;
     });
   }
 
@@ -278,11 +296,14 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
       context,
       initialField: _sortField,
       initialDirection: _sortDirection,
+      initialDateField: _sortDateField,
+      availableDateFields: _dateFields,
     );
     if (result == null || !mounted) return;
     setState(() {
       _sortField = result.field;
       _sortDirection = result.direction;
+      _sortDateField = result.dateField;
     });
   }
 
@@ -295,6 +316,19 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
     final format = needsYear ? formatShortDateWithYear : formatShortDate;
     return '${format(range.start)} - ${format(range.end)}';
   }
+
+  /// Which date the range applies to, under the button — only while a range
+  /// is set and it isn't the default (creation).
+  String? _dateCaption(AppStrings strings) =>
+      _dateRangeFilter == null || _rangeDateField == SkyDateField.created
+      ? null
+      : _rangeDateField.label(strings);
+
+  /// Which date "sort by date" uses, under the button, when not the default.
+  String? _sortCaption(AppStrings strings) =>
+      _sortField != SortField.date || _sortDateField == SkyDateField.created
+      ? null
+      : _sortDateField.label(strings);
 
   String _sortLabel(AppStrings strings) {
     if (!_isSortNonDefault) return strings.sortButtonDefaultLabel;
@@ -312,6 +346,8 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
     _dateRangePreset = DateRangePreset.allTime;
     _sortField = SortField.date;
     _sortDirection = SortDirection.descending;
+    _rangeDateField = SkyDateField.created;
+    _sortDateField = SkyDateField.created;
   });
 
   Future<void> _openFilters() async {
@@ -322,8 +358,10 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
       builder: (_) => StatefulBuilder(
         builder: (context, refresh) => _ProjectFiltersSheet(
           buttons: [
-            _ProjectFilterButton(
+            FilterButton(
               icon: Icons.flare,
+              horizontal: true,
+              tooltip: strings.filterAreasAction,
               active: _isAreaFilterNarrowed,
               label: _isAreaFilterNarrowed
                   ? strings.activeAreasCount(_areaFilter.length)
@@ -333,19 +371,25 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
                 refresh(() {});
               },
             ),
-            _ProjectFilterButton(
+            FilterButton(
               icon: Icons.calendar_month,
+              horizontal: true,
+              tooltip: strings.filterDateRangeAction,
               active: _dateRangeFilter != null,
               label: _dateLabel(strings),
+              caption: _dateCaption(strings),
               onTap: () async {
                 await _openDateRangeFilter();
                 refresh(() {});
               },
             ),
-            _ProjectFilterButton(
+            FilterButton(
               icon: Icons.sort,
+              horizontal: true,
+              tooltip: strings.sortAction,
               active: _isSortNonDefault,
               label: _sortLabel(strings),
+              caption: _sortCaption(strings),
               onTap: () async {
                 await _openSortFilter();
                 refresh(() {});
@@ -638,54 +682,6 @@ class _ProjectFiltersTrigger extends StatelessWidget {
   }
 }
 
-class _ProjectFilterButton extends StatelessWidget {
-  const _ProjectFilterButton({
-    required this.icon,
-    required this.active,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final bool active;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(kRadiusField),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(kRadiusField),
-        child: Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: selectableDecoration(colors, selected: active),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 16, color: active ? colors.gold : colors.muted),
-              const SizedBox(width: 8),
-              Flexible(
-                child: AppButtonLabel(
-                  label,
-                  color: active ? colors.text : colors.muted,
-                  fontSize: 11,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _ProjectFiltersSheet extends StatelessWidget {
   const _ProjectFiltersSheet({
     required this.buttons,
@@ -710,6 +706,7 @@ class _ProjectFiltersSheet extends StatelessWidget {
             AppSheetTitle(strings.filtersAction),
             const SizedBox(height: 20),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(child: buttons[0]),
                 const SizedBox(width: 10),

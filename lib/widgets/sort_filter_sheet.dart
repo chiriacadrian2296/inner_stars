@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/strings_scope.dart';
+import '../models/sky_date_field.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import 'app_choice_chip.dart';
+import 'date_field_chips.dart';
 import 'staggered_entrance.dart';
 
 /// What Sky's Constellations/Stars lists can be ordered by — the same three
@@ -25,17 +27,29 @@ enum SortDirection { ascending, descending }
 /// Returns the new `(field, direction)`, or null if dismissed without
 /// tapping Apply (caller should keep its previous sort in that case) — same
 /// apply-or-keep contract as the other filter sheets.
-Future<({SortField field, SortDirection direction})?> showSortFilterSheet(
+///
+/// When sorting by [SortField.date], [availableDateFields] lets the user pick
+/// which of an item's dates (created / modified / occurred) is meant; with
+/// fewer than two the picker is hidden and `dateField` echoes
+/// [initialDateField].
+Future<({SortField field, SortDirection direction, SkyDateField dateField})?>
+showSortFilterSheet(
   BuildContext context, {
   required SortField initialField,
   required SortDirection initialDirection,
+  SkyDateField initialDateField = SkyDateField.created,
+  List<SkyDateField> availableDateFields = const [],
 }) {
-  return showAppSheet<({SortField field, SortDirection direction})>(
+  return showAppSheet<
+    ({SortField field, SortDirection direction, SkyDateField dateField})
+  >(
     context: context,
     isScrollControlled: true,
     builder: (_) => _SortFilterSheet(
       initialField: initialField,
       initialDirection: initialDirection,
+      initialDateField: initialDateField,
+      availableDateFields: availableDateFields,
     ),
   );
 }
@@ -44,10 +58,14 @@ class _SortFilterSheet extends StatefulWidget {
   const _SortFilterSheet({
     required this.initialField,
     required this.initialDirection,
+    required this.initialDateField,
+    required this.availableDateFields,
   });
 
   final SortField initialField;
   final SortDirection initialDirection;
+  final SkyDateField initialDateField;
+  final List<SkyDateField> availableDateFields;
 
   @override
   State<_SortFilterSheet> createState() => _SortFilterSheetState();
@@ -56,8 +74,13 @@ class _SortFilterSheet extends StatefulWidget {
 class _SortFilterSheetState extends State<_SortFilterSheet> {
   late SortField _field = widget.initialField;
   late SortDirection _direction = widget.initialDirection;
+  late SkyDateField _dateField = widget.initialDateField;
   bool get _hasChanges =>
-      _field != widget.initialField || _direction != widget.initialDirection;
+      _field != widget.initialField ||
+      _direction != widget.initialDirection ||
+      (_field == SortField.date && _dateField != widget.initialDateField) ||
+      (_field != SortField.date &&
+          widget.initialDateField != SkyDateField.created);
 
   void _toggleDirection() {
     setState(() {
@@ -70,10 +93,13 @@ class _SortFilterSheetState extends State<_SortFilterSheet> {
   void _reset() => setState(() {
     _field = SortField.date;
     _direction = SortDirection.descending;
+    _dateField = SkyDateField.created;
   });
 
   bool get _isDefault =>
-      _field == SortField.date && _direction == SortDirection.descending;
+      _field == SortField.date &&
+      _direction == SortDirection.descending &&
+      _dateField == SkyDateField.created;
 
   @override
   Widget build(BuildContext context) {
@@ -149,6 +175,15 @@ class _SortFilterSheetState extends State<_SortFilterSheet> {
                 ),
               ],
             ),
+            // Date Type only applies while sorting by date: the section
+            // opens and closes (the sheet rises or falls with it) while its
+            // title and chips rise in, or sink out, one after another.
+            DateFieldChips(
+              fields: widget.availableDateFields,
+              selected: _dateField,
+              visible: _field == SortField.date,
+              onChanged: (field) => setState(() => _dateField = field),
+            ),
             const SizedBox(height: 24),
             StaggeredEntrance(
               index: 4,
@@ -164,9 +199,14 @@ class _SortFilterSheetState extends State<_SortFilterSheet> {
                     ),
                     ElevatedButton(
                       onPressed: _hasChanges
-                          ? () =>
-                                Navigator.of(context)
-                                    .pop((field: _field, direction: _direction))
+                          ? () => Navigator.of(context).pop((
+                              field: _field,
+                              direction: _direction,
+                              // The date only matters when sorting by date.
+                              dateField: _field == SortField.date
+                                  ? _dateField
+                                  : SkyDateField.created,
+                            ))
                           : null,
                       child: AppButtonLabel(strings.applyFilterAction),
                     ),

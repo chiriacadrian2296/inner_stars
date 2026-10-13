@@ -286,7 +286,7 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
     if (!mounted) return;
     final strings = context.strings;
     final colors = context.colors;
-    var hideNextTime = false;
+    var hideNextTime = prefs.hideHelp;
 
     await showAppDialog<void>(
       context: context,
@@ -834,7 +834,7 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                       child: widget.onOpenLibrary == null
                           ? const SizedBox(width: _EditorRoundButton.size)
                           : _EditorRoundButton(
-                              icon: Icons.space_dashboard_outlined,
+                              icon: Icons.troubleshoot,
                               tooltip: strings.shapesLibraryButtonLabel,
                               onTap: _openLibrary,
                             ),

@@ -124,6 +124,7 @@ class HabitRepository extends ChangeNotifier {
           ? null
           : trimmedDescription,
       createdAt: existing.createdAt,
+      updatedAt: DateTime.now(),
       intensity: intensity,
       frequency: frequency,
       targetPerPeriod: targetPerPeriod,
@@ -151,9 +152,11 @@ class HabitRepository extends ChangeNotifier {
     if (index == -1) {
       throw StateError('No habit found with id $id');
     }
+    final now = DateTime.now();
     final updated = habits[index].copyWith(
       dead: true,
-      deadDate: DateTime.now(),
+      deadDate: now,
+      updatedAt: now,
     );
     final nextHabits = [...habits]..[index] = updated;
     await _saveAll(nextHabits);
@@ -197,6 +200,7 @@ class HabitRepository extends ChangeNotifier {
           ? null
           : trimmedDescription,
       createdAt: existing.createdAt,
+      updatedAt: DateTime.now(),
       intensity: intensity,
       frequency: frequency,
       targetPerPeriod: targetPerPeriod,

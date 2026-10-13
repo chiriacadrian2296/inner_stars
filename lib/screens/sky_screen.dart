@@ -106,6 +106,7 @@ import 'star_reader_screen.dart';
 import 'stats_screen.dart';
 import 'ui_sandbox_screen.dart';
 import 'area_icon_lab_screen.dart';
+import 'fab_icon_lab_screen.dart';
 import '../widgets/galaxy_exit_guard.dart';
 import 'visions_screen.dart';
 import 'vision_editor_screen.dart';
@@ -1887,6 +1888,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         .push(MaterialPageRoute(builder: (_) => const UiSandboxScreen()));
   }
 
+  void _openFabIconLab() {
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const FabIconLabScreen()));
+  }
+
   void _openAreaIconLab() {
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => const AreaIconLabScreen()));
@@ -1967,6 +1973,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
               onMetaphor: _openMetaphor,
               onMoonLab: _openUiSandbox,
               onAreaIconLab: _openAreaIconLab,
+              onFabIconLab: _openFabIconLab,
               detailed: true,
               scrollController: scrollController,
               physics: physics,
@@ -3498,6 +3505,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
           onMetaphor: _openMetaphor,
           onMoonLab: _openUiSandbox,
           onAreaIconLab: _openAreaIconLab,
+          onFabIconLab: _openFabIconLab,
         ),
         // Its own [Overlay]: the sky tooltip (see [_buildSkyTooltipOverlay])
         // lives in it, below any route pushed on top, so it is still there
