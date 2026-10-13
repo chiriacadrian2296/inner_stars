@@ -3468,12 +3468,13 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
 
     return GalaxyExitGuard(
       consumeBack: () {
-        if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
-          _scaffoldKey.currentState!.closeDrawer();
+        // Any open tooltip closes first.
+        if (_skyTooltipController.isOpen || _quickLookConstellation != null) {
+          _closeSkyTooltip();
           return true;
         }
-        if (_quickLookConstellation != null) {
-          _closeSkyTooltip();
+        if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+          _scaffoldKey.currentState!.closeDrawer();
           return true;
         }
         return false;

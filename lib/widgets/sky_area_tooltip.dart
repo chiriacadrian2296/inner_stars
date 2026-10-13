@@ -1,3 +1,4 @@
+import '../utils/area_section_icons.dart';
 import '../utils/entity_insights.dart';
 
 import 'package:flutter/material.dart';
@@ -64,19 +65,19 @@ class SkyAreaTooltip extends StatelessWidget {
           isNew: true,
         ),
         SearchCardAction(
-          icon: Icons.edit_outlined,
+          icon: kAreaVisionIcon,
           label: strings.visionPageTitle,
           onTap: onVision,
           group: 1,
         ),
         SearchCardAction(
-          icon: Icons.photo_library_outlined,
+          icon: kAreaMoodboardIcon,
           label: strings.moodboardTitle,
           onTap: onMoodboard,
           group: 1,
         ),
         SearchCardAction(
-          icon: Icons.auto_stories_outlined,
+          icon: kAreaReflectionsIcon,
           label: strings.areaQuickLookReflectionsAction,
           onTap: onReflections,
           group: 1,

@@ -12,6 +12,17 @@ import '../utils/entity_insights.dart';
 import 'entity_insight_content.dart';
 import 'entity_insights_scope.dart';
 
+/// The two categories of card with a flip button. Each uses one button for
+/// both faces; the styles may diverge between categories.
+enum FlipButtonStyle {
+  /// Sky grid cards: a small round button, scaled with the card.
+  grid,
+
+  /// Galaxy tooltips: half of the card's right edge, matching the drawer
+  /// toggle below it.
+  tooltip,
+}
+
 /// Presentation only: the repositories and summary never run in animation frames.
 class EntityFlipCard extends StatelessWidget {
   const EntityFlipCard({
@@ -43,110 +54,118 @@ class EntityFlipCard extends StatelessWidget {
     final controller = EntityInsightsScope.maybeOf(context);
     if (controller == null) return front;
     final data = controller.read(entity);
-    return LayoutBuilder(
-      builder: (context, constraints) => _build(
-        context,
-        data,
-        buttonStyle == FlipButtonStyle.grid
-            ? (constraints.maxWidth / _gridReferenceWidth).clamp(0.4, 4.0)
-            : 1.0,
-      ),
-    );
-  }
-
-  Widget _build(BuildContext context, EntityInsights data, double scale) {
     final grid = buttonStyle == FlipButtonStyle.grid;
-    Widget back = Stack(
-      fit: StackFit.expand,
-      children: [
-        // A tap or a hold anywhere on the card (not on a button) turns it
-        // back face up.
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onFlip,
-          onLongPress: onFlip,
-          child: _InsightBack(
-            data: data,
-            styled: buttonStyle == FlipButtonStyle.grid,
-          ),
-        ),
-        _FlipButton(
-          style: buttonStyle,
-          bodyHeight: holdHeight,
-          tooltip: context.strings.insightReturn,
-          onTap: onFlip,
-        ),
-      ],
-    );
-    // Grid cards lay the back out at the reference tile width and scale it,
-    // like the front, so it follows the grid size.
-    if (grid) back = _ScaledFill(scale: scale, child: back);
-    final frontFace = GestureDetector(
-      onLongPressStart: (details) {
-        if (holdHeight == null || details.localPosition.dy < holdHeight!) {
-          onFlip();
-        }
-      },
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          front,
-          _FlipButton(
-            style: buttonStyle,
-            bodyHeight: holdHeight,
-            scale: scale,
-            tooltip: context.strings.insightFlip,
-            onTap: onFlip,
-          ),
-        ],
-      ),
-    );
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(end: flipped ? 1 : 0),
-        duration: MediaQuery.disableAnimationsOf(context)
-            ? Duration.zero
-            : const Duration(milliseconds: 360),
-        curve: Curves.easeInOutCubic,
-        builder: (context, value, _) {
-          final showBack = value >= 0.5;
-          final angle = math.pi * value - (showBack ? math.pi : 0);
-          final transform = Matrix4.identity()..setEntry(3, 2, 0.001);
-          if (axis == Axis.vertical) {
-            transform.rotateY(angle);
-          } else {
-            transform.rotateX(angle);
-          }
-          return Transform(
-            alignment: Alignment.center,
-            transform: transform,
-            child: IgnorePointer(
-              ignoring: value > 0 && value < 1,
-              child: showBack ? back : frontFace,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Grid cards are drawn at the reference tile width and scaled, like
+        // their front, so the flip button and the back follow the grid size.
+        final scale = grid
+            ? (constraints.maxWidth / _gridReferenceWidth).clamp(0.4, 4.0)
+            : 1.0;
+        Widget back = Stack(
+          fit: StackFit.expand,
+          children: [
+            // A tap or a hold anywhere on the card (not on a button) turns it
+            // back face up.
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onFlip,
+              onLongPress: onFlip,
+              child: _InsightBack(data: data, grid: grid),
             ),
-          );
-        },
-      ),
+            _FlipButton(
+              style: buttonStyle,
+              bodyHeight: holdHeight,
+              tooltip: context.strings.insightReturn,
+              onTap: onFlip,
+            ),
+          ],
+        );
+        if (grid) back = _ScaledFill(scale: scale, child: back);
+        final frontFace = GestureDetector(
+          onLongPressStart: (details) {
+            if (holdHeight == null || details.localPosition.dy < holdHeight!) {
+              onFlip();
+            }
+          },
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              front,
+              _FlipButton(
+                style: buttonStyle,
+                bodyHeight: holdHeight,
+                scale: scale,
+                tooltip: context.strings.insightFlip,
+                onTap: onFlip,
+              ),
+            ],
+          ),
+        );
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(end: flipped ? 1 : 0),
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 360),
+            curve: Curves.easeInOutCubic,
+            builder: (context, value, _) {
+              final showBack = value >= 0.5;
+              final angle = math.pi * value - (showBack ? math.pi : 0);
+              final transform = Matrix4.identity()..setEntry(3, 2, 0.001);
+              if (axis == Axis.vertical) {
+                transform.rotateY(angle);
+              } else {
+                transform.rotateX(angle);
+              }
+              return Transform(
+                alignment: Alignment.center,
+                transform: transform,
+                child: IgnorePointer(
+                  ignoring: value > 0 && value < 1,
+                  child: showBack ? back : frontFace,
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
 
 class _InsightBack extends StatelessWidget {
-  const _InsightBack({required this.data, required this.styled});
+  const _InsightBack({required this.data, required this.grid});
   final EntityInsights data;
 
-  /// Grid cards: the bottom actions match the flip button's style.
-  final bool styled;
+  /// Grid cards: padded like the card face, with small round actions grouped
+  /// at the bottom. Tooltips spread plain actions across the row.
+  final bool grid;
+
   @override
-  Widget build(BuildContext context) => Material(
-    color: context.colors.nightPanel,
-    child: LayoutBuilder(
-      builder: (context, constraints) {
-        return Padding(
-          // Grid cards use the same 12 all round as the card face.
-          padding: styled
-              ? const EdgeInsets.fromLTRB(12, 0, 12, 12)
+  Widget build(BuildContext context) {
+    final strings = context.strings;
+    final colors = context.colors;
+    final actions = [
+      (
+        icon: Icons.bar_chart,
+        label: strings.statsTitle,
+        onTap: () => openEntityStatistics(context, data.entity),
+      ),
+      if (data.entity.aggregate)
+        (
+          icon: Icons.checklist_rounded,
+          label: strings.manageHabits,
+          onTap: () => openTodayHabits(context, data.entity),
+        ),
+    ];
+    return Material(
+      color: colors.nightPanel,
+      child: LayoutBuilder(
+        builder: (context, constraints) => Padding(
+          padding: grid
+              ? const EdgeInsets.fromLTRB(12, 0, 12, 8)
               : const EdgeInsets.symmetric(horizontal: 6),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -166,7 +185,7 @@ class _InsightBack extends StatelessWidget {
                             fontSize: 12,
                             height: 1,
                             fontWeight: FontWeight.bold,
-                            color: context.colors.text,
+                            color: colors.text,
                           ),
                         ),
                       ),
@@ -181,61 +200,55 @@ class _InsightBack extends StatelessWidget {
                   child: EntityInsightMetrics(data: data, compact: true),
                 ),
               ),
+              // As much space above the buttons as below them.
+              if (grid) const SizedBox(height: 8),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _wrap(
-                    styled,
-                    _BackAction(
-                      styled: styled,
-                      icon: Icons.bar_chart,
-                      label: context.strings.statsTitle,
-                      showLabel: constraints.maxWidth > 300,
-                      onTap: () => openEntityStatistics(context, data.entity),
-                    ),
-                  ),
-                  if (data.entity.aggregate) ...[
-                    if (styled) const SizedBox(width: 8),
-                    _wrap(
-                      styled,
-                      _BackAction(
-                        styled: styled,
-                        icon: Icons.checklist_rounded,
-                        label: context.strings.manageHabits,
-                        showLabel: constraints.maxWidth > 300,
-                        onTap: () => openTodayHabits(context, data.entity),
+                  for (var i = 0; i < actions.length; i++) ...[
+                    if (grid && i > 0) const SizedBox(width: 8),
+                    if (grid)
+                      _RoundAction(
+                        icon: actions[i].icon,
+                        label: actions[i].label,
+                        onTap: actions[i].onTap,
+                      )
+                    else
+                      Expanded(
+                        child: _PlainAction(
+                          icon: actions[i].icon,
+                          label: actions[i].label,
+                          onTap: actions[i].onTap,
+                          showLabel: constraints.maxWidth > 300,
+                        ),
                       ),
-                    ),
                   ],
                 ],
               ),
             ],
           ),
-        );
-      },
-    ),
-  );
+        ),
+      ),
+    );
+  }
 }
 
-class _BackAction extends StatelessWidget {
-  const _BackAction({
+/// A grid card's action: round and icon only (the label is the tooltip), the
+/// size of the flip button.
+class _RoundAction extends StatelessWidget {
+  const _RoundAction({
     required this.icon,
     required this.label,
     required this.onTap,
-    required this.showLabel,
-    this.styled = false,
   });
-  final bool styled;
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final bool showLabel;
+
   @override
   Widget build(BuildContext context) {
-    if (!styled) return _plain(context);
     final colors = context.colors;
-    // Round, icon only (the label is the tooltip), like the flip button.
     return Tooltip(
       message: label,
       child: Material(
@@ -247,16 +260,31 @@ class _BackAction extends StatelessWidget {
           customBorder: const CircleBorder(),
           onTap: onTap,
           child: SizedBox(
-            width: 30,
-            height: 30,
-            child: Icon(icon, size: 18, color: colors.muted),
+            width: 24,
+            height: 24,
+            child: Icon(icon, size: 14, color: colors.muted),
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _plain(BuildContext context) => showLabel
+/// A tooltip card's action: a text button, or just its icon when narrow.
+class _PlainAction extends StatelessWidget {
+  const _PlainAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    required this.showLabel,
+  });
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool showLabel;
+
+  @override
+  Widget build(BuildContext context) => showLabel
       ? TextButton.icon(
           onPressed: onTap,
           icon: Icon(icon, size: 18),
@@ -271,17 +299,7 @@ class _BackAction extends StatelessWidget {
         );
 }
 
-/// The two categories of card with a flip button. Each uses one button for
-/// both faces; the styles may diverge between categories.
-enum FlipButtonStyle {
-  /// Sky grid cards: a round gold button with a navy glyph.
-  grid,
-
-  /// Galaxy tooltips: half of the card's right edge, matching the drawer
-  /// toggle below it.
-  tooltip,
-}
-
+/// The flip button, shared by both faces of a card.
 class _FlipButton extends StatelessWidget {
   const _FlipButton({
     this.scale = 1,
@@ -302,70 +320,49 @@ class _FlipButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    switch (style) {
-      case FlipButtonStyle.grid:
-        return Positioned(
-          top: 8 * scale,
-          right: 8 * scale,
-          child: Tooltip(
-            message: tooltip,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onTap,
-              child: Container(
-                width: 28 * scale,
-                height: 28 * scale,
-                decoration: BoxDecoration(
-                  color: colors.night,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: colors.nightBorder,
-                    width: kBorderWidth,
-                  ),
-                ),
-                child: Icon(Icons.flip, size: 16 * scale, color: colors.muted),
-              ),
-            ),
-          ),
-        );
-      case FlipButtonStyle.tooltip:
-        // A 28 circle (like the grid's) in the top-right of the card's upper
-        // half, mirroring the drawer toggle in the lower half. The whole
-        // half-height strip is its tap zone.
-        final zone = (bodyHeight ?? 110) / 2;
-        return Positioned(
-          top: 0,
-          right: 0,
-          width: 48,
-          height: zone,
-          child: Tooltip(
-            message: tooltip,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onTap,
-              child: Align(
-                alignment: Alignment.topRight,
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: colors.night,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: colors.nightBorder,
-                        width: kBorderWidth,
-                      ),
-                    ),
-                    child: Icon(Icons.flip, size: 16, color: colors.muted),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
+    Widget circle(double size, double iconSize) => Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: colors.night,
+        shape: BoxShape.circle,
+        border: Border.all(color: colors.nightBorder, width: kBorderWidth),
+      ),
+      child: Icon(Icons.flip, size: iconSize, color: colors.muted),
+    );
+    Widget tappable(Widget child) => Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: child,
+      ),
+    );
+    if (style == FlipButtonStyle.grid) {
+      return Positioned(
+        top: 8 * scale,
+        right: 8 * scale,
+        child: tappable(circle(24 * scale, 14 * scale)),
+      );
     }
+    // A 28 circle in the top-right of the card's upper half, mirroring the
+    // drawer toggle in the lower half. The whole half-height strip is its
+    // tap zone.
+    return Positioned(
+      top: 0,
+      right: 0,
+      width: 48,
+      height: (bodyHeight ?? 110) / 2,
+      child: tappable(
+        Align(
+          alignment: Alignment.topRight,
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: circle(28, 16),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -419,11 +416,6 @@ class _BarScrollState extends State<_BarScroll> {
     );
   }
 }
-
-/// Grid cards keep their bottom buttons close together; tooltips spread them
-/// across the row.
-Widget _wrap(bool styled, Widget child) =>
-    styled ? child : Expanded(child: child);
 
 /// Width of a grid tile on the layout the back was tuned on (the Large size,
 /// two cards a row on a phone): the back is drawn at this width and scaled.

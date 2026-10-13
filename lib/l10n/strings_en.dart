@@ -1309,7 +1309,7 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get selectAProject => 'Select a project';
   @override
-  String get selectASupernova => 'Select a area';
+  String get selectASupernova => 'Select an area';
   @override
   String get dateLabel => 'Date';
   @override

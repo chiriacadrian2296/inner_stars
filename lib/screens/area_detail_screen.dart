@@ -1,3 +1,4 @@
+import '../utils/area_section_icons.dart';
 import '../utils/entity_insights.dart';
 import '../widgets/entity_insights_scope.dart';
 import '../widgets/grouped_action_layout.dart';
@@ -102,8 +103,8 @@ class AreaReflectionsScreen extends StatelessWidget {
                 StaggeredEntrance(
                   index: 0,
                   child: AreaSectionHeader(
-                    title:
-                        '${strings.areaReflectionsTitle} - ${area.displayName(strings)}',
+                    title: area.displayName(strings),
+                    icon: kAreaReflectionsIcon,
                     description: strings.reflectionsPageDescription,
                   ),
                 ),
@@ -298,6 +299,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                             replayKey: area,
                                             reverse: _contentReverse,
                                             title: strings.areaCoverVisionTitle,
+                                            icon: kAreaVisionIcon,
                                             preview: VisionMarkdown(
                                               data: vision.trim().isEmpty
                                                   ? area.visionPlaceholder(
@@ -340,6 +342,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                             staggerPreview: false,
                                             showWatermark: false,
                                             title: strings.moodboardTitle,
+                                            icon: kAreaMoodboardIcon,
                                             preview:
                                                 FutureBuilder<
                                                   MoodboardRepository
@@ -389,6 +392,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                             replayKey: area,
                                             reverse: _contentReverse,
                                             title: strings.areaReflectionsTitle,
+                                            icon: kAreaReflectionsIcon,
                                             preview: Column(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
@@ -633,17 +637,17 @@ class _AreaDock extends StatelessWidget {
         isNew: true,
       ),
       _AreaDockAction(
-        icon: Icons.edit_outlined,
+        icon: kAreaVisionIcon,
         label: context.strings.visionPageTitle,
         onTap: onVision,
       ),
       _AreaDockAction(
-        icon: Icons.photo_library_outlined,
+        icon: kAreaMoodboardIcon,
         label: context.strings.moodboardTitle,
         onTap: onMoodboard,
       ),
       _AreaDockAction(
-        icon: Icons.auto_stories_outlined,
+        icon: kAreaReflectionsIcon,
         label: context.strings.areaQuickLookReflectionsAction,
         onTap: onReflections,
       ),
@@ -753,6 +757,7 @@ class _AreaSection extends StatelessWidget {
     required this.replayKey,
     required this.reverse,
     required this.title,
+    this.icon,
     required this.preview,
     required this.action,
     this.staggerPreview = true,
@@ -772,6 +777,7 @@ class _AreaSection extends StatelessWidget {
   final bool staggerPreview;
   final bool showWatermark;
   final String title;
+  final IconData? icon;
   final Widget preview;
   final Widget action;
   @override
@@ -788,8 +794,24 @@ class _AreaSection extends StatelessWidget {
           // A one-line title is short, so the default 6% rise is a couple of
           // pixels; this makes it actually visible.
           drift: 0.5,
-          child: Text(
-            title,
+          child: Text.rich(
+            TextSpan(
+              children: [
+                if (icon != null) ...[
+                  // As tall as the text beside it.
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.middle,
+                    child: Icon(
+                      icon,
+                      size: 30,
+                      color: context.colors.text,
+                    ),
+                  ),
+                  const WidgetSpan(child: SizedBox(width: 14)),
+                ],
+                TextSpan(text: title),
+              ],
+            ),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: kFontBranding,

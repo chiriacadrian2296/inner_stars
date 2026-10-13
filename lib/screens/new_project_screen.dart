@@ -994,8 +994,8 @@ class _ShapePickerSwitch extends StatelessWidget {
                   message: label[value]!,
                   child: Icon(
                     value == _ShapePickerTab.library
-                        ? Icons.grid_view_rounded
-                        : Icons.draw_outlined,
+                        ? Icons.grid_view_outlined
+                        : Icons.dashboard_customize_outlined,
                     size: 20,
                     color: value == current ? colors.night : colors.muted,
                   ),

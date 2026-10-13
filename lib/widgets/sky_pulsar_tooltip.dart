@@ -1,3 +1,4 @@
+import 'eyebrow_icon_row.dart';
 import '../utils/entity_insights.dart';
 import '../models/display_text.dart';
 
@@ -65,6 +66,7 @@ class SkyPulsarTooltip extends StatelessWidget {
             ? starKindColor(StarKind.dead, context.colors)
             : starKindColor(StarKind.pulsar, context.colors, lit: isLit),
         archivedOriginalKind: habit.dead ? StarKind.pulsar : null,
+        eyebrowIcon: EyebrowIconRow.iconFor(habit.iconSlug, StarKind.pulsar),
         title: habit.displayTitle,
         breadcrumb: project == null
             ? null

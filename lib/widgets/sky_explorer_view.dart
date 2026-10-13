@@ -1,3 +1,4 @@
+import '../utils/area_section_icons.dart';
 import '../utils/entity_insights.dart';
 import 'entity_flip_card.dart';
 import 'entity_insights_scope.dart';
@@ -2442,19 +2443,19 @@ class _AreaCard extends StatelessWidget {
           onTap: onNewConstellation,
         ),
         SearchCardAction(
-          icon: Icons.edit_outlined,
+          icon: kAreaVisionIcon,
           label: 'Vision',
           onTap: onVision,
           group: 1,
         ),
         SearchCardAction(
-          icon: Icons.photo_library_outlined,
+          icon: kAreaMoodboardIcon,
           label: 'Moodboard',
           onTap: onMoodboard,
           group: 1,
         ),
         SearchCardAction(
-          icon: Icons.auto_stories_outlined,
+          icon: kAreaReflectionsIcon,
           label: 'Riflessioni',
           onTap: onReflections,
           group: 1,

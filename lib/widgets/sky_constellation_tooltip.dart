@@ -1,3 +1,4 @@
+import '../utils/icon_for_slug.dart';
 import '../utils/entity_insights.dart';
 import '../models/display_text.dart';
 
@@ -58,6 +59,7 @@ class SkyConstellationTooltip extends StatelessWidget {
       ),
       content: SearchCardTextContent(
         eyebrow: strings.galaxyProjectLabel,
+        eyebrowIcon: iconForSlug(project.iconSlug),
         eyebrowColor: context.colors.gold,
         title: project.displayName,
         breadcrumb: project.area.displayName(strings),

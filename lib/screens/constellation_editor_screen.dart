@@ -834,7 +834,7 @@ class _StarsShapeEditorScreenState extends State<StarsShapeEditorScreen> {
                       child: widget.onOpenLibrary == null
                           ? const SizedBox(width: _EditorRoundButton.size)
                           : _EditorRoundButton(
-                              icon: Icons.grid_view_rounded,
+                              icon: Icons.space_dashboard_outlined,
                               tooltip: strings.shapesLibraryButtonLabel,
                               onTap: _openLibrary,
                             ),

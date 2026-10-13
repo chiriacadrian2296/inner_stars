@@ -1,3 +1,5 @@
+import '../utils/area_section_icons.dart';
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -302,8 +304,8 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                     child: AreaSectionHeader(
-                      title:
-                          '${strings.visionPageTitle} - ${widget.area.displayName(strings)}',
+                      title: widget.area.displayName(strings),
+                      icon: kAreaVisionIcon,
                       description: strings.visionPageDescription,
                     ),
                   ),

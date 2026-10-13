@@ -1,3 +1,4 @@
+import 'eyebrow_icon_row.dart';
 import '../utils/entity_insights.dart';
 import '../models/display_text.dart';
 
@@ -84,6 +85,7 @@ class SkyStarTooltip extends StatelessWidget {
       content: SearchCardTextContent(
         eyebrow: kind.galaxyLabel(strings),
         archivedOriginalKind: star.dead ? star.originalKind : null,
+        eyebrowIcon: EyebrowIconRow.iconFor(star.iconSlug, kind),
         eyebrowColor: starKindColor(kind, context.colors),
         title: star.displayTitle,
         breadcrumb: project == null

@@ -1,3 +1,5 @@
+import 'eyebrow_icon_row.dart';
+
 import 'package:flutter/material.dart';
 
 import 'icon_with_new_badge.dart';
@@ -310,6 +312,7 @@ class SearchCardTextContent extends StatelessWidget {
     this.badges,
     this.eyebrow,
     this.eyebrowColor,
+    this.eyebrowIcon,
     this.archivedOriginalKind,
     this.breadcrumb,
     this.description,
@@ -318,6 +321,9 @@ class SearchCardTextContent extends StatelessWidget {
 
   final String? eyebrow;
   final Color? eyebrowColor;
+
+  /// The element's own icon, shown in gold after the label (" - icon").
+  final IconData? eyebrowIcon;
   final StarKind? archivedOriginalKind;
   final String title;
   final String? breadcrumb;
@@ -348,19 +354,29 @@ class SearchCardTextContent extends StatelessWidget {
           ),
           const SizedBox(height: 3),
         ] else if (eyebrow != null) ...[
-          StarTypeText(
-            eyebrow!.toUpperCase(),
-            originalKind: archivedOriginalKind,
-            compact: true,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 9.5,
-              letterSpacing: 0.7,
-              fontWeight: FontWeight.w700,
-              color: eyebrowColor ?? colors.accentDim,
-            ),
-          ),
+          () {
+            final label = StarTypeText(
+              eyebrow!.toUpperCase(),
+              originalKind: archivedOriginalKind,
+              compact: true,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 9.5,
+                letterSpacing: 0.7,
+                fontWeight: FontWeight.w700,
+                color: eyebrowColor ?? colors.accentDim,
+              ),
+            );
+            // An archived element already ends in its original type's icon.
+            return eyebrowIcon == null || archivedOriginalKind != null
+                ? label
+                : EyebrowIconRow(
+                    label: label,
+                    icon: eyebrowIcon!,
+                    color: eyebrowColor ?? colors.accentDim,
+                  );
+          }(),
           const SizedBox(height: 3),
         ],
         Text(
@@ -740,16 +756,24 @@ class _SearchQuickMenuToggle extends StatelessWidget {
                 width: kBorderWidth,
               ),
             ),
-            child: AnimatedRotation(
-              turns: isOpen ? 0.5 : 0,
-              duration: motionDuration(context, kMotionBase),
-              curve: kMotionEnter,
-              child: Icon(
-                Icons.more_vert_rounded,
-                size: 18,
-                color: isOpen ? colors.night : colors.muted,
-              ),
-            ),
+            // Tooltips: a chevron that follows the drawer; elsewhere the
+            // dots turn over.
+            child: round
+                ? Icon(
+                    isOpen ? Icons.expand_less : Icons.expand_more,
+                    size: 24,
+                    color: isOpen ? colors.night : colors.muted,
+                  )
+                : AnimatedRotation(
+                    turns: isOpen ? 0.5 : 0,
+                    duration: motionDuration(context, kMotionBase),
+                    curve: kMotionEnter,
+                    child: Icon(
+                      Icons.more_vert_rounded,
+                      size: 18,
+                      color: isOpen ? colors.night : colors.muted,
+                    ),
+                  ),
           ),
         ),
       ),

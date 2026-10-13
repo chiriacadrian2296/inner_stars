@@ -1,3 +1,5 @@
+import '../utils/area_section_icons.dart';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -309,8 +311,8 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                           StaggeredEntrance(
                             index: 0,
                             child: AreaSectionHeader(
-                              title:
-                                  '${strings.moodboardTitle} - ${widget.area.displayName(strings)}',
+                              title: widget.area.displayName(strings),
+                              icon: kAreaMoodboardIcon,
                               description: strings.moodboardPageDescription,
                             ),
                           ),

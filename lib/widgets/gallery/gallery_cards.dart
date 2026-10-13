@@ -11,9 +11,11 @@ import '../../models/star_kind.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_fonts.dart';
 import '../../utils/area_hero_art.dart';
+import '../../utils/icon_for_slug.dart';
 import '../../utils/area_hero_art_tone.dart';
 import '../../utils/star_card_info.dart';
 import '../badge_rows.dart';
+import '../eyebrow_icon_row.dart';
 import '../constellation_painter.dart' show ConstellationStar;
 import '../photo_image.dart';
 import '../star_glyph.dart';
@@ -200,19 +202,31 @@ class GalleryStarTile extends StatelessWidget {
                       ),
                       SizedBox(height: 4 * u),
                     ],
-                    StarTypeText(
-                      kind.label(strings).toUpperCase(),
-                      compact: true,
-                      originalKind: kind == StarKind.dead
-                          ? data.star?.originalKind ?? StarKind.pulsar
-                          : null,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 9.5 * u,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2,
+                    _withItemIcon(
+                      u: u,
+                      color: color,
+                      // An archived element already ends in its original
+                      // type's icon.
+                      icon: kind == StarKind.dead
+                          ? null
+                          : EyebrowIconRow.iconFor(
+                              data.star?.iconSlug ?? data.habit?.iconSlug ?? '',
+                              kind,
+                            ),
+                      label: StarTypeText(
+                        kind.label(strings).toUpperCase(),
+                        compact: true,
+                        originalKind: kind == StarKind.dead
+                            ? data.star?.originalKind ?? StarKind.pulsar
+                            : null,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 9.5 * u,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.2,
+                        ),
                       ),
                     ),
                     SizedBox(height: 4 * u),
@@ -351,15 +365,20 @@ class GalleryProjectTile extends StatelessWidget {
                   ),
                   SizedBox(height: 4 * u),
                 ],
-                Text(
-                  strings.projectLabel.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: colors.gold,
-                    fontSize: 9.5 * u,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
+                _withItemIcon(
+                  u: u,
+                  color: colors.gold,
+                  icon: iconForSlug(data.project.iconSlug),
+                  label: Text(
+                    strings.projectLabel.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: colors.gold,
+                      fontSize: 9.5 * u,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                    ),
                   ),
                 ),
                 SizedBox(height: 4 * u),
@@ -616,3 +635,20 @@ class GalleryAreaTile extends StatelessWidget {
     );
   }
 }
+
+/// A tile's type label with the element's own icon after it (" - icon"),
+/// sized to the tile; the label alone when there is no [icon].
+Widget _withItemIcon({
+  required double u,
+  required Color color,
+  required Widget label,
+  required IconData? icon,
+}) => icon == null
+    ? label
+    : EyebrowIconRow(
+        label: label,
+        icon: icon,
+        color: color,
+        fontSize: 9.5 * u,
+        scale: u,
+      );
