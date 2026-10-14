@@ -4,7 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../l10n/strings_scope.dart';
-import '../screens/entity_stats_screen.dart';
+import '../screens/light_screen.dart' show openEntityStatistics;
 import '../screens/today_habits_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
@@ -140,7 +140,7 @@ class _InsightBack extends StatelessWidget {
   final EntityInsights data;
 
   /// Grid cards: padded like the card face, with small round actions grouped
-  /// at the bottom. Tooltips spread plain actions across the row.
+  /// at the bottom. Tooltips use labelled pills with the flip button's colours.
   final bool grid;
 
   @override
@@ -166,7 +166,7 @@ class _InsightBack extends StatelessWidget {
         builder: (context, constraints) => Padding(
           padding: grid
               ? const EdgeInsets.fromLTRB(12, 0, 12, 8)
-              : const EdgeInsets.symmetric(horizontal: 6),
+              : const EdgeInsets.fromLTRB(12, 0, 12, 6),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -182,7 +182,7 @@ class _InsightBack extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: grid ? 12 : 13,
                             height: 1,
                             fontWeight: FontWeight.bold,
                             color: colors.text,
@@ -197,7 +197,11 @@ class _InsightBack extends StatelessWidget {
               ),
               Expanded(
                 child: _BarScroll(
-                  child: EntityInsightMetrics(data: data, compact: true),
+                  child: EntityInsightMetrics(
+                    data: data,
+                    compact: true,
+                    tooltip: !grid,
+                  ),
                 ),
               ),
               // As much space above the buttons as below them.
@@ -207,7 +211,7 @@ class _InsightBack extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   for (var i = 0; i < actions.length; i++) ...[
-                    if (grid && i > 0) const SizedBox(width: 8),
+                    if (i > 0) const SizedBox(width: 8),
                     if (grid)
                       _RoundAction(
                         icon: actions[i].icon,
@@ -216,11 +220,10 @@ class _InsightBack extends StatelessWidget {
                       )
                     else
                       Expanded(
-                        child: _PlainAction(
+                        child: _TooltipAction(
                           icon: actions[i].icon,
                           label: actions[i].label,
                           onTap: actions[i].onTap,
-                          showLabel: constraints.maxWidth > 300,
                         ),
                       ),
                   ],
@@ -270,33 +273,38 @@ class _RoundAction extends StatelessWidget {
   }
 }
 
-/// A tooltip card's action: a text button, or just its icon when narrow.
-class _PlainAction extends StatelessWidget {
-  const _PlainAction({
+/// A labelled counterpart to the tooltip's round flip button.
+class _TooltipAction extends StatelessWidget {
+  const _TooltipAction({
     required this.icon,
     required this.label,
     required this.onTap,
-    required this.showLabel,
   });
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final bool showLabel;
 
   @override
-  Widget build(BuildContext context) => showLabel
-      ? TextButton.icon(
-          onPressed: onTap,
-          icon: Icon(icon, size: 18),
-          label: Text(label, style: const TextStyle(fontSize: 11)),
-        )
-      : IconButton(
-          tooltip: label,
-          constraints: const BoxConstraints(minHeight: 40),
-          padding: EdgeInsets.zero,
-          onPressed: onTap,
-          icon: Icon(icon, size: 20),
-        );
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return TextButton.icon(
+      onPressed: onTap,
+      style: TextButton.styleFrom(
+        foregroundColor: colors.muted,
+        backgroundColor: colors.night,
+        side: BorderSide(color: colors.nightBorder, width: kBorderWidth),
+        shape: const StadiumBorder(),
+        minimumSize: const Size(0, 32),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      ),
+      icon: Icon(icon, size: 14),
+      label: Text(
+        label,
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 11),
+      ),
+    );
+  }
 }
 
 /// The flip button, shared by both faces of a card.
@@ -417,6 +425,8 @@ class _BarScrollState extends State<_BarScroll> {
       radius: const Radius.circular(3),
       child: SingleChildScrollView(
         controller: _controller,
+        // Keep the thumb in its own gutter, outside the summary badges.
+        padding: const EdgeInsets.only(right: 9),
         child: widget.child,
       ),
     );

@@ -40,14 +40,12 @@ class GalleryStarData {
   }) : star = star,
        habit = null,
        kind = star.kind,
-       streak = 0,
        pulsarLit = true,
        sortKey = star.achievedDate ?? star.createdAt;
 
   GalleryStarData.fromHabit(
     Habit habit,
     this.project, {
-    required this.streak,
     required this.pulsarLit,
     this.badges = CardBadges.none,
   }) : star = null,
@@ -59,7 +57,6 @@ class GalleryStarData {
   final Habit? habit;
   final Project? project;
   final StarKind kind;
-  final int streak;
   final bool pulsarLit;
   final DateTime sortKey;
 
@@ -143,7 +140,7 @@ class _BottomScrim extends StatelessWidget {
 // -- Star -------------------------------------------------------------------
 
 /// Miniature of the star reader's page: kind icon, kind label, title, the
-/// kind's own data (intensity bolts / target date / streak / dead date) and
+/// kind's own data (intensity bolts / target date / days done / dead date) and
 /// the constellation it belongs to. A lit star's photo fills the tile.
 class GalleryStarTile extends StatelessWidget {
   const GalleryStarTile({super.key, required this.data, this.onTap});
@@ -229,7 +226,7 @@ class GalleryStarTile extends StatelessWidget {
                     SizedBox(height: 4 * u),
                     Text(
                       data.title,
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: colors.text,
@@ -602,7 +599,7 @@ class GalleryAreaTile extends StatelessWidget {
                 SizedBox(height: 4 * u),
                 Text(
                   data.area.displayName(strings),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: colors.text,

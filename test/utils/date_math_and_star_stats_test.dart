@@ -33,15 +33,6 @@ void main() {
   });
 
   group('star_stats streaks across DST', () {
-    test('current streak spans the spring clock change', () {
-      final counts = {
-        for (final d in [28, 29, 30, 31]) DateTime(2026, 3, d): 1,
-      };
-      final range = currentStreakRange(counts, today: DateTime(2026, 3, 31));
-      expect(range.length, 4);
-      expect(range.start, DateTime(2026, 3, 28));
-    });
-
     test('longest streak spans the autumn clock change', () {
       final counts = {
         for (final d in [24, 25, 26]) DateTime(2026, 10, d): 1,

@@ -17,7 +17,7 @@ import 'star_created_at.dart';
 import 'star_extra_badge.dart';
 import 'star_kind_label.dart';
 
-/// A pulsar (a habit) in a flat star list — a streak badge alongside the
+/// A pulsar (a habit) in a flat star list — a days-done badge alongside the
 /// intensity block every burning star carries. [isLit] is the one thing on
 /// this card that changes with the day: it flips the kind label between the
 /// gold and the no-light family, and dims the title, exactly the way the
@@ -26,7 +26,7 @@ class PulsarCard extends StatelessWidget {
   const PulsarCard({
     super.key,
     required this.habit,
-    required this.currentStreak,
+    required this.daysDone,
     required this.isLit,
     this.onTap,
     this.project,
@@ -34,7 +34,7 @@ class PulsarCard extends StatelessWidget {
   });
 
   final Habit habit;
-  final int currentStreak;
+  final int daysDone;
   final bool isLit;
   final VoidCallback? onTap;
   final Project? project;
@@ -110,9 +110,9 @@ class PulsarCard extends StatelessWidget {
                 ],
                 const SizedBox(height: 12),
                 StarExtraBadge(
-                  icon: Icons.local_fire_department,
-                  label: strings.streakBadgeLabel,
-                  value: '$currentStreak',
+                  icon: Icons.event_available_rounded,
+                  label: strings.habitStatsDaysDoneLabel,
+                  value: '$daysDone',
                 ),
                 const SizedBox(height: 14),
                 Center(

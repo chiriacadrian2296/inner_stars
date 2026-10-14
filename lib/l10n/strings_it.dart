@@ -370,55 +370,7 @@ class StringsIt implements AppStrings {
   String get statsTitle => 'Statistiche';
 
   @override
-  String get todayStarSectionLabel => 'Vittoria di Oggi';
-  @override
-  String get litTodayTitle => 'Complimenti, hai registrato una vittoria oggi!';
-  @override
-  String get litTodayTitleHighlight => 'vittoria';
-  @override
-  String get litTodaySubtitle => '- hai portato nuova luce nella tua vita -';
-  @override
-  String get litTodaySubtitleHighlight => 'luce';
-  @override
-  String get notLitTodayLabel => 'Nessuna vittoria registrata oggi, per ora';
-  @override
-  String get notLitTodayHighlight => 'vittoria';
-  @override
-  String get lightStarCta => 'Registra una vittoria';
-  @override
-  String get totalStarsLabel => 'Vittorie Totali';
-  @override
-  String get streaksSectionLabel => 'Serie';
-  @override
-  String get currentStreakLabel => 'Serie Attuale';
-  @override
-  String get longestStreakLabel => 'Serie Record';
-  @override
-  String get activityLabel => 'Attività';
-  @override
-  String get dayDetailEmpty => 'Nessuna vittoria registrata in questo giorno.';
-  @override
-  String get addStarForDayLabel => 'Aggiungi';
-
-  @override
-  String get firstStarLabel => 'Prima Vittoria';
-  @override
-  String get mostRecentStarLabel => 'Vittoria Più Recente';
-  @override
-  String get combinedIntensityLabel => 'Intensità Complessiva';
-  @override
-  String get starsByAreaLabel => 'Per Area';
-  @override
-  String get streakFromLabel => 'Da';
-  @override
-  String get streakToLabel => 'A';
-  @override
   String get todayLabel => 'Oggi';
-  @override
-  String get starsLoggedLabel => 'Vittorie Registrate';
-  @override
-  String get noCurrentStreakBody =>
-      'Nessuna serie in corso al momento. Registra una vittoria oggi per iniziarne una.';
 
   @override
   String get searchHint => 'Cerca aree, progetti e attività';
@@ -515,6 +467,8 @@ class StringsIt implements AppStrings {
   String get dateFieldOccurred => 'Avvenimento';
   @override
   String get clearFilterAction => 'Reset';
+  @override
+  String get backToTopAction => 'Torna in alto';
   @override
   String get clearSearchTooltip => 'Cancella ricerca';
   @override
@@ -1607,8 +1561,6 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get cycleReflectAction => 'Ripensa al Ciclo';
 
   @override
-  String get habitCurrentStreakLabel => 'Serie Attuale';
-  @override
   String get habitCheckAction => 'Spunta';
   @override
   String get habitUncheckAction => 'Togli Spunta';
@@ -1652,42 +1604,15 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
       ? 'Questa settimana · oggi fatto'
       : 'Questa settimana · oggi non ancora';
   @override
-  String get habitStatsSectionTitle => 'Abitudini';
-  @override
-  String get starsStatsSectionTitle => 'Vittorie';
-  @override
   String get habitStatsActiveLabel => 'Attive';
-  @override
-  String get habitStatsDoneTodayLabel => 'Fatte Oggi';
   @override
   String get habitStatsDaysDoneLabel => 'Giorni Fatti';
   @override
   String get habitStatsCyclesLabel => 'Cicli Completati';
   @override
-  String get habitStatsLongestLabel => 'Record Personale';
-  @override
   String get habitStatsTotalLabel => 'Completamenti Totali';
   @override
-  String get habitStatsTrendLabel => 'Ritmo Recente';
-  @override
-  String get habitStatsWeekdaysLabel => 'La Tua Settimana';
-  @override
-  String get habitStatsBestDayLabel => 'Giorno Più Forte';
-  @override
-  String get habitStatsNotEnoughData =>
-      'Serve ancora un po’ di storia per vedere questo ritmo.';
-  @override
-  String get habitStatsArchiveAction => 'Archivio';
-  @override
-  String get habitStatsArchiveTitle => 'Abitudini Archiviate';
-  @override
-  String get habitStatsArchiveEmpty =>
-      'Non ci sono ancora abitudini archiviate.';
-  @override
   String habitStatsDays(int count) => count == 1 ? '1 giorno' : '$count giorni';
-  @override
-  String habitStatsWeeks(int count) =>
-      count == 1 ? '1 settimana' : '$count settimane';
 
   @override
   String activePulsarsBadge(int count) =>
@@ -1748,8 +1673,6 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get targetDateBadgeLabel => 'Obiettivo';
   @override
   String get deadDateBadgeLabel => 'Archiviata';
-  @override
-  String get streakBadgeLabel => 'Serie';
   @override
   String get noPhotoLabel => 'Nessuna Foto';
   @override
@@ -2256,6 +2179,74 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get deleteProjectConfirmBody =>
       'Verranno eliminati definitivamente attività, abitudini, completamenti e foto. Questa azione non può essere annullata.';
+
+  @override
+  String get lightPageTitle => 'La Tua Luce';
+  @override
+  String get lightScopeAll => 'Tutto';
+  @override
+  String get lightPeriodAllTime => 'Dall’Inizio';
+  @override
+  String get lightPeriodYear => 'Quest’Anno';
+  @override
+  String get lightPeriodMonth => 'Questo Mese';
+  @override
+  String get lightHeadline => 'Guarda quanta luce hai acceso.';
+  @override
+  String get lightHeadlineEmpty => 'Qui prenderà forma la tua luce.';
+  @override
+  String lightCyclesCount(int count) => count == 1 ? '1 Ciclo' : '$count Cicli';
+  @override
+  String lightDaysCount(int count) =>
+      count == 1 ? '1 Giorno Luminoso' : '$count Giorni Luminosi';
+  @override
+  String get lightCurveLabel => 'Intensità Accumulata';
+  @override
+  String get lightCalendarLabel => 'Giorni Luminosi';
+  @override
+  String get lightBreakdownLabel => 'Dove Brilla';
+  @override
+  String get lightMomentsLabel => 'Momenti';
+  @override
+  String get lightSeeAllTimeAction => 'Guarda Dall’Inizio';
+  @override
+  String get lightGoalWaitingBody =>
+      'Questo obiettivo aspetta il suo momento: quando lo raggiungerai, la sua luce comparirà qui.';
+  @override
+  String get lightCurveHint =>
+      'Tocca o trascina sul grafico per vedere la data e il totale.';
+  @override
+  String get momentFirstVictory => 'Prima Vittoria';
+  @override
+  String get momentFirstDay => 'Primo Giorno';
+  @override
+  String get momentBrightestDay => 'Giorno Più Luminoso';
+  @override
+  String get momentLongestRun => 'Giorni Di Fila';
+  @override
+  String get momentFavouriteWeekday => 'Il Giorno In Cui Brilli Di Più';
+  @override
+  String get momentBrightestMonth => 'Mese Più Luminoso';
+  @override
+  String get momentLongestCycle => 'Ciclo Più Lungo';
+  @override
+  List<String> get weekdayNames => const [
+    'Lunedì',
+    'Martedì',
+    'Mercoledì',
+    'Giovedì',
+    'Venerdì',
+    'Sabato',
+    'Domenica',
+  ];
+  @override
+  String todayLightChip(int count) => '$count Oggi';
+  @override
+  String get todayLightChipTooltip => 'Le stelle accese oggi';
+  @override
+  String get todayLightPrevious => 'Precedente';
+  @override
+  String get todayLightNext => 'Successiva';
 }
 
 const _fullMonths = [

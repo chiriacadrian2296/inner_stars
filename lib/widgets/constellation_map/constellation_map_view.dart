@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui' show lerpDouble;
+import 'dart:ui' show ImageFilter, lerpDouble;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -68,6 +68,7 @@ class ConstellationMapView extends StatefulWidget {
     required this.onStarTap,
     this.cardBuilder,
     this.tooltipScale = 0.45,
+    this.autoFrame = false,
   });
 
   final List<ConstellationStar> stars;
@@ -102,6 +103,7 @@ class ConstellationMapView extends StatefulWidget {
   /// 1 renders Galaxy's native tooltip dimensions at the fit zoom. The map
   /// uses a smaller uniform scale while keeping all tooltip geometry intact.
   final double tooltipScale;
+  final bool autoFrame;
 
   @override
   State<ConstellationMapView> createState() => _ConstellationMapViewState();
@@ -139,7 +141,10 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
   /// as "on screen" - about a button's radius plus a little.
   static const _visibleInset = 40.0;
 
-  double get _minZoom => widget.fitScale * _minZoomFactor;
+  double get _minZoom => math.min(
+    widget.fitScale * _minZoomFactor,
+    _overviewZoom ?? double.infinity,
+  );
   double get _maxZoom => widget.fitScale * _maxZoomFactor;
 
   double get _zoom => widget.transformation.value.entry(0, 0);
@@ -172,7 +177,9 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
   Offset _cameraToPan = Offset.zero;
   Offset _lastTapPosition = Offset.zero;
   Offset _lastDoubleTapPosition = Offset.zero;
-  late final Matrix4 _initialTransform;
+  late Matrix4 _initialTransform;
+  bool _overviewFitted = false;
+  double? _overviewZoom;
 
   // Raw pointer state supplements GestureDetector's recognizers: a star tap
   // is only valid for a one-finger interaction from start to finish. A pinch
@@ -360,7 +367,68 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
   /// widest view they are small dots; zooming in enlarges the whole map in
   /// lockstep.
   double _nodeScale(double zoom) {
-    return zoom / widget.fitScale;
+    final ui = zoom / widget.fitScale;
+    var nearest = double.infinity;
+    for (var i = 0; i < widget.stars.length; i++) {
+      for (var j = i + 1; j < widget.stars.length; j++) {
+        final delta = widget.stars[i].position - widget.stars[j].position;
+        final distance =
+            Offset(
+              delta.dx * widget.canvasSize.width,
+              delta.dy * widget.canvasSize.height,
+            ).distance *
+            zoom;
+        if (distance > 0.001) nearest = math.min(nearest, distance);
+      }
+    }
+    // Preserve the shape, but keep discs and their auras clear in dense groups.
+    return ui * math.min(1.0, nearest / (74 * ui));
+  }
+
+  void _frameCompleteMap(_MapGeometry geometry) {
+    if (_overviewFitted ||
+        _tooltipSizes.length < widget.stars.length ||
+        _pendingTooltipSizes.isNotEmpty) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _overviewFitted) return;
+      final viewport = context.size;
+      if (viewport == null || viewport.isEmpty) return;
+      Rect? bounds;
+      void include(Rect rect) =>
+          bounds = bounds == null ? rect : bounds!.expandToInclude(rect);
+      for (final node in geometry.nodes) {
+        include(Rect.fromCircle(center: node.center, radius: node.outer));
+      }
+      for (final placement in geometry.layout.placements.values) {
+        include(placement.rect);
+      }
+      if (bounds == null || bounds!.isEmpty) return;
+      final available = Rect.fromLTRB(
+        16,
+        16,
+        viewport.width - 16,
+        viewport.height - 72,
+      );
+      final ratio = math.min(
+        1.0,
+        math.min(
+          available.width / bounds!.width,
+          available.height / bounds!.height,
+        ),
+      );
+      final zoom = _zoom * ratio;
+      final pan = available.center - bounds!.center * ratio;
+      _overviewFitted = true;
+      _overviewZoom = zoom;
+      _initialTransform = Matrix4.identity()
+        ..translateByDouble(pan.dx, pan.dy, 0, 1)
+        ..scaleByDouble(zoom, zoom, 1, 1);
+      if (widget.autoFrame) {
+        widget.transformation.value = _initialTransform.clone();
+      }
+    });
   }
 
   @override
@@ -749,6 +817,7 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
     final colors = context.colors;
     final ui = _uiScale(zoom);
     final geometry = _ensureGeometry(context, zoom, ui, _nodeScale(zoom));
+    _frameCompleteMap(geometry);
     final translation = Offset(matrix.entry(0, 3), matrix.entry(1, 3));
     _translation = translation;
     final layout = geometry.layout;
@@ -1053,16 +1122,16 @@ class _StarButton extends StatelessWidget {
                 ),
               Center(
                 child: nascent
-                    ? Icon(
-                        kind.icon,
+                    ? _GlowingStarIcon(
+                        icon: kind.icon,
                         size: innerDiameter * 0.5,
-                        color: colors.text.withValues(alpha: 0.5),
+                        color: kindColor,
                       )
                     : Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            kind.icon,
+                          _GlowingStarIcon(
+                            icon: kind.icon,
                             size: innerDiameter * 0.4,
                             color: kindColor,
                           ),
@@ -1086,6 +1155,69 @@ class _StarButton extends StatelessWidget {
 
     return Stack(alignment: Alignment.center, children: [disc]);
   }
+}
+
+/// The glow follows the glyph itself, like the reader's light action, while
+/// the crisp foreground preserves its shape and the size used by the layout.
+class _GlowingStarIcon extends StatelessWidget {
+  const _GlowingStarIcon({
+    required this.icon,
+    required this.size,
+    required this.color,
+  });
+
+  final IconData icon;
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => SizedBox.square(
+    dimension: size,
+    child: Stack(
+      alignment: Alignment.center,
+      clipBehavior: Clip.none,
+      children: [
+        ExcludeSemantics(
+          child: ImageFiltered(
+            imageFilter: ImageFilter.blur(
+              sigmaX: size * 0.22,
+              sigmaY: size * 0.22,
+            ),
+            child: Icon(icon, size: size, color: color.withValues(alpha: 0.65)),
+          ),
+        ),
+        ExcludeSemantics(
+          child: ImageFiltered(
+            imageFilter: ImageFilter.blur(
+              sigmaX: size * 0.09,
+              sigmaY: size * 0.09,
+            ),
+            child: Icon(icon, size: size, color: color.withValues(alpha: 0.8)),
+          ),
+        ),
+        Icon(
+          icon,
+          size: size,
+          color: color,
+          // Sharp offset copies form a thin white contour around the glyph,
+          // above the colored glow and behind the original colored fill.
+          shadows: [
+            for (final direction in const [
+              Offset(1, 0),
+              Offset(-1, 0),
+              Offset(0, 1),
+              Offset(0, -1),
+              Offset(0.707, 0.707),
+              Offset(-0.707, 0.707),
+              Offset(0.707, -0.707),
+              Offset(-0.707, -0.707),
+            ])
+              Shadow(color: Colors.white, offset: direction * size * 0.03),
+          ],
+        ),
+      ],
+    ),
+  );
 }
 
 /// Kept separate from [_StarButton] so the glow can be below every line on

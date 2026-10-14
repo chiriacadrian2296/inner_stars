@@ -259,6 +259,9 @@ buildConstellationRenderStars({
   required List<Habit> habits,
   required ConstellationShape? shape,
   required Map<int, List<HabitCompletion>> completionsByHabit,
+  // When set (only by the Galaxy), stars lit and pulsars checked on this
+  // day are flagged [ConstellationStar.litToday].
+  DateTime? today,
 }) {
   if (shape == null) {
     return (stars: const [], edges: const []);
@@ -294,6 +297,8 @@ buildConstellationRenderStars({
         slotSequence: star.slotSequence,
         intensity: star.intensity,
         photoPath: star.photoPath,
+        litToday:
+            today != null && star.isLit && _sameDay(star.achievedDate!, today),
       ),
     );
   }
@@ -329,6 +334,7 @@ buildConstellationRenderStars({
     final countsByDay = habitCompletionCountsByDay(
       completionsByHabit[habit.id] ?? const <HabitCompletion>[],
     );
+    final pulsarLit = !habit.dead && isHabitLit(habit, countsByDay, now: today);
     renderStars.add(
       ConstellationStar(
         entityId: habit.id,
@@ -337,12 +343,17 @@ buildConstellationRenderStars({
         // star, the same way a deleted star does — see [Habit.dead].
         kind: habit.dead ? StarKind.dead : StarKind.pulsar,
         originalKind: StarKind.pulsar,
-        lit: !habit.dead && isHabitLit(habit, countsByDay),
+        lit: pulsarLit,
         label: habit.displayTitle,
         intensity: habit.intensity,
+        // A pulsar is lit only by a check-in today, so lit is today's light.
+        litToday: today != null && pulsarLit,
       ),
     );
   }
 
   return (stars: renderStars, edges: layout.edges);
 }
+
+bool _sameDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;

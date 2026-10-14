@@ -66,7 +66,7 @@ const uiAuditCatalog = <UiAuditItem>[
     origins: [
       'area_detail_screen.dart',
       'settings_screen.dart',
-      'stats_screen.dart',
+      'light_screen.dart',
       'quick_settings_screen.dart',
     ],
     states: ['single line', 'wrapped', 'compact viewport'],

@@ -11,10 +11,9 @@ import '../theme/app_fonts.dart';
 class AppFooterMark extends StatelessWidget {
   const AppFooterMark({super.key});
 
-  /// How far the floating action button sits from the bottom of the screen
-  /// (see the Sky explorer's `Positioned`): the mark ends at the same height,
-  /// so it lines up with the button.
-  static const double bottomRoom = 20;
+  /// Tuned so the visual unit made by the logo and name shares its vertical
+  /// center with Sky's floating action button at the bottom of the page.
+  static const double bottomRoom = 18;
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +26,7 @@ class AppFooterMark extends StatelessWidget {
         bottomRoom + MediaQuery.paddingOf(context).bottom,
       ),
       child: Column(
+        key: const Key('app-footer-mark-unit'),
         mainAxisSize: MainAxisSize.min,
         children: [
           // The logo's drawing leaves empty margin inside its box (its shapes

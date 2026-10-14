@@ -2,7 +2,7 @@ import '../utils/area_section_icons.dart';
 import '../utils/entity_insights.dart';
 import '../widgets/entity_insights_scope.dart';
 import '../widgets/grouped_action_layout.dart';
-import 'entity_stats_screen.dart';
+import 'light_screen.dart' show openEntityStatistics;
 
 import '../widgets/icon_with_new_badge.dart';
 

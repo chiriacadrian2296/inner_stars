@@ -158,37 +158,9 @@ abstract class AppStrings {
   String get passkeyPlaceholderBody;
   String get socialPlaceholderBody;
 
-  // Statistics tab
+  // Statistics (the label of every "Statistics" button)
   String get statsTitle;
-
-  // Home dashboard
-  String get todayStarSectionLabel;
-  String get litTodayTitle;
-  String get litTodayTitleHighlight;
-  String get litTodaySubtitle;
-  String get litTodaySubtitleHighlight;
-  String get notLitTodayLabel;
-  String get notLitTodayHighlight;
-  String get lightStarCta;
-  String get totalStarsLabel;
-  String get streaksSectionLabel;
-  String get currentStreakLabel;
-  String get longestStreakLabel;
-  String get activityLabel;
-  String get dayDetailEmpty;
-  String get addStarForDayLabel;
-
-  // Stat detail screens (tapping Total Stars / Current Streak / Longest
-  // Streak on the dashboard)
-  String get firstStarLabel;
-  String get mostRecentStarLabel;
-  String get combinedIntensityLabel;
-  String get starsByAreaLabel;
-  String get streakFromLabel;
-  String get streakToLabel;
   String get todayLabel;
-  String get starsLoggedLabel;
-  String get noCurrentStreakBody;
 
   // Area detail (constellations / list view switch)
   String get searchHint;
@@ -500,6 +472,7 @@ abstract class AppStrings {
   String get dateFieldModified;
   String get dateFieldOccurred;
   String get clearFilterAction;
+  String get backToTopAction;
   String get clearSearchTooltip;
   String get sortAction;
   String get sortButtonDefaultLabel;
@@ -842,7 +815,6 @@ abstract class AppStrings {
   String get cycleReflectAction;
 
   // Habit reader
-  String get habitCurrentStreakLabel;
   String get habitCheckAction;
   String get habitUncheckAction;
   String get habitStillToDoLabel;
@@ -868,32 +840,19 @@ abstract class AppStrings {
   /// habit's target is more than 1.
   String habitProgressToday(int done, int target);
 
-  /// "2/3 this week" — a weekly habit's own progress line, shown alongside
-  /// [habitCurrentStreakLabel] rather than instead of it (the day itself is
-  /// still a plain done/not-done toggle; only the week total is a count).
+  /// "2/3 this week" — a weekly habit's own progress line (the day itself
+  /// is still a plain done/not-done toggle; only the week total is a count).
   String habitProgressThisWeek(int done, int target);
 
   /// Caption under a weekly habit's "this week" count: says whether today
   /// is already marked too.
   String habitThisWeekCaption(bool doneToday);
 
-  String get habitStatsSectionTitle;
-  String get starsStatsSectionTitle;
   String get habitStatsActiveLabel;
-  String get habitStatsDoneTodayLabel;
   String get habitStatsDaysDoneLabel;
   String get habitStatsCyclesLabel;
-  String get habitStatsLongestLabel;
   String get habitStatsTotalLabel;
-  String get habitStatsTrendLabel;
-  String get habitStatsWeekdaysLabel;
-  String get habitStatsBestDayLabel;
-  String get habitStatsNotEnoughData;
-  String get habitStatsArchiveAction;
-  String get habitStatsArchiveTitle;
-  String get habitStatsArchiveEmpty;
   String habitStatsDays(int count);
-  String habitStatsWeeks(int count);
 
   // Constellation card badges, alongside the existing star count
   String activePulsarsBadge(int count);
@@ -934,7 +893,6 @@ abstract class AppStrings {
   String get photoBadgeLabel;
   String get targetDateBadgeLabel;
   String get deadDateBadgeLabel;
-  String get streakBadgeLabel;
   String get noPhotoLabel;
   String get noTargetDateLabel;
   String get noDeadDateLabel;
@@ -1233,4 +1191,40 @@ abstract class AppStrings {
   String get undoCompletionAction;
   String get deleteProjectConfirmTitle;
   String get deleteProjectConfirmBody;
+
+  // "Your Light" — the one statistics page, opened on everything from the
+  // Galaxy menu or on one area/constellation/activity from its own page.
+  String get lightPageTitle;
+  String get lightScopeAll;
+  String get lightPeriodAllTime;
+  String get lightPeriodYear;
+  String get lightPeriodMonth;
+  String get lightHeadline;
+  String get lightHeadlineEmpty;
+  String lightCyclesCount(int count);
+  String lightDaysCount(int count);
+  String get lightCurveLabel;
+  String get lightCalendarLabel;
+  String get lightBreakdownLabel;
+  String get lightMomentsLabel;
+  String get lightSeeAllTimeAction;
+  String get lightGoalWaitingBody;
+  String get lightCurveHint;
+  String get momentFirstVictory;
+  String get momentFirstDay;
+  String get momentBrightestDay;
+  String get momentLongestRun;
+  String get momentFavouriteWeekday;
+  String get momentBrightestMonth;
+  String get momentLongestCycle;
+
+  /// 7 full weekday names, Monday first.
+  List<String> get weekdayNames;
+
+  // Galaxy's "today" chip: today's lit stars and checked pulsars, and the
+  // fly-through it starts.
+  String todayLightChip(int count);
+  String get todayLightChipTooltip;
+  String get todayLightPrevious;
+  String get todayLightNext;
 }

@@ -34,7 +34,6 @@ class HabitWeekdayStat {
 class HabitStatsSummary {
   const HabitStatsSummary({
     required this.range,
-    required this.currentStreak,
     required this.longestStreak,
     required this.daysDone,
     required this.totalCompletions,
@@ -45,7 +44,6 @@ class HabitStatsSummary {
   });
 
   final HabitStatsRange range;
-  final int currentStreak;
   final int longestStreak;
 
   /// Distinct days with at least one check-in inside [range] — what was done,
@@ -198,44 +196,6 @@ int habitWeeklyProgress(
   return _weekMetDays(habit, countsByDay, _weekStart(today));
 }
 
-/// Consecutive periods met — days for [HabitFrequency.daily], calendar
-/// weeks for [HabitFrequency.weekly]. A habit not done yet for the current
-/// period (today / this week) keeps the streak it had up to the previous one
-/// until that period ends; it drops to 0 once the previous one was missed too.
-///
-/// Deliberately not a generalization of `star_stats.dart`'s `currentStreak`
-/// (which requires today specifically to have a value) — a habit's own
-/// grace before its deadline needs different anchoring per frequency.
-int habitCurrentStreak(
-  Habit habit,
-  Map<DateTime, int> countsByDay, {
-  DateTime? now,
-}) {
-  final today = dateOnly(now ?? DateTime.now());
-  if (habit.frequency == HabitFrequency.daily) {
-    var day = _dayMet(habit, countsByDay, today) ? today : addDays(today, -1);
-    var streak = 0;
-    while (_dayMet(habit, countsByDay, day)) {
-      streak++;
-      day = addDays(day, -1);
-    }
-    return streak;
-  }
-
-  // A week still in progress only joins the streak once it's actually met
-  // its target.
-  var weekStart = _weekStart(today);
-  if (_weekMetDays(habit, countsByDay, weekStart) < habit.targetPerPeriod) {
-    weekStart = addDays(weekStart, -7);
-  }
-  var streak = 0;
-  while (_weekMetDays(habit, countsByDay, weekStart) >= habit.targetPerPeriod) {
-    streak++;
-    weekStart = addDays(weekStart, -7);
-  }
-  return streak;
-}
-
 DateTime _habitEnd(Habit habit, DateTime now) {
   final today = dateOnly(now);
   if (habit.deadDate == null) return today;
@@ -340,9 +300,6 @@ HabitStatsSummary habitStatsSummary(
 
   return HabitStatsSummary(
     range: range,
-    currentStreak: habit.dead
-        ? 0
-        : habitCurrentStreak(habit, counts, now: effectiveNow),
     longestStreak: habitLongestStreak(habit, counts, now: effectiveNow),
     daysDone: daysDone,
     totalCompletions: completions.where((completion) {

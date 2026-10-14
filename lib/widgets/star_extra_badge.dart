@@ -4,7 +4,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 
 /// The one fact unique to a star's kind — a photo, a target date, a death
-/// date, or a streak — shown centered between the description and the
+/// date, or days done — shown centered between the description and the
 /// intensity/date block, always in the same spot across every card. When
 /// the kind doesn't have one to show (e.g. no photo attached), pass
 /// [dimmed] true with a "no X" [label] instead of omitting the badge
@@ -21,7 +21,7 @@ class StarExtraBadge extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  /// Appended after [label] (e.g. a date or a streak count) — omitted for
+  /// Appended after [label] (e.g. a date or a days-done count) — omitted for
   /// a badge that's just "this is true" (the photo badge has no value of
   /// its own beyond its presence) or when [dimmed].
   final String? value;

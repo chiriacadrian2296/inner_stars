@@ -368,55 +368,7 @@ class StringsEn implements AppStrings {
   String get statsTitle => 'Statistics';
 
   @override
-  String get todayStarSectionLabel => 'Today’s Victory';
-  @override
-  String get litTodayTitle => 'Well done, you recorded a victory today!';
-  @override
-  String get litTodayTitleHighlight => 'victory';
-  @override
-  String get litTodaySubtitle => "- you've brought new light to your life -";
-  @override
-  String get litTodaySubtitleHighlight => 'light';
-  @override
-  String get notLitTodayLabel => 'No victory recorded today yet';
-  @override
-  String get notLitTodayHighlight => 'victory';
-  @override
-  String get lightStarCta => 'Record a victory';
-  @override
-  String get totalStarsLabel => 'Total Victories';
-  @override
-  String get streaksSectionLabel => 'Streaks';
-  @override
-  String get currentStreakLabel => 'Current Streak';
-  @override
-  String get longestStreakLabel => 'Longest Streak';
-  @override
-  String get activityLabel => 'Activity';
-  @override
-  String get dayDetailEmpty => 'No victories recorded on this day.';
-  @override
-  String get addStarForDayLabel => 'Add';
-
-  @override
-  String get firstStarLabel => 'First Victory';
-  @override
-  String get mostRecentStarLabel => 'Most Recent Victory';
-  @override
-  String get combinedIntensityLabel => 'Combined Intensity';
-  @override
-  String get starsByAreaLabel => 'By Area';
-  @override
-  String get streakFromLabel => 'From';
-  @override
-  String get streakToLabel => 'To';
-  @override
   String get todayLabel => 'Today';
-  @override
-  String get starsLoggedLabel => 'Recorded Victories';
-  @override
-  String get noCurrentStreakBody =>
-      'No current streak. Record a victory today to start one.';
 
   @override
   String get searchHint => 'Search areas, projects and activities';
@@ -509,6 +461,8 @@ class StringsEn implements AppStrings {
   String get dateFieldOccurred => 'Occurred';
   @override
   String get clearFilterAction => 'Reset';
+  @override
+  String get backToTopAction => 'Back to top';
   @override
   String get clearSearchTooltip => 'Clear search';
   @override
@@ -1593,8 +1547,6 @@ My contribution meets a real need and is something I can sustain.
   String get cycleReflectAction => 'Reflect on the Cycle';
 
   @override
-  String get habitCurrentStreakLabel => 'Current Streak';
-  @override
   String get habitCheckAction => 'Check';
   @override
   String get habitUncheckAction => 'Uncheck';
@@ -1637,40 +1589,15 @@ My contribution meets a real need and is something I can sustain.
   String habitThisWeekCaption(bool doneToday) =>
       doneToday ? 'This week · today done' : 'This week · not today yet';
   @override
-  String get habitStatsSectionTitle => 'Habits';
-  @override
-  String get starsStatsSectionTitle => 'Victories';
-  @override
   String get habitStatsActiveLabel => 'Active';
-  @override
-  String get habitStatsDoneTodayLabel => 'Done Today';
   @override
   String get habitStatsDaysDoneLabel => 'Days Done';
   @override
   String get habitStatsCyclesLabel => 'Cycles Completed';
   @override
-  String get habitStatsLongestLabel => 'Personal Best';
-  @override
   String get habitStatsTotalLabel => 'Total Completions';
   @override
-  String get habitStatsTrendLabel => 'Recent Rhythm';
-  @override
-  String get habitStatsWeekdaysLabel => 'Your Week';
-  @override
-  String get habitStatsBestDayLabel => 'Strongest Day';
-  @override
-  String get habitStatsNotEnoughData =>
-      'A little more history will reveal this pattern.';
-  @override
-  String get habitStatsArchiveAction => 'Archive';
-  @override
-  String get habitStatsArchiveTitle => 'Archived Habits';
-  @override
-  String get habitStatsArchiveEmpty => 'No archived habits yet.';
-  @override
   String habitStatsDays(int count) => count == 1 ? '1 day' : '$count days';
-  @override
-  String habitStatsWeeks(int count) => count == 1 ? '1 week' : '$count weeks';
 
   @override
   String activePulsarsBadge(int count) =>
@@ -1730,8 +1657,6 @@ My contribution meets a real need and is something I can sustain.
   String get targetDateBadgeLabel => 'Target';
   @override
   String get deadDateBadgeLabel => 'Archived';
-  @override
-  String get streakBadgeLabel => 'Streak';
   @override
   String get noPhotoLabel => 'No Photo';
   @override
@@ -2228,6 +2153,75 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get deleteProjectConfirmBody =>
       'Activities, habits, completions and photos will be permanently deleted. This action cannot be undone.';
+
+  @override
+  String get lightPageTitle => 'Your Light';
+  @override
+  String get lightScopeAll => 'Everything';
+  @override
+  String get lightPeriodAllTime => 'All Time';
+  @override
+  String get lightPeriodYear => 'This Year';
+  @override
+  String get lightPeriodMonth => 'This Month';
+  @override
+  String get lightHeadline => 'Look at all the light you have lit.';
+  @override
+  String get lightHeadlineEmpty => 'Your light will take shape here.';
+  @override
+  String lightCyclesCount(int count) =>
+      count == 1 ? '1 Cycle' : '$count Cycles';
+  @override
+  String lightDaysCount(int count) =>
+      count == 1 ? '1 Bright Day' : '$count Bright Days';
+  @override
+  String get lightCurveLabel => 'Intensity Gathered';
+  @override
+  String get lightCalendarLabel => 'Bright Days';
+  @override
+  String get lightBreakdownLabel => 'Where It Shines';
+  @override
+  String get lightMomentsLabel => 'Moments';
+  @override
+  String get lightSeeAllTimeAction => 'See All Time';
+  @override
+  String get lightGoalWaitingBody =>
+      'This goal is waiting for its moment: once you reach it, its light will show here.';
+  @override
+  String get lightCurveHint =>
+      'Tap or drag across the chart to see the date and the total.';
+  @override
+  String get momentFirstVictory => 'First Victory';
+  @override
+  String get momentFirstDay => 'First Day';
+  @override
+  String get momentBrightestDay => 'Brightest Day';
+  @override
+  String get momentLongestRun => 'Days In A Row';
+  @override
+  String get momentFavouriteWeekday => 'The Day You Shine Most';
+  @override
+  String get momentBrightestMonth => 'Brightest Month';
+  @override
+  String get momentLongestCycle => 'Longest Cycle';
+  @override
+  List<String> get weekdayNames => const [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+  @override
+  String todayLightChip(int count) => '$count Today';
+  @override
+  String get todayLightChipTooltip => 'Stars lit today';
+  @override
+  String get todayLightPrevious => 'Previous';
+  @override
+  String get todayLightNext => 'Next';
 }
 
 const _fullMonths = [

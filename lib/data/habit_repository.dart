@@ -173,7 +173,7 @@ class HabitRepository extends ChangeNotifier {
   /// Always a pulsar again: what a dead star can be reignited as is decided
   /// by what it was, never chosen anew.
   ///
-  /// "Brand new" includes its history: the old streak is wiped via
+  /// "Brand new" includes its history: its old check-ins are wiped via
   /// [completionRepository], so a reignited pulsar starts from zero rather
   /// than inheriting a run it broke long ago. Cycles it already completed
   /// stay, though: that reward was earned and is never taken back.

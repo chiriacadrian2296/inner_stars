@@ -77,10 +77,9 @@ void main() {
         .reduce((a, b) => a.isBefore(b) ? a : b);
     expect(dayDiff(oldest, today), greaterThan(120));
 
-    // The old 14-day streak beats the live one.
+    // An old 14-day run of victories.
     final counts = starCountsByDay(lit);
     expect(longestStreak(counts), greaterThanOrEqualTo(14));
-    expect(currentStreak(counts), lessThan(longestStreak(counts)));
 
     // Uneven areas.
     final byArea = starCountsByArea(lit, {

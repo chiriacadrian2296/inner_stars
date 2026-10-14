@@ -26,7 +26,7 @@ enum BadgeSlot {
 
   // A habit.
   progress(_medium),
-  streak(_medium),
+  daysDone(_medium),
   cycle(_medium),
 
   // A constellation and an area.
@@ -61,7 +61,7 @@ const Map<BadgeCardKind, List<List<BadgeSlot>>> kBadgeRows = {
     [BadgeSlot.date],
   ],
   BadgeCardKind.habit: [
-    [BadgeSlot.progress, BadgeSlot.streak, BadgeSlot.cycle],
+    [BadgeSlot.progress, BadgeSlot.daysDone, BadgeSlot.cycle],
   ],
   BadgeCardKind.constellation: [
     [

@@ -310,11 +310,16 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     setState(() {
       _modeReverse = mode.index < _mode.index;
       _mode = mode;
+      _showBackToTop = false;
+      _backToTopAvoidsFooter = false;
     });
     // The search box shows this tab's own text.
     _queryController.text = _query;
     _saveSession();
     _modeAnimation.forward(from: 0);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateBackToTop(mode.index);
+    });
   }
 
   /// Moves only one step in the same sequence as the segmented switch:
@@ -332,6 +337,11 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   late final SearchCardMenuController _cardMenuController;
   late final List<ScrollController> _scrollControllers;
   late final SkyExplorerSession _session;
+  bool _showBackToTop = false;
+  bool _backToTopAvoidsFooter = false;
+
+  static const _backToTopRevealOffset = 240.0;
+  static const _backToTopFooterDistance = 48.0;
 
   /// Whether [_syncModeToTour] has already forced Supernovas out once.
   ///
@@ -770,15 +780,17 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       final controller = ScrollController(
         initialScrollOffset: session.scrollOffsets[index] ?? 0,
       );
-      controller.addListener(
-        () => session.scrollOffsets[index] = controller.offset,
-      );
+      controller.addListener(() {
+        session.scrollOffsets[index] = controller.offset;
+        _updateBackToTop(index);
+      });
       return controller;
     });
     final resume = session.resume;
     session.resume = null;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      _updateBackToTop(_mode.index);
       if (resume != null) {
         _resume(resume);
         return;
@@ -818,7 +830,39 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   /// to the old one.
   void _onSettingsChanged() {
     _cardMenuController.closeAll();
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateBackToTop(_mode.index);
+    });
+  }
+
+  void _updateBackToTop(int modeIndex) {
+    if (!mounted || modeIndex != _mode.index) return;
+    final controller = _scrollControllers[modeIndex];
+    if (!controller.hasClients) return;
+    final position = controller.position;
+    final show = position.pixels >= _backToTopRevealOffset;
+    final avoidsFooter =
+        _gridView &&
+        position.extentAfter <= _backToTopFooterDistance;
+    if (show == _showBackToTop && avoidsFooter == _backToTopAvoidsFooter) {
+      return;
+    }
+    setState(() {
+      _showBackToTop = show;
+      _backToTopAvoidsFooter = avoidsFooter;
+    });
+  }
+
+  void _scrollToTop() {
+    final controller = _scrollControllers[_mode.index];
+    if (!controller.hasClients) return;
+    controller.animateTo(
+      0,
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   // -- Grid view ------------------------------------------------------------
@@ -919,7 +963,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     return GalleryStarData.fromHabit(
       habit,
       _projectsById[habit.projectId],
-      streak: habitCurrentStreak(habit, counts),
       badges: _entryBadges(entry),
       pulsarLit: isHabitLit(habit, counts),
     );
@@ -2455,6 +2498,41 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
             ),
           ),
           Positioned(
+            left: 20,
+            right: 20,
+            // The FAB is 56 px high at bottom 20. This 32 px button sits
+            // 12 px higher so their centers share the same horizontal axis.
+            bottom: 32,
+            child: SafeArea(
+              child: AnimatedAlign(
+                key: const Key('sky-back-to-top-position'),
+                alignment: _backToTopAvoidsFooter
+                    ? Alignment.centerLeft
+                    : Alignment.center,
+                duration: const Duration(milliseconds: 240),
+                curve: Curves.easeOutCubic,
+                child: IgnorePointer(
+                  key: const Key('sky-back-to-top-hit-region'),
+                  ignoring: !_showBackToTop,
+                  child: AnimatedOpacity(
+                    opacity: _showBackToTop ? 1 : 0,
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOut,
+                    child: AnimatedScale(
+                      scale: _showBackToTop ? 1 : 0.82,
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutBack,
+                      child: _BackToTopButton(
+                        tooltip: strings.backToTopAction,
+                        onTap: _scrollToTop,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
             right: 20,
             bottom: 20,
             child: SafeArea(
@@ -2784,6 +2862,38 @@ class _ConstellationsList extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _BackToTopButton extends StatelessWidget {
+  const _BackToTopButton({required this.tooltip, required this.onTap});
+
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: colors.night,
+        shape: CircleBorder(
+          side: BorderSide(color: colors.gold, width: kBorderWidth),
+        ),
+        elevation: 4,
+        shadowColor: Colors.black.withValues(alpha: 0.5),
+        child: InkWell(
+          key: const Key('sky-back-to-top-button'),
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox.square(
+            dimension: 32,
+            child: Icon(Icons.keyboard_arrow_up, color: colors.gold, size: 20),
+          ),
+        ),
+      ),
     );
   }
 }

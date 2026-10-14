@@ -1,5 +1,5 @@
 import '../widgets/sky_search_tooltip_card.dart'
-    show galaxyTooltipWidth, galaxyTooltipPadding;
+    show GalaxyTooltipStartsClosed, galaxyTooltipWidth, galaxyTooltipPadding;
 import '../widgets/entity_insights_scope.dart';
 import '../models/display_text.dart';
 
@@ -85,6 +85,7 @@ import '../widgets/sky_explorer_view.dart' show SkyExplorerSession;
 import '../widgets/sky_navigation_target.dart';
 import '../widgets/sky_pulsar_tooltip.dart';
 import '../widgets/sky_star_tooltip.dart';
+import '../widgets/sky_shooting_star.dart';
 import '../widgets/sky_supernova.dart';
 import '../widgets/staggered_entrance.dart';
 import '../widgets/star_glyph.dart';
@@ -95,7 +96,6 @@ import 'metaphor_screen.dart';
 import 'moodboard_screen.dart';
 import 'new_project_screen.dart';
 import 'nightlight_gate_screen.dart';
-import 'pulsar_reader_screen.dart';
 import 'quick_settings_screen.dart';
 import 'settings_screen.dart';
 import 'share_preview_screen.dart';
@@ -104,7 +104,7 @@ import 'constellation_screen.dart';
 import 'shooting_stars_screen.dart';
 import 'star_form_screen.dart';
 import 'star_reader_screen.dart';
-import 'stats_screen.dart';
+import 'light_screen.dart';
 import 'ui_sandbox_screen.dart';
 import 'area_icon_lab_screen.dart';
 import 'fab_icon_lab_screen.dart';
@@ -224,6 +224,15 @@ class _PulsarTooltip extends _SkyTooltip {
   final Habit habit;
 }
 
+/// One of today's lights for the "today" fly-through: a victory ([starId])
+/// or a checked pulsar ([habitId]), and when it lit.
+class _TodayLight {
+  const _TodayLight({this.starId, this.habitId, required this.at});
+  final int? starId;
+  final int? habitId;
+  final DateTime at;
+}
+
 class _ConstellationTooltip extends _SkyTooltip {
   const _ConstellationTooltip(this.constellation);
   final PlacedConstellation constellation;
@@ -279,8 +288,13 @@ class _ConstellationShare extends _CreationShareSubject {
 }
 
 class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
+  /// STUDY (TRB-style park): the sample shooting star
+  /// ([SkyShootingStarStudy]) — debug builds only, until the timed-wish
+  /// feature exists. Set to false to hide it.
+  static const _kShowShootingStarStudy = kDebugMode;
+
   final _skySession = SkyExplorerSession();
-  final _statsSession = StatsSession();
+  final _lightSession = LightSession();
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   // See kSkyMaxZoom's own doc comment (constellation_field.dart) for why
   // this value, and why it's shared rather than private to this class.
@@ -463,6 +477,25 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// handling) the same way plain fields used to be.
   final _skyTooltipController = TooltipCardController<_SkyTooltip>();
 
+  /// The "today" fly-through started from [_TodayLightChip]: null while it
+  /// is off, otherwise which of [_todayLights] it is showing. It ends as
+  /// soon as its tooltip closes or another one replaces it (a pan, a zoom,
+  /// a tap or hold elsewhere) — see [_onSkyTooltipChanged].
+  int? _todayTourIndex;
+
+  /// Same idea as [_menuControlPressed], for the "today" chip and its
+  /// arrows: a press there is theirs, never the sky's (no hold, and no
+  /// "first tap only closes the tooltip").
+  bool _todayControlPressed = false;
+
+  /// [_todayControlPressed] captured at the start of the touch, like
+  /// [_holdTargetIsMenuControl].
+  bool _touchOnTodayControl = false;
+
+  /// True between the close and the open of one fly-through step (see
+  /// [_stepTodayTour]), so that close isn't read as the user leaving.
+  bool _todayTourStepping = false;
+
   final _quickLookShareKey = GlobalKey();
   bool _sharingQuickLookStar = false;
 
@@ -563,6 +596,28 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   double _flyStartZoom = 0;
   double _flyTargetZoom = 0;
 
+  /// Set by [_stepTodayTour] just before it flies: the next [_flyToWorld]
+  /// becomes a "hop" — zoom out, travel, zoom back in — instead of a flight
+  /// at the same zoom, so moving between two of today's stars shows where
+  /// you're going. Consumed (reset) by that very flight.
+  bool _hopNextFlight = false;
+
+  /// The zoom a hop backs out to mid-flight; null for an ordinary flight.
+  double? _flyHopZoom;
+
+  /// How long an ordinary flight takes, and a hop: from [_hopShortest]
+  /// (a trip short enough not to back out at all) up to [_hopLongest] (one
+  /// backing out 60 or more points of the zoom scale).
+  static const _flyDuration = Duration(milliseconds: 900);
+  static const _hopShortest = Duration(milliseconds: 1300);
+  static const _hopLongest = Duration(milliseconds: 2200);
+
+  /// A little extra zoom out every hop gets on top of its scale (points
+  /// of the 0..100 zoom scale, see [zoomPercent]), short trips included, so
+  /// the camera always backs off a touch before travelling. The one knob to
+  /// turn for "a bit more / less zoom out overall".
+  static const _hopExtraZoomOut = 8.0;
+
   /// Extra roll (radians) [_onFlyTick] ramps in on top of the ordinary
   /// [SkyCamera.rotatedToAlignFraction] sweep, reaching its full value
   /// exactly as the flight lands — see [_flyToWorld]'s own
@@ -606,6 +661,67 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// the camera" check. Kept local rather than reused from
   /// `constellation_field.dart`'s own private `_dot`, which this file has
   /// no access to.
+  /// Half of what the screen shows at [zoom], as an angle on the sky:
+  /// from the center to the edge of the screen's shorter side.
+  double _halfViewAngle(double zoom, Size size) {
+    final camera = SkyCamera.lookingAt(azimuthTurns: 0, elevationTurns: 0);
+    final edge = screenToDirection(
+      Offset(
+        size.width / 2 + math.min(size.width, size.height) / 2,
+        size.height / 2,
+      ),
+      camera,
+      zoom,
+      size,
+    );
+    return math.acos(_dotDirections(edge, camera.forward).clamp(-1.0, 1.0));
+  }
+
+  /// A hop's length: longer the further it backs out from [closest].
+  Duration _hopDuration(double closest) {
+    final depth =
+        ((zoomPercent(closest) - zoomPercent(_flyHopZoom ?? closest)) / 60)
+            .clamp(0.0, 1.0);
+    return _hopShortest + (_hopLongest - _hopShortest) * depth;
+  }
+
+  /// The widest distance on the sky between any two of the user's
+  /// constellations — the longest trip a hop can ever make.
+  double _longestTrip() {
+    final directions = [
+      for (final placed in _placed)
+        if (placed.project.id >= 0)
+          SkyCamera.lookingAt(
+            azimuthTurns: placed.worldPosition.dx,
+            elevationTurns: placed.worldPosition.dy,
+          ).forward,
+    ];
+    var longest = 0.0;
+    for (var i = 0; i < directions.length; i++) {
+      for (var j = i + 1; j < directions.length; j++) {
+        final angle = math.acos(
+          _dotDirections(directions[i], directions[j]).clamp(-1.0, 1.0),
+        );
+        if (angle > longest) longest = angle;
+      }
+    }
+    return longest;
+  }
+
+  /// How far a hop backs out for a trip of [angle] on the sky, starting
+  /// from [closest] (the nearer of its start and landing zooms), as a plain
+  /// scale: only [_hopExtraZoomOut] for a short trip (the two ends on one
+  /// screen, or about a screen apart), the widest zoom for the longest trip
+  /// this sky has (see [_longestTrip]), and everything in between spread
+  /// evenly along the zoom scale, plus that same extra.
+  double _hopZoomFor(double angle, double closest, Size size) {
+    final short = _halfViewAngle(closest, size) * 1.6;
+    final longest = math.max(_longestTrip(), short + 0.01);
+    final share = ((angle - short) / (longest - short)).clamp(0.0, 1.0);
+    final percent = zoomPercent(closest) * (1 - share) - _hopExtraZoomOut;
+    return zoomFromPercent(percent.clamp(0.0, zoomPercent(closest)));
+  }
+
   static double _dotDirections(
     (double, double, double) a,
     (double, double, double) b,
@@ -623,10 +739,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _skyClock = SkyClock(this);
-    _flyController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..addListener(_onFlyTick);
+    _flyController = AnimationController(vsync: this, duration: _flyDuration)
+      ..addListener(_onFlyTick);
     _holdRingController = AnimationController(
       vsync: this,
       duration: _holdDuration,
@@ -784,6 +898,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // which clusters a project's constellation around its own area's
     // supernova instead of scattering it across the whole sky.
     final indexByArea = <LifeArea, int>{};
+    _todayLightsCache = null;
     _placed = [
       // While the tour's placeholder constellation is up, the user's own
       // real ones are left out entirely — not just visually secondary,
@@ -828,6 +943,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       habits: habits,
       shape: shape,
       completionsByHabit: completionsByHabit,
+      today: DateTime.now(),
     );
 
     return PlacedConstellation(
@@ -1184,7 +1300,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
 
   /// A pulsar's own hold half — same shape as [_openStarQuickLook], just
   /// for a pulsar's tooltip (see [SkyPulsarTooltip]) instead of a real
-  /// star's. The full [PulsarReaderScreen] page is still just one tap
+  /// star's. The full star reader page is still just one tap
   /// away from there (see [_viewQuickLookPulsar]).
   void _openPulsarQuickLook(
     PlacedConstellation constellation,
@@ -1515,6 +1631,136 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     return null;
   }
 
+  /// Where the shooting-star study passes by: the constellation the Galaxy
+  /// opens on ("Love"), else the first one; null with none at all.
+  Offset? _shootingStarAnchor() {
+    final real = _placed.where((p) => p.project.id >= 0);
+    for (final placed in real) {
+      if (placed.project.name == 'Love') return placed.worldPosition;
+    }
+    return real.firstOrNull?.worldPosition;
+  }
+
+  /// Every star lit today and every pulsar checked today, in the order they
+  /// lit: a victory by its achievement time (its creation time when the
+  /// date carries no time of day), a pulsar by today's first check-in.
+  List<_TodayLight> _todayLights() =>
+      _todayLightsCache ??= _computeTodayLights();
+
+  /// [_todayLights], kept until [_placed] is rebuilt (the sky rebuilds on
+  /// every camera frame; the list only changes with the data).
+  List<_TodayLight>? _todayLightsCache;
+
+  List<_TodayLight> _computeTodayLights() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    bool isToday(DateTime date) =>
+        date.year == today.year &&
+        date.month == today.month &&
+        date.day == today.day;
+    final lights = <_TodayLight>[];
+    for (final placed in _placed) {
+      // The tour's placeholder constellation isn't the user's light.
+      if (placed.project.id < 0) continue;
+      for (final star in placed.stars) {
+        final achieved = star.achievedDate;
+        if (!star.isLit || achieved == null || !isToday(achieved)) continue;
+        final createdToday = isToday(
+          DateTime.fromMillisecondsSinceEpoch(star.id),
+        );
+        final hasTime =
+            achieved.hour != 0 || achieved.minute != 0 || achieved.second != 0;
+        lights.add(
+          _TodayLight(
+            starId: star.id,
+            at: hasTime || !createdToday
+                ? achieved
+                : DateTime.fromMillisecondsSinceEpoch(star.id),
+          ),
+        );
+      }
+      for (final habit in placed.habits) {
+        if (habit.dead) continue;
+        DateTime? first;
+        for (final completion
+            in widget.habitCompletionRepository.getAllForHabit(habit.id)) {
+          if (!isToday(completion.date)) continue;
+          // A completion's id is the moment it was logged.
+          final at = DateTime.fromMicrosecondsSinceEpoch(completion.id);
+          if (first == null || at.isBefore(first)) first = at;
+        }
+        if (first != null) {
+          lights.add(_TodayLight(habitId: habit.id, at: first));
+        }
+      }
+    }
+    lights.sort((a, b) => a.at.compareTo(b.at));
+    return lights;
+  }
+
+  /// Starts the "today" fly-through on the first light, or moves it by
+  /// [delta], wrapping around at either end.
+  void _stepTodayTour(int delta) {
+    final lights = _todayLights();
+    if (lights.isEmpty) {
+      _endTodayTour();
+      return;
+    }
+    final current = _todayTourIndex;
+    final next = current == null
+        ? 0
+        : (current.clamp(0, lights.length - 1) + delta) % lights.length;
+    final light = lights[next];
+    final starId = light.starId;
+    final habitId = light.habitId;
+    final placed = starId != null
+        ? _placedForStar(starId)
+        : _placedForHabit(habitId!);
+    if (placed == null) {
+      _endTodayTour();
+      return;
+    }
+    setState(() => _todayTourIndex = next);
+    // Every step leaves from a closed tooltip: the one we're on closes as
+    // the flight sets off and the next one opens on the way, instead of a
+    // single card that seems to stay put while only its content changes.
+    // [_todayTourStepping] keeps that close from ending the fly-through.
+    if (_skyTooltipController.isOpen) {
+      _todayTourStepping = true;
+      _skyTooltipController.close();
+    }
+    _hopNextFlight = true;
+    if (starId != null) {
+      _flyToStarWithHoldFeedback(placed, starId, holdFeedback: false);
+    } else {
+      _flyToPulsarWithHoldFeedback(placed, habitId!, holdFeedback: false);
+    }
+    // Already consumed by the flight; cleared in case none was started.
+    _hopNextFlight = false;
+  }
+
+  void _endTodayTour() {
+    if (_todayTourIndex == null) return;
+    setState(() => _todayTourIndex = null);
+  }
+
+  /// Whether the open tooltip is the one the "today" fly-through is on.
+  bool _tooltipShowsTodayLight() {
+    final index = _todayTourIndex;
+    if (index == null || !_skyTooltipController.isOpen) return false;
+    final lights = _todayLights();
+    if (index >= lights.length) return false;
+    final light = lights[index];
+    return switch (_skyTooltipController.data) {
+      _StarTooltip(:final constellation, :final starIndex) =>
+        light.starId != null &&
+            starIndex < constellation.stars.length &&
+            constellation.stars[starIndex].id == light.starId,
+      _PulsarTooltip(:final habit) => light.habitId == habit.id,
+      _ => false,
+    };
+  }
+
   /// Same as [_placedForStar], for a pulsar's own [Habit] id.
   PlacedConstellation? _placedForHabit(int habitId) {
     for (final placed in _placed) {
@@ -1532,8 +1778,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// [SkyStarTarget.starId]).
   void _flyToStarWithHoldFeedback(
     PlacedConstellation constellation,
-    int starId,
-  ) {
+    int starId, {
+    bool holdFeedback = true,
+  }) {
     final index = constellation.stars.indexWhere((s) => s.id == starId);
     if (index == -1) return;
     ConstellationStar? renderStar;
@@ -1544,7 +1791,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       }
     }
     if (renderStar == null) return;
-    _playHoldFeedback();
+    if (holdFeedback) _playHoldFeedback();
     _openStarQuickLook(constellation, index, renderStar);
   }
 
@@ -1552,8 +1799,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// [Habit] id.
   void _flyToPulsarWithHoldFeedback(
     PlacedConstellation constellation,
-    int habitId,
-  ) {
+    int habitId, {
+    bool holdFeedback = true,
+  }) {
     Habit? habit;
     for (final candidate in constellation.habits) {
       if (candidate.id == habitId) {
@@ -1570,7 +1818,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       }
     }
     if (renderStar == null) return;
-    _playHoldFeedback();
+    if (holdFeedback) _playHoldFeedback();
     _openPulsarQuickLook(constellation, habit, renderStar);
   }
 
@@ -1788,20 +2036,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _openStatistics() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => StatsScreen(
-          starRepository: widget.starRepository,
-          projectRepository: widget.projectRepository,
-          habitRepository: widget.habitRepository,
-          habitCompletionRepository: widget.habitCompletionRepository,
-          starsShapeRepository: widget.starsShapeRepository,
-          session: _statsSession,
-        ),
-      ),
-    );
-  }
+  void _openStatistics() => openLightPage(context, session: _lightSession);
 
   void _openShootingStars() {
     Navigator.of(context)
@@ -2236,6 +2471,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     LifeArea? straightenBackdropArea,
   }) {
     final size = context.size;
+    final hop = _hopNextFlight;
+    _hopNextFlight = false;
     if (size == null) return TickerFuture.complete();
 
     final baseCamera = SkyCamera.lookingAt(
@@ -2326,9 +2563,15 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _flyStartZoom = _zoom;
     _flyTargetZoom = targetZoom;
     _flyRollCorrection = rollCorrection;
+    _flyHopZoom = hop
+        ? _hopZoomFor(angleToTarget, math.min(_zoom, targetZoom), size)
+        : null;
     _flyController
       ..stop()
-      ..reset();
+      ..reset()
+      ..duration = hop
+          ? _hopDuration(math.min(_zoom, targetZoom))
+          : _flyDuration;
     return _flyController.forward();
   }
 
@@ -2336,7 +2579,12 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     final startCamera = _flyStartCamera;
     final targetForward = _flyTargetForward;
     if (startCamera == null || targetForward == null) return;
-    final t = Curves.easeInOutCubic.transform(_flyController.value);
+    final hopZoom = _flyHopZoom;
+    final value = _flyController.value;
+    // One easing for the whole flight, a hop included: it travels fastest
+    // mid-way, exactly where a hop is backed out the furthest (see the zoom
+    // below), so it reads as one continuous arc rather than three moves.
+    final t = Curves.easeInOutCubic.transform(value);
     setState(() {
       var camera = startCamera.rotatedToAlignFraction(
         startCamera.forward,
@@ -2352,7 +2600,18 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         camera = camera.rolled(_flyRollCorrection * t);
       }
       _camera = camera;
-      _zoom = _flyStartZoom + (_flyTargetZoom - _flyStartZoom) * t;
+      if (hopZoom == null) {
+        _zoom = _flyStartZoom + (_flyTargetZoom - _flyStartZoom) * t;
+      } else {
+        // In log space, the same way the zoom scale itself is defined: the
+        // straight start-to-target zoom, pulled back by a smooth bell
+        // (sin², flat at both ends, deepest mid-way) down to [hopZoom].
+        final logStart = math.log(_flyStartZoom);
+        final logTarget = math.log(_flyTargetZoom);
+        final dip = math.log(hopZoom) - math.min(logStart, logTarget);
+        final bell = math.pow(math.sin(math.pi * value), 2).toDouble();
+        _zoom = math.exp(logStart + (logTarget - logStart) * t + dip * bell);
+      }
     });
   }
 
@@ -2407,8 +2666,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       });
     }
 
+    // A hop only opens it as it closes in on the star again, not while
+    // still backed out over the sky.
+    final openAt = _flyHopZoom == null ? _tooltipOpenAtFlightProgress : 0.88;
     void onFlyProgress() {
-      if (_flyController.value >= _tooltipOpenAtFlightProgress) {
+      if (_flyController.value >= openAt) {
         _flyController.removeListener(onFlyProgress);
         openOnce();
       }
@@ -2490,10 +2752,17 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // tooltip: letting the camera move out from under one used to leave
     // it pinned in place, still pointing at wherever the target *used*
     // to be rather than closing along with the view moving away from it.
-    if (_skyTooltipController.isOpen &&
-        (details.focalPointDelta.distance > _realPanDistance ||
-            (details.scale - 1.0).abs() > _realZoomDelta)) {
+    final realGesture =
+        details.focalPointDelta.distance > _realPanDistance ||
+        (details.scale - 1.0).abs() > _realZoomDelta;
+    if (_skyTooltipController.isOpen && realGesture) {
       _skyTooltipController.close();
+    }
+    // A pan or zoom between two "today" steps (tooltip already closed)
+    // still ends the fly-through.
+    if (_todayTourStepping && realGesture) {
+      _todayTourStepping = false;
+      _endTodayTour();
     }
     final size = context.size;
     setState(() {
@@ -2818,6 +3087,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   }
 
   void _handleTapDown(TapDownDetails details) {
+    // A press on the "today" chip or its arrows is theirs alone — it must
+    // not start a hold, nor close the tooltip it is stepping through.
+    _touchOnTodayControl = _todayControlPressed;
+    if (_touchOnTodayControl) return;
     _holdFired = false;
     _tooltipDismissedForPendingHold = false;
     _holdTimer?.cancel();
@@ -2995,6 +3268,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   }
 
   void _handleTapUp(TapUpDetails details) {
+    if (_touchOnTodayControl) {
+      _touchOnTodayControl = false;
+      return;
+    }
     _holdTimer?.cancel();
     _holdTimer = null;
     _holdRingArmTimer?.cancel();
@@ -3257,6 +3534,19 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// hooks the controller directly and reuses [_advanceGestureTourStep]
   /// only for its guard/pause, the same as they do.
   void _onSkyTooltipChanged() {
+    // The "today" fly-through lives only as long as its own tooltip: closed
+    // (a pan, a zoom, a tap elsewhere) or replaced by another one, it ends.
+    // Moving between today's stars swaps the tooltip's data directly, never
+    // through a close, so stepping never ends it.
+    if (_todayTourStepping) {
+      // Our own close between two steps; the next open ends the step.
+      if (_skyTooltipController.isOpen) _todayTourStepping = false;
+    }
+    if (!_todayTourStepping &&
+        _todayTourIndex != null &&
+        !_tooltipShowsTodayLight()) {
+      _todayTourIndex = null;
+    }
     if (mounted) setState(() {});
     if (!_skyTooltipController.isOpen) _advanceGestureTourStep(7);
   }
@@ -3592,6 +3882,18 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                         palette: kSkyStarPalette,
                         revision: _revision,
                       ),
+                      // STUDY — see [SkyShootingStarStudy]: one sample
+                      // shooting star, debug builds only, until the feature
+                      // itself exists.
+                      if (_kShowShootingStarStudy &&
+                          _shootingStarAnchor() != null)
+                        SkyShootingStarStudy(
+                          anchor: _shootingStarAnchor()!,
+                          camera: _camera,
+                          zoom: _zoom,
+                          clock: _skyClock,
+                          flareProgram: _flareProgram,
+                        ),
                       if (widget.settings.artworkLayer ==
                           ArtworkLayer.aboveStars)
                         _artworkBackdrop(),
@@ -4224,6 +4526,30 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                             ),
                           ),
                         ),
+                      // Today's light: a quiet chip, there only once
+                      // something was lit today (an empty day shows
+                      // nothing at all), that flies from one of today's
+                      // stars to the next.
+                      if (!_tutorialDemoActive && _todayLights().isNotEmpty)
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: SafeArea(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Center(
+                                child: _TodayLightChip(
+                                  count: _todayLights().length,
+                                  index: _todayTourIndex,
+                                  onStep: _stepTodayTour,
+                                  onPressChanged: (pressed) =>
+                                      _todayControlPressed = pressed,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       // The hold-charging ring (see [_handleTapDown]/
                       // [_holdRingController]) — last so it paints above
                       // every star/constellation/control here, never under
@@ -4493,7 +4819,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         whenContentHide: WhenContentHide.pressOutSide,
         barrierDismissible: false,
         child: const SizedBox.shrink(),
-        builder: (context, close) => _buildSkyTooltip(),
+        builder: (context, close) => GalaxyTooltipStartsClosed(
+          closed: _todayTourIndex != null,
+          child: _buildSkyTooltip(),
+        ),
       ),
     );
   }
@@ -4628,7 +4957,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
 
   /// A pulsar's own version of [_buildStarTooltip] — no stale-index guard
   /// needed here (unlike a star, [_PulsarTooltip] carries the [Habit]
-  /// itself, not an index to re-look-up), but streak/lit are recomputed
+  /// itself, not an index to re-look-up), but days done/lit are recomputed
   /// fresh from [HabitCompletionRepository] every build rather than
   /// cached at hold-time, same "never show stale content" reasoning.
   Widget _buildPulsarTooltip(PlacedConstellation constellation, Habit habit) {
@@ -5577,6 +5906,233 @@ class _ArtworkStepButton extends StatelessWidget {
     visualDensity: VisualDensity.compact,
     constraints: const BoxConstraints.tightFor(width: 24, height: 24),
   );
+}
+
+/// Galaxy's "today" chip: how many stars were lit (and pulsars checked)
+/// today, shown only when there is at least one. Same navy-and-white look
+/// as the main button's quick-access fan. A tap starts the fly-through: the
+/// chip shows which light it is on ("1/3") and a smaller arrow fades in on
+/// either side. A tap on the active chip moves on like the right arrow;
+/// both ends wrap around. Every tap makes the icon and number glow white for
+/// a moment, so the change of star is felt, not only seen in the counter.
+class _TodayLightChip extends StatefulWidget {
+  const _TodayLightChip({
+    required this.count,
+    required this.index,
+    required this.onStep,
+    required this.onPressChanged,
+  });
+
+  final int count;
+
+  /// Which light the fly-through is on; null while it is off.
+  final int? index;
+  final ValueChanged<int> onStep;
+
+  /// See `_SkyScreenState._todayControlPressed`.
+  final ValueChanged<bool> onPressChanged;
+
+  @override
+  State<_TodayLightChip> createState() => _TodayLightChipState();
+}
+
+class _TodayLightChipState extends State<_TodayLightChip>
+    with TickerProviderStateMixin {
+  static const _fade = Duration(milliseconds: 220);
+
+  /// The arrows' disc, a touch smaller than the chip, and its touch area:
+  /// a square as tall as the chip, so the arrows are hard to miss.
+  static const _arrowSize = 26.0;
+  static const _arrowTouch = 40.0;
+
+  /// Space between an arrow's touch square and the chip, chosen so the
+  /// visible gap between disc and chip stays [kSpaceSm].
+  static const _arrowGap = kSpaceSm - (_arrowTouch - _arrowSize) / 2;
+
+  /// The arrows fading in and out with the fly-through.
+  late final _on = AnimationController(
+    vsync: this,
+    duration: _fade,
+    value: widget.index != null ? 1 : 0,
+  );
+
+  /// One tap's beat: the icon and the number glow white for a moment, like
+  /// the reader's "light" buttons.
+  late final _tap = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 420),
+  );
+
+  @override
+  void didUpdateWidget(_TodayLightChip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final active = widget.index != null;
+    if (active != (oldWidget.index != null)) {
+      active ? _on.forward() : _on.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    _on.dispose();
+    _tap.dispose();
+    super.dispose();
+  }
+
+  void _step(int delta) {
+    _tap.forward(from: 0);
+    widget.onStep(delta);
+  }
+
+  Widget _pressable(Widget child) => Listener(
+    onPointerDown: (_) => widget.onPressChanged(true),
+    onPointerUp: (_) => widget.onPressChanged(false),
+    onPointerCancel: (_) => widget.onPressChanged(false),
+    child: child,
+  );
+
+  /// An arrow, always laid out (so the chip never moves) and faded in only
+  /// while the fly-through is on. Its touch area is a square as tall as the chip.
+  Widget _arrow(bool active, IconData icon, String tooltip, int delta) =>
+      IgnorePointer(
+        ignoring: !active,
+        child: FadeTransition(
+          opacity: _on,
+          child: _pressable(
+            Tooltip(
+              message: tooltip,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _step(delta),
+                child: SizedBox(
+                  width: _arrowTouch,
+                  height: _arrowTouch,
+                  child: Center(
+                    child: Container(
+                      width: _arrowSize,
+                      height: _arrowSize,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: context.colors.nightPanel,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: Icon(icon, size: 18, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+  /// The chip's icon and number, glowing with [_tap].
+  Widget _content(String text) => AnimatedBuilder(
+    animation: _tap,
+    builder: (context, _) {
+      final t = _tap.value;
+      // The reader's "light" buttons' glow (swells and fades with the
+      // beat), made stronger: a full-white tight halo plus a wider soft one.
+      final glow = t == 0 || t == 1 ? 0.0 : math.sin(t * math.pi);
+      final glowColor = Colors.white.withValues(alpha: glow);
+      final wideColor = Colors.white.withValues(alpha: 0.7 * glow);
+      const icon = Icon(Icons.auto_awesome, size: 18, color: Colors.white);
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (glow < 0.02)
+            icon
+          else
+            // A blurred copy behind the icon, so the glow follows the
+            // glyph's own outline (same trick as the reader's buttons).
+            Stack(
+              alignment: Alignment.center,
+              clipBehavior: Clip.none,
+              children: [
+                ImageFiltered(
+                  imageFilter: ui.ImageFilter.blur(sigmaX: 9, sigmaY: 9),
+                  child: Icon(Icons.auto_awesome, size: 18, color: wideColor),
+                ),
+                ImageFiltered(
+                  imageFilter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                  child: Icon(Icons.auto_awesome, size: 18, color: glowColor),
+                ),
+                icon,
+              ],
+            ),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              fontFeatures: const [FontFeature.tabularFigures()],
+              // Blur radius ≈ twice the icon's sigma: 8 tight, 18 wide.
+              shadows: glow < 0.02
+                  ? null
+                  : [
+                      Shadow(color: glowColor, blurRadius: 8),
+                      Shadow(color: glowColor, blurRadius: 8),
+                      Shadow(color: wideColor, blurRadius: 18),
+                    ],
+            ),
+          ),
+        ],
+      );
+    },
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final strings = context.strings;
+    final active = widget.index != null;
+    // A plain tap target, no ink splash: the icon's glide and glow are the
+    // press feedback.
+    final pill = Tooltip(
+      message: strings.todayLightChipTooltip,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _step(1),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.nightPanel,
+            borderRadius: BorderRadius.circular(kRadiusPill),
+            border: Border.all(color: Colors.white, width: 2),
+          ),
+          child: SizedBox(
+            height: 40,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: _content(
+                active
+                    ? '${widget.index! + 1}/${widget.count}'
+                    : strings.todayLightChip(widget.count),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    // Only the pill and visible arrows count as the chip's own presses:
+    // the faded-out arrows' space stays plain sky.
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _arrow(
+          active,
+          Icons.chevron_left_rounded,
+          strings.todayLightPrevious,
+          -1,
+        ),
+        const SizedBox(width: _arrowGap),
+        _pressable(pill),
+        const SizedBox(width: _arrowGap),
+        _arrow(active, Icons.chevron_right_rounded, strings.todayLightNext, 1),
+      ],
+    );
+  }
 }
 
 class _SkyOverlayButton extends StatelessWidget {

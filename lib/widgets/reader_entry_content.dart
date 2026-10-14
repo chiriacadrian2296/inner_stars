@@ -81,7 +81,7 @@ class ReaderEntrance {
 /// 1. **What it is** — the kind's icon (in its own color), its name in
 ///    white, and the day it was created as the last, smallest line.
 /// 2. **Where it is** — area › constellation › number, as one breadcrumb line.
-/// 3. **Its particular data** — intensity, target date, streak…: a slot of a
+/// 3. **Its particular data** — intensity, target date, days done…: a slot of a
 ///    fixed height whatever it holds (or nothing), so the texts below always
 ///    start at the same place.
 /// 4. **Its texts** — title and description, or for a kind with none (an
@@ -133,7 +133,7 @@ class ReaderPage extends StatelessWidget {
   final bool reserveExtraSlot;
 
   /// Height of that slot; taller only for a page that stacks two data
-  /// blocks (a counting habit's streak and today's repetitions).
+  /// blocks (a counting habit's days done and today's repetitions).
   final double extraSlotHeight;
   final String? title;
   final Color? titleColor;
@@ -502,7 +502,7 @@ class StarReaderContent extends StatelessWidget {
   }
 }
 
-/// Slot height for a streak block with today's repetitions stacked under it.
+/// Slot height for a days-done block with today's repetitions stacked under it.
 const double _stackedExtraHeight = 132;
 
 /// What the cycle-progress block adds under the other data blocks.
@@ -517,7 +517,7 @@ class PulsarReaderContent extends StatelessWidget {
     required this.project,
     required this.number,
     required this.lit,
-    required this.streak,
+    required this.daysDone,
     required this.weekProgress,
     required this.entrance,
     this.todayProgress,
@@ -531,13 +531,15 @@ class PulsarReaderContent extends StatelessWidget {
   /// Which habit of the constellation this is, from 1 in order of creation.
   final int? number;
   final bool lit;
-  final int streak;
+
+  /// Distinct days with a check-in, ever — a figure that only grows.
+  final int daysDone;
 
   /// Only shown for a weekly habit.
   final int weekProgress;
 
   /// Today's repetitions so far; only for a daily habit with a target above
-  /// 1 (null otherwise), shown under the streak.
+  /// 1 (null otherwise), shown under the days done.
   final int? todayProgress;
 
   /// Whether today is marked — shown with a weekly habit's week count.
@@ -559,40 +561,39 @@ class PulsarReaderContent extends StatelessWidget {
       extra = _archivedDateBlock(context, habit.deadDate);
     } else {
       final isWeekly = habit.frequency == HabitFrequency.weekly;
-      // The streak is gold from the moment the period's goal is reached (for
-      // a weekly habit: the week's count) and blue again when a new one
-      // begins — [lit]. The week block below follows today instead.
-      final streakTint = tint;
+      // Days done is gold while the pulsar burns today — [lit]. The week
+      // block below follows today too.
+      final daysTint = tint;
       final weekTint = starKindColor(StarKind.pulsar, colors, lit: doneToday);
-      final streakBlock = _DataBlock(
+      final daysBlock = _DataBlock(
         value: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.local_fire_department, size: 40, color: streakTint),
+            Icon(Icons.event_available_rounded, size: 40, color: daysTint),
             const SizedBox(width: 4),
             Text(
-              '$streak',
+              '$daysDone',
               style: TextStyle(
                 fontSize: 44,
                 fontWeight: FontWeight.w800,
-                color: streakTint,
+                color: daysTint,
                 height: 1,
               ),
             ),
           ],
         ),
-        caption: strings.habitCurrentStreakLabel,
+        caption: strings.habitStatsDaysDoneLabel,
       );
       final today = todayProgress;
-      // Same look as the streak, a size smaller: today's repetitions so far
+      // Same look as the days done, a size smaller: today's repetitions so far
       // (daily counting habit), or this week's count with today's state
       // (weekly habit).
       extra = (today == null && !isWeekly)
-          ? streakBlock
+          ? daysBlock
           : Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                streakBlock,
+                daysBlock,
                 const SizedBox(height: 14),
                 _DataBlock(
                   value: Row(
@@ -625,7 +626,7 @@ class PulsarReaderContent extends StatelessWidget {
             );
       final cycle = cycleProgress;
       if (cycle != null) {
-        // The reward's own progress: the current cycle, next to the streak.
+        // The reward's own progress: the current cycle, next to the days done.
         extra = Column(
           mainAxisSize: MainAxisSize.min,
           children: [

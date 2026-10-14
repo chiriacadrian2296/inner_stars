@@ -26,7 +26,7 @@ import 'package:inner_stars/models/life_area.dart';
 import 'package:inner_stars/models/project.dart';
 import 'package:inner_stars/models/star.dart';
 import 'package:inner_stars/models/star_kind.dart';
-import 'package:inner_stars/screens/entity_stats_screen.dart';
+import 'package:inner_stars/screens/light_screen.dart';
 import 'package:inner_stars/screens/today_habits_screen.dart';
 import 'package:inner_stars/screens/star_reader_screen.dart';
 import 'package:inner_stars/screens/star_form_screen.dart';
@@ -38,7 +38,6 @@ import 'package:inner_stars/widgets/entity_insights_scope.dart';
 import 'package:inner_stars/widgets/grouped_action_layout.dart';
 import 'package:inner_stars/widgets/sky_search_tooltip_card.dart';
 import 'package:inner_stars/widgets/sky_explorer_view.dart';
-import 'package:inner_stars/widgets/star_type_text.dart';
 import 'package:inner_stars/widgets/stats/stats_widgets.dart';
 import 'package:inner_stars/widgets/pill_action_button.dart';
 
@@ -293,7 +292,7 @@ void main() {
       expect(find.byIcon(Icons.bar_chart), findsOneWidget);
       await tester.tap(find.byIcon(Icons.bar_chart));
       await tester.pumpAndSettle();
-      expect(find.byType(EntityStatsScreen), findsOneWidget);
+      expect(find.byType(LightScreen), findsOneWidget);
       expect(find.text('Habit 1'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
@@ -483,7 +482,7 @@ void main() {
       expect(tester.takeException(), isNull);
       await tester.tap(find.byTooltip(StringsIt().statsTitle));
       await tester.pumpAndSettle();
-      expect(find.byType(EntityStatsScreen), findsOneWidget);
+      expect(find.byType(LightScreen), findsOneWidget);
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip(StringsIt().manageHabits));
@@ -639,7 +638,7 @@ void main() {
   );
 
   testWidgets(
-    'archived statistics retain original type and habit history; stars have no artificial charts',
+    'archived statistics keep their history; stars have no artificial charts',
     (tester) async {
       final c = await _controller(
         stars: [_star(1, DateTime(2026, 9, 29), dead: true)],
@@ -649,29 +648,22 @@ void main() {
         ],
       );
       await tester.pumpWidget(
-        _app(c, const EntityStatsScreen(entity: InsightEntity.star(1))),
+        _app(c, const LightScreen(initialScope: InsightEntity.star(1))),
       );
       await tester.pumpAndSettle();
-      expect(
-        tester.widget<StarTypeText>(find.byType(StarTypeText)).originalKind,
-        StarKind.lit,
-      );
       expect(find.byType(HeatmapPanel), findsNothing);
       expect(find.text(StringsIt().insightArchived), findsOneWidget);
       await tester.pumpWidget(
         _app(
           c,
-          const EntityStatsScreen(
+          const LightScreen(
             key: ValueKey('habit'),
-            entity: InsightEntity.habit(2),
+            initialScope: InsightEntity.habit(2),
           ),
         ),
       );
       await tester.pumpAndSettle();
-      expect(
-        tester.widget<StarTypeText>(find.byType(StarTypeText)).originalKind,
-        StarKind.pulsar,
-      );
+      await tester.scrollUntilVisible(find.byType(HeatmapPanel), 300);
       expect(find.byType(HeatmapPanel), findsOneWidget);
       expect(c.read(const InsightEntity.habit(2)).completions, hasLength(1));
       expect(tester.takeException(), isNull);
@@ -868,6 +860,37 @@ void main() {
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
       settings.dispose();
+      c.dispose();
+    },
+  );
+
+  testWidgets(
+    'Your Light moves down through "where it shines" and back up the trail',
+    (tester) async {
+      final today = DateTime.now();
+      final c = await _controller(
+        stars: [_star(1, today), _star(2, today, project: 2)],
+      );
+      final strings = StringsIt();
+      await tester.pumpWidget(_app(c, const LightScreen()));
+      await tester.pumpAndSettle();
+      expect(find.text(strings.lightPageTitle), findsOneWidget);
+      expect(find.text(strings.lightHeadline), findsOneWidget);
+      // Both victories (intensity 3 each) make the light.
+      expect(find.text('6'), findsOneWidget);
+
+      // Down: the physical area, then back up to everything.
+      final physical = find.text(LifeArea.physical.displayName(strings));
+      await tester.scrollUntilVisible(physical.last, 300);
+      await tester.tap(physical.last);
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text(strings.lightScopeAll), -300);
+      expect(find.text('3'), findsWidgets);
+      await tester.tap(find.text(strings.lightScopeAll));
+      await tester.pumpAndSettle();
+      expect(find.text('6'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
       c.dispose();
     },
   );

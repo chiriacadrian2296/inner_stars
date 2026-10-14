@@ -1,7 +1,7 @@
 import '../widgets/position_counter.dart';
 import '../utils/entity_insights.dart';
 import '../widgets/entity_insights_scope.dart';
-import 'entity_stats_screen.dart';
+import 'light_screen.dart' show openEntityStatistics;
 import '../models/display_text.dart';
 
 import 'dart:async';
@@ -661,7 +661,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
       project: project,
       number: position == -1 ? null : position + 1,
       lit: !habit.dead && isHabitLit(habit, countsByDay),
-      streak: habitCurrentStreak(habit, countsByDay),
+      daysDone: countsByDay.length,
       weekProgress: habit.frequency == HabitFrequency.weekly
           ? habitWeeklyProgress(habit, countsByDay)
           : 0,

@@ -185,10 +185,10 @@ CardBadges starCardBadges(Star star, AppColors colors, AppStrings strings) {
 }
 
 /// The badges for a [habit] (a pulsar): its intensity, then the progress of
-/// today (a daily habit) or of this week (a weekly one) and the streak.
-/// [countsByDay] is the habit's completions per day, taken from a cache —
-/// never read from storage here. A dead habit keeps the same badges, with no
-/// progress and a 0 streak.
+/// today (a daily habit) or of this week (a weekly one), the days done and
+/// the cycle. [countsByDay] is the habit's completions per day, taken from a
+/// cache — never read from storage here. A dead habit keeps the same badges,
+/// with no progress; its days done stay, they were done all the same.
 CardBadges habitCardBadges(
   Habit habit,
   Map<DateTime, int> countsByDay,
@@ -200,7 +200,9 @@ CardBadges habitCardBadges(
   final today = DateTime(clock.year, clock.month, clock.day);
   final dead = habit.dead;
   final lit = !dead && isHabitLit(habit, countsByDay, now: today);
-  final streak = dead ? 0 : habitCurrentStreak(habit, countsByDay, now: today);
+  // Every day with a check-in, ever: it only grows, a missed day never
+  // takes anything away.
+  final daysDone = countsByDay.values.where((count) => count > 0).length;
 
   final CardBadge progress;
   if (dead) {
@@ -247,15 +249,15 @@ CardBadges habitCardBadges(
       [
         progress,
         makeBadge(
-          BadgeSlot.streak,
-          Icons.local_fire_department_rounded,
+          BadgeSlot.daysDone,
+          Icons.event_available_rounded,
           colors,
           color: starKindColor(StarKind.pulsar, colors, lit: lit),
-          value: '$streak',
-          label: strings.habitCurrentStreakLabel,
+          value: '$daysDone',
+          label: strings.habitStatsDaysDoneLabel,
         ),
         // How far the current cycle is (the reward's own progress), next to
-        // the streak rather than instead of it.
+        // the days done.
         makeBadge(
           BadgeSlot.cycle,
           Icons.autorenew_rounded,

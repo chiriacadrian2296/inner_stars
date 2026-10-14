@@ -9,7 +9,8 @@ uniform float uFlareRadius;
 // Which look to draw this whole group in: 0 = the gold lit-star flare (the
 // recipe below), 1 = unlit (a cold, steady blue star), 2 = nascent (a faint
 // gas cloud a star hasn't condensed out of yet), 3 = dead (the thin shell a
-// spent star shed, around a dim remnant). The non-gold looks take their tint
+// spent star shed, around a dim remnant), 4 = today (rings and a halo drawn
+// over a star lit today, on top of its own gold flare). The cold looks take their tint
 // from [uColor] (the palette's own unlit/nascent/dead color).
 uniform float uMode;
 uniform vec3 uColor;
@@ -23,6 +24,9 @@ uniform vec2 uPositions[16];
 // value the instant the view changed, since the hash's own input value
 // was changing too, not just the star's actual screen position.
 uniform vec2 uSeeds[16];
+// How many dots orbit each star — its intensity (1-5) — or 0 for none. Set
+// only in the Galaxy, for victories and pulsars (lit or not).
+uniform float uCounts[16];
 
 out vec4 fragColor;
 
@@ -114,6 +118,24 @@ vec4 coldLook(float mode, vec2 diff, vec2 rotated, float r, float h, float t) {
   return vec4(color, clamp(ring + haze + core, 0.0, 1.0));
 }
 
+// A star's intensity as [count] soft pinpoints of light circling it on a
+// ring, evenly spaced and turning slowly (each star at its own phase).
+// Returns the dots' strength 0..1 at [diff] from the star.
+float intensityOrbit(vec2 diff, float count, float h) {
+  if (count < 0.5) return 0.0;
+  float r = length(diff) / uFlareRadius;
+  const float ringR = 0.11;
+  if (abs(r - ringR) > 0.06) return 0.0;
+  float spin = uTime * 0.3 + h * kTau;
+  float gap = kTau / floor(count + 0.5);
+  float a = mod(atan(diff.y, diff.x) - spin, gap);
+  a = min(a, gap - a);
+  // Distance to the nearest dot, in the same [uFlareRadius] units.
+  vec2 d = vec2(a * ringR, r - ringR);
+  float d2 = dot(d, d);
+  return exp(-d2 / (0.0085 * 0.0085)) + exp(-d2 / (0.02 * 0.02)) * 0.25;
+}
+
 // Interleaved-gradient-noise dither, ±½ of one 8-bit step. These glows fade
 // over hundreds of pixels at high zoom, so without it the 8-bit output
 // quantizes into visible bands/grain instead of a smooth gradient.
@@ -146,6 +168,28 @@ void main() {
     float cosR = cos(-rotation);
     float sinR = sin(-rotation);
     vec2 diff = fragPos - pos;
+    if (uMode > 3.5) {
+      // Today: drawn on top of a star lit today (or a pulsar checked
+      // today) — two rings rippling out of it, half a beat apart, and a
+      // warm halo that breathes, so the day's light is easy to spot from
+      // afar. [r] is in units of [uFlareRadius] like the other looks.
+      float r = length(diff) / uFlareRadius;
+      float phase = fract(uTime * 0.4 + h);
+      float phase2 = fract(phase + 0.5);
+      float r1 = 0.035 + phase * 0.14;
+      float r2 = 0.035 + phase2 * 0.14;
+      float x1 = (r - r1) / 0.007;
+      float x2 = (r - r2) / 0.007;
+      float ring = exp(-x1 * x1) * pow(1.0 - phase, 1.5) +
+                   exp(-x2 * x2) * pow(1.0 - phase2, 1.5);
+      float breath = 0.75 + 0.25 * sin(uTime * 1.8 + h * kTau);
+      float halo = exp(-r * 14.0) * 0.45 * breath;
+      vec3 color = mix(kGold, kCore, 0.55) * ring * 0.9 + kGold * halo;
+      float alpha = clamp(ring * 0.9 + halo, 0.0, 1.0);
+      total += color * alpha;
+      totalAlpha = max(totalAlpha, alpha);
+      continue;
+    }
     if (uMode > 0.5) {
       vec4 cold = coldLook(
         uMode,
@@ -157,6 +201,11 @@ void main() {
       );
       total += cold.rgb * cold.a;
       totalAlpha = max(totalAlpha, cold.a);
+      // An unlit pulsar's intensity dots, in its own cold tint.
+      float coldOrb =
+          clamp(intensityOrbit(diff, uCounts[i], h), 0.0, 1.0) * 0.8;
+      total += mix(uColor, vec3(1.0), 0.35) * coldOrb * coldOrb;
+      totalAlpha = max(totalAlpha, coldOrb);
       continue;
     }
     vec2 rotated = vec2(
@@ -185,6 +234,10 @@ void main() {
 
     vec3 color = kGold * (glow + spikes) + kCore * core * 1.5;
     float alpha = clamp(glow + spikes + core, 0.0, 1.0);
+    // The intensity dots, burning gold like the star they circle.
+    float orb = clamp(intensityOrbit(diff, uCounts[i], h), 0.0, 1.0) * 0.9;
+    color += mix(kGold, kCore, 0.45) * orb;
+    alpha = max(alpha, orb);
 
     // Additive color, max'd alpha — two overlapping stars (rare, but not
     // impossible for a dense/small constellation) brighten rather than

@@ -136,24 +136,27 @@ void main() {
       dead: dead,
     );
 
-    test('always has progress, streak and cycle, and the intensity apart', () {
-      for (final h in [
-        habit(),
-        habit(target: 3),
-        habit(frequency: HabitFrequency.weekly, target: 3),
-        habit(dead: true),
-      ]) {
-        final rows = habitCardBadges(
-          h,
-          counts([today]),
-          colors,
-          strings,
-          now: today,
-        );
-        expect(slots(rows), kBadgeRows[BadgeCardKind.habit]);
-        expect(rows.intensity, isNotNull);
-      }
-    });
+    test(
+      'always has progress, days done and cycle, and the intensity apart',
+      () {
+        for (final h in [
+          habit(),
+          habit(target: 3),
+          habit(frequency: HabitFrequency.weekly, target: 3),
+          habit(dead: true),
+        ]) {
+          final rows = habitCardBadges(
+            h,
+            counts([today]),
+            colors,
+            strings,
+            now: today,
+          );
+          expect(slots(rows), kBadgeRows[BadgeCardKind.habit]);
+          expect(rows.intensity, isNotNull);
+        }
+      },
+    );
 
     test('a weekly habit shows the week count, gold once today is marked', () {
       final weekly = habit(frequency: HabitFrequency.weekly, target: 3);
@@ -191,7 +194,7 @@ void main() {
       expect(progress(habit(), [today]), '1/1');
     });
 
-    test('a dead habit has a dash for progress and a 0 streak', () {
+    test('a dead habit has a dash for progress and keeps its days done', () {
       final row = habitCardBadges(
         habit(dead: true),
         {},
@@ -204,7 +207,18 @@ void main() {
       expect(row.last.value, '—');
     });
 
-    test('shows how far the current cycle is next to the streak', () {
+    test('days done count every day with a check-in, ever', () {
+      final row = habitCardBadges(
+        habit(),
+        counts([today, DateTime(2026, 1, 2), DateTime(2025, 12, 1)]),
+        colors,
+        strings,
+        now: today,
+      ).rows.single;
+      expect(row[1].value, '3');
+    });
+
+    test('shows how far the current cycle is next to the days done', () {
       final row = habitCardBadges(
         Habit(
           id: 1,

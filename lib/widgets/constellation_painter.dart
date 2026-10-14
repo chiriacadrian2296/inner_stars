@@ -68,6 +68,7 @@ class ConstellationStar {
     this.slotSequence,
     this.intensity,
     this.photoPath,
+    this.litToday = false,
   });
 
   /// The [Star]/[Habit] this stands for. Always 0 for a
@@ -113,6 +114,11 @@ class ConstellationStar {
   /// The star's photo, if it has one (see [Star.photoPath]) — shown inside
   /// its button on the single-constellation view; the Sky ignores it.
   final String? photoPath;
+
+  /// Lit (a victory achieved today) or checked (a pulsar) today — drawn
+  /// with an extra, breathing flare so the day's light is easy to find.
+  /// Only the Galaxy sets it.
+  final bool litToday;
 }
 
 /// Compiles `shaders/constellation_flare.frag` once — callers hold the
@@ -139,6 +145,7 @@ class ConstellationPainter extends CustomPainter {
     this.sparkleScale = 1,
     this.glowScale = 1,
     this.time = 0,
+    this.intensityOrbits = false,
   });
 
   final List<ConstellationStar> stars;
@@ -158,6 +165,11 @@ class ConstellationPainter extends CustomPainter {
   /// flicker phase) so any caller that doesn't thread a real clock through
   /// still renders correctly, just without the pulse.
   final double time;
+
+  /// Whether victories and pulsars (lit or not) get their intensity drawn
+  /// around them as that many dots slowly orbiting the star — the Galaxy
+  /// only. Goals, nascent and dead stars never do.
+  final bool intensityOrbits;
 
   /// One color per [StarKind] family — see [StarPalette].
   final StarPalette palette;
@@ -192,7 +204,7 @@ class ConstellationPainter extends CustomPainter {
   /// completed) — deliberately NOT a deep list comparison, so pan/zoom
   /// gesture frames never trigger a repaint. Since a star's [ConstellationStar.lit]
   /// can now flip without [stars.length] changing at all (an achieved goal,
-  /// a tombstoned star, a habit's streak breaking), correctness here depends
+  /// a tombstoned star, a habit checked or not today), correctness here depends
   /// entirely on the caller bumping this — the painter has no cheap way to
   /// detect that change itself.
   final int revision;
@@ -263,12 +275,36 @@ class ConstellationPainter extends CustomPainter {
     // A lit star and a kept pulsar burn with the same gold — they differ
     // only in size (a pulsar is the smaller, scattered kind) and in how
     // easily they go out again.
-    _drawGlowAndSparkle(canvas, size, burning, flareRadius: size.width * 0.42);
+    _drawGlowAndSparkle(
+      canvas,
+      size,
+      burning,
+      flareRadius: size.width * 0.42,
+      orbits: intensityOrbits,
+    );
     _drawGlowAndSparkle(
       canvas,
       size,
       burningPulsars,
       flareRadius: size.width * 0.42 * 0.55,
+      orbits: intensityOrbits,
+    );
+    // Today's light: rings rippling out of every star lit today (and every
+    // pulsar checked today) and a breathing halo, until midnight — see
+    // `constellation_flare.frag`'s today look.
+    _drawGlowAndSparkle(
+      canvas,
+      size,
+      burning.where((s) => s.litToday).toList(),
+      flareRadius: size.width * 0.42,
+      mode: _kModeToday,
+    );
+    _drawGlowAndSparkle(
+      canvas,
+      size,
+      burningPulsars.where((s) => s.litToday).toList(),
+      flareRadius: size.width * 0.42 * 0.55,
+      mode: _kModeToday,
     );
     // The "no light" kinds are drawn by the same shader as the burning ones,
     // just in a calm, steady look of their own (see `constellation_flare.frag`'s
@@ -293,6 +329,7 @@ class ConstellationPainter extends CustomPainter {
         flareRadius: coldRadius * 0.55,
         mode: _kModeUnlit,
         tint: palette.unlit,
+        orbits: intensityOrbits,
       );
       _drawGlowAndSparkle(
         canvas,
@@ -349,6 +386,7 @@ class ConstellationPainter extends CustomPainter {
   static const _kModeUnlit = 1.0;
   static const _kModeNascent = 2.0;
   static const _kModeDead = 3.0;
+  static const _kModeToday = 4.0;
 
   // At least `kMaxConstellationStars` (a group can be every star of a
   // constellation) — must match `constellation_flare.frag`'s own `kMaxStars`
@@ -374,6 +412,8 @@ class ConstellationPainter extends CustomPainter {
     required double flareRadius,
     double mode = _kModeLit,
     Color tint = const Color(0xFFF2B84B),
+    // Draw each star's intensity as orbiting dots (see [intensityOrbits]).
+    bool orbits = false,
   }) {
     if (group.isEmpty) return;
 
@@ -403,6 +443,8 @@ class ConstellationPainter extends CustomPainter {
     // of staying fixed between a star's own occasional flicker.
     final positions = Float32List(_kMaxFlareStars * 2);
     final seeds = Float32List(_kMaxFlareStars * 2);
+    // How many dots orbit each star: its intensity, or none.
+    final counts = Float32List(_kMaxFlareStars);
     for (var i = 0; i < _kMaxFlareStars; i++) {
       if (i < group.length) {
         final center = _toCanvas(group[i].position, size);
@@ -410,6 +452,7 @@ class ConstellationPainter extends CustomPainter {
         positions[i * 2 + 1] = center.dy;
         seeds[i * 2] = group[i].position.dx;
         seeds[i * 2 + 1] = group[i].position.dy;
+        counts[i] = orbits ? (group[i].intensity ?? 0).toDouble() : 0;
       } else {
         positions[i * 2] = -1;
         positions[i * 2 + 1] = -1;
@@ -436,6 +479,9 @@ class ConstellationPainter extends CustomPainter {
     }
     for (var i = 0; i < seeds.length; i++) {
       shader.setFloat(base + positions.length + i, seeds[i]);
+    }
+    for (var i = 0; i < counts.length; i++) {
+      shader.setFloat(base + positions.length + seeds.length + i, counts[i]);
     }
     // BlendMode.plus, not the default srcOver — this is the actual
     // structural difference from the bg's own flare stars, not a tuning

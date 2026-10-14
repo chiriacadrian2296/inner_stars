@@ -16,8 +16,8 @@ import 'share_arrangement.dart';
 /// lit-star original this family follows) — exists only to be captured as
 /// an image via a [RepaintBoundary] wrapped around it (see `SkyScreen`'s
 /// own creation share flow). Only ever built for a freshly created pulsar,
-/// so its streak is always zero — there's been no day for it to keep the
-/// rhythm on yet.
+/// so it has no days done yet — there's been no day for it to be checked
+/// on yet.
 class ShareablePulsarCard extends StatelessWidget {
   const ShareablePulsarCard({super.key, required this.habit, this.project});
 

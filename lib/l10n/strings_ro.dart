@@ -370,55 +370,7 @@ class StringsRo implements AppStrings {
   String get statsTitle => 'Statistici';
 
   @override
-  String get todayStarSectionLabel => 'Victoria de Azi';
-  @override
-  String get litTodayTitle => 'Felicitări, ai înregistrat o victorie azi!';
-  @override
-  String get litTodayTitleHighlight => 'victorie';
-  @override
-  String get litTodaySubtitle => '- ai adus lumină nouă în viața ta -';
-  @override
-  String get litTodaySubtitleHighlight => 'lumină';
-  @override
-  String get notLitTodayLabel => 'Încă nu ai înregistrat nicio victorie azi';
-  @override
-  String get notLitTodayHighlight => 'victorie';
-  @override
-  String get lightStarCta => 'Înregistrează o victorie';
-  @override
-  String get totalStarsLabel => 'Total Victorii';
-  @override
-  String get streaksSectionLabel => 'Serii';
-  @override
-  String get currentStreakLabel => 'Serie Curentă';
-  @override
-  String get longestStreakLabel => 'Cea Mai Lungă Serie';
-  @override
-  String get activityLabel => 'Activitate';
-  @override
-  String get dayDetailEmpty => 'Nicio victorie înregistrată în această zi.';
-  @override
-  String get addStarForDayLabel => 'Adaugă';
-
-  @override
-  String get firstStarLabel => 'Prima Victorie';
-  @override
-  String get mostRecentStarLabel => 'Cea Mai Recentă Victorie';
-  @override
-  String get combinedIntensityLabel => 'Intensitate Combinată';
-  @override
-  String get starsByAreaLabel => 'După Aria de Viață';
-  @override
-  String get streakFromLabel => 'De la';
-  @override
-  String get streakToLabel => 'Până la';
-  @override
   String get todayLabel => 'Azi';
-  @override
-  String get starsLoggedLabel => 'Victorii Înregistrate';
-  @override
-  String get noCurrentStreakBody =>
-      'Nicio serie în curs. Înregistrează o victorie azi pentru a începe una.';
 
   @override
   String get searchHint => 'Caută arii, proiecte și activități';
@@ -514,6 +466,8 @@ class StringsRo implements AppStrings {
   String get dateFieldOccurred => 'Eveniment';
   @override
   String get clearFilterAction => 'Resetează';
+  @override
+  String get backToTopAction => 'Înapoi sus';
   @override
   String get clearSearchTooltip => 'Șterge căutarea';
   @override
@@ -1602,8 +1556,6 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get cycleReflectAction => 'Reflectă la Ciclu';
 
   @override
-  String get habitCurrentStreakLabel => 'Serie Curentă';
-  @override
   String get habitCheckAction => 'Bifează';
   @override
   String get habitUncheckAction => 'Debifează';
@@ -1647,41 +1599,15 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
       ? 'Săptămâna aceasta · azi bifat'
       : 'Săptămâna aceasta · azi încă nu';
   @override
-  String get habitStatsSectionTitle => 'Obiceiuri';
-  @override
-  String get starsStatsSectionTitle => 'Victorii';
-  @override
   String get habitStatsActiveLabel => 'Active';
-  @override
-  String get habitStatsDoneTodayLabel => 'Făcute Azi';
   @override
   String get habitStatsDaysDoneLabel => 'Zile Făcute';
   @override
   String get habitStatsCyclesLabel => 'Cicluri Finalizate';
   @override
-  String get habitStatsLongestLabel => 'Record Personal';
-  @override
   String get habitStatsTotalLabel => 'Completări Totale';
   @override
-  String get habitStatsTrendLabel => 'Ritm Recent';
-  @override
-  String get habitStatsWeekdaysLabel => 'Săptămâna Ta';
-  @override
-  String get habitStatsBestDayLabel => 'Ziua Cea Mai Bună';
-  @override
-  String get habitStatsNotEnoughData =>
-      'Mai este nevoie de puțin istoric pentru acest tipar.';
-  @override
-  String get habitStatsArchiveAction => 'Arhivă';
-  @override
-  String get habitStatsArchiveTitle => 'Obiceiuri Arhivate';
-  @override
-  String get habitStatsArchiveEmpty => 'Încă nu există obiceiuri arhivate.';
-  @override
   String habitStatsDays(int count) => count == 1 ? '1 zi' : '$count zile';
-  @override
-  String habitStatsWeeks(int count) =>
-      count == 1 ? '1 săptămână' : '$count săptămâni';
 
   @override
   String activePulsarsBadge(int count) =>
@@ -1742,8 +1668,6 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get targetDateBadgeLabel => 'Țintă';
   @override
   String get deadDateBadgeLabel => 'Arhivată';
-  @override
-  String get streakBadgeLabel => 'Serie';
   @override
   String get noPhotoLabel => 'Fără Fotografie';
   @override
@@ -2246,6 +2170,75 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get deleteProjectConfirmBody =>
       'Activitățile, obiceiurile, completările și fotografiile vor fi șterse definitiv. Această acțiune nu poate fi anulată.';
+
+  @override
+  String get lightPageTitle => 'Lumina Ta';
+  @override
+  String get lightScopeAll => 'Tot';
+  @override
+  String get lightPeriodAllTime => 'De La Început';
+  @override
+  String get lightPeriodYear => 'Anul Acesta';
+  @override
+  String get lightPeriodMonth => 'Luna Aceasta';
+  @override
+  String get lightHeadline => 'Privește câtă lumină ai aprins.';
+  @override
+  String get lightHeadlineEmpty => 'Aici va prinde formă lumina ta.';
+  @override
+  String lightCyclesCount(int count) =>
+      count == 1 ? '1 Ciclu' : '$count Cicluri';
+  @override
+  String lightDaysCount(int count) =>
+      count == 1 ? '1 Zi Luminoasă' : '$count Zile Luminoase';
+  @override
+  String get lightCurveLabel => 'Intensitate Acumulată';
+  @override
+  String get lightCalendarLabel => 'Zile Luminoase';
+  @override
+  String get lightBreakdownLabel => 'Unde Strălucește';
+  @override
+  String get lightMomentsLabel => 'Momente';
+  @override
+  String get lightSeeAllTimeAction => 'Vezi De La Început';
+  @override
+  String get lightGoalWaitingBody =>
+      'Acest obiectiv își așteaptă momentul: când îl vei atinge, lumina lui va apărea aici.';
+  @override
+  String get lightCurveHint =>
+      'Atinge sau glisează pe grafic pentru a vedea data și totalul.';
+  @override
+  String get momentFirstVictory => 'Prima Victorie';
+  @override
+  String get momentFirstDay => 'Prima Zi';
+  @override
+  String get momentBrightestDay => 'Cea Mai Luminoasă Zi';
+  @override
+  String get momentLongestRun => 'Zile La Rând';
+  @override
+  String get momentFavouriteWeekday => 'Ziua În Care Strălucești Cel Mai Mult';
+  @override
+  String get momentBrightestMonth => 'Cea Mai Luminoasă Lună';
+  @override
+  String get momentLongestCycle => 'Cel Mai Lung Ciclu';
+  @override
+  List<String> get weekdayNames => const [
+    'Luni',
+    'Marți',
+    'Miercuri',
+    'Joi',
+    'Vineri',
+    'Sâmbătă',
+    'Duminică',
+  ];
+  @override
+  String todayLightChip(int count) => '$count Azi';
+  @override
+  String get todayLightChipTooltip => 'Stelele aprinse azi';
+  @override
+  String get todayLightPrevious => 'Anterioara';
+  @override
+  String get todayLightNext => 'Următoarea';
 }
 
 const _fullMonths = [

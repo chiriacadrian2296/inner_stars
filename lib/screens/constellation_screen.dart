@@ -10,7 +10,7 @@ import '../utils/habit_stats.dart';
 import '../utils/entity_insights.dart';
 import '../widgets/entity_insights_scope.dart';
 import '../widgets/grouped_action_layout.dart';
-import 'entity_stats_screen.dart';
+import 'light_screen.dart' show openEntityStatistics;
 
 import '../widgets/icon_with_new_badge.dart';
 import '../models/display_text.dart';
@@ -49,7 +49,6 @@ import '../widgets/responsive_content.dart';
 import '../widgets/sky_navigation_target.dart';
 import '../widgets/shareable_constellation_card.dart';
 import '../widgets/staggered_entrance.dart';
-import 'pulsar_reader_screen.dart';
 import 'share_preview_screen.dart';
 import 'new_project_screen.dart';
 import 'star_form_screen.dart';
@@ -63,7 +62,7 @@ import 'star_reader_screen.dart';
 /// stars scattered around/inside/outside the shape (see
 /// [seededPulsarPosition]), never part of that graph.
 ///
-/// Tapping a star opens [StarReaderScreen]/[PulsarReaderScreen], or — for a
+/// Tapping a star opens [StarReaderScreen], or — for a
 /// nascent one — the [StarFormScreen] that configures that exact slot,
 /// which is the one way this screen creates anything.
 class ConstellationScreen extends StatefulWidget {
@@ -889,6 +888,9 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                                       fitScale: _fitScaleFor(viewportSize),
                                       onStarTap: _openStar,
                                       cardBuilder: _buildMapCard,
+                                      autoFrame:
+                                          widget.initialTransform == null ||
+                                          _hasNavigatedConstellations,
                                     ),
                                   );
                                 },

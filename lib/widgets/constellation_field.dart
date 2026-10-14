@@ -1665,6 +1665,7 @@ class ConstellationFieldPainter extends CustomPainter {
         sparkleScale: 2.2,
         glowScale: 1.8,
         time: time,
+        intensityOrbits: true,
       ).paint(canvas, Size.square(localSizePx));
       canvas.restore();
 

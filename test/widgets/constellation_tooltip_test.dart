@@ -80,6 +80,27 @@ void main() {
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 200));
       await tester.pumpAndSettle();
+      final mapBounds = tester.getRect(find.byType(ConstellationMapView));
+      for (final tooltip in [
+        SkyStarTooltip,
+        SkyPulsarTooltip,
+        SkyNascentStarTooltip,
+      ]) {
+        final placements = find.ancestor(
+          of: find.byType(tooltip),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is Positioned && widget.child is FittedBox,
+          ),
+        );
+        for (final element in placements.evaluate()) {
+          final rect = tester.getRect(find.byWidget(element.widget));
+          expect(rect.left, greaterThanOrEqualTo(mapBounds.left + 15));
+          expect(rect.right, lessThanOrEqualTo(mapBounds.right - 15));
+          expect(rect.top, greaterThanOrEqualTo(mapBounds.top + 15));
+          expect(rect.bottom, lessThanOrEqualTo(mapBounds.bottom - 71));
+        }
+      }
+      expect(tester.widget<Text>(find.text('Obiettivo')).maxLines, 1);
       Finder action(Type tooltip, IconData icon) => find.descendant(
         of: find.descendant(
           of: find.byType(tooltip).first,

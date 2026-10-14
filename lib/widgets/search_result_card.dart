@@ -318,6 +318,7 @@ class SearchCardTextContent extends StatelessWidget {
     this.breadcrumb,
     this.description,
     this.descriptionMatched = false,
+    this.titleMaxLines = 1,
   });
 
   final String? eyebrow;
@@ -331,6 +332,7 @@ class SearchCardTextContent extends StatelessWidget {
   final String? eyebrowSecond;
   final StarKind? archivedOriginalKind;
   final String title;
+  final int titleMaxLines;
   final String? breadcrumb;
   final String? description;
   final bool descriptionMatched;
@@ -392,7 +394,7 @@ class SearchCardTextContent extends StatelessWidget {
         ],
         Text(
           title,
-          maxLines: 1,
+          maxLines: titleMaxLines,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontFamily: kFontStarTitle,

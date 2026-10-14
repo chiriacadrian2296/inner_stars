@@ -58,8 +58,9 @@ void main() {
       AreaVisionRepository visions,
       ReflectionAnswerRepository reflections,
     })
-    repositories,
-  ) async {
+    repositories, {
+    SkyExplorerSession? session,
+  }) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -86,6 +87,7 @@ void main() {
                 areaVisionRepository: repositories.visions,
                 reflectionAnswerRepository: repositories.reflections,
                 settings: settings,
+                session: session,
                 onNavigateTo: (_) {},
               ),
             ),
@@ -122,6 +124,52 @@ void main() {
     expect(tester.getSize(firstSurface).height, 88);
     expect(tester.takeException(), isNull);
   }, skip: !kShowSkyListView);
+
+  testWidgets('Sky reveals back to top and moves it beside the footer mark', (
+    tester,
+  ) async {
+    final repos = await repositories();
+    final session = SkyExplorerSession();
+    await pumpExplorer(tester, repos, session: session);
+    tester.view.physicalSize = const Size(390, 400);
+    await tester.pumpAndSettle();
+
+    final hitRegion = find.byKey(const Key('sky-back-to-top-hit-region'));
+    final position = find.byKey(const Key('sky-back-to-top-position'));
+    final scrollView = find.byType(CustomScrollView);
+    expect(tester.widget<IgnorePointer>(hitRegion).ignoring, isTrue);
+
+    await tester.drag(scrollView, const Offset(0, -270));
+    await tester.pumpAndSettle();
+    expect(session.scrollOffsets[0], greaterThanOrEqualTo(240));
+    expect(
+      tester.widget<AnimatedAlign>(position).alignment,
+      Alignment.center,
+    );
+
+    await tester.fling(scrollView, const Offset(0, -1000), 3000);
+    await tester.pumpAndSettle();
+    expect(session.scrollOffsets[0], greaterThan(240));
+    expect(tester.widget<IgnorePointer>(hitRegion).ignoring, isFalse);
+    expect(
+      tester.widget<AnimatedAlign>(position).alignment,
+      Alignment.centerLeft,
+    );
+    final button = find.byKey(const Key('sky-back-to-top-button'));
+    expect(tester.getTopLeft(button).dx, closeTo(20, 0.1));
+    expect(
+      tester.getCenter(button).dy,
+      closeTo(tester.getCenter(find.byType(FloatingActionButton)).dy, 0.1),
+    );
+    expect(
+      tester.getCenter(find.byKey(const Key('app-footer-mark-unit'))).dy,
+      closeTo(tester.getCenter(find.byType(FloatingActionButton)).dy, 0.5),
+    );
+
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    expect(tester.widget<IgnorePointer>(hitRegion).ignoring, isTrue);
+  });
 
   testWidgets('area cards expose their dock actions in the quick menu', (
     tester,

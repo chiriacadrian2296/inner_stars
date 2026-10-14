@@ -104,7 +104,7 @@ void main() {
                   project: null,
                   number: null,
                   lit: false,
-                  streak: 0,
+                  daysDone: 0,
                   weekProgress: 0,
                   entrance: entrance,
                 )
@@ -115,12 +115,7 @@ void main() {
                 ),
           GalleryStarTile(
             data: type == StarKind.pulsar
-                ? GalleryStarData.fromHabit(
-                    habit,
-                    null,
-                    streak: 0,
-                    pulsarLit: false,
-                  )
+                ? GalleryStarData.fromHabit(habit, null, pulsarLit: false)
                 : GalleryStarData.fromStar(star, null),
           ),
           type == StarKind.pulsar
