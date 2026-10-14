@@ -254,6 +254,20 @@ CardBadges habitCardBadges(
           value: '$streak',
           label: strings.habitCurrentStreakLabel,
         ),
+        // How far the current cycle is (the reward's own progress), next to
+        // the streak rather than instead of it.
+        makeBadge(
+          BadgeSlot.cycle,
+          Icons.autorenew_rounded,
+          colors,
+          color: starKindColor(StarKind.pulsar, colors, lit: lit),
+          value: dead
+              ? '—'
+              : '${habitCycleProgress(habit, countsByDay, now: today).clamp(0, habit.cycleLength)}'
+                    '/${habit.cycleLength}',
+          zero: dead,
+          label: strings.habitCycleLabel,
+        ),
       ],
     ],
   );

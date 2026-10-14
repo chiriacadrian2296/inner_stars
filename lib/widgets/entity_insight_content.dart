@@ -7,6 +7,8 @@ import '../models/life_area.dart';
 import '../models/star_kind.dart';
 import '../utils/date_math.dart';
 import '../utils/entity_insights.dart';
+import '../utils/star_stats.dart' show cycleIntensityTotal;
+import 'habit_cycle_scope.dart';
 import '../theme/app_colors.dart';
 
 String insightTitle(BuildContext context, EntityInsights data) {
@@ -40,9 +42,9 @@ List<({String label, String value})> insightMetrics(
   EntityInsights data,
 ) {
   final s = context.strings;
-  String rate() => data.consistency == null
-      ? s.insightNoData
-      : '${(data.consistency! * 100).round()}%';
+  final cycles = HabitCycleScope.maybeOf(context)?.getAll() ?? const [];
+  String daysDone() =>
+      data.daysDone == null ? s.insightNoData : '${data.daysDone}';
   String date(DateTime? value) => value == null
       ? s.insightNoData
       : MaterialLocalizations.of(context).formatMediumDate(value);
@@ -65,8 +67,15 @@ List<({String label, String value})> insightMetrics(
       ),
       (
         label:
-            '${s.habitStatsConsistencyLabel} · ${s.habitStatsDays(data.range.days)}',
-        value: rate(),
+            '${s.habitStatsDaysDoneLabel} · ${s.habitStatsDays(data.range.days)}',
+        value: daysDone(),
+      ),
+      // Stars and completed pulsar cycles both add to an area's or
+      // constellation's intensity.
+      (
+        label: s.intensityLabel,
+        value:
+            '${data.starIntensity + cycleIntensityTotal(cycles, habitIds: {for (final h in data.habits) h.id})}',
       ),
     ];
   }
@@ -92,8 +101,20 @@ List<({String label, String value})> insightMetrics(
       ),
       (
         label:
-            '${s.habitStatsConsistencyLabel} · ${s.habitStatsDays(data.range.days)}',
-        value: rate(),
+            '${s.habitStatsDaysDoneLabel} · ${s.habitStatsDays(data.range.days)}',
+        value: daysDone(),
+      ),
+      (
+        label: s.habitCycleLabel,
+        value: s.cycleProgressLabel(
+          data.cycleProgress(habit).clamp(0, habit.cycleLength),
+          habit.cycleLength,
+        ),
+      ),
+      (label: s.habitRewardLabel, value: '${habit.intensity}/5'),
+      (
+        label: s.habitStatsCyclesLabel,
+        value: '${cycles.where((c) => c.habitId == habit.id).length}',
       ),
       if (habit.dead) (label: s.insightArchived, value: date(habit.deadDate)),
       if (habit.dead)

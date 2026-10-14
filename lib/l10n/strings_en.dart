@@ -1376,7 +1376,7 @@ My contribution meets a real need and is something I can sustain.
   String get addExtraAction => 'Add';
   @override
   String get createChooserQuestion =>
-      'What would you like to add to your galaxy?';
+      'What would you like to add to your Galaxy?';
   @override
   String mediaMaxDuration(String duration) => 'Max $duration';
   @override
@@ -1513,12 +1513,12 @@ My contribution meets a real need and is something I can sustain.
       'This activity is archived. You can reactivate it as a new activity in the same spot in Galaxy.';
   @override
   String get deadPulsarBody =>
-      'This habit is archived. You can reactivate it as a new habit in the same spot in Galaxy; its previous streak and completions will be reset.';
+      'This habit is archived. You can reactivate it as a new habit in the same spot in Galaxy; its previous streak and completions will be reset (cycles it already finished keep their reward).';
   @override
   String get reigniteAction => 'Reactivate';
 
   @override
-  String get habitFrequencyLabel => 'Frequency';
+  String get habitFrequencyLabel => 'Preferred Rhythm';
   @override
   String get habitFrequencyDaily => 'Every day';
   @override
@@ -1532,6 +1532,65 @@ My contribution meets a real need and is something I can sustain.
       : '$times times a week, on $times different days';
   @override
   String get customReminderToggleLabel => 'Custom Reminder Time';
+
+  @override
+  String get habitCycleLabel => 'Cycle Length';
+  @override
+  String get habitCycleCustom => 'Custom';
+  @override
+  String habitCycleSummary(int days) => days == 1
+      ? 'Do it on 1 day to complete the cycle.'
+      : 'Do it on $days different days to complete the cycle — no rush, no deadline.';
+  @override
+  String get habitRewardLabel => 'Reward';
+  @override
+  String cycleProgressLabel(int done, int length) => '$done/$length days';
+  @override
+  String get cycleHistoryTitle => 'Completed Cycles';
+  @override
+  String cycleHistoryItem(int length) => length == 1 ? '1 day' : '$length days';
+  @override
+  String get cycleDoneTitle => 'You did it!';
+  @override
+  String cycleDoneBody(int length) => length == 1
+      ? 'You showed up. That counts.'
+      : 'You showed up on $length different days. That is all yours.';
+  @override
+  String get cycleRewardEarned => 'Intensity Earned';
+  @override
+  String get cycleReflectionIntro =>
+      'Take a moment to look back. These questions are optional.';
+  @override
+  String get cycleQuestionHelped => 'What helped you?';
+  @override
+  String get cycleQuestionHard => 'What was hard?';
+  @override
+  String get cycleQuestionFeel => 'How do you feel now?';
+  @override
+  String get cycleNextTitle => 'What now?';
+  @override
+  String get cycleOptionRestartTitle => 'Start Again';
+  @override
+  String get cycleOptionRestartBody =>
+      'A new cycle with the same length and the same reward.';
+  @override
+  String get cycleOptionChangeTitle => 'Change It';
+  @override
+  String get cycleOptionChangeBody =>
+      'Pick a new length and a new reward for the next cycle.';
+  @override
+  String get cycleOptionCloseTitle => 'Wrap This Habit Up';
+  @override
+  String get cycleOptionCloseBody =>
+      'It goes to the archive with everything you earned from it.';
+  @override
+  String get cycleContinueAction => 'Continue';
+  @override
+  String get cycleArchiveAction => 'Archive';
+  @override
+  String get cycleLaterAction => 'Later';
+  @override
+  String get cycleReflectAction => 'Reflect on the Cycle';
 
   @override
   String get habitCurrentStreakLabel => 'Current Streak';
@@ -1584,9 +1643,11 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get habitStatsActiveLabel => 'Active';
   @override
-  String get habitStatsOnTrackLabel => 'On Track';
+  String get habitStatsDoneTodayLabel => 'Done Today';
   @override
-  String get habitStatsConsistencyLabel => 'Consistency';
+  String get habitStatsDaysDoneLabel => 'Days Done';
+  @override
+  String get habitStatsCyclesLabel => 'Cycles Completed';
   @override
   String get habitStatsLongestLabel => 'Personal Best';
   @override
@@ -1597,8 +1658,6 @@ My contribution meets a real need and is something I can sustain.
   String get habitStatsWeekdaysLabel => 'Your Week';
   @override
   String get habitStatsBestDayLabel => 'Strongest Day';
-  @override
-  String get habitStatsSupportDayLabel => 'Day to Support';
   @override
   String get habitStatsNotEnoughData =>
       'A little more history will reveal this pattern.';
@@ -1828,7 +1887,7 @@ My contribution meets a real need and is something I can sustain.
       'Every burning star carries an intensity, 1 to 5 — how much the '
       'effort actually cost you, not how big the result looks from '
       'outside. A lit star keeps the intensity it took; a pulsar carries '
-      'what it costs you each day.';
+      'the reward you chose for its cycle, earned when you finish it.';
 
   @override
   List<String> get upliftingQuotes => const [

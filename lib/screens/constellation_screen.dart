@@ -36,6 +36,7 @@ import '../models/star.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
+import '../widgets/habit_cycle_scope.dart';
 import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import '../widgets/constellation_map/constellation_map_view.dart';
@@ -489,6 +490,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
         intensity: result.intensity ?? habit.intensity,
         frequency: result.habitFrequency ?? habit.frequency,
         targetPerPeriod: result.habitTargetPerPeriod ?? habit.targetPerPeriod,
+        cycleLength: result.habitCycleLength ?? habit.cycleLength,
         reminderHour: result.reminderHour,
         reminderMinute: result.reminderMinute,
         completionRepository: completions,
@@ -523,6 +525,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
       intensity: formResult.intensity ?? habit.intensity,
       frequency: formResult.habitFrequency ?? habit.frequency,
       targetPerPeriod: formResult.habitTargetPerPeriod ?? habit.targetPerPeriod,
+      cycleLength: formResult.habitCycleLength ?? habit.cycleLength,
       reminderHour: formResult.reminderHour,
       reminderMinute: formResult.reminderMinute,
     );
@@ -644,10 +647,13 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
     if (!confirmed) return;
     final id = _project.id;
     final shapeId = _project.starsShapeId;
+    if (!mounted) return;
+    final cycleRepository = HabitCycleScope.read(context);
     final habitIds = await widget.habitRepository.deleteAllForProject(id);
     for (final habitId in habitIds) {
       await widget.habitCompletionRepository.deleteAllForHabit(habitId);
     }
+    await cycleRepository?.deleteAllForHabits(habitIds);
     await widget.starRepository.deleteAllForProject(id);
     await widget.projectRepository.delete(id);
     if (shapeId != null &&
@@ -711,6 +717,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
           intensity: result.intensity ?? 3,
           frequency: result.habitFrequency ?? HabitFrequency.daily,
           targetPerPeriod: result.habitTargetPerPeriod ?? 1,
+          cycleLength: result.habitCycleLength ?? kDefaultCycleLength,
           reminderHour: result.reminderHour,
           reminderMinute: result.reminderMinute,
         );

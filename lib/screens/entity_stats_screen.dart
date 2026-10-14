@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/strings_scope.dart';
 import '../models/display_text.dart';
+import '../models/habit_cycle.dart';
 import '../models/life_area.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
@@ -9,6 +10,8 @@ import '../theme/app_typography.dart';
 import '../utils/entity_insights.dart';
 import '../utils/habit_stats.dart';
 import '../utils/icon_for_slug.dart';
+import '../utils/star_stats.dart' show cycleIntensityTotal;
+import '../widgets/habit_cycle_scope.dart';
 import '../widgets/activity_check_card.dart';
 import '../widgets/entity_insight_content.dart';
 import '../widgets/entity_insights_scope.dart';
@@ -41,6 +44,10 @@ class _EntityStatsScreenState extends State<EntityStatsScreen> {
     final controller = EntityInsightsScope.maybeOf(context)!;
     final data = controller.read(widget.entity, range: _range);
     final habit = data.habits.firstOrNull;
+    final habitCycles = habit == null
+        ? const <HabitCycle>[]
+        : HabitCycleScope.maybeOf(context)?.getAllForHabit(habit.id) ??
+              const <HabitCycle>[];
     final star = data.stars.firstOrNull;
     final project = widget.entity.kind == InsightEntityKind.project
         ? data.projects.firstOrNull
@@ -131,7 +138,7 @@ class _EntityStatsScreenState extends State<EntityStatsScreen> {
                         figures: Text(
                           data.summary(activeHabit).trend.isEmpty
                               ? strings.insightNoData
-                              : '${(data.summary(activeHabit).completionRate * 100).round()}%',
+                              : '${data.cycleProgress(activeHabit).clamp(0, activeHabit.cycleLength)}/${activeHabit.cycleLength}',
                           style: TextStyle(color: context.colors.text),
                         ),
                         onTap: () => openEntityStatistics(
@@ -143,7 +150,7 @@ class _EntityStatsScreenState extends State<EntityStatsScreen> {
                 ],
                 if (habit != null) ...[
                   const SizedBox(height: 20),
-                  if (data.consistency == null)
+                  if (data.daysDone == null)
                     Text(strings.insightNoData)
                   else
                     HabitAnalytics(
@@ -151,6 +158,8 @@ class _EntityStatsScreenState extends State<EntityStatsScreen> {
                       summary: data.summary(habit),
                       range: _range,
                       onRangeChanged: (range) => setState(() => _range = range),
+                      completedCycles: habitCycles.length,
+                      rewardEarned: cycleIntensityTotal(habitCycles),
                     ),
                   const SizedBox(height: 20),
                   HeatmapPanel(

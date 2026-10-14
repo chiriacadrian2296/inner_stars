@@ -1,5 +1,7 @@
 import '../data/project_repository.dart';
 import '../data/star_repository.dart';
+import '../models/habit.dart';
+import '../models/habit_cycle.dart';
 import '../models/life_area.dart';
 import '../models/project.dart';
 import '../models/star.dart';
@@ -61,6 +63,45 @@ Map<DateTime, int> starIntensityByDay(List<Star> stars) {
   }
   return totals;
 }
+
+/// Groups completed pulsar [cycles] by the day their goal was reached,
+/// summing each day's rewards — a cycle lights the calendar exactly like a
+/// star of the same intensity does.
+Map<DateTime, int> cycleIntensityByDay(Iterable<HabitCycle> cycles) {
+  final totals = <DateTime, int>{};
+  for (final cycle in cycles) {
+    final day = dateOnly(cycle.completedDate);
+    totals[day] = (totals[day] ?? 0) + cycle.intensity;
+  }
+  return totals;
+}
+
+/// How many cycles were completed on each calendar day.
+Map<DateTime, int> cycleCountsByDay(Iterable<HabitCycle> cycles) {
+  final counts = <DateTime, int>{};
+  for (final cycle in cycles) {
+    final day = dateOnly(cycle.completedDate);
+    counts[day] = (counts[day] ?? 0) + 1;
+  }
+  return counts;
+}
+
+/// Per-day totals of [a] and [b] added together.
+Map<DateTime, int> addDayTotals(Map<DateTime, int> a, Map<DateTime, int> b) {
+  final merged = {...a};
+  for (final entry in b.entries) {
+    merged[entry.key] = (merged[entry.key] ?? 0) + entry.value;
+  }
+  return merged;
+}
+
+/// The total reward of the completed [cycles] belonging to [habitIds] (all
+/// of them when null) — what a pulsar's finished cycles add to a
+/// constellation's or an area's intensity.
+int cycleIntensityTotal(Iterable<HabitCycle> cycles, {Set<int>? habitIds}) =>
+    cycles
+        .where((c) => habitIds == null || habitIds.contains(c.habitId))
+        .fold<int>(0, (sum, c) => sum + c.intensity);
 
 /// A run of consecutive days with at least one win. [length] is 0 (with
 /// [start] and [end] both null) when there's nothing to report.
@@ -174,6 +215,29 @@ class StarFilter {
     }
     if (hasDateRange) {
       final day = dateOnly(achieved);
+      if (day.isBefore(dateOnly(from!)) || day.isAfter(dateOnly(to!))) {
+        return false;
+      }
+    }
+    return true;
+  }
+}
+
+/// Whether a completed [cycle] of [habit] passes this filter, the way
+/// [matches] does for a star: by the area of the habit's project and by the
+/// day the cycle's goal was reached.
+extension StarFilterCycles on StarFilter {
+  bool matchesCycle(
+    HabitCycle cycle,
+    Habit? habit,
+    Map<int, Project> projectsById,
+  ) {
+    if (isAreaNarrowed) {
+      final area = habit == null ? null : projectsById[habit.projectId]?.area;
+      if (area == null || !areas.contains(area)) return false;
+    }
+    if (hasDateRange) {
+      final day = dateOnly(cycle.completedDate);
       if (day.isBefore(dateOnly(from!)) || day.isAfter(dateOnly(to!))) {
         return false;
       }

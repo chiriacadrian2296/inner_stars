@@ -52,9 +52,11 @@ import '../utils/icon_for_slug.dart';
 import '../utils/page_settled.dart';
 import '../utils/project_card_info.dart';
 import '../utils/star_card_info.dart';
+import '../utils/star_stats.dart';
 import 'app_action_disc.dart';
 import 'app_field.dart';
 import 'app_footer_mark.dart';
+import 'habit_cycle_scope.dart';
 import 'filter_button.dart';
 import 'filters_trigger_button.dart';
 import 'project_picker.dart';
@@ -525,10 +527,17 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
 
   /// What "sort by intensity" means for a project — the same combined
   /// intensity across its lit stars that [_ProjectCard] shows as a badge.
-  int _projectIntensity(Project project) =>
-      _starsForProject(project.id)
-          .where((s) => s.isLit)
-          .fold<int>(0, (sum, s) => sum + s.intensity!);
+  int _projectIntensity(Project project) {
+    final habitIds = {
+      for (final h in _habitsCache)
+        if (h.projectId == project.id) h.id,
+    };
+    final cycles = HabitCycleScope.maybeOf(context)?.getAll() ?? const [];
+    return _starsForProject(project.id)
+            .where((s) => s.isLit)
+            .fold<int>(0, (sum, s) => sum + s.intensity!) +
+        cycleIntensityTotal(cycles, habitIds: habitIds);
+  }
 
   int _compareProjects(Project a, Project b) {
     if (_sortField == SortField.date) {
@@ -840,6 +849,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         for (final project in projects)
           ..._habitsCache.where((h) => h.projectId == project.id),
       ],
+      cycles: HabitCycleScope.maybeOf(context)?.getAll() ?? const [],
       emptySlots: projects.fold<int>(
         0,
         (sum, project) =>
@@ -857,6 +867,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   CardBadges _projectBadges(Project project) => projectCardBadges(
     stars: _starsForProject(project.id),
     habits: _habitsCache.where((h) => h.projectId == project.id).toList(),
+    cycles: HabitCycleScope.maybeOf(context)?.getAll() ?? const [],
     slotCount: _shapesByIdCache[project.starsShapeId]?.points.length ?? 0,
     colors: context.colors,
     strings: context.strings,
@@ -1308,6 +1319,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         intensity: result.intensity ?? 3,
         frequency: result.habitFrequency ?? HabitFrequency.daily,
         targetPerPeriod: result.habitTargetPerPeriod ?? 1,
+        cycleLength: result.habitCycleLength ?? kDefaultCycleLength,
         reminderHour: result.reminderHour,
         reminderMinute: result.reminderMinute,
       );
@@ -1368,12 +1380,15 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       tone: AppConfirmationTone.destructive,
     );
     if (!confirmed) return;
+    if (!mounted) return;
+    final cycleRepository = HabitCycleScope.read(context);
     final habitIds = await widget.habitRepository.deleteAllForProject(
       project.id,
     );
     for (final habitId in habitIds) {
       await widget.habitCompletionRepository.deleteAllForHabit(habitId);
     }
+    await cycleRepository?.deleteAllForHabits(habitIds);
     await widget.starRepository.deleteAllForProject(project.id);
     await widget.projectRepository.delete(project.id);
     final shapeId = project.starsShapeId;
@@ -1601,6 +1616,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         intensity: result.intensity ?? habit.intensity,
         frequency: result.habitFrequency ?? habit.frequency,
         targetPerPeriod: result.habitTargetPerPeriod ?? habit.targetPerPeriod,
+        cycleLength: result.habitCycleLength ?? habit.cycleLength,
         reminderHour: result.reminderHour,
         reminderMinute: result.reminderMinute,
         completionRepository: widget.habitCompletionRepository,
@@ -1635,6 +1651,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       intensity: edited.intensity ?? habit.intensity,
       frequency: edited.habitFrequency ?? habit.frequency,
       targetPerPeriod: edited.habitTargetPerPeriod ?? habit.targetPerPeriod,
+      cycleLength: edited.habitCycleLength ?? habit.cycleLength,
       reminderHour: edited.reminderHour,
       reminderMinute: edited.reminderMinute,
     );

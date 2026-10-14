@@ -62,6 +62,7 @@ Future<Object?> showCreatePage(
       intensity: result.intensity ?? 3,
       frequency: result.habitFrequency ?? HabitFrequency.daily,
       targetPerPeriod: result.habitTargetPerPeriod ?? 1,
+      cycleLength: result.habitCycleLength ?? kDefaultCycleLength,
       reminderHour: result.reminderHour,
       reminderMinute: result.reminderMinute,
     );

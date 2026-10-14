@@ -2,6 +2,7 @@ import '../models/display_text.dart';
 
 import 'package:flutter/material.dart';
 
+import '../l10n/strings_scope.dart';
 import '../models/habit.dart';
 import '../models/project.dart';
 import '../models/star_kind.dart';
@@ -47,11 +48,33 @@ class ShareablePulsarCard extends StatelessWidget {
                 ),
               ],
             ),
-      footer: IntensityBolts(
-        intensity: habit.intensity,
-        size: 24,
-        spacing: 5,
-        emphasizeLast: true,
+      footer: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // The cycle it asks for, and the reward waiting at its end.
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.autorenew_rounded, size: 20, color: colors.muted),
+              const SizedBox(width: 6),
+              Text(
+                context.strings.cycleHistoryItem(habit.cycleLength),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: colors.muted,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          IntensityBolts(
+            intensity: habit.intensity,
+            size: 24,
+            spacing: 5,
+            emphasizeLast: true,
+          ),
+        ],
       ),
     );
   }

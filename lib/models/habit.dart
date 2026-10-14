@@ -5,13 +5,26 @@
 /// how each is scored.
 enum HabitFrequency { daily, weekly }
 
+/// Shortest and longest cycle a pulsar can have, and the one new pulsars
+/// start with. The form offers [kCyclePresets] as quick picks plus a custom
+/// value.
+const int kMinCycleLength = 1;
+const int kMaxCycleLength = 365;
+const int kDefaultCycleLength = 30;
+const List<int> kCyclePresets = [7, 30, 90];
+
 /// A pulsar: the *present* effort — something you keep doing day by day,
 /// tracked separately from a constellation's own shape as its own small,
 /// scattered star. Gold on the days the rhythm is kept (see
 /// `habit_stats.dart`), dark blue the moment it breaks.
 ///
-/// Like every other star, a pulsar carries an [intensity] — how much the
-/// effort costs you each day, not how long the streak is.
+/// A pulsar works in **cycles**: the user picks a [cycleLength] (a number of
+/// distinct days of doing it) and an [intensity] — the reward that cycle is
+/// worth. Reaching the length earns the intensity once, like lighting a star
+/// (see `HabitCycle`); how often or how fast the days come never matters,
+/// only that they get there. [frequency] and [targetPerPeriod] are just the
+/// rhythm the user would like — they never decide the pulsar's state or the
+/// stats.
 ///
 /// Deleting a pulsar never removes its record: [dead] is set instead, the
 /// same tombstone a [Star] gets, so it stays in the sky as a dead star that
@@ -30,6 +43,8 @@ class Habit {
     this.frequency = HabitFrequency.daily,
     this.targetPerPeriod = 1,
     this.intensity = 3,
+    this.cycleLength = kDefaultCycleLength,
+    this.cycleStart,
     this.reminderHour,
     this.reminderMinute,
     this.dead = false,
@@ -37,6 +52,11 @@ class Habit {
   }) : assert(
          intensity >= 1 && intensity <= 5,
          'intensity must be 1-5, was $intensity',
+       ),
+       assert(
+         cycleLength >= kMinCycleLength && cycleLength <= kMaxCycleLength,
+         'cycleLength must be $kMinCycleLength-$kMaxCycleLength, '
+         'was $cycleLength',
        );
 
   final int id;
@@ -61,14 +81,27 @@ class Habit {
   /// [HabitFrequency]'s own doc comment for what that means per value.
   final int targetPerPeriod;
 
-  /// How much effort keeping this up costs on a given day, 1 (light) to 5
-  /// (a lot) — the same scale a [Star]'s own intensity uses, so "intensity
-  /// of the effort" means one single thing across every kind of star.
-  /// Defaults to 3 rather than being nullable: unlike a goal (whose real
-  /// cost is only known once it's reached), a habit's cost is knowable the
-  /// day it's created, and pulsars stored before this field existed read
-  /// back as a plain middle value instead of a hole.
+  /// What completing one cycle is worth, 1 (light) to 5 (a lot) — the same
+  /// scale a [Star]'s own intensity uses, so "intensity" means one single
+  /// thing across every kind of star. Unlike a victory (rated once it's
+  /// lit), the user picks it up front: it is the prize they are working
+  /// toward, and it is earned only when the cycle is completed.
   final int intensity;
+
+  /// How many distinct days of doing this make up one cycle. Reaching it
+  /// earns [intensity]; there is no deadline.
+  final int cycleLength;
+
+  /// First day that counts toward the current cycle. Null on a pulsar that
+  /// never restarted its cycle: read it through [currentCycleStart].
+  final DateTime? cycleStart;
+
+  /// The day (midnight) the current cycle began, falling back to the day
+  /// the pulsar was created.
+  DateTime get currentCycleStart {
+    final start = cycleStart ?? createdAt;
+    return DateTime(start.year, start.month, start.day);
+  }
 
   /// null = inherits the app's single global reminder time
   /// ([SettingsController]). Not yet acted on by [ReminderService] in v1 —
@@ -97,6 +130,8 @@ class Habit {
     HabitFrequency? frequency,
     int? targetPerPeriod,
     int? intensity,
+    int? cycleLength,
+    DateTime? cycleStart,
     int? reminderHour,
     int? reminderMinute,
     bool? dead,
@@ -113,6 +148,8 @@ class Habit {
       frequency: frequency ?? this.frequency,
       targetPerPeriod: targetPerPeriod ?? this.targetPerPeriod,
       intensity: intensity ?? this.intensity,
+      cycleLength: cycleLength ?? this.cycleLength,
+      cycleStart: cycleStart ?? this.cycleStart,
       reminderHour: reminderHour ?? this.reminderHour,
       reminderMinute: reminderMinute ?? this.reminderMinute,
       dead: dead ?? this.dead,
@@ -136,9 +173,12 @@ class Habit {
         json['frequency'] as String? ?? 'daily',
       ),
       targetPerPeriod: json['targetPerPeriod'] as int? ?? 1,
-      // Pre-intensity pulsars read back as the middle of the scale rather
-      // than failing the constructor's own assert.
       intensity: json['intensity'] as int? ?? 3,
+      cycleLength: json['cycleLength'] as int? ?? kDefaultCycleLength,
+      cycleStart: switch (json['cycleStart'] as String?) {
+        final value? => DateTime.parse(value),
+        null => null,
+      },
       reminderHour: json['reminderHour'] as int?,
       reminderMinute: json['reminderMinute'] as int?,
       dead: json['dead'] as bool? ?? false,
@@ -161,6 +201,8 @@ class Habit {
       'frequency': frequency.name,
       'targetPerPeriod': targetPerPeriod,
       'intensity': intensity,
+      'cycleLength': cycleLength,
+      'cycleStart': cycleStart?.toIso8601String(),
       'reminderHour': reminderHour,
       'reminderMinute': reminderMinute,
       'dead': dead,
@@ -181,6 +223,8 @@ class Habit {
         other.frequency == frequency &&
         other.targetPerPeriod == targetPerPeriod &&
         other.intensity == intensity &&
+        other.cycleLength == cycleLength &&
+        other.cycleStart == cycleStart &&
         other.reminderHour == reminderHour &&
         other.reminderMinute == reminderMinute &&
         other.dead == dead &&
@@ -199,6 +243,8 @@ class Habit {
     frequency,
     targetPerPeriod,
     intensity,
+    cycleLength,
+    cycleStart,
     reminderHour,
     reminderMinute,
     dead,

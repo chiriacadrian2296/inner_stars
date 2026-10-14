@@ -395,7 +395,6 @@ Future<T?> showFixedAppSheet<T>({
       bottom: bottomViewPadding,
     ),
     viewInsets: EdgeInsets.zero,
-    disableAnimations: true,
   );
   final theme = Theme.of(context);
   final sheetTheme = theme.bottomSheetTheme;
@@ -442,10 +441,14 @@ Future<T?> showFixedAppSheet<T>({
     ),
     transitionBuilder: (context, animation, secondaryAnimation, child) =>
         SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, 1),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(parent: animation, curve: kMotionEnter)),
+          position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+              .animate(
+                CurvedAnimation(
+                  parent: animation,
+                  curve: kMotionEnter,
+                  reverseCurve: kMotionExit,
+                ),
+              ),
           child: child,
         ),
   );

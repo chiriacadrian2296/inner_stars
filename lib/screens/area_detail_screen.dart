@@ -806,11 +806,7 @@ class _AreaSection extends StatelessWidget {
                   // As tall as the text beside it.
                   WidgetSpan(
                     alignment: PlaceholderAlignment.middle,
-                    child: Icon(
-                      icon,
-                      size: 30,
-                      color: context.colors.text,
-                    ),
+                    child: Icon(icon, size: 30, color: context.colors.text),
                   ),
                   const WidgetSpan(child: SizedBox(width: 14)),
                 ],

@@ -36,25 +36,26 @@ class HabitStatsSummary {
     required this.range,
     required this.currentStreak,
     required this.longestStreak,
-    required this.completionRate,
+    required this.daysDone,
     required this.totalCompletions,
     required this.trend,
     required this.progressByDay,
     required this.weekdays,
     required this.bestWeekday,
-    required this.weakestWeekday,
   });
 
   final HabitStatsRange range;
   final int currentStreak;
   final int longestStreak;
-  final double completionRate;
+
+  /// Distinct days with at least one check-in inside [range] — what was done,
+  /// never measured against what was asked.
+  final int daysDone;
   final int totalCompletions;
   final List<HabitTrendPoint> trend;
   final Map<DateTime, double> progressByDay;
   final List<HabitWeekdayStat> weekdays;
   final HabitWeekdayStat? bestWeekday;
-  final HabitWeekdayStat? weakestWeekday;
 }
 
 /// Monday of the calendar week containing [day] — [HabitFrequency.weekly]'s
@@ -122,25 +123,55 @@ int _weekMetDays(
   return count;
 }
 
-/// Whether a habit's star should currently read as lit, given how many
-/// times it's been completed on which days.
-///
-/// [HabitFrequency.daily]: true only while today has met
-/// [Habit.targetPerPeriod] — lit means "done today", so the star and the
-/// button that marks it done always agree. Yesterday's completion no longer
-/// keeps it lit (it only keeps the streak alive, see [habitCurrentStreak]).
-///
-/// [HabitFrequency.weekly]: true only once this calendar week (Monday reset)
-/// has met its target — dark until then, same simple rule as a daily habit:
-/// lit means "the goal is reached".
+/// Whether a habit's star should currently read as lit: it was done at least
+/// once today. The habit's own frequency and target are only the rhythm the
+/// user would like — they never decide the state, so a habit is never "dark"
+/// for missing a goal, it simply isn't lit until it's done again.
 bool isHabitLit(Habit habit, Map<DateTime, int> countsByDay, {DateTime? now}) {
   final today = dateOnly(now ?? DateTime.now());
-  if (habit.frequency == HabitFrequency.daily) {
-    return _dayMet(habit, countsByDay, today);
-  }
+  return (countsByDay[today] ?? 0) > 0;
+}
 
-  return _weekMetDays(habit, countsByDay, _weekStart(today)) >=
-      habit.targetPerPeriod;
+/// How many distinct days of the habit's current cycle have been done: every
+/// day from [Habit.currentCycleStart] up to [now] with at least one
+/// completion. Not capped — callers clamp for display; reaching
+/// [Habit.cycleLength] is what completes the cycle.
+int habitCycleProgress(
+  Habit habit,
+  Map<DateTime, int> countsByDay, {
+  DateTime? now,
+}) {
+  final start = habit.currentCycleStart;
+  final end = dateOnly(now ?? DateTime.now());
+  var days = 0;
+  for (final entry in countsByDay.entries) {
+    if (entry.value <= 0) continue;
+    final day = dateOnly(entry.key);
+    if (day.isBefore(start) || day.isAfter(end)) continue;
+    days++;
+  }
+  return days;
+}
+
+/// The day the current cycle's last needed repetition happened — the
+/// [Habit.cycleLength]-th distinct done day counting from
+/// [Habit.currentCycleStart] — or null while the cycle isn't complete yet.
+DateTime? habitCycleCompletedDay(
+  Habit habit,
+  Map<DateTime, int> countsByDay, {
+  DateTime? now,
+}) {
+  final start = habit.currentCycleStart;
+  final end = dateOnly(now ?? DateTime.now());
+  final days = <DateTime>[
+    for (final entry in countsByDay.entries)
+      if (entry.value > 0 &&
+          !dateOnly(entry.key).isBefore(start) &&
+          !dateOnly(entry.key).isAfter(end))
+        dateOnly(entry.key),
+  ]..sort();
+  if (days.length < habit.cycleLength) return null;
+  return days[habit.cycleLength - 1];
 }
 
 /// [HabitFrequency.daily]: today's raw completion count, for a "2/3 today"
@@ -274,8 +305,7 @@ HabitStatsSummary habitStatsSummary(
   final weekdayCompleted = List<int>.filled(7, 0);
   final weekdayAvailable = List<int>.filled(7, 0);
 
-  var earned = 0.0;
-  var possible = 0.0;
+  var daysDone = 0;
   if (!end.isBefore(start)) {
     for (var day = start; !day.isAfter(end); day = addDays(day, 1)) {
       final raw = counts[day] ?? 0;
@@ -285,35 +315,9 @@ HabitStatsSummary habitStatsSummary(
       progress[day] = dayProgress;
       trend.add(HabitTrendPoint(date: day, progress: dayProgress));
       weekdayAvailable[day.weekday - 1]++;
-      if (dayProgress >= 1) weekdayCompleted[day.weekday - 1]++;
-    }
-
-    if (habit.frequency == HabitFrequency.daily) {
-      possible = trend.length.toDouble();
-      earned = trend.where((point) => point.progress >= 1).length.toDouble();
-    } else {
-      for (
-        var week = _weekStart(start);
-        !week.isAfter(_weekStart(end));
-        week = addDays(week, 7)
-      ) {
-        final segmentStart = _maxDay(week, start);
-        final weekEnd = addDays(week, 6);
-        final segmentEnd = weekEnd.isBefore(end) ? weekEnd : end;
-        final availableDays = dayDiff(segmentStart, segmentEnd) + 1;
-        final expected = availableDays < habit.targetPerPeriod
-            ? availableDays
-            : habit.targetPerPeriod;
-        var completedDays = 0;
-        for (
-          var day = segmentStart;
-          !day.isAfter(segmentEnd);
-          day = addDays(day, 1)
-        ) {
-          if (_dayMet(habit, counts, day)) completedDays++;
-        }
-        possible += expected;
-        earned += completedDays > expected ? expected : completedDays;
+      if (raw > 0) {
+        daysDone++;
+        weekdayCompleted[day.weekday - 1]++;
       }
     }
   }
@@ -328,12 +332,10 @@ HabitStatsSummary habitStatsSummary(
   );
   final comparable = weekdays.where((item) => item.available > 0).toList();
   HabitWeekdayStat? best;
-  HabitWeekdayStat? weakest;
   // Avoid claiming a pattern before every weekday has had at least one fair
   // chance to occur in the selected interval.
   if (comparable.length == 7) {
     best = comparable.reduce((a, b) => b.rate > a.rate ? b : a);
-    weakest = comparable.reduce((a, b) => b.rate < a.rate ? b : a);
   }
 
   return HabitStatsSummary(
@@ -342,7 +344,7 @@ HabitStatsSummary habitStatsSummary(
         ? 0
         : habitCurrentStreak(habit, counts, now: effectiveNow),
     longestStreak: habitLongestStreak(habit, counts, now: effectiveNow),
-    completionRate: possible == 0 ? 0 : earned / possible,
+    daysDone: daysDone,
     totalCompletions: completions.where((completion) {
       final day = dateOnly(completion.date);
       return !day.isBefore(lifetimeStart) && !day.isAfter(end);
@@ -351,6 +353,5 @@ HabitStatsSummary habitStatsSummary(
     progressByDay: Map.unmodifiable(progress),
     weekdays: List.unmodifiable(weekdays),
     bestWeekday: best,
-    weakestWeekday: weakest,
   );
 }

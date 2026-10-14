@@ -37,3 +37,26 @@ use the text's font size for the icon. Compact uppercase labels use an icon at
 1.4 times that size, raised by 0.1 times the font size for optical alignment.
 This applies to Sky cards, readers, Galaxy tooltips, gallery and project maps.
 Galaxy keeps the celestial label while showing the same original-type icon.
+
+## Habit cycles and reward
+
+A habit (pulsar) works in **cycles**. The user picks a cycle length (7, 30 or
+90 distinct days, or a custom number) and a **reward**: the habit's intensity,
+on the same 1-5 scale as every star. The intensity is earned once, when the
+cycle's last needed day is done, and counts in the statistics like a lit star
+of that intensity (calendar, constellation and area totals, sorting). There is
+no deadline: only reaching the length matters, never how often or how fast.
+
+- One repetition is one distinct day with at least one check-in.
+- The habit's frequency (daily/weekly and target) is only the rhythm the user
+  would like. It never decides whether the pulsar is lit (any check-in today
+  does) and never reduces a reward.
+- Reaching the length records a completed cycle (`HabitCycle`) at once, and the
+  end-of-cycle reflection page opens when it happens today. The user answers
+  optional questions and chooses: start again, change length and reward, or wrap
+  the habit up (archive). A reflection left for later stays reachable from the
+  pulsar ("Reflect on the Cycle").
+- Undoing the check-in that completed a cycle before its reflection was
+  finished takes the cycle back; a reflected cycle is never taken back.
+- Reactivating an archived habit starts a fresh cycle today but keeps the cycles
+  it already completed: a reward that was earned is never removed.

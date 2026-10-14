@@ -29,6 +29,7 @@ import '../utils/date_math.dart';
 import '../utils/habit_stats.dart';
 import '../utils/habit_stats_snapshot.dart';
 import '../utils/star_stats.dart';
+import '../widgets/habit_cycle_scope.dart';
 import '../widgets/app_field.dart';
 import '../widgets/area_filter_sheet.dart';
 import '../widgets/date_range_filter_sheet.dart';
@@ -272,6 +273,7 @@ class _StatsScreenState extends State<StatsScreen> {
         intensity: result.intensity ?? 3,
         frequency: result.habitFrequency ?? HabitFrequency.daily,
         targetPerPeriod: result.habitTargetPerPeriod ?? 1,
+        cycleLength: result.habitCycleLength ?? kDefaultCycleLength,
         reminderHour: result.reminderHour,
         reminderMinute: result.reminderMinute,
       );
@@ -400,8 +402,22 @@ class _StatsScreenState extends State<StatsScreen> {
     final achievedStars = litStars
         .where((s) => _filter.matches(s, projects))
         .toList();
-    final dayCounts = starCountsByDay(achievedStars);
-    final dayIntensities = starIntensityByDay(achievedStars);
+    // A completed pulsar cycle lights its day like a star of the same
+    // intensity, so it counts on the calendar alongside the lit stars.
+    final habitsById = {
+      for (final habit in widget.habitRepository.getAll()) habit.id: habit,
+    };
+    final cycles = (HabitCycleScope.maybeOf(context)?.getAll() ?? const [])
+        .where((c) => _filter.matchesCycle(c, habitsById[c.habitId], projects))
+        .toList();
+    final dayCounts = addDayTotals(
+      starCountsByDay(achievedStars),
+      cycleCountsByDay(cycles),
+    );
+    final dayIntensities = addDayTotals(
+      starIntensityByDay(achievedStars),
+      cycleIntensityByDay(cycles),
+    );
     final today = dateOnly(DateTime.now());
     final litToday = (starCountsByDay(litStars)[today] ?? 0) > 0;
     final areaCounts = starCountsByArea(achievedStars, projects);
@@ -600,7 +616,6 @@ class _StatsScreenState extends State<StatsScreen> {
       allCompletions: widget.habitCompletionRepository.getAll(),
       range: _habitRange,
     );
-    final consistency = (snapshot.overallRate * 100).round();
     return [
       const SizedBox(height: 24),
       StaggeredEntrance(
@@ -634,8 +649,8 @@ class _StatsScreenState extends State<StatsScreen> {
           Expanded(
             child: MetricTile(
               compact: true,
-              value: '${snapshot.onTrackCount}',
-              label: strings.habitStatsOnTrackLabel,
+              value: '${snapshot.doneTodayCount}',
+              label: strings.habitStatsDoneTodayLabel,
             ),
           ),
           const SizedBox(width: 8),
@@ -643,8 +658,8 @@ class _StatsScreenState extends State<StatsScreen> {
             child: MetricTile(
               compact: true,
               highlight: true,
-              value: '$consistency%',
-              label: strings.habitStatsConsistencyLabel,
+              value: '${snapshot.totalDaysDone}',
+              label: strings.habitStatsDaysDoneLabel,
             ),
           ),
         ],
@@ -725,7 +740,7 @@ class _PulsarTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Text(
-            '${(summary.completionRate * 100).round()}%',
+            '${entry.cycleProgress.clamp(0, habit.cycleLength)}/${habit.cycleLength}',
             style: context.typography.body.copyWith(
               fontWeight: FontWeight.w700,
               color: entry.isLit ? colors.gold : colors.muted,

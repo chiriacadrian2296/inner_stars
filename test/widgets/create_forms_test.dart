@@ -128,7 +128,7 @@ void main() {
     expect(find.byType(AppTextField), findsNothing);
 
     expect(
-      find.text('What would you like to add to your galaxy?'),
+      find.text('What would you like to add to your Galaxy?'),
       findsOneWidget,
     );
     expect(
@@ -147,7 +147,7 @@ void main() {
     );
     await tester.pump();
     expect(
-      find.text('What would you like to add to your galaxy?'),
+      find.text('What would you like to add to your Galaxy?'),
       findsOneWidget,
     );
     expect(
@@ -163,7 +163,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 220));
     await tester.pump();
     expect(
-      find.text('What would you like to add to your galaxy?'),
+      find.text('What would you like to add to your Galaxy?'),
       findsNothing,
     );
     expect(find.byType(AppTextField), findsNothing);
@@ -179,7 +179,7 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(
-      find.text('What would you like to add to your galaxy?'),
+      find.text('What would you like to add to your Galaxy?'),
       findsOneWidget,
     );
     final resetTiles = tester.widget<FormKindTiles>(find.byType(FormKindTiles));
@@ -215,7 +215,7 @@ void main() {
     await tester.tap(find.text('CHANGE'));
     await tester.pumpAndSettle();
     expect(
-      find.text('What would you like to add to your galaxy?'),
+      find.text('What would you like to add to your Galaxy?'),
       findsOneWidget,
     );
     expect(find.text('A draft goal'), findsNothing);
@@ -237,6 +237,40 @@ void main() {
     await tester.tap(find.text('CANCEL'));
     await tester.pumpAndSettle();
     expect(find.text('A draft project'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('victory details stay collapsed until requested', (tester) async {
+    await _pump(
+      tester,
+      () => StarFormScreen(
+        projectRepository: projects,
+        starsShapeRepository: shapes,
+        allowConstellation: true,
+        startWithoutSelection: true,
+      ),
+    );
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(FormKindTiles),
+        matching: find.text('Victory'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final detailsToggle = find.byKey(
+      const ValueKey('victory-details-toggle'),
+    );
+    expect(detailsToggle, findsOneWidget);
+    expect(find.text('Photos'), findsNothing);
+
+    await tester.ensureVisible(detailsToggle);
+    await tester.tap(detailsToggle);
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.expand_less), findsWidgets);
+    expect(find.text('Photos'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

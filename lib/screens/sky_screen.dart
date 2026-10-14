@@ -44,6 +44,7 @@ import '../models/star_kind.dart';
 import '../notifications/reminder_service.dart';
 import '../settings/settings_controller.dart';
 import '../theme/app_colors.dart';
+import '../widgets/habit_cycle_scope.dart';
 import '../theme/app_style.dart';
 import '../tutorials/sky_hint_target.dart';
 import '../tutorials/tour_gesture_step.dart';
@@ -1724,6 +1725,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         intensity: result.intensity ?? 3,
         frequency: result.habitFrequency ?? HabitFrequency.daily,
         targetPerPeriod: result.habitTargetPerPeriod ?? 1,
+        cycleLength: result.habitCycleLength ?? kDefaultCycleLength,
         reminderHour: result.reminderHour,
         reminderMinute: result.reminderMinute,
       );
@@ -4590,6 +4592,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     return projectCardBadges(
       stars: widget.starRepository.getAllForProject(constellation.project.id),
       habits: habits,
+      cycles: HabitCycleScope.maybeOf(context)?.getAll() ?? const [],
       slotCount: constellation.shape?.points.length ?? 0,
       colors: context.colors,
       strings: context.strings,
@@ -4610,6 +4613,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       constellationCount: projects.length,
       stars: [for (final list in stars.values) ...list],
       habits: habits,
+      cycles: HabitCycleScope.maybeOf(context)?.getAll() ?? const [],
       emptySlots: projects.fold<int>(0, (sum, project) {
         final shapeId = project.starsShapeId;
         final points = shapeId == null
@@ -4743,6 +4747,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         intensity: result.intensity ?? habit.intensity,
         frequency: result.habitFrequency ?? habit.frequency,
         targetPerPeriod: result.habitTargetPerPeriod ?? habit.targetPerPeriod,
+        cycleLength: result.habitCycleLength ?? habit.cycleLength,
         reminderHour: result.reminderHour,
         reminderMinute: result.reminderMinute,
         completionRepository: widget.habitCompletionRepository,
@@ -4760,6 +4765,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         intensity: result.intensity ?? habit.intensity,
         frequency: result.habitFrequency ?? habit.frequency,
         targetPerPeriod: result.habitTargetPerPeriod ?? habit.targetPerPeriod,
+        cycleLength: result.habitCycleLength ?? habit.cycleLength,
         reminderHour: result.reminderHour,
         reminderMinute: result.reminderMinute,
       );
@@ -4855,6 +4861,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         intensity: result.intensity ?? 3,
         frequency: result.habitFrequency ?? HabitFrequency.daily,
         targetPerPeriod: result.habitTargetPerPeriod ?? 1,
+        cycleLength: result.habitCycleLength ?? kDefaultCycleLength,
         reminderHour: result.reminderHour,
         reminderMinute: result.reminderMinute,
       );
@@ -4924,12 +4931,15 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     );
     if (!confirmed) return;
     _closeSkyTooltip();
+    if (!mounted) return;
+    final cycleRepository = HabitCycleScope.read(context);
     final habitIds = await widget.habitRepository.deleteAllForProject(
       project.id,
     );
     for (final habitId in habitIds) {
       await widget.habitCompletionRepository.deleteAllForHabit(habitId);
     }
+    await cycleRepository?.deleteAllForHabits(habitIds);
     await widget.starRepository.deleteAllForProject(project.id);
     await widget.projectRepository.delete(project.id);
     final shapeId = project.starsShapeId;

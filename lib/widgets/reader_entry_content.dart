@@ -505,6 +505,9 @@ class StarReaderContent extends StatelessWidget {
 /// Slot height for a streak block with today's repetitions stacked under it.
 const double _stackedExtraHeight = 132;
 
+/// What the cycle-progress block adds under the other data blocks.
+const double _cycleExtraHeight = 72;
+
 /// A pulsar's page in the star reader — a habit, burning (kept today) or
 /// dark; deleted, a failure.
 class PulsarReaderContent extends StatelessWidget {
@@ -519,6 +522,7 @@ class PulsarReaderContent extends StatelessWidget {
     required this.entrance,
     this.todayProgress,
     this.doneToday = false,
+    this.cycleProgress,
   });
 
   final Habit habit;
@@ -538,6 +542,10 @@ class PulsarReaderContent extends StatelessWidget {
 
   /// Whether today is marked — shown with a weekly habit's week count.
   final bool doneToday;
+
+  /// Distinct days done in the current cycle, shown as "done/length" under
+  /// the other data blocks (null hides it).
+  final int? cycleProgress;
   final ReaderEntrance entrance;
 
   @override
@@ -615,6 +623,36 @@ class PulsarReaderContent extends StatelessWidget {
                 ),
               ],
             );
+      final cycle = cycleProgress;
+      if (cycle != null) {
+        // The reward's own progress: the current cycle, next to the streak.
+        extra = Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            extra,
+            const SizedBox(height: 14),
+            _DataBlock(
+              value: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.autorenew_rounded, size: 26, color: tint),
+                  const SizedBox(width: 3),
+                  Text(
+                    '${cycle.clamp(0, habit.cycleLength)}/${habit.cycleLength}',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: tint,
+                      height: 1,
+                    ),
+                  ),
+                ],
+              ),
+              caption: strings.habitCycleLabel,
+            ),
+          ],
+        );
+      }
     }
 
     return ReaderPage(
@@ -625,11 +663,12 @@ class PulsarReaderContent extends StatelessWidget {
       entrance: entrance,
       reserveExtraSlot: true,
       extraSlotHeight:
-          (habit.dead ||
-              (todayProgress == null &&
-                  habit.frequency != HabitFrequency.weekly))
-          ? ReaderPage.extraHeight
-          : _stackedExtraHeight,
+          ((habit.dead ||
+                  (todayProgress == null &&
+                      habit.frequency != HabitFrequency.weekly))
+              ? ReaderPage.extraHeight
+              : _stackedExtraHeight) +
+          (!habit.dead && cycleProgress != null ? _cycleExtraHeight : 0),
       createdAt: habit.createdAt,
       project: project,
       numberLabel: number == null ? null : strings.pulsarNumberLabel(number!),

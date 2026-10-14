@@ -29,6 +29,7 @@ import '../theme/app_typography.dart';
 import '../utils/app_modals.dart';
 import '../utils/app_time_picker.dart';
 import '../widgets/apk_download_prompt.dart';
+import '../widgets/habit_cycle_scope.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
 import 'onboarding_screen.dart';
@@ -318,12 +319,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _seedSampleData() async {
     final strings = context.strings;
+    final cycleRepository = HabitCycleScope.read(context);
     final added = await seedSampleData(
       starRepository: widget.starRepository,
       projectRepository: widget.projectRepository,
       habitRepository: widget.habitRepository,
       habitCompletionRepository: widget.habitCompletionRepository,
       languageCode: widget.settings.locale,
+      habitCycleRepository: cycleRepository,
       areaVisionRepository: widget.areaVisionRepository,
       reflectionAnswerRepository: widget.reflectionAnswerRepository,
       moodboardRepository: await MoodboardRepository.create(),
@@ -344,6 +347,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _resetAllData() async {
     final strings = context.strings;
+    final cycleRepository = HabitCycleScope.read(context);
 
     final confirmed = await showAppConfirmation(
       context: context,
@@ -359,6 +363,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await widget.projectRepository.clear();
     await widget.habitRepository.clear();
     await widget.habitCompletionRepository.clear();
+    await cycleRepository?.clear();
     await widget.starsShapeRepository.clear();
     await (await MoodboardRepository.create()).clear();
     await widget.areaVisionRepository.clear();

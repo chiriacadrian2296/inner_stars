@@ -1522,12 +1522,12 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
       'Această activitate este arhivată. O poți reactiva ca activitate nouă, în același loc în Galaxie.';
   @override
   String get deadPulsarBody =>
-      'Acest obicei este arhivat. Îl poți reactiva ca obicei nou, în același loc în Galaxie; seria și completările anterioare vor fi resetate.';
+      'Acest obicei este arhivat. Îl poți reactiva ca obicei nou, în același loc în Galaxie; seria și completările anterioare vor fi resetate (ciclurile deja finalizate își păstrează recompensa).';
   @override
   String get reigniteAction => 'Reactivează';
 
   @override
-  String get habitFrequencyLabel => 'Frecvență';
+  String get habitFrequencyLabel => 'Ritm Dorit';
   @override
   String get habitFrequencyDaily => 'În fiecare zi';
   @override
@@ -1541,6 +1541,65 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
       : 'De $times ori pe săptămână, în $times zile diferite';
   @override
   String get customReminderToggleLabel => 'Oră de Memento Personalizată';
+
+  @override
+  String get habitCycleLabel => 'Durata Ciclului';
+  @override
+  String get habitCycleCustom => 'Altul';
+  @override
+  String habitCycleSummary(int days) => days == 1
+      ? 'Fă-o într-o zi ca să închei ciclul.'
+      : 'Fă-o în $days zile diferite ca să închei ciclul — fără grabă, fără termen.';
+  @override
+  String get habitRewardLabel => 'Recompensă';
+  @override
+  String cycleProgressLabel(int done, int length) => '$done/$length zile';
+  @override
+  String get cycleHistoryTitle => 'Cicluri Finalizate';
+  @override
+  String cycleHistoryItem(int length) => length == 1 ? '1 zi' : '$length zile';
+  @override
+  String get cycleDoneTitle => 'Ai reușit!';
+  @override
+  String cycleDoneBody(int length) => length == 1
+      ? 'Ai fost acolo. Și asta contează.'
+      : 'Ai fost prezent în $length zile diferite. Toate acestea sunt ale tale.';
+  @override
+  String get cycleRewardEarned => 'Intensitate Câștigată';
+  @override
+  String get cycleReflectionIntro =>
+      'Ia-ți un moment să privești înapoi. Întrebările sunt opționale.';
+  @override
+  String get cycleQuestionHelped => 'Ce te-a ajutat?';
+  @override
+  String get cycleQuestionHard => 'Ce a fost greu?';
+  @override
+  String get cycleQuestionFeel => 'Cum te simți acum?';
+  @override
+  String get cycleNextTitle => 'Și acum?';
+  @override
+  String get cycleOptionRestartTitle => 'Începe din Nou';
+  @override
+  String get cycleOptionRestartBody =>
+      'Un ciclu nou, cu aceeași durată și aceeași recompensă.';
+  @override
+  String get cycleOptionChangeTitle => 'Schimbă';
+  @override
+  String get cycleOptionChangeBody =>
+      'Alege o durată nouă și o recompensă nouă pentru următorul ciclu.';
+  @override
+  String get cycleOptionCloseTitle => 'Încheie Acest Obicei';
+  @override
+  String get cycleOptionCloseBody =>
+      'Merge în arhivă împreună cu tot ce ai câștigat.';
+  @override
+  String get cycleContinueAction => 'Continuă';
+  @override
+  String get cycleArchiveAction => 'Arhivează';
+  @override
+  String get cycleLaterAction => 'Mai Târziu';
+  @override
+  String get cycleReflectAction => 'Reflectă la Ciclu';
 
   @override
   String get habitCurrentStreakLabel => 'Serie Curentă';
@@ -1594,9 +1653,11 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get habitStatsActiveLabel => 'Active';
   @override
-  String get habitStatsOnTrackLabel => 'În Ritm';
+  String get habitStatsDoneTodayLabel => 'Făcute Azi';
   @override
-  String get habitStatsConsistencyLabel => 'Consecvență';
+  String get habitStatsDaysDoneLabel => 'Zile Făcute';
+  @override
+  String get habitStatsCyclesLabel => 'Cicluri Finalizate';
   @override
   String get habitStatsLongestLabel => 'Record Personal';
   @override
@@ -1607,8 +1668,6 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get habitStatsWeekdaysLabel => 'Săptămâna Ta';
   @override
   String get habitStatsBestDayLabel => 'Ziua Cea Mai Bună';
-  @override
-  String get habitStatsSupportDayLabel => 'Zi de Susținut';
   @override
   String get habitStatsNotEnoughData =>
       'Mai este nevoie de puțin istoric pentru acest tipar.';
@@ -1841,7 +1900,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
       'Fiecare stea care arde poartă o intensitate, de la 1 la 5 — cât '
       'te-a costat efortul cu adevărat, nu cât de mare pare rezultatul din '
       'afară. O stea aprinsă păstrează intensitatea care i-a trebuit; un '
-      'pulsar o poartă pe cea care te costă în fiecare zi.';
+      'pulsar poartă recompensa aleasă pentru ciclul său, câștigată când îl închei.';
 
   @override
   List<String> get upliftingQuotes => const [

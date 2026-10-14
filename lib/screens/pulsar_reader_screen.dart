@@ -11,12 +11,18 @@ import '../data/habit_repository.dart';
 import '../data/project_repository.dart';
 import '../l10n/strings_scope.dart';
 import '../models/habit.dart';
+import '../models/habit_cycle.dart';
 import '../models/project.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../theme/app_typography.dart';
+import '../utils/date_format.dart';
 import '../utils/habit_stats.dart';
+import '../utils/star_stats.dart' show cycleIntensityTotal;
+import '../widgets/habit_cycle_detail_dialog.dart';
+import '../widgets/habit_cycle_host.dart';
+import '../widgets/habit_cycle_scope.dart';
 import '../widgets/intensity_bolts.dart';
 import '../widgets/logo_watermark.dart';
 import '../widgets/reader_action_bar.dart';
@@ -69,12 +75,18 @@ class HabitAnalytics extends StatelessWidget {
     required this.summary,
     required this.range,
     required this.onRangeChanged,
+    this.completedCycles = 0,
+    this.rewardEarned = 0,
   });
 
   final Habit habit;
   final HabitStatsSummary summary;
   final HabitStatsRange range;
   final ValueChanged<HabitStatsRange> onRangeChanged;
+
+  /// How many cycles this pulsar completed, and the intensity they earned.
+  final int completedCycles;
+  final int rewardEarned;
 
   @override
   Widget build(BuildContext context) {
@@ -95,8 +107,8 @@ class HabitAnalytics extends StatelessWidget {
           children: [
             Expanded(
               child: MetricTile(
-                label: strings.habitStatsConsistencyLabel,
-                value: '${(summary.completionRate * 100).round()}%',
+                label: strings.habitStatsDaysDoneLabel,
+                value: '${summary.daysDone}',
               ),
             ),
             const SizedBox(width: 10),
@@ -109,10 +121,27 @@ class HabitAnalytics extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 10),
-        MetricTile(
-          label: strings.habitStatsTotalLabel,
-          value: '${summary.totalCompletions}',
+        Row(
+          children: [
+            Expanded(
+              child: MetricTile(
+                label: strings.habitStatsTotalLabel,
+                value: '${summary.totalCompletions}',
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: MetricTile(
+                label: strings.habitStatsCyclesLabel,
+                value: '$completedCycles',
+              ),
+            ),
+          ],
         ),
+        if (rewardEarned > 0) ...[
+          const SizedBox(height: 10),
+          MetricTile(label: strings.cycleRewardEarned, value: '+$rewardEarned'),
+        ],
         const SizedBox(height: 18),
         StatsSectionLabel(strings.habitStatsTrendLabel),
         const SizedBox(height: 10),
@@ -122,29 +151,16 @@ class HabitAnalytics extends StatelessWidget {
         const SizedBox(height: 10),
         _WeekdayBars(values: summary.weekdays),
         const SizedBox(height: 12),
-        if (summary.bestWeekday == null || summary.weakestWeekday == null)
+        if (summary.bestWeekday == null)
           Text(
             strings.habitStatsNotEnoughData,
             textAlign: TextAlign.center,
             style: context.typography.supporting,
           )
         else
-          Row(
-            children: [
-              Expanded(
-                child: _PatternLabel(
-                  label: strings.habitStatsBestDayLabel,
-                  weekday: summary.bestWeekday!.weekday,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _PatternLabel(
-                  label: strings.habitStatsSupportDayLabel,
-                  weekday: summary.weakestWeekday!.weekday,
-                ),
-              ),
-            ],
+          _PatternLabel(
+            label: strings.habitStatsBestDayLabel,
+            weekday: summary.bestWeekday!.weekday,
           ),
       ],
     );
@@ -212,6 +228,41 @@ class _PatternLabel extends StatelessWidget {
 class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
   late Habit _habit = widget.habit;
   HabitStatsRange _statsRange = HabitStatsRange.days30;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.habitRepository.addListener(_refreshHabit);
+  }
+
+  @override
+  void dispose() {
+    widget.habitRepository.removeListener(_refreshHabit);
+    super.dispose();
+  }
+
+  /// The end-of-cycle page changes this pulsar (a new cycle, a different
+  /// reward) from outside this screen, so it follows the repository.
+  void _refreshHabit() {
+    final fresh = widget.habitRepository
+        .getAll()
+        .where((h) => h.id == _habit.id)
+        .firstOrNull;
+    if (fresh == null || !mounted) return;
+    setState(() => _habit = fresh);
+  }
+
+  Future<void> _reflectOnCycle(HabitCycle cycle) async {
+    final cycles = HabitCycleScope.read(context);
+    if (cycles == null) return;
+    await openHabitCycleReflection(
+      navigator: Navigator.of(context),
+      habit: _habit,
+      cycle: cycle,
+      habitRepository: widget.habitRepository,
+      cycleRepository: cycles,
+    );
+  }
 
   DateTime get _today {
     final now = DateTime.now();
@@ -286,6 +337,7 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
       frequency: formResult.habitFrequency ?? _habit.frequency,
       targetPerPeriod:
           formResult.habitTargetPerPeriod ?? _habit.targetPerPeriod,
+      cycleLength: formResult.habitCycleLength ?? _habit.cycleLength,
       reminderHour: formResult.reminderHour,
       reminderMinute: formResult.reminderMinute,
     );
@@ -317,6 +369,7 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
       intensity: result.intensity ?? _habit.intensity,
       frequency: result.habitFrequency ?? _habit.frequency,
       targetPerPeriod: result.habitTargetPerPeriod ?? _habit.targetPerPeriod,
+      cycleLength: result.habitCycleLength ?? _habit.cycleLength,
       reminderHour: result.reminderHour,
       reminderMinute: result.reminderMinute,
       completionRepository: widget.habitCompletionRepository,
@@ -328,6 +381,9 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final strings = context.strings;
+    final cycleRepository = HabitCycleScope.maybeOf(context);
+    final habitCycles =
+        cycleRepository?.getAllForHabit(_habit.id) ?? const <HabitCycle>[];
     final completions = widget.habitCompletionRepository.getAllForHabit(
       _habit.id,
     );
@@ -451,6 +507,8 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
                                 range: _statsRange,
                                 onRangeChanged: (value) =>
                                     setState(() => _statsRange = value),
+                                completedCycles: habitCycles.length,
+                                rewardEarned: cycleIntensityTotal(habitCycles),
                               ),
                               const SizedBox(height: 24),
                               HeatmapPanel(
@@ -647,22 +705,29 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
                                           ),
                                         ),
                                       ],
-                                      const SizedBox(height: 16),
-                                      // What keeping this up costs you on any given day —
-                                      // the same 1-5 scale every other kind of star
-                                      // carries, and the reason a two-minute habit and a
-                                      // punishing one don't read as the same thing.
-                                      StaggeredEntrance(
-                                        index: 3,
-                                        child: IntensityBolts(
-                                          intensity: _habit.intensity,
-                                          size: 20,
-                                          spacing: 4,
-                                          emphasizeLast: true,
-                                        ),
-                                      ),
                                     ],
                                   ),
+                                ),
+                              ),
+                              const SizedBox(height: kSpaceLg),
+                              // The current cycle: how far along it is, and the
+                              // reward (the same 1-5 intensity every star carries)
+                              // that finishing it earns.
+                              StaggeredEntrance(
+                                index: 3,
+                                replayKey: _habit.dead,
+                                child: _CyclePanel(
+                                  habit: _habit,
+                                  progress: habitCycleProgress(
+                                    _habit,
+                                    countsByDay,
+                                  ),
+                                  cycles:
+                                      cycleRepository?.getAllForHabit(
+                                        _habit.id,
+                                      ) ??
+                                      const [],
+                                  onReflect: _reflectOnCycle,
                                 ),
                               ),
                               const SizedBox(height: 24),
@@ -672,6 +737,8 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
                                 range: _statsRange,
                                 onRangeChanged: (value) =>
                                     setState(() => _statsRange = value),
+                                completedCycles: habitCycles.length,
+                                rewardEarned: cycleIntensityTotal(habitCycles),
                               ),
                               const SizedBox(height: 24),
                               StaggeredEntrance(
@@ -739,6 +806,121 @@ class _PulsarReaderScreenState extends State<PulsarReaderScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// A pulsar's current cycle at a glance: the reward it will earn, how many
+/// of its days are done, a way back to a reflection left for later, and the
+/// cycles it already completed.
+class _CyclePanel extends StatelessWidget {
+  const _CyclePanel({
+    required this.habit,
+    required this.progress,
+    required this.cycles,
+    required this.onReflect,
+  });
+
+  final Habit habit;
+  final int progress;
+
+  /// Every completed cycle of this pulsar, newest first.
+  final List<HabitCycle> cycles;
+  final ValueChanged<HabitCycle> onReflect;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final strings = context.strings;
+    final shown = progress.clamp(0, habit.cycleLength);
+    final pending = cycles.where((c) => !c.resolved).firstOrNull;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Center(
+          child: Text(
+            strings.habitRewardLabel,
+            style: TextStyle(
+              fontSize: 13,
+              color: colors.muted,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: IntensityBolts(
+            intensity: habit.intensity,
+            size: 20,
+            spacing: 4,
+            emphasizeLast: true,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: habit.cycleLength == 0 ? 0 : shown / habit.cycleLength,
+            minHeight: 6,
+            color: colors.gold,
+            backgroundColor: colors.muted.withValues(alpha: 0.2),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Center(
+          child: Text(
+            strings.cycleProgressLabel(shown, habit.cycleLength),
+            style: TextStyle(
+              fontSize: 13,
+              color: colors.muted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        if (pending != null) ...[
+          const SizedBox(height: 14),
+          Center(
+            child: ElevatedButton.icon(
+              onPressed: () => onReflect(pending),
+              icon: const Icon(Icons.auto_awesome),
+              label: AppButtonLabel(strings.cycleReflectAction),
+            ),
+          ),
+        ],
+        if (cycles.isNotEmpty) ...[
+          const SizedBox(height: 22),
+          StatsSectionLabel(strings.cycleHistoryTitle),
+          const SizedBox(height: 10),
+          for (final cycle in cycles)
+            InkWell(
+              // Only a cycle with answers has something more to read.
+              onTap: cycle.hasReflection
+                  ? () => showHabitCycleDetail(context, cycle)
+                  : null,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${strings.cycleHistoryItem(cycle.length)} · '
+                        '${formatDisplayDate(cycle.completedDate, strings)}',
+                        style: context.typography.supporting,
+                      ),
+                    ),
+                    if (cycle.hasReflection) ...[
+                      Icon(Icons.notes_rounded, size: 16, color: colors.muted),
+                      const SizedBox(width: 8),
+                    ],
+                    IntensityBolts(intensity: cycle.intensity, size: 14),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ],
     );
   }
 }

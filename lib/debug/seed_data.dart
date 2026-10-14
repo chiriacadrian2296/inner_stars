@@ -3,11 +3,13 @@ import '../data/constellation_layout.dart' show kMaxConstellationStars;
 import '../data/moodboard_repository.dart';
 import '../data/reflection_answer_repository.dart';
 import '../data/habit_completion_repository.dart';
+import '../data/habit_cycle_repository.dart';
 import '../data/habit_repository.dart';
 import '../data/project_repository.dart';
 import '../data/star_repository.dart';
 import '../models/life_area.dart';
 import '../models/habit.dart';
+import '../models/habit_cycle.dart';
 import '../models/project.dart';
 import '../models/star_media.dart';
 import '../utils/date_math.dart';
@@ -138,6 +140,7 @@ Future<int> seedSampleData({
   required HabitRepository habitRepository,
   required HabitCompletionRepository habitCompletionRepository,
   required String languageCode,
+  HabitCycleRepository? habitCycleRepository,
   AreaVisionRepository? areaVisionRepository,
   ReflectionAnswerRepository? reflectionAnswerRepository,
   MoodboardRepository? moodboardRepository,
@@ -280,6 +283,18 @@ Future<int> seedSampleData({
         iconSlug: _sampleIcon(spec.area, habitSeed.title.length + specIndex),
         projectId: project.id,
         intensity: habitSeed.intensity,
+        cycleLength: habitSeed.cycleLength,
+        // Starts on its oldest check-in, so those days count toward the
+        // cycle instead of predating it.
+        createdAt: habitSeed.completedDayOffsets.isEmpty
+            ? null
+            : today.subtract(
+                Duration(
+                  days: habitSeed.completedDayOffsets.reduce(
+                    (a, b) => a > b ? a : b,
+                  ),
+                ),
+              ),
       );
       for (final offset in habitSeed.completedDayOffsets) {
         await habitCompletionRepository.markDone(
@@ -293,6 +308,7 @@ Future<int> seedSampleData({
   await _seedHabitHistory(
     habitRepository: habitRepository,
     habitCompletionRepository: habitCompletionRepository,
+    habitCycleRepository: habitCycleRepository,
     projects: projectsBySpec,
     languageCode: languageCode,
     today: today,
@@ -415,6 +431,8 @@ class _HabitHistorySeed {
     this.frequency = HabitFrequency.daily,
     this.target = 1,
     this.intensity = 3,
+    this.cycleLength = 30,
+    this.pendingReflection = false,
     this.endedDaysAgo,
   });
 
@@ -427,6 +445,15 @@ class _HabitHistorySeed {
   final HabitFrequency frequency;
   final int target;
   final int intensity;
+
+  /// The reward is [intensity]; the cycle completes after this many distinct
+  /// days. The seed plays the whole history through it, so a long habit ends
+  /// up with several completed cycles and a partly-filled current one.
+  final int cycleLength;
+
+  /// Leaves the newest completed cycle without its reflection, so the
+  /// "Reflect on the Cycle" action has something to show.
+  final bool pendingReflection;
 
   /// When set, the pulsar is deleted (a dead star in the archive) after its
   /// last completion this many days ago.
@@ -457,6 +484,8 @@ final _habitHistory = <_HabitHistorySeed>[
     ro: 'Plimbare de seară',
     projectIndex: 0,
     startedDaysAgo: 110,
+    // A couple of finished cycles behind it and a third under way.
+    cycleLength: 30,
     countOn: (d, wd) {
       if (d >= 30 && d <= 38) return 0; // a 9-day gap a month ago
       final chance = wd >= 6 ? 45 : (wd == 3 ? 95 : 82);
@@ -471,6 +500,8 @@ final _habitHistory = <_HabitHistorySeed>[
     startedDaysAgo: 60,
     target: 3,
     intensity: 1,
+    // A short custom length with the smallest reward: many quick cycles.
+    cycleLength: 14,
     countOn: (d, wd) => d == 0 ? 2 : (_roll(d, 2) % 5).clamp(0, 4),
   ),
   _HabitHistorySeed(
@@ -482,6 +513,8 @@ final _habitHistory = <_HabitHistorySeed>[
     frequency: HabitFrequency.weekly,
     target: 3,
     intensity: 4,
+    // Slow and irregular: the rhythm is only a wish, the cycle still gets there.
+    cycleLength: 21,
     countOn: (d, wd) {
       final chance = switch (wd) {
         1 => 70,
@@ -500,6 +533,7 @@ final _habitHistory = <_HabitHistorySeed>[
     startedDaysAgo: 70,
     frequency: HabitFrequency.weekly,
     intensity: 2,
+    cycleLength: 7,
     countOn: (d, wd) => wd == 7 && _roll(d, 4) < 92 ? 1 : 0,
   ),
   _HabitHistorySeed(
@@ -508,7 +542,10 @@ final _habitHistory = <_HabitHistorySeed>[
     ro: 'Scris jurnal',
     projectIndex: 2,
     startedDaysAgo: 45,
-    // Done every day until 5 days ago, then nothing: a broken streak.
+    // Done every day until 5 days ago, then nothing: a broken streak. Its
+    // first cycle was finished and never reflected on.
+    intensity: 4,
+    pendingReflection: true,
     countOn: (d, wd) => d >= 5 ? 1 : 0,
   ),
   _HabitHistorySeed(
@@ -518,7 +555,32 @@ final _habitHistory = <_HabitHistorySeed>[
     projectIndex: 0,
     startedDaysAgo: 2,
     intensity: 5,
+    // Just started: 3 of 7 days, with the biggest reward on the line.
+    cycleLength: 7,
     countOn: (d, wd) => d <= 2 ? 1 : 0,
+  ),
+  _HabitHistorySeed(
+    en: 'Stretch',
+    it: 'Stretching',
+    ro: 'Întinderi',
+    projectIndex: 1,
+    startedDaysAgo: 29,
+    intensity: 3,
+    // One day short of the goal and dark today: checking it in completes the
+    // cycle and opens the reflection page.
+    cycleLength: 30,
+    countOn: (d, wd) => d >= 1 ? 1 : 0,
+  ),
+  _HabitHistorySeed(
+    en: 'Meditate',
+    it: 'Meditare',
+    ro: 'Meditez',
+    projectIndex: 2,
+    startedDaysAgo: 110,
+    intensity: 5,
+    // A big 90-day cycle, finished and reflected on; a new one just begun.
+    cycleLength: 90,
+    countOn: (d, wd) => d > 8 ? (_roll(d, 6) < 94 ? 1 : 0) : (d > 3 ? 1 : 0),
   ),
   _HabitHistorySeed(
     en: 'Learn Spanish',
@@ -528,13 +590,119 @@ final _habitHistory = <_HabitHistorySeed>[
     startedDaysAgo: 120,
     endedDaysAgo: 40,
     intensity: 2,
+    // Archived after a finished cycle: its reward stays in the stats.
+    cycleLength: 30,
     countOn: (d, wd) => d >= 40 && _roll(d, 5) < 70 ? 1 : 0,
   ),
 ];
 
+/// A few short sample answers for a finished cycle's reflection, in the
+/// seed's language; some cycles answer all three questions, some only one,
+/// some none — as real ones will.
+({String? helped, String? hard, String? feel}) _cycleReflectionSample(
+  String languageCode,
+  int index,
+) {
+  final samples = switch (languageCode) {
+    'it' => const [
+      (
+        helped: 'Farlo sempre alla stessa ora.',
+        hard: 'Le sere in cui ero stanco.',
+        feel: 'Orgoglioso, ma con voglia di continuare.',
+      ),
+      (helped: 'Un amico che mi ricordava di farlo.', hard: null, feel: null),
+      (helped: null, hard: null, feel: null),
+    ],
+    'ro' => const [
+      (
+        helped: 'Îl făceam mereu la aceeași oră.',
+        hard: 'Serile în care eram obosit.',
+        feel: 'Mândru, dar cu chef să continui.',
+      ),
+      (helped: 'Un prieten care îmi amintea să-l fac.', hard: null, feel: null),
+      (helped: null, hard: null, feel: null),
+    ],
+    _ => const [
+      (
+        helped: 'Doing it at the same time every day.',
+        hard: 'The evenings when I was tired.',
+        feel: 'Proud, and ready to keep going.',
+      ),
+      (helped: 'A friend who reminded me to do it.', hard: null, feel: null),
+      (helped: null, hard: null, feel: null),
+    ],
+  };
+  return samples[index % samples.length];
+}
+
+/// Plays a seeded habit's whole history through its cycle length: every full
+/// run of [habit.cycleLength] distinct days becomes a completed, reflected
+/// cycle (never one that would complete today, which would pop the page up
+/// mid-seed), and the habit's current cycle starts the day after the last
+/// one. With [pendingReflection] the newest completed cycle is left
+/// unresolved instead, and stays the habit's current cycle.
+///
+/// Must run *before* the completions are written: writing them wakes the
+/// cycle host, which would otherwise record the very same cycles a second
+/// time.
+Future<void> _seedCycles({
+  required HabitRepository habitRepository,
+  required HabitCycleRepository cycleRepository,
+  required Habit habit,
+  required List<DateTime> days,
+  required DateTime today,
+  required String languageCode,
+  required bool pendingReflection,
+}) async {
+  final distinct = {for (final d in days) dateOnly(d)}.toList()..sort();
+  var start = dateOnly(habit.createdAt);
+  final cycles = <HabitCycle>[];
+  final baseId = DateTime.now().microsecondsSinceEpoch;
+  while (true) {
+    final inCycle = distinct.where((d) => !d.isBefore(start)).toList();
+    if (inCycle.length < habit.cycleLength) break;
+    final completed = inCycle[habit.cycleLength - 1];
+    if (!completed.isBefore(today)) break;
+    final sample = _cycleReflectionSample(languageCode, cycles.length);
+    cycles.add(
+      HabitCycle(
+        id: baseId + cycles.length,
+        habitId: habit.id,
+        startDate: start,
+        completedDate: completed,
+        length: habit.cycleLength,
+        intensity: habit.intensity,
+        resolved: true,
+        whatHelped: sample.helped,
+        whatWasHard: sample.hard,
+        howItFeels: sample.feel,
+      ),
+    );
+    start = addDays(completed, 1);
+  }
+  if (cycles.isEmpty) return;
+  if (pendingReflection) {
+    final last = cycles.removeLast();
+    cycles.add(
+      HabitCycle(
+        id: last.id,
+        habitId: last.habitId,
+        startDate: last.startDate,
+        completedDate: last.completedDate,
+        length: last.length,
+        intensity: last.intensity,
+      ),
+    );
+    start = last.startDate;
+  }
+  await cycleRepository.addMany(cycles);
+  await habitRepository.startNextCycle(habit.id, start: start);
+}
+
 Future<void> _seedHabitHistory({
   required HabitRepository habitRepository,
   required HabitCompletionRepository habitCompletionRepository,
+  HabitCycleRepository? habitCycleRepository,
   required List<Project> projects,
   required String languageCode,
   required DateTime today,
@@ -554,6 +722,7 @@ Future<void> _seedHabitHistory({
       ),
       projectId: projects[seed.projectIndex].id,
       intensity: seed.intensity,
+      cycleLength: seed.cycleLength,
       frequency: seed.frequency,
       targetPerPeriod: seed.target,
       createdAt: addDays(today, -seed.startedDaysAgo),
@@ -566,6 +735,17 @@ Future<void> _seedHabitHistory({
       for (var i = 0; i < count; i++) {
         days.add(day);
       }
+    }
+    if (habitCycleRepository != null) {
+      await _seedCycles(
+        habitRepository: habitRepository,
+        cycleRepository: habitCycleRepository,
+        habit: habit,
+        days: days,
+        today: today,
+        languageCode: languageCode,
+        pendingReflection: seed.pendingReflection,
+      );
     }
     await habitCompletionRepository.addMany(habit.id, days);
     await Future.delayed(const Duration(milliseconds: 2));
@@ -593,14 +773,23 @@ class _WinSeed {
 /// - A short burst several days back (e.g. `[4, 5, 6]`) exercises a habit
 ///   that's gone dark — its streak broke days ago and it hasn't recovered.
 class _HabitSeed {
-  const _HabitSeed(this.title, this.completedDayOffsets, {this.intensity = 3});
+  const _HabitSeed(
+    this.title,
+    this.completedDayOffsets, {
+    this.intensity = 3,
+    this.cycleLength = 30,
+  });
   final String title;
   final List<int> completedDayOffsets;
 
-  /// What keeping this up costs each day, 1-5 — left at the middle of the
-  /// scale for most seeds, so a deliberately heavy one (an ice bath) still
-  /// stands out against them.
+  /// The reward its cycle earns, 1-5 — left at the middle of the scale for
+  /// most seeds, so a deliberately big one (an ice bath) still stands out
+  /// against them.
   final int intensity;
+
+  /// How many distinct days complete its cycle. These short bursts all stay
+  /// well short of it, mid-cycle.
+  final int cycleLength;
 }
 
 class _ProjectSeed {
@@ -740,7 +929,7 @@ final _specsEn = [
     goals: ['Run a half marathon', 'Beat 50 minutes on a 10k'],
     habits: [
       _HabitSeed('Morning stretch', _activeStreak(10)),
-      _HabitSeed('Ice bath', [4, 5, 6], intensity: 5),
+      _HabitSeed('Ice bath', [4, 5, 6], intensity: 5, cycleLength: 10),
     ],
     seedDeadStar: true,
   ),
@@ -1091,7 +1280,7 @@ final _specsIt = [
     ],
     habits: [
       _HabitSeed('Stretching mattutino', _activeStreak(10)),
-      _HabitSeed('Bagno di ghiaccio', [4, 5, 6], intensity: 5),
+      _HabitSeed('Bagno di ghiaccio', [4, 5, 6], intensity: 5, cycleLength: 10),
     ],
     seedDeadStar: true,
   ),
@@ -1480,7 +1669,7 @@ final _specsRo = [
     goals: ['Aleargă un semimaraton', 'Sub 50 de minute la 10k'],
     habits: [
       _HabitSeed('Întindere de dimineață', _activeStreak(10)),
-      _HabitSeed('Baie cu gheață', [4, 5, 6], intensity: 5),
+      _HabitSeed('Baie cu gheață', [4, 5, 6], intensity: 5, cycleLength: 10),
     ],
     seedDeadStar: true,
   ),

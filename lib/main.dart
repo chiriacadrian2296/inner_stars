@@ -16,6 +16,9 @@ import 'data/audio_settings_repository.dart';
 import 'data/biometric_auth_service.dart';
 import 'data/custom_constellation_repository.dart';
 import 'data/habit_completion_repository.dart';
+import 'data/habit_cycle_repository.dart';
+import 'widgets/habit_cycle_host.dart';
+import 'widgets/habit_cycle_scope.dart';
 import 'data/habit_repository.dart';
 import 'data/legacy_constellation_migration.dart';
 import 'data/onboarding_prefs.dart';
@@ -89,6 +92,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
   ProjectRepository? _projectRepository;
   HabitRepository? _habitRepository;
   HabitCompletionRepository? _habitCompletionRepository;
+  HabitCycleRepository? _habitCycleRepository;
   StarsShapeRepository? _starsShapeRepository;
   AreaVisionRepository? _areaVisionRepository;
   ReflectionAnswerRepository? _reflectionAnswerRepository;
@@ -120,6 +124,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
       final habitRepository = await HabitRepository.create();
       final habitCompletionRepository =
           await HabitCompletionRepository.create();
+      final habitCycleRepository = await HabitCycleRepository.create();
       final starsShapeRepository = await StarsShapeRepository.create();
       final areaVisionRepository = await AreaVisionRepository.create();
       final reflectionAnswerRepository =
@@ -168,6 +173,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
         _projectRepository = projectRepository;
         _habitRepository = habitRepository;
         _habitCompletionRepository = habitCompletionRepository;
+        _habitCycleRepository = habitCycleRepository;
         _starsShapeRepository = starsShapeRepository;
         _areaVisionRepository = areaVisionRepository;
         _reflectionAnswerRepository = reflectionAnswerRepository;
@@ -267,6 +273,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
     final projectRepository = _projectRepository;
     final habitRepository = _habitRepository;
     final habitCompletionRepository = _habitCompletionRepository;
+    final habitCycleRepository = _habitCycleRepository;
     final starsShapeRepository = _starsShapeRepository;
     final areaVisionRepository = _areaVisionRepository;
     final reflectionAnswerRepository = _reflectionAnswerRepository;
@@ -301,6 +308,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
         projectRepository == null ||
         habitRepository == null ||
         habitCompletionRepository == null ||
+        habitCycleRepository == null ||
         starsShapeRepository == null ||
         areaVisionRepository == null ||
         reflectionAnswerRepository == null ||
@@ -386,13 +394,22 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
         ],
         builder: (context, child) => StringsScope(
           strings: strings,
-          child: EntityInsightsHost(
-            projects: projectRepository,
-            stars: starRepository,
-            habits: habitRepository,
-            completions: habitCompletionRepository,
-            shapes: starsShapeRepository,
-            child: child!,
+          child: HabitCycleScope(
+            repository: habitCycleRepository,
+            child: HabitCycleHost(
+              navigatorKey: _navigatorKey,
+              habitRepository: habitRepository,
+              completionRepository: habitCompletionRepository,
+              cycleRepository: habitCycleRepository,
+              child: EntityInsightsHost(
+                projects: projectRepository,
+                stars: starRepository,
+                habits: habitRepository,
+                completions: habitCompletionRepository,
+                shapes: starsShapeRepository,
+                child: child!,
+              ),
+            ),
           ),
         ),
         home: AnnotatedRegion<SystemUiOverlayStyle>(

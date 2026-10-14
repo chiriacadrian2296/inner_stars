@@ -62,6 +62,7 @@ class HabitRepository extends ChangeNotifier {
     String? description,
     required int projectId,
     int intensity = 3,
+    int cycleLength = kDefaultCycleLength,
     HabitFrequency frequency = HabitFrequency.daily,
     int targetPerPeriod = 1,
     int? reminderHour,
@@ -86,6 +87,7 @@ class HabitRepository extends ChangeNotifier {
           : trimmedDescription,
       createdAt: createdAt ?? DateTime.now(),
       intensity: intensity,
+      cycleLength: cycleLength,
       frequency: frequency,
       targetPerPeriod: targetPerPeriod,
       reminderHour: reminderHour,
@@ -103,6 +105,7 @@ class HabitRepository extends ChangeNotifier {
     String? description,
     required int projectId,
     int intensity = 3,
+    int? cycleLength,
     HabitFrequency frequency = HabitFrequency.daily,
     int targetPerPeriod = 1,
     int? reminderHour,
@@ -126,6 +129,8 @@ class HabitRepository extends ChangeNotifier {
       createdAt: existing.createdAt,
       updatedAt: DateTime.now(),
       intensity: intensity,
+      cycleLength: cycleLength ?? existing.cycleLength,
+      cycleStart: existing.cycleStart,
       frequency: frequency,
       targetPerPeriod: targetPerPeriod,
       reminderHour: reminderHour,
@@ -170,7 +175,8 @@ class HabitRepository extends ChangeNotifier {
   ///
   /// "Brand new" includes its history: the old streak is wiped via
   /// [completionRepository], so a reignited pulsar starts from zero rather
-  /// than inheriting a run it broke long ago.
+  /// than inheriting a run it broke long ago. Cycles it already completed
+  /// stay, though: that reward was earned and is never taken back.
   Future<Habit> resurrect(
     int id, {
     required String title,
@@ -178,6 +184,7 @@ class HabitRepository extends ChangeNotifier {
     String? description,
     required int projectId,
     int intensity = 3,
+    int cycleLength = kDefaultCycleLength,
     HabitFrequency frequency = HabitFrequency.daily,
     int targetPerPeriod = 1,
     int? reminderHour,
@@ -202,6 +209,8 @@ class HabitRepository extends ChangeNotifier {
       createdAt: existing.createdAt,
       updatedAt: DateTime.now(),
       intensity: intensity,
+      cycleLength: cycleLength,
+      cycleStart: DateTime.now(),
       frequency: frequency,
       targetPerPeriod: targetPerPeriod,
       reminderHour: reminderHour,
@@ -211,6 +220,32 @@ class HabitRepository extends ChangeNotifier {
     final nextHabits = [...habits]..[index] = updated;
     await _saveAll(nextHabits);
     await completionRepository.deleteAllForHabit(id);
+    return updated;
+  }
+
+  /// Opens the pulsar's next cycle after the user finished the reflection on
+  /// the last one. [start] is the first day that counts toward it; the
+  /// length and reward default to the current ones, and the user may change
+  /// either (or keep both for a plain restart).
+  Future<Habit> startNextCycle(
+    int id, {
+    required DateTime start,
+    int? cycleLength,
+    int? intensity,
+  }) async {
+    final habits = getAll();
+    final index = habits.indexWhere((h) => h.id == id);
+    if (index == -1) {
+      throw StateError('No habit found with id $id');
+    }
+    final existing = habits[index];
+    final updated = existing.copyWith(
+      cycleStart: DateTime(start.year, start.month, start.day),
+      cycleLength: cycleLength,
+      intensity: intensity,
+      updatedAt: DateTime.now(),
+    );
+    await _saveAll([...habits]..[index] = updated);
     return updated;
   }
 

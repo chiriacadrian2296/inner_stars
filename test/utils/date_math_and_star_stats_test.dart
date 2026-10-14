@@ -52,7 +52,7 @@ void main() {
   });
 
   group('HabitStatsSnapshot', () {
-    test('lists unlit habits first and averages the rate', () {
+    test('lists unlit habits first and sums the days done', () {
       final now = DateTime(2026, 5, 20, 12);
       final lit = Habit(
         id: 1,
@@ -76,8 +76,8 @@ void main() {
         now: now,
       );
       expect(snapshot.entries.first.habit.id, 2);
-      expect(snapshot.onTrackCount, 1);
-      expect(snapshot.overallRate, greaterThan(0));
+      expect(snapshot.doneTodayCount, 1);
+      expect(snapshot.totalDaysDone, greaterThan(0));
     });
   });
 

@@ -264,14 +264,34 @@ class _TodayHabitsScreenState extends State<TodayHabitsScreen> {
                         lit: data.doneToday(habit),
                         subtitle: projectName(habit.projectId),
                         onTap: _saving ? null : () => _view(entry),
-                        figures:
-                            habit.frequency == HabitFrequency.daily &&
-                                habit.targetPerPeriod > 1
-                            ? Text(
+                        figures: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (habit.frequency == HabitFrequency.daily &&
+                                habit.targetPerPeriod > 1)
+                              Text(
                                 '${data.todayCount(habit)}/${habit.targetPerPeriod}',
                                 style: context.typography.supporting,
-                              )
-                            : null,
+                              ),
+                            // How far the current cycle is.
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.autorenew_rounded,
+                                  size: 14,
+                                  color: context.colors.muted,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '${data.cycleProgress(habit).clamp(0, habit.cycleLength)}/${habit.cycleLength}',
+                                  style: context.typography.supporting,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                         actionIcon:
                             habit.frequency == HabitFrequency.daily &&
                                 habit.targetPerPeriod > 1

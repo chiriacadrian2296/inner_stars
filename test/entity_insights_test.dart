@@ -421,8 +421,8 @@ void main() {
       ],
     );
     addTearDown(c.dispose);
-    expect(_read(c, const InsightEntity.project(2)).consistency, isNull);
-    expect(_read(c, const InsightEntity.habit(1)).consistency, isNull);
+    expect(_read(c, const InsightEntity.project(2)).daysDone, isNull);
+    expect(_read(c, const InsightEntity.habit(1)).daysDone, isNull);
     final archived = _read(c, const InsightEntity.habit(2));
     expect(archived.completions, hasLength(1));
     expect(

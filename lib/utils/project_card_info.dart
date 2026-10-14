@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_strings.dart';
 import '../models/habit.dart';
+import '../models/habit_cycle.dart';
 import '../models/star.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
@@ -54,10 +55,18 @@ CardBadge _count(
 int emptySlotsOf(int slotCount, List<Star> stars) =>
     math.max(0, slotCount - stars.length);
 
-/// The total intensity of the lit [stars]: a constellation's or an area's.
-int _energy(List<Star> stars) => stars
-    .where((s) => s.isLit)
-    .fold<int>(0, (sum, s) => sum + (s.intensity ?? 0));
+/// The total intensity of the lit [stars] plus the rewards of the completed
+/// pulsar [cycles] of [habits]: a constellation's or an area's.
+int _energy(List<Star> stars, List<Habit> habits, List<HabitCycle> cycles) {
+  final habitIds = {for (final h in habits) h.id};
+  final starTotal = stars
+      .where((s) => s.isLit)
+      .fold<int>(0, (sum, s) => sum + (s.intensity ?? 0));
+  final cycleTotal = cycles
+      .where((c) => habitIds.contains(c.habitId))
+      .fold<int>(0, (sum, c) => sum + c.intensity);
+  return starTotal + cycleTotal;
+}
 
 CardBadge _goalsBadge(int goals, AppColors colors, AppStrings strings) =>
     _count(
@@ -100,9 +109,10 @@ CardBadges projectCardBadges({
   required int slotCount,
   required AppColors colors,
   required AppStrings strings,
+  List<HabitCycle> cycles = const [],
 }) {
   return CardBadges(
-    intensity: intensityBadge(_energy(stars), colors, strings),
+    intensity: intensityBadge(_energy(stars, habits, cycles), colors, strings),
     rows: [
       [
         _count(
@@ -133,13 +143,14 @@ CardBadges areaCardBadges({
   required int emptySlots,
   required AppColors colors,
   required AppStrings strings,
+  List<HabitCycle> cycles = const [],
 }) {
   final lit = stars.where((s) => s.isLit).length;
   final goals = stars.where((s) => s.isUnlit).length;
   final dead = stars.where((s) => s.dead).length;
 
   return CardBadges(
-    intensity: intensityBadge(_energy(stars), colors, strings),
+    intensity: intensityBadge(_energy(stars, habits, cycles), colors, strings),
     title: _count(
       BadgeSlot.constellations,
       Icons.insights_outlined,

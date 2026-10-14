@@ -38,6 +38,7 @@ import '../utils/date_format.dart';
 import '../utils/icon_for_slug.dart';
 import '../utils/page_settled.dart';
 import '../widgets/app_field.dart';
+import '../widgets/cycle_length_field.dart';
 import '../widgets/area_picker.dart';
 import '../widgets/intensity_bolts.dart';
 import '../widgets/memory_field_actions.dart';
@@ -72,6 +73,7 @@ class StarFormResult {
     this.reminderMinute,
     this.habitFrequency,
     this.habitTargetPerPeriod,
+    this.habitCycleLength,
   });
 
   /// Which kind of star was chosen — always one of [kCreatableStarKinds].
@@ -118,6 +120,10 @@ class StarFormResult {
   /// for what each means. Null for every other kind.
   final HabitFrequency? habitFrequency;
   final int? habitTargetPerPeriod;
+
+  /// [StarKind.pulsar] only — how many distinct days complete one cycle
+  /// (see [Habit.cycleLength]); [intensity] is the reward for completing it.
+  final int? habitCycleLength;
 }
 
 /// Popped instead of [StarFormResult] when editing and the user deleted the
@@ -337,10 +343,10 @@ class _StarFormScreenState extends State<StarFormScreen> {
 
   /// The supernova field's own selection — purely a picker convenience,
   /// never saved on its own (a star only ever stores a project id, never
-  /// an area), so it's not part of the `_initial*`/`_hasUnsavedChanges`
-  /// tracking below the way [_selectedProject] is. Seeded from whichever
-  /// project already applies, same as that field; [_openAreaPicker]/
-  /// [_openProjectPicker] are what keep the two in sync afterward.
+  /// an area). It is still tracked as form state so choosing only an area
+  /// counts as an unsaved change. Seeded from whichever project already
+  /// applies, same as that field; [_openAreaPicker]/[_openProjectPicker]
+  /// are what keep the two in sync afterward.
   late LifeArea? _selectedArea = _selectedProject?.area ?? widget.presetArea;
   late int _intensity =
       widget.existingStar?.intensity ?? widget.existingHabit?.intensity ?? 3;
@@ -372,6 +378,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
   late String? _photoPath = widget.existingStar?.photoPath;
   late List<StarMedia> _media = widget.existingStar?.media ?? const [];
   late final List<StarMedia> _initialMedia = _media;
+  late bool _victoryDetailsExpanded = _photoPath != null || _media.isNotEmpty;
   bool _saved = false;
 
   /// Set once the person carried on in a new constellation because the one
@@ -383,6 +390,12 @@ class _StarFormScreenState extends State<StarFormScreen> {
   late HabitFrequency _habitFrequency =
       widget.existingHabit?.frequency ?? HabitFrequency.daily;
   late int _habitTargetPerPeriod = widget.existingHabit?.targetPerPeriod ?? 1;
+  late int _cycleLength =
+      widget.existingHabit?.cycleLength ?? kDefaultCycleLength;
+
+  /// Whether the "Custom" length chip is the selected one: either picked
+  /// explicitly, or because the length being edited isn't one of the presets.
+  late bool _cycleCustom = !kCyclePresets.contains(_cycleLength);
 
   // What the form above started out as — captured once, alongside it, so
   // _hasUnsavedChanges has something to compare against regardless of
@@ -390,6 +403,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
   // already exists. Deliberately mirrors each field's own initializer.
   late final int? _initialProjectId =
       (widget.lockedProject ?? widget.contextProject)?.id;
+  late final LifeArea? _initialArea = _selectedArea;
   late final StarKind _initialKind = _kind;
   late final int _initialIntensity = _intensity;
   late final DateTime? _initialDateValue = _date;
@@ -401,6 +415,8 @@ class _StarFormScreenState extends State<StarFormScreen> {
   late final int _initialReminderMinute = _reminderMinute;
   late final HabitFrequency _initialHabitFrequency = _habitFrequency;
   late final int _initialHabitTargetPerPeriod = _habitTargetPerPeriod;
+  late final int _initialCycleLength = _cycleLength;
+  late final bool _initialCycleCustom = _cycleCustom;
 
   String get _initialTitle =>
       widget.existingStar?.title ?? widget.existingHabit?.title ?? '';
@@ -583,6 +599,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                 '') ||
         _titleController.text.trim() != _initialTitle ||
         normalizedDescription != normalizedInitialDescription ||
+        _selectedArea != _initialArea ||
         _selectedProject?.id != _initialProjectId ||
         (!widget.startWithoutSelection && _kind != _initialKind) ||
         (_kind != StarKind.unlit && _intensity != _initialIntensity) ||
@@ -595,6 +612,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
         (_kind == StarKind.pulsar &&
             (_habitFrequency != _initialHabitFrequency ||
                 _habitTargetPerPeriod != _initialHabitTargetPerPeriod ||
+                _cycleLength != _initialCycleLength ||
                 _customReminder != _initialCustomReminder ||
                 (_customReminder &&
                     (_reminderHour != _initialReminderHour ||
@@ -691,12 +709,16 @@ class _StarFormScreenState extends State<StarFormScreen> {
       _targetDate = _initialTargetDate;
       _photoPath = _initialPhotoPath;
       _media = _initialMedia;
+      _victoryDetailsExpanded =
+          _initialPhotoPath != null || _initialMedia.isNotEmpty;
       _movedToNewConstellation = false;
       _customReminder = _initialCustomReminder;
       _reminderHour = _initialReminderHour;
       _reminderMinute = _initialReminderMinute;
       _habitFrequency = _initialHabitFrequency;
       _habitTargetPerPeriod = _initialHabitTargetPerPeriod;
+      _cycleLength = _initialCycleLength;
+      _cycleCustom = _initialCycleCustom;
       _kindEpoch++;
       _builtDirty = false;
     });
@@ -857,6 +879,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
         habitTargetPerPeriod: _kind == StarKind.pulsar
             ? _habitTargetPerPeriod
             : null,
+        habitCycleLength: _kind == StarKind.pulsar ? _cycleLength : null,
       ),
     );
   }
@@ -1245,7 +1268,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                                 strings.createChooserQuestion,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: colors.text,
+                                  color: colors.muted,
                                   fontSize: 21,
                                   height: 1.3,
                                   fontWeight: FontWeight.w700,
@@ -1503,10 +1526,41 @@ class _StarFormScreenState extends State<StarFormScreen> {
                           ),
                         ),
                       ],
-                      // Every kind that's already burning carries an intensity —
-                      // a lit star's is what the effort cost once, a pulsar's
-                      // what it costs each day. An unlit star has none yet: it
-                      // gets one the moment it's lit.
+                      // A pulsar works in cycles: this many distinct days complete
+                      // one, and the reward below is what completing it is worth.
+                      if (_kind == StarKind.pulsar) ...[
+                        const SizedBox(height: 20),
+                        StaggeredEntrance(
+                          index: 8,
+                          replayKey: _kindEpoch,
+                          child: CycleLengthField(
+                            length: _cycleLength,
+                            custom: _cycleCustom,
+                            canReset:
+                                _cycleLength != kDefaultCycleLength ||
+                                _cycleCustom,
+                            onReset: () => setState(() {
+                              _cycleLength = kDefaultCycleLength;
+                              _cycleCustom = false;
+                            }),
+                            onPreset: (value) => setState(() {
+                              _cycleLength = value;
+                              _cycleCustom = false;
+                            }),
+                            onCustom: () => setState(() => _cycleCustom = true),
+                            onLengthChanged: (value) => setState(
+                              () => _cycleLength = value.clamp(
+                                kMinCycleLength,
+                                kMaxCycleLength,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                      // A lit star's intensity is what the effort cost, rated
+                      // once it's lit; a pulsar's is the reward for completing
+                      // a cycle, picked up front. An unlit star has none yet:
+                      // it gets one the moment it's lit.
                       if (_kind != StarKind.unlit) ...[
                         const SizedBox(height: 20),
                         HintTarget(
@@ -1528,7 +1582,9 @@ class _StarFormScreenState extends State<StarFormScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 AppFieldLabel(
-                                  strings.intensityLabel,
+                                  _kind == StarKind.pulsar
+                                      ? strings.habitRewardLabel
+                                      : strings.intensityLabel,
                                   canReset: _intensityTouched,
                                   onReset: () => setState(() {
                                     _intensityTouched = false;
@@ -1638,7 +1694,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
                                     _habitFrequency = HabitFrequency.daily;
                                     _habitTargetPerPeriod = 1;
                                   }),
-                                  requirement: FieldRequirement.required,
+                                  requirement: FieldRequirement.optional,
                                 ),
                               ),
                               const SizedBox(height: kFieldLabelGap),
@@ -1796,93 +1852,188 @@ class _StarFormScreenState extends State<StarFormScreen> {
                         ),
                       ],
                       if (_kind == StarKind.lit) ...[
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 44),
                         StaggeredEntrance(
                           index: 12,
                           replayKey: _kindEpoch,
-                          // The photo section, split in two halves: the main
-                          // photo on the left, the secondary photos (two columns)
-                          // on the right. The main preview keeps 9:16 and the
-                          // secondary grid fills its height so both halves line up.
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  AppFieldLabel(
-                                    strings.photosLabel,
-                                    requirement: FieldRequirement.optional,
-                                  ),
-                                  FieldResetButton(
-                                    onReset: _resetPhotos,
-                                    canReset:
-                                        _photoPath != null ||
-                                        _media.any(
-                                          (m) => m.kind == StarMediaKind.photo,
+                          child: Center(
+                            child: Semantics(
+                              button: true,
+                              expanded: _victoryDetailsExpanded,
+                              child: GestureDetector(
+                                key: const ValueKey('victory-details-toggle'),
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () => setState(
+                                  () => _victoryDetailsExpanded =
+                                      !_victoryDetailsExpanded,
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        strings.detailsLabel,
+                                        style: TextStyle(
+                                          color: colors.muted,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
                                         ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      AnimatedContainer(
+                                        duration: motionDuration(
+                                          context,
+                                          kMotionBase,
+                                        ),
+                                        curve: kMotionEnter,
+                                        width: 28,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          color: _victoryDetailsExpanded
+                                              ? colors.gold
+                                              : colors.night,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: colors.nightBorder,
+                                            width: kBorderWidth,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          _victoryDetailsExpanded
+                                              ? Icons.expand_less
+                                              : Icons.expand_more,
+                                          size: 24,
+                                          color: _victoryDetailsExpanded
+                                              ? colors.night
+                                              : colors.muted,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
-                              const SizedBox(height: kFieldLabelGap),
-                              LayoutBuilder(
-                                builder: (context, constraints) {
-                                  const gap = 12.0;
-                                  final half = (constraints.maxWidth - gap) / 2;
-                                  // The main photo keeps its 9:16 frame; the secondary
-                                  // grid then resizes to fill exactly that height.
-                                  final gridHeight = half * 16 / 9;
-                                  return Row(
+                            ),
+                          ),
+                        ),
+                        ClipRect(
+                          child: AnimatedSize(
+                            duration: motionDuration(context, kMotionBase),
+                            curve: kMotionEnter,
+                            alignment: Alignment.topCenter,
+                            child: !_victoryDetailsExpanded
+                                ? const SizedBox(width: double.infinity)
+                                : Column(
+                                    key: const ValueKey(
+                                      'victory-details-content',
+                                    ),
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Expanded(
+                                      const SizedBox(height: 20),
+                                      StaggeredEntrance(
+                                        index: 0,
+                                        // The photo section, split in two
+                                        // halves: main photo on the left,
+                                        // secondary photos on the right.
                                         child: Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            PhotoPicker(
-                                              photoPath: _photoPath,
-                                              onPick: _pickPhoto,
-                                              onRemove: _removePhoto,
-                                              compact: true,
-                                              compactWidth: half,
-                                              compactHeight: gridHeight,
+                                            Row(
+                                              children: [
+                                                AppFieldLabel(
+                                                  strings.photosLabel,
+                                                  requirement:
+                                                      FieldRequirement.optional,
+                                                ),
+                                                FieldResetButton(
+                                                  onReset: _resetPhotos,
+                                                  canReset:
+                                                      _photoPath != null ||
+                                                      _media.any(
+                                                        (m) =>
+                                                            m.kind ==
+                                                            StarMediaKind.photo,
+                                                      ),
+                                                ),
+                                              ],
                                             ),
-                                            MemoryCaption(
-                                              strings.mainPhotoLabel,
+                                            const SizedBox(
+                                              height: kFieldLabelGap,
+                                            ),
+                                            LayoutBuilder(
+                                              builder: (context, constraints) {
+                                                const gap = 12.0;
+                                                final half =
+                                                    (constraints.maxWidth -
+                                                        gap) /
+                                                    2;
+                                                final gridHeight =
+                                                    half * 16 / 9;
+                                                return Row(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          PhotoPicker(
+                                                            photoPath:
+                                                                _photoPath,
+                                                            onPick: _pickPhoto,
+                                                            onRemove:
+                                                                _removePhoto,
+                                                            compact: true,
+                                                            compactWidth: half,
+                                                            compactHeight:
+                                                                gridHeight,
+                                                          ),
+                                                          MemoryCaption(
+                                                            strings
+                                                                .mainPhotoLabel,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: gap),
+                                                    Expanded(
+                                                      child: StarMediaEditor(
+                                                        media: _media,
+                                                        onChanged:
+                                                            _onMediaChanged,
+                                                        kinds: const [
+                                                          StarMediaKind.photo,
+                                                        ],
+                                                        compact: true,
+                                                        gridHeight: gridHeight,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                );
+                                              },
                                             ),
                                           ],
                                         ),
                                       ),
-                                      const SizedBox(width: gap),
-                                      Expanded(
+                                      const SizedBox(height: 20),
+                                      StaggeredEntrance(
+                                        index: 1,
                                         child: StarMediaEditor(
                                           media: _media,
                                           onChanged: _onMediaChanged,
-                                          kinds: const [StarMediaKind.photo],
-                                          compact: true,
-                                          gridHeight: gridHeight,
+                                          kinds: const [
+                                            StarMediaKind.video,
+                                            StarMediaKind.voice,
+                                            StarMediaKind.link,
+                                          ],
                                         ),
                                       ),
                                     ],
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        StaggeredEntrance(
-                          index: 13,
-                          replayKey: _kindEpoch,
-                          child: StarMediaEditor(
-                            media: _media,
-                            onChanged: _onMediaChanged,
-                            kinds: const [
-                              StarMediaKind.video,
-                              StarMediaKind.voice,
-                              StarMediaKind.link,
-                            ],
+                                  ),
                           ),
                         ),
                       ],

@@ -203,20 +203,30 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
   DateTime _dateOf(Project project, SkyDateField field) =>
       field == SkyDateField.modified ? project.lastModified : project.createdAt;
 
-  List<Project> get _filtered {
+  Iterable<Project> _projectsMatchingFilters({
+    required Set<LifeArea> areas,
+    required DateTimeRange? range,
+    required SkyDateField dateField,
+  }) {
     final query = _query.trim().toLowerCase();
-    var projects = widget.projects
-        .where((project) => _areaFilter.contains(project.area))
+    return widget.projects
+        .where((project) => areas.contains(project.area))
         .where((project) {
-          final range = _dateRangeFilter;
           return range == null ||
-              _isWithinRange(_dateOf(project, _rangeDateField), range);
+              _isWithinRange(_dateOf(project, dateField), range);
         })
         .where(
           (project) =>
               query.isEmpty || project.name.toLowerCase().contains(query),
-        )
-        .toList();
+        );
+  }
+
+  List<Project> get _filtered {
+    final projects = _projectsMatchingFilters(
+      areas: _areaFilter,
+      range: _dateRangeFilter,
+      dateField: _rangeDateField,
+    ).toList();
     projects.sort(_compareProjects);
     return projects;
   }
@@ -268,20 +278,41 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
   }
 
   Future<void> _openAreaFilter() async {
+    final strings = context.strings;
     final result = await showAreaFilterSheet(
       context,
       selectedAreas: _areaFilter,
+      preview: FilterPreview<Set<LifeArea>>(
+        icon: Icons.insights,
+        countFor: (areas) => _projectsMatchingFilters(
+          areas: areas,
+          range: _dateRangeFilter,
+          dateField: _rangeDateField,
+        ).length,
+        wordFor: strings.resultsConstellationsWord,
+      ),
     );
     if (result != null && mounted) setState(() => _areaFilter = result);
   }
 
   Future<void> _openDateRangeFilter() async {
+    final strings = context.strings;
+    final preview = FilterPreview<({DateTimeRange? range, SkyDateField field})>(
+      icon: Icons.insights,
+      countFor: (selection) => _projectsMatchingFilters(
+        areas: _areaFilter,
+        range: selection.range,
+        dateField: selection.field,
+      ).length,
+      wordFor: strings.resultsConstellationsWord,
+    );
     final result = await showDateRangeFilterSheet(
       context,
       initialRange: _dateRangeFilter,
       initialPreset: _dateRangePreset,
       initialField: _rangeDateField,
       availableFields: _dateFields,
+      preview: preview,
     );
     if (result == null || !mounted) return;
     setState(() {

@@ -1526,12 +1526,12 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
       'Questa attività è archiviata. Puoi riattivarla come nuova attività, nello stesso punto della Galassia.';
   @override
   String get deadPulsarBody =>
-      'Questa abitudine è archiviata. Puoi riattivarla come nuova abitudine, nello stesso punto della Galassia; la serie e i completamenti precedenti saranno azzerati.';
+      'Questa abitudine è archiviata. Puoi riattivarla come nuova abitudine, nello stesso punto della Galassia; la serie e i completamenti precedenti saranno azzerati (i cicli già completati mantengono il loro premio).';
   @override
   String get reigniteAction => 'Riattiva';
 
   @override
-  String get habitFrequencyLabel => 'Frequenza';
+  String get habitFrequencyLabel => 'Ritmo Desiderato';
   @override
   String get habitFrequencyDaily => 'Ogni giorno';
   @override
@@ -1545,6 +1545,66 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
       : '$times volte alla settimana, in $times giorni diversi';
   @override
   String get customReminderToggleLabel => 'Orario Promemoria Personalizzato';
+
+  @override
+  String get habitCycleLabel => 'Durata del Ciclo';
+  @override
+  String get habitCycleCustom => 'Altro';
+  @override
+  String habitCycleSummary(int days) => days == 1
+      ? 'Falla in 1 giorno per completare il ciclo.'
+      : 'Falla in $days giorni diversi per completare il ciclo — senza fretta e senza scadenza.';
+  @override
+  String get habitRewardLabel => 'Premio';
+  @override
+  String cycleProgressLabel(int done, int length) => '$done/$length giorni';
+  @override
+  String get cycleHistoryTitle => 'Cicli Completati';
+  @override
+  String cycleHistoryItem(int length) =>
+      length == 1 ? '1 giorno' : '$length giorni';
+  @override
+  String get cycleDoneTitle => 'Ce l’hai fatta!';
+  @override
+  String cycleDoneBody(int length) => length == 1
+      ? 'Hai fatto la tua parte. E conta.'
+      : 'Hai fatto la tua parte in $length giorni diversi. Tutto questo è tuo.';
+  @override
+  String get cycleRewardEarned => 'Intensità Guadagnata';
+  @override
+  String get cycleReflectionIntro =>
+      'Prenditi un momento per guardare indietro. Le domande sono facoltative.';
+  @override
+  String get cycleQuestionHelped => 'Cosa ti ha aiutato?';
+  @override
+  String get cycleQuestionHard => 'Cosa è stato difficile?';
+  @override
+  String get cycleQuestionFeel => 'Come ti senti adesso?';
+  @override
+  String get cycleNextTitle => 'E adesso?';
+  @override
+  String get cycleOptionRestartTitle => 'Ricomincia';
+  @override
+  String get cycleOptionRestartBody =>
+      'Un nuovo ciclo con la stessa durata e lo stesso premio.';
+  @override
+  String get cycleOptionChangeTitle => 'Cambia';
+  @override
+  String get cycleOptionChangeBody =>
+      'Scegli una nuova durata e un nuovo premio per il prossimo ciclo.';
+  @override
+  String get cycleOptionCloseTitle => 'Concludi Questa Abitudine';
+  @override
+  String get cycleOptionCloseBody =>
+      'Va in archivio con tutto ciò che hai guadagnato.';
+  @override
+  String get cycleContinueAction => 'Continua';
+  @override
+  String get cycleArchiveAction => 'Archivia';
+  @override
+  String get cycleLaterAction => 'Più Tardi';
+  @override
+  String get cycleReflectAction => 'Ripensa al Ciclo';
 
   @override
   String get habitCurrentStreakLabel => 'Serie Attuale';
@@ -1598,9 +1658,11 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get habitStatsActiveLabel => 'Attive';
   @override
-  String get habitStatsOnTrackLabel => 'In Carreggiata';
+  String get habitStatsDoneTodayLabel => 'Fatte Oggi';
   @override
-  String get habitStatsConsistencyLabel => 'Costanza';
+  String get habitStatsDaysDoneLabel => 'Giorni Fatti';
+  @override
+  String get habitStatsCyclesLabel => 'Cicli Completati';
   @override
   String get habitStatsLongestLabel => 'Record Personale';
   @override
@@ -1611,8 +1673,6 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get habitStatsWeekdaysLabel => 'La Tua Settimana';
   @override
   String get habitStatsBestDayLabel => 'Giorno Più Forte';
-  @override
-  String get habitStatsSupportDayLabel => 'Giorno da Sostenere';
   @override
   String get habitStatsNotEnoughData =>
       'Serve ancora un po’ di storia per vedere questo ritmo.';
@@ -1848,7 +1908,7 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
       "Ogni stella che brucia porta un'intensità, da 1 a 5 — quanto ti è "
       'costato davvero lo sforzo, non quanto sembra grande da fuori. Una '
       "stella accesa conserva l'intensità che le è servita; un pulsar "
-      'porta quella che ti costa ogni giorno.';
+      'porta il premio che hai scelto per il suo ciclo, guadagnato quando lo completi.';
 
   @override
   List<String> get upliftingQuotes => const [

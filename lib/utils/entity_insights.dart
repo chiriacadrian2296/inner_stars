@@ -110,18 +110,31 @@ class EntityInsights {
     ),
   );
 
-  double? get consistency {
+  /// Days with a check-in over [range], summed across the habits this entity
+  /// covers; null while none of them has any history to look at.
+  int? get daysDone {
     final candidates = entity.aggregate ? activeHabits : habits;
     final observed = candidates
         .where((h) => summary(h).trend.isNotEmpty)
         .toList();
     if (observed.isEmpty) return null;
-    return observed.fold<double>(
-          0,
-          (sum, h) => sum + summary(h).completionRate,
-        ) /
-        observed.length;
+    return observed.fold<int>(0, (sum, h) => sum + summary(h).daysDone);
   }
+
+  /// The intensity of this entity's lit stars. A completed pulsar cycle adds
+  /// its reward on top (see `cycleIntensityTotal`).
+  int get starIntensity => stars
+      .where((s) => s.isLit)
+      .fold<int>(0, (sum, s) => sum + (s.intensity ?? 0));
+
+  /// How far [habit]'s current cycle is.
+  int cycleProgress(Habit habit) => habitCycleProgress(
+    habit,
+    habitCompletionCountsByDay(
+      completions.where((c) => c.habitId == habit.id).toList(),
+    ),
+    now: now,
+  );
 
   static EntityInsights read({
     required InsightEntity entity,

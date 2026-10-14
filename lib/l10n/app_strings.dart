@@ -800,6 +800,47 @@ abstract class AppStrings {
 
   String get customReminderToggleLabel;
 
+  // Pulsar cycles: N distinct days complete a cycle and earn its reward.
+  String get habitCycleLabel;
+  String get habitCycleCustom;
+
+  /// Live summary under the cycle picker: "N different days, no rush, no
+  /// deadline" — says out loud that nothing punishes a slow pace.
+  String habitCycleSummary(int days);
+
+  /// The pulsar's intensity field on the form — what finishing a cycle is
+  /// worth.
+  String get habitRewardLabel;
+
+  /// "12/30 days" — progress through the current cycle.
+  String cycleProgressLabel(int done, int length);
+
+  /// Header of the list of cycles a pulsar already finished.
+  String get cycleHistoryTitle;
+  String cycleHistoryItem(int length);
+
+  /// The end-of-cycle reflection page.
+  String get cycleDoneTitle;
+  String cycleDoneBody(int length);
+  String get cycleRewardEarned;
+  String get cycleReflectionIntro;
+  String get cycleQuestionHelped;
+  String get cycleQuestionHard;
+  String get cycleQuestionFeel;
+  String get cycleNextTitle;
+  String get cycleOptionRestartTitle;
+  String get cycleOptionRestartBody;
+  String get cycleOptionChangeTitle;
+  String get cycleOptionChangeBody;
+  String get cycleOptionCloseTitle;
+  String get cycleOptionCloseBody;
+  String get cycleContinueAction;
+  String get cycleArchiveAction;
+  String get cycleLaterAction;
+
+  /// Shown on a pulsar whose finished cycle was never reflected on.
+  String get cycleReflectAction;
+
   // Habit reader
   String get habitCurrentStreakLabel;
   String get habitCheckAction;
@@ -839,14 +880,14 @@ abstract class AppStrings {
   String get habitStatsSectionTitle;
   String get starsStatsSectionTitle;
   String get habitStatsActiveLabel;
-  String get habitStatsOnTrackLabel;
-  String get habitStatsConsistencyLabel;
+  String get habitStatsDoneTodayLabel;
+  String get habitStatsDaysDoneLabel;
+  String get habitStatsCyclesLabel;
   String get habitStatsLongestLabel;
   String get habitStatsTotalLabel;
   String get habitStatsTrendLabel;
   String get habitStatsWeekdaysLabel;
   String get habitStatsBestDayLabel;
-  String get habitStatsSupportDayLabel;
   String get habitStatsNotEnoughData;
   String get habitStatsArchiveAction;
   String get habitStatsArchiveTitle;

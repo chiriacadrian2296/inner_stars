@@ -11,6 +11,7 @@ class HabitStatsEntry {
     required this.countsByDay,
     required this.summary,
     required this.isLit,
+    required this.cycleProgress,
   });
 
   final Habit habit;
@@ -19,13 +20,16 @@ class HabitStatsEntry {
   /// Summary over the range the snapshot was built for.
   final HabitStatsSummary summary;
   final bool isLit;
+
+  /// Distinct days done in the habit's current cycle.
+  final int cycleProgress;
 }
 
 /// A single pass over [habits] and [allCompletions] (one storage decode for
-/// the whole page), with the entries ordered so habits that need attention
+/// the whole page), with the entries ordered so habits not done yet today
 /// (not lit) come first.
 class HabitStatsSnapshot {
-  HabitStatsSnapshot._(this.entries, this.range, this.overallRate);
+  HabitStatsSnapshot._(this.entries, this.range, this.totalDaysDone);
 
   factory HabitStatsSnapshot.build({
     required List<Habit> habits,
@@ -38,7 +42,7 @@ class HabitStatsSnapshot {
       (byHabit[completion.habitId] ??= []).add(completion);
     }
     final entries = <HabitStatsEntry>[];
-    var rateSum = 0.0;
+    var daysDone = 0;
     for (final habit in habits) {
       final completions = byHabit[habit.id] ?? const <HabitCompletion>[];
       final counts = habitCompletionCountsByDay(completions);
@@ -48,13 +52,14 @@ class HabitStatsSnapshot {
         range: range,
         now: now,
       );
-      rateSum += summary.completionRate;
+      daysDone += summary.daysDone;
       entries.add(
         HabitStatsEntry(
           habit: habit,
           countsByDay: counts,
           summary: summary,
           isLit: isHabitLit(habit, counts, now: now),
+          cycleProgress: habitCycleProgress(habit, counts, now: now),
         ),
       );
     }
@@ -67,15 +72,16 @@ class HabitStatsSnapshot {
     return HabitStatsSnapshot._(
       [for (final e in indexed) e.value],
       range,
-      entries.isEmpty ? 0 : rateSum / entries.length,
+      daysDone,
     );
   }
 
   final List<HabitStatsEntry> entries;
   final HabitStatsRange range;
 
-  /// Average completion rate over [range] across every entry (0..1).
-  final double overallRate;
+  /// Days with a check-in over [range], summed across every entry.
+  final int totalDaysDone;
 
-  int get onTrackCount => entries.where((e) => e.isLit).length;
+  /// How many habits were already done today.
+  int get doneTodayCount => entries.where((e) => e.isLit).length;
 }

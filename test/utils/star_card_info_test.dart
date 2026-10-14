@@ -136,7 +136,7 @@ void main() {
       dead: dead,
     );
 
-    test('always has progress and streak, and the intensity apart', () {
+    test('always has progress, streak and cycle, and the intensity apart', () {
       for (final h in [
         habit(),
         habit(target: 3),
@@ -200,7 +200,26 @@ void main() {
         now: today,
       ).rows.single;
       expect(row.first.value, '—');
-      expect(row.last.value, '0');
+      expect(row[1].value, '0');
+      expect(row.last.value, '—');
+    });
+
+    test('shows how far the current cycle is next to the streak', () {
+      final row = habitCardBadges(
+        Habit(
+          id: 1,
+          projectId: 1,
+          title: 'Swim',
+          createdAt: created,
+          cycleLength: 7,
+        ),
+        counts([today, today.subtract(const Duration(days: 2))]),
+        colors,
+        strings,
+        now: today,
+      ).rows.single;
+
+      expect(row.last.value, '2/7');
     });
   });
 

@@ -434,6 +434,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
         intensity: result.intensity ?? habit.intensity,
         frequency: result.habitFrequency ?? habit.frequency,
         targetPerPeriod: result.habitTargetPerPeriod ?? habit.targetPerPeriod,
+        cycleLength: result.habitCycleLength ?? habit.cycleLength,
         reminderHour: result.reminderHour,
         reminderMinute: result.reminderMinute,
         completionRepository: completions,
@@ -468,6 +469,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
       intensity: formResult.intensity ?? habit.intensity,
       frequency: formResult.habitFrequency ?? habit.frequency,
       targetPerPeriod: formResult.habitTargetPerPeriod ?? habit.targetPerPeriod,
+      cycleLength: formResult.habitCycleLength ?? habit.cycleLength,
       reminderHour: formResult.reminderHour,
       reminderMinute: formResult.reminderMinute,
     );
@@ -668,6 +670,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
           ? habitDailyProgress(habit, countsByDay)
           : null,
       doneToday: countsByDay.containsKey(_today),
+      cycleProgress: habitCycleProgress(habit, countsByDay),
       entrance: entrance,
     );
   }
