@@ -8,6 +8,10 @@ import '../../theme/app_typography.dart';
 import '../../utils/celebration_stats.dart';
 import '../../utils/accumulation_chart_data.dart';
 
+const double _axisLabelGap = 10;
+const double _valueBadgeHorizontalPadding = 8;
+const double _valueBadgeVerticalPadding = 4;
+
 /// Monotone cumulative curve with precise day-based inspection.
 class AccumulationChart extends StatefulWidget {
   const AccumulationChart({
@@ -56,25 +60,37 @@ class _AccumulationChartState extends State<AccumulationChart> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(widget.axisLabel, style: context.typography.supporting),
-            const SizedBox(height: kSpaceXs),
             Semantics(
               liveRegion: true,
-              child: Text(
-                selected == null
-                    ? '${widget.dateLabel(widget.points.first.date)} – ${widget.dateLabel(widget.points.last.date)}'
-                    : '${widget.dateLabel(selected.date)} · ${selected.total}',
-                key: const ValueKey('accumulation-chart-selection'),
-                textAlign: TextAlign.center,
-                style: context.typography.body.copyWith(
-                  color: selected == null ? colors.muted : colors.gold,
-                  fontWeight: selected == null
-                      ? FontWeight.w400
-                      : FontWeight.w700,
+              child: Align(
+                alignment: Alignment.center,
+                child: Container(
+                  key: const ValueKey('accumulation-chart-selection-badge'),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: _valueBadgeHorizontalPadding,
+                    vertical: _valueBadgeVerticalPadding,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.night,
+                    borderRadius: BorderRadius.circular(kSpaceXs),
+                  ),
+                  child: Text(
+                    selected == null
+                        ? '${widget.dateLabel(widget.points.first.date)} – ${widget.dateLabel(widget.points.last.date)}'
+                        : '${widget.dateLabel(selected.date)} · ${selected.total}',
+                    key: const ValueKey('accumulation-chart-selection'),
+                    textAlign: TextAlign.center,
+                    style: context.typography.body.copyWith(
+                      color: selected == null ? colors.muted : colors.gold,
+                      fontWeight: selected == null
+                          ? FontWeight.w400
+                          : FontWeight.w700,
+                    ),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: kSpaceXs),
+            const SizedBox(height: 2),
             LayoutBuilder(
               builder: (context, constraints) {
                 final painter = _AccumulationPainter(
@@ -164,7 +180,7 @@ class _AccumulationPainter extends CustomPainter {
     final text = label('$maximum');
     return Rect.fromLTRB(
       text.width + 24,
-      text.height + 12,
+      text.height / 2 + 8,
       size.width - 16,
       size.height - text.height * 2 - 34,
     );
@@ -223,7 +239,10 @@ class _AccumulationPainter extends CustomPainter {
       final text = label('$value');
       text.paint(
         canvas,
-        Offset(plot.left - text.width - 8, y(value) - text.height / 2),
+        Offset(
+          plot.left - text.width - _axisLabelGap,
+          y(value) - text.height / 2,
+        ),
       );
     }
     var previousLabelEnd = double.negativeInfinity;
@@ -235,7 +254,7 @@ class _AccumulationPainter extends CustomPainter {
           .toDouble();
       if (left < previousLabelEnd + 8) continue;
       previousLabelEnd = left + text.width;
-      text.paint(canvas, Offset(left, plot.bottom + 10));
+      text.paint(canvas, Offset(left, plot.bottom + _axisLabelGap));
     }
     final curve = accumulationCurvePoints(points);
     final tangents = accumulationTangents(curve);
@@ -325,7 +344,7 @@ class _AccumulationPainter extends CustomPainter {
       // cover a nearby tick instead of creating a second row or column.
       final exactTotal = label('${selected!.total}', highlight: true);
       final totalOffset = Offset(
-        plot.left - exactTotal.width - 8,
+        plot.left - exactTotal.width - _axisLabelGap,
         y(selected!.total) - exactTotal.height / 2,
       );
       _paintLabelBadge(canvas, exactTotal, totalOffset);
@@ -334,7 +353,7 @@ class _AccumulationPainter extends CustomPainter {
       final dateLeft = (point.dx - exactDate.width / 2)
           .clamp(0.0, math.max(0.0, size.width - exactDate.width))
           .toDouble();
-      final dateOffset = Offset(dateLeft, plot.bottom + 10);
+      final dateOffset = Offset(dateLeft, plot.bottom + _axisLabelGap);
       _paintLabelBadge(canvas, exactDate, dateOffset);
       exactDate.paint(canvas, dateOffset);
     }
@@ -367,7 +386,12 @@ class _AccumulationPainter extends CustomPainter {
   }
 
   void _paintLabelBadge(Canvas canvas, TextPainter text, Offset offset) {
-    final rect = (offset & text.size).inflate(4);
+    final rect = Rect.fromLTRB(
+      offset.dx - _valueBadgeHorizontalPadding,
+      offset.dy - _valueBadgeVerticalPadding,
+      offset.dx + text.width + _valueBadgeHorizontalPadding,
+      offset.dy + text.height + _valueBadgeVerticalPadding,
+    );
     canvas.drawRRect(
       RRect.fromRectAndRadius(rect, const Radius.circular(kSpaceXs)),
       Paint()..color = colors.night,

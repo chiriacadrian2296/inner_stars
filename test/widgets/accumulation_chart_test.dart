@@ -35,6 +35,13 @@ void main() {
     final selection = find.byKey(
       const ValueKey('accumulation-chart-selection'),
     );
+    final selectionBadge = tester.widget<Container>(
+      find.byKey(const ValueKey('accumulation-chart-selection-badge')),
+    );
+    expect(
+      selectionBadge.padding,
+      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    );
     expect(
       tester.getBottomLeft(selection).dy,
       lessThan(tester.getTopLeft(touch).dy),

@@ -35,6 +35,7 @@ class LightRun {
 class LightMoments {
   const LightMoments({
     this.firstVictory,
+    this.latestVictory,
     this.firstDay,
     this.brightestDay,
     this.brightestDayLight = 0,
@@ -46,6 +47,7 @@ class LightMoments {
   });
 
   final Star? firstVictory;
+  final Star? latestVictory;
 
   /// The first day with something done (used where there are no
   /// victories to point to, i.e. a pulsar).
@@ -64,6 +66,7 @@ class LightMoments {
 
   bool get isEmpty =>
       firstVictory == null &&
+      latestVictory == null &&
       firstDay == null &&
       brightestDay == null &&
       longestRun == null &&
@@ -233,10 +236,15 @@ class LightStats {
 
   late final LightMoments moments = () {
     Star? firstVictory;
+    Star? latestVictory;
     for (final star in victories) {
       if (firstVictory == null ||
           star.achievedDate!.isBefore(firstVictory.achievedDate!)) {
         firstVictory = star;
+      }
+      if (latestVictory == null ||
+          star.achievedDate!.isAfter(latestVictory.achievedDate!)) {
+        latestVictory = star;
       }
     }
 
@@ -315,6 +323,7 @@ class LightStats {
 
     return LightMoments(
       firstVictory: firstVictory,
+      latestVictory: latestVictory,
       firstDay: isHabitScope && sortedActive.isNotEmpty
           ? sortedActive.first
           : null,

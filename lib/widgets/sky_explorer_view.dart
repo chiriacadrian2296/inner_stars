@@ -47,10 +47,12 @@ import '../tutorials/tutorial_replay.dart';
 import '../utils/app_modals.dart';
 import '../utils/area_hero_art.dart';
 import '../utils/date_format.dart';
+import '../utils/date_math.dart';
 import '../utils/habit_stats.dart';
 import '../utils/icon_for_slug.dart';
 import '../utils/page_settled.dart';
 import '../utils/project_card_info.dart';
+import '../utils/responsive.dart';
 import '../utils/star_card_info.dart';
 import '../utils/star_stats.dart';
 import 'app_field.dart';
@@ -80,6 +82,16 @@ import 'star_glyph.dart';
 enum _SkyMode { supernovas, constellations, stars }
 
 enum _SkyActionStyle { pill, dock, edge, minimal }
+
+/// Turns the shared Sky browser into the full-page view for one day opened
+/// from Statistics. It deliberately keeps the normal Stars grid, controls,
+/// cards and actions; only the day is a non-removable boundary.
+class SkyDayContext {
+  const SkyDayContext({required this.day, this.entity});
+
+  final DateTime day;
+  final InsightEntity? entity;
+}
 
 List<BoxShadow> _skyFabNavyShadow(AppColors colors) => [
   BoxShadow(
@@ -255,6 +267,7 @@ class SkyExplorerView extends StatefulWidget {
     required this.reflectionAnswerRepository,
     required this.settings,
     this.session,
+    this.dayContext,
     required this.onNavigateTo,
   });
 
@@ -270,6 +283,7 @@ class SkyExplorerView extends StatefulWidget {
   /// changing either from the view-mode sheet shows up here live.
   final SettingsController settings;
   final SkyExplorerSession? session;
+  final SkyDayContext? dayContext;
 
   /// See [SkyNavigationTarget] — called when a card's "take me there" button
   /// is tapped.
@@ -308,6 +322,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
 
   late _SkyMode _mode;
   bool _modeReverse = false;
+  late SkyDayContext? _dayContext;
   late final _modeAnimation = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 340),
@@ -337,11 +352,35 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   void _swipeMode(double horizontalVelocity) {
     const minimumVelocity = 180.0;
     if (horizontalVelocity.abs() < minimumVelocity) return;
+    if (_dayContext != null) {
+      _shiftDay(horizontalVelocity.isNegative ? 1 : -1);
+      return;
+    }
     final direction = horizontalVelocity.isNegative ? 1 : -1;
     final rawIndex = _mode.index + direction;
     if (rawIndex < 0 || rawIndex >= _SkyMode.values.length) return;
     final nextIndex = rawIndex;
     _selectMode(_SkyMode.values[nextIndex]);
+  }
+
+  void _shiftDay(int offset) {
+    final current = _dayContext;
+    if (current == null || offset == 0) return;
+    _cardMenuController.closeAll();
+    setState(() {
+      _modeReverse = offset.isNegative;
+      _dayContext = SkyDayContext(
+        day: addDays(current.day, offset),
+        entity: current.entity,
+      );
+      _tab.flipped.clear();
+      _showBackToTop = false;
+      _backToTopAvoidsFooter = false;
+    });
+    final controller = _scrollControllers[_SkyMode.stars.index];
+    if (controller.hasClients) controller.jumpTo(0);
+    _session.scrollOffsets[_SkyMode.stars.index] = 0;
+    _modeAnimation.forward(from: 0);
   }
 
   late final SearchCardMenuController _cardMenuController;
@@ -664,6 +703,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     );
     final projectFilter = projects ?? _projectFilterIds;
     return _allEntriesFor(areas ?? _areaFilter).where((e) {
+      if (!_matchesDayContext(e)) return false;
       if (!kindFilter.contains(e.kind)) {
         return false;
       }
@@ -679,6 +719,30 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       return e.title.toLowerCase().contains(query) ||
           (e.description?.toLowerCase().contains(query) ?? false);
     }).toList();
+  }
+
+  bool _matchesDayContext(_SkyEntry entry) {
+    final dayContext = _dayContext;
+    if (dayContext == null) return true;
+    final day = dateOnly(dayContext.day);
+    final occursOnDay = entry.star != null
+        ? entry.star!.isLit && dateOnly(entry.star!.achievedDate!) == day
+        : (_completionsByHabitCache[entry.habit!.id] ?? const []).any(
+            (completion) => dateOnly(completion.date) == day,
+          );
+    if (!occursOnDay) return false;
+
+    final entity = dayContext.entity;
+    if (entity == null) return true;
+    final projectId = entry.star?.projectId ?? entry.habit!.projectId;
+    return switch (entity.kind) {
+      InsightEntityKind.area => _projectsCache.any(
+        (project) => project.id == projectId && project.area == entity.area,
+      ),
+      InsightEntityKind.project => projectId == entity.id,
+      InsightEntityKind.star => entry.star?.id == entity.id,
+      InsightEntityKind.habit => entry.habit?.id == entity.id,
+    };
   }
 
   IconData get _modeIcon => switch (_mode) {
@@ -771,13 +835,14 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   void initState() {
     super.initState();
     widget.settings.addListener(_onSettingsChanged);
+    _dayContext = widget.dayContext;
     final session = _session = widget.session ?? SkyExplorerSession();
     final modeIndex = session.modeIndex < 0
         ? 0
         : session.modeIndex >= _SkyMode.values.length
         ? _SkyMode.values.length - 1
         : session.modeIndex;
-    _mode = _SkyMode.values[modeIndex];
+    _mode = _dayContext == null ? _SkyMode.values[modeIndex] : _SkyMode.stars;
     _queryController = TextEditingController(text: _query);
     _kindFilter = {...session.kindFilter};
     _areaFilter = {...session.areaFilter};
@@ -994,6 +1059,9 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         child: Center(
           child: StaggeredEntrance(
             index: 0,
+            axis: _dayContext == null ? Axis.vertical : Axis.horizontal,
+            replayKey: _dayContext?.day,
+            reverse: _modeReverse,
             child: Text(
               emptyText,
               textAlign: TextAlign.center,
@@ -1034,6 +1102,9 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                 delegate: SliverChildBuilderDelegate(
                   (context, index) => StaggeredEntrance(
                     index: index % 12,
+                    axis: _dayContext == null ? Axis.vertical : Axis.horizontal,
+                    replayKey: _dayContext?.day,
+                    reverse: _modeReverse,
                     child: tile(items[index], () => onTap(index)),
                   ),
                   childCount: items.length,
@@ -1230,8 +1301,15 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       constellationOnly: constellationOnly,
       startWithoutSelection: startWithoutSelection,
       area: area,
+      initialDate: _dayContext?.day,
     );
     if (created == null) return;
+    if (created case final Habit habit when _dayContext != null) {
+      await widget.habitCompletionRepository.markDone(
+        habit.id,
+        date: _dayContext!.day,
+      );
+    }
     _refreshAndRebuild();
     if (!mounted) return;
     switch (created) {
@@ -2120,15 +2198,16 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           horizontal: horizontal,
           onTap: () => wrap(_openKindFilter),
         ),
-      FilterButton(
-        icon: Icons.calendar_month,
-        active: _dateRangeFilter != null,
-        label: _dateRangeButtonLabel(strings),
-        caption: _dateRangeButtonCaption(strings),
-        tooltip: strings.filterDateRangeAction,
-        horizontal: horizontal,
-        onTap: () => wrap(_openDateRangeFilter),
-      ),
+      if (_dayContext == null)
+        FilterButton(
+          icon: Icons.calendar_month,
+          active: _dateRangeFilter != null,
+          label: _dateRangeButtonLabel(strings),
+          caption: _dateRangeButtonCaption(strings),
+          tooltip: strings.filterDateRangeAction,
+          horizontal: horizontal,
+          onTap: () => wrap(_openDateRangeFilter),
+        ),
       FilterButton(
         icon: Icons.sort,
         active: _isSortNonDefault,
@@ -2183,7 +2262,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   Widget build(BuildContext context) {
     final colors = context.colors;
     final strings = context.strings;
-    _syncModeToTour(context);
+    if (_dayContext == null) _syncModeToTour(context);
     final allEntries = _mode == _SkyMode.stars
         ? _allEntries
         : const <_SkyEntry>[];
@@ -2210,59 +2289,117 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                     children: [
                       Padding(
                         padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
-                        child: HintTarget(
-                          tour: 'search-stars',
-                          order: 1,
-                          showArrow: true,
-                          spotlightPadding: const EdgeInsets.all(8),
-                          contentBuilder: appTourStepCard,
-                          title: strings.searchTourModeTitle,
-                          description: strings.searchTourModeBody,
-                          child: StaggeredEntrance(
-                            index: 1,
-                            child: Center(
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxWidth: 220,
-                                ),
-                                child: AnimatedToggleSwitch<_SkyMode>.rolling(
-                                  height: 40,
-                                  current: _mode,
-                                  values: _SkyMode.values,
-                                  onChanged: _selectMode,
-                                  // The package default is 2; every other
-                                  // control on this row draws kBorderWidth.
-                                  borderWidth: kBorderWidth,
-                                  // The package dims inactive icons to
-                                  // half on top of their own color; the
-                                  // search field's icon isn't dimmed.
-                                  iconOpacity: 1.0,
-                                  iconBuilder: (value, size) => Icon(
-                                    switch (value) {
-                                      _SkyMode.supernovas => Icons.flare,
-                                      _SkyMode.constellations => Icons.insights,
-                                      _SkyMode.stars => Icons.auto_awesome,
-                                    },
-                                    size: 20,
-                                    color: value == _mode
-                                        ? colors.night
-                                        : colors.muted,
-                                  ),
-                                  style: ToggleStyle(
-                                    backgroundColor: colors.nightPanel,
-                                    indicatorColor: colors.gold,
-                                    borderColor: colors.nightBorder,
-                                    borderRadius: BorderRadius.circular(
-                                      kRadiusField,
+                        child: _dayContext != null
+                            ? SizedBox(
+                                height: 48,
+                                child: Row(
+                                  children: [
+                                    IconButton(
+                                      key: const ValueKey('sky-day-previous'),
+                                      tooltip: strings.todayLightPrevious,
+                                      onPressed: () => _shiftDay(-1),
+                                      icon: const Icon(
+                                        Icons.chevron_left,
+                                        color: Colors.white,
+                                      ),
                                     ),
-                                    indicatorBorderRadius:
-                                        BorderRadius.circular(kRadiusField),
+                                    Expanded(
+                                      child: StaggeredEntrance(
+                                        index: 0,
+                                        axis: Axis.horizontal,
+                                        replayKey: _dayContext!.day,
+                                        reverse: _modeReverse,
+                                        child: Text(
+                                          formatDisplayDate(
+                                            _dayContext!.day,
+                                            strings,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: colors.text,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      key: const ValueKey('sky-day-next'),
+                                      tooltip: strings.todayLightNext,
+                                      onPressed: () => _shiftDay(1),
+                                      icon: const Icon(
+                                        Icons.chevron_right,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : HintTarget(
+                                tour: 'search-stars',
+                                order: 1,
+                                showArrow: true,
+                                spotlightPadding: const EdgeInsets.all(8),
+                                contentBuilder: appTourStepCard,
+                                title: strings.searchTourModeTitle,
+                                description: strings.searchTourModeBody,
+                                child: StaggeredEntrance(
+                                  index: 1,
+                                  child: Center(
+                                    child: ConstrainedBox(
+                                      constraints: const BoxConstraints(
+                                        maxWidth: 220,
+                                      ),
+                                      child:
+                                          AnimatedToggleSwitch<
+                                            _SkyMode
+                                          >.rolling(
+                                            height: 40,
+                                            current: _mode,
+                                            values: _SkyMode.values,
+                                            onChanged: _selectMode,
+                                            // The package default is 2; every other
+                                            // control on this row draws kBorderWidth.
+                                            borderWidth: kBorderWidth,
+                                            // The package dims inactive icons to
+                                            // half on top of their own color; the
+                                            // search field's icon isn't dimmed.
+                                            iconOpacity: 1.0,
+                                            iconBuilder: (value, size) => Icon(
+                                              switch (value) {
+                                                _SkyMode.supernovas =>
+                                                  Icons.flare,
+                                                _SkyMode.constellations =>
+                                                  Icons.insights,
+                                                _SkyMode.stars =>
+                                                  Icons.auto_awesome,
+                                              },
+                                              size: 20,
+                                              color: value == _mode
+                                                  ? colors.night
+                                                  : colors.muted,
+                                            ),
+                                            style: ToggleStyle(
+                                              backgroundColor:
+                                                  colors.nightPanel,
+                                              indicatorColor: colors.gold,
+                                              borderColor: colors.nightBorder,
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    kRadiusField,
+                                                  ),
+                                              indicatorBorderRadius:
+                                                  BorderRadius.circular(
+                                                    kRadiusField,
+                                                  ),
+                                            ),
+                                          ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
-                        ),
                       ),
                       Builder(
                         builder: (context) {
@@ -2319,11 +2456,21 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                         child: Builder(
                           builder: (_) {
                             final count = _resultCount(strings);
-                            return ResultsCountRow(
+                            final row = ResultsCountRow(
                               icon: _modeIcon,
                               count: count,
                               word: _resultsWord(count),
                             );
+                            final day = _dayContext?.day;
+                            return day == null
+                                ? row
+                                : StaggeredEntrance(
+                                    index: 1,
+                                    axis: Axis.horizontal,
+                                    replayKey: day,
+                                    reverse: _modeReverse,
+                                    child: row,
+                                  );
                           },
                         ),
                       ),
@@ -2506,40 +2653,52 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
               ],
             ),
           ),
+          // Capped to the shared content column on wide layouts, like the
+          // list above, so the floating actions sit inside it.
           Positioned(
-            left: 20,
-            right: 20,
+            left: 0,
+            right: 0,
             bottom: 20,
-            child: SafeArea(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 240),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
-                transitionBuilder: (child, animation) => FadeTransition(
-                  opacity: animation,
-                  child: ScaleTransition(
-                    scale: Tween<double>(
-                      begin: 0.96,
-                      end: 1,
-                    ).animate(animation),
-                    child: child,
+            child: ResponsiveContent(
+              shrinkHeight: true,
+              child: Padding(
+                // Wider inset on wide layouts, so the buttons don't sit
+                // flush against the column's edges.
+                padding: EdgeInsets.symmetric(
+                  horizontal: isWideLayout(context) ? 36 : 20,
+                ),
+                child: SafeArea(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 240),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(
+                        scale: Tween<double>(
+                          begin: 0.96,
+                          end: 1,
+                        ).animate(animation),
+                        child: child,
+                      ),
+                    ),
+                    child: action == null
+                        ? SizedBox.shrink(
+                            key: ValueKey('sky-actions-${_mode.name}'),
+                          )
+                        : _SkyFloatingActions(
+                            key: ValueKey('sky-actions-${_mode.name}'),
+                            style: _SkyActionStyle.pill,
+                            showBackToTop: _showBackToTop,
+                            backToTopAvoidsFooter: _backToTopAvoidsFooter,
+                            backTooltip: strings.backToTopAction,
+                            onBackToTop: _scrollToTop,
+                            primaryIcon: action.icon,
+                            primaryLabel: action.tooltip,
+                            onPrimary: action.onPressed,
+                          ),
                   ),
                 ),
-                child: action == null
-                    ? SizedBox.shrink(
-                        key: ValueKey('sky-actions-${_mode.name}'),
-                      )
-                    : _SkyFloatingActions(
-                        key: ValueKey('sky-actions-${_mode.name}'),
-                        style: _SkyActionStyle.pill,
-                        showBackToTop: _showBackToTop,
-                        backToTopAvoidsFooter: _backToTopAvoidsFooter,
-                        backTooltip: strings.backToTopAction,
-                        onBackToTop: _scrollToTop,
-                        primaryIcon: action.icon,
-                        primaryLabel: action.tooltip,
-                        onPrimary: action.onPressed,
-                      ),
               ),
             ),
           ),

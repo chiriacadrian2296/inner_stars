@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
 import '../models/life_area.dart';
@@ -22,6 +23,7 @@ class NebulaBackground extends StatefulWidget {
     required this.clock,
     this.showGrid = false,
     this.supernovaLight = 0,
+    this.supernovaLevels = const [0, 0, 0, 0, 0, 0, 0, 0],
   });
 
   /// Drives the shader's animation — see [SkyClock].
@@ -37,6 +39,11 @@ class NebulaBackground extends StatefulWidget {
   /// How strongly the supernovas light the nebula around them (0 for not
   /// at all — e.g. while they are hidden).
   final double supernovaLight;
+
+  /// Each area's intensity level (see `supernovaIntensityLevel`), in
+  /// [LifeArea] order: the higher, the wider and warmer its supernova's
+  /// light on the gas.
+  final List<double> supernovaLevels;
 
   @override
   State<NebulaBackground> createState() => _NebulaBackgroundState();
@@ -84,6 +91,7 @@ class _NebulaBackgroundState extends State<NebulaBackground> {
         zoom: widget.zoom,
         showGrid: widget.showGrid,
         supernovaLight: widget.supernovaLight,
+        supernovaLevels: widget.supernovaLevels,
       ),
     );
   }
@@ -97,6 +105,7 @@ class _NebulaPainter extends CustomPainter {
     required this.zoom,
     required this.showGrid,
     required this.supernovaLight,
+    required this.supernovaLevels,
   }) : super(repaint: clock);
 
   final ui.FragmentShader shader;
@@ -105,6 +114,7 @@ class _NebulaPainter extends CustomPainter {
   final double zoom;
   final bool showGrid;
   final double supernovaLight;
+  final List<double> supernovaLevels;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -131,6 +141,12 @@ class _NebulaPainter extends CustomPainter {
         ..setFloat(15 + i * 3, x)
         ..setFloat(16 + i * 3, y)
         ..setFloat(17 + i * 3, z);
+    }
+    for (var i = 0; i < 8; i++) {
+      shader.setFloat(
+        39 + i,
+        i < supernovaLevels.length ? supernovaLevels[i] : 0,
+      );
     }
     // Screen (rather than the plain opaque fill this always used to be) —
     // a 2026-09-19 test: SkyAreaBackdrop was moved to sit *behind* this
@@ -162,5 +178,6 @@ class _NebulaPainter extends CustomPainter {
       oldDelegate.camera != camera ||
       oldDelegate.zoom != zoom ||
       oldDelegate.showGrid != showGrid ||
-      oldDelegate.supernovaLight != supernovaLight;
+      oldDelegate.supernovaLight != supernovaLight ||
+      !listEquals(oldDelegate.supernovaLevels, supernovaLevels);
 }

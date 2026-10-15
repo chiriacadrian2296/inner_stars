@@ -259,9 +259,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final detailsToggle = find.byKey(
-      const ValueKey('victory-details-toggle'),
-    );
+    final detailsToggle = find.byKey(const ValueKey('victory-details-toggle'));
     expect(detailsToggle, findsOneWidget);
     expect(find.text('Photos'), findsNothing);
 

@@ -208,6 +208,7 @@ void main() {
     );
     final moments = stats.moments;
     expect(moments.firstVictory?.id, 1);
+    expect(moments.latestVictory?.id, 4);
     expect(moments.brightestDay, DateTime(2026, 9, 10));
     expect(moments.brightestDayLight, 5);
     expect(moments.longestRun?.length, 3);

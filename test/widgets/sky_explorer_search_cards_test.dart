@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:hint_kit/hint_kit.dart';
 import 'package:inner_stars/data/area_vision_repository.dart';
 import 'package:inner_stars/data/constellation_shape.dart';
@@ -19,6 +20,7 @@ import 'package:inner_stars/theme/app_colors.dart';
 import 'package:inner_stars/theme/app_theme.dart';
 import 'package:inner_stars/widgets/constellation_editor_painter.dart';
 import 'package:inner_stars/widgets/filter_button.dart';
+import 'package:inner_stars/widgets/filters_trigger_button.dart';
 import 'package:inner_stars/widgets/search_result_card.dart';
 import 'package:inner_stars/widgets/sky_explorer_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -62,6 +64,7 @@ void main() {
     })
     repositories, {
     SkyExplorerSession? session,
+    SkyDayContext? dayContext,
   }) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
@@ -90,6 +93,7 @@ void main() {
                 reflectionAnswerRepository: repositories.reflections,
                 settings: settings,
                 session: session,
+                dayContext: dayContext,
                 onNavigateTo: (_) {},
               ),
             ),
@@ -99,6 +103,51 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets('Statistics day reuses Sky and only shows that day', (
+    tester,
+  ) async {
+    final repos = await repositories();
+    final project = await repos.projects.add(
+      name: 'Costellazione giorno',
+      area: LifeArea.personal,
+      iconSlug: 'star',
+    );
+    await repos.stars.add(
+      title: 'Vittoria del giorno',
+      projectId: project.id,
+      achievedDate: DateTime(2026, 10, 15),
+      intensity: 4,
+    );
+    await repos.stars.add(
+      title: 'Vittoria di ieri',
+      projectId: project.id,
+      achievedDate: DateTime(2026, 10, 14),
+      intensity: 3,
+    );
+    final habit = await repos.habits.add(
+      title: 'Pulsar del giorno',
+      projectId: project.id,
+    );
+    await repos.completions.markDone(habit.id, date: DateTime(2026, 10, 15));
+    final session = SkyExplorerSession()..modeIndex = 2;
+
+    await pumpExplorer(
+      tester,
+      repos,
+      session: session,
+      dayContext: SkyDayContext(day: DateTime(2026, 10, 15)),
+    );
+
+    expect(find.text('Vittoria del giorno'), findsOneWidget);
+    expect(find.text('Pulsar del giorno'), findsOneWidget);
+    expect(find.text('Vittoria di ieri'), findsNothing);
+    expect(find.byType(AnimatedToggleSwitch), findsNothing);
+    final filters = find.byType(FiltersTriggerButton);
+    expect(filters, findsOneWidget);
+    expect(tester.widget<FiltersTriggerButton>(filters).active, isFalse);
+    expect(find.byKey(const Key('sky-primary-action')), findsOneWidget);
+  });
 
   testWidgets('real Search closes an open quick menu when results scroll', (
     tester,

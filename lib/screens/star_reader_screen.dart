@@ -1042,13 +1042,16 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                             constraints: const BoxConstraints(minHeight: 64),
                             child: Row(
                               children: [
-                                IconButton(
-                                  onPressed: _showPrevious,
-                                  icon: const Icon(
-                                    Icons.chevron_left,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                                if (_entries.length > 1)
+                                  IconButton(
+                                    onPressed: _showPrevious,
+                                    icon: const Icon(
+                                      Icons.chevron_left,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                else
+                                  const SizedBox(width: 48),
                                 Expanded(
                                   child: BalancedTitle(
                                     key: ValueKey(entry.key),
@@ -1062,13 +1065,16 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                                     ),
                                   ),
                                 ),
-                                IconButton(
-                                  onPressed: _showNext,
-                                  icon: const Icon(
-                                    Icons.chevron_right,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                                if (_entries.length > 1)
+                                  IconButton(
+                                    onPressed: _showNext,
+                                    icon: const Icon(
+                                      Icons.chevron_right,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                else
+                                  const SizedBox(width: 48),
                               ],
                             ),
                           ),

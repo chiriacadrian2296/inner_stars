@@ -2171,8 +2171,6 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get lightOverviewLabel => 'Overview';
   @override
-  String get lightHeadline => 'Look at all the light you have lit.';
-  @override
   String get lightHeadlineEmpty => 'Your light will take shape here.';
   @override
   String lightCyclesCount(int count) =>
@@ -2195,9 +2193,26 @@ My contribution meets a real need and is something I can sustain.
       'This goal is waiting for its moment: once you reach it, its light will show here.';
   @override
   String get lightCurveHint =>
-      'Tap or drag across the chart to see the date and the total.';
+      'Your light adds up over time: each star you light and cycle you complete lifts the line. Tap or drag across the chart to see the date and the total.';
+  @override
+  String get lightOverviewNote =>
+      'Look at all the light you have lit: every victory and completed cycle adds intensity here. Use the trail above to focus on one area, constellation or activity, and the period to look at a stretch of time.';
+  @override
+  String get lightCalendarNote =>
+      'Each lit day glows brighter the more intensity it holds. Tap a day to see what you lit, and fly to it in the Galaxy.';
+  @override
+  String get lightBreakdownNote =>
+      'Which parts of your world hold the most light. Tap a row to step inside it and see its own light.';
+  @override
+  String get lightMomentsNote =>
+      'The highlights of this period: your firsts, your brightest day and month, your longest run. Tap one to open it.';
+  @override
+  String get cycleHistoryNote =>
+      'Every full cycle of this pulsar you completed. Open one to see it again, or reflect on it if you left that for later.';
   @override
   String get momentFirstVictory => 'First Victory';
+  @override
+  String get momentLatestVictory => 'Latest Victory';
   @override
   String get momentFirstDay => 'First Day';
   @override

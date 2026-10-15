@@ -3,6 +3,9 @@ import 'widgets/entity_insights_scope.dart';
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
+
+import 'debug/frame_timing_probe.dart'; // TEMPORARY
+
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hint_kit/hint_kit.dart';
@@ -73,6 +76,7 @@ Future<void> main() async {
     DeviceOrientation.portraitDown,
   ]);
   runApp(const InnerStarsApp());
+  startFrameTimingProbe(); // TEMPORARY — Galaxy optimization measurements.
 }
 
 class InnerStarsApp extends StatefulWidget {
@@ -407,6 +411,9 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
                 habits: habitRepository,
                 completions: habitCompletionRepository,
                 shapes: starsShapeRepository,
+                areaVisions: areaVisionRepository,
+                reflections: reflectionAnswerRepository,
+                settings: settings,
                 child: child!,
               ),
             ),

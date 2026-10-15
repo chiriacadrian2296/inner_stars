@@ -32,6 +32,27 @@ class StatsSectionLabel extends StatelessWidget {
   }
 }
 
+/// The grey, centered line that explains a Light section (or hints at how to
+/// use it). One look everywhere: the greeting under the overview figure, the
+/// chart's hint below the chart, and each section's note.
+class StatsNote extends StatelessWidget {
+  const StatsNote(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: kSpaceSm),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: context.typography.supporting,
+      ),
+    );
+  }
+}
+
 /// A quantitative line with a bright gold core and a soft halo. Unlike the
 /// app's controls, this glow communicates magnitude rather than selection.
 class StatsGlowBar extends StatelessWidget {

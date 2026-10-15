@@ -31,6 +31,7 @@ Future<Object?> showCreatePage(
   bool constellationOnly = false,
   bool startWithoutSelection = false,
   LifeArea? area,
+  DateTime? initialDate,
 }) async {
   final result = await Navigator.of(context).push<Object>(
     MaterialPageRoute(
@@ -47,6 +48,7 @@ Future<Object?> showCreatePage(
               startAsConstellation: constellation,
               startWithoutSelection: startWithoutSelection,
               presetArea: area,
+              initialDate: initialDate,
             ),
     ),
   );

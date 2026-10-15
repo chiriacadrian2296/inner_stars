@@ -34,6 +34,7 @@ import '../data/reflection_answer_repository.dart';
 import '../data/star_repository.dart';
 import '../l10n/strings_scope.dart';
 import '../models/habit.dart';
+import '../models/habit_cycle.dart';
 import '../models/habit_completion.dart';
 import '../models/artwork_blend.dart';
 import '../models/artwork_layer.dart';
@@ -1631,6 +1632,45 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     return null;
   }
 
+  /// Each area's intensity level for its supernova's orbiting moons and light
+  /// (see
+  /// [supernovaIntensityLevel]), from the total intensity of its lit stars and
+  /// completed pulsar cycles. Recomputed only when the sky's data or the
+  /// cycles change, not on every camera frame.
+  List<double> _supernovaIntensityLevels(List<HabitCycle> cycles) {
+    final cached = _intensityLevelsCache;
+    if (cached != null &&
+        identical(_intensityLevelsPlaced, _placed) &&
+        _intensityLevelsCycles == cycles.length) {
+      return cached;
+    }
+    final totals = List<int>.filled(LifeArea.values.length, 0);
+    final areaOfHabit = <int, LifeArea>{};
+    for (final placed in _placed) {
+      if (placed.project.id < 0) continue;
+      final area = placed.project.area.index;
+      for (final star in placed.stars) {
+        if (star.isLit) totals[area] += star.intensity ?? 0;
+      }
+      for (final habit in placed.habits) {
+        areaOfHabit[habit.id] = placed.project.area;
+      }
+    }
+    for (final cycle in cycles) {
+      final area = areaOfHabit[cycle.habitId];
+      if (area != null) totals[area.index] += cycle.intensity;
+    }
+    _intensityLevelsPlaced = _placed;
+    _intensityLevelsCycles = cycles.length;
+    return _intensityLevelsCache = [
+      for (final total in totals) supernovaIntensityLevel(total),
+    ];
+  }
+
+  List<double>? _intensityLevelsCache;
+  List<PlacedConstellation>? _intensityLevelsPlaced;
+  int? _intensityLevelsCycles;
+
   /// Where the shooting-star study passes by: the constellation the Galaxy
   /// opens on ("Love"), else the first one; null with none at all.
   Offset? _shootingStarAnchor() {
@@ -2047,7 +2087,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _openStatistics() => openLightPage(context, session: _lightSession);
+  Future<void> _openStatistics() async {
+    final target = await openLightPage(context, session: _lightSession);
+    _refresh();
+    if (target != null && mounted) _flyToWithHoldFeedback(target);
+  }
 
   void _openShootingStars() {
     Navigator.of(context)
@@ -3855,6 +3899,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                         supernovaLight: widget.settings.showSupernovae
                             ? widget.settings.supernovaIntensity
                             : 0,
+                        supernovaLevels: _supernovaIntensityLevels(
+                          HabitCycleScope.maybeOf(context)?.getAll() ??
+                              const [],
+                        ),
                       ),
                       if (widget.settings.artworkLayer ==
                           ArtworkLayer.behindSupernovae)
@@ -3884,6 +3932,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                           clock: _skyClock,
                           scale: widget.settings.supernovaScale,
                           intensity: widget.settings.supernovaIntensity,
+                          intensityLevels: _supernovaIntensityLevels(
+                            HabitCycleScope.maybeOf(context)?.getAll() ??
+                                const [],
+                          ),
                         ),
                       AnimatedConstellationField(
                         placed: _placed,

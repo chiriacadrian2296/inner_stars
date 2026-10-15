@@ -1,11 +1,31 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
 import '../models/life_area.dart';
 import 'constellation_field.dart';
 import 'sky_clock.dart';
+
+/// Where an area's total intensity (lit stars plus completed pulsar cycles)
+/// stands on a growing scale of milestones — 10, 25, 50, 100,
+/// 200, 400, 800 — as a smooth 0..7: each milestone is one step (a new moon
+/// round its supernova), and the level keeps rising between them, so every
+/// star lit adds a little light to the gas around it.
+double supernovaIntensityLevel(int totalIntensity) {
+  const milestones = [10, 25, 50, 100, 200, 400, 800];
+  if (totalIntensity <= 0) return 0;
+  var previous = 0;
+  for (var i = 0; i < milestones.length; i++) {
+    final next = milestones[i];
+    if (totalIntensity < next) {
+      return i + (totalIntensity - previous) / (next - previous);
+    }
+    previous = next;
+  }
+  return milestones.length.toDouble();
+}
 
 /// Another alternative take on the same slot [SkyDecorations]/[SkyWisps]/
 /// `SkyBlackHole` filled before it (see `NebulaScreen.build` — only one is
@@ -32,6 +52,7 @@ import 'sky_clock.dart';
 /// edge rendered solid black) and, after that fix, icons that vanished
 /// near the screen edge instead of just sliding off it normally. Plain
 /// icon-on-glow, this file's very first look, never had either problem.
+
 class SkySupernova extends StatefulWidget {
   const SkySupernova({
     super.key,
@@ -40,6 +61,7 @@ class SkySupernova extends StatefulWidget {
     required this.clock,
     this.scale = 1,
     this.intensity = 1,
+    this.intensityLevels = const [0, 0, 0, 0, 0, 0, 0, 0],
   });
 
   /// Drives the shader's animation — see [SkyClock].
@@ -48,6 +70,10 @@ class SkySupernova extends StatefulWidget {
   final double zoom;
   final double scale;
   final double intensity;
+
+  /// Each area's intensity level, in [LifeArea] order — see
+  /// [supernovaIntensityLevel]: one orbiting moon per whole milestone.
+  final List<double> intensityLevels;
 
   @override
   State<SkySupernova> createState() => _SkySupernovaState();
@@ -90,6 +116,7 @@ class _SkySupernovaState extends State<SkySupernova> {
         zoom: widget.zoom,
         scale: widget.scale,
         intensity: widget.intensity,
+        intensityLevels: widget.intensityLevels,
       ),
     );
   }
@@ -149,6 +176,7 @@ class _SkySupernovaPainter extends CustomPainter {
     required this.zoom,
     required this.scale,
     required this.intensity,
+    required this.intensityLevels,
   }) : super(repaint: clock);
 
   final ui.FragmentShader shader;
@@ -158,6 +186,7 @@ class _SkySupernovaPainter extends CustomPainter {
   final double zoom;
   final double scale;
   final double intensity;
+  final List<double> intensityLevels;
 
   // Roughly the on-sky radius of each star's own bright core (see
   // sky_supernova.frag's starMetric/core) — the icon is sized to sit just
@@ -188,6 +217,12 @@ class _SkySupernovaPainter extends CustomPainter {
       shader.setFloat(
         15 + i,
         supernovaArtworkVerticalOffset(LifeArea.values[i]),
+      );
+    }
+    for (var i = 0; i < 8; i++) {
+      shader.setFloat(
+        23 + i,
+        i < intensityLevels.length ? intensityLevels[i] : 0,
       );
     }
 
@@ -333,5 +368,6 @@ class _SkySupernovaPainter extends CustomPainter {
       oldDelegate.camera != camera ||
       oldDelegate.zoom != zoom ||
       oldDelegate.scale != scale ||
-      oldDelegate.intensity != intensity;
+      oldDelegate.intensity != intensity ||
+      !listEquals(oldDelegate.intensityLevels, intensityLevels);
 }

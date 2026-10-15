@@ -500,9 +500,28 @@ class ConstellationPainter extends CustomPainter {
     // relationship the bg stars have with their own nebula backdrop —
     // nothing for a blend-mode mismatch to darken.
     // Inflated past the constellation's own square so a glow sitting near
-    // its edge fades out naturally instead of being sliced off by it.
+    // its edge fades out naturally instead of being sliced off by it — but
+    // only as far as this group's stars actually reach (each one's light
+    // is invisible past 1.2 × [flareRadius], the same cut-off the shader
+    // uses), so a group of a few stars doesn't shade the whole square.
+    var reach = Rect.fromCircle(
+      center: Offset(positions[0], positions[1]),
+      radius: flareRadius * 1.2,
+    );
+    for (var i = 1; i < group.length && i < _kMaxFlareStars; i++) {
+      reach = reach.expandToInclude(
+        Rect.fromCircle(
+          center: Offset(positions[i * 2], positions[i * 2 + 1]),
+          radius: flareRadius * 1.2,
+        ),
+      );
+    }
+    final area = (Offset.zero & size)
+        .inflate(size.width * 0.3)
+        .intersect(reach);
+    if (area.isEmpty) return;
     canvas.drawRect(
-      (Offset.zero & size).inflate(size.width * 0.3),
+      area,
       Paint()
         ..shader = shader
         ..blendMode = BlendMode.plus,

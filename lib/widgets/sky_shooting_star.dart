@@ -15,7 +15,7 @@ import 'sky_clock.dart';
 /// pure scenery), a shooting star is the user's own: so it follows the
 /// Galaxy's "gold + rays = yours" rule — its head is a real lit star, drawn
 /// with the very same flare shader as the user's stars — and it lasts,
-/// gliding calmly on a long loop around [anchor].
+/// gliding calmly in a straight line across the sky, past [anchor].
 ///
 /// Its tail is a wake of stardust in the sky's own language: crisp little
 /// stars like the background's (a solid core in a small glow), left behind
@@ -33,7 +33,7 @@ class SkyShootingStarStudy extends StatelessWidget {
     required this.flareProgram,
   });
 
-  /// The world position (azimuth, elevation in turns) its loop circles.
+  /// The world position (azimuth, elevation in turns) its path passes.
   final Offset anchor;
   final SkyCamera camera;
   final double zoom;
@@ -72,23 +72,29 @@ class _ShootingStarPainter extends CustomPainter {
   final SkyClock clock;
   final ui.FragmentProgram? flareProgram;
 
-  /// Seconds for one full loop around [anchor]: slow, but clearly moving.
-  static const _loopPeriod = 480.0;
+  /// How fast it travels, in radians of sky a second: one full way round
+  /// the sky in 20 minutes — calm, but clearly moving.
+  static const _speed = 2 * math.pi / 1200;
 
-  /// How much of the loop (radians of its angle) the wake stretches over.
-  static const _wakeAngle = 0.75;
+  /// Which way its straight path crosses [anchor].
+  static const _bearing = 2.2;
 
-  /// One grain of stardust is left every this much of the loop angle, a
-  /// few at a time (see [_grainsPerStep]).
-  static const _grainStep = 0.012;
+  /// How much of its path (radians of sky) the wake stretches over.
+  static const _wakeAngle = 0.12;
+
+  /// One grain of stardust is left every this much of the path, a few at
+  /// a time (see [_grainsPerStep]).
+  static const _grainStep = 0.0016;
   static const _grainsPerStep = 3;
 
   static const _gold = Color(0xFFF2B84B);
   static const _warmWhite = Color(0xFFFFF4DE);
 
-  /// The loop: an ellipse around [anchor], at loop angle [angle].
-  Offset _pointAt(double angle) =>
-      offsetWorldPosition(anchor, 0.12 + 0.045 * math.cos(2 * angle), angle);
+  /// Its path: a straight line across the sky — a great circle through
+  /// [anchor] — [distance] radians along it from [anchor] (negative before
+  /// it), going round the whole sky and back.
+  Offset _pointAt(double distance) =>
+      offsetWorldPosition(anchor, distance, _bearing);
 
   /// A stable 0..1 random number for grain [index], [salt] picking which.
   static double _hash(int index, int salt) {
@@ -99,7 +105,8 @@ class _ShootingStarPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final time = clock.seconds;
-    final headAngle = time / _loopPeriod * 2 * math.pi + 0.5;
+    // Starting a little before [anchor], so it soon passes by it.
+    final headAngle = time * _speed - 0.35;
     final head = worldToScreen(_pointAt(headAngle), camera, zoom, size);
     if (head == null) return;
 
@@ -110,20 +117,92 @@ class _ShootingStarPainter extends CustomPainter {
         size.height *
         head.perspectiveScale;
 
-    _paintThread(canvas, size, headAngle);
-    _paintStardust(canvas, size, headAngle, time, starSize);
+    // Nothing to draw while no part of the star and its wake is on screen
+    // (most of the time): a few points along the wake give its extent.
+    var extent = Rect.fromCircle(
+      center: head.position,
+      radius: starSize * 0.45,
+    );
+    for (var i = 1; i <= 4; i++) {
+      final point = worldToScreen(
+        _pointAt(headAngle - _wakeAngle * i / 4),
+        camera,
+        zoom,
+        size,
+      );
+      if (point == null) continue;
+      extent = extent.expandToInclude(
+        Rect.fromCircle(
+          center: point.position,
+          radius: _spread(starSize, i / 4) * 2 + starSize * 0.05,
+        ),
+      );
+    }
+    if (!extent.overlaps(Offset.zero & size)) return;
+
+    // How close the camera is: 0 from afar, 1 close in. Up close the
+    // wake gains a soft glow under its grains and round its thread, so it
+    // keeps the misty look it has from far away instead of breaking up
+    // into separate dots.
+    final closeness = ((zoomPercent(zoom) - 55) / 40).clamp(0.0, 1.0);
+    _paintWakeGlow(canvas, size, headAngle, starSize, closeness);
+    _paintBeam(canvas, size, headAngle, starSize);
+    _paintThread(canvas, size, headAngle, starSize);
+    _paintStardust(canvas, size, headAngle, time, starSize, closeness);
     _paintHead(canvas, head.position, starSize, time);
   }
 
-  /// A hair-thin crisp line from the head back over the freshest stretch
-  /// of the wake, fading out quickly.
-  void _paintThread(Canvas canvas, Size size, double headAngle) {
-    const samples = 14;
+  /// A soft gold beam pouring out of the star toward its tail: widest at
+  /// the head, narrowing and fading over the first stretch, so the wake
+  /// visibly comes out of the star instead of starting after a gap of sky.
+  void _paintBeam(Canvas canvas, Size size, double headAngle, double starSize) {
+    const samples = 12;
+    const reach = 0.22;
     Offset? previous;
     for (var i = 0; i <= samples; i++) {
       final k = i / samples;
       final projected = worldToScreen(
-        _pointAt(headAngle - _wakeAngle * 0.3 * k),
+        _pointAt(headAngle - _wakeAngle * reach * k),
+        camera,
+        zoom,
+        size,
+      );
+      if (projected == null) return;
+      final point = projected.position;
+      if (previous != null) {
+        final width = starSize * (0.032 - 0.024 * k) * _neck(0.22 * k);
+        canvas.drawLine(
+          previous,
+          point,
+          Paint()
+            ..blendMode = BlendMode.plus
+            ..strokeCap = StrokeCap.round
+            ..strokeWidth = width
+            ..maskFilter = MaskFilter.blur(BlurStyle.normal, width * 0.5)
+            ..color = _gold.withValues(
+              alpha: 0.5 * math.pow(1 - k, 1.6).toDouble(),
+            ),
+        );
+      }
+      previous = point;
+    }
+  }
+
+  /// A thin crisp line from the head back over the first half of the wake,
+  /// tapering and fading as it goes. Sized with the sky (see [_paintStardust])
+  /// so it looks the same from near and far.
+  void _paintThread(
+    Canvas canvas,
+    Size size,
+    double headAngle,
+    double starSize,
+  ) {
+    const samples = 24;
+    Offset? previous;
+    for (var i = 0; i <= samples; i++) {
+      final k = i / samples;
+      final projected = worldToScreen(
+        _pointAt(headAngle - _wakeAngle * 0.55 * k),
         camera,
         zoom,
         size,
@@ -135,11 +214,11 @@ class _ShootingStarPainter extends CustomPainter {
           previous,
           point,
           Paint()
-            ..strokeWidth = 1
+            ..strokeWidth = starSize * 0.0075 * (1 - 0.7 * k) * _neck(0.55 * k)
             ..strokeCap = StrokeCap.round
             ..blendMode = BlendMode.plus
             ..color = _gold.withValues(
-              alpha: 0.55 * math.pow(1 - k, 2).toDouble(),
+              alpha: 0.8 * math.pow(1 - k, 1.5).toDouble(),
             ),
         );
       }
@@ -147,23 +226,101 @@ class _ShootingStarPainter extends CustomPainter {
     }
   }
 
-  /// The wake: grains left at fixed points of the loop as the head passes,
-  /// each aging from the moment it was left.
+  /// How full the wake is at [age]: only a tenth right at the star,
+  /// opening to full width over the first stretch — a slim neck, so the
+  /// star itself stays clearly visible instead of being covered.
+  static double _neck(double age) {
+    final t = (age / 0.15).clamp(0.0, 1.0);
+    return 0.1 + 0.9 * t * t * (3 - 2 * t);
+  }
+
+  /// How far a grain of age [age] (0 fresh .. 1 gone) has drifted from the
+  /// path: slim near the head, scattering more and more toward the end.
+  static double _spread(double starSize, double age) =>
+      starSize * 0.035 * (0.3 + 1.2 * age + 3.0 * age * age);
+
+  /// Up close only ([closeness] > 0): a soft glow along the wake, as wide
+  /// as the grains are spread, and a brighter one round the thread.
+  void _paintWakeGlow(
+    Canvas canvas,
+    Size size,
+    double headAngle,
+    double starSize,
+    double closeness,
+  ) {
+    if (closeness <= 0) return;
+    const samples = 20;
+    Offset? previous;
+    for (var i = 0; i <= samples; i++) {
+      final age = i / samples;
+      final projected = worldToScreen(
+        _pointAt(headAngle - _wakeAngle * age),
+        camera,
+        zoom,
+        size,
+      );
+      if (projected == null) return;
+      final point = projected.position;
+      if (previous != null) {
+        final width =
+            (_spread(starSize, age) * 2 + starSize * 0.01) * _neck(age);
+        final color = Color.lerp(_gold, _warmWhite, age)!;
+        canvas.drawLine(
+          previous,
+          point,
+          Paint()
+            ..blendMode = BlendMode.plus
+            ..strokeCap = StrokeCap.round
+            ..strokeWidth = width
+            ..maskFilter = MaskFilter.blur(BlurStyle.normal, width * 0.45)
+            ..color = color.withValues(
+              alpha: 0.13 * closeness * math.pow(1 - age, 1.3).toDouble(),
+            ),
+        );
+        if (age <= 0.55) {
+          final k = age / 0.55;
+          final threadWidth = starSize * 0.03 * (1 - 0.7 * k) * _neck(age);
+          canvas.drawLine(
+            previous,
+            point,
+            Paint()
+              ..blendMode = BlendMode.plus
+              ..strokeCap = StrokeCap.round
+              ..strokeWidth = threadWidth
+              ..maskFilter = MaskFilter.blur(
+                BlurStyle.normal,
+                threadWidth * 0.6,
+              )
+              ..color = _gold.withValues(
+                alpha: 0.3 * closeness * math.pow(1 - k, 1.5).toDouble(),
+              ),
+          );
+        }
+      }
+      previous = point;
+    }
+  }
+
+  /// The wake: grains left at fixed points of the path as the head passes,
+  /// each aging from the moment it was left — only ever behind the head.
+  /// Everything is sized with the sky ([starSize]), never with minimum
+  /// pixel sizes, so from far away the wake keeps the same delicate look
+  /// instead of thickening up.
   void _paintStardust(
     Canvas canvas,
     Size size,
     double headAngle,
     double time,
     double starSize,
+    double closeness,
   ) {
     final newestStep = (headAngle / _grainStep).floor();
     final steps = (_wakeAngle / _grainStep).ceil();
     for (var s = 0; s < steps; s++) {
       final step = newestStep - s;
       final bornAt = step * _grainStep;
-      final age = (headAngle - bornAt) / _wakeAngle;
-      if (age < 0 || age >= 1) continue;
-      // This stretch of the loop, projected once for all its grains.
+      if ((headAngle - bornAt) / _wakeAngle >= 1) continue;
+      // This stretch of the path, projected once for all its grains.
       final from = worldToScreen(_pointAt(bornAt), camera, zoom, size);
       final to = worldToScreen(
         _pointAt(bornAt + _grainStep),
@@ -176,40 +333,66 @@ class _ShootingStarPainter extends CustomPainter {
       final length = along.distance;
       if (length == 0) continue;
       final normal = Offset(-along.dy, along.dx) / length;
-      for (var g = 0; g < _grainsPerStep; g++) {
-        final index = step * _grainsPerStep + g;
-        final at = from.position + along * _hash(index, 1);
+      // The first stretch behind the head gets extra, finer grains, so the
+      // beam has a grain to it and no gap of sky shows through.
+      final stepAge = (headAngle - bornAt) / _wakeAngle;
+      final grains = _grainsPerStep + (stepAge < 0.2 ? 4 : 0);
+      for (var g = 0; g < grains; g++) {
+        final fine = g >= _grainsPerStep;
+        // The usual grains keep their own numbers (and so their look); the
+        // fine ones get numbers of their own.
+        final index = fine ? 1000000 + step * 8 + g : step * _grainsPerStep + g;
+        final share = _hash(index, 1);
+        // Never at or ahead of the head: a small gap behind it first.
+        final spotAngle = bornAt + _grainStep * share;
+        final age = (headAngle - spotAngle) / _wakeAngle;
+        // Born right behind the head (never ahead of it): the slim neck
+        // keeps them small and close to the line there.
+        if (age < 0.004 || age >= 1) continue;
+        final at = from.position + along * share;
 
-        // Drifting slowly aside as it ages: the wake widens behind.
+        // Drifting aside as it ages: slim near the head, scattering behind.
         final side = _hash(index, 2) * 2 - 1;
-        final spread = starSize * 0.05 * (0.4 + 2.6 * age);
+        final spread = _spread(starSize, age) * (fine ? 0.6 : 1.0) * _neck(age);
         final center = at + normal * side * spread;
 
         final twinkle =
             0.75 +
             0.25 * math.sin(time * (1.4 + _hash(index, 3) * 2.2) + index * 1.7);
         final fade = math.pow(1 - age, 1.4).toDouble();
-        final alpha = (fade * twinkle * (0.55 + 0.45 * _hash(index, 4))).clamp(
-          0.0,
-          1.0,
-        );
+        final alpha =
+            (fade *
+                    twinkle *
+                    (0.55 + 0.45 * _hash(index, 4)) *
+                    (fine ? 1 - age / 0.2 : 1.0))
+                .clamp(0.0, 1.0);
         if (alpha < 0.02) continue;
 
         // Bigger and gold fresh, smaller and warm white as it ages.
-        final coreRadius =
-            (starSize * 0.009 * (0.5 + _hash(index, 5)) * (1 - 0.6 * age))
-                .clamp(0.7, 2.6);
+        // Capped up close; no minimum, so it stays delicate from far away.
+        final coreRadius = math.min(
+          starSize *
+              0.009 *
+              (0.5 + _hash(index, 5)) *
+              (1 - 0.6 * age) *
+              (fine ? 0.5 : 1.0) *
+              (0.3 + 0.7 * _neck(age)),
+          2.6,
+        );
         final color = Color.lerp(_gold, _warmWhite, age)!;
 
+        // Near the head the halos shrink and dim with the neck.
+        final neck = _neck(age);
         // A small soft glow from two faint rings of light (cheaper than a
-        // blur, with a couple of hundred grains a frame).
+        // blur, with a couple of hundred grains a frame) — a little wider
+        // up close.
         for (final (scale, strength) in const [(2.8, 0.1), (1.7, 0.2)]) {
           canvas.drawCircle(
             center,
-            coreRadius * scale,
+            coreRadius * scale * (1 + closeness * 0.8) * (0.4 + 0.6 * neck),
             Paint()
               ..blendMode = BlendMode.plus
-              ..color = color.withValues(alpha: alpha * strength),
+              ..color = color.withValues(alpha: alpha * strength * neck),
           );
         }
         canvas.drawCircle(
@@ -224,7 +407,7 @@ class _ShootingStarPainter extends CustomPainter {
           final arm = coreRadius * 2.8 * (0.6 + 0.4 * twinkle);
           final line = Paint()
             ..blendMode = BlendMode.plus
-            ..strokeWidth = 0.8
+            ..strokeWidth = coreRadius * 0.55
             ..strokeCap = StrokeCap.round
             ..color = color.withValues(alpha: alpha * 0.8);
           canvas.drawLine(

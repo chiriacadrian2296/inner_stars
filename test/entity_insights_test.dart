@@ -1,5 +1,6 @@
 import 'package:inner_stars/widgets/activity_check_card.dart';
 import 'package:inner_stars/widgets/app_choice_chip.dart';
+import 'package:inner_stars/widgets/area_icon.dart';
 
 import 'dart:convert';
 import 'dart:io';
@@ -84,6 +85,7 @@ Future<EntityInsightsController> _controller({
   List<Star> stars = const [],
   List<Habit> habits = const [],
   List<HabitCompletion> completions = const [],
+  bool withSkyDependencies = false,
 }) async {
   SharedPreferences.setMockInitialValues({
     'projects-list': jsonEncode([
@@ -103,6 +105,11 @@ Future<EntityInsightsController> _controller({
     habits: HabitRepository(prefs),
     completions: HabitCompletionRepository(prefs),
     shapes: StarsShapeRepository(prefs),
+    areaVisions: withSkyDependencies ? AreaVisionRepository(prefs) : null,
+    reflections: withSkyDependencies ? ReflectionAnswerRepository(prefs) : null,
+    settings: withSkyDependencies
+        ? SettingsController(SettingsRepository(prefs))
+        : null,
   );
 }
 
@@ -883,12 +890,23 @@ void main() {
       await tester.pumpWidget(_app(c, const LightScreen(), reduceMotion: true));
       await tester.pumpAndSettle();
       expect(find.text(strings.lightPageTitle), findsOneWidget);
-      expect(find.text(strings.lightHeadline), findsOneWidget);
+      expect(find.text(strings.lightOverviewNote), findsOneWidget);
+      expect(
+        tester
+            .widget<AppChoiceChip>(
+              find.byKey(const ValueKey('light-current-scope')),
+            )
+            .icon,
+        Icons.explore,
+      );
+      expect(find.byIcon(Icons.bolt_rounded), findsWidgets);
       // Both victories (intensity 3 each) make the light.
       expect(find.text('6'), findsOneWidget);
 
       // Down: the physical area, then back up to everything.
-      await tester.drag(find.byType(CustomScrollView), const Offset(0, -1200));
+      await tester.ensureVisible(
+        find.text(LifeArea.physical.displayName(strings)),
+      );
       await tester.pumpAndSettle();
       final physical = find
           .text(LifeArea.physical.displayName(strings))
@@ -896,11 +914,197 @@ void main() {
       expect(physical, findsOneWidget);
       await tester.tap(physical);
       await tester.pumpAndSettle();
+      final areaChoice = tester.widget<AppChoiceChip>(
+        find.byKey(const ValueKey('light-current-scope')),
+      );
+      expect(areaChoice.icon, isNull);
+      expect(areaChoice.leading, isA<AreaIcon>());
       expect(find.text('3'), findsWidgets);
       await tester.tap(find.bySemanticsLabel(strings.lightScopeAll));
       await tester.pumpAndSettle();
       expect(find.text('6'), findsOneWidget);
       expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      c.dispose();
+    },
+  );
+
+  testWidgets('Your Light opens First Victory from Moments', (tester) async {
+    final c = await _controller(stars: [_star(1, DateTime.now())]);
+    final strings = StringsIt();
+    final tours = InMemoryTourStorage();
+    await tours.markCompleted('star-reader');
+    await tester.pumpWidget(
+      TourScope(
+        storage: tours,
+        child: _app(c, const LightScreen(), reduceMotion: true),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final firstVictory = find.text(strings.momentFirstVictory);
+    await tester.ensureVisible(firstVictory);
+    await tester.pumpAndSettle();
+    await tester.tap(firstVictory);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(StarReaderScreen), findsOneWidget);
+    expect(find.text('Star 1'), findsWidgets);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox());
+    c.dispose();
+  });
+
+  testWidgets(
+    'Your Light exposes interactive aggregate Moments and hides project runs',
+    (tester) async {
+      final today = DateTime.now();
+      final runStart = DateTime(today.year, today.month - 1, 10);
+      final earlier = DateTime(today.year, today.month - 2, 10);
+      final c = await _controller(
+        withSkyDependencies: true,
+        stars: [
+          _star(1, earlier),
+          _star(2, runStart),
+          _star(3, runStart.add(const Duration(days: 1))),
+          _star(4, runStart.add(const Duration(days: 2))),
+        ],
+      );
+      final tours = InMemoryTourStorage();
+      await tours.markCompleted('search-stars');
+      await tester.pumpWidget(
+        TourScope(
+          storage: tours,
+          child: _app(c, const LightScreen(), reduceMotion: true),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('moment-first-victory')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('moment-latest-victory')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('moment-brightest-day')),
+        findsOneWidget,
+      );
+      final run = find.byKey(const ValueKey('moment-longest-run'));
+      final month = find.byKey(const ValueKey('moment-brightest-month'));
+      expect(run, findsOneWidget);
+      expect(month, findsOneWidget);
+
+      await tester.dragUntilVisible(
+        run,
+        find.byType(CustomScrollView),
+        const Offset(0, -400),
+      );
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -180));
+      await tester.pumpAndSettle();
+      await tester.tap(run);
+      await tester.pumpAndSettle();
+      final runSheet = find.byKey(const ValueKey('light-run-sheet'));
+      expect(runSheet, findsOneWidget);
+      expect(
+        find.descendant(
+          of: runSheet,
+          matching: find.byIcon(Icons.bolt_rounded),
+        ),
+        findsWidgets,
+      );
+      expect(
+        find.descendant(
+          of: runSheet,
+          matching: find.byIcon(Icons.auto_awesome),
+        ),
+        findsWidgets,
+      );
+      expect(
+        find.descendant(
+          of: runSheet,
+          matching: find.byIcon(Icons.wb_sunny_outlined),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: runSheet,
+          matching: find.byKey(const ValueKey('light-run-summary')),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find
+            .descendant(
+              of: runSheet,
+              matching: find.byKey(const ValueKey('light-run-day')),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(SkyExplorerView), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(runSheet, findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      await tester.dragUntilVisible(
+        month,
+        find.byType(CustomScrollView),
+        const Offset(0, -200),
+      );
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -100));
+      await tester.pumpAndSettle();
+      await tester.tap(month);
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('brightest-month-sheet')),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .getSize(find.byKey(const ValueKey('brightest-month-sheet')))
+            .height,
+        lessThanOrEqualTo(600),
+      );
+      final monthSheet = find.byKey(const ValueKey('brightest-month-sheet'));
+      await tester.tap(
+        find
+            .descendant(of: monthSheet, matching: find.byIcon(Icons.star))
+            .first,
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(SkyExplorerView), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(monthSheet, findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(
+        TourScope(
+          storage: tours,
+          child: _app(
+            c,
+            const LightScreen(initialScope: InsightEntity.project(1)),
+            reduceMotion: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('moment-longest-run')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('moment-latest-victory')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+
       await tester.pumpWidget(const SizedBox());
       c.dispose();
     },
@@ -955,7 +1159,17 @@ void main() {
     expect(tester.getSize(currentScope).width, lessThan(200));
     expect(tester.getCenter(currentScope).dx, closeTo(400, 1));
 
+    final navigation = tester.getRect(
+      find.byKey(const ValueKey('light-navigation-bar')),
+    );
+    final scopeTrail = tester.getRect(
+      find.byKey(const ValueKey('light-scope-trail')),
+    );
+
     final periodButton = find.byKey(const ValueKey('light-period-button'));
+    final periodRect = tester.getRect(periodButton);
+    expect(scopeTrail.top - navigation.top, closeTo(20, 0.1));
+    expect(navigation.bottom - periodRect.bottom, closeTo(20, 0.1));
     await tester.tap(periodButton);
     await tester.pumpAndSettle();
     await tester.tap(find.text(strings.lightPeriodYear));
@@ -969,7 +1183,7 @@ void main() {
 
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -1000));
     await tester.pumpAndSettle();
-    expect(tester.getCenter(periodButton).dy, lessThan(100));
+    expect(tester.getCenter(periodButton).dy, lessThan(120));
     expect(tester.takeException(), isNull);
 
     await tester.pumpWidget(const SizedBox());

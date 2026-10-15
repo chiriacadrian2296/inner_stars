@@ -1201,7 +1201,6 @@ abstract class AppStrings {
   String get lightPeriodMonth;
   String get lightPeriodFilterLabel;
   String get lightOverviewLabel;
-  String get lightHeadline;
   String get lightHeadlineEmpty;
   String lightCyclesCount(int count);
   String lightDaysCount(int count);
@@ -1212,7 +1211,13 @@ abstract class AppStrings {
   String get lightSeeAllTimeAction;
   String get lightGoalWaitingBody;
   String get lightCurveHint;
+  String get lightOverviewNote;
+  String get lightCalendarNote;
+  String get lightBreakdownNote;
+  String get lightMomentsNote;
+  String get cycleHistoryNote;
   String get momentFirstVictory;
+  String get momentLatestVictory;
   String get momentFirstDay;
   String get momentBrightestDay;
   String get momentLongestRun;

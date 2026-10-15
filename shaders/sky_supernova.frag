@@ -14,6 +14,9 @@ uniform float uSize;
 uniform float uIntensity;
 uniform vec4 uVerticalOffsets0;
 uniform vec4 uVerticalOffsets1;
+// Each supernova's area's total intensity, as a milestone level.
+uniform vec4 uIntensityLevels0;
+uniform vec4 uIntensityLevels1;
 
 out vec4 fragColor;
 
@@ -71,15 +74,103 @@ vec3 adjustedSupernovaDirection(int index) {
   return normalize(center + axisB * supernovaVerticalOffset(index));
 }
 
+// Where each supernova's area stands on the intensity milestones (see the
+// SkySupernova widget): a smooth 0..7, one step per milestone reached.
+float intensityLevel(int index) {
+  if (index == 0) return uIntensityLevels0.x;
+  if (index == 1) return uIntensityLevels0.y;
+  if (index == 2) return uIntensityLevels0.z;
+  if (index == 3) return uIntensityLevels0.w;
+  if (index == 4) return uIntensityLevels1.x;
+  if (index == 5) return uIntensityLevels1.y;
+  if (index == 6) return uIntensityLevels1.z;
+  return uIntensityLevels1.w;
+}
+
+float moonHash(float n) {
+  return fract(sin(n * 127.1 + 311.7) * 43758.5453);
+}
+
+// Moons: one small light circling the supernova for every intensity
+// milestone its area has reached — up to six — the same language as the
+// dots orbiting the user's stars, at the supernova's scale. Each on its
+// own orbit, tilted and turned its own way, the inner ones quicker, with a
+// short fading thread of light behind it hinting at its path. Only whole
+// milestones add a moon, so each new one is an event. Sized with the
+// supernova (in [uv], see supernova()) and dimmed rather than enlarged
+// when smaller than a pixel, so it stays delicate from far away.
+vec3 orbitingMoons(vec2 uv, vec3 center, float level) {
+  float moons = min(floor(level + 1e-4), 6.0);
+  if (moons < 1.0) return vec3(0.0);
+  float pixel = 1.0 / (uResolution.y * uZoom) / (0.45 * uSize);
+  float seed = dot(center, vec3(12.9898, 78.233, 37.719));
+  vec3 total = vec3(0.0);
+  for (int k = 0; k < 6; k++) {
+    float m = float(k);
+    if (m >= moons) break;
+    float radius = 0.16 + 0.05 * m;
+    float turn = moonHash(seed + m * 3.1) * 6.2831853;
+    float tilt = mix(0.3, 0.85, moonHash(seed + m * 5.7));
+    float speed = 0.35 * pow(0.16 / radius, 1.5) *
+        (moonHash(seed + m * 8.3) > 0.5 ? 1.0 : -1.0);
+    float angle = uTime * speed + moonHash(seed + m * 2.3) * 6.2831853;
+
+    // This pixel in the orbit's own flat plane.
+    vec2 turned = vec2(
+      cos(turn) * uv.x + sin(turn) * uv.y,
+      -sin(turn) * uv.x + cos(turn) * uv.y
+    );
+    vec2 plane = vec2(turned.x, turned.y / tilt);
+    float r = length(plane);
+    // Wide enough for the glow even on a steeply tilted orbit.
+    if (abs(r - radius) > 0.06 / tilt) continue;
+
+    // The moon.
+    vec2 moonAt = vec2(cos(angle), sin(angle)) * radius;
+    vec2 moonOnScreen = vec2(moonAt.x, moonAt.y * tilt);
+    float d = length(turned - moonOnScreen);
+    float coreRadius = 0.007;
+    float core = 1.0 -
+        smoothstep(coreRadius - pixel * 0.5, coreRadius + pixel * 0.5, d);
+    float glow = exp(-d * d / (0.016 * 0.016)) * 0.35;
+    // Half its orbit runs behind the supernova: a little dimmer there.
+    float behind = 0.8 + 0.2 * sin(angle);
+    float moon = (core * 1.1 + glow) * behind;
+
+    // The thread: a thin arc trailing behind the moon along its orbit.
+    float theta = atan(plane.y, plane.x);
+    float lag = mod((angle - theta) * sign(speed), 6.2831853);
+    float thread = lag < 0.9
+        ? (1.0 - smoothstep(0.0012, 0.0012 + pixel, abs(r - radius))) *
+            pow(1.0 - lag / 0.9, 2.0) * 0.45
+        : 0.0;
+
+    float fine = min(1.0, coreRadius * 2.0 / pixel);
+    total += vec3(1.0, 0.88, 0.62) * (moon + thread) * fine;
+  }
+  return total;
+}
+
 // One star's full color contribution — [midColor]/[outerColor] are the
 // same for all 8 calls in main() below (see that function's own comment
 // for why); kept as parameters anyway since a per-star tint was tried
 // here before and may be again.
-vec3 supernova(vec3 dir, vec3 center, vec3 midColor, vec3 outerColor) {
+vec3 supernova(
+  vec3 dir,
+  vec3 center,
+  vec3 midColor,
+  vec3 outerColor,
+  float level
+) {
   vec3 reference = abs(center.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
   vec3 axisA = normalize(cross(reference, center));
   vec3 axisB = cross(center, axisA);
   vec2 uv = vec2(dot(dir - center, axisA), dot(dir - center, axisB));
+  // Farther than 4 units of its own size (and on its far side) nothing of
+  // this supernova — glow, spikes, moons — is bright enough to show: skip
+  // all the work below. (4 units: its glow is down to e^-12 there.)
+  float reach = 4.0 * 0.45 * uSize;
+  if (dot(dir, center) < 0.0 || dot(uv, uv) > reach * reach) return vec3(0.0);
 
   // An occasional, irregular flicker — on top of [pulse]'s own steady
   // breathing further down — brightening and slightly growing a star for
@@ -102,6 +193,8 @@ vec3 supernova(vec3 dir, vec3 center, vec3 midColor, vec3 outerColor) {
   // fills your view. [flicker] nudges that divisor up slightly at its own
   // peak, growing the star a little rather than just brightening it (see
   // [brightness]'s own flicker term further down).
+  // The same plane before the flicker grows it, for the moons.
+  vec2 moonUv = uv / (0.45 * uSize);
   uv /= 0.45 * uSize * (1.0 + flicker * 0.15);
 
   // {center, axisA, axisB} is an orthonormal basis, so any unit [dir] is
@@ -199,7 +292,11 @@ vec3 supernova(vec3 dir, vec3 center, vec3 midColor, vec3 outerColor) {
   vec3 color = mix(outerColor, midColor, smoothstep(0.0, 0.25, glow + spikes * 0.3));
   color = mix(color, colorCore, clamp(core * 1.5 + nearGlow * 0.3, 0.0, 1.0));
 
-  return color * brightness * hemisphereFade * uIntensity;
+  // The moons keep their own size and orbit through the flicker (they use
+  // [moonUv], without its growth) — they only shine a little brighter
+  // with it.
+  vec3 moons = orbitingMoons(moonUv, center, level) * (1.0 + flicker * 0.6);
+  return (color * brightness + moons) * hemisphereFade * uIntensity;
 }
 
 // Interleaved-gradient-noise dither, ±½ of one 8-bit step. These glows fade
@@ -238,7 +335,7 @@ void main() {
   vec3 total = vec3(0.0);
   for (int i = 0; i < 8; i++) {
     vec3 center = adjustedSupernovaDirection(i);
-    total += supernova(dir, center, midColor, outerColor);
+    total += supernova(dir, center, midColor, outerColor, intensityLevel(i));
   }
 
   // Painted with BlendMode.plus (see the SkySupernova widget) — a pure

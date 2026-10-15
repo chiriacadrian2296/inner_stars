@@ -2,11 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../data/area_vision_repository.dart';
 import '../data/custom_constellation_repository.dart';
 import '../data/habit_completion_repository.dart';
 import '../data/habit_repository.dart';
 import '../data/project_repository.dart';
+import '../data/reflection_answer_repository.dart';
 import '../data/star_repository.dart';
+import '../settings/settings_controller.dart';
 import '../utils/entity_insights.dart';
 import '../utils/habit_stats.dart';
 
@@ -18,6 +21,9 @@ class EntityInsightsController extends ChangeNotifier
     required this.habits,
     required this.completions,
     required this.shapes,
+    this.areaVisions,
+    this.reflections,
+    this.settings,
   }) {
     for (final repository in _repositories) {
       repository.addListener(refresh);
@@ -30,6 +36,9 @@ class EntityInsightsController extends ChangeNotifier
   final HabitRepository habits;
   final HabitCompletionRepository completions;
   final StarsShapeRepository shapes;
+  final AreaVisionRepository? areaVisions;
+  final ReflectionAnswerRepository? reflections;
+  final SettingsController? settings;
   Iterable<ChangeNotifier> get _repositories => [
     projects,
     stars,
@@ -111,6 +120,9 @@ class EntityInsightsHost extends StatefulWidget {
     required this.habits,
     required this.completions,
     required this.shapes,
+    this.areaVisions,
+    this.reflections,
+    this.settings,
     required this.child,
   });
   final ProjectRepository projects;
@@ -118,6 +130,9 @@ class EntityInsightsHost extends StatefulWidget {
   final HabitRepository habits;
   final HabitCompletionRepository completions;
   final StarsShapeRepository shapes;
+  final AreaVisionRepository? areaVisions;
+  final ReflectionAnswerRepository? reflections;
+  final SettingsController? settings;
   final Widget child;
   @override
   State<EntityInsightsHost> createState() => _EntityInsightsHostState();
@@ -131,6 +146,9 @@ class _EntityInsightsHostState extends State<EntityInsightsHost> {
     habits: widget.habits,
     completions: widget.completions,
     shapes: widget.shapes,
+    areaVisions: widget.areaVisions,
+    reflections: widget.reflections,
+    settings: widget.settings,
   );
   @override
   void initState() {
@@ -145,7 +163,10 @@ class _EntityInsightsHostState extends State<EntityInsightsHost> {
         oldWidget.stars != widget.stars ||
         oldWidget.habits != widget.habits ||
         oldWidget.completions != widget.completions ||
-        oldWidget.shapes != widget.shapes) {
+        oldWidget.shapes != widget.shapes ||
+        oldWidget.areaVisions != widget.areaVisions ||
+        oldWidget.reflections != widget.reflections ||
+        oldWidget.settings != widget.settings) {
       _controller.dispose();
       _create();
     }

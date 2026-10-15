@@ -168,6 +168,9 @@ void main() {
     float cosR = cos(-rotation);
     float sinR = sin(-rotation);
     vec2 diff = fragPos - pos;
+    // Past 1.2 × the flare radius no look below adds a visible shade (the
+    // painter only draws that far round each star too): skip it.
+    if (dot(diff, diff) > uFlareRadius * uFlareRadius * 1.44) continue;
     if (uMode > 3.5) {
       // Today: drawn on top of a star lit today (or a pulsar checked
       // today) — two rings rippling out of it, half a beat apart, and a

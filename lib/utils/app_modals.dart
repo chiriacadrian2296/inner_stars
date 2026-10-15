@@ -45,18 +45,34 @@ class _AppSheetHandle extends StatelessWidget {
   const _AppSheetHandle();
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 10),
-    child: Center(
-      child: Container(
-        width: 32,
-        height: 4,
-        decoration: BoxDecoration(
-          color: context.colors.muted.withValues(alpha: 0.4),
-          borderRadius: BorderRadius.circular(2),
-        ),
+  Widget build(BuildContext context) => Center(
+    child: Container(
+      key: const Key('app-sheet-handle'),
+      width: 32,
+      height: 4,
+      decoration: BoxDecoration(
+        color: context.colors.muted.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(2),
       ),
     ),
+  );
+}
+
+/// Adds the shared sheet handle without the 48px touch row Material inserts
+/// around its native drag handle. Sheet bodies already leave 20px above their
+/// first title: placing the body at y=4 and the handle at y=10 makes the two
+/// visible gaps identical — 10px above the handle and 10px below it.
+class _AppSheetChrome extends StatelessWidget {
+  const _AppSheetChrome({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Stack(
+    children: [
+      Padding(padding: const EdgeInsets.only(top: 4), child: child),
+      const Positioned(top: 10, left: 0, right: 0, child: _AppSheetHandle()),
+    ],
   );
 }
 
@@ -246,9 +262,13 @@ class AppSheetFrame extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (showHandle) const _AppSheetHandle(),
+          if (showHandle)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 10),
+              child: _AppSheetHandle(),
+            ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
             child: Align(alignment: Alignment.centerLeft, child: title),
           ),
           if (expandChild) Expanded(child: child) else Flexible(child: child),
@@ -321,7 +341,15 @@ Future<T?> showAppSheet<T>({
   // there its scrollbar goes just outside the panel's edge. The route's own
   // sheet surface is then made invisible and widened by the gutters, and
   // [_OutsideScrollbarFrame] repaints the real surface inside them.
-  final baseConstraints = constraints ?? sheetTheme.constraints;
+  // Callers that only bound the height (maxWidth left infinite) still get the
+  // app's standard sheet width, so every modal is as wide as the others.
+  final themeConstraints = sheetTheme.constraints;
+  final themeMaxWidth = themeConstraints?.maxWidth ?? 640;
+  final baseConstraints = constraints == null
+      ? themeConstraints
+      : constraints.maxWidth.isFinite
+      ? constraints
+      : constraints.copyWith(maxWidth: themeMaxWidth);
   final baseMaxWidth = baseConstraints?.maxWidth ?? 640;
   final outside =
       outsideScrollbar &&
@@ -330,7 +358,7 @@ Future<T?> showAppSheet<T>({
       MediaQuery.sizeOf(context).width >=
           baseMaxWidth + 2 * _kSheetScrollbarGutter;
   final routeConstraints = !outside
-      ? constraints
+      ? baseConstraints
       : (baseConstraints ?? const BoxConstraints()).copyWith(
           maxWidth: baseMaxWidth + 2 * _kSheetScrollbarGutter,
         );
@@ -345,10 +373,11 @@ Future<T?> showAppSheet<T>({
         systemGestureInsets: routeMediaQuery.systemGestureInsets,
         viewInsets: EdgeInsets.zero,
       );
-      final content = MediaQuery(
+      Widget content = MediaQuery(
         data: fixedMediaQuery,
         child: Builder(builder: builder),
       );
+      if (showDragHandle) content = _AppSheetChrome(child: content);
       if (!outside) return content;
       return _OutsideScrollbarFrame(
         color: backgroundColor ?? sheetTheme.backgroundColor,
@@ -365,7 +394,7 @@ Future<T?> showAppSheet<T>({
     useSafeArea: useSafeArea,
     enableDrag: enableDrag,
     isDismissible: isDismissible,
-    showDragHandle: showDragHandle,
+    showDragHandle: false,
     useRootNavigator: useRootNavigator,
     shape: outside ? const RoundedRectangleBorder() : shape,
     clipBehavior: outside ? Clip.none : clipBehavior,
@@ -420,13 +449,7 @@ Future<T?> showFixedAppSheet<T>({
     constraints: const BoxConstraints(maxWidth: _kFixedSheetMaxWidth),
     child: SizedBox(
       width: mediaQuery.size.width,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const _AppSheetHandle(),
-          Flexible(child: Builder(builder: builder)),
-        ],
-      ),
+      child: _AppSheetChrome(child: Builder(builder: builder)),
     ),
   );
 

@@ -328,8 +328,12 @@ void main() {
             body: TextButton(
               onPressed: () => showAppSheet<void>(
                 context: context,
-                builder: (_) =>
-                    const SizedBox(height: 120, child: AppSheetTitle('sheet')),
+                builder: (_) => const SafeArea(
+                  child: Padding(
+                    padding: EdgeInsets.all(20),
+                    child: AppSheetTitle('sheet'),
+                  ),
+                ),
               ),
               child: const Text('open'),
             ),
@@ -339,10 +343,11 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
       expect(find.text('sheet'), findsOneWidget);
-      expect(
-        tester.widget<BottomSheet>(find.byType(BottomSheet)).showDragHandle,
-        isTrue,
-      );
+      final sheet = tester.getRect(find.byType(BottomSheet));
+      final handle = tester.getRect(find.byKey(const Key('app-sheet-handle')));
+      final title = tester.getRect(find.byType(AppSheetTitle));
+      expect(handle.top - sheet.top, closeTo(10, 0.5));
+      expect(title.top - handle.bottom, closeTo(10, 0.5));
       expect(
         tester.getCenter(find.text('sheet')).dx,
         closeTo(tester.getCenter(find.byType(BottomSheet)).dx, 0.5),

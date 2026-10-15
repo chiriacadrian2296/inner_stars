@@ -2188,8 +2188,6 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get lightOverviewLabel => 'Privire de Ansamblu';
   @override
-  String get lightHeadline => 'Privește câtă lumină ai aprins.';
-  @override
   String get lightHeadlineEmpty => 'Aici va prinde formă lumina ta.';
   @override
   String lightCyclesCount(int count) =>
@@ -2212,9 +2210,26 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
       'Acest obiectiv își așteaptă momentul: când îl vei atinge, lumina lui va apărea aici.';
   @override
   String get lightCurveHint =>
-      'Atinge sau glisează pe grafic pentru a vedea data și totalul.';
+      'Lumina ta se adună în timp: fiecare stea pe care o aprinzi și fiecare ciclu pe care îl închei ridică linia. Atinge sau glisează pe grafic pentru a vedea data și totalul.';
+  @override
+  String get lightOverviewNote =>
+      'Privește toată lumina pe care ai aprins-o: fiecare victorie și fiecare ciclu încheiat adaugă intensitate aici. Folosește traseul de sus ca să te concentrezi pe o zonă, o constelație sau o activitate, iar perioada ca să privești un interval de timp.';
+  @override
+  String get lightCalendarNote =>
+      'Fiecare zi aprinsă strălucește mai tare cu cât are mai multă intensitate. Atinge o zi ca să vezi ce ai aprins și zboară până acolo în Galaxie.';
+  @override
+  String get lightBreakdownNote =>
+      'Care părți din lumea ta au cea mai multă lumină. Atinge un rând ca să intri în el și să-i vezi lumina.';
+  @override
+  String get lightMomentsNote =>
+      'Momentele de seamă ale acestei perioade: primele tale, cea mai luminoasă zi și lună, cea mai lungă serie. Atinge unul ca să-l deschizi.';
+  @override
+  String get cycleHistoryNote =>
+      'Fiecare ciclu complet al acestui pulsar. Deschide unul ca să-l revezi sau reflectează asupra lui dacă l-ai lăsat pe mai târziu.';
   @override
   String get momentFirstVictory => 'Prima Victorie';
+  @override
+  String get momentLatestVictory => 'Cea Mai Recentă Victorie';
   @override
   String get momentFirstDay => 'Prima Zi';
   @override

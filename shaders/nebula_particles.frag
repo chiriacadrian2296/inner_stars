@@ -96,6 +96,13 @@ float starLayer(vec3 dir, float density, float twinkleSpeed, float seed) {
   vec3 local = fract(grid) - 0.5;
 
   float h = hash3(cell + seed);
+  // The one knob for "how many stars": the share of cells holding one.
+  // 0.24 since the stars got their crisp cores (at 0.38, once they could
+  // all be seen, there were far too many).
+  const float kStarFill = 0.24;
+  // Most cells hold no star: stop before any of the work below (the same
+  // result as before, just not computed for nothing).
+  if (h < 1.0 - kStarFill) return 0.0;
   vec3 starPos =
       (vec3(
         hash3(cell + seed * 2.0),
@@ -104,17 +111,15 @@ float starLayer(vec3 dir, float density, float twinkleSpeed, float seed) {
       ) - 0.5) * 0.7;
   float dist = length(local - starPos);
 
-  float twinkle = 0.6 + 0.4 * sin(uTime * twinkleSpeed + h * 6.2831853);
-  // The one knob for "how many stars": the share of cells holding one.
-  // 0.24 since the stars got their crisp cores (at 0.38, once they could
-  // all be seen, there were far too many).
-  const float kStarFill = 0.24;
-  float brightness = step(1.0 - kStarFill, h) * twinkle;
-  if (brightness <= 0.0) return 0.0;
   // A crisp, solid, brighter core — about a pixel at least, with a
   // one-pixel edge so it stays sharp at any zoom — inside the soft glow.
   float pixelInCell = density / (uResolution.y * uZoom);
   float coreRadius = clamp(pixelInCell * 0.8, 0.02, 0.09);
+  // Beyond the glow and the core's edge this star adds nothing.
+  if (dist > max(0.1, coreRadius + pixelInCell * 0.5)) return 0.0;
+
+  float twinkle = 0.6 + 0.4 * sin(uTime * twinkleSpeed + h * 6.2831853);
+  float brightness = twinkle;
   float core = 1.0 -
       smoothstep(
         coreRadius - pixelInCell * 0.5,
@@ -233,7 +238,13 @@ vec3 dustStarLayer(vec3 dir, float density, float twinkleSpeed, float seed) {
 // The nearest scenery stars: very sparse, bigger and softer, with a small
 // halo — no rays, no gold (those are the user's). Drawn in front of the
 // dark nebulae, and on the "near" layer of the zoom parallax.
-vec3 nearStarLayer(vec3 dir, float density, float seed, float threshold) {
+vec3 nearStarLayer(
+  vec3 dir,
+  float density,
+  float seed,
+  float threshold,
+  float size
+) {
   vec3 grid = dir * density;
   vec3 cell = floor(grid);
   vec3 local = fract(grid) - 0.5;
@@ -246,15 +257,17 @@ vec3 nearStarLayer(vec3 dir, float density, float seed, float threshold) {
   ) - 0.5) * 0.3;
   // In real angle (radians), so a sparser layer doesn't mean bigger stars.
   float d = length(local - pos) / density;
+  // Past its faint halo this star adds nothing visible: skip the rest.
+  float pixelAngle = 1.0 / (uResolution.y * uZoom);
+  float coreRadius = max(0.00045 * size, pixelAngle * 0.8);
+  if (d > max(0.012 * size, coreRadius + pixelAngle)) return vec3(0.0);
   float twinkle = 0.8 + 0.2 * sin(uTime * (0.9 + h * 2.0) + h * 30.0);
   // A crisp solid core (at least about a pixel, one-pixel edge) in a soft
   // glow and a faint halo.
-  float pixelAngle = 1.0 / (uResolution.y * uZoom);
-  float coreRadius = max(0.00045, pixelAngle * 0.8);
   float core =
       1.0 - smoothstep(coreRadius - pixelAngle * 0.5, coreRadius + pixelAngle * 0.5, d);
-  float star = (core * 1.3 + smoothstep(0.0011, 0.0, d) * 0.6 +
-      exp(-d / 0.0016) * 0.3) * twinkle;
+  float star = (core * 1.3 + smoothstep(0.0011 * size, 0.0, d) * 0.6 +
+      exp(-d / (0.0016 * size)) * 0.3) * twinkle;
   vec3 color = hash3(cell + seed * 5.0) < 0.6
       ? vec3(0.9, 0.94, 1.0)
       : vec3(0.7, 0.8, 1.0);
@@ -302,16 +315,38 @@ vec2 darkNebula(vec3 p) {
   return vec2(darkness, rim);
 }
 
-// The supernovas' light reaching this point of the sky: a warm wide glow
-// and a softer tighter one around each, fading with distance.
+// The supernovas' light reaching this point of the sky: a wide glow and a
+// softer tighter one around each, fading with distance — and the more an
+// area has been lit (its intensity level, 0..7, see the SkySupernova
+// widget), the wider, stronger and warmer its supernova's light: your
+// effort lights your sky.
 uniform float uSupernovaLight;
 uniform vec3 uSupernovas[8];
-float supernovaLight(vec3 dir) {
-  float light = 0.0;
+uniform vec4 uSupernovaLevels0;
+uniform vec4 uSupernovaLevels1;
+float supernovaLevel(int index) {
+  if (index == 0) return uSupernovaLevels0.x;
+  if (index == 1) return uSupernovaLevels0.y;
+  if (index == 2) return uSupernovaLevels0.z;
+  if (index == 3) return uSupernovaLevels0.w;
+  if (index == 4) return uSupernovaLevels1.x;
+  if (index == 5) return uSupernovaLevels1.y;
+  if (index == 6) return uSupernovaLevels1.z;
+  return uSupernovaLevels1.w;
+}
+vec3 supernovaLight(vec3 dir) {
+  vec3 light = vec3(0.0);
   for (int i = 0; i < 8; i++) {
+    float grown = clamp(supernovaLevel(i) / 7.0, 0.0, 1.0);
+    float wide = mix(0.3, 0.6, grown);
+    float tight = mix(0.11, 0.18, grown);
     float theta2 = 2.0 * (1.0 - dot(dir, uSupernovas[i]));
-    light += exp(-theta2 / (0.45 * 0.45)) * 0.35 +
-        exp(-theta2 / (0.15 * 0.15)) * 0.18;
+    // Far from this supernova its light is far below one shade of color.
+    if (theta2 > wide * wide * 10.0) continue;
+    float amount = exp(-theta2 / (wide * wide)) * mix(0.18, 0.55, grown) +
+        exp(-theta2 / (tight * tight)) * mix(0.1, 0.22, grown);
+    vec3 warmth = mix(vec3(1.0, 0.8, 0.6), vec3(1.0, 0.58, 0.3), grown);
+    light += warmth * amount;
   }
   return light * uSupernovaLight;
 }
@@ -580,6 +615,9 @@ void main() {
   vec3 dirFar = skyDirection(uZoom * pow(uZoom, -0.08));
   vec3 dirNear = skyDirection(uZoom * pow(uZoom, 0.12));
   vec3 dirNearest = skyDirection(uZoom * pow(uZoom, 0.26));
+  vec3 dirClose1 = skyDirection(uZoom * pow(uZoom, 0.4));
+  vec3 dirClose2 = skyDirection(uZoom * pow(uZoom, 0.55));
+  vec3 dirClose3 = skyDirection(uZoom * pow(uZoom, 0.7));
 
   // A bigger sky sphere reads as one with finer, denser detail — more (and
   // smaller) stars, and finer-grained gas structure — the same way a
@@ -600,12 +638,11 @@ void main() {
   float cloud = smoothstep(0.32, 0.78, n);
   vec3 nebula = mix(kVoid, kDeepCenter, cloud);
   nebula = mix(nebula, kGold, pow(n2, 4.0) * 0.65);
-  // Warm light around each supernova, on the gas.
   // Warm light around each supernova, on the gas only — never the empty
-  // sky. (Lighting only the cloud side facing the supernova was tried and
-  // dropped: it looked wrong.)
-  const vec3 kWarm = vec3(1.0, 0.68, 0.42);
-  nebula += kWarm * supernovaLight(dir) * cloud * 0.6;
+  // sky — as wide and warm as its area's intensity. (Lighting only the
+  // cloud side facing the supernova was tried and dropped: it looked
+  // wrong.)
+  nebula += supernovaLight(dir) * cloud * 0.6;
 
   // Dust out in the sky, at the gas's own depth.
   vec2 dark = darkNebula(dir);
@@ -633,11 +670,18 @@ void main() {
   vec3 near = dustStarLayer(dirNear, 24.0, 1.7, 107.0) * 1.0 +
       dustStarLayer(dirNear, 18.0, 1.5, 59.0) * 1.1 +
       dustStarLayer(dirNear, 12.0, 1.3, 53.0) * 1.1 +
-      nearStarLayer(dirNear, 14.0, 67.0, 0.8) * 0.7;
-  vec3 nearest = nearStarLayer(dirNearest, 13.0, 109.0, 0.82) * 0.85 +
-      nearStarLayer(dirNearest, 11.0, 89.0, 0.8) * 0.9 +
-      nearStarLayer(dirNearest, 9.0, 61.0, 0.78) +
-      nearStarLayer(dirNearest, 6.0, 83.0, 0.75);
+      nearStarLayer(dirNear, 14.0, 67.0, 0.8, 1.0) * 0.7;
+  vec3 nearest = nearStarLayer(dirNearest, 13.0, 109.0, 0.82, 1.0) * 0.85 +
+      nearStarLayer(dirNearest, 11.0, 89.0, 0.8, 1.0) * 0.9 +
+      nearStarLayer(dirNearest, 9.0, 61.0, 0.78, 1.0) +
+      nearStarLayer(dirNearest, 6.0, 83.0, 0.75, 1.0);
+  // Three more depths right in front of the camera: few stars each, a
+  // little bigger, magnified ever faster as you zoom — the strongest pull
+  // of the parallax.
+  vec3 closeStars =
+      nearStarLayer(dirClose1, 5.0, 113.0, 0.82, 1.2) * 0.85 +
+      nearStarLayer(dirClose2, 3.6, 127.0, 0.8, 1.4) * 0.8 +
+      nearStarLayer(dirClose3, 2.6, 131.0, 0.78, 1.6) * 0.75;
 
   // The galaxies stay at the sky's real depth: the stars do the parallax.
   vec3 galaxies =
@@ -661,6 +705,7 @@ void main() {
       mid * (1.0 - 0.5 * darkness) +
       near +
       nearest +
+      closeStars +
       comets;
 
   // Debug aid, toggled from NebulaScreen's own switch (uShowGrid) —
