@@ -9,7 +9,11 @@ import 'package:inner_stars/theme/app_colors.dart';
 import 'package:inner_stars/theme/app_theme.dart';
 
 void main() {
-  Future<void> pumpSandbox(WidgetTester tester, Size size) async {
+  Future<void> pumpSandbox(
+    WidgetTester tester,
+    Size size, {
+    bool parked = false,
+  }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -23,7 +27,7 @@ void main() {
             data: MediaQuery.of(context).copyWith(disableAnimations: true),
             child: child!,
           ),
-          home: const UiSandboxScreen(),
+          home: UiSandboxScreen(initialParkedStudies: parked),
         ),
       ),
     );
@@ -40,7 +44,7 @@ void main() {
       .first;
 
   Future<void> openParkedStudies(WidgetTester tester) async {
-    await tester.tap(find.byKey(const Key('moon-sandbox-open-parked')));
+    await pumpSandbox(tester, tester.view.physicalSize, parked: true);
     await tester.pumpAndSettle();
   }
 
@@ -50,6 +54,14 @@ void main() {
     await pumpSandbox(tester, const Size(320, 700));
     expect(find.byKey(const Key('ui-sandbox-list')), findsOneWidget);
     expect(find.byKey(const Key('moon-mascot-preview')), findsOneWidget);
+    for (final key in [
+      'badge-lab-open',
+      'card-back-lab-open',
+      'constellation-lab-open',
+      'moon-sandbox-open-parked',
+    ]) {
+      expect(find.byKey(Key(key)), findsNothing);
+    }
     expect(find.byKey(const Key('ui-sandbox-viewport-frame')), findsNothing);
 
     await openParkedStudies(tester);

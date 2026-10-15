@@ -120,6 +120,7 @@ flutter:
     - assets/images/area_icons/
   shaders:
     - shaders/nebula_particles.frag
+    - shaders/nebula_particles_lite.frag
     - shaders/constellation_flare.frag
     - shaders/sky_decorations.frag
     - shaders/sky_wisps.frag

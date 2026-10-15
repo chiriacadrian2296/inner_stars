@@ -17,6 +17,7 @@ import '../intensity_dots.dart';
 import '../photo_image.dart';
 import '../star_glyph.dart';
 import 'constellation_label_layout.dart';
+import 'constellation_structure_glow.dart';
 
 // Render the real Galaxy tooltip at native dimensions. Only this explicit
 // factor and the map's camera scale reduce it; the solver never shrinks it.
@@ -69,6 +70,9 @@ class ConstellationMapView extends StatefulWidget {
     this.cardBuilder,
     this.tooltipScale = 0.45,
     this.autoFrame = false,
+    this.structureColor,
+    this.tooltipFrameColor,
+    this.luminousStructure = false,
   });
 
   final List<ConstellationStar> stars;
@@ -104,6 +108,15 @@ class ConstellationMapView extends StatefulWidget {
   /// uses a smaller uniform scale while keeping all tooltip geometry intact.
   final double tooltipScale;
   final bool autoFrame;
+
+  /// Color override for graph edges, outer star shells and tooltip frames.
+  final Color? structureColor;
+
+  /// Independent tooltip frame color, separate from the graph structure.
+  final Color? tooltipFrameColor;
+
+  /// Outward-only structural glow and an inset ring matching tooltip frames.
+  final bool luminousStructure;
 
   @override
   State<ConstellationMapView> createState() => _ConstellationMapViewState();
@@ -856,6 +869,25 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
                 ),
               ),
             ),
+        if (widget.luminousStructure)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: ConstellationStructureGlowPainter(
+                  segments: [
+                    for (final (a, b) in geometry.segments)
+                      (a + translation, b + translation),
+                  ],
+                  discs: [
+                    for (final node in geometry.nodes)
+                      (node.center + translation, node.metrics.diameter / 2),
+                  ],
+                  strokeWidth: _kConstellationEdgeWidth * geometry.uiScale,
+                  color: widget.structureColor ?? colors.night,
+                ),
+              ),
+            ),
+          ),
         Positioned.fill(
           child: CustomPaint(
             painter: _LinesPainter(
@@ -863,7 +895,7 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
                 for (final (a, b) in geometry.segments)
                   (a + translation, b + translation),
               ],
-              edgeColor: colors.night,
+              edgeColor: widget.structureColor ?? colors.night,
               edgeWidth: _kConstellationEdgeWidth * geometry.uiScale,
               leaderWidth: _kLabelLeaderWidth * geometry.uiScale,
               leaders: leaders,
@@ -880,6 +912,15 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
               child: _StarButton(
                 star: stars[node.index],
                 metrics: node.metrics,
+                structureColor: widget.structureColor,
+                innerRingColor: widget.luminousStructure
+                    ? widget.tooltipFrameColor ?? colors.night
+                    : null,
+                innerRingWidth: widget.luminousStructure
+                    ? galaxyTooltipPadding *
+                          widget.tooltipScale *
+                          geometry.uiScale
+                    : 0,
               ),
             ),
           ),
@@ -903,7 +944,10 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
                     onSize: (size) =>
                         _onTooltipSize(_tooltipId(stars[placement.id]), size),
                     child: Material(
-                      color: colors.night,
+                      color:
+                          widget.tooltipFrameColor ??
+                          widget.structureColor ??
+                          colors.night,
                       elevation: 8,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(
@@ -1068,7 +1112,18 @@ class _NodeMetrics {
 const _glowStrengths = [0.35, 0.55, 0.8, 1.05, 1.3];
 
 class _StarButton extends StatelessWidget {
-  const _StarButton({required this.star, required this.metrics});
+  const _StarButton({
+    required this.star,
+    required this.metrics,
+    this.structureColor,
+    this.innerRingColor,
+    this.innerRingWidth = 0,
+  });
+
+  final Color? structureColor;
+
+  final Color? innerRingColor;
+  final double innerRingWidth;
 
   final ConstellationStar star;
   final _NodeMetrics metrics;
@@ -1091,63 +1146,74 @@ class _StarButton extends StatelessWidget {
       width: diameter,
       height: diameter,
       padding: EdgeInsets.all(frameWidth),
-      decoration: BoxDecoration(shape: BoxShape.circle, color: colors.night),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: structureColor ?? colors.night,
+      ),
       child: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: colors.nightPanel,
-          border: Border.all(
-            color: colors.nightBorder,
-            width: metrics.strokeWidth,
-            strokeAlign: BorderSide.strokeAlignInside,
+        padding: EdgeInsets.all(math.min(innerRingWidth, innerDiameter * 0.2)),
+        decoration: innerRingColor == null
+            ? null
+            : BoxDecoration(shape: BoxShape.circle, color: innerRingColor),
+        child: Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: colors.nightPanel,
+            border: Border.all(
+              color: colors.nightBorder,
+              width: metrics.strokeWidth,
+              strokeAlign: BorderSide.strokeAlignInside,
+            ),
           ),
-        ),
-        // The star's photo, if it has one, fills the disc behind everything
-        // else at half strength — its center, cropped to the circle.
-        child: ClipOval(
-          child: Stack(
-            fit: StackFit.expand,
-            alignment: Alignment.center,
-            children: [
-              if (photoPath != null && photoPath.isNotEmpty)
-                Opacity(
-                  opacity: 0.5,
-                  child: PhotoImage(
-                    photoPath: photoPath,
-                    fit: BoxFit.cover,
-                    // Never shown bigger than the biggest button, however
-                    // sharp the camera photo it came from.
-                    cacheWidth: 400,
+          // The star's photo, if it has one, fills the disc behind everything
+          // else at half strength — its center, cropped to the circle.
+          child: ClipOval(
+            child: Stack(
+              fit: StackFit.expand,
+              alignment: Alignment.center,
+              children: [
+                if (photoPath != null && photoPath.isNotEmpty)
+                  Opacity(
+                    opacity: 0.5,
+                    child: PhotoImage(
+                      photoPath: photoPath,
+                      fit: BoxFit.cover,
+                      // Never shown bigger than the biggest button, however
+                      // sharp the camera photo it came from.
+                      cacheWidth: 400,
+                    ),
                   ),
-                ),
-              Center(
-                child: nascent
-                    ? _GlowingStarIcon(
-                        icon: kind.icon,
-                        size: innerDiameter * 0.5,
-                        color: kindColor,
-                      )
-                    : Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _GlowingStarIcon(
-                            icon: kind.icon,
-                            size: innerDiameter * 0.4,
-                            color: kindColor,
-                          ),
-                          Padding(
-                            padding: EdgeInsets.only(top: innerDiameter * 0.04),
-                            child: IntensityDots(
-                              intensity: star.intensity,
-                              color: colors.gold,
-                              dotSize: innerDiameter * 0.038,
-                              spacing: innerDiameter * 0.024,
+                Center(
+                  child: nascent
+                      ? _GlowingStarIcon(
+                          icon: kind.icon,
+                          size: innerDiameter * 0.5,
+                          color: kindColor,
+                        )
+                      : Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _GlowingStarIcon(
+                              icon: kind.icon,
+                              size: innerDiameter * 0.4,
+                              color: kindColor,
                             ),
-                          ),
-                        ],
-                      ),
-              ),
-            ],
+                            Padding(
+                              padding: EdgeInsets.only(
+                                top: innerDiameter * 0.04,
+                              ),
+                              child: IntensityDots(
+                                intensity: star.intensity,
+                                color: colors.gold,
+                                dotSize: innerDiameter * 0.038,
+                                spacing: innerDiameter * 0.024,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1195,26 +1261,7 @@ class _GlowingStarIcon extends StatelessWidget {
             child: Icon(icon, size: size, color: color.withValues(alpha: 0.8)),
           ),
         ),
-        Icon(
-          icon,
-          size: size,
-          color: color,
-          // Sharp offset copies form a thin white contour around the glyph,
-          // above the colored glow and behind the original colored fill.
-          shadows: [
-            for (final direction in const [
-              Offset(1, 0),
-              Offset(-1, 0),
-              Offset(0, 1),
-              Offset(0, -1),
-              Offset(0.707, 0.707),
-              Offset(-0.707, 0.707),
-              Offset(0.707, -0.707),
-              Offset(-0.707, -0.707),
-            ])
-              Shadow(color: Colors.white, offset: direction * size * 0.03),
-          ],
-        ),
+        Icon(icon, size: size, color: color),
       ],
     ),
   );

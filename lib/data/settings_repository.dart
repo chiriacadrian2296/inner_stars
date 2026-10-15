@@ -1,5 +1,6 @@
 import '../models/artwork_blend.dart';
 import '../models/artwork_layer.dart';
+import '../models/galaxy_quality.dart';
 import '../settings/sky_grid_size.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -37,6 +38,7 @@ class SettingsRepository {
   static const _tutorialsEnabledKey = 'settings.tutorialsEnabled';
   static const _skyGridViewKey = 'settings.skyGridView';
   static const _skyGridSizeStepKey = 'settings.skyGridSizeStep';
+  static const _galaxyQualityKey = 'settings.galaxyQuality';
 
   final SharedPreferences _prefs;
 
@@ -88,6 +90,14 @@ class SettingsRepository {
 
   Future<void> setSkyGridSizeStep(int value) =>
       _prefs.setInt(_skyGridSizeStepKey, value);
+
+  /// How much the Galaxy spends on drawing its sky — the full sky by
+  /// default.
+  GalaxyQuality get galaxyQuality =>
+      GalaxyQuality.fromName(_prefs.getString(_galaxyQualityKey));
+
+  Future<void> setGalaxyQuality(GalaxyQuality value) =>
+      _prefs.setString(_galaxyQualityKey, value.name);
 
   /// Whether the Cosmo draws each life area's supernova (the giant star over
   /// its artwork, and the sigil around it) — on by default.

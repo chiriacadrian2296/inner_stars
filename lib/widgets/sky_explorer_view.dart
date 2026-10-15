@@ -2272,6 +2272,9 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
 
     final action = _modeAction;
     return GestureDetector(
+      key: _dayContext == null
+          ? null
+          : const ValueKey('sky-day-swipe-surface'),
       onHorizontalDragEnd: (details) =>
           _swipeMode(details.velocity.pixelsPerSecond.dx),
       child: Stack(

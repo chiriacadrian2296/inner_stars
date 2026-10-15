@@ -764,7 +764,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
         body: DecoratedBox(
           // Lighter tones distinguish the dark tooltips, while the radial
           // gradient keeps the same shape and continues behind the dock.
-          decoration: BoxDecoration(gradient: colors.constellationGradient),
+          decoration: BoxDecoration(gradient: colors.nightlightGradient),
           child: SafeArea(
             bottom: false,
             child: Column(
@@ -888,6 +888,9 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                                       fitScale: _fitScaleFor(viewportSize),
                                       onStarTap: _openStar,
                                       cardBuilder: _buildMapCard,
+                                      structureColor: Colors.white,
+                                      tooltipFrameColor: colors.night,
+                                      luminousStructure: true,
                                       autoFrame:
                                           widget.initialTransform == null ||
                                           _hasNavigatedConstellations,

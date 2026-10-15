@@ -9,6 +9,10 @@ class StringsEn implements AppStrings {
   @override
   String get manageGoals => 'Manage goals';
   @override
+  String get manageActivities => 'Manage goals and habits';
+  @override
+  String get managementSectionLabel => 'Goals and habits';
+  @override
   String get manageGoalsEmpty => 'No goals to achieve';
   @override
   String get insightFlip => 'Flip card';
@@ -1926,6 +1930,17 @@ My contribution meets a real need and is something I can sustain.
   String get skyGridSection => 'Sky Grid';
   @override
   String get skyGridToggleLabel => 'Show coordinate grid on the sky';
+  @override
+  String get galaxyQualitySection => 'Galaxy Quality';
+  @override
+  String get galaxyQualityLabel => 'Quality';
+  @override
+  String get galaxyQualityBalancedLabel => 'Balanced';
+  @override
+  String get galaxyQualityPerformanceLabel => 'Performance';
+  @override
+  String get galaxyQualityDescription =>
+      'Lighter modes draw the nebula a little softer, and Performance also slows its animation, to keep the phone cooler.';
   @override
   String get skySupernovaeSection => 'Supernovae';
   @override

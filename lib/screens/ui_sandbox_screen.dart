@@ -9,6 +9,7 @@ import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import 'badge_lab_screen.dart';
 import 'card_back_lab_screen.dart';
+import 'constellation_lab_screen.dart';
 import '../widgets/app_field.dart';
 import '../widgets/app_toggle_chip.dart';
 import '../widgets/moon_mascot.dart';
@@ -16,15 +17,25 @@ import '../widgets/pill_action_button.dart';
 
 /// Data-isolated catalogue for reviewing the app's current UI
 /// variants before any production component is migrated or removed.
+const _kShowNestedLabEntries = false;
+
 class UiSandboxScreen extends StatefulWidget {
-  const UiSandboxScreen({super.key});
+  const UiSandboxScreen({
+    super.key,
+    this.constellationLabBuilder,
+    this.initialParkedStudies = false,
+  });
+
+  final bool initialParkedStudies;
+
+  final WidgetBuilder? constellationLabBuilder;
 
   @override
   State<UiSandboxScreen> createState() => _UiSandboxScreenState();
 }
 
 class _UiSandboxScreenState extends State<UiSandboxScreen> {
-  bool _showParkedStudies = false;
+  bool get _showParkedStudies => widget.initialParkedStudies;
   UiAuditCategory? _category;
   UiAuditKind? _kind;
   UiAuditDecision? _decision;
@@ -69,30 +80,39 @@ class _UiSandboxScreenState extends State<UiSandboxScreen> {
         title: const Text('Moon visual lab'),
         backgroundColor: colors.night,
         surfaceTintColor: Colors.transparent,
-        actions: [
-          IconButton(
-            key: const Key('badge-lab-open'),
-            tooltip: 'Badge lab',
-            onPressed: () => Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const BadgeLabScreen())),
-            icon: const Icon(Icons.straighten_rounded),
-          ),
-          IconButton(
-            key: const Key('card-back-lab-open'),
-            tooltip: 'Card back lab',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const CardBackLabScreen()),
-            ),
-            icon: const Icon(Icons.flip_rounded),
-          ),
-          IconButton(
-            key: const Key('moon-sandbox-open-parked'),
-            tooltip: 'Parked UI studies',
-            onPressed: () => setState(() => _showParkedStudies = true),
-            icon: const Icon(Icons.inventory_2_outlined),
-          ),
-        ],
+        actions: _kShowNestedLabEntries
+            ? [
+                IconButton(
+                  key: const Key('badge-lab-open'),
+                  tooltip: 'Badge lab',
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const BadgeLabScreen()),
+                  ),
+                  icon: const Icon(Icons.straighten_rounded),
+                ),
+                IconButton(
+                  key: const Key('card-back-lab-open'),
+                  tooltip: 'Card back lab',
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const CardBackLabScreen(),
+                    ),
+                  ),
+                  icon: const Icon(Icons.flip_rounded),
+                ),
+                IconButton(
+                  key: const Key('moon-sandbox-open-parked'),
+                  tooltip: 'Parked UI studies',
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const UiSandboxScreen(initialParkedStudies: true),
+                    ),
+                  ),
+                  icon: const Icon(Icons.inventory_2_outlined),
+                ),
+              ]
+            : null,
       ),
       body: SafeArea(
         child: SelectionArea(
@@ -105,6 +125,24 @@ class _UiSandboxScreenState extends State<UiSandboxScreen> {
                 style: TextStyle(color: colors.muted, height: 1.45),
               ),
               const SizedBox(height: 18),
+              if (_kShowNestedLabEntries) ...[
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    key: const Key('constellation-lab-open'),
+                    icon: const Icon(Icons.hub_outlined),
+                    label: const Text('Constellation lab'),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder:
+                            widget.constellationLabBuilder ??
+                            (_) => const ConstellationLabScreen(),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+              ],
               _MoonMascotPreview(
                 expression: _moonExpression,
                 animate: _moonAnimated,
@@ -136,7 +174,7 @@ class _UiSandboxScreenState extends State<UiSandboxScreen> {
         leading: IconButton(
           key: const Key('moon-sandbox-close-parked'),
           tooltip: 'Back to Moon',
-          onPressed: () => setState(() => _showParkedStudies = false),
+          onPressed: () => Navigator.of(context).maybePop(),
           icon: const Icon(Icons.arrow_back_rounded),
         ),
         backgroundColor: colors.night,

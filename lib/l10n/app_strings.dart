@@ -11,6 +11,8 @@ import '../models/star_kind.dart';
 abstract class AppStrings {
   String get manageHabits;
   String get manageGoals;
+  String get manageActivities;
+  String get managementSectionLabel;
   String get manageGoalsEmpty;
   String get insightFlip;
   String get insightReturn;
@@ -1088,6 +1090,11 @@ abstract class AppStrings {
   String get reminderTimeLabel;
   String get skyGridSection;
   String get skyGridToggleLabel;
+  String get galaxyQualitySection;
+  String get galaxyQualityLabel;
+  String get galaxyQualityBalancedLabel;
+  String get galaxyQualityPerformanceLabel;
+  String get galaxyQualityDescription;
   String get skySupernovaeSection;
   String get skySupernovaeToggleLabel;
   String get skyArtworkSection;

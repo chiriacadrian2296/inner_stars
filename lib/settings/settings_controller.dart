@@ -1,5 +1,6 @@
 import '../models/artwork_blend.dart';
 import '../models/artwork_layer.dart';
+import '../models/galaxy_quality.dart';
 
 import 'package:flutter/material.dart';
 
@@ -27,7 +28,8 @@ class SettingsController extends ChangeNotifier {
       artworkLayer = _repository.artworkLayer,
       tutorialsEnabled = _repository.tutorialsEnabled,
       skyGridView = _repository.skyGridView,
-      skyGridSizeStep = _repository.skyGridSizeStep;
+      skyGridSizeStep = _repository.skyGridSizeStep,
+      galaxyQuality = _repository.galaxyQuality;
 
   final SettingsRepository _repository;
 
@@ -55,6 +57,15 @@ class SettingsController extends ChangeNotifier {
   /// into [kSkyGridTileExtents]) — one pair shared by all three levels.
   bool skyGridView;
   int skyGridSizeStep;
+
+  GalaxyQuality galaxyQuality;
+
+  Future<void> setGalaxyQuality(GalaxyQuality value) async {
+    if (value == galaxyQuality) return;
+    galaxyQuality = value;
+    notifyListeners();
+    await _repository.setGalaxyQuality(value);
+  }
 
   Future<void> setSkyGridView(bool value) async {
     if (value == skyGridView) return;

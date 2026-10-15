@@ -23,6 +23,7 @@ import '../l10n/strings_scope.dart';
 import '../notifications/reminder_service.dart';
 import '../settings/settings_controller.dart';
 import '../theme/app_colors.dart';
+import '../widgets/galaxy_quality_picker.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
 import '../theme/app_typography.dart';
@@ -554,6 +555,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 28),
+
+                  StaggeredEntrance(
+                    index: 4,
+                    child: _SectionLabel(strings.galaxyQualitySection),
+                  ),
+                  const SizedBox(height: 10),
+                  GalaxyQualityPicker(settings: widget.settings),
                   const SizedBox(height: 28),
 
                   StaggeredEntrance(

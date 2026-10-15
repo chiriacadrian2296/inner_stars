@@ -9,6 +9,10 @@ class StringsRo implements AppStrings {
   @override
   String get manageGoals => 'Gestionează obiectivele';
   @override
+  String get manageActivities => 'Gestionează obiectivele și obiceiurile';
+  @override
+  String get managementSectionLabel => 'Obiective și obiceiuri';
+  @override
   String get manageGoalsEmpty => 'Niciun obiectiv de realizat';
   @override
   String get insightFlip => 'Întoarce cardul';
@@ -1939,6 +1943,17 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get skyGridSection => 'Grila Cerului';
   @override
   String get skyGridToggleLabel => 'Arată grila de coordonate pe cer';
+  @override
+  String get galaxyQualitySection => 'Calitatea Galaxiei';
+  @override
+  String get galaxyQualityLabel => 'Calitate';
+  @override
+  String get galaxyQualityBalancedLabel => 'Echilibrat';
+  @override
+  String get galaxyQualityPerformanceLabel => 'Performanță';
+  @override
+  String get galaxyQualityDescription =>
+      'Modurile mai ușoare desenează nebuloasa puțin mai moale, iar Performanță îi încetinește și animația, ca telefonul să rămână mai rece.';
   @override
   String get skySupernovaeSection => 'Supernove';
   @override

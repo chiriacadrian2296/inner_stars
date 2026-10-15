@@ -84,6 +84,13 @@ class AudioService with WidgetsBindingObserver {
     final backgroundPlayer = AudioPlayer(playerId: _playerIds[0]);
     final sfxPlayer = AudioPlayer(playerId: _playerIds[1]);
     final transitionPlayer = AudioPlayer(playerId: _playerIds[2]);
+    // Nothing here follows the playback position, and audioplayers' default
+    // tracker asks for a new frame on every vsync while a sound plays —
+    // with the looping background track, that kept the Galaxy redrawing
+    // its whole sky at the screen's full rate even when nothing moved.
+    for (final player in [backgroundPlayer, sfxPlayer, transitionPlayer]) {
+      player.positionUpdater = null;
+    }
     await backgroundPlayer.setReleaseMode(ReleaseMode.loop);
     await Future.wait([
       backgroundPlayer.setAudioContext(_mixAudioContext),

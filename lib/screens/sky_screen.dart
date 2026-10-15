@@ -1,3 +1,5 @@
+import 'card_back_lab_screen.dart';
+import 'badge_lab_screen.dart';
 import '../widgets/sky_search_tooltip_card.dart'
     show GalaxyTooltipStartsClosed, galaxyTooltipWidth, galaxyTooltipPadding;
 import '../widgets/entity_insights_scope.dart';
@@ -107,6 +109,7 @@ import 'star_form_screen.dart';
 import 'star_reader_screen.dart';
 import 'light_screen.dart';
 import 'ui_sandbox_screen.dart';
+import 'constellation_lab_screen.dart';
 import 'area_icon_lab_screen.dart';
 import 'fab_icon_lab_screen.dart';
 import '../widgets/galaxy_exit_guard.dart';
@@ -2175,10 +2178,54 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _openUiSandbox() {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const UiSandboxScreen()));
-  }
+  void _openUiSandbox() =>
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const UiSandboxScreen()));
+
+  void _openCardBackLab() =>
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const CardBackLabScreen()));
+
+  void _openBadgeLab() =>
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const BadgeLabScreen()));
+
+  void _openUiStudiesLab() => Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => const UiSandboxScreen(initialParkedStudies: true),
+    ),
+  );
+
+  void _openConstellationLab() => Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) {
+        final project = widget.projectRepository
+            .getAll()
+            .where(
+              (project) => const [
+                'save for a house',
+                'save for a home',
+              ].contains(project.name.toLowerCase().trim()),
+            )
+            .firstOrNull;
+        return ConstellationLabScreen(
+          project: project,
+          stars: project == null
+              ? null
+              : widget.starRepository.getAllForProject(project.id),
+          habits: project == null
+              ? const []
+              : widget.habitRepository.getAllForProject(project.id),
+          completions: widget.habitCompletionRepository.getAll(),
+          shape: project?.starsShapeId == null
+              ? null
+              : widget.starsShapeRepository
+                    .getById(project!.starsShapeId!)
+                    ?.shape,
+        );
+      },
+    ),
+  );
 
   void _openFabIconLab() {
     Navigator.of(context)
@@ -2265,6 +2312,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
               onSettings: _openSettings,
               onMetaphor: _openMetaphor,
               onMoonLab: _openUiSandbox,
+              onCardBackLab: _openCardBackLab,
+              onConstellationLab: _openConstellationLab,
+              onBadgeLab: _openBadgeLab,
+              onUiStudiesLab: _openUiStudiesLab,
+              onSoundLab: _openSoundLab,
               onAreaIconLab: _openAreaIconLab,
               onFabIconLab: _openFabIconLab,
               detailed: true,
@@ -3816,6 +3868,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final strings = context.strings;
+    _skyClock.maxFps = widget.settings.galaxyQuality.ambientFps;
     // See [isTouchOnlyMobile]'s own doc comment for why mobile drops this
     // regardless of the (still user-toggleable, for every other platform)
     // [_showRotationControl] preference.
@@ -3852,6 +3905,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
           onSettings: _openSettings,
           onMetaphor: _openMetaphor,
           onMoonLab: _openUiSandbox,
+          onCardBackLab: _openCardBackLab,
+          onConstellationLab: _openConstellationLab,
+          onBadgeLab: _openBadgeLab,
+          onUiStudiesLab: _openUiStudiesLab,
+          onSoundLab: _openSoundLab,
           onAreaIconLab: _openAreaIconLab,
           onFabIconLab: _openFabIconLab,
         ),
@@ -3893,6 +3951,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                         camera: _camera,
                         zoom: _zoom,
                         clock: _skyClock,
+                        quality: widget.settings.galaxyQuality,
                         showGrid: widget.settings.showGrid,
                         // The supernovas light the nebula around them, as
                         // strongly as they themselves burn.

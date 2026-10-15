@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 
+import 'debug/frame_rate_limiter.dart'; // TEMPORARY
 import 'debug/frame_timing_probe.dart'; // TEMPORARY
 
 import 'package:flutter/services.dart';
@@ -77,6 +78,7 @@ Future<void> main() async {
   ]);
   runApp(const InnerStarsApp());
   startFrameTimingProbe(); // TEMPORARY — Galaxy optimization measurements.
+  installFrameRateLimiter(); // TEMPORARY — 40/30 fps smoothness test.
 }
 
 class InnerStarsApp extends StatefulWidget {

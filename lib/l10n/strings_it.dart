@@ -9,6 +9,10 @@ class StringsIt implements AppStrings {
   @override
   String get manageGoals => 'Gestisci obiettivi';
   @override
+  String get manageActivities => 'Gestisci obiettivi e abitudini';
+  @override
+  String get managementSectionLabel => 'Obiettivi e abitudini';
+  @override
   String get manageGoalsEmpty => 'Nessun obiettivo da raggiungere';
   @override
   String get insightFlip => 'Gira la card';
@@ -1947,6 +1951,17 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get skyGridSection => 'Griglia del Cielo';
   @override
   String get skyGridToggleLabel => 'Mostra la griglia di coordinate sul cielo';
+  @override
+  String get galaxyQualitySection => 'Qualità della Galaxy';
+  @override
+  String get galaxyQualityLabel => 'Qualità';
+  @override
+  String get galaxyQualityBalancedLabel => 'Bilanciata';
+  @override
+  String get galaxyQualityPerformanceLabel => 'Prestazioni';
+  @override
+  String get galaxyQualityDescription =>
+      "Le modalità più leggere disegnano la nebulosa un po' più morbida, e Prestazioni ne rallenta anche l'animazione, per tenere il telefono più fresco.";
   @override
   String get skySupernovaeSection => 'Supernove';
   @override

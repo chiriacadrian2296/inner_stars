@@ -28,6 +28,9 @@ const _kShowSkyAndCreateEntries = false;
 /// ahead of the features existing. Callbacks stay wired; flip on to restore.
 const _kShowSocialMenuEntries = false;
 
+// Keep every lab routed separately; only the three active studies are visible.
+const _kShowOtherLabEntries = false;
+
 /// The Sky's side menu — the app's only navigation. There's exactly one
 /// screen now (the Sky itself); everything else opens from here as a page
 /// on top of it, so the sky is never something you have to come *back* to.
@@ -52,6 +55,11 @@ class SkyMenuDrawer extends StatelessWidget {
     required this.onMoonLab,
     this.onAreaIconLab,
     this.onFabIconLab,
+    this.onCardBackLab,
+    this.onConstellationLab,
+    this.onBadgeLab,
+    this.onUiStudiesLab,
+    this.onSoundLab,
     required this.onSettings,
   });
 
@@ -67,6 +75,11 @@ class SkyMenuDrawer extends StatelessWidget {
   final VoidCallback onMoonLab;
   final VoidCallback? onAreaIconLab;
   final VoidCallback? onFabIconLab;
+  final VoidCallback? onCardBackLab;
+  final VoidCallback? onConstellationLab;
+  final VoidCallback? onBadgeLab;
+  final VoidCallback? onUiStudiesLab;
+  final VoidCallback? onSoundLab;
   final VoidCallback onSettings;
 
   @override
@@ -86,6 +99,11 @@ class SkyMenuDrawer extends StatelessWidget {
           onMoonLab: onMoonLab,
           onAreaIconLab: onAreaIconLab,
           onFabIconLab: onFabIconLab,
+          onCardBackLab: onCardBackLab,
+          onConstellationLab: onConstellationLab,
+          onBadgeLab: onBadgeLab,
+          onUiStudiesLab: onUiStudiesLab,
+          onSoundLab: onSoundLab,
           onSettings: onSettings,
         ),
       ),
@@ -155,6 +173,11 @@ class SkyMenuContent extends StatelessWidget {
     required this.onMoonLab,
     this.onAreaIconLab,
     this.onFabIconLab,
+    this.onCardBackLab,
+    this.onConstellationLab,
+    this.onBadgeLab,
+    this.onUiStudiesLab,
+    this.onSoundLab,
     required this.onSettings,
     this.detailed = false,
     this.scrollController,
@@ -173,6 +196,11 @@ class SkyMenuContent extends StatelessWidget {
   final VoidCallback onMoonLab;
   final VoidCallback? onAreaIconLab;
   final VoidCallback? onFabIconLab;
+  final VoidCallback? onCardBackLab;
+  final VoidCallback? onConstellationLab;
+  final VoidCallback? onBadgeLab;
+  final VoidCallback? onUiStudiesLab;
+  final VoidCallback? onSoundLab;
   final VoidCallback onSettings;
 
   /// See the class doc comment — off for the drawer, on for the modal.
@@ -544,7 +572,45 @@ class SkyMenuContent extends StatelessWidget {
           description: strings.menuMoonLabDescription,
           onTap: onMoonLab,
         ),
-        if (onAreaIconLab != null)
+        if (onCardBackLab != null)
+          entry(
+            index: 8,
+            icon: Icons.flip_rounded,
+            label: 'Card back lab',
+            description: 'Statistiche dietro le card e i tooltip.',
+            onTap: onCardBackLab!,
+          ),
+        if (onConstellationLab != null)
+          entry(
+            index: 9,
+            icon: Icons.hub_outlined,
+            label: 'Constellation lab',
+            description:
+                'Confronti visivi della costellazione e delle sue schede.',
+            onTap: onConstellationLab!,
+          ),
+        if (_kShowOtherLabEntries && onBadgeLab != null)
+          entry(
+            index: 10,
+            icon: Icons.straighten_rounded,
+            label: 'Badge lab',
+            onTap: onBadgeLab!,
+          ),
+        if (_kShowOtherLabEntries && onUiStudiesLab != null)
+          entry(
+            index: 11,
+            icon: Icons.inventory_2_outlined,
+            label: 'UI studies lab',
+            onTap: onUiStudiesLab!,
+          ),
+        if (_kShowOtherLabEntries && onSoundLab != null)
+          entry(
+            index: 12,
+            icon: Icons.music_note_outlined,
+            label: 'Sound lab',
+            onTap: onSoundLab!,
+          ),
+        if (_kShowOtherLabEntries && onAreaIconLab != null)
           entry(
             index: 8,
             icon: Icons.diversity_1,
@@ -552,7 +618,7 @@ class SkyMenuContent extends StatelessWidget {
             description: strings.menuAreaIconLabDescription,
             onTap: onAreaIconLab!,
           ),
-        if (onFabIconLab != null)
+        if (_kShowOtherLabEntries && onFabIconLab != null)
           entry(
             index: 9,
             icon: Icons.add_circle_outline,

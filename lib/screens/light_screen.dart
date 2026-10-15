@@ -41,6 +41,7 @@ import '../widgets/staggered_entrance.dart';
 import '../widgets/stats/accumulation_chart.dart';
 import '../widgets/stats/stats_widgets.dart';
 import 'star_reader_screen.dart';
+import 'today_habits_screen.dart';
 
 /// Where "Your Light" was left when opened from the Galaxy menu, so coming
 /// back restores the scope and period instead of starting over.
@@ -171,6 +172,18 @@ class _LightScreenState extends State<LightScreen> {
               : '${strings.lightHeadlineEmpty} ${strings.lightOverviewNote}',
         ),
       ]);
+      final scope = _session.scope;
+      if (scope == null ||
+          scope.kind == InsightEntityKind.area ||
+          scope.kind == InsightEntityKind.project) {
+        sections.addAll([
+          StatsSectionLabel(strings.managementSectionLabel),
+          _ManageActivitiesButton(
+            label: strings.manageActivities,
+            onPressed: () => openTodayHabits(context, scope),
+          ),
+        ]);
+      }
       final habit = stats.isHabitScope ? stats.habits.firstOrNull : null;
       final habitCycles = habit == null
           ? const <HabitCycle>[]
@@ -896,6 +909,25 @@ class _PinnedLightNavigationDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(_PinnedLightNavigationDelegate oldDelegate) =>
       oldDelegate.height != height || oldDelegate.child != child;
+}
+
+class _ManageActivitiesButton extends StatelessWidget {
+  const _ManageActivitiesButton({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      child: ElevatedButton.icon(
+        key: const ValueKey('light-manage-activities'),
+        onPressed: onPressed,
+        icon: const Icon(Icons.checklist_rounded),
+        label: AppButtonLabel(label),
+      ),
+    );
+  }
 }
 
 /// The headline: how much light (or, for a pulsar, how many days done),

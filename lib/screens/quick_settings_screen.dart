@@ -4,6 +4,7 @@ import '../audio/audio_service.dart';
 import '../l10n/strings_scope.dart';
 import '../settings/settings_controller.dart';
 import '../theme/app_colors.dart';
+import '../widgets/galaxy_quality_picker.dart';
 import '../theme/app_style.dart';
 import '../theme/app_typography.dart';
 import '../widgets/responsive_content.dart';
@@ -194,6 +195,17 @@ class _QuickSettingsScreenState extends State<QuickSettingsScreen> {
                           ),
                         ),
                       ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    StaggeredEntrance(
+                      index: 2,
+                      child: _SectionLabel(strings.galaxyQualitySection),
+                    ),
+                    const SizedBox(height: 10),
+                    StaggeredEntrance(
+                      index: 2,
+                      child: GalaxyQualityPicker(settings: widget.settings),
                     ),
                     const SizedBox(height: 24),
 

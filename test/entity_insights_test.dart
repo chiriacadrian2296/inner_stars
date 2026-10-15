@@ -34,6 +34,7 @@ import 'package:inner_stars/screens/star_reader_screen.dart';
 import 'package:inner_stars/screens/star_form_screen.dart';
 import 'package:inner_stars/theme/app_theme.dart';
 import 'package:inner_stars/settings/settings_controller.dart';
+import 'package:inner_stars/utils/date_format.dart';
 import 'package:inner_stars/utils/entity_insights.dart';
 import 'package:inner_stars/widgets/entity_flip_card.dart';
 import 'package:inner_stars/widgets/entity_insights_scope.dart';
@@ -212,8 +213,15 @@ void main() {
       );
       expect(find.byType(AppBar), findsNothing);
       expect(find.text(StringsIt().habitDoneTodayLabel), findsNothing);
-      await tester.tap(find.byTooltip(StringsIt().manageGoals));
+      expect(find.byIcon(StarKind.pulsar.icon), findsWidgets);
+      expect(find.byIcon(StarKind.unlit.icon), findsWidgets);
+      await tester.fling(
+        find.byKey(const ValueKey('management-swipe-surface')),
+        const Offset(-320, 0),
+        800,
+      );
       await tester.pumpAndSettle();
+      expect(find.text(StringsIt().manageGoals), findsOneWidget);
       expect(find.text('Star 1'), findsOneWidget);
       expect(find.text('Star 3'), findsNothing);
       expect(find.text('Star 4'), findsNothing);
@@ -244,7 +252,18 @@ void main() {
       expect(victory.isLit, true);
       expect(victory.intensity, 3);
       expect(victory.iconSlug, 'park');
-      expect(find.text(StringsIt().manageGoalsEmpty), findsOneWidget);
+      expect(find.text('Star 1'), findsOneWidget);
+      expect(
+        tester
+            .widget<ActivityCheckCard>(
+              find.descendant(
+                of: find.byKey(const ValueKey('s1')),
+                matching: find.byType(ActivityCheckCard),
+              ),
+            )
+            .lit,
+        true,
+      );
       await tester.tap(find.byTooltip(StringsIt().manageHabits));
       await tester.pumpAndSettle();
       expect(find.text('Habit 1'), findsOneWidget);
@@ -253,6 +272,32 @@ void main() {
       c.dispose();
     },
   );
+
+  testWidgets('management groups Everything by area and project', (
+    tester,
+  ) async {
+    final c = await _controller(
+      habits: [_habit(1), _habit(2, project: 2)],
+      stars: [_star(1, null), _star(2, null, project: 2)],
+    );
+    final strings = StringsIt();
+    await tester.pumpWidget(
+      _app(c, const TodayHabitsScreen(entity: null), reduceMotion: true),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(strings.lightScopeAll), findsOneWidget);
+    expect(find.text(LifeArea.physical.displayName(strings)), findsOneWidget);
+    expect(find.text(LifeArea.social.displayName(strings)), findsOneWidget);
+    expect(find.text('Project 1'), findsOneWidget);
+    expect(find.text('Project 2'), findsOneWidget);
+    expect(find.text('Habit 1'), findsOneWidget);
+    expect(find.text('Habit 2'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox());
+    c.dispose();
+  });
 
   testWidgets(
     'management card opens the existing reader; tooltip front opens scoped statistics',
@@ -957,6 +1002,62 @@ void main() {
   });
 
   testWidgets(
+    'Your Light opens management only for Everything, area and project',
+    (tester) async {
+      final c = await _controller(habits: [_habit(1)], stars: [_star(1, null)]);
+      await tester.pumpWidget(_app(c, const LightScreen(), reduceMotion: true));
+      await tester.pumpAndSettle();
+
+      final manage = find.byKey(const ValueKey('light-manage-activities'));
+      expect(manage, findsOneWidget);
+      await tester.dragUntilVisible(
+        manage,
+        find.byType(CustomScrollView),
+        const Offset(0, -300),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(manage);
+      await tester.pumpAndSettle();
+      expect(find.byType(TodayHabitsScreen), findsOneWidget);
+      expect(find.text(StringsIt().lightScopeAll), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      for (final scope in const [
+        InsightEntity.area(LifeArea.physical),
+        InsightEntity.project(1),
+      ]) {
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpWidget(
+          _app(c, LightScreen(initialScope: scope), reduceMotion: true),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('light-manage-activities')),
+          findsOneWidget,
+        );
+      }
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(
+        _app(
+          c,
+          const LightScreen(initialScope: InsightEntity.star(1)),
+          reduceMotion: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('light-manage-activities')),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+
+      await tester.pumpWidget(const SizedBox());
+      c.dispose();
+    },
+  );
+
+  testWidgets(
     'Your Light exposes interactive aggregate Moments and hides project runs',
     (tester) async {
       final today = DateTime.now();
@@ -1047,6 +1148,32 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(SkyExplorerView), findsOneWidget);
+      expect(find.byKey(const ValueKey('sky-day-previous')), findsOneWidget);
+      expect(find.byKey(const ValueKey('sky-day-next')), findsOneWidget);
+      expect(
+        find.text(formatDisplayDate(runStart, StringsIt())),
+        findsOneWidget,
+      );
+
+      await tester.fling(
+        find.byKey(const ValueKey('sky-day-swipe-surface')),
+        const Offset(-320, 0),
+        800,
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          formatDisplayDate(runStart.add(const Duration(days: 1)), StringsIt()),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('sky-day-previous')));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(formatDisplayDate(runStart, StringsIt())),
+        findsOneWidget,
+      );
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       expect(runSheet, findsOneWidget);
