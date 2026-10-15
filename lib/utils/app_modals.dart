@@ -26,15 +26,38 @@ class AppSheetTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: TextStyle(
-        color: context.colors.gold,
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
+    return Align(
+      alignment: Alignment.center,
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: context.colors.gold,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
+}
+
+class _AppSheetHandle extends StatelessWidget {
+  const _AppSheetHandle();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 10),
+    child: Center(
+      child: Container(
+        width: 32,
+        height: 4,
+        decoration: BoxDecoration(
+          color: context.colors.muted.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    ),
+  );
 }
 
 /// A destination inside a functional sheet: visually related to filter
@@ -198,7 +221,7 @@ class AppSheetFrame extends StatelessWidget {
     required this.title,
     required this.child,
     this.footer,
-    this.showHandle = true,
+    this.showHandle = false,
     this.footerDivider = true,
     this.expandChild = false,
   });
@@ -223,18 +246,7 @@ class AppSheetFrame extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (showHandle)
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: divider,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
+          if (showHandle) const _AppSheetHandle(),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
             child: Align(alignment: Alignment.centerLeft, child: title),
@@ -294,7 +306,7 @@ Future<T?> showAppSheet<T>({
   bool useSafeArea = false,
   bool enableDrag = true,
   bool isDismissible = true,
-  bool showDragHandle = false,
+  bool showDragHandle = true,
   bool useRootNavigator = false,
   ShapeBorder? shape,
   Clip? clipBehavior,
@@ -408,7 +420,13 @@ Future<T?> showFixedAppSheet<T>({
     constraints: const BoxConstraints(maxWidth: _kFixedSheetMaxWidth),
     child: SizedBox(
       width: mediaQuery.size.width,
-      child: Builder(builder: builder),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const _AppSheetHandle(),
+          Flexible(child: Builder(builder: builder)),
+        ],
+      ),
     ),
   );
 

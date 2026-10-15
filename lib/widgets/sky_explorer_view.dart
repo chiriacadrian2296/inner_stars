@@ -53,7 +53,6 @@ import '../utils/page_settled.dart';
 import '../utils/project_card_info.dart';
 import '../utils/star_card_info.dart';
 import '../utils/star_stats.dart';
-import 'app_action_disc.dart';
 import 'app_field.dart';
 import 'app_footer_mark.dart';
 import 'habit_cycle_scope.dart';
@@ -79,6 +78,17 @@ import 'staggered_entrance.dart';
 import 'star_glyph.dart';
 
 enum _SkyMode { supernovas, constellations, stars }
+
+enum _SkyActionStyle { pill, dock, edge, minimal }
+
+List<BoxShadow> _skyFabNavyShadow(AppColors colors) => [
+  BoxShadow(
+    color: colors.night.withValues(alpha: 0.9),
+    blurRadius: 12,
+    spreadRadius: 2,
+    offset: const Offset(0, 4),
+  ),
+];
 
 /// In-memory navigation state for Sky. Owned by Cosmo so opening a result,
 /// flying to it, and later returning to Sky restores the exact working
@@ -844,8 +854,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     final position = controller.position;
     final show = position.pixels >= _backToTopRevealOffset;
     final avoidsFooter =
-        _gridView &&
-        position.extentAfter <= _backToTopFooterDistance;
+        _gridView && position.extentAfter <= _backToTopFooterDistance;
     if (show == _showBackToTop && avoidsFooter == _backToTopAvoidsFooter) {
       return;
     }
@@ -2500,86 +2509,36 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           Positioned(
             left: 20,
             right: 20,
-            // The FAB is 56 px high at bottom 20. This 32 px button sits
-            // 12 px higher so their centers share the same horizontal axis.
-            bottom: 32,
-            child: SafeArea(
-              child: AnimatedAlign(
-                key: const Key('sky-back-to-top-position'),
-                alignment: _backToTopAvoidsFooter
-                    ? Alignment.centerLeft
-                    : Alignment.center,
-                duration: const Duration(milliseconds: 240),
-                curve: Curves.easeOutCubic,
-                child: IgnorePointer(
-                  key: const Key('sky-back-to-top-hit-region'),
-                  ignoring: !_showBackToTop,
-                  child: AnimatedOpacity(
-                    opacity: _showBackToTop ? 1 : 0,
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOut,
-                    child: AnimatedScale(
-                      scale: _showBackToTop ? 1 : 0.82,
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeOutBack,
-                      child: _BackToTopButton(
-                        tooltip: strings.backToTopAction,
-                        onTap: _scrollToTop,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 20,
             bottom: 20,
             child: SafeArea(
               child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                switchInCurve: Curves.easeOutBack,
-                switchOutCurve: Curves.easeOut,
+                duration: const Duration(milliseconds: 240),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
                 transitionBuilder: (child, animation) => FadeTransition(
                   opacity: animation,
-                  child: RotationTransition(
-                    turns: Tween<double>(
-                      begin: _modeReverse ? 0.12 : -0.12,
-                      end: 0,
+                  child: ScaleTransition(
+                    scale: Tween<double>(
+                      begin: 0.96,
+                      end: 1,
                     ).animate(animation),
-                    child: ScaleTransition(
-                      scale: Tween<double>(
-                        begin: 0.84,
-                        end: 1,
-                      ).animate(animation),
-                      child: child,
-                    ),
+                    child: child,
                   ),
                 ),
                 child: action == null
-                    ? SizedBox.shrink(key: ValueKey('sky-fab-${_mode.name}'))
-                    : TweenAnimationBuilder<double>(
-                        key: ValueKey('sky-fab-${_mode.name}'),
-                        tween: Tween(begin: 1, end: 0),
-                        duration: const Duration(milliseconds: 420),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, glow, child) => DecoratedBox(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: goldGlow(
-                              colors,
-                              strength: 0.55 * glow,
-                              size: 64,
-                            ),
-                          ),
-                          child: child,
-                        ),
-                        child: AppActionDisc(
-                          icon: action.icon,
-                          onPressed: action.onPressed,
-                          heroTag: 'sky-search-${_mode.name}-action',
-                          tooltip: action.tooltip,
-                        ),
+                    ? SizedBox.shrink(
+                        key: ValueKey('sky-actions-${_mode.name}'),
+                      )
+                    : _SkyFloatingActions(
+                        key: ValueKey('sky-actions-${_mode.name}'),
+                        style: _SkyActionStyle.pill,
+                        showBackToTop: _showBackToTop,
+                        backToTopAvoidsFooter: _backToTopAvoidsFooter,
+                        backTooltip: strings.backToTopAction,
+                        onBackToTop: _scrollToTop,
+                        primaryIcon: action.icon,
+                        primaryLabel: action.tooltip,
+                        onPrimary: action.onPressed,
                       ),
               ),
             ),
@@ -2741,11 +2700,12 @@ class _ControlsSheet extends StatelessWidget {
               const SizedBox(height: 24),
               AppSheetTitle(strings.sortAction),
               const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(child: sortButton!),
-                  const Spacer(),
-                ],
+              Align(
+                alignment: Alignment.center,
+                child: FractionallySizedBox(
+                  widthFactor: 0.5,
+                  child: sortButton!,
+                ),
               ),
             ],
             if (hasFilterSections) ...[
@@ -2866,31 +2826,333 @@ class _ConstellationsList extends StatelessWidget {
   }
 }
 
-class _BackToTopButton extends StatelessWidget {
-  const _BackToTopButton({required this.tooltip, required this.onTap});
+class _SkyFloatingActions extends StatelessWidget {
+  const _SkyFloatingActions({
+    super.key,
+    required this.style,
+    required this.showBackToTop,
+    required this.backToTopAvoidsFooter,
+    required this.backTooltip,
+    required this.onBackToTop,
+    required this.primaryIcon,
+    required this.primaryLabel,
+    required this.onPrimary,
+  });
 
+  final _SkyActionStyle style;
+  final bool showBackToTop;
+  final bool backToTopAvoidsFooter;
+  final String backTooltip;
+  final VoidCallback onBackToTop;
+  final IconData primaryIcon;
+  final String primaryLabel;
+  final VoidCallback onPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    if (style == _SkyActionStyle.dock) {
+      return SizedBox(
+        height: 56,
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: _SkyActionDock(
+            showBackToTop: showBackToTop,
+            backTooltip: backTooltip,
+            onBackToTop: onBackToTop,
+            primaryIcon: primaryIcon,
+            primaryLabel: primaryLabel,
+            onPrimary: onPrimary,
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 56,
+      child: Stack(
+        children: [
+          AnimatedAlign(
+            key: const Key('sky-back-to-top-position'),
+            alignment: backToTopAvoidsFooter
+                ? Alignment.centerLeft
+                : Alignment.center,
+            duration: const Duration(milliseconds: 240),
+            curve: Curves.easeOutCubic,
+            child: IgnorePointer(
+              key: const Key('sky-back-to-top-hit-region'),
+              ignoring: !showBackToTop,
+              child: AnimatedOpacity(
+                opacity: showBackToTop ? 1 : 0,
+                duration: const Duration(milliseconds: 180),
+                child: AnimatedScale(
+                  scale: showBackToTop ? 1 : 0.84,
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutBack,
+                  child: _SkyBackToTopButton(
+                    style: style,
+                    tooltip: backTooltip,
+                    onTap: onBackToTop,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: _SkyPrimaryAction(
+              style: style,
+              icon: primaryIcon,
+              label: primaryLabel,
+              onTap: onPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkyActionDock extends StatelessWidget {
+  const _SkyActionDock({
+    required this.showBackToTop,
+    required this.backTooltip,
+    required this.onBackToTop,
+    required this.primaryIcon,
+    required this.primaryLabel,
+    required this.onPrimary,
+  });
+
+  final bool showBackToTop;
+  final String backTooltip;
+  final VoidCallback onBackToTop;
+  final IconData primaryIcon;
+  final String primaryLabel;
+  final VoidCallback onPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Material(
+      color: colors.nightPanel,
+      shape: StadiumBorder(
+        side: BorderSide(color: colors.nightBorder, width: kBorderWidth),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            child: SizedBox(
+              width: showBackToTop ? 44 : 0,
+              child: ClipRect(
+                child: IgnorePointer(
+                  key: const Key('sky-back-to-top-hit-region'),
+                  ignoring: !showBackToTop,
+                  child: Tooltip(
+                    message: backTooltip,
+                    child: InkWell(
+                      key: const Key('sky-back-to-top-button'),
+                      onTap: onBackToTop,
+                      child: SizedBox(
+                        width: 44,
+                        height: 48,
+                        child: Icon(
+                          Icons.keyboard_arrow_up,
+                          color: colors.muted,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (showBackToTop)
+            Container(
+              width: kBorderWidth,
+              height: 22,
+              color: colors.nightBorder,
+            ),
+          Tooltip(
+            message: primaryLabel,
+            child: InkWell(
+              key: const Key('sky-primary-action'),
+              onTap: onPrimary,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SizedBox(
+                  height: 48,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(primaryIcon, color: colors.gold, size: 18),
+                      const SizedBox(width: 8),
+                      AppButtonLabel(primaryLabel, color: colors.text),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkyPrimaryAction extends StatelessWidget {
+  const _SkyPrimaryAction({
+    required this.style,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final _SkyActionStyle style;
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final (background, foreground, shape, padding) = switch (style) {
+      _SkyActionStyle.pill => (
+        colors.gold,
+        colors.onGold,
+        const StadiumBorder(),
+        const EdgeInsets.symmetric(horizontal: 18),
+      ),
+      _SkyActionStyle.edge => (
+        colors.nightPanel,
+        colors.gold,
+        RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kRadiusField),
+          side: BorderSide(color: colors.gold, width: kBorderWidth),
+        ),
+        const EdgeInsets.symmetric(horizontal: 15),
+      ),
+      _SkyActionStyle.minimal => (
+        Colors.transparent,
+        colors.gold,
+        const StadiumBorder(),
+        const EdgeInsets.symmetric(horizontal: 8),
+      ),
+      _SkyActionStyle.dock => throw StateError('Dock has its own action'),
+    };
+    return DecoratedBox(
+      key: const Key('sky-primary-action-shadow'),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(kRadiusPill),
+        boxShadow: _skyFabNavyShadow(colors),
+      ),
+      child: Tooltip(
+        message: label,
+        child: Material(
+          color: background,
+          shape: shape,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            key: const Key('sky-primary-action'),
+            onTap: onTap,
+            child: Padding(
+              padding: padding,
+              child: SizedBox(
+                height: style == _SkyActionStyle.minimal ? 42 : 48,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, color: foreground, size: 18),
+                    const SizedBox(width: 8),
+                    AppButtonLabel(label, color: foreground),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SkyBackToTopButton extends StatelessWidget {
+  const _SkyBackToTopButton({
+    required this.style,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final _SkyActionStyle style;
   final String tooltip;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    if (style == _SkyActionStyle.pill) {
+      const shape = CircleBorder();
+      return DecoratedBox(
+        key: const Key('sky-back-to-top-shadow'),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: _skyFabNavyShadow(colors),
+        ),
+        child: Tooltip(
+          message: tooltip,
+          child: Material(
+            color: colors.gold,
+            shape: shape,
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              key: const Key('sky-back-to-top-button'),
+              onTap: onTap,
+              customBorder: shape,
+              child: SizedBox.square(
+                dimension: 32,
+                child: Icon(
+                  Icons.keyboard_arrow_up,
+                  color: colors.onGold,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    final minimal = style == _SkyActionStyle.minimal;
+    final edge = style == _SkyActionStyle.edge;
+    final shape = edge
+        ? RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(kRadiusField),
+            side: BorderSide(color: colors.nightBorder, width: kBorderWidth),
+          )
+        : CircleBorder(
+            side: minimal
+                ? BorderSide.none
+                : BorderSide(color: colors.nightBorder, width: kBorderWidth),
+          );
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: colors.night,
-        shape: CircleBorder(
-          side: BorderSide(color: colors.gold, width: kBorderWidth),
-        ),
-        elevation: 4,
-        shadowColor: Colors.black.withValues(alpha: 0.5),
+        color: minimal ? Colors.transparent : colors.nightPanel,
+        shape: shape,
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           key: const Key('sky-back-to-top-button'),
-          customBorder: const CircleBorder(),
           onTap: onTap,
+          customBorder: shape,
           child: SizedBox.square(
-            dimension: 32,
-            child: Icon(Icons.keyboard_arrow_up, color: colors.gold, size: 20),
+            dimension: minimal ? 40 : 44,
+            child: Icon(
+              Icons.keyboard_arrow_up,
+              color: minimal ? colors.muted : colors.gold,
+              size: 22,
+            ),
           ),
         ),
       ),

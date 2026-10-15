@@ -329,7 +329,7 @@ void main() {
               onPressed: () => showAppSheet<void>(
                 context: context,
                 builder: (_) =>
-                    const SizedBox(height: 120, child: Text('sheet')),
+                    const SizedBox(height: 120, child: AppSheetTitle('sheet')),
               ),
               child: const Text('open'),
             ),
@@ -339,6 +339,14 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
       expect(find.text('sheet'), findsOneWidget);
+      expect(
+        tester.widget<BottomSheet>(find.byType(BottomSheet)).showDragHandle,
+        isTrue,
+      );
+      expect(
+        tester.getCenter(find.text('sheet')).dx,
+        closeTo(tester.getCenter(find.byType(BottomSheet)).dx, 0.5),
+      );
 
       await tester.tapAt(const Offset(5, 5));
       await tester.pumpAndSettle();

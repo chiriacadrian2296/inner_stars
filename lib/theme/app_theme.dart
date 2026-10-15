@@ -311,6 +311,8 @@ ThemeData buildAppTheme({AppColors palette = AppColors.dark}) {
       backgroundColor: palette.night,
       surfaceTintColor: Colors.transparent,
       shape: _SheetOutline(BorderSide(color: palette.nightBorder)),
+      dragHandleColor: palette.muted.withValues(alpha: 0.4),
+      dragHandleSize: const Size(32, 4),
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: palette.nightPanel,

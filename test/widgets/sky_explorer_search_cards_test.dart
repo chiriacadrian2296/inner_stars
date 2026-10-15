@@ -15,8 +15,10 @@ import 'package:inner_stars/l10n/strings_scope.dart';
 import 'package:inner_stars/models/life_area.dart';
 import 'package:inner_stars/settings/settings_controller.dart';
 import 'package:inner_stars/settings/sky_grid_size.dart';
+import 'package:inner_stars/theme/app_colors.dart';
 import 'package:inner_stars/theme/app_theme.dart';
 import 'package:inner_stars/widgets/constellation_editor_painter.dart';
+import 'package:inner_stars/widgets/filter_button.dart';
 import 'package:inner_stars/widgets/search_result_card.dart';
 import 'package:inner_stars/widgets/sky_explorer_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -142,10 +144,7 @@ void main() {
     await tester.drag(scrollView, const Offset(0, -270));
     await tester.pumpAndSettle();
     expect(session.scrollOffsets[0], greaterThanOrEqualTo(240));
-    expect(
-      tester.widget<AnimatedAlign>(position).alignment,
-      Alignment.center,
-    );
+    expect(tester.widget<AnimatedAlign>(position).alignment, Alignment.center);
 
     await tester.fling(scrollView, const Offset(0, -1000), 3000);
     await tester.pumpAndSettle();
@@ -156,14 +155,49 @@ void main() {
       Alignment.centerLeft,
     );
     final button = find.byKey(const Key('sky-back-to-top-button'));
+    expect(tester.getSize(button), const Size.square(32));
+    final buttonMaterial = find
+        .ancestor(of: button, matching: find.byType(Material))
+        .first;
+    expect(tester.widget<Material>(buttonMaterial).color, AppColors.dark.gold);
+    expect(
+      tester
+          .widget<Icon>(
+            find.descendant(
+              of: button,
+              matching: find.byIcon(Icons.keyboard_arrow_up),
+            ),
+          )
+          .color,
+      AppColors.dark.onGold,
+    );
+    for (final key in const [
+      Key('sky-back-to-top-shadow'),
+      Key('sky-primary-action-shadow'),
+    ]) {
+      final decoration =
+          tester.widget<DecoratedBox>(find.byKey(key)).decoration
+              as BoxDecoration;
+      expect(decoration.boxShadow, hasLength(1));
+      expect(
+        decoration.boxShadow!.single.color,
+        AppColors.dark.night.withValues(alpha: 0.9),
+      );
+    }
     expect(tester.getTopLeft(button).dx, closeTo(20, 0.1));
     expect(
       tester.getCenter(button).dy,
-      closeTo(tester.getCenter(find.byType(FloatingActionButton)).dy, 0.1),
+      closeTo(
+        tester.getCenter(find.byKey(const Key('sky-primary-action'))).dy,
+        0.1,
+      ),
     );
     expect(
       tester.getCenter(find.byKey(const Key('app-footer-mark-unit'))).dy,
-      closeTo(tester.getCenter(find.byType(FloatingActionButton)).dy, 0.5),
+      closeTo(
+        tester.getCenter(find.byKey(const Key('sky-primary-action'))).dy,
+        0.5,
+      ),
     );
 
     await tester.tap(button);
@@ -207,6 +241,33 @@ void main() {
       findsOneWidget,
     );
   }, skip: !kShowSkyListView);
+
+  testWidgets('Sky controls center section titles and the sort control', (
+    tester,
+  ) async {
+    final repos = await repositories();
+    await pumpExplorer(tester, repos);
+
+    await tester.tap(find.byIcon(Icons.insights).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip(const StringsIt().filtersAction));
+    await tester.pumpAndSettle();
+
+    final sheetCenter = tester.getCenter(find.byType(BottomSheet)).dx;
+    expect(
+      tester.getCenter(find.text(const StringsIt().filtersAction)).dx,
+      closeTo(sheetCenter, 0.5),
+    );
+    expect(
+      tester.getCenter(find.text(const StringsIt().sortAction)).dx,
+      closeTo(sheetCenter, 0.5),
+    );
+    final sortControl = find.ancestor(
+      of: find.text('ORDINA'),
+      matching: find.byType(FilterButton),
+    );
+    expect(tester.getCenter(sortControl).dx, closeTo(sheetCenter, 0.5));
+  });
 
   testWidgets('real Search uses compact cards in all three result levels', (
     tester,

@@ -7,7 +7,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -289,9 +289,9 @@ class _ConstellationShare extends _CreationShareSubject {
 
 class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// STUDY (TRB-style park): the sample shooting star
-  /// ([SkyShootingStarStudy]) — debug builds only, until the timed-wish
-  /// feature exists. Set to false to hide it.
-  static const _kShowShootingStarStudy = kDebugMode;
+  /// ([SkyShootingStarStudy]) — shown in every build, production included,
+  /// until the timed-wish feature exists. Set to false to hide it.
+  static const _kShowShootingStarStudy = true;
 
   final _skySession = SkyExplorerSession();
   final _lightSession = LightSession();
@@ -1644,12 +1644,23 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// Every star lit today and every pulsar checked today, in the order they
   /// lit: a victory by its achievement time (its creation time when the
   /// date carries no time of day), a pulsar by today's first check-in.
-  List<_TodayLight> _todayLights() =>
-      _todayLightsCache ??= _computeTodayLights();
+  List<_TodayLight> _todayLights() {
+    final now = DateTime.now();
+    final day = DateTime(now.year, now.month, now.day);
+    // A new day starts with nothing lit yet, even with the app left open
+    // across midnight.
+    if (_todayLightsDay != day) {
+      _todayLightsDay = day;
+      _todayLightsCache = null;
+    }
+    return _todayLightsCache ??= _computeTodayLights();
+  }
 
-  /// [_todayLights], kept until [_placed] is rebuilt (the sky rebuilds on
-  /// every camera frame; the list only changes with the data).
+  /// [_todayLights], kept until [_placed] is rebuilt or the day changes
+  /// (the sky rebuilds on every camera frame; the list only changes with
+  /// the data).
   List<_TodayLight>? _todayLightsCache;
+  DateTime? _todayLightsDay;
 
   List<_TodayLight> _computeTodayLights() {
     final now = DateTime.now();
@@ -2185,6 +2196,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       // own border, so the sheet itself gets a plain, borderless shape.
       shape: const RoundedRectangleBorder(),
       enableDrag: false,
+      showDragHandle: false,
       // `showModalBottomSheet` aligns via `Alignment.bottomCenter`, so
       // bounding `maxWidth` here is also what centers this horizontally
       // on a wide viewport — with no cap at all it stretched edge to
@@ -3838,6 +3850,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                         zoom: _zoom,
                         clock: _skyClock,
                         showGrid: widget.settings.showGrid,
+                        // The supernovas light the nebula around them, as
+                        // strongly as they themselves burn.
+                        supernovaLight: widget.settings.showSupernovae
+                            ? widget.settings.supernovaIntensity
+                            : 0,
                       ),
                       if (widget.settings.artworkLayer ==
                           ArtworkLayer.behindSupernovae)
@@ -3883,8 +3900,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                         revision: _revision,
                       ),
                       // STUDY — see [SkyShootingStarStudy]: one sample
-                      // shooting star, debug builds only, until the feature
-                      // itself exists.
+                      // shooting star, until the feature itself exists.
                       if (_kShowShootingStarStudy &&
                           _shootingStarAnchor() != null)
                         SkyShootingStarStudy(
@@ -4646,11 +4662,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                                       onSearch: () => _openSearch(
                                         onCloseMenu: _closeQuickAccessMenu,
                                       ),
-                                      onUiSandbox: kDebugMode
-                                          ? () => _selectQuickAccess(
-                                              _openUiSandbox,
-                                            )
-                                          : null,
+                                      // Every build, release included: the
+                                      // app isn't public, release is only
+                                      // for seeing it at full speed.
+                                      onUiSandbox: () =>
+                                          _selectQuickAccess(_openUiSandbox),
                                       onPressChanged: _setMenuControlPressed,
                                     ),
                                   ),

@@ -32,6 +32,13 @@ void main() {
       ),
     );
     final touch = find.byKey(const ValueKey('accumulation-chart-touch'));
+    final selection = find.byKey(
+      const ValueKey('accumulation-chart-selection'),
+    );
+    expect(
+      tester.getBottomLeft(selection).dy,
+      lessThan(tester.getTopLeft(touch).dy),
+    );
     final rect = tester.getRect(touch);
     await tester.tapAt(rect.center);
     await tester.pump();

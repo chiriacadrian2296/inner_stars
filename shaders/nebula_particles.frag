@@ -105,8 +105,24 @@ float starLayer(vec3 dir, float density, float twinkleSpeed, float seed) {
   float dist = length(local - starPos);
 
   float twinkle = 0.6 + 0.4 * sin(uTime * twinkleSpeed + h * 6.2831853);
-  float brightness = step(0.8, h) * twinkle;
-  return smoothstep(0.1, 0.0, dist) * brightness;
+  // The one knob for "how many stars": the share of cells holding one.
+  // 0.24 since the stars got their crisp cores (at 0.38, once they could
+  // all be seen, there were far too many).
+  const float kStarFill = 0.24;
+  float brightness = step(1.0 - kStarFill, h) * twinkle;
+  if (brightness <= 0.0) return 0.0;
+  // A crisp, solid, brighter core — about a pixel at least, with a
+  // one-pixel edge so it stays sharp at any zoom — inside the soft glow.
+  float pixelInCell = density / (uResolution.y * uZoom);
+  float coreRadius = clamp(pixelInCell * 0.8, 0.02, 0.09);
+  float core = 1.0 -
+      smoothstep(
+        coreRadius - pixelInCell * 0.5,
+        coreRadius + pixelInCell * 0.5,
+        dist
+      );
+  float glow = smoothstep(0.1, 0.0, dist) * 0.55;
+  return (glow + core * 1.3) * brightness;
 }
 
 // PARKED (2026-10-14): no longer drawn. Its gold rays made it read as one
@@ -196,57 +212,148 @@ vec3 flareStarLayer(vec3 dir, float density, float seed) {
 // is parked, no longer drawn.)
 // ---------------------------------------------------------------------------
 
-// [starLayer]'s same tiny twinkling points, in the colors real stars have
-// rather than the app's gold: mostly cool white and pale blue, a rare soft
-// warm one.
+// [starLayer]'s tiny twinkling points, in the colors real stars have rather
+// than the app's gold — mostly cool white and pale blue, a rare soft warm
+// one — and, for depth, in very different brightnesses: most of them faint
+// (far away), a few bright (closer).
 vec3 dustStarLayer(vec3 dir, float density, float twinkleSpeed, float seed) {
   float s = starLayer(dir, density, twinkleSpeed, seed);
   if (s <= 0.0) return vec3(0.0);
-  float tone = hash3(floor(dir * density) + seed * 5.0);
+  vec3 cell = floor(dir * density);
+  float tone = hash3(cell + seed * 5.0);
   vec3 color = tone < 0.55
       ? vec3(0.86, 0.9, 1.0)
       : tone < 0.92
       ? vec3(0.66, 0.76, 1.0)
       : vec3(1.0, 0.86, 0.74);
-  return color * s * 0.85;
+  float magnitude = 0.32 + 1.4 * pow(hash3(cell + seed * 6.0), 4.0);
+  return color * s * 0.85 * magnitude;
 }
 
-// The Milky Way: one soft band all the way round the sky, along a fixed,
-// tilted great circle — clumpy haze with a darker dust lane running through
-// it. Returns the haze strength; [dust] is how much the lane darkens this
-// pixel.
-const vec3 kBandNormal = vec3(0.3505, 0.8211, 0.4506);
-float milkyWay(vec3 dir, out float dust) {
-  dust = 0.0;
-  float b = dot(dir, kBandNormal);
-  // Far from the band nothing below shows: skip the noise entirely.
-  if (abs(b) > 0.7) return 0.0;
-  float wobble = (valueNoise3(dir * 3.0 + 11.0) - 0.5) * 0.14;
-  float x = b + wobble;
-  float core = exp(-(x * x) / (0.15 * 0.15));
-  float wide = exp(-(x * x) / (0.34 * 0.34));
-  float clumps = fbm3(dir * 9.0 + 23.0);
-  float lane = exp(-pow((x - 0.025) / 0.04, 2.0)) *
-      smoothstep(0.35, 0.65, valueNoise3(dir * 14.0 + 5.0));
-  dust = lane;
-  return core * (0.45 + 0.9 * clumps) + wide * 0.22;
+// The nearest scenery stars: very sparse, bigger and softer, with a small
+// halo — no rays, no gold (those are the user's). Drawn in front of the
+// dark nebulae, and on the "near" layer of the zoom parallax.
+vec3 nearStarLayer(vec3 dir, float density, float seed, float threshold) {
+  vec3 grid = dir * density;
+  vec3 cell = floor(grid);
+  vec3 local = fract(grid) - 0.5;
+  float h = hash3(cell + seed);
+  if (h < threshold) return vec3(0.0);
+  vec3 pos = (vec3(
+    hash3(cell + seed * 2.0),
+    hash3(cell + seed * 3.0),
+    hash3(cell + seed * 4.0)
+  ) - 0.5) * 0.3;
+  // In real angle (radians), so a sparser layer doesn't mean bigger stars.
+  float d = length(local - pos) / density;
+  float twinkle = 0.8 + 0.2 * sin(uTime * (0.9 + h * 2.0) + h * 30.0);
+  // A crisp solid core (at least about a pixel, one-pixel edge) in a soft
+  // glow and a faint halo.
+  float pixelAngle = 1.0 / (uResolution.y * uZoom);
+  float coreRadius = max(0.00045, pixelAngle * 0.8);
+  float core =
+      1.0 - smoothstep(coreRadius - pixelAngle * 0.5, coreRadius + pixelAngle * 0.5, d);
+  float star = (core * 1.3 + smoothstep(0.0011, 0.0, d) * 0.6 +
+      exp(-d / 0.0016) * 0.3) * twinkle;
+  vec3 color = hash3(cell + seed * 5.0) < 0.6
+      ? vec3(0.9, 0.94, 1.0)
+      : vec3(0.7, 0.8, 1.0);
+  return color * star;
 }
 
-// Distant galaxies: rare, small, soft smudges — a bright bulge in a tilted
-// disk, some with two faint spiral arms — in cool lavender, ice blue or a
-// warm white. Never points, never rays: they read as far-away scenery.
+// A cheaper three-octave [fbm3], for the broad shapes below.
+float fbm3lo(vec3 p) {
+  return 0.5 * valueNoise3(p) +
+      0.25 * valueNoise3(p * 2.0) +
+      0.125 * valueNoise3(p * 4.0);
+}
+
+// Dark nebulae: clouds of dust out in the sky, at the same depth as the
+// glowing gas — broad veils and small round globules — that dim the glow
+// and the farther stars behind them. Soft-edged and see-through, with
+// their own inner structure, so they read as gas in the sky rather than
+// shapes laid over the screen. Returns (darkness 0..1, rim 0..1): the rim
+// is a thin band just outside a veil's edge, where the gas behind seems to
+// catch a little more light.
+vec2 darkNebula(vec3 p) {
+  float veilNoise = fbm3lo(p * 2.2 + 31.0);
+  float veils = smoothstep(0.52, 0.74, veilNoise);
+  float rim = clamp(smoothstep(0.44, 0.6, veilNoise) - veils, 0.0, 1.0);
+  // Thicker and thinner patches inside each veil.
+  veils *= 0.55 + 0.45 * valueNoise3(p * 9.0 + 13.0);
+
+  vec3 g = p * 7.0;
+  vec3 cell = floor(g);
+  vec3 local = fract(g) - 0.5;
+  float gh = hash3(cell + 71.0);
+  float globule = 0.0;
+  if (gh > 0.94) {
+    vec3 gpos = (vec3(
+      hash3(cell + 72.0),
+      hash3(cell + 73.0),
+      hash3(cell + 74.0)
+    ) - 0.5) * 0.3;
+    float radius = mix(0.08, 0.17, hash3(cell + 75.0));
+    float gd = length(local - gpos) / radius;
+    globule = smoothstep(1.0, 0.3, gd) * 0.85;
+  }
+
+  float darkness = clamp(max(veils, globule), 0.0, 1.0) * 0.75;
+  return vec2(darkness, rim);
+}
+
+// The supernovas' light reaching this point of the sky: a warm wide glow
+// and a softer tighter one around each, fading with distance.
+uniform float uSupernovaLight;
+uniform vec3 uSupernovas[8];
+float supernovaLight(vec3 dir) {
+  float light = 0.0;
+  for (int i = 0; i < 8; i++) {
+    float theta2 = 2.0 * (1.0 - dot(dir, uSupernovas[i]));
+    light += exp(-theta2 / (0.45 * 0.45)) * 0.35 +
+        exp(-theta2 / (0.15 * 0.15)) * 0.18;
+  }
+  return light * uSupernovaLight;
+}
+
+// This pixel's direction on the sky for a camera at [zoom] — the same
+// inverse stereographic projection main() explains. Layers sampled at a
+// slightly different zoom than the real one drift apart as you zoom: the
+// zoom parallax that puts the dark nebulae in front and the faint stars
+// far behind.
+vec3 skyDirection(float zoom) {
+  vec2 centered = FlutterFragCoord().xy - uResolution * 0.5;
+  vec2 tangent = centered / uResolution.y / zoom;
+  float tx = tangent.x;
+  float ty = -tangent.y;
+  float rho2 = tx * tx + ty * ty;
+  float denom = 4.0 + rho2;
+  return normalize(
+    uRight * (4.0 * tx / denom) +
+    uUp * (4.0 * ty / denom) +
+    uForward * ((4.0 - rho2) / denom)
+  );
+}
+
+
+// Distant galaxies: rare, small, and — zoomed in — recognisably galaxies,
+// not smudges: a warm yellowish core, two (or, for an elliptical one, no)
+// spiral arms in cooler blue-white, a thin dark dust lane, a few pink knots
+// where new stars are forming, and above all a sprinkle of resolved
+// pinpoint stars tracing the arms. Never gold, never rays: far-away
+// scenery, not something to tap.
 vec3 galaxyLayer(vec3 dir, float density, float seed) {
   vec3 grid = dir * density;
   vec3 cell = floor(grid);
   vec3 local = fract(grid) - 0.5;
   float h = hash3(cell + seed);
-  if (h < 0.93) return vec3(0.0);
+  if (h < 0.88) return vec3(0.0);
 
   vec3 pos = (vec3(
     hash3(cell + seed * 2.0),
     hash3(cell + seed * 3.0),
     hash3(cell + seed * 4.0)
-  ) - 0.5) * 0.16;
+  ) - 0.5) * 0.06;
   vec3 diff = local - pos;
   // Each galaxy's own orientation, in the plane tangent to the sky here.
   vec3 rnd = vec3(
@@ -257,38 +364,86 @@ vec3 galaxyLayer(vec3 dir, float density, float seed) {
   vec3 u = normalize(rnd - dir * dot(rnd, dir) + vec3(1e-4));
   vec3 v = cross(dir, u);
   vec2 p = vec2(dot(diff, u), dot(diff, v));
-  p.y /= mix(0.3, 1.0, hash3(cell + seed * 8.0));
-  p /= mix(0.03, 0.06, hash3(cell + seed * 9.0));
+  // Seen at a slant: squashed along one axis.
+  float tilt = mix(0.32, 1.0, hash3(cell + seed * 8.0));
+  p.y /= tilt;
+  float scale = mix(0.055, 0.095, hash3(cell + seed * 9.0));
+  p /= scale;
   float r = length(p);
+  if (r > 3.0) return vec3(0.0);
   float theta = atan(p.y, p.x);
-  float spiral = hash3(cell + seed * 10.0) > 0.35
-      ? 0.5 + 0.5 * cos(2.0 * theta - log(r + 0.05) * 3.4 + h * 40.0)
-      : 1.0;
-  float disk = exp(-r * 2.4) * mix(0.45, 1.0, spiral);
-  float bulge = exp(-r * r * 12.0);
+
+  bool spiral = hash3(cell + seed * 10.0) > 0.3;
+  // How much of this point lies on an arm: two logarithmic arms winding
+  // out from the core, sharpened into bands.
+  float winding = mix(2.6, 4.2, hash3(cell + seed * 12.0));
+  float armWave = 0.5 + 0.5 * cos(2.0 * theta - log(r + 0.08) * winding + h * 40.0);
+  float arms = spiral ? pow(armWave, 3.0) : 0.6;
+
+  float disk = exp(-r * 1.6);
+  float bulge = exp(-r * r * 9.0);
+  // A thin dark lane along the disk, strongest for galaxies seen edge-on.
+  float lane = exp(-pow(p.y * tilt / 0.08, 2.0)) *
+      smoothstep(0.15, 0.6, r) * (1.0 - tilt) * 0.8;
+
+  // Resolved stars: a fine grid in the galaxy's own plane, each cell maybe
+  // holding one pinpoint, far likelier on an arm and near the center.
+  const float kStarGrid = 11.0;
+  vec2 starGrid = p * kStarGrid;
+  vec2 starCell = floor(starGrid);
+  vec2 starLocal = fract(starGrid) - 0.5;
+  float sh = hash3(vec3(starCell, seed * 13.0) + cell);
+  vec2 starOffset = vec2(
+    hash3(vec3(starCell, seed * 14.0) + cell),
+    hash3(vec3(starCell, seed * 15.0) + cell)
+  ) - 0.5;
+  float chance = (spiral ? arms * 0.85 + 0.1 : 0.45) * exp(-r * 0.7);
+  float starOn = step(1.0 - chance * 0.38, sh);
+  vec2 sd = starLocal - starOffset * 0.6;
+  float twinkle = 0.7 + 0.3 * sin(uTime * (1.5 + sh * 3.0) + sh * 50.0);
+  // One screen pixel, in this star grid's units: a pinpoint is never
+  // drawn thinner than about a pixel (it would shimmer); when the view is
+  // too far out for that, it widens and dims by the same amount, melting
+  // into the disk.
+  float pixelAngle = 1.0 / (uResolution.y * uZoom);
+  float pixelInGrid = pixelAngle * density / scale * kStarGrid;
+  float sigma = max(0.16, pixelInGrid * 0.7);
+  float pinpoint = starOn * exp(-dot(sd, sd) / (sigma * sigma)) *
+      twinkle * pow(0.16 / sigma, 2.0);
+
+  // Pink star-forming knots, scattered along the arms of spirals only.
+  float knotHash = hash3(vec3(floor(p * 4.0), seed * 16.0) + cell);
+  vec2 knotLocal = fract(p * 4.0) - 0.5;
+  float knot = spiral
+      ? step(0.82, knotHash) * arms *
+          exp(-dot(knotLocal, knotLocal) / (0.09 * 0.09))
+      : 0.0;
 
   float tone = hash3(cell + seed * 11.0);
-  vec3 color = tone < 0.4
-      ? vec3(0.78, 0.72, 1.0)
-      : tone < 0.8
-      ? vec3(0.62, 0.78, 1.0)
-      : vec3(1.0, 0.9, 0.8);
+  vec3 armColor = tone < 0.5 ? vec3(0.62, 0.74, 1.0) : vec3(0.76, 0.72, 1.0);
+  vec3 coreColor = vec3(1.0, 0.88, 0.7);
+
+  vec3 color = coreColor * bulge * 0.55 +
+      armColor * disk * (0.12 + arms * 0.32) +
+      vec3(0.9, 0.94, 1.0) * pinpoint * (0.55 + disk * 0.6) +
+      vec3(1.0, 0.55, 0.75) * knot * 0.35;
+  color *= 1.0 - lane;
+
   float edgeFade = smoothstep(
     0.5,
-    0.34,
+    0.36,
     max(max(abs(local.x), abs(local.y)), abs(local.z))
   );
-  float twinkle = 0.85 + 0.15 * sin(uTime * 0.4 + h * 20.0);
-  return (color * disk * 0.32 + vec3(1.0, 0.97, 0.93) * bulge * 0.4) *
-      edgeFade * twinkle;
+  return color * edgeFade;
 }
 
 // Comets: now and then a thin, cold streak — a bright head with a tail
-// that widens and fades behind it — slides across the sky and is gone in
-// under two seconds. Each [seed] is its own stream: one comet per
-// [period] seconds, somewhere on the sphere, at a random moment.
+// that widens and fades behind it — slides across the sky. Its end is a
+// small event: the head swells into a bigger flash, flickers fast, and is
+// gone at once. Each [seed] is its own stream: one comet per [period]
+// seconds, somewhere on the sphere, at a random moment.
 vec3 cometStream(vec3 dir, float seed, float period) {
-  const float kDuration = 1.7;
+  const float kDuration = 1.9;
   float slot = floor(uTime / period);
   float start = hash3(vec3(slot, seed, 1.0)) * (period - kDuration);
   float t = uTime - slot * period - start;
@@ -307,29 +462,70 @@ vec3 cometStream(vec3 dir, float seed, float period) {
   vec3 travel = normalize(rnd - origin * dot(rnd, origin) + vec3(1e-4));
   vec3 normal = cross(origin, travel);
 
+  // Each comet's own size (small, medium, large) and tone (white, blue,
+  // gold — the constellation stars' own families), picked independently,
+  // so every size comes in every color. Gold is fine here: a comet has no
+  // rays and is gone in two seconds, it can't pass for a tappable star.
+  float sizeRoll = hash3(vec3(slot, seed, 8.0));
+  float size = sizeRoll < 0.4 ? 0.7 : sizeRoll < 0.8 ? 1.0 : 1.45;
+  float toneRoll = hash3(vec3(slot, seed, 9.0));
+  vec3 tailColor = toneRoll < 0.34
+      ? vec3(0.86, 0.9, 1.0)
+      : toneRoll < 0.67
+      ? vec3(0.58, 0.76, 1.0)
+      : vec3(1.0, 0.8, 0.42);
+  // The head is the same tone, nearer white, like a star's hot core.
+  vec3 headColor = mix(tailColor, vec3(1.0), 0.6);
+
   float progress = t / kDuration;
-  float headAngle = progress * 0.55;
+  // Steady speed until 60% of its life, then braking evenly to a stop at
+  // 95% — the very last frames, flash and flicker, happen standing still.
+  const float kBrakeFrom = 0.6;
+  const float kStopAt = 0.95;
+  float braking = clamp(progress - kBrakeFrom, 0.0, kStopAt - kBrakeFrom);
+  float travelled = min(progress, kBrakeFrom) + braking -
+      braking * braking / (2.0 * (kStopAt - kBrakeFrom));
+  // Sized against the constellations: a head about as big as one of their
+  // stars, a tail about one constellation long, a matching travel.
+  float headAngle = travelled * 0.3 * size;
   vec3 head = origin * cos(headAngle) + travel * sin(headAngle);
   // Only the half of the sphere around the head; the angle below would
   // wrap round to the far side otherwise.
   if (dot(dir, head) < 0.8) return vec3(0.0);
 
+  // Its life: a quick fade in, the glide, then the end — a flash peaking
+  // at 85%, a fast flicker from about 89%, and nothing left from 96.5%.
+  float fadeIn = smoothstep(0.0, 0.12, progress);
+  float flash = exp(-pow((progress - 0.85) / 0.045, 2.0));
+  float flickerZone = smoothstep(0.885, 0.9, progress);
+  float flicker = mix(1.0, step(0.0, sin(t * 70.0)), flickerZone) *
+      (1.0 - step(0.965, progress));
+  float headBright =
+      fadeIn * (1.0 + 0.9 * flash) * flicker * (1.0 - 0.45 * flickerZone);
+  // Nearing its end the tail draws back into the head — shorter and
+  // narrower, a touch brighter as it gathers — until, as the flash peaks,
+  // it has gone back into it entirely.
+  float retract = smoothstep(0.6, 0.85, progress);
+  float tailLife = fadeIn * (1.0 + 0.4 * retract) *
+      (1.0 - smoothstep(0.8, 0.85, progress));
+
   float off = dot(dir, normal);
   float along = atan(dot(dir, travel), dot(dir, origin));
   float behind = headAngle - along;
-  const float kTail = 0.2;
-  float width = 0.0016 + max(behind, 0.0) * 0.012;
+  float tailLength = max(0.1 * size * (1.0 - retract), 1e-4);
+  float width =
+      (0.0007 + max(behind, 0.0) * 0.012 * (1.0 - retract * 0.7)) * size;
   float lateral = exp(-(off * off) / (width * width));
-  float tail = behind > 0.0 && behind < kTail
-      ? pow(1.0 - behind / kTail, 2.2)
+  float tail = behind > 0.0 && behind < tailLength
+      ? pow(1.0 - behind / tailLength, 2.2)
       : 0.0;
   vec2 toHead = vec2(along - headAngle, off);
-  float headGlow = exp(-dot(toHead, toHead) / (0.0035 * 0.0035));
-  // Fades in and out over its short life.
-  float life = sin(progress * 3.14159265);
-  vec3 color = vec3(0.78, 0.9, 1.0);
-  return (color * tail * lateral * 0.55 + vec3(0.95, 0.98, 1.0) * headGlow) *
-      life;
+  float d2 = dot(toHead, toHead);
+  float headSize = 0.0015 * size * (1.0 + 0.6 * flash);
+  float headGlow = exp(-d2 / (headSize * headSize)) +
+      exp(-d2 / (headSize * headSize * 6.25)) * 0.18 * flash;
+  return tailColor * tail * lateral * 0.55 * tailLife +
+      headColor * headGlow * headBright;
 }
 
 // Interleaved-gradient-noise dither, ±½ of one 8-bit step. These glows fade
@@ -376,6 +572,14 @@ void main() {
     up * (4.0 * ty / denom) +
     forward * ((4.0 - rho2) / denom)
   );
+  // Zoom parallax (see [skyDirection]): five depths of stars, each one
+  // magnified a little faster (nearer) or slower (farther) than the real
+  // zoom, so zooming in reads as moving through them. The gas, the dark
+  // dust and everything else stay at the real zoom, out in the sky.
+  vec3 dirFarthest = skyDirection(uZoom * pow(uZoom, -0.16));
+  vec3 dirFar = skyDirection(uZoom * pow(uZoom, -0.08));
+  vec3 dirNear = skyDirection(uZoom * pow(uZoom, 0.12));
+  vec3 dirNearest = skyDirection(uZoom * pow(uZoom, 0.26));
 
   // A bigger sky sphere reads as one with finer, denser detail — more (and
   // smaller) stars, and finer-grained gas structure — the same way a
@@ -389,40 +593,74 @@ void main() {
   float n = fbm3(dir * 6.0 + timeDrift);
   float n2 = fbm3(dir * 10.0 + timeDrift * 1.7 + 4.0);
 
-  // Mostly the deep blue palette, with gold reserved for the brightest
-  // noise peaks only (pow(n2, 4.0) stays low until n2 is high, so it reads
-  // as scattered highlights rather than a wash of gold across the screen).
-  vec3 nebula = mix(kDeepOuter, kDeepCenter, n);
+  // Deep voids and lit gas: the noise pushed apart so the empty sky sinks
+  // toward black and only the clouds keep the blue — contrast is depth.
+  // Gold stays reserved for the brightest noise peaks only.
+  const vec3 kVoid = vec3(0.006, 0.009, 0.02);
+  float cloud = smoothstep(0.32, 0.78, n);
+  vec3 nebula = mix(kVoid, kDeepCenter, cloud);
   nebula = mix(nebula, kGold, pow(n2, 4.0) * 0.65);
+  // Warm light around each supernova, on the gas.
+  // Warm light around each supernova, on the gas only — never the empty
+  // sky. (Lighting only the cloud side facing the supernova was tried and
+  // dropped: it looked wrong.)
+  const vec3 kWarm = vec3(1.0, 0.68, 0.42);
+  nebula += kWarm * supernovaLight(dir) * cloud * 0.6;
+
+  // Dust out in the sky, at the gas's own depth.
+  vec2 dark = darkNebula(dir);
+  float darkness = dark.x;
+  const vec3 kRimLight = vec3(0.32, 0.4, 0.62);
+  nebula = nebula * (1.0 - darkness) + kRimLight * dark.y * 0.06;
 
   // Scenery only — see the rule of thumb above the scenery functions: no
-  // gold, no rays (the gold flare stars that used to sit here read as the
-  // user's own stars, so they are no longer drawn).
-  float dust;
-  float band = milkyWay(dir, dust);
+  // gold, no rays. From the farthest depth to the nearest: the two far
+  // ones sit behind the dust, the mid one half veiled, the near ones in
+  // front of it.
+  // The stars carry the zoom parallax, so there are plenty at every depth.
+  vec3 farthest = dustStarLayer(dirFarthest, 240.0, 4.1, 97.0) * 0.28 +
+      dustStarLayer(dirFarthest, 200.0, 3.9, 31.0) * 0.3 +
+      dustStarLayer(dirFarthest, 150.0, 3.8, 23.0) * 0.35 +
+      dustStarLayer(dirFarthest, 110.0, 4.2, 29.0) * 0.4;
+  vec3 far = dustStarLayer(dirFar, 95.0, 3.7, 101.0) * 0.45 +
+      dustStarLayer(dirFar, 80.0, 4.0, 19.0) * 0.5 +
+      dustStarLayer(dirFar, 60.0, 3.4, 37.0) * 0.55 +
+      dustStarLayer(dirFar, 45.0, 3.1, 13.0) * 0.6;
+  vec3 mid = dustStarLayer(dir, 38.0, 2.8, 103.0) * 0.7 +
+      dustStarLayer(dir, 32.0, 2.6, 41.0) * 0.75 +
+      dustStarLayer(dir, 22.0, 2.3, 7.0) * 0.85 +
+      dustStarLayer(dir, 15.0, 1.6, 1.0);
+  vec3 near = dustStarLayer(dirNear, 24.0, 1.7, 107.0) * 1.0 +
+      dustStarLayer(dirNear, 18.0, 1.5, 59.0) * 1.1 +
+      dustStarLayer(dirNear, 12.0, 1.3, 53.0) * 1.1 +
+      nearStarLayer(dirNear, 14.0, 67.0, 0.8) * 0.7;
+  vec3 nearest = nearStarLayer(dirNearest, 13.0, 109.0, 0.82) * 0.85 +
+      nearStarLayer(dirNearest, 11.0, 89.0, 0.8) * 0.9 +
+      nearStarLayer(dirNearest, 9.0, 61.0, 0.78) +
+      nearStarLayer(dirNearest, 6.0, 83.0, 0.75);
 
-  vec3 stars = vec3(0.0);
-  stars += dustStarLayer(dir, 15.0, 1.6, 1.0);
-  stars += dustStarLayer(dir, 27.0, 2.3, 7.0) * 0.8;
-  stars += dustStarLayer(dir, 48.0, 3.1, 13.0) * 0.6;
-  stars += dustStarLayer(dir, 75.0, 4.0, 19.0) * 0.4;
-  // The Milky Way's own crowd of faint stars, only inside the band.
-  if (band > 0.02) {
-    stars += dustStarLayer(dir, 120.0, 3.6, 29.0) * band * 0.7;
-  }
-
+  // The galaxies stay at the sky's real depth: the stars do the parallax.
   vec3 galaxies =
-      galaxyLayer(dir, 6.0, 43.0) + galaxyLayer(dir, 9.0, 47.0) * 0.8;
+      galaxyLayer(dir, 2.4, 43.0) + galaxyLayer(dir, 3.6, 47.0) * 0.85;
 
-  vec3 comets = cometStream(dir, 1.0, 9.0) +
-      cometStream(dir, 2.0, 11.0) +
-      cometStream(dir, 3.0, 13.0);
+  // Six streams with different periods, scaled by [kCometPeriodScale]:
+  // at 1.0 about one comet a second somewhere on the sphere. Lower means
+  // more often (never below ~0.4: a period must outlast a comet's 1.9 s).
+  // REVIEW (2026-10-15): 0.45, more than twice as many, so the user can
+  // watch them closely; set back to 1.0 once they are tuned.
+  const float kCometPeriodScale = 0.45;
+  vec3 comets = cometStream(dir, 1.0, 5.0 * kCometPeriodScale) +
+      cometStream(dir, 2.0, 6.0 * kCometPeriodScale) +
+      cometStream(dir, 3.0, 7.0 * kCometPeriodScale) +
+      cometStream(dir, 4.0, 8.0 * kCometPeriodScale) +
+      cometStream(dir, 5.0, 9.0 * kCometPeriodScale) +
+      cometStream(dir, 6.0, 11.0 * kCometPeriodScale);
 
-  const vec3 kMilkyHaze = vec3(0.42, 0.49, 0.7);
-  vec3 color = nebula * (1.0 - dust * 0.4) +
-      kMilkyHaze * band * 0.2 * (1.0 - dust * 0.85) +
-      stars * (1.0 - dust * 0.6) +
-      galaxies +
+  vec3 color = nebula +
+      (farthest + far + galaxies) * (1.0 - 0.95 * darkness) +
+      mid * (1.0 - 0.5 * darkness) +
+      near +
+      nearest +
       comets;
 
   // Debug aid, toggled from NebulaScreen's own switch (uShowGrid) —

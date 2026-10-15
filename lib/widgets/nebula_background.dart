@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../models/life_area.dart';
 import '../theme/app_colors.dart';
 import 'constellation_field.dart';
 import 'sky_clock.dart';
@@ -20,6 +21,7 @@ class NebulaBackground extends StatefulWidget {
     required this.zoom,
     required this.clock,
     this.showGrid = false,
+    this.supernovaLight = 0,
   });
 
   /// Drives the shader's animation — see [SkyClock].
@@ -31,6 +33,10 @@ class NebulaBackground extends StatefulWidget {
   /// pole proximity and field of view can be gauged by eye — see
   /// `NebulaScreen`'s own toggle for this.
   final bool showGrid;
+
+  /// How strongly the supernovas light the nebula around them (0 for not
+  /// at all — e.g. while they are hidden).
+  final double supernovaLight;
 
   @override
   State<NebulaBackground> createState() => _NebulaBackgroundState();
@@ -77,6 +83,7 @@ class _NebulaBackgroundState extends State<NebulaBackground> {
         camera: widget.camera,
         zoom: widget.zoom,
         showGrid: widget.showGrid,
+        supernovaLight: widget.supernovaLight,
       ),
     );
   }
@@ -89,6 +96,7 @@ class _NebulaPainter extends CustomPainter {
     required this.camera,
     required this.zoom,
     required this.showGrid,
+    required this.supernovaLight,
   }) : super(repaint: clock);
 
   final ui.FragmentShader shader;
@@ -96,6 +104,7 @@ class _NebulaPainter extends CustomPainter {
   final SkyCamera camera;
   final double zoom;
   final bool showGrid;
+  final double supernovaLight;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -113,7 +122,16 @@ class _NebulaPainter extends CustomPainter {
       ..setFloat(10, camera.up.$2)
       ..setFloat(11, camera.up.$3)
       ..setFloat(12, zoom)
-      ..setFloat(13, showGrid ? 1.0 : 0.0);
+      ..setFloat(13, showGrid ? 1.0 : 0.0)
+      ..setFloat(14, supernovaLight);
+    // Where each area's supernova sits, so the nebula can glow around it.
+    for (var i = 0; i < LifeArea.values.length; i++) {
+      final (x, y, z) = supernovaVisualDirection(LifeArea.values[i]);
+      shader
+        ..setFloat(15 + i * 3, x)
+        ..setFloat(16 + i * 3, y)
+        ..setFloat(17 + i * 3, z);
+    }
     // Screen (rather than the plain opaque fill this always used to be) —
     // a 2026-09-19 test: SkyAreaBackdrop was moved to sit *behind* this
     // layer in NebulaScreen's own Stack, to see whether it reads as more
@@ -143,5 +161,6 @@ class _NebulaPainter extends CustomPainter {
   bool shouldRepaint(covariant _NebulaPainter oldDelegate) =>
       oldDelegate.camera != camera ||
       oldDelegate.zoom != zoom ||
-      oldDelegate.showGrid != showGrid;
+      oldDelegate.showGrid != showGrid ||
+      oldDelegate.supernovaLight != supernovaLight;
 }

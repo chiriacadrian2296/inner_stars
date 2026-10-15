@@ -7,16 +7,22 @@ import 'package:flutter/material.dart';
 import 'constellation_field.dart';
 import 'sky_clock.dart';
 
-/// STUDY (2026-10-14) — what a "shooting star" (a timed wish, see
-/// `ShootingStarsScreen`) could look like in the Galaxy. Nothing behind it
-/// yet: no data, no tap, one sample star near [anchor].
+/// STUDY (2026-10-14, shown in every build) — what a "shooting star" (a
+/// timed wish, see `ShootingStarsScreen`) could look like in the Galaxy.
+/// Nothing behind it yet: no data, no tap, one sample star near [anchor].
 ///
 /// Unlike the background's comets (cold, thin, gone in under two seconds,
 /// pure scenery), a shooting star is the user's own: so it follows the
 /// Galaxy's "gold + rays = yours" rule — its head is a real lit star, drawn
-/// with the very same flare shader as the user's stars — and it lasts: it
-/// crosses its arc over a whole hour, barely moving, trailing a long gold
-/// tail with sparks drifting off it.
+/// with the very same flare shader as the user's stars — and it lasts,
+/// gliding calmly on a long loop around [anchor].
+///
+/// Its tail is a wake of stardust in the sky's own language: crisp little
+/// stars like the background's (a solid core in a small glow), left behind
+/// where the head passed, each staying put while it drifts slightly aside,
+/// shrinks and fades — gold near the head, warm white further back — a few
+/// with the web cursor's tiny cross sparkle. A hair-thin line joins the
+/// head to the freshest stretch of it.
 class SkyShootingStarStudy extends StatelessWidget {
   const SkyShootingStarStudy({
     super.key,
@@ -27,7 +33,7 @@ class SkyShootingStarStudy extends StatelessWidget {
     required this.flareProgram,
   });
 
-  /// The world position (azimuth, elevation in turns) its arc passes by.
+  /// The world position (azimuth, elevation in turns) its loop circles.
   final Offset anchor;
   final SkyCamera camera;
   final double zoom;
@@ -66,103 +72,183 @@ class _ShootingStarPainter extends CustomPainter {
   final SkyClock clock;
   final ui.FragmentProgram? flareProgram;
 
-  /// How long one crossing takes — the wish's whole time.
-  static const _lifetime = 3600.0;
+  /// Seconds for one full loop around [anchor]: slow, but clearly moving.
+  static const _loopPeriod = 480.0;
 
-  /// How much of the arc the tail covers behind the head.
-  static const _tailShare = 0.32;
+  /// How much of the loop (radians of its angle) the wake stretches over.
+  static const _wakeAngle = 0.75;
+
+  /// One grain of stardust is left every this much of the loop angle, a
+  /// few at a time (see [_grainsPerStep]).
+  static const _grainStep = 0.012;
+  static const _grainsPerStep = 3;
 
   static const _gold = Color(0xFFF2B84B);
-  static const _core = Color(0xFFFFF8E6);
+  static const _warmWhite = Color(0xFFFFF4DE);
 
-  /// The arc: from one side of [anchor] to the other, a little above it.
-  Offset _pointAt(double progress) {
-    final start = offsetWorldPosition(anchor, 0.11, 2.5);
-    final end = offsetWorldPosition(anchor, 0.11, 2.5 + math.pi * 0.85);
-    return Offset.lerp(start, end, progress)!;
+  /// The loop: an ellipse around [anchor], at loop angle [angle].
+  Offset _pointAt(double angle) =>
+      offsetWorldPosition(anchor, 0.12 + 0.045 * math.cos(2 * angle), angle);
+
+  /// A stable 0..1 random number for grain [index], [salt] picking which.
+  static double _hash(int index, int salt) {
+    final x = math.sin(index * 127.1 + salt * 311.7) * 43758.5453;
+    return x - x.floorToDouble();
   }
 
   @override
   void paint(Canvas canvas, Size size) {
     final time = clock.seconds;
-    final progress = (time % _lifetime) / _lifetime;
-    final head = worldToScreen(_pointAt(progress), camera, zoom, size);
+    final headAngle = time / _loopPeriod * 2 * math.pi + 0.5;
+    final head = worldToScreen(_pointAt(headAngle), camera, zoom, size);
     if (head == null) return;
 
-    // The tail, sampled back along the arc from the head.
-    const samples = 28;
-    final points = <Offset>[];
-    for (var i = 0; i <= samples; i++) {
-      final projected = worldToScreen(
-        _pointAt(progress - _tailShare * i / samples),
-        camera,
-        zoom,
-        size,
-      );
-      if (projected == null) break;
-      points.add(projected.position);
-    }
     // Same on-screen size a constellation's own stars are drawn at.
     final starSize =
         kSkyConstellationAngularSpan *
         zoom *
         size.height *
         head.perspectiveScale;
-    final width = (starSize * 0.05).clamp(1.5, 14.0);
 
-    // A soft glow, then a brighter thinner core, both tapering to nothing.
-    for (var pass = 0; pass < 2; pass++) {
-      final glow = pass == 0;
-      for (var i = 0; i < points.length - 1; i++) {
-        final fade = 1 - i / (points.length - 1);
-        final paint = Paint()
-          ..blendMode = BlendMode.plus
-          ..strokeCap = StrokeCap.round
-          ..strokeWidth = (glow ? width * 2.6 : width * 0.7) * fade
-          ..color = (glow ? _gold : _core).withValues(
-            alpha: (glow ? 0.35 : 0.75) * math.pow(fade, 1.6).toDouble(),
+    _paintThread(canvas, size, headAngle);
+    _paintStardust(canvas, size, headAngle, time, starSize);
+    _paintHead(canvas, head.position, starSize, time);
+  }
+
+  /// A hair-thin crisp line from the head back over the freshest stretch
+  /// of the wake, fading out quickly.
+  void _paintThread(Canvas canvas, Size size, double headAngle) {
+    const samples = 14;
+    Offset? previous;
+    for (var i = 0; i <= samples; i++) {
+      final k = i / samples;
+      final projected = worldToScreen(
+        _pointAt(headAngle - _wakeAngle * 0.3 * k),
+        camera,
+        zoom,
+        size,
+      );
+      if (projected == null) return;
+      final point = projected.position;
+      if (previous != null) {
+        canvas.drawLine(
+          previous,
+          point,
+          Paint()
+            ..strokeWidth = 1
+            ..strokeCap = StrokeCap.round
+            ..blendMode = BlendMode.plus
+            ..color = _gold.withValues(
+              alpha: 0.55 * math.pow(1 - k, 2).toDouble(),
+            ),
+        );
+      }
+      previous = point;
+    }
+  }
+
+  /// The wake: grains left at fixed points of the loop as the head passes,
+  /// each aging from the moment it was left.
+  void _paintStardust(
+    Canvas canvas,
+    Size size,
+    double headAngle,
+    double time,
+    double starSize,
+  ) {
+    final newestStep = (headAngle / _grainStep).floor();
+    final steps = (_wakeAngle / _grainStep).ceil();
+    for (var s = 0; s < steps; s++) {
+      final step = newestStep - s;
+      final bornAt = step * _grainStep;
+      final age = (headAngle - bornAt) / _wakeAngle;
+      if (age < 0 || age >= 1) continue;
+      // This stretch of the loop, projected once for all its grains.
+      final from = worldToScreen(_pointAt(bornAt), camera, zoom, size);
+      final to = worldToScreen(
+        _pointAt(bornAt + _grainStep),
+        camera,
+        zoom,
+        size,
+      );
+      if (from == null || to == null) continue;
+      final along = to.position - from.position;
+      final length = along.distance;
+      if (length == 0) continue;
+      final normal = Offset(-along.dy, along.dx) / length;
+      for (var g = 0; g < _grainsPerStep; g++) {
+        final index = step * _grainsPerStep + g;
+        final at = from.position + along * _hash(index, 1);
+
+        // Drifting slowly aside as it ages: the wake widens behind.
+        final side = _hash(index, 2) * 2 - 1;
+        final spread = starSize * 0.05 * (0.4 + 2.6 * age);
+        final center = at + normal * side * spread;
+
+        final twinkle =
+            0.75 +
+            0.25 * math.sin(time * (1.4 + _hash(index, 3) * 2.2) + index * 1.7);
+        final fade = math.pow(1 - age, 1.4).toDouble();
+        final alpha = (fade * twinkle * (0.55 + 0.45 * _hash(index, 4))).clamp(
+          0.0,
+          1.0,
+        );
+        if (alpha < 0.02) continue;
+
+        // Bigger and gold fresh, smaller and warm white as it ages.
+        final coreRadius =
+            (starSize * 0.009 * (0.5 + _hash(index, 5)) * (1 - 0.6 * age))
+                .clamp(0.7, 2.6);
+        final color = Color.lerp(_gold, _warmWhite, age)!;
+
+        // A small soft glow from two faint rings of light (cheaper than a
+        // blur, with a couple of hundred grains a frame).
+        for (final (scale, strength) in const [(2.8, 0.1), (1.7, 0.2)]) {
+          canvas.drawCircle(
+            center,
+            coreRadius * scale,
+            Paint()
+              ..blendMode = BlendMode.plus
+              ..color = color.withValues(alpha: alpha * strength),
           );
-        if (glow) {
-          paint.maskFilter = MaskFilter.blur(BlurStyle.normal, width * 0.9);
         }
-        canvas.drawLine(points[i], points[i + 1], paint);
+        canvas.drawCircle(
+          center,
+          coreRadius,
+          Paint()
+            ..blendMode = BlendMode.plus
+            ..color = color.withValues(alpha: alpha),
+        );
+        // A few with the cursor sparkle's tiny cross.
+        if (_hash(index, 6) < 0.18) {
+          final arm = coreRadius * 2.8 * (0.6 + 0.4 * twinkle);
+          final line = Paint()
+            ..blendMode = BlendMode.plus
+            ..strokeWidth = 0.8
+            ..strokeCap = StrokeCap.round
+            ..color = color.withValues(alpha: alpha * 0.8);
+          canvas.drawLine(
+            center.translate(-arm, 0),
+            center.translate(arm, 0),
+            line,
+          );
+          canvas.drawLine(
+            center.translate(0, -arm),
+            center.translate(0, arm),
+            line,
+          );
+        }
       }
     }
+  }
 
-    // Sparks drifting off the tail, each twinkling at its own pace.
-    final random = math.Random(7);
-    for (var s = 0; s < 18; s++) {
-      final along = random.nextDouble();
-      final index = (along * (points.length - 1)).floor();
-      if (index >= points.length - 1) continue;
-      final a = points[index];
-      final b = points[index + 1];
-      final direction = b - a;
-      final length = direction.distance;
-      if (length == 0) continue;
-      final normal = Offset(-direction.dy, direction.dx) / length;
-      final phase = random.nextDouble() * math.pi * 2;
-      final speed = 1.2 + random.nextDouble() * 2.4;
-      final drift =
-          (random.nextDouble() - 0.5) * width * 5 +
-          math.sin(time * 0.7 + phase) * width * 0.8;
-      final twinkle = 0.5 + 0.5 * math.sin(time * speed + phase);
-      final fade = 1 - along;
-      canvas.drawCircle(
-        Offset.lerp(a, b, random.nextDouble())! + normal * drift,
-        (width * 0.35 * (0.6 + twinkle * 0.6)).clamp(0.8, 4.0),
-        Paint()
-          ..blendMode = BlendMode.plus
-          ..maskFilter = MaskFilter.blur(BlurStyle.normal, width * 0.25)
-          ..color = Color.lerp(
-            _gold,
-            _core,
-            twinkle,
-          )!.withValues(alpha: 0.85 * twinkle * fade),
-      );
-    }
-
-    // The head: a real lit star, from the same shader as the user's own.
+  /// The head: a real lit star, from the same shader as the user's own.
+  void _paintHead(
+    Canvas canvas,
+    Offset position,
+    double starSize,
+    double time,
+  ) {
     final program = flareProgram;
     if (program == null) return;
     final shader = program.fragmentShader();
@@ -176,15 +262,15 @@ class _ShootingStarPainter extends CustomPainter {
       ..setFloat(5, _gold.b);
     // 16 positions, 16 seeds, 16 orbit counts — only the first is used.
     final uniforms = Float32List(16 * 2 + 16 * 2 + 16)..fillRange(0, 32, -1);
-    uniforms[0] = head.position.dx;
-    uniforms[1] = head.position.dy;
+    uniforms[0] = position.dx;
+    uniforms[1] = position.dy;
     uniforms[32] = 0.37;
     uniforms[33] = 0.61;
     for (var i = 0; i < uniforms.length; i++) {
       shader.setFloat(6 + i, uniforms[i]);
     }
     canvas.drawRect(
-      Rect.fromCircle(center: head.position, radius: flareRadius),
+      Rect.fromCircle(center: position, radius: flareRadius),
       Paint()
         ..shader = shader
         ..blendMode = BlendMode.plus,

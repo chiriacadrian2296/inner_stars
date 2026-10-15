@@ -21,7 +21,75 @@ class StatsSectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(text, style: context.typography.compactSectionLabel);
+    return Text(
+      text,
+      style: TextStyle(
+        color: context.colors.gold,
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+      ),
+    );
+  }
+}
+
+/// A quantitative line with a bright gold core and a soft halo. Unlike the
+/// app's controls, this glow communicates magnitude rather than selection.
+class StatsGlowBar extends StatelessWidget {
+  const StatsGlowBar({super.key, required this.value, this.height = 7});
+
+  final double value;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final fraction = value.clamp(0.0, 1.0);
+    return SizedBox(
+      height: height + 8,
+      child: Center(
+        child: SizedBox(
+          height: height,
+          child: Stack(
+            clipBehavior: Clip.none,
+            fit: StackFit.expand,
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.muted.withValues(alpha: .12),
+                  borderRadius: BorderRadius.circular(kRadiusPill),
+                ),
+              ),
+              if (fraction > 0)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: FractionallySizedBox(
+                    widthFactor: fraction,
+                    heightFactor: 1,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: colors.gold,
+                        borderRadius: BorderRadius.circular(kRadiusPill),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.gold.withValues(alpha: .5),
+                            blurRadius: 12,
+                            spreadRadius: 1,
+                          ),
+                          BoxShadow(
+                            color: colors.gold.withValues(alpha: .22),
+                            blurRadius: 22,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -399,14 +467,8 @@ class AreaDistribution extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: kSpaceXs),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(3),
-                    child: LinearProgressIndicator(
-                      value: maxCount == 0 ? 0 : entry.value / maxCount,
-                      minHeight: 6,
-                      color: colors.gold,
-                      backgroundColor: colors.muted.withValues(alpha: 0.12),
-                    ),
+                  StatsGlowBar(
+                    value: maxCount == 0 ? 0 : entry.value / maxCount,
                   ),
                 ],
               ),

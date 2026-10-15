@@ -40,9 +40,38 @@ class NightlightStarfield extends StatefulWidget {
     super.key,
     this.starCount = 80,
     this.exclusionZones = const [],
-  });
+    this.color = Colors.white,
+    this.animate = true,
+    this.intensity = 1,
+    this.glowTightness = 1,
+    this.showGlow = true,
+    this.glowIntensity = 1,
+  }) : assert(intensity >= 0),
+       assert(glowTightness > 0),
+       assert(glowIntensity >= 0);
 
   final int starCount;
+
+  /// Tint for the sparkle core and its glow. Nightlight stays white by
+  /// default; other restrained hero treatments may supply their own light.
+  final Color color;
+
+  /// False keeps the generated field at its initial frame. The default is
+  /// animated; reduced-motion media settings also pause it automatically.
+  final bool animate;
+
+  /// Multiplies glow, core and flash opacity. Values above one make the
+  /// field read more brightly without changing the stars' layout.
+  final double intensity;
+
+  /// Values above one pull the soft light closer to each crisp core.
+  final double glowTightness;
+
+  /// Whether to paint the soft halo behind each crisp sparkle.
+  final bool showGlow;
+
+  /// Multiplies only the halo opacity, without dimming the crisp star core.
+  final double glowIntensity;
 
   /// Rects no star will ever be drawn in — e.g. the strip a big title sits
   /// in, so an animated star never drifts in front of its own text.
@@ -119,8 +148,29 @@ class _NightlightStarfieldState extends State<NightlightStarfield>
   @override
   void initState() {
     super.initState();
-    _ticker = createTicker((elapsed) => setState(() => _elapsed = elapsed))
-      ..start();
+    _ticker = createTicker((elapsed) => setState(() => _elapsed = elapsed));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _updateTicker();
+  }
+
+  @override
+  void didUpdateWidget(NightlightStarfield oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.animate != widget.animate) _updateTicker();
+  }
+
+  void _updateTicker() {
+    final shouldAnimate =
+        widget.animate && !MediaQuery.disableAnimationsOf(context);
+    if (shouldAnimate && !_ticker.isActive) {
+      _ticker.start();
+    } else if (!shouldAnimate && _ticker.isActive) {
+      _ticker.stop();
+    }
   }
 
   @override
@@ -138,6 +188,11 @@ class _NightlightStarfieldState extends State<NightlightStarfield>
           stars: _stars,
           exclusionZones: widget.exclusionZones,
           time: _elapsed.inMicroseconds / Duration.microsecondsPerSecond,
+          color: widget.color,
+          intensity: widget.intensity,
+          glowTightness: widget.glowTightness,
+          showGlow: widget.showGlow,
+          glowIntensity: widget.glowIntensity,
         ),
       ),
     );
@@ -165,11 +220,21 @@ class _NightlightStarfieldPainter extends CustomPainter {
     required this.stars,
     required this.exclusionZones,
     required this.time,
+    required this.color,
+    required this.intensity,
+    required this.glowTightness,
+    required this.showGlow,
+    required this.glowIntensity,
   });
 
   final List<_NightlightStar> stars;
   final List<Rect> exclusionZones;
   final double time;
+  final Color color;
+  final double intensity;
+  final double glowTightness;
+  final bool showGlow;
+  final double glowIntensity;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -216,16 +281,28 @@ class _NightlightStarfieldPainter extends CustomPainter {
       // rather than as a separate ring/circle shape.
       final radius =
           star.radius * (0.05 + 1.75 * cycle) * (1.0 + flicker * 0.6);
-      final glowAlpha = (0.5 * cycle + flicker * 0.5).clamp(0.0, 1.0);
-      final coreAlpha = (cycle + flicker * 0.4).clamp(0.0, 1.0);
+      final coreAlpha = ((cycle + flicker * 0.4) * intensity).clamp(0.0, 1.0);
 
-      final glowPaint = Paint()
-        ..color = Colors.white.withValues(alpha: glowAlpha)
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, radius * 1.8);
-      canvas.drawCircle(center, radius * 1.6, glowPaint);
+      if (showGlow) {
+        final glowAlpha =
+            ((0.28 * cycle + flicker * 0.16) * intensity * glowIntensity).clamp(
+              0.0,
+              1.0,
+            );
+        final glowRadius = radius * (3.2 / glowTightness).clamp(1.7, 3.2);
+        final glowPaint = Paint()
+          ..shader = RadialGradient(
+            colors: [
+              color.withValues(alpha: glowAlpha),
+              color.withValues(alpha: glowAlpha * .32),
+              color.withValues(alpha: 0),
+            ],
+            stops: const [0, .34, 1],
+          ).createShader(Rect.fromCircle(center: center, radius: glowRadius));
+        canvas.drawCircle(center, glowRadius, glowPaint);
+      }
 
-      final corePaint = Paint()
-        ..color = Colors.white.withValues(alpha: coreAlpha);
+      final corePaint = Paint()..color = color.withValues(alpha: coreAlpha);
       canvas.save();
       canvas.translate(center.dx, center.dy);
       canvas.drawPath(sparklePath(radius), corePaint);
@@ -241,15 +318,18 @@ class _NightlightStarfieldPainter extends CustomPainter {
       // rather than a wide, soft wash.
       final flash = math.pow(flickerClamped, 1.2).toDouble();
       if (flash > 0.02) {
-        final flashAlpha = (flash * 2.2).clamp(0.0, 1.0);
+        final flashAlpha = (flash * 2.2 * intensity).clamp(0.0, 1.0);
         final flareRadius = radius * (1.0 + flash * 0.35);
-        final flarePaint = Paint()
-          ..color = Colors.white.withValues(alpha: flashAlpha)
-          ..maskFilter = MaskFilter.blur(BlurStyle.normal, flareRadius * 0.7);
-        canvas.drawCircle(center, flareRadius, flarePaint);
+        if (showGlow) {
+          final flareAlpha = (flashAlpha * .22 * glowIntensity).clamp(0.0, 1.0);
+          final flarePaint = Paint()
+            ..color = color.withValues(alpha: flareAlpha)
+            ..maskFilter = MaskFilter.blur(BlurStyle.normal, flareRadius * 0.7);
+          canvas.drawCircle(center, flareRadius, flarePaint);
+        }
 
         final flashCorePaint = Paint()
-          ..color = Colors.white.withValues(alpha: flashAlpha);
+          ..color = color.withValues(alpha: flashAlpha);
         canvas.drawCircle(center, radius * 0.45, flashCorePaint);
       }
     }
@@ -259,5 +339,10 @@ class _NightlightStarfieldPainter extends CustomPainter {
   bool shouldRepaint(covariant _NightlightStarfieldPainter oldDelegate) =>
       oldDelegate.time != time ||
       oldDelegate.stars != stars ||
+      oldDelegate.color != color ||
+      oldDelegate.intensity != intensity ||
+      oldDelegate.glowTightness != glowTightness ||
+      oldDelegate.showGlow != showGlow ||
+      oldDelegate.glowIntensity != glowIntensity ||
       !listEquals(oldDelegate.exclusionZones, exclusionZones);
 }

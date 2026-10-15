@@ -2181,6 +2181,12 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get lightPeriodYear => 'Anul Acesta';
   @override
   String get lightPeriodMonth => 'Luna Aceasta';
+
+  @override
+  String get lightPeriodFilterLabel => 'Perioadă';
+
+  @override
+  String get lightOverviewLabel => 'Privire de Ansamblu';
   @override
   String get lightHeadline => 'Privește câtă lumină ai aprins.';
   @override

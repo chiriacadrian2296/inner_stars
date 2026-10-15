@@ -27,6 +27,7 @@ import '../widgets/habit_cycle_host.dart';
 import '../widgets/habit_cycle_scope.dart';
 import '../widgets/intensity_bolts.dart';
 import '../widgets/lit_star_card.dart';
+import '../widgets/nightlight_starfield.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
 import '../widgets/stats/accumulation_chart.dart';
@@ -85,6 +86,14 @@ class _LightScreenState extends State<LightScreen> {
   void _setPeriod(LightPeriod period) =>
       setState(() => _session.period = period);
 
+  Future<void> _pickPeriod() async {
+    final period = await showAppSheet<LightPeriod>(
+      context: context,
+      builder: (sheetContext) => _PeriodSheet(selected: _session.period),
+    );
+    if (period != null && mounted) _setPeriod(period);
+  }
+
   @override
   Widget build(BuildContext context) {
     final strings = context.strings;
@@ -113,13 +122,17 @@ class _LightScreenState extends State<LightScreen> {
     final sections = <Widget>[];
     if (stats.isStarScope) {
       final star = stats.stars.firstOrNull;
-      sections.add(
+      sections.addAll([
+        StatsSectionLabel(strings.lightOverviewLabel),
         star == null
             ? StatsEmptyState(strings.insightUnavailable)
             : _StarFacts(star: star),
-      );
+      ]);
     } else {
-      sections.add(_LightHero(stats: stats));
+      sections.addAll([
+        StatsSectionLabel(strings.lightOverviewLabel),
+        _LightHero(stats: stats),
+      ]);
       final habit = stats.isHabitScope ? stats.habits.firstOrNull : null;
       final habitCycles = habit == null
           ? const <HabitCycle>[]
@@ -195,61 +208,66 @@ class _LightScreenState extends State<LightScreen> {
       }
     }
 
-    return Scaffold(
-      backgroundColor: context.colors.night,
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            kPageInsetCompact,
-            kSpaceMd,
-            kPageInsetCompact,
-            kSpaceXxl,
-          ),
-          children: [
-            ResponsiveContent(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  StaggeredEntrance(
-                    index: 0,
-                    child: Text(
-                      strings.lightPageTitle,
-                      style: context.typography.utilityPageTitle,
-                    ),
-                  ),
-                  const SizedBox(height: kSpaceMd),
-                  StaggeredEntrance(
-                    index: 1,
-                    child: _ScopeTrail(
-                      trail: names.trail(_session.scope),
-                      names: names,
-                      onTap: _setScope,
-                    ),
-                  ),
-                  if (!stats.isStarScope) ...[
-                    const SizedBox(height: kSpaceSm),
-                    StaggeredEntrance(
-                      index: 1,
-                      child: _PeriodChips(
-                        period: _session.period,
-                        onChanged: _setPeriod,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: kSpaceLg),
-                  for (var i = 0; i < sections.length; i++) ...[
-                    if (i > 0)
-                      SizedBox(
-                        height: sections[i] is StatsSectionLabel
-                            ? kSpaceLg
-                            : kSpaceSm,
-                      ),
-                    StaggeredEntrance(index: 2 + i ~/ 2, child: sections[i]),
-                  ],
-                ],
+    final navigationHeight = stats.isStarScope ? 64.0 : 128.0;
+    return PopScope(
+      canPop: _session.scope == null,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop || _session.scope == null) return;
+        final trail = names.trail(_session.scope);
+        _setScope(trail.length > 1 ? trail[trail.length - 2] : null);
+      },
+      child: Scaffold(
+        backgroundColor: context.colors.night,
+        body: SafeArea(
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: _LightTitleHero(title: strings.lightPageTitle),
               ),
-            ),
-          ],
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _PinnedLightNavigationDelegate(
+                  height: navigationHeight,
+                  child: _LightNavigationBar(
+                    trail: names.trail(_session.scope),
+                    names: names,
+                    period: stats.isStarScope ? null : _session.period,
+                    onScopeTap: _setScope,
+                    onPeriodTap: _pickPeriod,
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                  kPageInsetCompact,
+                  kSpaceLg,
+                  kPageInsetCompact,
+                  kSpaceXxl,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: ResponsiveContent(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (var i = 0; i < sections.length; i++) ...[
+                          if (i > 0)
+                            SizedBox(
+                              height: sections[i] is StatsSectionLabel
+                                  ? kSpaceLg
+                                  : kSpaceSm,
+                            ),
+                          StaggeredEntrance(
+                            index: 2 + i ~/ 2,
+                            child: sections[i],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -327,6 +345,89 @@ class _LightScreenState extends State<LightScreen> {
   }
 }
 
+class _LightTitleHero extends StatelessWidget {
+  const _LightTitleHero({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return SizedBox(
+      height: 300,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final titleZone = Rect.fromCenter(
+            center: Offset(constraints.maxWidth / 2, 143),
+            width: constraints.maxWidth.clamp(250.0, 390.0),
+            height: 96,
+          );
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              ShaderMask(
+                blendMode: BlendMode.dstIn,
+                shaderCallback: (bounds) => const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.white,
+                    Colors.white,
+                    Colors.transparent,
+                  ],
+                  stops: [0, .14, .58, 1],
+                ).createShader(bounds),
+                child: NightlightStarfield(
+                  starCount: 52,
+                  color: colors.gold,
+                  intensity: 1.55,
+                  glowTightness: 1.45,
+                  glowIntensity: .5,
+                  exclusionZones: [titleZone],
+                ),
+              ),
+              Align(
+                alignment: const Alignment(0, -.05),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: kPageInsetCompact,
+                  ),
+                  child: ResponsiveContent(
+                    child: StaggeredEntrance(
+                      index: 0,
+                      child: Text(
+                        title,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: kFontBranding,
+                          fontSize: 58,
+                          height: 1.05,
+                          color: colors.gold,
+                          shadows: [
+                            Shadow(
+                              color: colors.gold.withValues(alpha: .68),
+                              blurRadius: 14,
+                            ),
+                            Shadow(
+                              color: colors.gold.withValues(alpha: .3),
+                              blurRadius: 32,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
 /// Resolves scope entities to names, icons and their parent chain.
 class _Names {
   const _Names({
@@ -389,10 +490,8 @@ class _Names {
   }
 }
 
-/// The scope, always one row of the same height whatever its depth or its
-/// names: every level above is a square icon-only step back up (its name
-/// on hold, as a tooltip), and the current one fills the rest of the row,
-/// ringed, its name cut short if it doesn't fit.
+/// A one-line breadcrumb. Every ancestor stays visible as a compact icon-only
+/// step while the current scope uses the remaining width for its label.
 class _ScopeTrail extends StatelessWidget {
   const _ScopeTrail({
     required this.trail,
@@ -407,13 +506,13 @@ class _ScopeTrail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = context.strings;
-    final colors = context.colors;
     String label(InsightEntity? entity) =>
         entity == null ? strings.lightScopeAll : names.label(entity);
     IconData icon(InsightEntity? entity) =>
         entity == null ? Icons.auto_awesome : names.icon(entity);
     final current = trail.last;
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         for (final entity in trail.take(trail.length - 1)) ...[
           Tooltip(
@@ -425,24 +524,37 @@ class _ScopeTrail extends StatelessWidget {
                 onTap: () => onTap(entity),
                 borderRadius: BorderRadius.circular(kRadiusField),
                 child: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: selectableDecoration(colors, selected: false),
-                  child: Icon(icon(entity), size: 18, color: colors.muted),
+                  width: 34,
+                  height: 34,
+                  decoration: selectableDecoration(
+                    context.colors,
+                    selected: false,
+                  ),
+                  child: Icon(
+                    icon(entity),
+                    size: 16,
+                    color: context.colors.muted,
+                  ),
                 ),
               ),
             ),
           ),
-          Icon(Icons.chevron_right_rounded, size: 18, color: colors.muted),
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 12,
+            color: context.colors.muted,
+          ),
         ],
-        Expanded(
-          child: AppChoiceChip(
-            label: label(current),
-            icon: icon(current),
-            selected: true,
-            expand: true,
-            // Tapping the current scope simply keeps it.
-            onPressed: () => onTap(current),
+        Flexible(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 180),
+            child: AppChoiceChip(
+              key: const ValueKey('light-current-scope'),
+              label: label(current),
+              icon: icon(current),
+              selected: true,
+              onPressed: () => onTap(current),
+            ),
           ),
         ),
       ],
@@ -450,33 +562,151 @@ class _ScopeTrail extends StatelessWidget {
   }
 }
 
-class _PeriodChips extends StatelessWidget {
-  const _PeriodChips({required this.period, required this.onChanged});
+String _periodLabel(BuildContext context, LightPeriod value) => switch (value) {
+  LightPeriod.allTime => context.strings.lightPeriodAllTime,
+  LightPeriod.year => context.strings.lightPeriodYear,
+  LightPeriod.month => context.strings.lightPeriodMonth,
+};
 
-  final LightPeriod period;
-  final ValueChanged<LightPeriod> onChanged;
+class _LightNavigationBar extends StatelessWidget {
+  const _LightNavigationBar({
+    required this.trail,
+    required this.names,
+    required this.period,
+    required this.onScopeTap,
+    required this.onPeriodTap,
+  });
+
+  final List<InsightEntity?> trail;
+  final _Names names;
+  final LightPeriod? period;
+  final ValueChanged<InsightEntity?> onScopeTap;
+  final VoidCallback onPeriodTap;
 
   @override
   Widget build(BuildContext context) {
-    final strings = context.strings;
-    String label(LightPeriod value) => switch (value) {
-      LightPeriod.allTime => strings.lightPeriodAllTime,
-      LightPeriod.year => strings.lightPeriodYear,
-      LightPeriod.month => strings.lightPeriodMonth,
-    };
-    return Wrap(
-      spacing: kSpaceSm,
-      runSpacing: kSpaceSm,
-      children: [
-        for (final value in LightPeriod.values)
-          AppChoiceChip(
-            label: label(value),
-            selected: value == period,
-            onPressed: () => onChanged(value),
-          ),
-      ],
+    final colors = context.colors;
+    final scope = _ScopeTrail(trail: trail, names: names, onTap: onScopeTap);
+    return DecoratedBox(
+      decoration: BoxDecoration(color: colors.night),
+      child: ResponsiveContent(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: kPageInsetCompact),
+          child: period == null
+              ? Center(child: scope)
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(height: 48, child: scope),
+                    const SizedBox(height: 9),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Tooltip(
+                        message: context.strings.lightPeriodFilterLabel,
+                        child: InkWell(
+                          key: const ValueKey('light-period-button'),
+                          onTap: onPeriodTap,
+                          borderRadius: BorderRadius.circular(kRadiusPill),
+                          child: Container(
+                            height: 30,
+                            padding: const EdgeInsets.symmetric(horizontal: 11),
+                            decoration: selectableDecoration(
+                              colors,
+                              selected: true,
+                              radius: kRadiusPill,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.calendar_month_outlined,
+                                  size: 14,
+                                  color: colors.gold,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _periodLabel(context, period!),
+                                  key: const ValueKey('light-period-value'),
+                                  maxLines: 1,
+                                  style: context.typography.microLabel.copyWith(
+                                    color: colors.text,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
     );
   }
+}
+
+class _PeriodSheet extends StatelessWidget {
+  const _PeriodSheet({required this.selected});
+
+  final LightPeriod selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSheetFrame(
+      title: AppSheetTitle(context.strings.lightPeriodFilterLabel),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final value in LightPeriod.values) ...[
+              if (value != LightPeriod.values.first)
+                const SizedBox(height: kSpaceSm),
+              AppChoiceChip(
+                label: _periodLabel(context, value),
+                icon: value == selected
+                    ? Icons.check_rounded
+                    : Icons.calendar_today_outlined,
+                selected: value == selected,
+                expand: true,
+                onPressed: () => Navigator.of(context).pop(value),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PinnedLightNavigationDelegate extends SliverPersistentHeaderDelegate {
+  const _PinnedLightNavigationDelegate({
+    required this.height,
+    required this.child,
+  });
+
+  final double height;
+  final Widget child;
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) => SizedBox.expand(child: child);
+
+  @override
+  bool shouldRebuild(_PinnedLightNavigationDelegate oldDelegate) =>
+      oldDelegate.height != height || oldDelegate.child != child;
 }
 
 /// The headline: how much light (or, for a pulsar, how many days done),
@@ -633,15 +863,7 @@ class _Breakdown extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: kSpaceXs),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(3),
-                        child: LinearProgressIndicator(
-                          value: max == 0 ? 0 : share.light / max,
-                          minHeight: 6,
-                          color: colors.gold,
-                          backgroundColor: colors.muted.withValues(alpha: 0.12),
-                        ),
-                      ),
+                      StatsGlowBar(value: max == 0 ? 0 : share.light / max),
                     ],
                   ),
                 ),

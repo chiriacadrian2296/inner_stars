@@ -1,4 +1,5 @@
 import 'package:inner_stars/widgets/activity_check_card.dart';
+import 'package:inner_stars/widgets/app_choice_chip.dart';
 
 import 'dart:convert';
 import 'dart:io';
@@ -285,6 +286,7 @@ void main() {
                 ),
               ),
             ),
+            reduceMotion: true,
           ),
         ),
       );
@@ -472,6 +474,7 @@ void main() {
               ),
             ),
           ),
+          reduceMotion: true,
         ),
       );
       await tester.tap(find.text('Front'));
@@ -648,7 +651,11 @@ void main() {
         ],
       );
       await tester.pumpWidget(
-        _app(c, const LightScreen(initialScope: InsightEntity.star(1))),
+        _app(
+          c,
+          const LightScreen(initialScope: InsightEntity.star(1)),
+          reduceMotion: true,
+        ),
       );
       await tester.pumpAndSettle();
       expect(find.byType(HeatmapPanel), findsNothing);
@@ -660,6 +667,7 @@ void main() {
             key: ValueKey('habit'),
             initialScope: InsightEntity.habit(2),
           ),
+          reduceMotion: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -872,7 +880,7 @@ void main() {
         stars: [_star(1, today), _star(2, today, project: 2)],
       );
       final strings = StringsIt();
-      await tester.pumpWidget(_app(c, const LightScreen()));
+      await tester.pumpWidget(_app(c, const LightScreen(), reduceMotion: true));
       await tester.pumpAndSettle();
       expect(find.text(strings.lightPageTitle), findsOneWidget);
       expect(find.text(strings.lightHeadline), findsOneWidget);
@@ -880,13 +888,16 @@ void main() {
       expect(find.text('6'), findsOneWidget);
 
       // Down: the physical area, then back up to everything.
-      final physical = find.text(LifeArea.physical.displayName(strings));
-      await tester.scrollUntilVisible(physical.last, 300);
-      await tester.tap(physical.last);
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -1200));
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(find.text(strings.lightScopeAll), -300);
+      final physical = find
+          .text(LifeArea.physical.displayName(strings))
+          .hitTestable();
+      expect(physical, findsOneWidget);
+      await tester.tap(physical);
+      await tester.pumpAndSettle();
       expect(find.text('3'), findsWidgets);
-      await tester.tap(find.text(strings.lightScopeAll));
+      await tester.tap(find.bySemanticsLabel(strings.lightScopeAll));
       await tester.pumpAndSettle();
       expect(find.text('6'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -894,4 +905,108 @@ void main() {
       c.dispose();
     },
   );
+
+  testWidgets(
+    'Your Light system back climbs activity, project, area and everything',
+    (tester) async {
+      final c = await _controller(stars: [_star(1, DateTime.now())]);
+      final strings = StringsIt();
+      await tester.pumpWidget(
+        _app(
+          c,
+          const LightScreen(initialScope: InsightEntity.star(1)),
+          reduceMotion: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      String currentScope() => tester
+          .widget<AppChoiceChip>(
+            find.byKey(const ValueKey('light-current-scope')),
+          )
+          .label;
+
+      expect(currentScope(), 'Star 1');
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(currentScope(), 'Project 1');
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(currentScope(), LifeArea.physical.displayName(strings));
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(currentScope(), strings.lightScopeAll);
+      expect(tester.takeException(), isNull);
+
+      await tester.pumpWidget(const SizedBox());
+      c.dispose();
+    },
+  );
+
+  testWidgets('Your Light keeps compact scope and period navigation pinned', (
+    tester,
+  ) async {
+    final c = await _controller(stars: [_star(1, DateTime.now())]);
+    final strings = StringsIt();
+    await tester.pumpWidget(_app(c, const LightScreen(), reduceMotion: true));
+    await tester.pumpAndSettle();
+
+    final currentScope = find.byKey(const ValueKey('light-current-scope'));
+    expect(tester.getSize(currentScope).width, lessThan(200));
+    expect(tester.getCenter(currentScope).dx, closeTo(400, 1));
+
+    final periodButton = find.byKey(const ValueKey('light-period-button'));
+    await tester.tap(periodButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(strings.lightPeriodYear));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('light-period-value')))
+          .data,
+      strings.lightPeriodYear,
+    );
+
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -1000));
+    await tester.pumpAndSettle();
+    expect(tester.getCenter(periodButton).dy, lessThan(100));
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox());
+    c.dispose();
+  });
+
+  testWidgets('Your Light fits every path icon on a narrow phone', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final c = await _controller(stars: [_star(1, DateTime.now())]);
+    final strings = StringsIt();
+    await tester.pumpWidget(
+      _app(
+        c,
+        const LightScreen(initialScope: InsightEntity.star(1)),
+        reduceMotion: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final current = find.byKey(const ValueKey('light-current-scope'));
+    expect(find.bySemanticsLabel(strings.lightScopeAll), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(LifeArea.physical.displayName(strings)),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel('Project 1'), findsOneWidget);
+    expect(tester.getTopLeft(current).dx, greaterThanOrEqualTo(0));
+    expect(tester.getTopRight(current).dx, lessThanOrEqualTo(320));
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox());
+    c.dispose();
+  });
 }

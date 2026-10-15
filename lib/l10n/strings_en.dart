@@ -2164,6 +2164,12 @@ My contribution meets a real need and is something I can sustain.
   String get lightPeriodYear => 'This Year';
   @override
   String get lightPeriodMonth => 'This Month';
+
+  @override
+  String get lightPeriodFilterLabel => 'Period';
+
+  @override
+  String get lightOverviewLabel => 'Overview';
   @override
   String get lightHeadline => 'Look at all the light you have lit.';
   @override

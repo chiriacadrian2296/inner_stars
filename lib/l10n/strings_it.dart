@@ -2190,6 +2190,12 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get lightPeriodYear => 'Quest’Anno';
   @override
   String get lightPeriodMonth => 'Questo Mese';
+
+  @override
+  String get lightPeriodFilterLabel => 'Periodo';
+
+  @override
+  String get lightOverviewLabel => 'Panoramica';
   @override
   String get lightHeadline => 'Guarda quanta luce hai acceso.';
   @override
