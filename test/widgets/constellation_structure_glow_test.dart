@@ -5,6 +5,64 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inner_stars/widgets/constellation_map/constellation_structure_glow.dart';
 
 void main() {
+  test('connection mask excludes whole discs including crossing segments', () {
+    final outside = constellationOutsideDiscs(
+      const Rect.fromLTWH(0, 0, 120, 120),
+      [(const Offset(30, 60), 14), (const Offset(90, 60), 14)],
+    );
+    expect(outside.contains(const Offset(30, 60)), isFalse);
+    expect(outside.contains(const Offset(43, 60)), isFalse);
+    expect(outside.contains(const Offset(90, 60)), isFalse);
+    expect(outside.contains(const Offset(60, 60)), isTrue);
+  });
+  testWidgets('tooltip glow stays outside the white frame', (tester) async {
+    await tester.runAsync(() async {
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder)..translate(20, 20);
+      const ConstellationTooltipGlowPainter(
+        frameWidth: 8,
+        radius: 12,
+      ).paint(canvas, const Size(80, 60));
+      final picture = recorder.endRecording();
+      final image = await picture.toImage(120, 100);
+      final bytes = (await image.toByteData(
+        format: ui.ImageByteFormat.rawRgba,
+      ))!;
+      int alpha(int x, int y) => bytes.getUint8((y * 120 + x) * 4 + 3);
+      expect(alpha(60, 50), 0);
+      expect(alpha(60, 22), 0);
+      expect(alpha(60, 15), greaterThan(0));
+      image.dispose();
+      picture.dispose();
+    });
+  });
+  testWidgets('focus preserves selected ring light and dims the other rings', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      final recorder = ui.PictureRecorder();
+      const ConstellationStructureGlowPainter(
+        segments: [],
+        discs: [(Offset(30, 60), 14), (Offset(90, 60), 14)],
+        strokeWidth: 4,
+        color: Colors.white,
+        focusedDiscIndex: 0,
+        inactiveOpacity: 0.32,
+      ).paint(Canvas(recorder), const Size(120, 120));
+      final picture = recorder.endRecording();
+      final image = await picture.toImage(120, 120);
+      final bytes = (await image.toByteData(
+        format: ui.ImageByteFormat.rawRgba,
+      ))!;
+      int alpha(int x, int y) => bytes.getUint8((y * 120 + x) * 4 + 3);
+      expect(alpha(30, 60), 0);
+      expect(alpha(90, 60), 0);
+      expect(alpha(110, 60), greaterThan(0));
+      expect(alpha(50, 60), greaterThan(alpha(110, 60) * 2));
+      image.dispose();
+      picture.dispose();
+    });
+  });
   testWidgets('structural light stays outside discs and solid line strokes', (
     tester,
   ) async {

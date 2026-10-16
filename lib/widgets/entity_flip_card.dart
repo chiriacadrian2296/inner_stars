@@ -445,19 +445,18 @@ class _ScaledFill extends StatelessWidget {
   final Widget child;
 
   @override
+  // A FittedBox rather than Transform.scale over an OverflowBox: the
+  // OverflowBox kept the scaled-down size for hit testing, so on a card
+  // narrower than the reference width the lower part of the back — its
+  // action buttons — never received taps.
   Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) => ClipRect(
-      child: Transform.scale(
-        scale: scale,
-        alignment: Alignment.topLeft,
-        child: OverflowBox(
-          alignment: Alignment.topLeft,
-          minWidth: constraints.maxWidth / scale,
-          maxWidth: constraints.maxWidth / scale,
-          minHeight: constraints.maxHeight / scale,
-          maxHeight: constraints.maxHeight / scale,
-          child: child,
-        ),
+    builder: (context, constraints) => FittedBox(
+      fit: BoxFit.fill,
+      alignment: Alignment.topLeft,
+      child: SizedBox(
+        width: constraints.maxWidth / scale,
+        height: constraints.maxHeight / scale,
+        child: child,
       ),
     ),
   );

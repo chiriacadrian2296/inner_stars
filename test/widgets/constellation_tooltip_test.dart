@@ -81,6 +81,21 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
       await tester.pumpAndSettle();
       final mapBounds = tester.getRect(find.byType(ConstellationMapView));
+      for (final (type, icon) in [
+        (SkyStarTooltip, StarKind.unlit.icon),
+        (SkyPulsarTooltip, StarKind.pulsar.icon),
+        (SkyNascentStarTooltip, StarKind.nascent.icon),
+      ]) {
+        for (final element in find.byType(type).evaluate()) {
+          expect(
+            find.descendant(
+              of: find.byWidget(element.widget),
+              matching: find.byIcon(icon),
+            ),
+            findsOneWidget,
+          );
+        }
+      }
       for (final tooltip in [
         SkyStarTooltip,
         SkyPulsarTooltip,
@@ -89,7 +104,7 @@ void main() {
         final placements = find.ancestor(
           of: find.byType(tooltip),
           matching: find.byWidgetPredicate(
-            (widget) => widget is Positioned && widget.child is FittedBox,
+            (widget) => widget is Positioned && widget.key is ValueKey,
           ),
         );
         for (final element in placements.evaluate()) {
@@ -145,6 +160,45 @@ void main() {
         matching: find.byKey(const Key('search-card-quick-menu-toggle')),
       );
       expectOpenDrawers(0);
+      expect(
+        tester
+            .widget<ConstellationMapView>(find.byType(ConstellationMapView))
+            .fadeStructureOnFocus,
+        isFalse,
+      );
+      expect(
+        tester
+            .widget<ConstellationMapView>(find.byType(ConstellationMapView))
+            .selectionEnabled,
+        isTrue,
+      );
+      await tap(find.text('Obiettivo'));
+      expect(find.byType(StarFormScreen), findsNothing);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is AnimatedOpacity && w.opacity == 0.32,
+        ),
+        findsNWidgets(3),
+      );
+      await tap(find.text('Abitudine'));
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is AnimatedOpacity && w.opacity == 0.32,
+        ),
+        findsNWidgets(3),
+      );
+      await tester.tapAt(
+        tester.getRect(find.byType(ConstellationMapView)).topLeft +
+            const Offset(5, 5),
+      );
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pumpAndSettle();
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is AnimatedOpacity && w.opacity == 0.32,
+        ),
+        findsNothing,
+      );
       await tap(toggle(find.byType(SkyPulsarTooltip)));
       expectOpenDrawers(1);
       await tap(action(SkyPulsarTooltip, Icons.local_fire_department_rounded));
@@ -215,6 +269,7 @@ void main() {
           projectId: 1,
           slotSequence: 1,
           title: 'Obiettivo',
+          iconSlug: scale == 0.45 ? 'home' : '',
           createdAt: DateTime(2026),
         );
         var viewed = 0;
@@ -283,6 +338,15 @@ void main() {
         }
 
         expectPlacementMatchesTooltip();
+        expect(
+          find.descendant(
+            of: find.byType(SkyStarTooltip),
+            matching: find.byIcon(
+              scale == 0.45 ? Icons.home : StarKind.unlit.icon,
+            ),
+          ),
+          findsOneWidget,
+        );
         final body = find.byKey(const Key('search-result-card-body'));
         final surface = find.byKey(const Key('search-result-card-surface'));
         // Map-only tooltip: remove the 88 px visual column, keeping text space.

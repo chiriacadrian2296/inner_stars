@@ -337,6 +337,16 @@ void main() {
     expect(second.slotSequence, first.slotSequence + 1);
   });
 
+  test('back-to-back adds never share an id', () async {
+    final repo = await StarRepository.create();
+    // Spread over projects so no constellation fills up.
+    for (var i = 0; i < 20; i++) {
+      await repo.add(title: 'Star $i', projectId: i);
+    }
+    final ids = repo.getAll().map((s) => s.id).toList();
+    expect(ids.toSet(), hasLength(ids.length));
+  });
+
   group('extras', () {
     final link = StarMedia(
       id: 'l1',

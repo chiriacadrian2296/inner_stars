@@ -789,8 +789,29 @@ _ConstellationTransform? _projectConstellationTransform(
   // Negated: the Sky's canonical "right" runs the opposite way to a shape's
   // own local x, so every shape drew mirrored left-to-right against its
   // tooltip/search preview (confirmed on-device; vertical was already right).
-  final rightVec = -(rightOffset - centerOffset) / _epsilon * angularSpan;
-  final upVec = (upOffset - centerOffset) / _epsilon * angularSpan;
+  var rightVec = -(rightOffset - centerOffset) / _epsilon * angularSpan;
+  var upVec = (upOffset - centerOffset) / _epsilon * angularSpan;
+
+  // The stereographic projection is conformal, so the derivative above is
+  // only ever a rotation plus a uniform scale. Squash it along the
+  // direction pointing away from the view center, by how obliquely the
+  // patch is seen (cos of its angle off-axis), to read as an object
+  // sitting on the sphere's inside rather than a flat sticker.
+  final radialLength = centerOffset.distance;
+  if (kSkyForeshortening > 0 && radialLength > 1e-6) {
+    final radial = centerOffset / radialLength;
+    final squash =
+        1 -
+        kSkyForeshortening *
+            (1 - _dot(direction, camera.forward).clamp(0.2, 1.0));
+    Offset squashed(Offset v) {
+      final along = v.dx * radial.dx + v.dy * radial.dy;
+      return v - radial * (along * (1 - squash));
+    }
+
+    rightVec = squashed(rightVec);
+    upVec = squashed(upVec);
+  }
 
   return _ConstellationTransform(
     Offset(
@@ -801,6 +822,12 @@ _ConstellationTransform? _projectConstellationTransform(
     upVec,
   );
 }
+
+/// How strongly sky objects (constellations, supernovas) are foreshortened
+/// toward the edges of the view, as if they sat on the inside of the sphere:
+/// 0 keeps the plain conformal look, 1 squashes an object fully by the cosine
+/// of its angle off the view axis. Shared with `sky_supernova.dart`.
+const double kSkyForeshortening = 0.3;
 
 /// Where [screenPos] lands in [constellation]'s own local unit space —
 /// [w]/[h], roughly -0.5..0.5 from center for an on-shape tap, the same
@@ -1666,6 +1693,7 @@ class ConstellationFieldPainter extends CustomPainter {
         glowScale: 1.8,
         time: time,
         intensityOrbits: true,
+        energyWaves: true,
       ).paint(canvas, Size.square(localSizePx));
       canvas.restore();
 

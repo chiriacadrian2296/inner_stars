@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui' show ImageFilter, lerpDouble;
+import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -57,6 +57,8 @@ class _StoredLabelLayout {
 /// underneath that reads the same matrix. Every visual element follows the
 /// camera's linear zoom factor, while positions are recomputed only when that
 /// zoom changes and merely translated while panning.
+enum ConstellationNodeStyle { disc, beacon, glyph }
+
 class ConstellationMapView extends StatefulWidget {
   const ConstellationMapView({
     super.key,
@@ -73,6 +75,15 @@ class ConstellationMapView extends StatefulWidget {
     this.structureColor,
     this.tooltipFrameColor,
     this.luminousStructure = false,
+    this.refinedPresentation = false,
+    this.focusedStarIndex,
+    this.selectionEnabled = false,
+    this.nodeStyle = ConstellationNodeStyle.disc,
+    this.showCardVisual = false,
+    this.simplifiedNodes = false,
+    this.fadeStructureOnFocus = false,
+    this.uniformNodeSize = false,
+    this.matchTooltipFrameToNode = false,
   });
 
   final List<ConstellationStar> stars;
@@ -118,6 +129,19 @@ class ConstellationMapView extends StatefulWidget {
   /// Outward-only structural glow and an inset ring matching tooltip frames.
   final bool luminousStructure;
 
+  /// Lab composition with lighter structure and compact nodes.
+  final bool refinedPresentation;
+  final int? focusedStarIndex;
+  final bool selectionEnabled;
+  final ConstellationNodeStyle nodeStyle;
+  final bool showCardVisual;
+  final bool simplifiedNodes;
+  final bool fadeStructureOnFocus;
+
+  /// Lab comparison: equal disc diameters for every star kind.
+  final bool uniformNodeSize;
+  final bool matchTooltipFrameToNode;
+
   @override
   State<ConstellationMapView> createState() => _ConstellationMapViewState();
 }
@@ -126,6 +150,12 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
     with TickerProviderStateMixin {
   // The layout is a function of the zoom (and the stars), not of the pan.
   final _menuController = SearchCardMenuController();
+  int? _selectedIndex;
+
+  void _select(int? index) {
+    setState(() => _selectedIndex = _selectedIndex == index ? null : index);
+  }
+
   double? _layoutZoom;
   Object? _layoutStars;
   Size? _layoutEnvironment;
@@ -447,9 +477,22 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
   @override
   void didUpdateWidget(ConstellationMapView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final selected = _selectedIndex;
+    if (selected != null &&
+        (selected >= widget.stars.length ||
+            selected >= oldWidget.stars.length ||
+            _tooltipId(widget.stars[selected]) !=
+                _tooltipId(oldWidget.stars[selected]))) {
+      _selectedIndex = null;
+    }
     if (!identical(oldWidget.stars, widget.stars) ||
         oldWidget.edges != widget.edges ||
-        oldWidget.tooltipScale != widget.tooltipScale) {
+        oldWidget.tooltipScale != widget.tooltipScale ||
+        oldWidget.nodeStyle != widget.nodeStyle ||
+        oldWidget.uniformNodeSize != widget.uniformNodeSize ||
+        oldWidget.matchTooltipFrameToNode != widget.matchTooltipFrameToNode ||
+        oldWidget.showCardVisual != widget.showCardVisual ||
+        oldWidget.refinedPresentation != widget.refinedPresentation) {
       _layoutStars = null;
       _lockedLayout = null;
       _layoutReferenceZoom = null;
@@ -487,10 +530,20 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
             _lastDoubleTapPosition = details.localPosition,
         onDoubleTap: () => _onDoubleTap(_lastDoubleTapPosition),
         onTapUp: (details) => _lastTapPosition = details.localPosition,
+        onLongPressStart: widget.selectionEnabled
+            ? (details) {
+                final star = _hitTest(details.localPosition);
+                if (star != null) widget.onStarTap(star);
+              }
+            : null,
         onTap: () {
           if (_gestureUsedMultiplePointers) return;
           final star = _hitTest(_lastTapPosition);
-          if (star != null) widget.onStarTap(star);
+          if (widget.selectionEnabled) {
+            _select(star == null ? null : widget.stars.indexOf(star));
+          } else if (star != null) {
+            widget.onStarTap(star);
+          }
         },
         child: ClipRect(
           child: AnimatedBuilder(
@@ -524,8 +577,19 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
   (int, int?) _tooltipId(ConstellationStar star) =>
       (star.entityId, star.slotSequence);
 
+  double _tooltipFrameWidth() {
+    if (!widget.matchTooltipFrameToNode) return galaxyTooltipPadding;
+    final zoom = widget.transformation.value.entry(0, 0);
+    final scale = zoom > 0 ? zoom : widget.fitScale;
+    return _kConstellationEdgeWidth *
+        _nodeScale(scale) /
+        (widget.tooltipScale * _uiScale(scale));
+  }
+
   double _mapTooltipWidth(BuildContext context) =>
-      galaxyTooltipWidth(context) - SearchResultCard.visualSize;
+      galaxyTooltipWidth(context) -
+      (widget.showCardVisual ? 0 : SearchResultCard.visualSize) +
+      2 * (_tooltipFrameWidth() - galaxyTooltipPadding);
 
   Size _nativeTooltipSize(BuildContext context, ConstellationStar star) {
     final width = _mapTooltipWidth(context);
@@ -604,7 +668,11 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
     final stars = widget.stars;
     final nodes = <_MapNode>[];
     for (var i = 0; i < stars.length; i++) {
-      final metrics = _NodeMetrics.of(stars[i], nodeScale);
+      final metrics = _NodeMetrics.of(
+        stars[i],
+        nodeScale * (widget.refinedPresentation ? 0.76 : 1),
+        uniformSize: widget.uniformNodeSize,
+      );
       nodes.add(
         _MapNode(
           index: i,
@@ -690,7 +758,9 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
             id: node.index,
             center: node.center,
             radius: node.outer,
-            leaderRadius: node.metrics.coreOuter,
+            leaderRadius:
+                node.metrics.coreOuter *
+                (widget.nodeStyle == ConstellationNodeStyle.beacon ? 0.32 : 1),
             // The crowded middle of the shape gets first pick of the free
             // space; the outer stars can always reach into the open sky.
             priority: -(node.center - anchor).distance,
@@ -823,6 +893,41 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
     );
   }
 
+  Widget _focusCard(int index, Widget child) {
+    if (!widget.refinedPresentation && !widget.selectionEnabled) return child;
+    final selected = widget.focusedStarIndex ?? _selectedIndex;
+    Offset? pointerStart;
+    return AnimatedOpacity(
+      key: ValueKey('constellation-card-focus-$index'),
+      opacity: selected == null || selected == index ? 1 : 0.32,
+      duration: const Duration(milliseconds: 220),
+      child: widget.selectionEnabled && !widget.fadeStructureOnFocus
+          ? Listener(
+              onPointerDown: (event) => pointerStart = event.position,
+              onPointerUp: (event) {
+                if (!_gestureUsedMultiplePointers &&
+                    pointerStart != null &&
+                    (event.position - pointerStart!).distance < 8) {
+                  setState(() => _selectedIndex = index);
+                }
+              },
+              child: child,
+            )
+          : child,
+    );
+  }
+
+  Widget _focusStructure(int? index, Widget child) {
+    if (!widget.fadeStructureOnFocus) return child;
+    final selected = widget.focusedStarIndex ?? _selectedIndex;
+    return AnimatedOpacity(
+      key: ValueKey('constellation-structure-focus-$index'),
+      opacity: selected == null || selected == index ? 1 : 0.32,
+      duration: const Duration(milliseconds: 220),
+      child: child,
+    );
+  }
+
   Widget _buildOverlay(BuildContext context) {
     final matrix = widget.transformation.value;
     final zoom = matrix.entry(0, 0);
@@ -836,16 +941,32 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
     final layout = geometry.layout;
     final stars = widget.stars;
 
+    final selected = widget.fadeStructureOnFocus
+        ? widget.focusedStarIndex ?? _selectedIndex
+        : null;
+    final discs = widget.fadeStructureOnFocus
+        ? [
+            for (final node in geometry.nodes)
+              (node.center + translation, node.metrics.diameter / 2),
+          ]
+        : <(Offset, double)>[];
+    final selectedLeaders = <_Leader>[];
+    final tooltipFrame = _tooltipFrameWidth();
+    final edgeStroke =
+        _kConstellationEdgeWidth *
+        geometry.uiScale *
+        (widget.refinedPresentation ? 0.4 : 1);
     final leaders = <_Leader>[];
     for (final placement in layout.placements.values) {
-      leaders.add(
+      final focused = selected == placement.id;
+      (focused ? selectedLeaders : leaders).add(
         _Leader(
           path: placement.path.shift(translation),
           color: starKindColor(
             stars[placement.id].kind,
             colors,
             lit: stars[placement.id].lit,
-          ).withValues(alpha: _kLabelLeaderOpacity),
+          ).withValues(alpha: focused ? 1 : _kLabelLeaderOpacity),
         ),
       );
     }
@@ -856,16 +977,16 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
         // The glow is atmospheric: it stays below both the constellation and
         // annotation lines instead of washing over the graph.
         for (final node in geometry.nodes)
-          if (node.metrics.glowStrength > 0)
+          if (node.metrics.glowStrength > 0 && !widget.refinedPresentation)
             Positioned(
               left: node.center.dx + translation.dx - node.outer,
               top: node.center.dy + translation.dy - node.outer,
               width: node.outer * 2,
               height: node.outer * 2,
               child: IgnorePointer(
-                child: _StarGlow(
-                  star: stars[node.index],
-                  metrics: node.metrics,
+                child: _focusStructure(
+                  node.index,
+                  _StarGlow(star: stars[node.index], metrics: node.metrics),
                 ),
               ),
             ),
@@ -882,26 +1003,56 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
                     for (final node in geometry.nodes)
                       (node.center + translation, node.metrics.diameter / 2),
                   ],
-                  strokeWidth: _kConstellationEdgeWidth * geometry.uiScale,
+                  strokeWidth: edgeStroke,
+                  focusedDiscIndex: widget.fadeStructureOnFocus
+                      ? widget.focusedStarIndex ?? _selectedIndex
+                      : null,
+                  inactiveOpacity: 0.32,
                   color: widget.structureColor ?? colors.night,
                 ),
               ),
             ),
           ),
         Positioned.fill(
-          child: CustomPaint(
-            painter: _LinesPainter(
-              segments: [
-                for (final (a, b) in geometry.segments)
-                  (a + translation, b + translation),
-              ],
-              edgeColor: widget.structureColor ?? colors.night,
-              edgeWidth: _kConstellationEdgeWidth * geometry.uiScale,
-              leaderWidth: _kLabelLeaderWidth * geometry.uiScale,
-              leaders: leaders,
+          child: _focusStructure(
+            null,
+            CustomPaint(
+              painter: _LinesPainter(
+                segments: [
+                  for (final (a, b) in geometry.segments)
+                    (a + translation, b + translation),
+                ],
+                edgeColor: widget.structureColor ?? colors.night,
+                edgeWidth: edgeStroke,
+                leaderWidth:
+                    _kLabelLeaderWidth *
+                    geometry.uiScale *
+                    (widget.refinedPresentation ? 0.55 : 1),
+                leaders: leaders,
+                discs: discs,
+              ),
             ),
           ),
         ),
+        if (selectedLeaders.isNotEmpty)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                key: const Key('constellation-focused-connector'),
+                painter: _LinesPainter(
+                  segments: const [],
+                  edgeColor: Colors.white,
+                  edgeWidth: 0,
+                  leaderWidth:
+                      _kLabelLeaderWidth *
+                      geometry.uiScale *
+                      (widget.refinedPresentation ? 0.55 : 1),
+                  leaders: selectedLeaders,
+                  discs: discs,
+                ),
+              ),
+            ),
+          ),
         for (final node in geometry.nodes)
           Positioned(
             left: node.center.dx + translation.dx - node.outer,
@@ -909,18 +1060,24 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
             width: node.outer * 2,
             height: node.outer * 2,
             child: IgnorePointer(
-              child: _StarButton(
-                star: stars[node.index],
-                metrics: node.metrics,
-                structureColor: widget.structureColor,
-                innerRingColor: widget.luminousStructure
-                    ? widget.tooltipFrameColor ?? colors.night
-                    : null,
-                innerRingWidth: widget.luminousStructure
-                    ? galaxyTooltipPadding *
-                          widget.tooltipScale *
-                          geometry.uiScale
-                    : 0,
+              child: _focusStructure(
+                node.index,
+                _StarButton(
+                  star: stars[node.index],
+                  metrics: node.metrics,
+                  refined: widget.refinedPresentation,
+                  nodeStyle: widget.nodeStyle,
+                  simplified: widget.simplifiedNodes,
+                  structureColor: widget.structureColor,
+                  innerRingColor: widget.luminousStructure
+                      ? widget.tooltipFrameColor ?? colors.night
+                      : null,
+                  innerRingWidth: widget.luminousStructure
+                      ? galaxyTooltipPadding *
+                            widget.tooltipScale *
+                            geometry.uiScale
+                      : 0,
+                ),
               ),
             ),
           ),
@@ -931,44 +1088,69 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
               stars[placement.id].slotSequence,
             )),
             rect: placement.rect.shift(translation),
-            child: FittedBox(
-              child: SizedBox(
-                width: _nativeTooltipSize(context, stars[placement.id]).width,
-                height: _nativeTooltipSize(context, stars[placement.id]).height,
-                child: OverflowBox(
-                  minWidth: _mapTooltipWidth(context),
-                  maxWidth: _mapTooltipWidth(context),
-                  minHeight: 0,
-                  maxHeight: double.infinity,
-                  child: _TooltipSizeObserver(
-                    onSize: (size) =>
-                        _onTooltipSize(_tooltipId(stars[placement.id]), size),
-                    child: Material(
-                      color:
-                          widget.tooltipFrameColor ??
-                          widget.structureColor ??
-                          colors.night,
-                      elevation: 8,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          kRadiusCard + galaxyTooltipPadding,
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(galaxyTooltipPadding),
-                        child: SkyTooltipMenuScope(
-                          controller: _menuController,
-                          showVisual: false,
-                          menuId: (
-                            stars[placement.id].entityId,
-                            stars[placement.id].slotSequence,
+            child: _focusCard(
+              placement.id,
+              FittedBox(
+                child: SizedBox(
+                  width: _nativeTooltipSize(context, stars[placement.id]).width,
+                  height: _nativeTooltipSize(
+                    context,
+                    stars[placement.id],
+                  ).height,
+                  child: OverflowBox(
+                    minWidth: _mapTooltipWidth(context),
+                    maxWidth: _mapTooltipWidth(context),
+                    minHeight: 0,
+                    maxHeight: double.infinity,
+                    child: _TooltipSizeObserver(
+                      onSize: (size) =>
+                          _onTooltipSize(_tooltipId(stars[placement.id]), size),
+                      child: CustomPaint(
+                        painter: selected == placement.id
+                            ? ConstellationTooltipGlowPainter(
+                                frameWidth: tooltipFrame,
+                                radius: kRadiusCard + tooltipFrame,
+                              )
+                            : null,
+                        child: Material(
+                          color: selected == placement.id
+                              ? Colors.white
+                              : widget.tooltipFrameColor ??
+                                    widget.structureColor ??
+                                    colors.night,
+                          elevation: 8,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              kRadiusCard + tooltipFrame,
+                            ),
                           ),
-                          child:
-                              widget.cardBuilder?.call(
-                                context,
-                                stars[placement.id],
-                              ) ??
-                              Text(stars[placement.id].label),
+                          child: Padding(
+                            padding: EdgeInsets.all(tooltipFrame),
+                            child: SkyTooltipMenuScope(
+                              controller: _menuController,
+                              showVisual: widget.showCardVisual,
+                              focused:
+                                  !widget.fadeStructureOnFocus ||
+                                  (!widget.selectionEnabled &&
+                                      !widget.refinedPresentation) ||
+                                  selected == placement.id,
+                              onCardTap: widget.selectionEnabled
+                                  ? () => setState(
+                                      () => _selectedIndex = placement.id,
+                                    )
+                                  : null,
+                              menuId: (
+                                stars[placement.id].entityId,
+                                stars[placement.id].slotSequence,
+                              ),
+                              child:
+                                  widget.cardBuilder?.call(
+                                    context,
+                                    stars[placement.id],
+                                  ) ??
+                                  Text(stars[placement.id].label),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -1065,12 +1247,17 @@ class _NodeMetrics {
     required this.glowStrength,
   });
 
-  factory _NodeMetrics.of(ConstellationStar star, double ui) {
+  factory _NodeMetrics.of(
+    ConstellationStar star,
+    double ui, {
+    bool uniformSize = false,
+  }) {
     switch (star.kind) {
-      // An empty slot is a little smaller: it's a place, not yet a star.
+      // Legacy comparisons keep empty slots smaller; the uniform lab uses one size.
       case StarKind.nascent:
         return _NodeMetrics(
-          diameter: (32 + _kConstellationEdgeWidth * 2) * ui,
+          diameter:
+              ((uniformSize ? 40 : 32) + _kConstellationEdgeWidth * 2) * ui,
           strokeWidth: _kNodeStrokeWidth * ui,
           glowStrength: 0,
         );
@@ -1118,12 +1305,18 @@ class _StarButton extends StatelessWidget {
     this.structureColor,
     this.innerRingColor,
     this.innerRingWidth = 0,
+    this.refined = false,
+    this.simplified = false,
+    this.nodeStyle = ConstellationNodeStyle.disc,
   });
 
   final Color? structureColor;
 
   final Color? innerRingColor;
   final double innerRingWidth;
+  final bool refined;
+  final bool simplified;
+  final ConstellationNodeStyle nodeStyle;
 
   final ConstellationStar star;
   final _NodeMetrics metrics;
@@ -1136,10 +1329,43 @@ class _StarButton extends StatelessWidget {
     // the lighter card surface. Keep the glyph and its inner disc unchanged.
     final kindColor = starKindColor(kind, colors, lit: star.lit);
     final diameter = metrics.diameter;
+    if (nodeStyle == ConstellationNodeStyle.beacon) {
+      return Center(
+        child: Container(
+          width: diameter * 0.32,
+          height: diameter * 0.32,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            border: Border.all(color: kindColor, width: diameter * 0.07),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.white.withValues(alpha: 0.35),
+                blurRadius: diameter * 0.55,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (nodeStyle == ConstellationNodeStyle.glyph) {
+      return Center(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.night,
+            shape: BoxShape.circle,
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(diameter * 0.08),
+            child: Icon(kind.icon, size: diameter * 0.7, color: kindColor),
+          ),
+        ),
+      );
+    }
     final nascent = kind == StarKind.nascent;
     final photoPath = star.photoPath;
     final ui = metrics.strokeWidth / _kNodeStrokeWidth;
-    final frameWidth = _kConstellationEdgeWidth * ui;
+    final frameWidth = _kConstellationEdgeWidth * ui * (refined ? 0.53 : 1);
     final innerDiameter = diameter - frameWidth * 2;
 
     final disc = Container(
@@ -1172,7 +1398,7 @@ class _StarButton extends StatelessWidget {
               fit: StackFit.expand,
               alignment: Alignment.center,
               children: [
-                if (photoPath != null && photoPath.isNotEmpty)
+                if (!simplified && photoPath != null && photoPath.isNotEmpty)
                   Opacity(
                     opacity: 0.5,
                     child: PhotoImage(
@@ -1184,18 +1410,18 @@ class _StarButton extends StatelessWidget {
                     ),
                   ),
                 Center(
-                  child: nascent
-                      ? _GlowingStarIcon(
-                          icon: kind.icon,
-                          size: innerDiameter * 0.5,
+                  child: nascent || simplified
+                      ? Icon(
+                          kind.icon,
+                          size: innerDiameter * (simplified ? 0.62 : 0.5),
                           color: kindColor,
                         )
                       : Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            _GlowingStarIcon(
-                              icon: kind.icon,
-                              size: innerDiameter * 0.4,
+                            Icon(
+                              kind.icon,
+                              size: innerDiameter * (refined ? 0.55 : 0.4),
                               color: kindColor,
                             ),
                             Padding(
@@ -1221,50 +1447,6 @@ class _StarButton extends StatelessWidget {
 
     return Stack(alignment: Alignment.center, children: [disc]);
   }
-}
-
-/// The glow follows the glyph itself, like the reader's light action, while
-/// the crisp foreground preserves its shape and the size used by the layout.
-class _GlowingStarIcon extends StatelessWidget {
-  const _GlowingStarIcon({
-    required this.icon,
-    required this.size,
-    required this.color,
-  });
-
-  final IconData icon;
-  final double size;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => SizedBox.square(
-    dimension: size,
-    child: Stack(
-      alignment: Alignment.center,
-      clipBehavior: Clip.none,
-      children: [
-        ExcludeSemantics(
-          child: ImageFiltered(
-            imageFilter: ImageFilter.blur(
-              sigmaX: size * 0.22,
-              sigmaY: size * 0.22,
-            ),
-            child: Icon(icon, size: size, color: color.withValues(alpha: 0.65)),
-          ),
-        ),
-        ExcludeSemantics(
-          child: ImageFiltered(
-            imageFilter: ImageFilter.blur(
-              sigmaX: size * 0.09,
-              sigmaY: size * 0.09,
-            ),
-            child: Icon(icon, size: size, color: color.withValues(alpha: 0.8)),
-          ),
-        ),
-        Icon(icon, size: size, color: color),
-      ],
-    ),
-  );
 }
 
 /// Kept separate from [_StarButton] so the glow can be below every line on
@@ -1354,6 +1536,7 @@ class _LinesPainter extends CustomPainter {
     required this.edgeWidth,
     required this.leaderWidth,
     required this.leaders,
+    this.discs = const [],
   });
 
   final List<(Offset, Offset)> segments;
@@ -1361,9 +1544,15 @@ class _LinesPainter extends CustomPainter {
   final double edgeWidth;
   final double leaderWidth;
   final List<_Leader> leaders;
+  final List<(Offset, double)> discs;
 
   @override
   void paint(Canvas canvas, Size size) {
+    canvas.save();
+    if (discs.isNotEmpty) {
+      canvas.clipPath(constellationOutsideDiscs(Offset.zero & size, discs));
+    }
+
     for (final leader in leaders) {
       canvas.drawPath(
         leader.path,
@@ -1381,6 +1570,7 @@ class _LinesPainter extends CustomPainter {
     for (final (a, b) in segments) {
       canvas.drawLine(a, b, edgePaint);
     }
+    canvas.restore();
   }
 
   @override

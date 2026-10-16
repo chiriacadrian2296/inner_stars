@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inner_stars/data/settings_repository.dart';
 import 'package:inner_stars/models/artwork_blend.dart';
 import 'package:inner_stars/models/artwork_layer.dart';
+import 'package:inner_stars/models/galaxy_navigation_mode.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -29,6 +30,42 @@ void main() {
     expect(repository.artworkColor, 0xFFF2B84B);
     final reloaded = await SettingsRepository.create();
     expect(reloaded.artworkColor, 0xFFF2B84B);
+  });
+
+  test('Galaxy navigation and cinematic gravity persist', () async {
+    final repository = await SettingsRepository.create();
+
+    expect(repository.galaxyNavigationMode, GalaxyNavigationMode.cinematic);
+    expect(
+      repository.galaxyCinematicGravity,
+      SettingsRepository.defaultGalaxyCinematicGravity,
+    );
+
+    await repository.setGalaxyNavigationMode(GalaxyNavigationMode.direct);
+    await repository.setGalaxyCinematicGravity(0);
+    final reloaded = await SettingsRepository.create();
+
+    expect(reloaded.galaxyNavigationMode, GalaxyNavigationMode.direct);
+    expect(reloaded.galaxyCinematicGravity, 0);
+  });
+
+  test('cinematic gravity is clamped to its supported range', () async {
+    final repository = await SettingsRepository.create();
+
+    await repository.setGalaxyCinematicGravity(2);
+    expect(repository.galaxyCinematicGravity, 1);
+
+    await repository.setGalaxyCinematicGravity(-1);
+    expect(repository.galaxyCinematicGravity, 0);
+  });
+
+  test('unknown Galaxy navigation values fall back to cinematic', () async {
+    SharedPreferences.setMockInitialValues({
+      'settings.galaxyNavigationMode': 'future-mode',
+    });
+    final repository = await SettingsRepository.create();
+
+    expect(repository.galaxyNavigationMode, GalaxyNavigationMode.cinematic);
   });
 
   test('resetCosmoVisuals persists every configured default', () async {

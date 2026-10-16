@@ -56,6 +56,18 @@ class HabitRepository extends ChangeNotifier {
   bool isFull(int projectId) =>
       getAllForProject(projectId).length >= kMaxConstellationPulsars;
 
+  /// Ids are millisecondsSinceEpoch, which two adds inside the same
+  /// millisecond would collide on. Steps past anything already taken, as
+  /// `ProjectRepository` does.
+  static int _nextId(List<Habit> existing) {
+    var id = DateTime.now().millisecondsSinceEpoch;
+    final taken = existing.map((h) => h.id).toSet();
+    while (taken.contains(id)) {
+      id++;
+    }
+    return id;
+  }
+
   Future<Habit> add({
     required String title,
     String? iconSlug,
@@ -78,7 +90,7 @@ class HabitRepository extends ChangeNotifier {
     }
     final trimmedDescription = description?.trim();
     final habit = Habit(
-      id: DateTime.now().millisecondsSinceEpoch,
+      id: _nextId(habits),
       projectId: projectId,
       title: title.trim(),
       iconSlug: iconSlug ?? '',

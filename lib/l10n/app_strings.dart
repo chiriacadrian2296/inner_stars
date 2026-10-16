@@ -1095,6 +1095,13 @@ abstract class AppStrings {
   String get galaxyQualityBalancedLabel;
   String get galaxyQualityPerformanceLabel;
   String get galaxyQualityDescription;
+  String get galaxyNavigationSection;
+  String get galaxyNavigationDirectLabel;
+  String get galaxyNavigationCinematicLabel;
+  String get galaxyNavigationDirectDescription;
+  String get galaxyNavigationCinematicDescription;
+  String get galaxyNavigationGravityLabel;
+  String get galaxyNavigationGravityDescription;
   String get skySupernovaeSection;
   String get skySupernovaeToggleLabel;
   String get skyArtworkSection;

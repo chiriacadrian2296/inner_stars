@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -146,7 +147,12 @@ class ConstellationPainter extends CustomPainter {
     this.glowScale = 1,
     this.time = 0,
     this.intensityOrbits = false,
+    this.energyWaves = false,
   });
+
+  /// Whether a wave of light runs along the lines and through the stars of
+  /// every separate shape whose stars are all lit — the Galaxy only.
+  final bool energyWaves;
 
   final List<ConstellationStar> stars;
 
@@ -231,6 +237,166 @@ class ConstellationPainter extends CustomPainter {
   static const _nascentAlpha = 0.4;
   static const _deadAlpha = 0.45;
 
+  // Wave timing: the head runs along a shape at this many reference-canvas
+  // pixels a second, trailing [_waveTail] of fading light, then rests.
+  static const _waveSpeed = 260.0;
+  static const _waveTail = 150.0;
+  static const _waveRest = 2.2;
+  static const _waveFront = 45.0;
+  static const _waveStops = 16;
+
+  /// A wave of light crossing each separate shape (connected group of
+  /// [edges]) whose stars are all lit: it starts at the shape's first slot,
+  /// follows the lines by their length (splitting at branches, meeting at
+  /// loops), and flares each star as it passes. Each shape runs on its own
+  /// phase.
+  void _drawEnergyWaves(
+    Canvas canvas,
+    Size size,
+    List<ConstellationStar> shapeStars,
+    double sizeScale,
+  ) {
+    final n = shapeStars.length;
+    final adjacency = List.generate(n, (_) => <int>[]);
+    for (final (a, b) in edges) {
+      if (a >= n || b >= n || a == b) continue;
+      adjacency[a].add(b);
+      adjacency[b].add(a);
+    }
+    final points = [for (final s in shapeStars) _toCanvas(s.position, size)];
+    final visited = List.filled(n, false);
+
+    for (var start = 0; start < n; start++) {
+      if (visited[start] || adjacency[start].isEmpty) continue;
+      // The connected shape containing [start], with each star's path
+      // distance from [start] (Dijkstra; shapes are tiny).
+      final dist = <int, double>{start: 0};
+      final open = <int>{start};
+      while (open.isNotEmpty) {
+        final u = open.reduce((p, q) => dist[p]! <= dist[q]! ? p : q);
+        open.remove(u);
+        visited[u] = true;
+        for (final v in adjacency[u]) {
+          final candidate = dist[u]! + (points[u] - points[v]).distance;
+          if (candidate < (dist[v] ?? double.infinity) - 1e-6) {
+            dist[v] = candidate;
+            open.add(v);
+          }
+        }
+      }
+      if (!dist.keys.every((i) => shapeStars[i].kind == StarKind.lit)) {
+        continue;
+      }
+
+      // Path distances are in canvas pixels; speed and tail are in
+      // reference pixels, so the timing is worked out in those.
+      final reach = dist.values.reduce(math.max) / sizeScale;
+      final cycle = (reach + _waveTail + _waveFront) / _waveSpeed + _waveRest;
+      // Per-shape phase so separate shapes never pulse in lockstep.
+      final phase = (shapeStars[start].slotSequence ?? 0) * 1.7;
+      final head = ((time + phase) % cycle) * _waveSpeed - _waveFront;
+      if (head > reach + _waveTail) continue;
+      final scaledHead = head * sizeScale;
+      final scaledTail = _waveTail * sizeScale;
+      _paintWave(
+        canvas,
+        points,
+        dist,
+        adjacency,
+        scaledHead,
+        scaledTail,
+        sizeScale,
+      );
+    }
+  }
+
+  void _paintWave(
+    Canvas canvas,
+    List<Offset> points,
+    Map<int, double> dist,
+    List<List<int>> adjacency,
+    double head,
+    double tail,
+    double sizeScale,
+  ) {
+    // Brightness at a point whose path distance is [d]: it rises smoothly
+    // ahead of the head, is full at it, and fades to nothing [tail] behind.
+    final front = _waveFront * sizeScale;
+    double glow(double d) {
+      final behind = head - d;
+      if (behind <= -front || behind >= tail) return 0;
+      if (behind < 0) {
+        final t = (behind + front) / front;
+        return t * t * (3 - 2 * t);
+      }
+      final t = 1 - behind / tail;
+      return t * t;
+    }
+
+    final core = Paint()
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.6 * sizeScale * lineWidthScale
+      ..blendMode = BlendMode.plus;
+    final halo = Paint()
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 7 * sizeScale * lineWidthScale
+      ..blendMode = BlendMode.plus;
+    final coreColor = Color.lerp(palette.lit, Colors.white, 0.7)!;
+
+    // Each line carries its brightness as one gradient along its length
+    // (sampled at [_waveStops] points), so the light glides continuously
+    // instead of stepping from one piece of the line to the next.
+    for (final a in dist.keys) {
+      for (final b in adjacency[a]) {
+        if (b < a || !dist.containsKey(b)) continue;
+        final length = (points[a] - points[b]).distance;
+        final levels = List<double>.generate(_waveStops, (i) {
+          final u = i / (_waveStops - 1);
+          return glow(
+            math.min(dist[a]! + u * length, dist[b]! + (1 - u) * length),
+          );
+        });
+        if (levels.every((g) => g < 0.01)) continue;
+        final offsets = [
+          for (var i = 0; i < _waveStops; i++) i / (_waveStops - 1),
+        ];
+        halo.shader = ui.Gradient.linear(points[a], points[b], [
+          for (final g in levels) palette.lit.withValues(alpha: 0.35 * g),
+        ], offsets);
+        core.shader = ui.Gradient.linear(points[a], points[b], [
+          for (final g in levels) coreColor.withValues(alpha: g),
+        ], offsets);
+        canvas.drawLine(points[a], points[b], halo);
+        canvas.drawLine(points[a], points[b], core);
+      }
+    }
+    // Each star flares as the head reaches it, then settles with the tail.
+    final flareRadius = 26 * sizeScale * glowScale;
+    for (final entry in dist.entries) {
+      final g = glow(entry.value);
+      if (g < 0.02) continue;
+      final center = points[entry.key];
+      canvas.drawCircle(
+        center,
+        flareRadius,
+        Paint()
+          ..blendMode = BlendMode.plus
+          ..shader = ui.Gradient.radial(
+            center,
+            flareRadius,
+            [
+              Colors.white.withValues(alpha: 0.9 * g),
+              palette.lit.withValues(alpha: 0.4 * g),
+              palette.lit.withValues(alpha: 0),
+            ],
+            const [0, 0.35, 1],
+          ),
+      );
+    }
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     if (stars.isEmpty) return;
@@ -259,6 +425,7 @@ class ConstellationPainter extends CustomPainter {
           linePaint,
         );
       }
+      if (energyWaves) _drawEnergyWaves(canvas, size, shapeStars, sizeScale);
     }
 
     final burning = stars.where((s) => s.kind == StarKind.lit).toList();

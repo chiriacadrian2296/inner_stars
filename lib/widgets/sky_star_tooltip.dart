@@ -87,7 +87,7 @@ class SkyStarTooltip extends StatelessWidget {
         // state, then what it was.
         eyebrow: kind.galaxyLabel(strings),
         eyebrowSecond: star.dead ? star.originalKind.label(strings) : null,
-        eyebrowIcon: EyebrowIconRow.chosenIcon(star.iconSlug),
+        eyebrowIcon: EyebrowIconRow.chosenIcon(star.iconSlug) ?? kind.icon,
         eyebrowColor: starKindColor(kind, context.colors),
         title: star.displayTitle,
         breadcrumb: project == null

@@ -41,6 +41,8 @@ import 'theme/app_theme.dart';
 import 'tutorials/tour_storage.dart';
 import 'widgets/apk_download_prompt.dart';
 import 'widgets/app_lock_gate.dart';
+import 'utils/web_back_guard_stub.dart'
+    if (dart.library.js_interop) 'utils/web_back_guard_web.dart';
 
 /// Parks the old first-launch onboarding and the Sky menu's "Metaphor"
 /// guide, both superseded by `hint_kit`-driven live tutorials pointing at
@@ -77,6 +79,7 @@ Future<void> main() async {
     DeviceOrientation.portraitDown,
   ]);
   runApp(const InnerStarsApp());
+  if (kIsWeb) installWebBackGuard();
   startFrameTimingProbe(); // TEMPORARY — Galaxy optimization measurements.
   installFrameRateLimiter(); // TEMPORARY — 40/30 fps smoothness test.
 }

@@ -22,7 +22,11 @@ void main() {
         .setMockMethodCallHandler(SystemChannels.platform, null);
   });
 
-  Future<void> pump(WidgetTester tester, {bool Function()? consumeBack}) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    bool Function()? consumeBack,
+    bool absorbInteractions = false,
+  }) async {
     await tester.pumpWidget(
       StringsScope(
         strings: strings,
@@ -30,6 +34,7 @@ void main() {
           theme: buildAppTheme(),
           home: GalaxyExitGuard(
             consumeBack: consumeBack,
+            absorbInteractions: absorbInteractions,
             child: Scaffold(
               body: Builder(
                 builder: (context) => TextButton(
@@ -110,5 +115,24 @@ void main() {
     expect(find.text('Other page'), findsNothing);
     expect(find.text(strings.exitAppBody), findsNothing);
     expect(exitCalls, 0);
+  });
+
+  testWidgets('Interaction lock absorbs Galaxy controls until released', (
+    tester,
+  ) async {
+    await pump(tester, absorbInteractions: true);
+    final lock = tester.widget<AbsorbPointer>(
+      find.byKey(const ValueKey('galaxy-flight-interaction-lock')),
+    );
+    expect(lock.absorbing, isTrue);
+
+    await tester.tap(find.text('Open page'), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(find.text('Other page'), findsNothing);
+
+    await pump(tester);
+    await tester.tap(find.text('Open page'));
+    await tester.pumpAndSettle();
+    expect(find.text('Other page'), findsOneWidget);
   });
 }

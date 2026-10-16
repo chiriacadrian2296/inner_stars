@@ -1963,6 +1963,23 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get galaxyQualityDescription =>
       "Le modalità più leggere disegnano la nebulosa un po' più morbida, e Prestazioni ne rallenta anche l'animazione, per tenere il telefono più fresco.";
   @override
+  String get galaxyNavigationSection => 'Navigazione in Galaxy';
+  @override
+  String get galaxyNavigationDirectLabel => 'Diretta';
+  @override
+  String get galaxyNavigationCinematicLabel => 'Cinematica';
+  @override
+  String get galaxyNavigationDirectDescription =>
+      'Il cielo segue il dito direttamente e conserva più slancio dopo un gesto veloce.';
+  @override
+  String get galaxyNavigationCinematicDescription =>
+      'Movimenti più piccoli, lenti e controllati: anche un gesto veloce attraversa il cielo con calma.';
+  @override
+  String get galaxyNavigationGravityLabel => 'Gravità';
+  @override
+  String get galaxyNavigationGravityDescription =>
+      'Più è bassa, più a lungo la Galaxy continua a fluttuare dopo uno swipe. A 0 G continua finché non la tocchi.';
+  @override
   String get skySupernovaeSection => 'Supernove';
   @override
   String get skySupernovaeToggleLabel => 'Mostra le supernove sopra le artwork';

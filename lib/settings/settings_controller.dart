@@ -1,5 +1,6 @@
 import '../models/artwork_blend.dart';
 import '../models/artwork_layer.dart';
+import '../models/galaxy_navigation_mode.dart';
 import '../models/galaxy_quality.dart';
 
 import 'package:flutter/material.dart';
@@ -29,6 +30,8 @@ class SettingsController extends ChangeNotifier {
       tutorialsEnabled = _repository.tutorialsEnabled,
       skyGridView = _repository.skyGridView,
       skyGridSizeStep = _repository.skyGridSizeStep,
+      galaxyNavigationMode = _repository.galaxyNavigationMode,
+      _galaxyCinematicGravity = _repository.galaxyCinematicGravity,
       galaxyQuality = _repository.galaxyQuality;
 
   final SettingsRepository _repository;
@@ -59,6 +62,30 @@ class SettingsController extends ChangeNotifier {
   int skyGridSizeStep;
 
   GalaxyQuality galaxyQuality;
+  GalaxyNavigationMode galaxyNavigationMode;
+
+  // Nullable only so a controller instance that survived a development hot
+  // reload from before this field existed can safely acquire the new setting.
+  // Freshly constructed instances always initialize it from the repository.
+  double? _galaxyCinematicGravity;
+  double get galaxyCinematicGravity =>
+      _galaxyCinematicGravity ??
+      SettingsRepository.defaultGalaxyCinematicGravity;
+
+  Future<void> setGalaxyNavigationMode(GalaxyNavigationMode value) async {
+    if (value == galaxyNavigationMode) return;
+    galaxyNavigationMode = value;
+    notifyListeners();
+    await _repository.setGalaxyNavigationMode(value);
+  }
+
+  Future<void> setGalaxyCinematicGravity(double value) async {
+    final gravity = value.clamp(0.0, 1.0).toDouble();
+    if (gravity == galaxyCinematicGravity) return;
+    _galaxyCinematicGravity = gravity;
+    notifyListeners();
+    await _repository.setGalaxyCinematicGravity(gravity);
+  }
 
   Future<void> setGalaxyQuality(GalaxyQuality value) async {
     if (value == galaxyQuality) return;

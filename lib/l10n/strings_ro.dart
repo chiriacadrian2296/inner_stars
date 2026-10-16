@@ -1955,6 +1955,23 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get galaxyQualityDescription =>
       'Modurile mai ușoare desenează nebuloasa puțin mai moale, iar Performanță îi încetinește și animația, ca telefonul să rămână mai rece.';
   @override
+  String get galaxyNavigationSection => 'Navigarea în Galaxy';
+  @override
+  String get galaxyNavigationDirectLabel => 'Directă';
+  @override
+  String get galaxyNavigationCinematicLabel => 'Cinematică';
+  @override
+  String get galaxyNavigationDirectDescription =>
+      'Cerul urmărește degetul direct și păstrează mai mult elan după un gest rapid.';
+  @override
+  String get galaxyNavigationCinematicDescription =>
+      'Mișcări mai mici, lente și controlate: chiar și un gest rapid străbate cerul calm.';
+  @override
+  String get galaxyNavigationGravityLabel => 'Gravitație';
+  @override
+  String get galaxyNavigationGravityDescription =>
+      'Cu cât este mai mică, cu atât Galaxy continuă să plutească mai mult după un gest. La 0 G continuă până când o atingi.';
+  @override
   String get skySupernovaeSection => 'Supernove';
   @override
   String get skySupernovaeToggleLabel => 'Arată supernovele peste artwork';

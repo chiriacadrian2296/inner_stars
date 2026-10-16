@@ -891,6 +891,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                                       structureColor: Colors.white,
                                       tooltipFrameColor: colors.night,
                                       luminousStructure: true,
+                                      selectionEnabled: true,
                                       autoFrame:
                                           widget.initialTransform == null ||
                                           _hasNavigatedConstellations,

@@ -21,6 +21,7 @@ import '../widgets/logo_watermark.dart';
 import '../widgets/sky_nascent_star_tooltip.dart';
 import '../widgets/sky_pulsar_tooltip.dart';
 import '../widgets/sky_star_tooltip.dart';
+import 'constellation_focus_lab.dart';
 
 /// Read-only visual comparison, using a snapshot of the house project when
 /// available and a standalone house fixture otherwise. Never writes data.
@@ -99,6 +100,7 @@ class _ConstellationLabScreenState extends State<ConstellationLabScreen> {
   Size? _framedSize;
   int _variant = 0;
   int _reset = 0;
+  int? _focused;
 
   List<Star> _demoStars() {
     const titles = [
@@ -129,6 +131,7 @@ class _ConstellationLabScreenState extends State<ConstellationLabScreen> {
   @override
   void dispose() {
     _camera.dispose();
+
     super.dispose();
   }
 
@@ -148,12 +151,20 @@ class _ConstellationLabScreenState extends State<ConstellationLabScreen> {
     ),
   );
 
+  void _viewCard(ConstellationStar entry, String title) {
+    if (_variant == 3) {
+      setState(() => _focused = _render.stars.indexOf(entry));
+    } else {
+      _inspect(title);
+    }
+  }
+
   Widget _card(BuildContext context, ConstellationStar entry) {
     if (entry.kind == StarKind.nascent) {
       return SkyNascentStarTooltip(
         project: _project,
         onClose: () {},
-        onView: () => _inspect('Opportunità'),
+        onView: () => _viewCard(entry, 'Opportunità'),
         onConfigure: () => _inspect('Configura'),
       );
     }
@@ -168,7 +179,7 @@ class _ConstellationLabScreenState extends State<ConstellationLabScreen> {
         countsByDay: counts,
         isLit: entry.lit,
         onClose: () {},
-        onView: () => _inspect(habit.displayTitle),
+        onView: () => _viewCard(entry, habit.displayTitle),
         onToday: () => _inspect(habit.displayTitle),
         todayActionIcon: Icons.local_fire_department_rounded,
         todayActionLabel: 'Oggi',
@@ -182,7 +193,7 @@ class _ConstellationLabScreenState extends State<ConstellationLabScreen> {
       star: star,
       project: _project,
       onClose: () {},
-      onView: () => _inspect(star.displayTitle),
+      onView: () => _viewCard(entry, star.displayTitle),
       onEdit: () => _inspect('Modifica'),
       onLight: star.isUnlit ? () => _inspect('Accendi') : null,
       onShare: star.dead ? null : () => _inspect('Condividi'),
@@ -245,20 +256,32 @@ class _ConstellationLabScreenState extends State<ConstellationLabScreen> {
               ),
               Padding(
                 padding: const EdgeInsets.all(12),
-                child: SegmentedButton<int>(
+                child: Wrap(
                   key: const Key('constellation-lab-variant'),
-                  segments: const [
-                    ButtonSegment(value: 0, label: Text('Originale')),
-                    ButtonSegment(value: 1, label: Text('Bianco · notte')),
-                    ButtonSegment(value: 2, label: Text('Cornici navy')),
+                  spacing: 6,
+                  runSpacing: 6,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    for (final (value, label) in const [
+                      (0, 'Originale'),
+                      (1, 'Bianco · notte'),
+                      (2, 'Cornici navy'),
+                      (3, 'Leggera'),
+                      (4, 'Atlante'),
+                      (5, 'Punti luce'),
+                      (6, 'Fili'),
+                      (7, 'Card complete'),
+                    ])
+                      ChoiceChip(
+                        label: Text(label),
+                        selected: _variant == value,
+                        showCheckmark: false,
+                        onSelected: (_) => setState(() {
+                          _variant = value;
+                          _focused = null;
+                        }),
+                      ),
                   ],
-                  selected: {_variant},
-                  showSelectedIcon: false,
-                  style: SegmentedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                  ),
-                  onSelectionChanged: (value) =>
-                      setState(() => _variant = value.single),
                 ),
               ),
               Padding(
@@ -271,7 +294,12 @@ class _ConstellationLabScreenState extends State<ConstellationLabScreen> {
                         1 =>
                           'Struttura e cornici bianche, sfondo di Vedi stella.',
                         2 => 'Glow esterno bianco, anelli e cornici navy su sfondo notte.',
-                        _ => 'Aspetto attuale: struttura navy, sfondo blu più chiaro.',
+                        3 => 'Struttura sottile, nodi compatti e cornici leggere. Tocca una stella o una scheda per darle risalto.',
+                        4 => 'La forma respira: esplora i punti, con una sola scheda condivisa in primo piano.',
+                        5 => 'Piccoli punti bianchi con un accento del tipo stella. Tutte le schede restano sulla mappa.',
+                        6 => 'Icone libere, senza anelli: la forma è un filo sottile tra le schede.',
+                        7 => 'Cornici navy e card complete come in Galaxy. Nei cerchi restano solo icone più grandi.',
+                        _ => 'Prima versione: struttura navy, sfondo blu più chiaro.',
                       },
                       textAlign: TextAlign.center,
                       maxLines: 3,
@@ -282,85 +310,141 @@ class _ConstellationLabScreenState extends State<ConstellationLabScreen> {
                 ),
               ),
               Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final viewport = constraints.biggest;
-                    final xs = _shape.points.map((p) => p.dx).toList();
-                    final ys = _shape.points.map((p) => p.dy).toList();
-                    final bounds = Rect.fromLTRB(
-                      xs.reduce(math.min) * 1000,
-                      ys.reduce(math.min) * 1000,
-                      xs.reduce(math.max) * 1000,
-                      ys.reduce(math.max) * 1000,
-                    );
-                    final fit =
-                        math.min(
-                          viewport.width / math.max(1, bounds.width),
-                          viewport.height / math.max(1, bounds.height),
-                        ) *
-                        0.6;
-                    if (_framedSize != viewport) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (!mounted || _framedSize == viewport) return;
-                        final zoom =
-                            fit * ConstellationMapView.initialZoomFactor;
-                        setState(() {
-                          _framedSize = viewport;
-                          _camera.value = Matrix4.identity()
-                            ..translateByDouble(
-                              viewport.width / 2,
-                              viewport.height / 2,
-                              0,
-                              1,
-                            )
-                            ..scaleByDouble(zoom, zoom, 1, 1)
-                            ..translateByDouble(
-                              -bounds.center.dx,
-                              -bounds.center.dy,
-                              0,
-                              1,
-                            );
-                        });
-                      });
-                      return const SizedBox.shrink();
-                    }
-                    return Stack(
-                      children: [
-                        Positioned.fill(
-                          child: LogoWatermark(
-                            scale: logoWatermarkScale(StarKind.unlit),
-                            color: logoWatermarkColor(colors, StarKind.unlit),
-                          ),
-                        ),
-                        Positioned.fill(
-                          child: ConstellationMapView(
-                            key: ValueKey((viewport, _reset)),
-                            stars: _render.stars,
-                            edges: _render.edges,
-                            transformation: _camera,
-                            canvasSize: _canvas,
-                            fitScale: fit,
-                            autoFrame: true,
-                            structureColor: _variant != 0 ? Colors.white : null,
-                            luminousStructure: _variant == 2,
-                            tooltipFrameColor: _variant == 2
-                                ? colors.night
-                                : null,
-                            onStarTap: (star) => _inspect(
-                              star.label.isEmpty ? 'Opportunità' : star.label,
-                            ),
-                            cardBuilder: _card,
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
+                child: _variant == 4
+                    ? ConstellationFocusLab(
+                        stars: _render.stars,
+                        edges: _render.edges,
+                        cardBuilder: _card,
+                      )
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          final viewport = constraints.biggest;
+                          final xs = _shape.points.map((p) => p.dx).toList();
+                          final ys = _shape.points.map((p) => p.dy).toList();
+                          final bounds = Rect.fromLTRB(
+                            xs.reduce(math.min) * 1000,
+                            ys.reduce(math.min) * 1000,
+                            xs.reduce(math.max) * 1000,
+                            ys.reduce(math.max) * 1000,
+                          );
+                          final fit =
+                              math.min(
+                                viewport.width / math.max(1, bounds.width),
+                                viewport.height / math.max(1, bounds.height),
+                              ) *
+                              0.6;
+                          if (_framedSize != viewport) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (!mounted || _framedSize == viewport) return;
+                              final zoom =
+                                  fit * ConstellationMapView.initialZoomFactor;
+                              setState(() {
+                                _framedSize = viewport;
+                                _camera.value = Matrix4.identity()
+                                  ..translateByDouble(
+                                    viewport.width / 2,
+                                    viewport.height / 2,
+                                    0,
+                                    1,
+                                  )
+                                  ..scaleByDouble(zoom, zoom, 1, 1)
+                                  ..translateByDouble(
+                                    -bounds.center.dx,
+                                    -bounds.center.dy,
+                                    0,
+                                    1,
+                                  );
+                              });
+                            });
+                            return const SizedBox.shrink();
+                          }
+                          return Stack(
+                            children: [
+                              Positioned.fill(
+                                child: LogoWatermark(
+                                  scale: logoWatermarkScale(StarKind.unlit),
+                                  color: logoWatermarkColor(
+                                    colors,
+                                    StarKind.unlit,
+                                  ),
+                                ),
+                              ),
+                              Positioned.fill(
+                                child: ConstellationMapView(
+                                  key: ValueKey((viewport, _reset)),
+                                  stars: _render.stars,
+                                  edges: _render.edges,
+                                  transformation: _camera,
+                                  canvasSize: _canvas,
+                                  fitScale: fit,
+                                  autoFrame: true,
+                                  structureColor: _variant != 0
+                                      ? Colors.white
+                                      : null,
+                                  luminousStructure:
+                                      _variant == 2 ||
+                                      _variant == 3 ||
+                                      _variant == 7,
+                                  refinedPresentation:
+                                      _variant == 3 ||
+                                      _variant == 5 ||
+                                      _variant == 6,
+                                  showCardVisual: _variant == 7,
+                                  simplifiedNodes: _variant == 7,
+                                  uniformNodeSize: _variant == 7,
+                                  matchTooltipFrameToNode: _variant == 7,
+                                  selectionEnabled: _variant >= 5,
+                                  fadeStructureOnFocus: true,
+                                  nodeStyle: switch (_variant) {
+                                    5 => ConstellationNodeStyle.beacon,
+                                    6 => ConstellationNodeStyle.glyph,
+                                    _ => ConstellationNodeStyle.disc,
+                                  },
+                                  focusedStarIndex: _variant == 3
+                                      ? _focused
+                                      : null,
+                                  tooltipFrameColor: _variant >= 2
+                                      ? colors.night
+                                      : null,
+                                  onStarTap: (star) {
+                                    if (_variant == 3) {
+                                      setState(
+                                        () => _focused =
+                                            _focused ==
+                                                _render.stars.indexOf(star)
+                                            ? null
+                                            : _render.stars.indexOf(star),
+                                      );
+                                    } else {
+                                      _inspect(
+                                        star.label.isEmpty
+                                            ? 'Opportunità'
+                                            : star.label,
+                                      );
+                                    }
+                                  },
+                                  cardBuilder: (context, star) => Listener(
+                                    onPointerDown: _variant == 3
+                                        ? (_) => setState(
+                                            () => _focused = _render.stars
+                                                .indexOf(star),
+                                          )
+                                        : null,
+                                    child: _card(context, star),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
                 child: Text(
-                  'Trascina e zooma · il confronto mantiene la stessa inquadratura',
+                  _variant == 4
+                      ? 'Tocca i punti o usa le frecce · le card sono quelle di Galaxy'
+                      : 'Trascina e zooma · doppio tocco per tornare alla vista intera',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: colors.muted, fontSize: 11),
                 ),

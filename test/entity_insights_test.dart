@@ -1,5 +1,6 @@
 import 'package:inner_stars/widgets/activity_check_card.dart';
 import 'package:inner_stars/widgets/app_choice_chip.dart';
+import 'package:inner_stars/widgets/app_field.dart';
 import 'package:inner_stars/widgets/area_icon.dart';
 
 import 'dart:convert';
@@ -399,9 +400,19 @@ void main() {
       await tester.ensureVisible(iconField);
       await tester.tap(iconField);
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'fitness_center');
+      // The picker is a sheet over the form, which has text fields of its
+      // own: type into the sheet's search field, then confirm the choice.
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AppSearchField),
+          matching: find.byType(TextField),
+        ),
+        'fitness_center',
+      );
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.fitness_center));
+      await tester.tap(find.byIcon(Icons.fitness_center).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(StringsIt().pickerConfirmAction));
       await tester.pumpAndSettle();
       final save = find.byType(SaveActionButton);
       await tester.ensureVisible(save);
@@ -538,8 +549,17 @@ void main() {
       await tester.tap(find.byTooltip(StringsIt().statsTitle));
       await tester.pumpAndSettle();
       expect(find.byType(LightScreen), findsOneWidget);
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
+      // Back first climbs the page's own trail (constellation → area →
+      // everything) and only then leaves it.
+      for (
+        var i = 0;
+        i < 5 && find.byType(LightScreen).evaluate().isNotEmpty;
+        i++
+      ) {
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+      }
+      expect(find.byType(LightScreen), findsNothing);
       await tester.tap(find.byTooltip(StringsIt().manageHabits));
       await tester.pumpAndSettle();
       expect(find.byType(TodayHabitsScreen), findsOneWidget);
@@ -603,6 +623,8 @@ void main() {
       await tester.pumpWidget(
         _app(c, const TodayHabitsScreen(entity: InsightEntity.project(1))),
       );
+      // Rows slide in (StaggeredEntrance); let them land before tapping.
+      await tester.pumpAndSettle();
       await tester.tap(
         find.descendant(
           of: find.byKey(const ValueKey('p1')),
@@ -673,6 +695,8 @@ void main() {
       await tester.pumpWidget(
         _app(c, const TodayHabitsScreen(entity: InsightEntity.project(1))),
       );
+      // Rows slide in (StaggeredEntrance); let them land before tapping.
+      await tester.pumpAndSettle();
       await tester.tap(
         find.descendant(
           of: find.byKey(const ValueKey('p1')),
@@ -826,7 +850,7 @@ void main() {
   });
 
   testWidgets(
-    'Sky grid keeps one back open, updates after writes and resets on search',
+    'Sky grid keeps flipped backs open through writes and search until reset',
     (tester) async {
       if (const bool.fromEnvironment('INSIGHTS_PREVIEW')) {
         await tester.runAsync(() async {
@@ -905,16 +929,28 @@ void main() {
               .writeAsBytes(image!.buffer.asUint8List());
         });
       }
+      // Several backs may stay open at once (the flipped-cards row counts
+      // them and resets them all).
       await tester.tap(find.byTooltip(StringsIt().insightFlip));
       await tester.pumpAndSettle();
-      expect(find.byTooltip(StringsIt().insightReturn), findsOneWidget);
+      expect(find.byTooltip(StringsIt().insightReturn), findsNWidgets(2));
       expect(
         tester
             .widgetList<EntityFlipCard>(find.byType(EntityFlipCard))
             .where((card) => card.flipped),
-        hasLength(1),
+        hasLength(2),
       );
+      // Flipped cards are kept like the filters: a search keeps them, the
+      // flipped-cards row's reset turns them all face up again.
       await tester.enterText(find.byType(TextField).first, 'Project');
+      await tester.pumpAndSettle();
+      expect(find.byTooltip(StringsIt().insightReturn), findsNWidgets(2));
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const ValueKey('flipped-row')),
+          matching: find.byType(FieldResetButton),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(find.byTooltip(StringsIt().insightReturn), findsNothing);
       expect(tester.takeException(), isNull);
@@ -1273,6 +1309,45 @@ void main() {
       c.dispose();
     },
   );
+
+  testWidgets('Your Light exit closes statistics from a deep scope', (
+    tester,
+  ) async {
+    final c = await _controller(stars: [_star(1, DateTime.now())]);
+    await tester.pumpWidget(
+      _app(
+        c,
+        Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              key: const ValueKey('open-light'),
+              onPressed: () => Navigator.of(context).push<void>(
+                MaterialPageRoute<void>(
+                  builder: (_) =>
+                      const LightScreen(initialScope: InsightEntity.star(1)),
+                ),
+              ),
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+        reduceMotion: true,
+      ),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('open-light')));
+    await tester.pumpAndSettle();
+    expect(find.byType(LightScreen), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('light-exit-button')));
+    await tester.pumpAndSettle();
+    expect(find.byType(LightScreen), findsNothing);
+    expect(find.byKey(const ValueKey('open-light')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox());
+    c.dispose();
+  });
 
   testWidgets('Your Light keeps compact scope and period navigation pinned', (
     tester,

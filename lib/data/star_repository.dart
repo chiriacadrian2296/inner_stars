@@ -132,7 +132,7 @@ class StarRepository extends ChangeNotifier {
     final trimmedDescription = description?.trim();
 
     final star = Star(
-      id: DateTime.now().millisecondsSinceEpoch,
+      id: _nextId(stars),
       projectId: projectId,
       slotSequence: nextSlot,
       number: achievedDate == null ? null : _nextNumber(stars),
@@ -405,6 +405,18 @@ class StarRepository extends ChangeNotifier {
     await StarMediaStorage.deleteAll(
       before.where((m) => !keptIds.contains(m.id)),
     );
+  }
+
+  /// Ids are millisecondsSinceEpoch, which two adds inside the same
+  /// millisecond would collide on — and every update/delete finds its star
+  /// by id. Steps past anything already taken, as `ProjectRepository` does.
+  static int _nextId(List<Star> existing) {
+    var id = DateTime.now().millisecondsSinceEpoch;
+    final taken = existing.map((s) => s.id).toSet();
+    while (taken.contains(id)) {
+      id++;
+    }
+    return id;
   }
 
   int _nextNumber(List<Star> stars) {

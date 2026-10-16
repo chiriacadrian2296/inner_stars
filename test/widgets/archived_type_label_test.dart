@@ -98,21 +98,25 @@ void main() {
                   onView: () {},
                   onEdit: () {},
                 ),
-          type == StarKind.pulsar
-              ? PulsarReaderContent(
-                  habit: habit,
-                  project: null,
-                  number: null,
-                  lit: false,
-                  daysDone: 0,
-                  weekProgress: 0,
-                  entrance: entrance,
-                )
-              : StarReaderContent(
-                  star: star,
-                  project: null,
-                  entrance: entrance,
-                ),
+          // The reader scrolls in the app (StarReaderScreen); the pulsar's
+          // content is taller than this test screen.
+          SingleChildScrollView(
+            child: type == StarKind.pulsar
+                ? PulsarReaderContent(
+                    habit: habit,
+                    project: null,
+                    number: null,
+                    lit: false,
+                    daysDone: 0,
+                    weekProgress: 0,
+                    entrance: entrance,
+                  )
+                : StarReaderContent(
+                    star: star,
+                    project: null,
+                    entrance: entrance,
+                  ),
+          ),
           GalleryStarTile(
             data: type == StarKind.pulsar
                 ? GalleryStarData.fromHabit(habit, null, pulsarLit: false)

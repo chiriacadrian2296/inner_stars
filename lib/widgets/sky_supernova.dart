@@ -225,6 +225,7 @@ class _SkySupernovaPainter extends CustomPainter {
         i < intensityLevels.length ? intensityLevels[i] : 0,
       );
     }
+    shader.setFloat(31, kSkyForeshortening);
 
     canvas.drawRect(
       Offset.zero & size,

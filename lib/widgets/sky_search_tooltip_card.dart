@@ -10,11 +10,13 @@ import 'entity_insights_scope.dart';
 
 import 'search_result_card.dart';
 
-/// Galaxy's outer tooltip width, including its 8 px frame on each side.
-double galaxyTooltipWidth(BuildContext context) =>
-    math.min(480, MediaQuery.sizeOf(context).width - 12);
+/// Outer width for the chosen frame, preserving the shared card's content width.
+double galaxyTooltipWidth(
+  BuildContext context, {
+  double framePadding = galaxyTooltipPadding,
+}) => math.min(464, MediaQuery.sizeOf(context).width - 28) + framePadding * 2;
 
-const galaxyTooltipPadding = 8.0;
+const galaxyTooltipPadding = 3.0;
 
 /// A map shares one drawer controller, but each card keeps its own identity.
 class SkyTooltipMenuScope extends InheritedWidget {
@@ -23,11 +25,15 @@ class SkyTooltipMenuScope extends InheritedWidget {
     required this.controller,
     required this.menuId,
     this.showVisual = true,
+    this.onCardTap,
+    this.focused = true,
     required super.child,
   });
 
   final SearchCardMenuController controller;
   final bool showVisual;
+  final VoidCallback? onCardTap;
+  final bool focused;
   final Object menuId;
 
   static SkyTooltipMenuScope? maybeOf(BuildContext context) =>
@@ -37,6 +43,8 @@ class SkyTooltipMenuScope extends InheritedWidget {
   bool updateShouldNotify(SkyTooltipMenuScope oldWidget) =>
       controller != oldWidget.controller ||
       menuId != oldWidget.menuId ||
+      onCardTap != oldWidget.onCardTap ||
+      focused != oldWidget.focused ||
       showVisual != oldWidget.showVisual;
 }
 
@@ -117,6 +125,25 @@ class _SkySearchTooltipCardState extends State<SkySearchTooltipCard> {
     }
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final scope = SkyTooltipMenuScope.maybeOf(context);
+    if (scope == null || scope.focused) return;
+    _flipped = false;
+    if (scope.controller.isOpen(scope.menuId)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final current = SkyTooltipMenuScope.maybeOf(context);
+        if (current != null &&
+            !current.focused &&
+            current.controller.isOpen(current.menuId)) {
+          current.controller.closeAll();
+        }
+      });
+    }
+  }
+
   /// A Galaxy tooltip opens with its drawer open. Tooltips on a
   /// constellation's own map (which share one controller through
   /// [SkyTooltipMenuScope]) and the "today" fly-through's (see
@@ -140,6 +167,17 @@ class _SkySearchTooltipCardState extends State<SkySearchTooltipCard> {
 
   @override
   Widget build(BuildContext context) {
+    final scope = SkyTooltipMenuScope.maybeOf(context);
+    final card = _buildCard(context);
+    final inactive = scope?.focused == false;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: inactive ? scope?.onCardTap ?? widget.onTap : null,
+      child: AbsorbPointer(absorbing: inactive, child: card),
+    );
+  }
+
+  Widget _buildCard(BuildContext context) {
     final scope = SkyTooltipMenuScope.maybeOf(context);
     final menuController = scope?.controller ?? _localMenuController;
     final menuId = scope?.menuId ?? widget.menuId;
@@ -170,7 +208,7 @@ class _SkySearchTooltipCardState extends State<SkySearchTooltipCard> {
         showVisual: scope?.showVisual ?? true,
         content: widget.content,
         actions: actions,
-        onTap: widget.onTap,
+        onTap: scope?.onCardTap ?? widget.onTap,
         baseBodyHeight: bodyHeight,
         fillVisualHeight: widget.fillVisualHeight,
         centerVisual: widget.centerVisual,

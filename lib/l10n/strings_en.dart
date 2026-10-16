@@ -1942,6 +1942,23 @@ My contribution meets a real need and is something I can sustain.
   String get galaxyQualityDescription =>
       'Lighter modes draw the nebula a little softer, and Performance also slows its animation, to keep the phone cooler.';
   @override
+  String get galaxyNavigationSection => 'Galaxy Navigation';
+  @override
+  String get galaxyNavigationDirectLabel => 'Direct';
+  @override
+  String get galaxyNavigationCinematicLabel => 'Cinematic';
+  @override
+  String get galaxyNavigationDirectDescription =>
+      'The sky follows your finger directly and carries more momentum after a quick gesture.';
+  @override
+  String get galaxyNavigationCinematicDescription =>
+      'Smaller, slower, controlled movement: even a quick gesture travels calmly through the sky.';
+  @override
+  String get galaxyNavigationGravityLabel => 'Gravity';
+  @override
+  String get galaxyNavigationGravityDescription =>
+      'The lower it is, the longer Galaxy keeps drifting after a swipe. At 0 G it continues until you touch it.';
+  @override
   String get skySupernovaeSection => 'Supernovae';
   @override
   String get skySupernovaeToggleLabel => 'Show the supernovae over the artwork';

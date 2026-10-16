@@ -120,6 +120,8 @@ class _LightScreenState extends State<LightScreen> {
   void _setPeriod(LightPeriod period) =>
       setState(() => _session.period = period);
 
+  void _exitStatistics() => Navigator.of(context).pop();
+
   Future<void> _pickPeriod() async {
     final period = await showAppSheet<LightPeriod>(
       context: context,
@@ -301,6 +303,7 @@ class _LightScreenState extends State<LightScreen> {
                     period: stats.isStarScope ? null : _session.period,
                     onScopeTap: _setScope,
                     onPeriodTap: _pickPeriod,
+                    onExit: _exitStatistics,
                   ),
                 ),
               ),
@@ -651,7 +654,18 @@ class _ScopeTrail extends StatelessWidget {
       required Color color,
     }) {
       if (entity?.kind == InsightEntityKind.area) {
-        return AreaIcon(area: entity!.area!, size: size, color: color);
+        // Area SVGs fill their square more fully than Material icons. Keep the
+        // same footprint in the breadcrumb, but optically scale the artwork.
+        return SizedBox.square(
+          dimension: size,
+          child: Center(
+            child: AreaIcon(
+              area: entity!.area!,
+              size: size,
+              color: color,
+            ),
+          ),
+        );
       }
       return Icon(icon(entity), size: size, color: color);
     }
@@ -702,10 +716,15 @@ class _ScopeTrail extends StatelessWidget {
                   ? null
                   : icon(current),
               leading: current?.kind == InsightEntityKind.area
-                  ? AreaIcon(
-                      area: current!.area!,
-                      size: 16,
-                      color: context.colors.gold,
+                  ? SizedBox.square(
+                      dimension: 16,
+                      child: Center(
+                        child: AreaIcon(
+                          area: current!.area!,
+                          size: 16,
+                          color: context.colors.gold,
+                        ),
+                      ),
                     )
                   : null,
               selected: true,
@@ -731,6 +750,7 @@ class _LightNavigationBar extends StatelessWidget {
     required this.period,
     required this.onScopeTap,
     required this.onPeriodTap,
+    required this.onExit,
   });
 
   final List<InsightEntity?> trail;
@@ -738,6 +758,7 @@ class _LightNavigationBar extends StatelessWidget {
   final LightPeriod? period;
   final ValueChanged<InsightEntity?> onScopeTap;
   final VoidCallback onPeriodTap;
+  final VoidCallback onExit;
 
   @override
   Widget build(BuildContext context) {
@@ -750,6 +771,15 @@ class _LightNavigationBar extends StatelessWidget {
     // content column, level with the trail; an invisible twin on the left
     // keeps the trail centred. Narrower, it goes back under the trail.
     final beside = periodButton != null && isWideLayout(context);
+    Widget withExit(Widget child) => Row(
+      children: [
+        const SizedBox(width: 34),
+        const SizedBox(width: kSpaceXs),
+        Expanded(child: child),
+        const SizedBox(width: kSpaceXs),
+        _ExitStatisticsButton(onTap: onExit),
+      ],
+    );
     return DecoratedBox(
       key: const ValueKey('light-navigation-bar'),
       decoration: BoxDecoration(color: colors.night),
@@ -757,40 +787,67 @@ class _LightNavigationBar extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: kPageInsetCompact),
           child: periodButton == null
-              ? Center(child: scope)
+              ? withExit(Center(child: scope))
               : beside
               ? Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: Row(
-                    children: [
-                      ExcludeSemantics(
-                        child: Visibility(
-                          visible: false,
-                          maintainSize: true,
-                          maintainAnimation: true,
-                          maintainState: true,
-                          child: _PeriodButton(
-                            period: period!,
-                            onTap: onPeriodTap,
-                            keyed: false,
+                  child: withExit(
+                    Row(
+                      children: [
+                        ExcludeSemantics(
+                          child: Visibility(
+                            visible: false,
+                            maintainSize: true,
+                            maintainAnimation: true,
+                            maintainState: true,
+                            child: _PeriodButton(
+                              period: period!,
+                              onTap: onPeriodTap,
+                              keyed: false,
+                            ),
                           ),
                         ),
-                      ),
-                      Expanded(child: SizedBox(height: 48, child: scope)),
-                      periodButton,
-                    ],
+                        Expanded(child: SizedBox(height: 48, child: scope)),
+                        periodButton,
+                      ],
+                    ),
                   ),
                 )
               : Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   child: Column(
                     children: [
-                      SizedBox(height: 48, child: scope),
+                      SizedBox(height: 48, child: withExit(scope)),
                       const SizedBox(height: 22),
                       periodButton,
                     ],
                   ),
                 ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExitStatisticsButton extends StatelessWidget {
+  const _ExitStatisticsButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Tooltip(
+      message: context.strings.closeAction,
+      child: InkWell(
+        key: const ValueKey('light-exit-button'),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(kRadiusField),
+        child: Container(
+          width: 34,
+          height: 34,
+          decoration: selectableDecoration(colors, selected: false),
+          child: Icon(Icons.close_rounded, size: 18, color: colors.text),
         ),
       ),
     );

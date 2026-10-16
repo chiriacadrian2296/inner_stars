@@ -67,7 +67,9 @@ class SkyPulsarTooltip extends StatelessWidget {
         eyebrowColor: habit.dead
             ? starKindColor(StarKind.dead, context.colors)
             : starKindColor(StarKind.pulsar, context.colors, lit: isLit),
-        eyebrowIcon: EyebrowIconRow.chosenIcon(habit.iconSlug),
+        eyebrowIcon:
+            EyebrowIconRow.chosenIcon(habit.iconSlug) ??
+            (habit.dead ? StarKind.dead : StarKind.pulsar).icon,
         title: habit.displayTitle,
         breadcrumb: project == null
             ? null

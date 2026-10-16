@@ -1,7 +1,7 @@
 import 'card_back_lab_screen.dart';
 import 'badge_lab_screen.dart';
 import '../widgets/sky_search_tooltip_card.dart'
-    show GalaxyTooltipStartsClosed, galaxyTooltipWidth, galaxyTooltipPadding;
+    show GalaxyTooltipStartsClosed, galaxyTooltipWidth;
 import '../widgets/entity_insights_scope.dart';
 import '../models/display_text.dart';
 
@@ -40,6 +40,7 @@ import '../models/habit_cycle.dart';
 import '../models/habit_completion.dart';
 import '../models/artwork_blend.dart';
 import '../models/artwork_layer.dart';
+import '../models/galaxy_navigation_mode.dart';
 import '../models/life_area.dart';
 import '../models/project.dart';
 import '../models/star.dart';
@@ -87,6 +88,7 @@ import '../widgets/sky_nascent_star_tooltip.dart';
 import '../widgets/sky_explorer_view.dart' show SkyExplorerSession;
 import '../widgets/sky_navigation_target.dart';
 import '../widgets/sky_pulsar_tooltip.dart';
+import '../widgets/sky_compare_labels.dart';
 import '../widgets/sky_star_tooltip.dart';
 import '../widgets/sky_shooting_star.dart';
 import '../widgets/sky_supernova.dart';
@@ -125,7 +127,7 @@ import 'vision_editor_screen.dart';
 /// squared-off rectangle.
 const double _bottomPillHeight = 44.0;
 const double _bottomPillRadius = 22.0;
-const double _skyTooltipPadding = galaxyTooltipPadding;
+const double _skyTooltipPadding = 8.0;
 
 /// Shared by every hold-to-activate gesture on this screen — the sky's own
 /// hold-to-peek (see `_SkyScreenState._holdDuration`) and the menu button's
@@ -330,10 +332,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// zoom instead of a fourth magic number.
   static const _zoomOutFloorPercent = 0.0;
 
-  // Only used to seed the inertia glide's initial velocity now (see
-  // _handleScaleEnd) — the live drag itself is an exact rotation (see
-  // _handleScaleUpdate/SkyCamera.rotatedToAlign), not a scaled pixel
-  // delta, so it has no sensitivity constant to tune at all.
+  // Converts pointer movement into camera turns: Direct uses it to seed the
+  // release glide, while Cinematic uses it continuously as steering force.
   static const _panSensitivity = 0.15;
 
   /// The camera's own free orientation — see [SkyCamera]: no fixed "up"
@@ -496,6 +496,12 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// [_holdTargetIsMenuControl].
   bool _touchOnTodayControl = false;
 
+  /// A tap during Cinematic drift always starts the soft brake. If it lands
+  /// on a sky element, [_handleTapUp] turns that same tap into a flight;
+  /// empty sky only keeps the brake. A drag can still win the arena and take
+  /// control immediately.
+  bool _touchStoppedCinematicDrift = false;
+
   /// True between the close and the open of one fly-through step (see
   /// [_stepTodayTour]), so that close isn't read as the user leaving.
   bool _todayTourStepping = false;
@@ -537,14 +543,26 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   Ticker? _inertiaTicker;
   Duration _lastInertiaTick = Duration.zero;
 
-  /// The camera exactly as it was when the current drag began, and the
-  /// world direction under the cursor/finger at that same instant — see
-  /// [_handleScaleUpdate], which re-derives the camera fresh from these
-  /// two every frame (never by accumulating small steps) so that anchor
-  /// point stays glued to the cursor for the entire gesture, regardless
-  /// of zoom. Both null between gestures.
+  /// A tap does not kill Cinematic drift on the same frame. It turns the
+  /// existing inertia ticker into a soft smoothstep brake, preserving the
+  /// direction and letting the sky visibly settle into rest.
+  Offset? _inertiaBrakeStartVelocity;
+  double _inertiaBrakeElapsedSeconds = 0;
+
+  double _inertiaBrakeDurationSeconds = _inertiaBrakeMinSeconds;
+  static const _inertiaBrakeMinSeconds = 0.6;
+  static const _inertiaBrakeMaxSeconds = 1.6;
+
+  bool get _inertiaInProgress => _inertiaTicker?.isActive ?? false;
+
+  /// The camera, world direction and focal point captured when the current
+  /// Direct drag began. [_handleScaleUpdate] re-derives that mode's camera
+  /// from this stable origin so the anchor stays glued to the finger.
+  /// Cinematic instead steers [_panVelocity] continuously and ignores these.
   SkyCamera? _dragStartCamera;
   (double, double, double)? _dragAnchorDirection;
+  bool _steeringCinematicInertia = false;
+  double _lastSteeringRotation = 0;
 
   /// Whether each sky-overlay control is currently shown at all — not to
   /// be confused with [SettingsController.showGrid] (that one toggles the
@@ -585,12 +603,15 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// exploratory alongside the full menu, not a replacement for it.
   bool _quickAccessMenuOpen = false;
 
-  /// Drives the "take me there" fly-to animation — a single controller
-  /// reused across flights rather than rebuilt per tap, so a second tap
-  /// mid-flight can redirect it smoothly instead of leaving an orphaned
-  /// listener behind. [_flyStartCamera]/[_flyTargetForward] are read by
-  /// [_onFlyTick] on every frame; null between flights.
+  /// Drives every deliberate Galaxy camera flight, including the animated
+  /// zoom-out. Most of a flight is interaction-locked, but its imperceptible
+  /// final approach releases control slightly before the animation completes.
+  /// [_flyStartCamera]/[_flyTargetForward] are read by [_onFlyTick] on every
+  /// frame; null between flights.
   late final AnimationController _flyController;
+
+  bool get _flightInProgress => _flyController.isAnimating;
+  bool _flightInteractionLocked = false;
 
   /// The shared, throttled clock behind the sky's ambient animation — see
   /// [SkyClock].
@@ -599,6 +620,29 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   (double, double, double)? _flyTargetForward;
   double _flyStartZoom = 0;
   double _flyTargetZoom = 0;
+
+  /// Whether the current flight is a Cinematic guided glide (see
+  /// [_cinematicFlight]) rather than Direct's deterministic A-to-B sweep.
+  bool _flyUsesCinematicPhysics = false;
+
+  /// The target a Cinematic flight is steering [_panVelocity] toward. The
+  /// flight is not a separate animation: it runs inside the same inertia
+  /// ticker as a free glide, on the same velocity, so grabbing, braking or
+  /// letting go mid-flight behaves exactly like doing it while gliding.
+  /// [_flyController] only provides the flight's lifecycle (its future,
+  /// [_flightInProgress]); stopping it hands the motion back to free glide.
+  _CinematicFlight? _cinematicFlight;
+
+  /// The one principle behind Cinematic motion: speed may get high, but it
+  /// only ever changes gently. These are the acceleration limits a flight
+  /// (see [_planCinematicFlight]) and the empty-sky brake respect — travel
+  /// in turns/s² at zoom 1 (gentler zoomed in), zoom in log-units/s², roll
+  /// in radians/s² — plus a generous top speed in turns/s.
+  static const _cinematicPanAcceleration = 0.25;
+  static const _cinematicZoomAcceleration = 1.2;
+  static const _cinematicRollAcceleration = 2.0;
+  static const _cinematicMaxSpeed = 0.5;
+  static const _cinematicMinFlightSeconds = 0.9;
 
   /// Set by [_stepTodayTour] just before it flies: the next [_flyToWorld]
   /// becomes a "hop" — zoom out, travel, zoom back in — instead of a flight
@@ -658,6 +702,17 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// exact same spot.
   static const _flyMovementAngleEpsilon = 0.0015;
   static const _flyMovementZoomPercentEpsilon = 0.05;
+
+  /// Once every remaining component of a flight would move the furthest
+  /// affected screen point by less than this, the animation is visually over.
+  /// Snap to the exact target and complete the controller in that same frame
+  /// so Galaxy never stays interaction-locked after it already looks still.
+  static const _flightVisualSettlePixels = 10.0;
+
+  /// Releases input before the final visual snap. If nobody interacts, the
+  /// flight keeps easing normally; the first new gesture cancels only this
+  /// tiny residual tail and takes control immediately.
+  static const _flightInteractionUnlockPixels = 28.0;
 
   /// The dot product of two sky-sphere direction vectors — see
   /// [SkyCamera.forward] — used only to measure the angle between them
@@ -744,7 +799,16 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     super.initState();
     _skyClock = SkyClock(this);
     _flyController = AnimationController(vsync: this, duration: _flyDuration)
-      ..addListener(_onFlyTick);
+      ..addListener(_onFlyTick)
+      // The tick listener can release input during the final approach; status
+      // changes remain the safety net that clears the lock on every other
+      // completion or cancellation path.
+      ..addStatusListener((_) {
+        if (!_flyController.isAnimating) {
+          _flightInteractionLocked = false;
+        }
+        if (mounted) setState(() {});
+      });
     _holdRingController = AnimationController(
       vsync: this,
       duration: _holdDuration,
@@ -820,6 +884,30 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _inertiaTicker?.stop();
     _inertiaTicker?.dispose();
     _inertiaTicker = null;
+    _inertiaBrakeStartVelocity = null;
+    _inertiaBrakeElapsedSeconds = 0;
+  }
+
+  /// Brakes an active Cinematic glide under the same rule as a flight:
+  /// the deceleration eases in and out (smoothstep) and stays within the
+  /// travel acceleration limit, so a faster glide takes a little longer to
+  /// settle instead of being jolted to a stop.
+  void _brakeInertia() {
+    if (!_inertiaInProgress || _inertiaBrakeStartVelocity != null) return;
+    _inertiaBrakeStartVelocity = _panVelocity;
+    _inertiaBrakeElapsedSeconds = 0;
+    // Smoothstep's peak deceleration is 1.5·v0/T.
+    final limit =
+        _cinematicPanAcceleration / math.pow(math.max(_zoom, 0.5), 0.6);
+    _inertiaBrakeDurationSeconds = (1.5 * _panVelocity.distance / limit).clamp(
+      _inertiaBrakeMinSeconds,
+      _inertiaBrakeMaxSeconds,
+    );
+  }
+
+  void _cancelInertiaBrake() {
+    _inertiaBrakeStartVelocity = null;
+    _inertiaBrakeElapsedSeconds = 0;
   }
 
   /// Turns [_camera] by a raw cursor-derived [delta] — dragging left
@@ -836,10 +924,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     );
   }
 
-  /// Starts (or restarts) the coast-to-a-stop glide after a drag release —
-  /// see [_handleScaleEnd]. Runs its own ticker rather than reusing the
-  /// scale gesture's setState pattern since it needs to keep animating
-  /// well after the gesture itself has ended.
+  /// Starts (or restarts) the coast ticker. Direct starts it on release;
+  /// Cinematic starts it as soon as the first drag begins, including from
+  /// rest, because pointer deltas are forces applied to this live motion.
   void _startInertia() {
     _stopInertia();
     _lastInertiaTick = Duration.zero;
@@ -853,13 +940,48 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _lastInertiaTick = elapsed;
     if (dt <= 0) return;
 
+    // Any gesture or code path that stops [_flyController] (a grab, a tap,
+    // the wheel…) ends the guidance only: the velocity it had built up
+    // carries on as an ordinary glide, so there is nothing to notice.
+    final flight = _cinematicFlight;
+    if (flight != null) {
+      if (_flyController.isAnimating) {
+        _stepCinematicFlight(flight, math.min(dt, 0.05));
+        return;
+      }
+      _cinematicFlight = null;
+    }
+
+    final brakeStartVelocity = _inertiaBrakeStartVelocity;
+    if (brakeStartVelocity != null) {
+      _inertiaBrakeElapsedSeconds += dt;
+      final progress =
+          (_inertiaBrakeElapsedSeconds / _inertiaBrakeDurationSeconds).clamp(
+            0.0,
+            1.0,
+          );
+      // Smoothstep: the deceleration rises from zero and fades back to
+      // zero, the same no-jolt rule as every Cinematic flight.
+      final velocityFactor = 1 - progress * progress * (3 - 2 * progress);
+      setState(() {
+        _panVelocity = brakeStartVelocity * velocityFactor;
+        _rotateCamera(_panVelocity * dt);
+      });
+      if (progress >= 1) {
+        _panVelocity = Offset.zero;
+        _stopInertia();
+      }
+      return;
+    }
+
     setState(() {
       _rotateCamera(_panVelocity * dt);
       // Exponential decay ("friction") — velocityDecayPerSecond is what
       // fraction of the velocity survives after a full second, so this
       // stays frame-rate independent rather than shrinking by a fixed
       // amount per tick.
-      const velocityDecayPerSecond = 0.04;
+      final velocityDecayPerSecond = widget.settings.galaxyNavigationMode
+          .velocityDecayPerSecond(widget.settings.galaxyCinematicGravity);
       final decay = math.pow(velocityDecayPerSecond, dt).toDouble();
       _panVelocity *= decay;
     });
@@ -868,7 +990,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // coasting forever at a value too tiny to ever visibly move anything.
     const minVelocity = 0.0001;
     if (_panVelocity.distanceSquared < minVelocity * minVelocity) {
-      _stopInertia();
+      if (!_steeringCinematicInertia) _stopInertia();
     }
   }
 
@@ -1246,6 +1368,45 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     }
   }
 
+  /// Where [star] sits on the sky *as it will be seen once the flight to
+  /// it lands* — dead center, at star zoom. [starWorldPosition] reads it
+  /// off the constellation's flat on-screen sprite, whose perspective
+  /// depends on where the shape sits on screen and on the zoom; read under
+  /// the starting camera, a constellation off to one side (or a hop from
+  /// another zoom, as the "today" fly-through does) landed the star
+  /// visibly off-center. Re-reading it under the landing camera a few
+  /// times converges on the spot that really ends up centered.
+  Offset? _landingStarWorld(
+    PlacedConstellation constellation,
+    ConstellationStar star,
+    Size size,
+  ) {
+    // Off-screen right now (a far hop): start from the shape's own center,
+    // the refinement below reads the star from the landing view anyway.
+    var world =
+        starWorldPosition(constellation, star, _camera, _zoom, size) ??
+        constellation.worldPosition;
+    final landingZoom = zoomFromPercent(_starZoomPercent)
+        .clamp(minZoomWithoutRepeats, _maxZoom);
+    for (var i = 0; i < 4; i++) {
+      final forward = SkyCamera.lookingAt(
+        azimuthTurns: world.dx,
+        elevationTurns: world.dy,
+      ).forward;
+      final landing = _camera.rotatedToAlign(_camera.forward, forward);
+      final refined = starWorldPosition(
+        constellation,
+        star,
+        landing,
+        landingZoom,
+        size,
+      );
+      if (refined == null) break;
+      world = refined;
+    }
+    return world;
+  }
+
   /// The plain-tap half of [_openStar]'s real-star branch — flies the
   /// camera to [renderStar] (see [_openStarQuickLook]'s own doc comment
   /// for why its exact position, not [SkyStarTarget]'s coarser
@@ -1256,13 +1417,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   ) {
     final size = context.size;
     if (size == null) return;
-    final world = starWorldPosition(
-      constellation,
-      renderStar,
-      _camera,
-      _zoom,
-      size,
-    );
+    final world = _landingStarWorld(constellation, renderStar, size);
     if (world == null) return;
     _flyToWorld(
       world,
@@ -1282,13 +1437,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   ) {
     final size = context.size;
     if (size == null) return;
-    final world = starWorldPosition(
-      constellation,
-      renderStar,
-      _camera,
-      _zoom,
-      size,
-    );
+    final world = _landingStarWorld(constellation, renderStar, size);
     if (world == null) return;
     // See [_openTooltipDuringFlight]'s own doc comment for why this
     // doesn't wait for the flight to actually land.
@@ -1313,13 +1462,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   ) {
     final size = context.size;
     if (size == null) return;
-    final world = starWorldPosition(
-      constellation,
-      renderStar,
-      _camera,
-      _zoom,
-      size,
-    );
+    final world = _landingStarWorld(constellation, renderStar, size);
     if (world == null) return;
     _openTooltipDuringFlight(
       _flyToWorld(
@@ -1342,7 +1485,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   ) {
     final size = context.size;
     if (size == null) return;
-    final world = starWorldPosition(constellation, star, _camera, _zoom, size);
+    final world = _landingStarWorld(constellation, star, size);
     if (world == null) return;
     _openTooltipDuringFlight(
       _flyToWorld(
@@ -2532,10 +2675,10 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// alignment always is).
   /// Returns the flight's own [TickerFuture] — [_openStarQuickLook] and
   /// [_flyToConstellation] use it to open their tooltip only once the
-  /// camera actually lands (`whenCompleteOrCancel`, so an interrupted
-  /// flight — a second tap before the first one finishes — still resolves
-  /// instead of leaving a dangling callback). Every other caller ignores
-  /// it, same as when this returned nothing at all.
+  /// camera actually lands (`whenCompleteOrCancel` also prevents a dangling
+  /// callback if the controller is cancelled for a non-interaction reason,
+  /// such as the route being disposed). Every other caller ignores it, same
+  /// as when this returned nothing at all.
   TickerFuture _flyTo(
     SkyNavigationTarget target, {
     Offset anchorFraction = const Offset(0.5, 0.5),
@@ -2664,63 +2807,385 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     }
     _lastFlightMoved = true;
 
-    _stopInertia();
     _playZoomTransitionSound(_zoom, targetZoom);
+    final hopZoom = hop
+        ? _hopZoomFor(angleToTarget, math.min(_zoom, targetZoom), size)
+        : null;
+    if (widget.settings.galaxyNavigationMode ==
+        GalaxyNavigationMode.cinematic) {
+      return _startCinematicFlight(
+        _planCinematicFlight(
+          targetForward: targetForward,
+          targetZoom: targetZoom,
+          hopZoom: hopZoom,
+          rollCorrection: rollCorrection,
+        ),
+      );
+    }
+
+    _flyUsesCinematicPhysics = false;
+    _cinematicFlight = null;
+    _stopInertia();
     _flyStartCamera = _camera;
     _flyTargetForward = targetForward;
     _flyStartZoom = _zoom;
     _flyTargetZoom = targetZoom;
     _flyRollCorrection = rollCorrection;
-    _flyHopZoom = hop
-        ? _hopZoomFor(angleToTarget, math.min(_zoom, targetZoom), size)
-        : null;
+    _flyHopZoom = hopZoom;
     _flyController
       ..stop()
       ..reset()
       ..duration = hop
           ? _hopDuration(math.min(_zoom, targetZoom))
           : _flyDuration;
+    _flightInteractionLocked = true;
     return _flyController.forward();
   }
 
+  /// Hands [flight] to the inertia ticker. Whatever glide is running keeps
+  /// its current velocity — an empty-sky brake that a tap-down began is
+  /// cancelled, the flight steers from what is left of it — and the sky
+  /// stays fully interactive throughout, exactly as during a free glide.
+  TickerFuture _startCinematicFlight(_CinematicFlight flight) {
+    // The inertia ticker drives the flight; the controller only needs to
+    // outlive it as its lifecycle.
+    _flyController
+      ..stop()
+      ..reset()
+      ..duration = Duration(
+        milliseconds: ((flight.seconds + 2) * 1000).round(),
+      );
+    _flyUsesCinematicPhysics = true;
+    _cinematicFlight = flight;
+    _flyStartCamera = _camera;
+    _flyTargetForward = flight.targetForward ?? _camera.forward;
+    _flyStartZoom = flight.startZoom;
+    _flyTargetZoom = flight.targetZoom;
+    _flyRollCorrection = flight.rollCorrection;
+    _flyHopZoom = flight.hopZoom;
+    _cancelInertiaBrake();
+    if (!_inertiaInProgress) {
+      _panVelocity = Offset.zero;
+      _startInertia();
+    }
+    _flightInteractionLocked = false;
+    return _flyController.forward();
+  }
+
+  /// How far along the current flight is, 0..1 — the controller's own
+  /// value for Direct; the planned curve's time fraction for Cinematic,
+  /// whose controller only outlives the flight.
+  double get _flightProgress =>
+      _cinematicFlight?.progress ?? _flyController.value;
+
+  /// Plans a Cinematic flight from the camera's current state. The whole
+  /// flight is one minimum-jerk curve — the profile of a human reaching
+  /// movement — shared by travel, zoom and roll, so all of them start,
+  /// ease and land together, with zero acceleration at both ends. Its
+  /// duration is the shortest that keeps every channel under its
+  /// acceleration limit (and travel under [_cinematicMaxSpeed]): long trips
+  /// reach real speed, short ones stay a soft bell of velocity.
+  ///
+  /// The glide in progress is the curve's starting velocity, so nothing
+  /// jumps: its component toward the target becomes the initial travel
+  /// speed, the sideways rest becomes a detour that the same kind of curve
+  /// absorbs by the end.
+  _CinematicFlight _planCinematicFlight({
+    required (double, double, double)? targetForward,
+    required double targetZoom,
+    double? hopZoom,
+    double rollCorrection = 0,
+  }) {
+    final startCamera = _camera;
+    final entryVelocity = _inertiaInProgress ? _panVelocity : Offset.zero;
+    final error = targetForward == null
+        ? Offset.zero
+        : _flightDirectionErrorTurns(startCamera, targetForward);
+    final distance = error.distance;
+    final hasTravel = distance > 1e-6;
+    final toward = hasTravel ? error / distance : Offset.zero;
+    final side = Offset(-toward.dy, toward.dx);
+    final alongSpeed = hasTravel
+        ? entryVelocity.dx * toward.dx + entryVelocity.dy * toward.dy
+        : 0.0;
+    final sideSpeed = hasTravel
+        ? entryVelocity.dx * side.dx + entryVelocity.dy * side.dy
+        : 0.0;
+
+    final logStart = math.log(_zoom);
+    final logTarget = math.log(targetZoom);
+    final zoomSpan = (logTarget - logStart).abs();
+    final hopDip = hopZoom == null
+        ? 0.0
+        : (math.log(hopZoom) - math.min(logStart, logTarget)).abs();
+    final effectiveZoom = math.max(math.sqrt(_zoom * targetZoom), 0.5);
+    final panAcceleration =
+        _cinematicPanAcceleration / math.pow(effectiveZoom, 0.6);
+
+    const maxSeconds = 8.0;
+    var seconds = _cinematicMinFlightSeconds;
+    for (; seconds < maxSeconds; seconds += 0.05) {
+      final t2 = seconds * seconds;
+      // Peak of the minimum-jerk curve's second derivative is 10/√3.
+      final zoomAcceleration =
+          (5.7735 * zoomSpan + 2 * math.pi * math.pi * hopDip) / t2;
+      if (zoomAcceleration > _cinematicZoomAcceleration) continue;
+      if (5.7735 * rollCorrection.abs() / t2 > _cinematicRollAcceleration) {
+        continue;
+      }
+      if (!hasTravel) break;
+      final along = _MinimumJerk(1, alongSpeed * seconds / distance);
+      final lateral = _MinimumJerk(0, sideSpeed * seconds);
+      var fits = true;
+      for (var i = 0; i <= 24 && fits; i++) {
+        final tau = i / 24;
+        final ax = along.acceleration(tau) * distance / t2;
+        final ay = lateral.acceleration(tau) / t2;
+        final vx = along.velocity(tau) * distance / seconds;
+        final vy = lateral.velocity(tau) / seconds;
+        fits =
+            ax * ax + ay * ay <= panAcceleration * panAcceleration &&
+            vx * vx + vy * vy <= _cinematicMaxSpeed * _cinematicMaxSpeed;
+      }
+      if (fits) break;
+    }
+
+    return _CinematicFlight(
+      startCamera: startCamera,
+      targetForward: targetForward,
+      seconds: seconds,
+      startZoom: _zoom,
+      targetZoom: targetZoom,
+      hopZoom: hopZoom,
+      rollCorrection: rollCorrection,
+      toward: toward,
+      distance: distance,
+      along: hasTravel
+          ? _MinimumJerk(1, alongSpeed * seconds / distance)
+          : null,
+      lateral: hasTravel ? _MinimumJerk(0, sideSpeed * seconds) : null,
+    );
+  }
+
+  /// [start] carried [fraction] of the way along the great circle to
+  /// [target] — beyond 1 (a gentle overshoot when a fast glide arrives
+  /// close to its target) or below 0 (still drifting away at first) keep
+  /// rotating about the same axis.
+  static SkyCamera _cinematicPathCamera(
+    SkyCamera start,
+    (double, double, double) target,
+    double fraction,
+  ) {
+    if (fraction < 0) {
+      return start.rotatedToAlignFraction(target, start.forward, -fraction);
+    }
+    if (fraction <= 1) {
+      return start.rotatedToAlignFraction(start.forward, target, fraction);
+    }
+    return start
+        .rotatedToAlign(start.forward, target)
+        .rotatedToAlignFraction(start.forward, target, fraction - 1);
+  }
+
+  /// One frame of a Cinematic flight (see [_planCinematicFlight]). Every
+  /// frame also writes the flight's own velocity into [_panVelocity], so
+  /// if anything interrupts it — a grab, a tap, the wheel — the free glide
+  /// carries on from exactly that motion.
+  void _stepCinematicFlight(_CinematicFlight flight, double dt) {
+    flight.elapsedSeconds += dt;
+    final tau = flight.progress;
+    final ease = _MinimumJerk.standard(tau);
+
+    final logStart = math.log(flight.startZoom);
+    final logTarget = math.log(flight.targetZoom);
+    var logZoom = logStart + (logTarget - logStart) * ease;
+    final hopZoom = flight.hopZoom;
+    if (hopZoom != null) {
+      final dip = math.log(hopZoom) - math.min(logStart, logTarget);
+      logZoom += dip * math.pow(math.sin(math.pi * tau), 2).toDouble();
+    }
+    var zoom = math.exp(logZoom).clamp(minZoomWithoutRepeats, _maxZoom);
+
+    var camera = _camera;
+    var velocity = _panVelocity;
+    final target = flight.targetForward;
+    final along = flight.along;
+    final lateral = flight.lateral;
+    if (target != null && along != null && lateral != null) {
+      final side = Offset(-flight.toward.dy, flight.toward.dx);
+      camera = _cinematicPathCamera(
+        flight.startCamera,
+        target,
+        along.position(tau),
+      );
+      final detour = lateral.position(tau);
+      if (detour != 0) {
+        camera = camera.rotated(
+          horizontalTurns: side.dx * detour,
+          verticalTurns: side.dy * detour,
+        );
+      }
+      if (_flyRollCorrection != 0) {
+        camera = camera.rolled(_flyRollCorrection * ease);
+      }
+      velocity =
+          flight.toward *
+              (along.velocity(tau) * flight.distance / flight.seconds) +
+          side * (lateral.velocity(tau) / flight.seconds);
+    } else if (target != null) {
+      // Already centered on the target (a hold right after a tap landed
+      // there): nothing to travel, but the roll — straightening a
+      // supernova backdrop or a constellation upright — still has to run.
+      camera = flight.startCamera;
+      if (_flyRollCorrection != 0) {
+        camera = camera.rolled(_flyRollCorrection * ease);
+      }
+      velocity = Offset.zero;
+    } else {
+      // A zoom-only flight leaves any glide to its ordinary gravity.
+      final decay = widget.settings.galaxyNavigationMode.velocityDecayPerSecond(
+        widget.settings.galaxyCinematicGravity,
+      );
+      velocity *= math.pow(decay, dt).toDouble();
+      camera = camera.rotated(
+        horizontalTurns: velocity.dx * dt,
+        verticalTurns: velocity.dy * dt,
+      );
+    }
+
+    final arrived = tau >= 1;
+    if (arrived) {
+      if (target != null) {
+        camera = flight.startCamera.rotatedToAlign(
+          flight.startCamera.forward,
+          target,
+        );
+        if (_flyRollCorrection != 0) {
+          camera = camera.rolled(_flyRollCorrection);
+        }
+        velocity = Offset.zero;
+      }
+      zoom = flight.targetZoom;
+    }
+
+    setState(() {
+      _camera = camera;
+      _zoom = zoom;
+      _panVelocity = velocity;
+    });
+    if (arrived) {
+      _cinematicFlight = null;
+      _flyController.stop(canceled: false);
+      if (velocity == Offset.zero) _stopInertia();
+    }
+  }
+
+  /// Shortest spherical error expressed on [camera]'s own horizontal and
+  /// vertical steering axes, in turns. This is the same coordinate space as
+  /// [_panVelocity], so the target can attract the existing glide directly.
+  Offset _flightDirectionErrorTurns(
+    SkyCamera camera,
+    (double, double, double) target,
+  ) {
+    final forward = camera.forward;
+    final axis = (
+      forward.$2 * target.$3 - forward.$3 * target.$2,
+      forward.$3 * target.$1 - forward.$1 * target.$3,
+      forward.$1 * target.$2 - forward.$2 * target.$1,
+    );
+    final axisLength = math.sqrt(_dotDirections(axis, axis));
+    if (axisLength < 1e-9) return Offset.zero;
+    final angle = math.acos(_dotDirections(forward, target).clamp(-1.0, 1.0));
+    final turnsPerAxisUnit = angle / axisLength / (2 * math.pi);
+    return Offset(
+      _dotDirections(axis, camera.up) * turnsPerAxisUnit,
+      _dotDirections(axis, camera.right) * turnsPerAxisUnit,
+    );
+  }
+
   void _onFlyTick() {
+    // A Cinematic flight is driven by the inertia ticker instead (see
+    // [_stepCinematicFlight]); the controller is only its lifecycle there.
+    if (_flyUsesCinematicPhysics) return;
     final startCamera = _flyStartCamera;
     final targetForward = _flyTargetForward;
     if (startCamera == null || targetForward == null) return;
     final hopZoom = _flyHopZoom;
     final value = _flyController.value;
-    // One easing for the whole flight, a hop included: it travels fastest
-    // mid-way, exactly where a hop is backed out the furthest (see the zoom
-    // below), so it reads as one continuous arc rather than three moves.
+
+    // Direct deliberately keeps the original deterministic A-to-B flight.
+    // Its navigation mode favors efficiency and exact cursor response, so
+    // there is no inherited velocity or physical guidance here.
     final t = Curves.easeInOutCubic.transform(value);
-    setState(() {
-      var camera = startCamera.rotatedToAlignFraction(
-        startCamera.forward,
-        targetForward,
-        t,
-      );
-      // [_flyRollCorrection] (see its own doc comment for how it's
-      // computed and why plain [rotatedToAlignFraction] alone doesn't
-      // already land level) — ramped in step with the same [t] so a
-      // constellation hold finishes exactly level right as the camera
-      // finishes arriving, not in a separate, visually disconnected step.
+    var camera = startCamera.rotatedToAlignFraction(
+      startCamera.forward,
+      targetForward,
+      t,
+    );
+    if (_flyRollCorrection != 0) {
+      camera = camera.rolled(_flyRollCorrection * t);
+    }
+    late double zoom;
+    if (hopZoom == null) {
+      zoom = _flyStartZoom + (_flyTargetZoom - _flyStartZoom) * t;
+    } else {
+      final logStart = math.log(_flyStartZoom);
+      final logTarget = math.log(_flyTargetZoom);
+      final dip = math.log(hopZoom) - math.min(logStart, logTarget);
+      final bell = math.pow(math.sin(math.pi * value), 2).toDouble();
+      zoom = math.exp(logStart + (logTarget - logStart) * t + dip * bell);
+    }
+    final remainingRoll = _flyRollCorrection.abs() * (1 - t);
+
+    final size = context.size;
+    final residualPixels = size == null
+        ? double.infinity
+        : _flightResidualPixels(
+            camera: camera,
+            zoom: zoom,
+            targetForward: targetForward,
+            remainingRoll: remainingRoll,
+            size: size,
+          );
+    // Finish as soon as the tiny residual movement is visually gone.
+    final visuallySettled =
+        value >= 1 || residualPixels < _flightVisualSettlePixels;
+    final interactionCanUnlock =
+        value >= 1 || residualPixels < _flightInteractionUnlockPixels;
+    if (visuallySettled) {
+      camera = startCamera.rotatedToAlign(startCamera.forward, targetForward);
       if (_flyRollCorrection != 0) {
-        camera = camera.rolled(_flyRollCorrection * t);
+        camera = camera.rolled(_flyRollCorrection);
       }
+      zoom = _flyTargetZoom;
+    }
+
+    setState(() {
       _camera = camera;
-      if (hopZoom == null) {
-        _zoom = _flyStartZoom + (_flyTargetZoom - _flyStartZoom) * t;
-      } else {
-        // In log space, the same way the zoom scale itself is defined: the
-        // straight start-to-target zoom, pulled back by a smooth bell
-        // (sin², flat at both ends, deepest mid-way) down to [hopZoom].
-        final logStart = math.log(_flyStartZoom);
-        final logTarget = math.log(_flyTargetZoom);
-        final dip = math.log(hopZoom) - math.min(logStart, logTarget);
-        final bell = math.pow(math.sin(math.pi * value), 2).toDouble();
-        _zoom = math.exp(logStart + (logTarget - logStart) * t + dip * bell);
-      }
+      _zoom = zoom;
+      if (interactionCanUnlock) _flightInteractionLocked = false;
     });
+    if (visuallySettled) _flyController.stop(canceled: false);
+  }
+
+  double _flightResidualPixels({
+    required SkyCamera camera,
+    required double zoom,
+    required (double, double, double) targetForward,
+    required double remainingRoll,
+    required Size size,
+  }) {
+    final radius = math.min(size.width, size.height) / 2;
+    final halfView = _halfViewAngle(zoom, size);
+    final remainingAngle = math.acos(
+      _dotDirections(camera.forward, targetForward).clamp(-1.0, 1.0),
+    );
+    final travelPixels = halfView <= 0
+        ? double.infinity
+        : remainingAngle / halfView * radius;
+    final rollPixels = remainingRoll * radius;
+    final zoomPixels = (_flyTargetZoom / zoom - 1).abs() * radius;
+    return travelPixels + rollPixels + zoomPixels;
   }
 
   /// How far into the fly controller's own 0..1 progress a flight has to
@@ -2737,9 +3202,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// Opens [tooltip] once [flight] — the [TickerFuture] a [_flyToWorld]/
   /// [_flyTo] call just returned — crosses
   /// [_tooltipOpenAtFlightProgress], or actually finishes/gets
-  /// interrupted, whichever comes first (a short flight, e.g. the target
-  /// was already close, might complete before ever reaching that
-  /// fraction). Shared by [_openStarQuickLook]/[_holdArea]/
+  /// cancelled, whichever comes first (a short flight, e.g. the target was
+  /// already close, might complete before ever reaching that fraction).
+  /// Shared by [_openStarQuickLook]/[_holdArea]/
   /// [_holdConstellation] so this early-open behavior lives in one place
   /// rather than three hand-rolled listeners.
   void _openTooltipDuringFlight(TickerFuture flight, _SkyTooltip tooltip) {
@@ -2778,7 +3243,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // still backed out over the sky.
     final openAt = _flyHopZoom == null ? _tooltipOpenAtFlightProgress : 0.88;
     void onFlyProgress() {
-      if (_flyController.value >= openAt) {
+      if (_flightProgress >= openAt) {
         _flyController.removeListener(onFlyProgress);
         openOnce();
       }
@@ -2821,9 +3286,24 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // touch that starts on the step's own target (inside its scrim hole,
     // so it still reaches this detector at all) turn into a pan once it
     // moves, bypassing the tap/hold split entirely.
-    if (_tourGestureLockActive) return;
+    if (_flightInteractionLocked || _tourGestureLockActive) return;
     _zoomAtGestureStart = _zoom;
-    _stopInertia();
+    _steeringCinematicInertia =
+        widget.settings.galaxyNavigationMode == GalaxyNavigationMode.cinematic;
+    _lastSteeringRotation = 0;
+    if (_steeringCinematicInertia) {
+      // Tap-down began the soft brake before Flutter knew whether this would
+      // remain a tap or become a drag. A drag means "steer", so resume the
+      // ordinary gravity curve. Starting the same ticker from rest is what
+      // makes even Cinematic's very first swipe an impulse rather than a
+      // direct drag followed by a visually different release.
+      _cancelInertiaBrake();
+      if (!_inertiaInProgress) _startInertia();
+    } else {
+      // Direct keeps its original grab behavior: any old glide is forgotten
+      // immediately and this gesture starts from the camera's current pose.
+      _stopInertia();
+    }
     _flyController.stop();
     final size = context.size;
     if (size != null && size.height > 0) {
@@ -2855,7 +3335,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // set while locked, so this would be a no-op anyway, but bailing
     // early also skips closing an open tooltip below for a "pan" that
     // was never really allowed to begin with.
-    if (_tourGestureLockActive) return;
+    if (_flightInteractionLocked || _tourGestureLockActive) return;
     // A genuine pan/zoom — not just the jitter above — closes any open
     // tooltip: letting the camera move out from under one used to leave
     // it pinned in place, still pointing at wherever the target *used*
@@ -2873,6 +3353,50 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       _endTodayTour();
     }
     final size = context.size;
+    if (_steeringCinematicInertia) {
+      if (size == null || size.height <= 0) return;
+      final mode = widget.settings.galaxyNavigationMode;
+      final steeringImpulse =
+          details.focalPointDelta /
+          size.height /
+          _zoom *
+          _panSensitivity *
+          mode.inertiaVelocityFactor;
+      final rotationDelta = details.rotation - _lastSteeringRotation;
+      _lastSteeringRotation = details.rotation;
+      setState(() {
+        final oldZoom = _zoom;
+        _zoom = (_zoomAtGestureStart * details.scale).clamp(
+          minZoomWithoutRepeats,
+          _maxZoom,
+        );
+        if (_zoom != oldZoom) {
+          // Pinch zooms toward the fingers, as in Direct and with the
+          // wheel: the sky point under the focal point stays under it.
+          final anchor = screenToDirection(
+            details.localFocalPoint,
+            _camera,
+            oldZoom,
+            size,
+          );
+          final current = screenToDirection(
+            details.localFocalPoint,
+            _camera,
+            _zoom,
+            size,
+          );
+          _camera = _camera.rotatedToAlign(current, anchor);
+        }
+        _panVelocity = mode.steerInertiaVelocity(
+          currentVelocity: _panVelocity,
+          impulse: steeringImpulse,
+        );
+        if (rotationDelta != 0) {
+          _camera = _camera.rolled(rotationDelta * mode.dragDistanceFactor);
+        }
+      });
+      return;
+    }
     setState(() {
       _zoom = (_zoomAtGestureStart * details.scale).clamp(
         minZoomWithoutRepeats,
@@ -2884,15 +3408,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
           size.height > 0 &&
           startCamera != null &&
           anchor != null) {
-        // Exact "grab and drag": re-derive the camera fresh, every frame,
-        // as the single rotation of the *drag's starting* camera that
-        // puts [anchor] back under wherever the cursor is *now* — never
-        // by accumulating a small-angle delta step by step, so there's no
-        // per-frame approximation error to build up over a long drag, and
-        // the anchor point stays exactly under the cursor regardless of
-        // zoom (recomputing its direction with the live zoom here is also
-        // what makes a simultaneous pinch keep its focal point anchored
-        // too, for the same reason).
+        // Original Direct grab-and-drag: the exact screen point under the
+        // finger remains attached to it for the whole gesture.
         final current = screenToDirection(
           details.localFocalPoint,
           startCamera,
@@ -2932,9 +3449,24 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // inertia glide from whatever velocity it happened to release at,
     // moving the camera after the fact even though the drag itself never
     // did anything while it was live.
-    if (_tourGestureLockActive) return;
+    if (_steeringCinematicInertia) {
+      _steeringCinematicInertia = false;
+      _lastSteeringRotation = 0;
+      const minVelocity = 0.0001;
+      if (_panVelocity.distanceSquared < minVelocity * minVelocity) {
+        _stopInertia();
+      } else if (!_inertiaInProgress) {
+        _startInertia();
+      }
+      return;
+    }
+    if (_flightInteractionLocked || _tourGestureLockActive) {
+      return;
+    }
     final size = context.size;
     if (size == null || size.height <= 0) return;
+    // Direct's original release replaces the previous velocity, with no
+    // Cinematic steering, gravity scaling or maximum-speed cap.
     _panVelocity =
         details.velocity.pixelsPerSecond /
         size.height /
@@ -2952,6 +3484,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   // screen center — matching a phone's pinch-to-zoom, which always
   // zooms wherever the fingers are, never forces the center.
   void _handlePointerSignal(PointerSignalEvent event) {
+    if (_flightInteractionLocked) return;
     if (event is! PointerScrollEvent) return;
     final size = context.size;
     if (size == null) return;
@@ -2960,7 +3493,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // [_handleScaleUpdate]'s own version of this for why that one needs
     // a threshold and this doesn't).
     if (_skyTooltipController.isOpen) _skyTooltipController.close();
-    _stopInertia();
+    // Cinematic keeps gliding while the wheel zooms, as a pinch does.
+    if (widget.settings.galaxyNavigationMode !=
+        GalaxyNavigationMode.cinematic) {
+      _stopInertia();
+    }
     _flyController.stop();
     final oldZoom = _zoom;
     final oldCamera = _camera;
@@ -3195,12 +3732,25 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   }
 
   void _handleTapDown(TapDownDetails details) {
+    if (_flightInteractionLocked) return;
+    if (_flightInProgress) _flyController.stop();
+    _touchStoppedCinematicDrift = false;
+    _holdFired = false;
+    _tooltipDismissedForPendingHold = false;
+    _holdTargetIsMenuControl = _menuControlPressed;
     // A press on the "today" chip or its arrows is theirs alone — it must
     // not start a hold, nor close the tooltip it is stepping through.
     _touchOnTodayControl = _todayControlPressed;
+    final stoppedCinematicDrift =
+        widget.settings.galaxyNavigationMode ==
+            GalaxyNavigationMode.cinematic &&
+        _inertiaInProgress;
+    if (stoppedCinematicDrift) _brakeInertia();
     if (_touchOnTodayControl) return;
-    _holdFired = false;
-    _tooltipDismissedForPendingHold = false;
+    if (stoppedCinematicDrift && !_menuControlPressed) {
+      _touchStoppedCinematicDrift = true;
+      return;
+    }
     _holdTimer?.cancel();
     _holdRingArmTimer?.cancel();
     _holdRingArmTimer = null;
@@ -3214,7 +3764,6 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
       _lastEmptyTapPosition = null;
     });
     _stopHoldHaptic();
-    _holdTargetIsMenuControl = _menuControlPressed;
     if (_holdTargetIsMenuControl) {
       // This touch's down event landed on [_MenuStarButton] or a
       // [_QuickAccessButton] — see [_menuControlPressed]'s own doc comment
@@ -3290,6 +3839,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// pending hold that hasn't fired yet is no longer this touch's to act
   /// on.
   void _handleTapCancel() {
+    _touchStoppedCinematicDrift = false;
     _holdTimer?.cancel();
     _holdTimer = null;
     _holdRingArmTimer?.cancel();
@@ -3393,6 +3943,11 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     final holdWasCharging =
         _holdRingController.value > 0 || _holdRingController.isAnimating;
     _collapseHoldRing();
+    // Normally [AbsorbPointer] prevents this callback altogether. This also
+    // covers a pointer that was already down when a hold started its flight.
+    if (_flightInteractionLocked) return;
+    final brakingCinematicDrift = _touchStoppedCinematicDrift;
+    _touchStoppedCinematicDrift = false;
     // This touch's down event landed on a menu control (see
     // [_holdTargetIsMenuControl]'s own doc comment) — its release is the
     // control's to handle, not the sky's, no matter what a plain hit test
@@ -3412,7 +3967,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     // plain-tap handling here used to fly the camera (or close an open
     // tooltip) right after the user watched the ring cancel, which read
     // as the sky ignoring the cancellation instead of honoring it.
-    if (holdWasCharging) return;
+    if (holdWasCharging && !brakingCinematicDrift) return;
     final size = context.size;
     if (size == null) return;
     // While a tooltip is showing, the first tap anywhere else only
@@ -3441,6 +3996,16 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         widget.audioService.playTapSound();
       }
       _lastEmptyTapTime = null;
+      return;
+    }
+
+    // During a glide, empty sky means "brake" only. In particular it must
+    // not also become the first/second half of an empty-sky double tap and
+    // unexpectedly zoom out. A hit above is different: its flight has
+    // already absorbed the brake and continues toward the selected element.
+    if (brakingCinematicDrift) {
+      _lastEmptyTapTime = null;
+      _lastEmptyTapPosition = null;
       return;
     }
 
@@ -3488,6 +4053,7 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// [TooltipCardController.open]'s own doc comment — so this never needs
   /// an explicit close first).
   void _handleHold(Offset position) {
+    if (_flightInteractionLocked) return;
     final size = context.size;
     if (size == null) return;
     final hit = _resolveTapTarget(position, size, showTooltip: true);
@@ -3748,8 +4314,19 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
   /// its azimuth/elevation round-trip (there's no new direction to aim
   /// at here, just [_camera]'s own current one, exactly).
   void _zoomTo(double targetZoom) {
-    _stopInertia();
     _playZoomTransitionSound(_zoom, targetZoom);
+    // Cinematic zooms through the same spring a flight uses, leaving any
+    // glide to carry on under its own gravity rather than killing it.
+    if (widget.settings.galaxyNavigationMode ==
+        GalaxyNavigationMode.cinematic) {
+      _startCinematicFlight(
+        _planCinematicFlight(targetForward: null, targetZoom: targetZoom),
+      );
+      return;
+    }
+    _flyUsesCinematicPhysics = false;
+    _cinematicFlight = null;
+    _stopInertia();
     _flyStartCamera = _camera;
     _flyTargetForward = _camera.forward;
     _flyStartZoom = _zoom;
@@ -3758,7 +4335,9 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     _flyController
       ..stop()
       ..reset()
-      ..forward();
+      ..duration = _flyDuration;
+    _flightInteractionLocked = true;
+    _flyController.forward();
   }
 
   /// Opens the small centered dialog that flips [_showGridControl]/
@@ -3864,6 +4443,22 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     color: widget.settings.artworkColor,
   );
 
+  bool _consumeGalaxyBack() {
+    // A system-back gesture is not covered by the pointer lock in [build].
+    // Swallow it for the locked part of a flight, but honor the same early
+    // control window as touch once the final approach is already negligible.
+    if (_flightInteractionLocked) return true;
+    if (_skyTooltipController.isOpen || _quickLookConstellation != null) {
+      _closeSkyTooltip();
+      return true;
+    }
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      _scaffoldKey.currentState!.closeDrawer();
+      return true;
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -3875,18 +4470,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
     final showRotation = _showRotationControl && !isTouchOnlyMobile;
 
     return GalaxyExitGuard(
-      consumeBack: () {
-        // Any open tooltip closes first.
-        if (_skyTooltipController.isOpen || _quickLookConstellation != null) {
-          _closeSkyTooltip();
-          return true;
-        }
-        if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
-          _scaffoldKey.currentState!.closeDrawer();
-          return true;
-        }
-        return false;
-      },
+      consumeBack: _consumeGalaxyBack,
+      absorbInteractions: _flightInteractionLocked,
       child: Scaffold(
         key: _scaffoldKey,
         // The sky is dragged edge to edge to look around, so the drawer must
@@ -4010,6 +4595,8 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
                         palette: kSkyStarPalette,
                         revision: _revision,
                       ),
+                      if (kShowSkyCompareLabels)
+                        SkyCompareLabels(camera: _camera, zoom: _zoom),
                       // STUDY — see [SkyShootingStarStudy]: one sample
                       // shooting star, until the feature itself exists.
                       if (_kShowShootingStarStudy &&
@@ -4923,7 +5510,12 @@ class _SkyScreenState extends State<SkyScreen> with TickerProviderStateMixin {
         // small clamp margin) is what actually keeps it on
         // screen instead.
         fitToViewport: false,
-        constraints: BoxConstraints(maxWidth: galaxyTooltipWidth(context)),
+        constraints: BoxConstraints(
+          maxWidth: galaxyTooltipWidth(
+            context,
+            framePadding: _skyTooltipPadding,
+          ),
+        ),
         padding: const EdgeInsets.all(_skyTooltipPadding),
         // `TooltipCard`'s own default (`WhenContentHide.goAway`) auto-closes
         // on the pointer leaving the panel — meant for a *hover*-triggered
@@ -7351,4 +7943,74 @@ class _RenderHoleBarrier extends RenderProxyBox {
     }
     return super.hitTest(result, position: position);
   }
+}
+
+/// One planned Cinematic flight — see `_SkyScreenState._planCinematicFlight`.
+/// A null [targetForward] is a zoom-only flight (the animated zoom-out),
+/// which leaves any glide alone.
+class _CinematicFlight {
+  _CinematicFlight({
+    required this.startCamera,
+    required this.targetForward,
+    required this.seconds,
+    required this.startZoom,
+    required this.targetZoom,
+    required this.hopZoom,
+    required this.rollCorrection,
+    required this.toward,
+    required this.distance,
+    required this.along,
+    required this.lateral,
+  });
+
+  final SkyCamera startCamera;
+  final (double, double, double)? targetForward;
+  final double seconds;
+  final double startZoom;
+  final double targetZoom;
+  final double? hopZoom;
+  final double rollCorrection;
+
+  /// Unit direction toward the target and its distance, in the start
+  /// camera's steering axes (turns) — the same space as the glide velocity.
+  final Offset toward;
+  final double distance;
+
+  /// Travel as a fraction of [distance], and the sideways detour (turns)
+  /// that absorbs inherited sideways motion, over normalized time.
+  final _MinimumJerk? along;
+  final _MinimumJerk? lateral;
+
+  double elapsedSeconds = 0;
+
+  double get progress => (elapsedSeconds / seconds).clamp(0.0, 1.0);
+}
+
+/// A quintic from (0, [startVelocity], 0) to ([end], 0, 0) over τ ∈ 0..1 —
+/// the minimum-jerk curve with a given starting velocity (in units per
+/// unit τ), zero acceleration at both ends.
+class _MinimumJerk {
+  _MinimumJerk(double end, double startVelocity)
+    : _c1 = startVelocity,
+      _c3 = 10 * end - 6 * startVelocity,
+      _c4 = -15 * end + 8 * startVelocity,
+      _c5 = 6 * end - 3 * startVelocity;
+
+  final double _c1;
+  final double _c3;
+  final double _c4;
+  final double _c5;
+
+  /// The plain 0→1 curve from rest: 10τ³ − 15τ⁴ + 6τ⁵.
+  static double standard(double tau) =>
+      tau * tau * tau * (10 + tau * (-15 + tau * 6));
+
+  double position(double tau) =>
+      tau * (_c1 + tau * tau * (_c3 + tau * (_c4 + tau * _c5)));
+
+  double velocity(double tau) =>
+      _c1 + tau * tau * (3 * _c3 + tau * (4 * _c4 + tau * 5 * _c5));
+
+  double acceleration(double tau) =>
+      tau * (6 * _c3 + tau * (12 * _c4 + tau * 20 * _c5));
 }

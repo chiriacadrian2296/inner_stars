@@ -17,6 +17,9 @@ uniform vec4 uVerticalOffsets1;
 // Each supernova's area's total intensity, as a milestone level.
 uniform vec4 uIntensityLevels0;
 uniform vec4 uIntensityLevels1;
+// 0..1: how strongly a star is squashed toward the view center's opposite
+// side as it nears the edge of the view (see kSkyForeshortening).
+uniform float uForeshorten;
 
 out vec4 fragColor;
 
@@ -166,6 +169,18 @@ vec3 supernova(
   vec3 axisA = normalize(cross(reference, center));
   vec3 axisB = cross(center, axisA);
   vec2 uv = vec2(dot(dir - center, axisA), dot(dir - center, axisB));
+
+  // Foreshortening: the stereographic view is conformal, so a star would look
+  // equally round everywhere. Where the view axis tilts away from this
+  // star, stretch the sampled coordinate along that tilt (the star shrinks
+  // on screen along it) by the cosine of the angle off the axis.
+  vec2 tilt = vec2(dot(uForward, axisA), dot(uForward, axisB));
+  float tiltLength = length(tilt);
+  if (uForeshorten > 0.0 && tiltLength > 1e-4) {
+    vec2 tiltDir = tilt / tiltLength;
+    float squash = 1.0 - uForeshorten * (1.0 - clamp(dot(uForward, center), 0.2, 1.0));
+    uv += tiltDir * dot(uv, tiltDir) * (1.0 / squash - 1.0);
+  }
   // Farther than 4 units of its own size (and on its far side) nothing of
   // this supernova — glow, spikes, moons — is bright enough to show: skip
   // all the work below. (4 units: its glow is down to e^-12 there.)

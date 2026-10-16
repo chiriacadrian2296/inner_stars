@@ -16,6 +16,10 @@
 - Cancel actions are always secondary and grey (`colors.muted`), including
   their text labels. Never use gold for Cancel.
 
+- Quick Settings are currently hidden and inaccessible. Do not mirror new
+  settings there while they remain hidden; add them only to the main Settings
+  screen unless Quick Settings are explicitly restored.
+
 
 - **Galaxy** (formerly called Cosmo; the original name) is the visual
   universe screen implemented by `SkyScreen`: it has the animated star field

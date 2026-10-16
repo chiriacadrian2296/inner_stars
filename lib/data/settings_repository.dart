@@ -1,5 +1,6 @@
 import '../models/artwork_blend.dart';
 import '../models/artwork_layer.dart';
+import '../models/galaxy_navigation_mode.dart';
 import '../models/galaxy_quality.dart';
 import '../settings/sky_grid_size.dart';
 
@@ -20,6 +21,8 @@ class SettingsRepository {
   static const defaultArtworkColor = 0xFFFFFFFF;
   static const defaultArtworkLayer = ArtworkLayer.aboveStars;
   static const defaultArtworkBlend = ArtworkBlend.plus;
+  static const defaultGalaxyNavigationMode = GalaxyNavigationMode.cinematic;
+  static const defaultGalaxyCinematicGravity = 0.25;
 
   static const _localeKey = 'settings.locale';
   static const _reminderEnabledKey = 'settings.reminderEnabled';
@@ -39,6 +42,8 @@ class SettingsRepository {
   static const _skyGridViewKey = 'settings.skyGridView';
   static const _skyGridSizeStepKey = 'settings.skyGridSizeStep';
   static const _galaxyQualityKey = 'settings.galaxyQuality';
+  static const _galaxyNavigationModeKey = 'settings.galaxyNavigationMode';
+  static const _galaxyCinematicGravityKey = 'settings.galaxyCinematicGravity';
 
   final SharedPreferences _prefs;
 
@@ -98,6 +103,26 @@ class SettingsRepository {
 
   Future<void> setGalaxyQuality(GalaxyQuality value) =>
       _prefs.setString(_galaxyQualityKey, value.name);
+
+  GalaxyNavigationMode get galaxyNavigationMode =>
+      GalaxyNavigationMode.fromName(
+        _prefs.getString(_galaxyNavigationModeKey),
+        fallback: defaultGalaxyNavigationMode,
+      );
+
+  Future<void> setGalaxyNavigationMode(GalaxyNavigationMode value) =>
+      _prefs.setString(_galaxyNavigationModeKey, value.name);
+
+  double get galaxyCinematicGravity =>
+      (_prefs.getDouble(_galaxyCinematicGravityKey) ??
+              defaultGalaxyCinematicGravity)
+          .clamp(0.0, 1.0)
+          .toDouble();
+
+  Future<void> setGalaxyCinematicGravity(double value) => _prefs.setDouble(
+    _galaxyCinematicGravityKey,
+    value.clamp(0.0, 1.0).toDouble(),
+  );
 
   /// Whether the Cosmo draws each life area's supernova (the giant star over
   /// its artwork, and the sigil around it) — on by default.

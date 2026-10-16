@@ -379,6 +379,69 @@ vec3 supernovaLight(vec3 dir) {
   return light * uSupernovaLight;
 }
 
+// Area nebulae: each life area has a reflection of itself near its
+// supernova — a cool, ray-less cloud of glowing gas, the place the area's
+// victories, goals and habits are born from. Same gas as the rest of the sky,
+// but drawn as ridges and filaments with a ragged outline, tinted per area,
+// and with a few young bright stars lit inside it. Sits a little off its
+// supernova so the two never compete. Scenery colors only: no gold, no rays.
+vec3 areaNebulae(vec3 dir) {
+  // COMPARISON (2026-10-16): the first two areas each carry one of the two
+  // looks, labeled on screen — see sky_compare_labels.dart.
+  vec3 light = vec3(0.0);
+  for (int i = 0; i < 2; i++) {
+    float fi = float(i);
+    vec3 s = uSupernovas[i];
+    vec3 ref = abs(s.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+    vec3 a = normalize(cross(ref, s));
+    vec3 b = cross(s, a);
+    float bearing = fi * 2.4 + 0.7;
+    vec3 c = normalize(s + (a * cos(bearing) + b * sin(bearing)) * 0.36);
+    float theta2 = 2.0 * (1.0 - dot(dir, c));
+    const float kReach = 0.26;
+    if (theta2 > kReach * kReach * 4.0) continue;
+
+    vec3 tint = 0.5 + 0.5 * cos(6.2831853 * (fi / 8.0 + vec3(0.0, 0.33, 0.67)));
+    tint = mix(vec3(0.45, 0.62, 0.95), tint, 0.5);
+
+    if (i == 0) {
+      // Look 1: a round haze with a cluster of pinpoints in its core.
+      float body = exp(-theta2 / (0.22 * 0.22));
+      float gas = fbm3(dir * 16.0 + fi * 7.0 + uTime * 0.01);
+      float haze = body * smoothstep(0.25, 0.8, gas);
+      float core = exp(-theta2 / (0.09 * 0.09));
+      vec3 g = dir * 160.0;
+      vec3 cell = floor(g);
+      vec3 local = fract(g) - 0.5;
+      float h = hash3(cell + fi * 31.0);
+      vec3 jitter = (vec3(
+        hash3(cell + 1.7), hash3(cell + 2.9), hash3(cell + 4.3)
+      ) - 0.5) * 0.6;
+      vec3 d = local - jitter;
+      float pinpoint = step(1.0 - 0.45 * core, h) * exp(-dot(d, d) / 0.03) *
+          (0.65 + 0.35 * sin(uTime * 2.0 + h * 60.0));
+      light += tint * haze * 0.2 + tint * core * haze * 0.14 +
+          mix(vec3(1.0), tint, 0.4) * pinpoint * 0.7;
+    } else {
+      // Look 2: ridges and filaments with a ragged outline and a few young
+      // stars lit inside.
+      vec3 warp = vec3(
+        valueNoise3(dir * 9.0 + fi * 4.0),
+        valueNoise3(dir * 9.0 + fi * 4.0 + 7.0),
+        valueNoise3(dir * 9.0 + fi * 4.0 + 13.0)
+      ) - 0.5;
+      vec3 wd = dir + warp * 0.12;
+      float body = exp(-2.0 * (1.0 - dot(normalize(wd), c)) / (kReach * kReach));
+      float n = fbm3lo(wd * 18.0 + vec3(fi * 5.0, uTime * 0.008, 0.0));
+      float ridge = pow(1.0 - abs(2.0 * n - 1.0), 3.0);
+      float veil = smoothstep(0.3, 0.8, fbm3lo(wd * 7.0 + fi * 3.0));
+      float gas = body * (ridge * 0.9 + veil * 0.35);
+      vec3 stars = nearStarLayer(dir, 55.0, 150.0 + fi, 0.93, 0.8) * body;
+      light += tint * gas * 0.3 + mix(vec3(1.0), tint, 0.35) * stars * 0.9;
+    }
+  }
+  return light;
+}
 // This pixel's direction on the sky for a camera at [zoom] — the same
 // inverse stereographic projection main() explains. Layers sampled at a
 // slightly different zoom than the real one drift apart as you zoom: the
@@ -399,26 +462,28 @@ vec3 skyDirection(float zoom) {
 }
 
 
-// Distant galaxies: rare, small, and — zoomed in — recognisably galaxies,
-// not smudges: a warm yellowish core, two (or, for an elliptical one, no)
-// spiral arms in cooler blue-white, a thin dark dust lane, a few pink knots
-// where new stars are forming, and above all a sprinkle of resolved
-// pinpoint stars tracing the arms. Never gold, never rays: far-away
-// scenery, not something to tap.
-vec3 galaxyLayer(vec3 dir, float density, float seed) {
-  vec3 grid = dir * density;
-  vec3 cell = floor(grid);
-  vec3 local = fract(grid) - 0.5;
-  float h = hash3(cell + seed);
-  if (h < 0.88) return vec3(0.0);
+// Distant galaxies: four big spirals seen almost exactly edge-on, at fixed
+// spots far from every supernova. Built from the sky's own ingredients — the
+// same pale-blue and cool-white stars as everywhere else (resolved as
+// pinpoints once you look closely), a warm cream bulge, soft gas — and the
+// way the dark nebulae work: a ragged lane of dust through the middle of the
+// disk that dims the light behind it, with loose filaments of dust climbing
+// out of the plane. Never gold, never rays: scenery, not something to tap.
+vec3 galaxyCenter(int i) {
+  if (i == 0) return vec3(0.853, 0.502, -0.144);
+  if (i == 1) return vec3(-0.302, -0.499, -0.812);
+  if (i == 2) return vec3(-0.653, 0.620, -0.435);
+  return vec3(0.706, -0.612, 0.358);
+}
 
-  vec3 pos = (vec3(
-    hash3(cell + seed * 2.0),
-    hash3(cell + seed * 3.0),
-    hash3(cell + seed * 4.0)
-  ) - 0.5) * 0.06;
-  vec3 diff = local - pos;
-  // Each galaxy's own orientation, in the plane tangent to the sky here.
+// COMPARISON (2026-10-16): the first galaxy look, one placed by hand.
+vec3 galaxyOriginalAt(vec3 dir, vec3 center) {
+  const float density = 2.4;
+  const float seed = 43.0;
+  const float h = 0.95;
+  const vec3 cell = vec3(3.0, 1.0, 2.0);
+  if (dot(dir, center) < 0.0) return vec3(0.0);
+  vec3 diff = (dir - center) * density;
   vec3 rnd = vec3(
     hash3(cell + seed * 5.0),
     hash3(cell + seed * 6.0),
@@ -427,30 +492,20 @@ vec3 galaxyLayer(vec3 dir, float density, float seed) {
   vec3 u = normalize(rnd - dir * dot(rnd, dir) + vec3(1e-4));
   vec3 v = cross(dir, u);
   vec2 p = vec2(dot(diff, u), dot(diff, v));
-  // Seen at a slant: squashed along one axis.
   float tilt = mix(0.32, 1.0, hash3(cell + seed * 8.0));
   p.y /= tilt;
-  float scale = mix(0.055, 0.095, hash3(cell + seed * 9.0));
+  float scale = mix(0.055, 0.095, hash3(cell + seed * 9.0)) * 1.6;
   p /= scale;
   float r = length(p);
   if (r > 3.0) return vec3(0.0);
   float theta = atan(p.y, p.x);
-
-  bool spiral = hash3(cell + seed * 10.0) > 0.3;
-  // How much of this point lies on an arm: two logarithmic arms winding
-  // out from the core, sharpened into bands.
   float winding = mix(2.6, 4.2, hash3(cell + seed * 12.0));
   float armWave = 0.5 + 0.5 * cos(2.0 * theta - log(r + 0.08) * winding + h * 40.0);
-  float arms = spiral ? pow(armWave, 3.0) : 0.6;
-
+  float arms = pow(armWave, 3.0);
   float disk = exp(-r * 1.6);
   float bulge = exp(-r * r * 9.0);
-  // A thin dark lane along the disk, strongest for galaxies seen edge-on.
   float lane = exp(-pow(p.y * tilt / 0.08, 2.0)) *
       smoothstep(0.15, 0.6, r) * (1.0 - tilt) * 0.8;
-
-  // Resolved stars: a fine grid in the galaxy's own plane, each cell maybe
-  // holding one pinpoint, far likelier on an arm and near the center.
   const float kStarGrid = 11.0;
   vec2 starGrid = p * kStarGrid;
   vec2 starCell = floor(starGrid);
@@ -460,44 +515,142 @@ vec3 galaxyLayer(vec3 dir, float density, float seed) {
     hash3(vec3(starCell, seed * 14.0) + cell),
     hash3(vec3(starCell, seed * 15.0) + cell)
   ) - 0.5;
-  float chance = (spiral ? arms * 0.85 + 0.1 : 0.45) * exp(-r * 0.7);
+  float chance = (arms * 0.85 + 0.1) * exp(-r * 0.7);
   float starOn = step(1.0 - chance * 0.38, sh);
   vec2 sd = starLocal - starOffset * 0.6;
   float twinkle = 0.7 + 0.3 * sin(uTime * (1.5 + sh * 3.0) + sh * 50.0);
-  // One screen pixel, in this star grid's units: a pinpoint is never
-  // drawn thinner than about a pixel (it would shimmer); when the view is
-  // too far out for that, it widens and dims by the same amount, melting
-  // into the disk.
   float pixelAngle = 1.0 / (uResolution.y * uZoom);
-  float pixelInGrid = pixelAngle * density / scale * kStarGrid;
+  float pixelInGrid = pixelAngle * density / (scale / 1.6) * kStarGrid / 1.6;
   float sigma = max(0.16, pixelInGrid * 0.7);
   float pinpoint = starOn * exp(-dot(sd, sd) / (sigma * sigma)) *
       twinkle * pow(0.16 / sigma, 2.0);
-
-  // Pink star-forming knots, scattered along the arms of spirals only.
   float knotHash = hash3(vec3(floor(p * 4.0), seed * 16.0) + cell);
   vec2 knotLocal = fract(p * 4.0) - 0.5;
-  float knot = spiral
-      ? step(0.82, knotHash) * arms *
-          exp(-dot(knotLocal, knotLocal) / (0.09 * 0.09))
-      : 0.0;
-
-  float tone = hash3(cell + seed * 11.0);
-  vec3 armColor = tone < 0.5 ? vec3(0.62, 0.74, 1.0) : vec3(0.76, 0.72, 1.0);
+  float knot = step(0.82, knotHash) * arms *
+      exp(-dot(knotLocal, knotLocal) / (0.09 * 0.09));
+  vec3 armColor = vec3(0.62, 0.74, 1.0);
   vec3 coreColor = vec3(1.0, 0.88, 0.7);
-
   vec3 color = coreColor * bulge * 0.55 +
       armColor * disk * (0.12 + arms * 0.32) +
       vec3(0.9, 0.94, 1.0) * pinpoint * (0.55 + disk * 0.6) +
       vec3(1.0, 0.55, 0.75) * knot * 0.35;
-  color *= 1.0 - lane;
+  return color * (1.0 - lane);
+}
 
-  float edgeFade = smoothstep(
-    0.5,
-    0.36,
-    max(max(abs(local.x), abs(local.y)), abs(local.z))
-  );
-  return color * edgeFade;
+// COMPARISON (2026-10-16): the second look, a smooth density with two arms.
+vec3 galaxySpiralAt(vec3 dir, vec3 c) {
+  float cosAway = dot(dir, c);
+  if (cosAway < 0.93) return vec3(0.0);
+  vec3 ref = abs(c.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+  vec3 a = normalize(cross(ref, c));
+  vec3 b = cross(c, a);
+  float roll = 2.3;
+  vec3 u = a * cos(roll) + b * sin(roll);
+  vec3 v = b * cos(roll) - a * sin(roll);
+  const float tilt = 0.6;
+  const float radius = 0.2;
+  vec2 p = vec2(dot(dir, u), dot(dir, v) / tilt) / radius;
+  float r = length(p);
+  if (r > 1.4) return vec3(0.0);
+  float theta = atan(p.y, p.x);
+  float winding = 3.2;
+  float armWave = 0.5 + 0.5 * cos(2.0 * theta - log(r + 0.04) * winding);
+  float arm = pow(armWave, mix(2.5, 7.0, smoothstep(0.1, 0.9, r)));
+  float disk = exp(-r * 2.4) * smoothstep(1.3, 0.85, r);
+  float bulge = exp(-r * r * 55.0) + 0.35 * exp(-r * 7.0);
+  float density = disk * (0.18 + 1.1 * arm) + bulge * 1.4;
+  float grain = hash3(floor(dir * 320.0) + 5.0);
+  float stars = mix(0.55, 1.0, grain) + 1.6 * pow(grain, 14.0);
+  vec3 coreColor = vec3(1.0, 0.86, 0.66);
+  vec3 diskColor = vec3(0.86, 0.9, 1.0);
+  vec3 armColor = vec3(0.58, 0.74, 1.0);
+  vec3 tint = mix(coreColor, diskColor, smoothstep(0.03, 0.3, r));
+  tint = mix(tint, armColor, arm * smoothstep(0.15, 0.7, r));
+  return tint * density * stars * 0.34 * smoothstep(0.93, 0.96, cosAway);
+}
+vec3 edgeOnGalaxy(vec3 dir, vec3 c, int i) {
+  float cosAway = dot(dir, c);
+  if (cosAway < 0.92) return vec3(0.0);
+
+  float fi = float(i);
+  vec3 ref = abs(c.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+  vec3 a = normalize(cross(ref, c));
+  vec3 b = cross(c, a);
+  float roll = fi * 1.9 + 0.4;
+  vec3 u = a * cos(roll) + b * sin(roll);
+  vec3 v = b * cos(roll) - a * sin(roll);
+  float radius = i == 0 ? 0.26 : (i == 1 ? 0.2 : (i == 2 ? 0.24 : 0.18));
+  // x runs along the disk, y across it; a slight slant opens the disk a little.
+  float slant = i == 0 ? 0.05 : (i == 1 ? 0.09 : (i == 2 ? 0.13 : 0.07));
+  vec2 p = vec2(dot(dir, u), dot(dir, v)) / radius;
+  float ax = abs(p.x);
+  if (ax > 1.3 || abs(p.y) > 0.9) return vec3(0.0);
+
+  // The disk: a thin sheet that thickens toward the middle, fading out along
+  // its length. The halo and the bulge are rounder and brighter.
+  float thick = mix(0.05, 0.085, exp(-ax * 2.5)) + slant * 0.4;
+  float disk = exp(-ax * 2.2) * exp(-abs(p.y) / thick) * smoothstep(1.2, 0.8, ax);
+  float bulge = exp(-length(vec2(p.x, p.y * 1.7)) * 7.5);
+  float halo = exp(-length(vec2(p.x, p.y * 0.8)) * 2.6) * 0.12;
+
+  // The dust lane: ragged along its length, wandering a little off the plane,
+  // thicker and darker toward the middle — and a thin, loose spray of dust
+  // above and below it.
+  vec3 q = vec3(p.x * 4.0, fi * 5.0, 1.0);
+  float wander = (fbm3lo(q) - 0.5) * 0.07;
+  float laneWidth = mix(0.028, 0.012, smoothstep(0.1, 0.9, ax)) + slant * 0.25;
+  float lane = exp(-pow((p.y - wander) / laneWidth, 2.0)) *
+      smoothstep(1.05, 0.35, ax) * (0.55 + 0.45 * valueNoise3(q * 3.0 + 9.0));
+  float spray = smoothstep(0.55, 0.78, fbm3lo(vec3(p.x * 5.0, p.y * 14.0, fi * 3.0))) *
+      exp(-abs(p.y) / 0.11) * smoothstep(0.9, 0.2, ax) * 0.5;
+  float dust = clamp(lane * 0.92 + spray, 0.0, 0.96);
+
+  // Smooth light, then the stars it is made of: pinpoints on a fine grid in
+  // the galaxy's own plane, drawn like the sky's dust stars, never thinner than
+  // a pixel (they widen and dim when the view is far out).
+  float light = disk * 0.85 + bulge * 1.1 + halo;
+  const float kGrid = 60.0;
+  vec2 gridPos = p * kGrid;
+  vec2 gridCell = floor(gridPos);
+  vec2 gridLocal = fract(gridPos) - 0.5;
+  float sh = hash3(vec3(gridCell, fi * 9.0));
+  vec2 jitter = vec2(
+    hash3(vec3(gridCell, fi * 9.0 + 1.0)),
+    hash3(vec3(gridCell, fi * 9.0 + 2.0))
+  ) - 0.5;
+  vec2 sd = gridLocal - jitter * 0.6;
+  float pixelAngle = 1.0 / (uResolution.y * uZoom);
+  float pixelInGrid = pixelAngle / radius * kGrid;
+  float sigma = max(0.2, pixelInGrid * 0.7);
+  float on = step(1.0 - clamp(light * 0.9, 0.0, 0.8), sh);
+  float twinkle = 0.75 + 0.25 * sin(uTime * (1.2 + sh * 2.5) + sh * 40.0);
+  float pinpoint = on * exp(-dot(sd, sd) / (sigma * sigma)) * twinkle *
+      pow(0.2 / sigma, 2.0);
+
+  // Colors from the sky's own stars; the bulge alone is warm.
+  float tone = hash3(vec3(gridCell, fi * 9.0 + 3.0));
+  vec3 starColor = tone < 0.55
+      ? vec3(0.86, 0.9, 1.0)
+      : (tone < 0.9 ? vec3(0.66, 0.76, 1.0) : vec3(1.0, 0.86, 0.74));
+  vec3 glowColor = mix(vec3(0.62, 0.72, 0.98), vec3(0.88, 0.92, 1.0), smoothstep(0.0, 0.5, light));
+  vec3 bulgeColor = vec3(1.0, 0.88, 0.72);
+
+  vec3 color = glowColor * (disk * 0.85 + halo) * 0.55 +
+      bulgeColor * bulge * 0.6 +
+      mix(starColor, bulgeColor, clamp(bulge * 1.5, 0.0, 1.0)) * pinpoint * (0.5 + light);
+  // Dust dims everything behind it, and its thin lit rim catches a little cool light.
+  float rim = clamp(smoothstep(0.0, 0.5, dust) - smoothstep(0.5, 1.0, dust), 0.0, 1.0);
+  color = color * (1.0 - dust) + vec3(0.32, 0.4, 0.62) * rim * light * 0.25;
+
+  return color * smoothstep(0.92, 0.95, cosAway);
+}
+vec3 galaxyLayer(vec3 dir) {
+  // COMPARISON (2026-10-16): one of each look, labeled on screen — see
+  // sky_compare_labels.dart. Keep the winner, drop the rest.
+  return galaxyOriginalAt(dir, galaxyCenter(0)) +
+      galaxySpiralAt(dir, galaxyCenter(1)) +
+      edgeOnGalaxy(dir, galaxyCenter(2), 0) +
+      edgeOnGalaxy(dir, galaxyCenter(3), 1);
 }
 
 // Comets: now and then a thin, cold streak — a bright head with a tail
@@ -698,6 +851,8 @@ void main() {
   // cloud side facing the supernova was tried and dropped: it looked
   // wrong.)
   nebula += supernovaLight(dir) * cloud * 0.6;
+  // The areas' own nebulae, on top of the gas and under the dust.
+  nebula += areaNebulae(dir);
 
   // The dust dims the gas behind it.
   const vec3 kRimLight = vec3(0.32, 0.4, 0.62);
@@ -758,8 +913,7 @@ void main() {
       dustStarLayer(dir, 22.0, 2.3, 7.0) * 0.85 +
       dustStarLayer(dir, 15.0, 1.6, 1.0);
   // The galaxies stay at the sky's real depth: the stars do the parallax.
-  vec3 galaxies =
-      galaxyLayer(dir, 2.4, 43.0) + galaxyLayer(dir, 3.6, 47.0) * 0.85;
+  vec3 galaxies = galaxyLayer(dir);
   deep = (farthest + far + galaxies) * (1.0 - 0.95 * darkness) +
       mid * (1.0 - 0.5 * darkness);
   }
