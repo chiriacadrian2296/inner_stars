@@ -49,13 +49,14 @@ void main() {
     final rect = tester.getRect(touch);
     await tester.tapAt(rect.center);
     await tester.pump();
-    final selected = tester.widget<Text>(
-      find.byKey(const ValueKey('accumulation-chart-selection')),
+    final selectedTotal = tester.widget<Text>(
+      find.byKey(const ValueKey('accumulation-chart-selection-total')),
     );
-    expect(selected.data, endsWith(' · 3'));
+    expect(selectedTotal.data, '3');
     await tester.dragFrom(rect.center, Offset(rect.width / 2, 0));
     await tester.pumpAndSettle();
-    expect(find.text('10/10/2026 · 9'), findsOneWidget);
+    expect(find.text('10/10/2026'), findsOneWidget);
+    expect(find.text('9'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

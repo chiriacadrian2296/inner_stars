@@ -27,6 +27,8 @@ class SkyTooltipMenuScope extends InheritedWidget {
     this.showVisual = true,
     this.onCardTap,
     this.focused = true,
+    this.onView,
+    this.onFly,
     required super.child,
   });
 
@@ -34,6 +36,8 @@ class SkyTooltipMenuScope extends InheritedWidget {
   final bool showVisual;
   final VoidCallback? onCardTap;
   final bool focused;
+  final VoidCallback? onView;
+  final VoidCallback? onFly;
   final Object menuId;
 
   static SkyTooltipMenuScope? maybeOf(BuildContext context) =>
@@ -45,6 +49,8 @@ class SkyTooltipMenuScope extends InheritedWidget {
       menuId != oldWidget.menuId ||
       onCardTap != oldWidget.onCardTap ||
       focused != oldWidget.focused ||
+      onView != oldWidget.onView ||
+      onFly != oldWidget.onFly ||
       showVisual != oldWidget.showVisual;
 }
 
@@ -187,6 +193,27 @@ class _SkySearchTooltipCardState extends State<SkySearchTooltipCard> {
     final hasInsights =
         entity != null && EntityInsightsScope.maybeOf(context) != null;
     final actions = [...widget.actions];
+    if (scope?.onView != null) {
+      actions.insert(
+        0,
+        SearchCardAction(
+          icon: Icons.open_in_new_rounded,
+          label: context.strings.starQuickLookViewAction,
+          onTap: scope!.onView!,
+          group: -1,
+        ),
+      );
+    }
+    if (scope?.onFly != null) {
+      actions.add(
+        SearchCardAction(
+          icon: Icons.navigation,
+          label: context.strings.actionFly,
+          onTap: scope!.onFly!,
+          group: 3,
+        ),
+      );
+    }
     if (hasInsights) {
       final insertion = actions.indexWhere((action) => action.group >= 2);
       actions.insert(

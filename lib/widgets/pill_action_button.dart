@@ -102,9 +102,9 @@ class PillActionButton extends StatelessWidget {
 /// by its own content and padding. Importance comes from fill/glow, never
 /// from extra width.
 ///
-/// [onPressed] stays callable even while [lit] is false (same reasoning as
-/// `AppActionDisc`) so a screen can use the tap to explain *why* it can't
-/// save yet, rather than the button sitting there inert.
+/// Unlit, it does nothing when tapped: an off button that still reacted
+/// would contradict its own look. What a form still needs is shown by its
+/// required dots, and invalid values by errors at their own fields.
 class SaveActionButton extends StatelessWidget {
   const SaveActionButton({
     super.key,
@@ -136,7 +136,7 @@ class SaveActionButton extends StatelessWidget {
         color: lit ? colors.gold : colors.nightBorder,
         shape: const StadiumBorder(),
         child: InkWell(
-          onTap: onPressed,
+          onTap: lit ? onPressed : null,
           customBorder: const StadiumBorder(),
           child: Container(
             constraints: const BoxConstraints(minHeight: _minimumHeight),

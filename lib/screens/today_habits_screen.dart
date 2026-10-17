@@ -111,7 +111,9 @@ class _TodayHabitsScreenState extends State<TodayHabitsScreen> {
       await controller.stars.markAchieved(
         goal.id,
         intensity: result.intensity,
+        achievedDate: result.achievedDate,
         photoPath: result.photoPath,
+        media: result.media,
       );
     } catch (_) {
       _reportError();

@@ -17,6 +17,7 @@ import '../data/legacy_constellation_migration.dart';
 import '../data/project_repository.dart';
 import '../data/reflection_answer_repository.dart';
 import '../data/star_repository.dart';
+import '../data/shooting_star_wish_repository.dart';
 import '../audio/audio_service.dart';
 import '../debug/seed_data.dart';
 import '../l10n/strings_scope.dart';
@@ -370,6 +371,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await (await MoodboardRepository.create()).clear();
     await widget.areaVisionRepository.clear();
     await widget.reflectionAnswerRepository.clear();
+    await (await ShootingStarWishRepository.create()).clear();
     await widget.audioSettingsRepository.clear();
     if (mounted) {
       ScaffoldMessenger.of(context)

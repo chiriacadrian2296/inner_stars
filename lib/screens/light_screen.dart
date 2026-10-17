@@ -659,11 +659,7 @@ class _ScopeTrail extends StatelessWidget {
         return SizedBox.square(
           dimension: size,
           child: Center(
-            child: AreaIcon(
-              area: entity!.area!,
-              size: size,
-              color: color,
-            ),
+            child: AreaIcon(area: entity!.area!, size: size, color: color),
           ),
         );
       }
@@ -1157,12 +1153,16 @@ class _ResultBadgeChip extends StatelessWidget {
         children: [
           GlowIcon(badge.icon, size: 18, color: colors.gold),
           const SizedBox(width: 8),
-          Text(
-            _properCase(badge.text),
-            style: context.typography.supporting.copyWith(
-              color: colors.text,
-              fontFamily: kFontMono,
-              fontWeight: FontWeight.w700,
+          Flexible(
+            child: Text(
+              _properCase(badge.text),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.typography.supporting.copyWith(
+                color: colors.text,
+                fontFamily: kFontMono,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
@@ -1483,17 +1483,45 @@ class _LightSheetSummary extends StatelessWidget {
         brightest = day;
       }
     }
-    Widget stat(IconData icon, String text) => Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 18, color: colors.gold),
-        const SizedBox(width: 6),
-        Text(
-          text,
-          style: context.typography.body.copyWith(fontWeight: FontWeight.w700),
-        ),
-      ],
-    );
+    // "12 Giorni": the figure in white, its word in grey.
+    Widget stat(IconData icon, String text) {
+      final split = text.indexOf(' ');
+      final value = split < 0 ? text : text.substring(0, split);
+      final word = split < 0 ? '' : text.substring(split);
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 15, color: colors.gold),
+          const SizedBox(width: 4),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: value,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    TextSpan(
+                      text: word,
+                      style: TextStyle(color: colors.muted),
+                    ),
+                  ],
+                ),
+                maxLines: 1,
+                softWrap: false,
+                style: context.typography.supporting.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     final brightestDay = brightest;
 
     Widget? brightestBlock;
@@ -1523,65 +1551,59 @@ class _LightSheetSummary extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),
-          child: Wrap(
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: kSpaceSm,
-            runSpacing: 6,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.wb_sunny_outlined, size: 18, color: colors.gold),
-                  const SizedBox(width: 6),
-                  Text(title, style: titleStyle),
-                ],
-              ),
-              Text('–', style: titleStyle),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _RunDayBadge(
-                    badge: makeBadge(
-                      BadgeSlot.date,
-                      Icons.calendar_today_rounded,
-                      colors,
-                      color: colors.gold,
-                      value: formatDisplayDate(brightestDay, strings),
-                      label: formatDisplayDate(brightestDay, strings),
+          // Always one line: on a narrow phone it shrinks to fit rather
+          // than wrapping or overflowing.
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.wb_sunny_outlined, size: 18, color: colors.gold),
+                const SizedBox(width: 6),
+                Text(title, style: titleStyle),
+                const SizedBox(width: kSpaceSm),
+                Text('–', style: titleStyle),
+                const SizedBox(width: kSpaceSm),
+                _RunDayBadge(
+                  badge: makeBadge(
+                    BadgeSlot.date,
+                    Icons.calendar_today_rounded,
+                    colors,
+                    color: colors.gold,
+                    value: formatDisplayDate(brightestDay, strings),
+                    label: formatDisplayDate(brightestDay, strings),
+                  ),
+                ),
+                const SizedBox(width: kSpaceMd),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _RunDayBadge(
+                      valueWidth: badgeHeight * 1.8,
+                      iconSize: badgeHeight,
+                      fontSize: badgeHeight / 1.1,
+                      badge: intensityBadge(brightestLevel, colors, strings),
                     ),
-                  ),
-                  const SizedBox(width: kSpaceMd),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _RunDayBadge(
-                        valueWidth: badgeHeight * 1.8,
-                        iconSize: badgeHeight,
-                        fontSize: badgeHeight / 1.1,
-                        badge: intensityBadge(brightestLevel, colors, strings),
+                    const SizedBox(height: badgeGap),
+                    _RunDayBadge(
+                      valueWidth: badgeHeight * 1.8,
+                      iconSize: badgeHeight,
+                      fontSize: badgeHeight / 1.1,
+                      badge: makeBadge(
+                        BadgeSlot.litStars,
+                        Icons.auto_awesome,
+                        colors,
+                        color: colors.gold,
+                        value: '$starCount',
+                        zero: starCount == 0,
+                        label: strings.resultsStarsWord(starCount),
                       ),
-                      const SizedBox(height: badgeGap),
-                      _RunDayBadge(
-                        valueWidth: badgeHeight * 1.8,
-                        iconSize: badgeHeight,
-                        fontSize: badgeHeight / 1.1,
-                        badge: makeBadge(
-                          BadgeSlot.litStars,
-                          Icons.auto_awesome,
-                          colors,
-                          color: colors.gold,
-                          value: '$starCount',
-                          zero: starCount == 0,
-                          label: strings.resultsStarsWord(starCount),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -1603,18 +1625,27 @@ class _LightSheetSummary extends StatelessWidget {
             ),
             const SizedBox(height: kSpaceSm),
           ],
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: kSpaceMd,
-            runSpacing: kSpaceSm,
+          Row(
             children: [
-              stat(Icons.calendar_today_rounded, strings.habitStatsDays(lit)),
-              stat(Icons.auto_awesome, strings.starsCount(stars)),
-              if (showIntensity)
-                stat(
-                  Icons.bolt_rounded,
-                  '$intensity ${strings.intensityLabel}',
+              Expanded(
+                child: stat(
+                  Icons.calendar_today_rounded,
+                  strings.habitStatsDays(lit),
                 ),
+              ),
+              const SizedBox(width: kSpaceXs),
+              Expanded(
+                child: stat(Icons.auto_awesome, strings.starsCount(stars)),
+              ),
+              if (showIntensity) ...[
+                const SizedBox(width: kSpaceXs),
+                Expanded(
+                  child: stat(
+                    Icons.bolt_rounded,
+                    '$intensity ${strings.intensityLabel}',
+                  ),
+                ),
+              ],
             ],
           ),
         ],
@@ -1735,8 +1766,6 @@ class _RunCalendar extends StatelessWidget {
   final Map<DateTime, int> levels;
   final ValueChanged<DateTime> onDayTap;
 
-  static const _cellHeight = 56.0;
-
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -1787,32 +1816,39 @@ class _RunCalendar extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
             ),
             child: SizedBox(
-              height: _cellHeight,
+              width: double.infinity,
+              height: double.infinity,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    label,
-                    maxLines: 1,
-                    softWrap: false,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      height: 1.1,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        softWrap: false,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          height: 1,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.auto_awesome, size: 12, color: colors.gold),
-                      const SizedBox(width: 3),
+                      Icon(Icons.auto_awesome, size: 8, color: colors.gold),
+                      const SizedBox(width: 2),
                       Text(
                         '$count',
                         style: TextStyle(
-                          fontSize: 14,
-                          height: 1.1,
+                          fontSize: 10,
+                          height: 1,
                           fontWeight: FontWeight.w800,
                           color: colors.text,
                         ),
@@ -1827,68 +1863,80 @@ class _RunCalendar extends StatelessWidget {
       );
     }
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: panelDecoration(colors),
-      child: Column(
-        children: [
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Fourteen pixels of panel padding and three per side around each
+        // cell leave this exact square for every day at any sheet width.
+        final cellExtent = ((constraints.maxWidth - 28) / 7 - 6).clamp(
+          30.0,
+          double.infinity,
+        );
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: panelDecoration(colors),
+          child: Column(
             children: [
-              for (final label in strings.weekdayAbbreviations)
-                Expanded(
-                  child: Center(
-                    child: Text(
-                      label,
-                      style: TextStyle(fontSize: 11, color: colors.muted),
+              Row(
+                children: [
+                  for (final label in strings.weekdayAbbreviations)
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          label,
+                          style: TextStyle(fontSize: 10, color: colors.muted),
+                        ),
+                      ),
                     ),
-                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              for (var row = 0; row < rowCount; row++)
+                Padding(
+                  padding: EdgeInsets.only(bottom: row == rowCount - 1 ? 0 : 6),
+                  child: () {
+                    final first = row == 0 ? lead : 0;
+                    final last = row == rowCount - 1
+                        ? (lead + days.length - 1) % 7
+                        : 6;
+                    return SizedBox(
+                      height: cellExtent,
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: Row(
+                              children: [
+                                for (var col = 0; col < 7; col++)
+                                  Expanded(child: thread(col, first, last)),
+                              ],
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              for (var col = 0; col < 7; col++)
+                                Expanded(
+                                  child: col < first || col > last
+                                      ? const SizedBox.shrink()
+                                      : Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 3,
+                                          ),
+                                          child: cell(
+                                            days[row * 7 + col - lead],
+                                          ),
+                                        ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  }(),
                 ),
             ],
           ),
-          const SizedBox(height: 6),
-          for (var row = 0; row < rowCount; row++)
-            Padding(
-              padding: EdgeInsets.only(bottom: row == rowCount - 1 ? 0 : 6),
-              child: () {
-                final first = row == 0 ? lead : 0;
-                final last = row == rowCount - 1
-                    ? (lead + days.length - 1) % 7
-                    : 6;
-                return SizedBox(
-                  height: _cellHeight,
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: Row(
-                          children: [
-                            for (var col = 0; col < 7; col++)
-                              Expanded(child: thread(col, first, last)),
-                          ],
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          for (var col = 0; col < 7; col++)
-                            Expanded(
-                              child: col < first || col > last
-                                  ? const SizedBox.shrink()
-                                  : Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 3,
-                                      ),
-                                      child: cell(days[row * 7 + col - lead]),
-                                    ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              }(),
-            ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

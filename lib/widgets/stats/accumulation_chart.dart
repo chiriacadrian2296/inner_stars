@@ -72,20 +72,48 @@ class _AccumulationChartState extends State<AccumulationChart> {
                   ),
                   decoration: BoxDecoration(
                     color: colors.night,
+                    border: Border.all(color: colors.nightBorder),
                     borderRadius: BorderRadius.circular(kSpaceXs),
                   ),
-                  child: Text(
-                    selected == null
-                        ? '${widget.dateLabel(widget.points.first.date)} – ${widget.dateLabel(widget.points.last.date)}'
-                        : '${widget.dateLabel(selected.date)} · ${selected.total}',
+                  child: Row(
                     key: const ValueKey('accumulation-chart-selection'),
-                    textAlign: TextAlign.center,
-                    style: context.typography.body.copyWith(
-                      color: selected == null ? colors.muted : colors.gold,
-                      fontWeight: selected == null
-                          ? FontWeight.w400
-                          : FontWeight.w700,
-                    ),
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.calendar_today_rounded,
+                        size: 15,
+                        color: colors.gold,
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          selected == null
+                              ? '${widget.dateLabel(widget.points.first.date)} – ${widget.dateLabel(widget.points.last.date)}'
+                              : widget.dateLabel(selected.date),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.typography.body.copyWith(
+                            color: colors.text,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      if (selected != null) ...[
+                        const SizedBox(width: kSpaceSm),
+                        Icon(Icons.bolt_rounded, size: 17, color: colors.gold),
+                        const SizedBox(width: 3),
+                        Text(
+                          '${selected.total}',
+                          key: const ValueKey(
+                            'accumulation-chart-selection-total',
+                          ),
+                          style: context.typography.body.copyWith(
+                            color: colors.text,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),
@@ -168,10 +196,20 @@ class _AccumulationPainter extends CustomPainter {
   final CelebrationPoint? selected;
   int get step => accumulationTickStep(points.last.total);
   int get maximum => math.max(step, (points.last.total / step).ceil() * step);
-  TextPainter label(String value, {bool highlight = false}) => TextPainter(
+  TextPainter label(
+    String value, {
+    bool highlight = false,
+    bool badge = false,
+  }) => TextPainter(
     text: TextSpan(
       text: value,
-      style: style.copyWith(color: highlight ? colors.gold : colors.muted),
+      style: style.copyWith(
+        color: badge
+            ? colors.text
+            : highlight
+            ? colors.gold
+            : colors.muted,
+      ),
     ),
     textDirection: direction,
     textScaler: scaler,
@@ -221,11 +259,16 @@ class _AccumulationPainter extends CustomPainter {
       label(tickLabel(points.last.date)).width,
     );
     final maxTicks = (plot.width / (longestDate + 10)).floor().clamp(2, 8);
-    final ticks = accumulationDateTicks(
+    final generatedTicks = accumulationDateTicks(
       points.first.date,
       points.last.date,
       maxTicks,
     );
+    final ticks = <DateTime>[
+      points.first.date,
+      for (final date in generatedTicks)
+        if (chartDay(date) != first) date,
+    ];
     for (final date in ticks) {
       final horizontal = x(date);
       canvas.drawLine(
@@ -330,7 +373,6 @@ class _AccumulationPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5,
     );
-    _paintPoint(canvas, end);
     if (selected == null) {
       final text = label('${points.last.total}', highlight: true);
       text.paint(canvas, Offset(end.dx - text.width, end.dy - text.height - 8));
@@ -339,17 +381,17 @@ class _AccumulationPainter extends CustomPainter {
         x(selected!.date),
         y(accumulationCurveValue(curve, tangents, chartDay(selected!.date))),
       );
-      _paintPoint(canvas, point, selected: true);
+      _paintSelectedPoint(canvas, point);
       // Exact values occupy the regular axis lanes. Their opaque badges
       // cover a nearby tick instead of creating a second row or column.
-      final exactTotal = label('${selected!.total}', highlight: true);
+      final exactTotal = label('${selected!.total}', badge: true);
       final totalOffset = Offset(
         plot.left - exactTotal.width - _axisLabelGap,
         y(selected!.total) - exactTotal.height / 2,
       );
       _paintLabelBadge(canvas, exactTotal, totalOffset);
       exactTotal.paint(canvas, totalOffset);
-      final exactDate = label(dateLabel(selected!.date), highlight: true);
+      final exactDate = label(dateLabel(selected!.date), badge: true);
       final dateLeft = (point.dx - exactDate.width / 2)
           .clamp(0.0, math.max(0.0, size.width - exactDate.width))
           .toDouble();
@@ -359,30 +401,22 @@ class _AccumulationPainter extends CustomPainter {
     }
   }
 
-  void _paintPoint(Canvas canvas, Offset point, {bool selected = false}) {
-    final haloRadius = selected ? 16.0 : 13.0;
+  void _paintSelectedPoint(Canvas canvas, Offset point) {
+    const haloRadius = 24.0;
     canvas.drawCircle(
       point,
       haloRadius,
       Paint()
         ..shader = RadialGradient(
           colors: [
-            colors.gold.withValues(alpha: .58),
-            colors.gold.withValues(alpha: .2),
+            colors.gold.withValues(alpha: .72),
+            colors.gold.withValues(alpha: .28),
             colors.gold.withValues(alpha: 0),
           ],
-          stops: const [0, .45, 1],
+          stops: const [0, .35, 1],
         ).createShader(Rect.fromCircle(center: point, radius: haloRadius)),
     );
-    canvas.drawCircle(point, selected ? 6 : 5, Paint()..color = colors.night);
-    canvas.drawCircle(
-      point,
-      selected ? 5 : 4,
-      Paint()
-        ..color = colors.text
-        ..style = PaintingStyle.fill,
-    );
-    canvas.drawCircle(point, selected ? 2.5 : 2, Paint()..color = colors.gold);
+    canvas.drawCircle(point, 6, Paint()..color = colors.gold);
   }
 
   void _paintLabelBadge(Canvas canvas, TextPainter text, Offset offset) {
@@ -395,6 +429,13 @@ class _AccumulationPainter extends CustomPainter {
     canvas.drawRRect(
       RRect.fromRectAndRadius(rect, const Radius.circular(kSpaceXs)),
       Paint()..color = colors.night,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(kSpaceXs)),
+      Paint()
+        ..color = colors.nightBorder
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
     );
   }
 

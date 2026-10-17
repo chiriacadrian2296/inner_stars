@@ -2,11 +2,13 @@ import '../models/artwork_blend.dart';
 import '../models/artwork_layer.dart';
 import '../models/galaxy_navigation_mode.dart';
 import '../models/galaxy_quality.dart';
+import '../models/constellation_card_layout.dart';
 
 import 'package:flutter/material.dart';
 
 import '../data/settings_repository.dart';
 import 'sky_grid_size.dart';
+import 'constellation_card_size.dart';
 
 /// In-memory, listenable view over [SettingsRepository] — the single
 /// instance created in `main.dart` and threaded down to [MaterialApp] (for
@@ -31,6 +33,10 @@ class SettingsController extends ChangeNotifier {
       skyGridView = _repository.skyGridView,
       skyGridSizeStep = _repository.skyGridSizeStep,
       galaxyNavigationMode = _repository.galaxyNavigationMode,
+      constellationCardLayout = _repository.constellationCardLayout,
+      constellationCardSizeStep = _repository.constellationCardSizeStep,
+      constellationCardLabelsOnLeft = _repository.constellationCardLabelsOnLeft,
+      constellationLandscapeEnabled = _repository.constellationLandscapeEnabled,
       _galaxyCinematicGravity = _repository.galaxyCinematicGravity,
       galaxyQuality = _repository.galaxyQuality;
 
@@ -63,6 +69,10 @@ class SettingsController extends ChangeNotifier {
 
   GalaxyQuality galaxyQuality;
   GalaxyNavigationMode galaxyNavigationMode;
+  ConstellationCardLayout constellationCardLayout;
+  int constellationCardSizeStep;
+  bool constellationCardLabelsOnLeft;
+  bool constellationLandscapeEnabled;
 
   // Nullable only so a controller instance that survived a development hot
   // reload from before this field existed can safely acquire the new setting.
@@ -77,6 +87,35 @@ class SettingsController extends ChangeNotifier {
     galaxyNavigationMode = value;
     notifyListeners();
     await _repository.setGalaxyNavigationMode(value);
+  }
+
+  Future<void> setConstellationCardLayout(ConstellationCardLayout value) async {
+    if (value == constellationCardLayout) return;
+    constellationCardLayout = value;
+    notifyListeners();
+    await _repository.setConstellationCardLayout(value);
+  }
+
+  Future<void> setConstellationCardSizeStep(int value) async {
+    final step = clampConstellationCardSizeStep(value);
+    if (step == constellationCardSizeStep) return;
+    constellationCardSizeStep = step;
+    notifyListeners();
+    await _repository.setConstellationCardSizeStep(step);
+  }
+
+  Future<void> setConstellationCardLabelsOnLeft(bool value) async {
+    if (value == constellationCardLabelsOnLeft) return;
+    constellationCardLabelsOnLeft = value;
+    notifyListeners();
+    await _repository.setConstellationCardLabelsOnLeft(value);
+  }
+
+  Future<void> setConstellationLandscapeEnabled(bool value) async {
+    if (value == constellationLandscapeEnabled) return;
+    constellationLandscapeEnabled = value;
+    notifyListeners();
+    await _repository.setConstellationLandscapeEnabled(value);
   }
 
   Future<void> setGalaxyCinematicGravity(double value) async {

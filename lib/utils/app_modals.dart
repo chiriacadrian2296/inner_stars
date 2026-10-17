@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 
@@ -463,21 +465,24 @@ Future<T?> showFixedAppSheet<T>({
       data: mediaQuery,
       child: Align(
         alignment: Alignment.bottomCenter,
-        child: outside
-            ? _OutsideScrollbarFrame(
-                color: sheetTheme.backgroundColor ?? Colors.transparent,
-                elevation: sheetTheme.elevation ?? 0,
-                shape: sheetTheme.shape,
-                clipBehavior: Clip.antiAlias,
-                child: sheetBody,
-              )
-            : Material(
-                color: sheetTheme.backgroundColor ?? Colors.transparent,
-                elevation: sheetTheme.elevation ?? 0,
-                shape: sheetTheme.shape,
-                clipBehavior: Clip.antiAlias,
-                child: sheetBody,
-              ),
+        child: _FixedSheetDragToDismiss(
+          enabled: isDismissible,
+          child: outside
+              ? _OutsideScrollbarFrame(
+                  color: sheetTheme.backgroundColor ?? Colors.transparent,
+                  elevation: sheetTheme.elevation ?? 0,
+                  shape: sheetTheme.shape,
+                  clipBehavior: Clip.antiAlias,
+                  child: sheetBody,
+                )
+              : Material(
+                  color: sheetTheme.backgroundColor ?? Colors.transparent,
+                  elevation: sheetTheme.elevation ?? 0,
+                  shape: sheetTheme.shape,
+                  clipBehavior: Clip.antiAlias,
+                  child: sheetBody,
+                ),
+        ),
       ),
     ),
     transitionBuilder: (context, animation, secondaryAnimation, child) =>
@@ -493,6 +498,89 @@ Future<T?> showFixedAppSheet<T>({
           child: child,
         ),
   );
+}
+
+/// Pull-down-to-close for [showFixedAppSheet], matching what
+/// [showModalBottomSheet] gives the other sheets: dragging the handle (or any
+/// part of the sheet that doesn't scroll itself) moves the sheet with the
+/// finger; releasing past half its height, or with a downward fling, closes
+/// it, otherwise it settles back.
+class _FixedSheetDragToDismiss extends StatefulWidget {
+  const _FixedSheetDragToDismiss({required this.enabled, required this.child});
+
+  final bool enabled;
+  final Widget child;
+
+  @override
+  State<_FixedSheetDragToDismiss> createState() =>
+      _FixedSheetDragToDismissState();
+}
+
+class _FixedSheetDragToDismissState extends State<_FixedSheetDragToDismiss>
+    with SingleTickerProviderStateMixin {
+  // Same thresholds as Material's BottomSheet.
+  static const _flingVelocity = 700.0;
+  static const _closeFraction = 0.5;
+
+  final _sheetKey = GlobalKey();
+  late final AnimationController _settle = AnimationController.unbounded(
+    vsync: this,
+  )..addListener(() => setState(() => _offset = _settle.value));
+  double _offset = 0;
+  bool _closing = false;
+
+  double get _sheetHeight =>
+      (_sheetKey.currentContext?.findRenderObject() as RenderBox?)
+          ?.size
+          .height ??
+      1;
+
+  @override
+  void dispose() {
+    _settle.dispose();
+    super.dispose();
+  }
+
+  void _onUpdate(DragUpdateDetails details) {
+    if (_closing) return;
+    _settle.stop();
+    setState(() => _offset = math.max(0, _offset + details.primaryDelta!));
+  }
+
+  void _onEnd(DragEndDetails details) {
+    if (_closing) return;
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity > _flingVelocity ||
+        (velocity >= 0 && _offset > _sheetHeight * _closeFraction)) {
+      _closing = true;
+      Navigator.of(context).pop();
+      return;
+    }
+    _settle.value = _offset;
+    _settle.animateTo(
+      0,
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : kMotionFast,
+      curve: kMotionEnter,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.enabled) return widget.child;
+    return GestureDetector(
+      key: _sheetKey,
+      behavior: HitTestBehavior.opaque,
+      onVerticalDragUpdate: _onUpdate,
+      onVerticalDragEnd: _onEnd,
+      onVerticalDragCancel: () => _onEnd(DragEndDetails(primaryVelocity: 0)),
+      child: Transform.translate(
+        offset: Offset(0, _offset),
+        child: widget.child,
+      ),
+    );
+  }
 }
 
 /// Wide-screen sheet surface whose scrollbar sits just outside its edge.

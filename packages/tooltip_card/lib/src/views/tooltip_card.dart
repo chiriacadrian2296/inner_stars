@@ -165,24 +165,18 @@ class TooltipCard extends StatefulWidget {
   final TooltipCardAnimation animation;
 
   /// Effective non-themed fallback values retained for API compatibility.
-  Duration get hoverOpenDelay =>
-      _hoverOpenDelay ?? _defaults.hoverOpenDelay;
-  Duration get hoverCloseDelay =>
-      _hoverCloseDelay ?? _defaults.hoverCloseDelay;
+  Duration get hoverOpenDelay => _hoverOpenDelay ?? _defaults.hoverOpenDelay;
+  Duration get hoverCloseDelay => _hoverCloseDelay ?? _defaults.hoverCloseDelay;
   double get awaySpace => _awaySpace ?? _defaults.awaySpace;
-  double get elevation =>
-      _elevation ?? _defaults.elevation;
-  BorderRadius get borderRadius =>
-      _borderRadius ?? _defaults.borderRadius;
+  double get elevation => _elevation ?? _defaults.elevation;
+  BorderRadius get borderRadius => _borderRadius ?? _defaults.borderRadius;
   EdgeInsetsGeometry get padding => _padding ?? _defaults.padding;
   BoxConstraints? get constraints => _constraints;
   double get barrierBlur => _barrierBlur ?? _defaults.barrierBlur;
   Duration? get showDuration => _showDuration;
   bool get beakEnabled => _beakEnabled ?? _defaults.beakEnabled;
-  double get beakSize =>
-      _beakSize ?? _defaults.beakSize;
-  double get beakInset =>
-      _beakInset ?? _defaults.beakInset;
+  double get beakSize => _beakSize ?? _defaults.beakSize;
+  double get beakInset => _beakInset ?? _defaults.beakInset;
   double get borderWidth => _borderWidth ?? _defaults.borderWidth;
 
   @override
@@ -357,16 +351,14 @@ class _TooltipCardState extends State<TooltipCard>
       ),
     );
 
-    _slide = Tween<Offset>(
-      begin: _slideOffset(_resolvedSide),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: TooltipCardCurves.slideIn,
-        reverseCurve: TooltipCardCurves.slideOut,
-      ),
-    );
+    _slide = Tween<Offset>(begin: _slideOffset(_resolvedSide), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: TooltipCardCurves.slideIn,
+            reverseCurve: TooltipCardCurves.slideOut,
+          ),
+        );
   }
 
   (double, Curve, Curve) _scaleConfig(TooltipCardAnimation animation) {
@@ -392,13 +384,13 @@ class _TooltipCardState extends State<TooltipCard>
     const amount = 0.1;
     switch (side.baseSide) {
       case TooltipCardPlacementSide.top:
-        return const Offset(0, amount);
-      case TooltipCardPlacementSide.bottom:
         return const Offset(0, -amount);
+      case TooltipCardPlacementSide.bottom:
+        return const Offset(0, amount);
       case TooltipCardPlacementSide.start:
-        return const Offset(amount, 0);
-      case TooltipCardPlacementSide.end:
         return const Offset(-amount, 0);
+      case TooltipCardPlacementSide.end:
+        return const Offset(amount, 0);
       default:
         return Offset.zero;
     }

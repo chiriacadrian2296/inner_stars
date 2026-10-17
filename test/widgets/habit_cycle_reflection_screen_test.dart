@@ -123,11 +123,20 @@ void main() {
     await tapText(tester, strings.cycleOptionChangeTitle);
     await tapText(tester, '30');
 
+    // The reward starts on the old one, inactive: until it's chosen again
+    // Continue does nothing.
+    await tapAction(tester, strings.cycleContinueAction);
+    expect(habits.getAll().single.cycleLength, isNot(30));
+
+    final slider = find.byType(Slider);
+    await tester.ensureVisible(slider);
+    await tester.drag(slider, const Offset(400, 0));
+    await tester.pumpAndSettle();
     await tapAction(tester, strings.cycleContinueAction);
 
     final next = habits.getAll().single;
     expect(next.cycleLength, 30);
-    expect(next.intensity, 4);
+    expect(next.intensity, 5);
     expect(next.currentCycleStart, DateTime(2026, 3, 10));
   });
 

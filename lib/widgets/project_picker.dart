@@ -37,10 +37,10 @@ class _ClearSelection {
 /// [NewProjectScreen]. With [allowCreate] off it only lists what exists: no
 /// "New" button.
 ///
-/// Always lists every constellation across every area. [area] is only an
-/// optional initial value for the complete editor opened by "New"; it never
-/// narrows this picker, otherwise returning here after one choice can trap
-/// the user inside that constellation's area.
+/// [area] — the area already chosen in the calling form — starts the
+/// picker's area filter on just that area, and is the initial area of the
+/// complete editor opened by "New". It is only a starting filter: the
+/// filter button shows it as active and resetting it lists every area again.
 ///
 /// One tap on a row picks it and closes the sheet, and a Reset button (when
 /// [onCleared] is given) clears the current choice. [selected] is shown as
@@ -62,6 +62,7 @@ Future<Project?> pickProject(
     allowCreate: allowCreate,
     initialId: selected?.id,
     allowClear: onCleared != null,
+    initialArea: area,
   );
   if (!context.mounted) return null;
   if (result is _ClearSelection) {
@@ -122,6 +123,7 @@ Future<Object?> _pickProjectFlat(
   required bool allowClear,
   Set<int>? filterIds,
   FilterPreview<Set<int>>? preview,
+  LifeArea? initialArea,
 }) {
   final maxHeight = MediaQuery.sizeOf(context).height * 0.85;
   return showFixedAppSheet<Object>(
@@ -136,6 +138,7 @@ Future<Object?> _pickProjectFlat(
         allowClear: allowClear,
         filterIds: filterIds,
         preview: preview,
+        initialArea: initialArea,
       );
     },
   );
@@ -154,7 +157,11 @@ class _FlatProjectPickerSheet extends StatefulWidget {
     required this.allowClear,
     this.filterIds,
     this.preview,
+    this.initialArea,
   });
+
+  /// Starts the area filter on just this area (see [pickProject]).
+  final LifeArea? initialArea;
 
   /// Filter mode (the Sky's constellation filter) when set: the constellations
   /// chosen so far; the sheet is then a multi-select chip list with Apply.
@@ -189,7 +196,10 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
   }
 
   late Set<int> _selectedIds = {...?widget.filterIds};
-  Set<LifeArea> _areaFilter = {...LifeArea.values};
+  late Set<LifeArea> _areaFilter = switch (widget.initialArea) {
+    final area? => {area},
+    null => {...LifeArea.values},
+  };
   DateTimeRange? _dateRangeFilter;
   DateRangePreset _dateRangePreset = DateRangePreset.allTime;
   SortField _sortField = SortField.date;

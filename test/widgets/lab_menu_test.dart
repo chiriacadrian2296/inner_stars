@@ -9,7 +9,7 @@ import 'package:inner_stars/widgets/sky_menu_drawer.dart';
 void main() {
   for (final detailed in [false, true]) {
     testWidgets(
-      'only three independent labs are visible (detailed: $detailed)',
+      'only four independent labs are visible (detailed: $detailed)',
       (tester) async {
         tester.view.physicalSize = const Size(800, 1800);
         tester.view.devicePixelRatio = 1;
@@ -39,6 +39,7 @@ void main() {
                     onMoonLab: () => calls.add('moon'),
                     onCardBackLab: () => calls.add('cards'),
                     onConstellationLab: () => calls.add('constellation'),
+                    onShareLab: () => calls.add('share'),
                     onBadgeLab: noop,
                     onUiStudiesLab: noop,
                     onSoundLab: noop,
@@ -55,6 +56,7 @@ void main() {
           'MOON LAB',
           'CARD BACK LAB',
           'CONSTELLATION LAB',
+          'SHARE LAB',
         ]) {
           expect(find.text(label), findsOneWidget);
         }
@@ -72,12 +74,13 @@ void main() {
             'MOON LAB',
             'CARD BACK LAB',
             'CONSTELLATION LAB',
+            'SHARE LAB',
           ]) {
             await tester.ensureVisible(find.text(label));
             await tester.tap(find.text(label));
             await tester.pump();
           }
-          expect(calls, ['moon', 'cards', 'constellation']);
+          expect(calls, ['moon', 'cards', 'constellation', 'share']);
         }
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());

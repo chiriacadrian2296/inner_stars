@@ -33,6 +33,8 @@ class ConstellationLabScreen extends StatefulWidget {
     this.shape,
     this.habits = const [],
     this.completions = const [],
+    this.onViewStar,
+    this.onFlyStar,
   });
 
   final Project? project;
@@ -40,6 +42,8 @@ class ConstellationLabScreen extends StatefulWidget {
   final ConstellationShape? shape;
   final List<Habit> habits;
   final List<HabitCompletion> completions;
+  final ValueChanged<ConstellationStar>? onViewStar;
+  final ValueChanged<ConstellationStar>? onFlyStar;
 
   @override
   State<ConstellationLabScreen> createState() => _ConstellationLabScreenState();
@@ -97,6 +101,7 @@ class _ConstellationLabScreenState extends State<ConstellationLabScreen> {
     },
   );
   final _camera = TransformationController();
+  final _variantScroll = ScrollController();
   Size? _framedSize;
   int _variant = 0;
   int _reset = 0;
@@ -131,6 +136,7 @@ class _ConstellationLabScreenState extends State<ConstellationLabScreen> {
   @override
   void dispose() {
     _camera.dispose();
+    _variantScroll.dispose();
 
     super.dispose();
   }
@@ -256,32 +262,45 @@ class _ConstellationLabScreenState extends State<ConstellationLabScreen> {
               ),
               Padding(
                 padding: const EdgeInsets.all(12),
-                child: Wrap(
-                  key: const Key('constellation-lab-variant'),
-                  spacing: 6,
-                  runSpacing: 6,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    for (final (value, label) in const [
-                      (0, 'Originale'),
-                      (1, 'Bianco · notte'),
-                      (2, 'Cornici navy'),
-                      (3, 'Leggera'),
-                      (4, 'Atlante'),
-                      (5, 'Punti luce'),
-                      (6, 'Fili'),
-                      (7, 'Card complete'),
-                    ])
-                      ChoiceChip(
-                        label: Text(label),
-                        selected: _variant == value,
-                        showCheckmark: false,
-                        onSelected: (_) => setState(() {
-                          _variant = value;
-                          _focused = null;
-                        }),
+                child: SizedBox(
+                  height: 96,
+                  child: Scrollbar(
+                    controller: _variantScroll,
+                    thumbVisibility: true,
+                    child: SingleChildScrollView(
+                      controller: _variantScroll,
+                      child: Wrap(
+                        key: const Key('constellation-lab-variant'),
+                        spacing: 6,
+                        runSpacing: 6,
+                        alignment: WrapAlignment.center,
+                        children: [
+                          for (final (value, label) in const [
+                            (0, 'Originale'),
+                            (1, 'Bianco · notte'),
+                            (2, 'Cornici navy'),
+                            (3, 'Leggera'),
+                            (4, 'Atlante'),
+                            (5, 'Punti luce'),
+                            (6, 'Fili'),
+                            (7, 'Card complete'),
+                            (8, 'Connettori discreti'),
+                            (9, 'Riferimenti'),
+                            (10, 'Riferimenti · griglia'),
+                          ])
+                            ChoiceChip(
+                              label: Text(label),
+                              selected: _variant == value,
+                              showCheckmark: false,
+                              onSelected: (_) => setState(() {
+                                _variant = value;
+                                _focused = null;
+                              }),
+                            ),
+                        ],
                       ),
-                  ],
+                    ),
+                  ),
                 ),
               ),
               Padding(
@@ -299,6 +318,9 @@ class _ConstellationLabScreenState extends State<ConstellationLabScreen> {
                         5 => 'Piccoli punti bianchi con un accento del tipo stella. Tutte le schede restano sulla mappa.',
                         6 => 'Icone libere, senza anelli: la forma è un filo sottile tra le schede.',
                         7 => 'Cornici navy e card complete come in Galaxy. Nei cerchi restano solo icone più grandi.',
+                        8 => 'Connettori neutri, sottili e con angoli morbidi. Sul focus diventano bianchi.',
+                        9 => 'Numeri abbinati su stelle e tooltip, senza connettori alle schede.',
+                        10 => 'Costellazione in alto e tutte le schede sotto, in ordine numerico. La griglia accompagna i cassetti.',
                         _ => 'Prima versione: struttura navy, sfondo blu più chiaro.',
                       },
                       textAlign: TextAlign.center,
@@ -373,6 +395,27 @@ class _ConstellationLabScreenState extends State<ConstellationLabScreen> {
                                 child: ConstellationMapView(
                                   key: ValueKey((viewport, _reset)),
                                   stars: _render.stars,
+                                  onViewStar: (star) =>
+                                      widget.onViewStar != null
+                                      ? widget.onViewStar!(star)
+                                      : _inspect(
+                                          'Vedi: ${star.label.isEmpty ? "Opportunità" : star.label}',
+                                        ),
+                                  onFlyStar: (star) => widget.onFlyStar != null
+                                      ? widget.onFlyStar!(star)
+                                      : _inspect(
+                                          'Vola: ${star.label.isEmpty ? "Opportunità" : star.label}',
+                                        ),
+                                  connectorStyle: switch (_variant) {
+                                    8 => ConstellationConnectorStyle.discreet,
+                                    9 => ConstellationConnectorStyle.numbered,
+                                    10 => ConstellationConnectorStyle.numbered,
+                                    _ => ConstellationConnectorStyle.original,
+                                  },
+                                  cardLayout: _variant == 10
+                                      ? ConstellationCardLayout.bottomGrid
+                                      : ConstellationCardLayout.aroundShape,
+                                  numberedTabStyle: _variant == 10,
                                   edges: _render.edges,
                                   transformation: _camera,
                                   canvasSize: _canvas,
@@ -384,15 +427,15 @@ class _ConstellationLabScreenState extends State<ConstellationLabScreen> {
                                   luminousStructure:
                                       _variant == 2 ||
                                       _variant == 3 ||
-                                      _variant == 7,
+                                      _variant >= 7,
                                   refinedPresentation:
                                       _variant == 3 ||
                                       _variant == 5 ||
                                       _variant == 6,
-                                  showCardVisual: _variant == 7,
-                                  simplifiedNodes: _variant == 7,
-                                  uniformNodeSize: _variant == 7,
-                                  matchTooltipFrameToNode: _variant == 7,
+                                  showCardVisual: _variant >= 7,
+                                  simplifiedNodes: _variant >= 7,
+                                  uniformNodeSize: _variant >= 7,
+                                  matchTooltipFrameToNode: _variant >= 7,
                                   selectionEnabled: _variant >= 5,
                                   fadeStructureOnFocus: true,
                                   nodeStyle: switch (_variant) {

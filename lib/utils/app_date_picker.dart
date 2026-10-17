@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
+import '../widgets/app_field.dart';
 import 'proper_case.dart';
 
 Future<DateTime?> showAppDatePicker({
@@ -123,9 +124,14 @@ class _AppDateInputDialogState extends State<_AppDateInputDialog> {
   final _dayFocus = FocusNode();
   final _monthFocus = FocusNode();
   final _yearFocus = FocusNode();
-  String? _error;
+
+  /// One message per wrong part, in the order the boxes are shown.
+  List<String> _errors = const [];
   Set<_DatePart> _invalidParts = const {};
   bool _switchingMode = false;
+
+  /// Day, month, year as laid out on screen: month first in English.
+  bool get _monthFirst => Localizations.localeOf(context).languageCode == 'en';
 
   Future<void> _switchToCalendar() async {
     if (_switchingMode) return;
@@ -148,60 +154,72 @@ class _AppDateInputDialogState extends State<_AppDateInputDialog> {
     Navigator.of(context).pop(_DatePickerResult(_selected, switchMode: true));
   }
 
+  /// Any edit takes back the last error: it described the old values.
+  void _clearError() {
+    if (_errors.isEmpty && _invalidParts.isEmpty) return;
+    setState(() {
+      _invalidParts = const {};
+      _errors = const [];
+    });
+  }
+
   bool _saveInput() {
     final strings = context.strings;
     final day = int.tryParse(_dayController.text);
     final month = int.tryParse(_monthController.text);
     final year = int.tryParse(_yearController.text);
-    final invalid = <_DatePart>{};
-    if (year == null ||
-        year < widget.firstDate.year ||
-        year > widget.lastDate.year) {
-      invalid.add(_DatePart.year);
-    }
-    if (month == null || month < 1 || month > 12) {
-      invalid.add(_DatePart.month);
-    }
-    if (day == null || day < 1) invalid.add(_DatePart.day);
-    if (invalid.isNotEmpty) {
-      final detail = invalid.contains(_DatePart.year)
-          ? strings.dateInputInvalidYear(
-              widget.firstDate.year,
-              widget.lastDate.year,
-            )
-          : invalid.contains(_DatePart.month)
-          ? strings.dateInputInvalidMonth
-          : strings.dateInputInvalidDay;
+
+    final yearValid =
+        year != null &&
+        year >= widget.firstDate.year &&
+        year <= widget.lastDate.year;
+    final monthValid = month != null && month >= 1 && month <= 12;
+    // The real length of the month typed — with the year when it's usable
+    // (February in a leap year), otherwise the longest that month can be.
+    final maxDay = !monthValid
+        ? 31
+        : DateUtils.getDaysInMonth(yearValid ? year : 2024, month);
+    final dayValid = day != null && day >= 1 && day <= maxDay;
+
+    final messages = <_DatePart, String>{
+      if (!dayValid) _DatePart.day: strings.dateInputDayRange(maxDay),
+      if (!monthValid) _DatePart.month: strings.dateInputMonthRange,
+      if (!yearValid)
+        _DatePart.year: strings.dateInputYearRange(
+          widget.firstDate.year,
+          widget.lastDate.year,
+        ),
+    };
+    if (messages.isNotEmpty) {
+      final order = _monthFirst
+          ? const [_DatePart.month, _DatePart.day, _DatePart.year]
+          : const [_DatePart.day, _DatePart.month, _DatePart.year];
       setState(() {
-        _invalidParts = invalid;
-        _error = detail;
+        _invalidParts = messages.keys.toSet();
+        _errors = [for (final part in order) ?messages[part]];
       });
       return false;
     }
+
+    // A real date, but on the wrong side of what this field allows: a
+    // victory can't be in the future, a goal's target can't be in the past.
     final candidate = DateTime(year!, month!, day!);
-    final isRealDate =
-        candidate.year == year &&
-        candidate.month == month &&
-        candidate.day == day;
-    if (!isRealDate) {
-      setState(() {
-        _invalidParts = const {_DatePart.day};
-        _error = strings.dateInputInvalidDay;
-      });
-      return false;
-    }
-    if (candidate.isBefore(widget.firstDate) ||
-        candidate.isAfter(widget.lastDate)) {
+    final tooLate = candidate.isAfter(widget.lastDate);
+    if (tooLate || candidate.isBefore(widget.firstDate)) {
       setState(() {
         _invalidParts = const {_DatePart.day, _DatePart.month, _DatePart.year};
-        _error = strings.dateInputOutsideRange;
+        _errors = [
+          tooLate
+              ? strings.dateInputPickPastDate
+              : strings.dateInputPickFutureDate,
+        ];
       });
       return false;
     }
     _selected = candidate;
     setState(() {
       _invalidParts = const {};
-      _error = null;
+      _errors = const [];
     });
     return true;
   }
@@ -222,7 +240,7 @@ class _AppDateInputDialogState extends State<_AppDateInputDialog> {
     final colors = context.colors;
     final material = MaterialLocalizations.of(context);
     final language = Localizations.localeOf(context).languageCode;
-    final monthFirst = language == 'en';
+    final monthFirst = _monthFirst;
     final separator = language == 'ro' ? '.' : '/';
     final day = _DateSegment(
       controller: _dayController,
@@ -232,6 +250,7 @@ class _AppDateInputDialogState extends State<_AppDateInputDialog> {
       digits: 2,
       width: 62,
       invalid: _invalidParts.contains(_DatePart.day),
+      onEdited: _clearError,
     );
     final month = _DateSegment(
       controller: _monthController,
@@ -241,6 +260,7 @@ class _AppDateInputDialogState extends State<_AppDateInputDialog> {
       digits: 2,
       width: 62,
       invalid: _invalidParts.contains(_DatePart.month),
+      onEdited: _clearError,
     );
     final year = _DateSegment(
       controller: _yearController,
@@ -248,6 +268,7 @@ class _AppDateInputDialogState extends State<_AppDateInputDialog> {
       digits: 4,
       width: 96,
       invalid: _invalidParts.contains(_DatePart.year),
+      onEdited: _clearError,
     );
     return _PickerShell(
       title: toProperCase(
@@ -279,30 +300,12 @@ class _AppDateInputDialogState extends State<_AppDateInputDialog> {
               ],
             ),
           ),
-          if (_error != null) ...[
+          if (_errors.isNotEmpty) ...[
             const SizedBox(height: 16),
-            Center(
-              child: Column(
-                children: [
-                  Text(
-                    '${context.strings.dateInputInvalidValues}.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _error!,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            for (final (i, error) in _errors.indexed) ...[
+              if (i > 0) const SizedBox(height: 6),
+              Center(child: AppErrorMessage(error, center: true)),
+            ],
           ],
         ],
       ),
@@ -317,6 +320,7 @@ class _DateSegment extends StatelessWidget {
     required this.digits,
     required this.width,
     required this.invalid,
+    required this.onEdited,
     this.nextFocus,
     this.nextController,
   });
@@ -328,6 +332,7 @@ class _DateSegment extends StatelessWidget {
   final int digits;
   final double width;
   final bool invalid;
+  final VoidCallback onEdited;
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -345,6 +350,7 @@ class _DateSegment extends StatelessWidget {
         );
       },
       onChanged: (value) {
+        onEdited();
         if (value.length == digits && nextFocus != null) {
           nextFocus!.requestFocus();
           final target = nextController;
@@ -365,24 +371,8 @@ class _DateSegment extends StatelessWidget {
         isDense: true,
         counterText: '',
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
-        enabledBorder: invalid
-            ? OutlineInputBorder(
-                borderRadius: BorderRadius.circular(kRadiusField),
-                borderSide: BorderSide(
-                  color: Theme.of(context).colorScheme.error,
-                  width: kBorderWidthActive,
-                ),
-              )
-            : null,
-        focusedBorder: invalid
-            ? OutlineInputBorder(
-                borderRadius: BorderRadius.circular(kRadiusField),
-                borderSide: BorderSide(
-                  color: Theme.of(context).colorScheme.error,
-                  width: kBorderWidthActive,
-                ),
-              )
-            : null,
+        enabledBorder: invalid ? appErrorBorder(context.colors) : null,
+        focusedBorder: invalid ? appErrorBorder(context.colors) : null,
       ),
     ),
   );

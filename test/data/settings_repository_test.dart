@@ -3,6 +3,7 @@ import 'package:inner_stars/data/settings_repository.dart';
 import 'package:inner_stars/models/artwork_blend.dart';
 import 'package:inner_stars/models/artwork_layer.dart';
 import 'package:inner_stars/models/galaxy_navigation_mode.dart';
+import 'package:inner_stars/models/constellation_card_layout.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -66,6 +67,57 @@ void main() {
     final repository = await SettingsRepository.create();
 
     expect(repository.galaxyNavigationMode, GalaxyNavigationMode.cinematic);
+  });
+
+  test(
+    'constellation card layout defaults, persists and safely falls back',
+    () async {
+      final repository = await SettingsRepository.create();
+      expect(
+        repository.constellationCardLayout,
+        ConstellationCardLayout.bottomGrid,
+      );
+
+      await repository.setConstellationCardLayout(
+        ConstellationCardLayout.sideColumns,
+      );
+      final reloaded = await SettingsRepository.create();
+      expect(
+        reloaded.constellationCardLayout,
+        ConstellationCardLayout.sideColumns,
+      );
+
+      SharedPreferences.setMockInitialValues({
+        'settings.constellationCardLayout': 'future-layout',
+      });
+      final unknown = await SettingsRepository.create();
+      expect(
+        unknown.constellationCardLayout,
+        ConstellationCardLayout.bottomGrid,
+      );
+    },
+  );
+
+  test('constellation card size defaults, persists and clamps', () async {
+    final repository = await SettingsRepository.create();
+    expect(repository.constellationCardSizeStep, 2);
+
+    await repository.setConstellationCardSizeStep(3);
+    expect((await SettingsRepository.create()).constellationCardSizeStep, 3);
+
+    await repository.setConstellationCardSizeStep(99);
+    expect(repository.constellationCardSizeStep, 3);
+  });
+
+  test('constellation card label side defaults and persists', () async {
+    final repository = await SettingsRepository.create();
+    expect(repository.constellationCardLabelsOnLeft, isFalse);
+
+    await repository.setConstellationCardLabelsOnLeft(true);
+    expect(
+      (await SettingsRepository.create()).constellationCardLabelsOnLeft,
+      isTrue,
+    );
   });
 
   test('resetCosmoVisuals persists every configured default', () async {

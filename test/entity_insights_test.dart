@@ -242,16 +242,25 @@ void main() {
       expect(c.stars.getAll().firstWhere((s) => s.id == 1).isUnlit, true);
       await tester.tap(check);
       await tester.pumpAndSettle();
-      await tester.tap(
-        find.widgetWithText(
-          ElevatedButton,
-          StringsIt().markAchievedConfirm.toUpperCase(),
-        ),
+      final save = find.widgetWithText(
+        ElevatedButton,
+        StringsIt().markAchievedConfirm.toUpperCase(),
       );
+      // No intensity chosen yet: the slider's starting value isn't one.
+      expect(tester.widget<ElevatedButton>(save).onPressed, isNull);
+      final slider = find.descendant(
+        of: find.byType(MarkAchievedSheet),
+        matching: find.byType(Slider),
+      );
+      await tester.drag(slider, const Offset(400, 0));
+      await tester.pumpAndSettle();
+      expect(tester.widget<ElevatedButton>(save).onPressed, isNotNull);
+      await tester.ensureVisible(save);
+      await tester.tap(save);
       await tester.pumpAndSettle();
       final victory = c.stars.getAll().firstWhere((s) => s.id == 1);
       expect(victory.isLit, true);
-      expect(victory.intensity, 3);
+      expect(victory.intensity, 5);
       expect(victory.iconSlug, 'park');
       expect(find.text('Star 1'), findsOneWidget);
       expect(
@@ -415,6 +424,16 @@ void main() {
       await tester.tap(find.text(StringsIt().pickerConfirmAction));
       await tester.pumpAndSettle();
       final save = find.byType(SaveActionButton);
+      // Editing still asks for the reward to be chosen again: until then
+      // the save button is off and a tap does nothing.
+      await tester.ensureVisible(save);
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+      expect(result, isNull);
+      final slider = find.byType(Slider);
+      await tester.ensureVisible(slider);
+      await tester.drag(slider, const Offset(400, 0));
+      await tester.pumpAndSettle();
       await tester.ensureVisible(save);
       await tester.tap(save);
       await tester.pumpAndSettle();
@@ -999,7 +1018,13 @@ void main() {
         find.byKey(const ValueKey('light-current-scope')),
       );
       expect(areaChoice.icon, isNull);
-      expect(areaChoice.leading, isA<AreaIcon>());
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('light-current-scope')),
+          matching: find.byType(AreaIcon),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('3'), findsWidgets);
       await tester.tap(find.bySemanticsLabel(strings.lightScopeAll));
       await tester.pumpAndSettle();
@@ -1272,6 +1297,83 @@ void main() {
       c.dispose();
     },
   );
+
+  testWidgets('Your Light sheets stay compact with two-digit totals on phone', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final today = DateTime.now();
+    final runStart = DateTime(today.year, today.month - 1, 2);
+    final stars = [
+      for (var index = 0; index < 12; index++)
+        _star(index + 1, runStart.add(Duration(days: index))),
+      // Brightest Month needs a second month with light to compare against.
+      _star(13, DateTime(today.year, today.month - 3, 5)),
+    ];
+    final c = await _controller(stars: stars);
+    final strings = StringsIt();
+    await tester.pumpWidget(_app(c, const LightScreen(), reduceMotion: true));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    final run = find.byKey(const ValueKey('moment-longest-run'));
+    await tester.ensureVisible(run);
+    await tester.pumpAndSettle();
+    await tester.tap(run);
+    await tester.pumpAndSettle();
+
+    final runSummary = find.byKey(const ValueKey('light-run-summary'));
+    final totals = [
+      find.descendant(
+        of: runSummary,
+        matching: find.text(strings.habitStatsDays(12)),
+      ),
+      find.descendant(
+        of: runSummary,
+        matching: find.text(strings.starsCount(12)),
+      ),
+      find.descendant(
+        of: runSummary,
+        matching: find.text('36 ${strings.intensityLabel}'),
+      ),
+    ];
+    expect(totals, everyElement(findsOneWidget));
+    final totalCenters = totals.map(tester.getCenter).toList();
+    expect(
+      totalCenters.map((center) => center.dy).reduce((a, b) => a > b ? a : b) -
+          totalCenters
+              .map((center) => center.dy)
+              .reduce((a, b) => a < b ? a : b),
+      lessThan(1),
+    );
+
+    final dayCard = find.byKey(const ValueKey('light-run-day')).first;
+    final daySize = tester.getSize(dayCard);
+    expect(daySize.width, closeTo(daySize.height, 1));
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    final month = find.byKey(const ValueKey('moment-brightest-month'));
+    await tester.ensureVisible(month);
+    await tester.pumpAndSettle();
+    await tester.tap(month);
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('brightest-month-summary')),
+        matching: find.text('36 ${strings.intensityLabel}'),
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox());
+    c.dispose();
+  });
 
   testWidgets(
     'Your Light system back climbs activity, project, area and everything',

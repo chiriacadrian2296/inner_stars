@@ -147,6 +147,13 @@ abstract class AppStrings {
   // and its own body text.
   String get comingSoonBadge;
   String get shootingStarsBody;
+  String get shootingStarWishTitle;
+  String get shootingStarWishPrompt;
+  String get shootingStarWishHint;
+  String get shootingStarWishSave;
+  String get shootingStarStepTitle;
+  String get shootingStarCreateActivity;
+  String get shootingStarReflectOnArea;
   String get friendsBody;
 
   // Settings — placeholder sections, sketched the same way (see above),
@@ -715,8 +722,6 @@ abstract class AppStrings {
   /// than lit up.
   String get placeThisStarAction;
 
-  String get cannotSaveTitle;
-  String get cannotSaveMissingInfo;
   String get constellationFullTitle;
   String get constellationFullCreateNew;
   String constellationFullStars(int max);
@@ -1090,6 +1095,16 @@ abstract class AppStrings {
   String get reminderTimeLabel;
   String get skyGridSection;
   String get skyGridToggleLabel;
+  String get constellationLayoutSection;
+  String get constellationLayoutBottomLabel;
+  String get constellationLayoutBottomDescription;
+  String get constellationLayoutSidesLabel;
+  String get constellationLayoutSidesDescription;
+  String get constellationLayoutAroundLabel;
+  String get constellationLayoutAroundDescription;
+  String get constellationCardSizeLabel;
+  String get constellationRotateHint;
+  String get constellationRotateBackHint;
   String get galaxyQualitySection;
   String get galaxyQualityLabel;
   String get galaxyQualityBalancedLabel;
@@ -1185,11 +1200,14 @@ abstract class AppStrings {
   String get onboardingNextAction;
   String get onboardingGetStartedAction;
   String get onboardingSkipTooltip;
-  String get dateInputInvalidValues;
-  String get dateInputInvalidDay;
-  String get dateInputInvalidMonth;
-  String dateInputInvalidYear(int firstYear, int lastYear);
-  String get dateInputOutsideRange;
+  String dateInputDayRange(int lastDay);
+  String get dateInputMonthRange;
+  String dateInputYearRange(int firstYear, int lastYear);
+  String get dateInputPickPastDate;
+  String get dateInputPickFutureDate;
+  String timeInputInvalidHour(int first, int last);
+  String get timeInputInvalidMinute;
+  String get victoryTimeInFuture;
 
   // Galaxy tooltips name the celestial representation; Sky uses domain labels.
   String get galaxyAreaLabel;

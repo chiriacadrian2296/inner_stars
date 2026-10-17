@@ -45,7 +45,7 @@ class StringsRo implements AppStrings {
   String get insightElapsed => 'Timp scurs';
 
   @override
-  String get insightDuration => 'Timp până la realizare';
+  String get insightDuration => 'Timp Până La Realizare';
 
   @override
   String get insightRecentVictories => 'Victorii în perioadă';
@@ -292,7 +292,7 @@ class StringsRo implements AppStrings {
       'Îmbogățește-ți cerul cu noi surse de lumină.';
   @override
   String get menuShootingStarsDescription =>
-      'O dorință cu limită de timp — în curând.';
+      'Urmărește o stea căzătoare, pune-ți o dorință și fă primul pas.';
   @override
   String get menuFindYourLightDescription =>
       'Pentru când ești în întuneric și ai nevoie de puțină lumină.';
@@ -340,10 +340,22 @@ class StringsRo implements AppStrings {
   String get comingSoonBadge => 'ÎN CURÂND';
   @override
   String get shootingStarsBody =>
-      'O dorință pusă în clipa în care o zărești — de urmărit înainte să se '
-      'stingă. Stelele căzătoare sunt încă în lucru: în curând vei putea să '
-      'îți dai o mică provocare cu limită de timp și să o prinzi pe cer '
-      'înainte să se închidă fereastra.';
+      'Găsește steaua căzătoare în Galaxy. Atinge-o pentru a ajunge la ea sau ține apăsat pentru a-i deschide tooltipul, a-ți pune o dorință și a alege un pas concret.';
+  @override
+  String get shootingStarWishTitle => 'Pune-ți o Dorință';
+  @override
+  String get shootingStarWishPrompt =>
+      'Scrie ce ți-ai dori să se întâmple, apoi alege un pas real în acea direcție.';
+  @override
+  String get shootingStarWishHint => 'Mi-aș dori…';
+  @override
+  String get shootingStarWishSave => 'Salvează dorința';
+  @override
+  String get shootingStarStepTitle => 'Fă un pas concret';
+  @override
+  String get shootingStarCreateActivity => 'Creează stea';
+  @override
+  String get shootingStarReflectOnArea => 'Reflectează asupra unei arii';
   @override
   String get friendsBody =>
       'Proiecte comune, mesaje și victorii sărbătorite împreună: funcțiile sociale vor fi disponibile în curând.';
@@ -400,7 +412,7 @@ class StringsRo implements AppStrings {
   @override
   String get skyEmptyStars => 'Încă nu există activități.';
   @override
-  String intensityCount(int value) => '$value intensitate';
+  String intensityCount(int value) => '$value Intensitate';
   @override
   String createdOnLabel(String date, String time) =>
       'Creată pe $date la ora $time';
@@ -1413,11 +1425,6 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get placeThisStarAction => 'Salvează';
   @override
-  String get cannotSaveTitle => 'Informații Lipsă';
-  @override
-  String get cannotSaveMissingInfo =>
-      'Completează câmpurile obligatorii indicate înainte de salvare.';
-  @override
   String get constellationFullTitle => 'Proiect Plin';
   @override
   String get constellationFullCreateNew => 'Creează';
@@ -1470,7 +1477,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get markAchievedAction => 'Marchează ca atins';
   @override
-  String get markAchievedSheetTitle => 'Cât Efort Te-a Costat să Ajungi Aici?';
+  String get markAchievedSheetTitle => 'Obiectiv Atins';
   @override
   String get markAchievedConfirm => 'Salvează';
   @override
@@ -1515,7 +1522,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get cycleHistoryTitle => 'Cicluri Finalizate';
   @override
-  String cycleHistoryItem(int length) => length == 1 ? '1 zi' : '$length zile';
+  String cycleHistoryItem(int length) => length == 1 ? '1 Zi' : '$length Zile';
   @override
   String get cycleDoneTitle => 'Ai reușit!';
   @override
@@ -1611,7 +1618,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get habitStatsTotalLabel => 'Completări Totale';
   @override
-  String habitStatsDays(int count) => count == 1 ? '1 zi' : '$count zile';
+  String habitStatsDays(int count) => count == 1 ? '1 Zi' : '$count Zile';
 
   @override
   String activePulsarsBadge(int count) =>
@@ -1944,6 +1951,31 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get skyGridToggleLabel => 'Arată grila de coordonate pe cer';
   @override
+  String get constellationLayoutSection => 'Carduri în Vezi constelația';
+  @override
+  String get constellationLayoutBottomLabel => 'Grilă dedesubt';
+  @override
+  String get constellationLayoutBottomDescription =>
+      'Forma rămâne sus, iar cardurile sunt așezate dedesubt pe două coloane.';
+  @override
+  String get constellationLayoutSidesLabel => 'Coloane laterale';
+  @override
+  String get constellationLayoutSidesDescription =>
+      'Cardurile se împart în stânga și dreapta. Ecranele înguste folosesc grila de dedesubt.';
+  @override
+  String get constellationLayoutAroundLabel => 'În jurul formei';
+  @override
+  String get constellationLayoutAroundDescription =>
+      'Fiecare card rămâne aproape de steaua la care se referă.';
+  @override
+  String get constellationCardSizeLabel => 'Dimensiunea cardurilor';
+  @override
+  String get constellationRotateHint =>
+      'Rotește telefonul pentru carduri laterale';
+  @override
+  String get constellationRotateBackHint =>
+      'Rotește telefonul vertical pentru a reveni';
+  @override
   String get galaxyQualitySection => 'Calitatea Galaxiei';
   @override
   String get galaxyQualityLabel => 'Calitate';
@@ -2154,17 +2186,23 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get onboardingSkipTooltip => 'Sari peste';
   @override
-  String get dateInputInvalidValues => 'Valori nevalide';
+  String dateInputDayRange(int lastDay) => 'Alege o zi între 1 și $lastDay.';
   @override
-  String get dateInputInvalidDay => 'Verifică ziua evidențiată.';
+  String get dateInputMonthRange => 'Alege o lună între 1 și 12.';
   @override
-  String get dateInputInvalidMonth => 'Luna trebuie să fie între 1 și 12.';
+  String dateInputYearRange(int firstYear, int lastYear) =>
+      'Alege un an între $firstYear și $lastYear.';
   @override
-  String dateInputInvalidYear(int firstYear, int lastYear) =>
-      'Anul trebuie să fie între $firstYear și $lastYear.';
+  String get dateInputPickPastDate => 'Alege o dată trecută sau de azi.';
   @override
-  String get dateInputOutsideRange =>
-      'Această dată este în afara intervalului permis.';
+  String get dateInputPickFutureDate => 'Alege o dată viitoare sau de azi.';
+  @override
+  String timeInputInvalidHour(int first, int last) =>
+      'Alege o oră între $first și $last.';
+  @override
+  String get timeInputInvalidMinute => 'Alege minutele între 0 și 59.';
+  @override
+  String get victoryTimeInFuture => 'Această oră nu a sosit încă azi.';
 
   @override
   String get galaxyAreaLabel => 'Supernovă';

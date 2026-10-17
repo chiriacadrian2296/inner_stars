@@ -17,6 +17,7 @@ import '../models/display_text.dart';
 
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -34,6 +35,9 @@ import '../models/habit_completion.dart';
 import '../models/project.dart';
 import '../models/star.dart';
 import '../models/star_kind.dart';
+import '../settings/settings_controller.dart';
+import '../utils/system_bars.dart';
+import '../settings/constellation_card_size.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../widgets/habit_cycle_scope.dart';
@@ -74,6 +78,7 @@ class ConstellationScreen extends StatefulWidget {
     required this.habitRepository,
     required this.habitCompletionRepository,
     required this.starsShapeRepository,
+    this.settings,
     this.initialTransform,
     this.onTransformChanged,
   });
@@ -90,6 +95,7 @@ class ConstellationScreen extends StatefulWidget {
   final HabitRepository habitRepository;
   final HabitCompletionRepository habitCompletionRepository;
   final StarsShapeRepository starsShapeRepository;
+  final SettingsController? settings;
 
   @override
   State<ConstellationScreen> createState() => _ConstellationScreenState();
@@ -97,6 +103,16 @@ class ConstellationScreen extends StatefulWidget {
 
 class _ConstellationScreenState extends State<ConstellationScreen> {
   static const _canvasSize = Size(1000, 1000);
+  // Final relative zoom measured from the Casa lab's “Riferimenti · griglia”
+  // composition. Keeping this separate from the absolute fit preserves the
+  // same proportions among shape, nodes, labels, lines and cards.
+  static const _casaOverviewFactor = 0.60;
+  static const _desktopOverviewFactor = 1.0;
+
+  bool get _supportsLandscapeToggle =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
 
   // Every project is expected to carry a starsShapeId — either set
   // directly at creation (NewProjectScreen requires it) or backfilled by
@@ -117,6 +133,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
   late List<(int, int)> _edges;
   final _transformationController = TransformationController();
   bool _framed = false;
+  Size? _framedViewport;
   late Matrix4? _restoredTransform = widget.initialTransform;
 
   /// The centered, farthest-zoom framing — what a double tap returns to, even
@@ -138,6 +155,10 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
     super.initState();
     _project = widget.project;
     _loadData();
+    widget.settings?.addListener(_onSettingsChanged);
+    // "Vedi" always turns with the phone: sideways it shows the cards at the
+    // sides, every one at once. The rest of the app stays upright.
+    _applyConstellationOrientations(true);
     _transformationController.addListener(() {
       if (_framed) {
         widget.onTransformChanged?.call(
@@ -148,10 +169,60 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Sideways the status bar's strip is where the header's arrows sit, and
+    // Android keeps touches there for itself: a phone on its side hides the
+    // bars. Upright, or on leaving, the app's usual bars come back.
+    final hide = _phoneLandscape;
+    if (hide != _hidesSystemBars) {
+      _hidesSystemBars = hide;
+      SystemBars.set(this, hidden: hide);
+    }
+  }
+
+  bool? _hidesSystemBars;
+
+  @override
   void dispose() {
+    widget.settings?.removeListener(_onSettingsChanged);
+    SystemBars.release(this);
+    _restorePortraitOrientations();
     _transformationController.dispose();
     super.dispose();
   }
+
+  @override
+  void didUpdateWidget(covariant ConstellationScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.settings == widget.settings) return;
+    oldWidget.settings?.removeListener(_onSettingsChanged);
+    widget.settings?.addListener(_onSettingsChanged);
+  }
+
+  void _onSettingsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _applyConstellationOrientations(bool landscapeEnabled) {
+    if (!_supportsLandscapeToggle) return Future.value();
+    return SystemChrome.setPreferredOrientations(
+      landscapeEnabled
+          ? const [
+              DeviceOrientation.portraitUp,
+              DeviceOrientation.portraitDown,
+              DeviceOrientation.landscapeLeft,
+              DeviceOrientation.landscapeRight,
+            ]
+          : const [
+              DeviceOrientation.portraitUp,
+              DeviceOrientation.portraitDown,
+            ],
+    );
+  }
+
+  Future<void> _restorePortraitOrientations() =>
+      _applyConstellationOrientations(false);
 
   void _loadData() {
     _stars = widget.starRepository.getAllForProject(_project.id);
@@ -199,39 +270,189 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
     final boundsPixels = _boundsPixels();
     final shapeWidth = boundsPixels.width == 0 ? 1.0 : boundsPixels.width;
     final shapeHeight = boundsPixels.height == 0 ? 1.0 : boundsPixels.height;
+    if (_phoneLandscape) {
+      // Same stars, tabs and cards as upright (the opening factor fixes
+      // their size); only the shape is fitted, to the short height that is
+      // left once the vignette and the top tab and bottom disc are allowed
+      // for, and to a middle band of the width the side cards frame.
+      final (top, bottom) = _starReach;
+      final usableHeight =
+          viewportSize.height -
+          _constellationVignetteDepth(viewportSize) -
+          top -
+          bottom;
+      final onScreen =
+          math.min(
+            usableHeight / shapeHeight,
+            viewportSize.width * 0.4 / shapeWidth,
+          ) *
+          _landscapeShapeFill;
+      final scale = onScreen / _casaOverviewFactor;
+      return scale <= 0 ? 0.1 : scale;
+    }
+    final region = _constellationOpeningRegion(viewportSize);
+    // Use the Casa lab's own fit rule. Filling 86% of this region made the
+    // shape more than twice as large while cards stayed nearly unchanged.
     final scale =
-        math.min(
-          viewportSize.width / shapeWidth,
-          viewportSize.height / shapeHeight,
-        ) *
-        // Leaves room around the shape for the labels, which sit outside it.
-        0.6;
+        math.min(region.width / shapeWidth, region.height / shapeHeight) *
+        0.6 *
+        (_isMobilePortrait(viewportSize) ? _mobileShapeSpread : 1);
     return scale <= 0 ? 0.1 : scale;
   }
 
+  /// On a phone held upright the shape spreads this much wider than the
+  /// Casa lab's fit. The opening zoom grows with the fit, so their ratio -
+  /// which sizes stars, tabs and cards - stays the same: only the distances
+  /// between the stars grow.
+  static const _mobileShapeSpread = 1.22;
+
+  /// How much of its fitted frame the shape fills on a phone on its side,
+  /// leaving it some air instead of touching the edges.
+  static const _landscapeShapeFill = 0.8;
+
+  /// The dock and position counter on a phone on its side: smaller, so they
+  /// don't outweigh the slimmer title.
+  static const _landscapeDockScale = 0.78;
+
+  /// The header column on a phone on its side - about an upright phone's
+  /// width, between the status icons in the corners.
+  static const _landscapeHeaderWidth = 400.0;
+
+  /// Its one-line row: the arrows set the height, the title is shorter.
+  static const _landscapeHeaderRowHeight = 28.0;
+
+  /// The gap between the screen's edge and the header above, and the dock
+  /// below, on a phone on its side - the same at both ends.
+  static const _landscapeEdgeMargin = 6.0;
+
+  /// The thumb-sized square each header arrow answers on a phone on its
+  /// side, though drawn slimmer - the same as an upright arrow button.
+  static const _landscapeArrowZone = 48.0;
+
+  /// Where the highest number tab tops out, as a fraction of the top
+  /// vignette's depth: below 1 it reaches into the fade.
+  static const _topTabInVignette = 0.55;
+
+  bool _isMobilePortrait(Size viewportSize) =>
+      viewportSize.width < kWideLayoutBreakpoint &&
+      viewportSize.width <= viewportSize.height;
+
+  /// A phone turned on its side. Wide enough to pass for a desktop, it
+  /// still needs the upright proportions - just a short, wide frame.
+  bool get _phoneLandscape {
+    final screen = MediaQuery.sizeOf(context);
+    return screen.width > screen.height && screen.shortestSide < 600;
+  }
+
+  /// How far the map draws above the highest star (its number tab) and
+  /// below the lowest one (half its disc), at the opening zoom.
+  (double, double) get _starReach => (
+    ConstellationMapView.reachAboveStar(
+      ui: _casaOverviewFactor,
+      tooltipScale: _cardScale,
+    ),
+    ConstellationMapView.reachAboveStar(
+      ui: _casaOverviewFactor,
+      tooltipScale: _cardScale,
+      numberedTabs: false,
+    ),
+  );
+
+  Rect _constellationOpeningRegion(Size viewportSize) {
+    const side = 16.0;
+    const top = 12.0;
+    final mobile =
+        viewportSize.width < kWideLayoutBreakpoint &&
+        viewportSize.width <= viewportSize.height;
+    final height = mobile
+        ? viewportSize.height * 0.75
+        : viewportSize.height - 72;
+    return Rect.fromLTWH(
+      side,
+      top,
+      math.max(1, viewportSize.width - side * 2),
+      math.max(1, height - top - 12),
+    );
+  }
+
+  double _openingFactorFor(Size viewportSize) =>
+      _isMobilePortrait(viewportSize) || _phoneLandscape
+      ? _casaOverviewFactor
+      : _desktopOverviewFactor;
+
   void _frameShape(Size viewportSize) {
-    if (_framed || viewportSize.isEmpty) return;
+    if ((_framed && _framedViewport == viewportSize) || viewportSize.isEmpty) {
+      return;
+    }
+    final firstFrame = !_framed;
     _framed = true;
+    _framedViewport = viewportSize;
     final fitScale = _fitScaleFor(viewportSize);
     _fitScale = fitScale;
     // A constellation now opens at the map's fixed farthest zoom: its star
     // cards and leaders are laid out compactly there, giving the user the
     // whole constellation before they zoom into one star.
-    final scale = fitScale * ConstellationMapView.initialZoomFactor;
+    // Desktop intentionally opens one step closer: the first side columns
+    // remain complete while farther columns peek in at the edges. The map's
+    // minimum zoom is unchanged, so zooming out still reveals everything.
+    final openingFactor = _openingFactorFor(viewportSize);
+    final scale = fitScale * openingFactor;
     final center = _boundsPixels().center;
+    final region = _constellationOpeningRegion(viewportSize);
+    final renderStars = _buildRenderStars();
+    var origin = region.center - center * scale;
+    if (_phoneLandscape && renderStars.isNotEmpty) {
+      // Sideways the cards flank the shape, centred across the width. As
+      // upright, the highest star's tab rises a little into the top
+      // vignette, leaving the room below to the rest.
+      final highest = renderStars
+          .map((star) => star.position.dy * _canvasSize.height)
+          .reduce(math.min);
+      final (top, _) = _starReach;
+      origin = Offset(
+        viewportSize.width / 2 - center.dx * scale,
+        _constellationVignetteDepth(viewportSize) * _topTabInVignette +
+            top -
+            highest * scale,
+      );
+    } else if (_isMobilePortrait(viewportSize) && renderStars.isNotEmpty) {
+      // The cards hang below the shape, so a centred shape left an empty
+      // band on top. Instead the highest star rises, carrying the cards up
+      // with it, until its number tab reaches a little into the top
+      // vignette: a hint of fade on that tab is worth the room below.
+      final highest = renderStars
+          .map((star) => star.position.dy * _canvasSize.height)
+          .reduce(math.min);
+      final reach = ConstellationMapView.reachAboveStar(
+        ui: openingFactor,
+        tooltipScale: _cardScale,
+      );
+      origin = Offset(
+        origin.dx,
+        _constellationVignetteDepth(viewportSize) * _topTabInVignette +
+            reach -
+            highest * scale,
+      );
+    }
     final matrix = Matrix4.identity()
-      ..translateByDouble(viewportSize.width / 2, viewportSize.height / 2, 0, 1)
-      ..scaleByDouble(scale, scale, 1, 1)
-      ..translateByDouble(-center.dx, -center.dy, 0, 1);
+      ..translateByDouble(origin.dx, origin.dy, 0, 1)
+      ..scaleByDouble(scale, scale, 1, 1);
     setState(() {
       // Only the first framing restores; swiping to another constellation
       // reframes from scratch.
-      _transformationController.value = _restoredTransform ?? matrix;
+      _transformationController.value = firstFrame
+          ? _restoredTransform ?? matrix
+          : matrix;
       _restoredTransform = null;
       _homeTransform = matrix;
-      _renderStars = _buildRenderStars();
+      _renderStars = renderStars;
     });
   }
+
+  double get _cardScale => constellationCardScaleFor(
+    widget.settings?.constellationCardSizeStep ??
+        kConstellationCardDefaultSizeStep,
+  );
 
   void _refresh() {
     if (mounted) setState(_loadData);
@@ -369,7 +590,9 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
     await widget.starRepository.markAchieved(
       star.id,
       intensity: result.intensity,
+      achievedDate: result.achievedDate,
       photoPath: result.photoPath,
+      media: result.media,
     );
     _refresh();
   }
@@ -608,6 +831,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
       _watermarkPulseDirection = direction < 0 ? 1 : -1;
       _project = nextProject;
       _framed = false;
+      _framedViewport = null;
       _fitScale = null;
       _contentReverse = direction < 0;
       _hasNavigatedConstellations = true;
@@ -669,6 +893,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
       setState(() {
         _project = remaining.first;
         _framed = false;
+        _framedViewport = null;
         _fitScale = null;
         _loadData();
       });
@@ -752,6 +977,37 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
     final colors = context.colors;
     final strings = context.strings;
     final projectPosition = _projectPosition;
+    final phoneLandscape = _phoneLandscape;
+    // Sideways the header is a centred column like the web's narrow one.
+    // Not ResponsiveContent: below its wide breakpoint - many phones on their
+    // side - it would ignore the width and stretch the header edge to edge.
+    Widget headerColumn(Widget child) => phoneLandscape
+        ? Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: _landscapeHeaderWidth,
+              ),
+              child: child,
+            ),
+          )
+        : ResponsiveContent(
+            maxWidth: readerFrameWidth(context) ?? kResponsiveContentMaxWidth,
+            child: child,
+          );
+    Widget headerArrow(IconData icon, VoidCallback onPressed) => IconButton(
+      onPressed: onPressed,
+      // Sideways the arrows are no taller than the title they flank: no
+      // padded tap target adding invisible height above and below.
+      style: phoneLandscape
+          ? IconButton.styleFrom(
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              minimumSize: const Size(32, _landscapeHeaderRowHeight),
+              padding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+            )
+          : null,
+      icon: Icon(icon, color: colors.text),
+    );
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
@@ -767,301 +1023,461 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
           decoration: BoxDecoration(gradient: colors.nightlightGradient),
           child: SafeArea(
             bottom: false,
-            child: Column(
+            // Sideways the status icons sit in the corners, clear of the
+            // centred title, so the header rises into that strip instead of
+            // reserving all of it.
+            top: !phoneLandscape,
+            child: Stack(
+              fit: StackFit.expand,
               children: [
-                DecoratedBox(
-                  decoration: const BoxDecoration(color: Colors.transparent),
-                  child: Padding(
-                    // Same insets as the Star Reader's header, so the arrows
-                    // and title sit in the same place in every "Vedi".
-                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                    child: ResponsiveContent(
-                      maxWidth:
-                          readerFrameWidth(context) ??
-                          kResponsiveContentMaxWidth,
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(minHeight: 64),
-                        child: Row(
+                Column(
+                  children: [
+                    DecoratedBox(
+                      decoration: const BoxDecoration(
+                        color: Colors.transparent,
+                      ),
+                      child: Padding(
+                        // Same insets as the Star Reader's header, so the arrows
+                        // and title sit in the same place in every "Vedi". A
+                        // phone on its side keeps every pixel of height for the
+                        // map: with the system bars hidden, a slim header the
+                        // same distance from the top as the dock is from the
+                        // bottom.
+                        padding: EdgeInsets.fromLTRB(
+                          12,
+                          phoneLandscape ? _landscapeEdgeMargin : 12,
+                          12,
+                          0,
+                        ),
+                        // Sideways the header is a centred column like the web's
+                        // narrow one: arrows at its ends, and room between them
+                        // for a long title, on two lines if it needs them.
+                        child: headerColumn(
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: phoneLandscape ? 0 : 64,
+                            ),
+                            child: Row(
+                              children: [
+                                headerArrow(
+                                  Icons.chevron_left,
+                                  () => _moveBy(-1),
+                                ),
+                                Expanded(
+                                  child: StaggeredEntrance(
+                                    key: ValueKey(
+                                      'constellation-title-${_project.id}',
+                                    ),
+                                    index: 0,
+                                    axis: Axis.horizontal,
+                                    reverse: _contentReverse,
+                                    child: BalancedTitle(
+                                      key: ValueKey(
+                                        'constellation-title-${_project.id}',
+                                      ),
+                                      title: _project.displayName,
+                                      style: TextStyle(
+                                        fontFamily: kFontStarTitle,
+                                        fontSize: phoneLandscape ? 20 : 24,
+                                        height: phoneLandscape ? 1.1 : 1.25,
+                                        fontWeight: FontWeight.w800,
+                                        color: colors.text,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                headerArrow(
+                                  Icons.chevron_right,
+                                  () => _moveBy(1),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: LogoWatermark(
+                              pulse: _watermarkPulse,
+                              pulseDirection: _watermarkPulseDirection,
+                              scale: logoWatermarkScale(_watermarkKind),
+                              color: logoWatermarkColor(colors, _watermarkKind),
+                            ),
+                          ),
+                          Positioned.fill(
+                            child: shape == null
+                                ? StaggeredEntrance(
+                                    key: ValueKey(
+                                      'constellation-empty-${_project.id}',
+                                    ),
+                                    index: 2,
+                                    axis: Axis.horizontal,
+                                    reverse: _contentReverse,
+                                    child: Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(24),
+                                        child: Text(
+                                          strings.constellationShapeMissing,
+                                          style: TextStyle(color: colors.muted),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      final viewportSize = constraints.biggest;
+                                      WidgetsBinding.instance
+                                          .addPostFrameCallback(
+                                            (_) => _frameShape(viewportSize),
+                                          );
+                                      // Not built until the shape has been framed, so its
+                                      // first frame never shows the unzoomed identity view.
+                                      if (!_framed) {
+                                        return const SizedBox.shrink();
+                                      }
+
+                                      // The header arrows and the dedicated swipe bar
+                                      // are the only ways to swap a constellation.
+                                      // Start its entrance only after
+                                      // the camera is framed, so the map never flashes
+                                      // at identity zoom before it settles in.
+                                      return StaggeredEntrance(
+                                        key: ValueKey(
+                                          'constellation-map-${_project.id}',
+                                        ),
+                                        index: 1,
+                                        axis: Axis.horizontal,
+                                        reverse: _contentReverse,
+                                        child: ConstellationMapView(
+                                          stars: _renderStars,
+                                          edges: _edges,
+                                          transformation:
+                                              _transformationController,
+                                          homeTransform: _homeTransform,
+                                          canvasSize: _canvasSize,
+                                          fitScale: _fitScaleFor(viewportSize),
+                                          onStarTap: _openStar,
+                                          onViewStar: _openStar,
+                                          onFlyStar: (star) =>
+                                              Navigator.of(context).pop(
+                                                SkyStarTarget(
+                                                  _project,
+                                                  starId:
+                                                      star.slotSequence !=
+                                                              null &&
+                                                          star.kind !=
+                                                              StarKind.nascent
+                                                      ? star.entityId
+                                                      : null,
+                                                  habitId:
+                                                      star.slotSequence == null
+                                                      ? star.entityId
+                                                      : null,
+                                                  nascentSlot:
+                                                      star.kind ==
+                                                          StarKind.nascent
+                                                      ? star.slotSequence
+                                                      : null,
+                                                ),
+                                              ),
+                                          cardBuilder: _buildMapCard,
+                                          tooltipScale: _cardScale,
+                                          structureColor: Colors.white,
+                                          tooltipFrameColor: colors.night,
+                                          luminousStructure: true,
+                                          selectionEnabled: true,
+                                          // The lab's "Riferimenti · griglia":
+                                          // the shape on top, every card in a
+                                          // numbered grid below, pairs joined by
+                                          // matching number tabs.
+                                          connectorStyle:
+                                              ConstellationConnectorStyle
+                                                  .numbered,
+                                          // No choice here: cards stand at
+                                          // the sides wherever the screen
+                                          // is wide or turned sideways -
+                                          // the desktop, a phone on its
+                                          // side - and the map moves them
+                                          // into the grid below on an
+                                          // upright phone.
+                                          cardLayout: ConstellationCardLayout
+                                              .sideColumns,
+                                          numberedTabStyle: true,
+                                          showCardVisual: true,
+                                          simplifiedNodes: true,
+                                          uniformNodeSize: true,
+                                          matchTooltipFrameToNode: true,
+                                          fadeStructureOnFocus: true,
+                                          autoFrame: false,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                          // Paint the page's own night gradient back over the
+                          // navigable canvas near every edge. Cards, labels and
+                          // lines therefore dissolve into the page instead of
+                          // being cut off by the viewport.
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              key: const Key('constellation-edge-vignette'),
+                              child: _ConstellationEdgeVignette(
+                                gradient: colors.nightlightGradient,
+                              ),
+                            ),
+                          ),
+                          if (projectPosition.total > 1)
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              bottom: phoneLandscape ? 2 : 12,
+                              child: IgnorePointer(
+                                child: _ScaledDown(
+                                  scale: phoneLandscape
+                                      ? _landscapeDockScale
+                                      : 1,
+                                  child: PositionCounter(
+                                    index: projectPosition.index,
+                                    total: projectPosition.total,
+                                    icon: Icons.insights,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          // On a phone, a quiet reminder that the view turns
+                          // with it - upright to sideways and back, the only
+                          // way out of the sideways view. It floats over the
+                          // top vignette, just under the title, taking no
+                          // room from the header.
+                          if (_supportsLandscapeToggle)
+                            Positioned(
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              child: Center(
+                                child: _ConstellationRotateHint(
+                                  text: phoneLandscape
+                                      ? strings.constellationRotateBackHint
+                                      : strings.constellationRotateHint,
+                                ),
+                              ),
+                            ),
+                          // Card size: a vertical rail at the right edge,
+                          // centred on the map's height, either way up.
+                          if (widget.settings case final settings?)
+                            Positioned(
+                              top: 0,
+                              bottom: 0,
+                              right: 6,
+                              child: Center(
+                                child: _ConstellationCardSizeControl(
+                                  label: strings.constellationCardSizeLabel,
+                                  step: settings.constellationCardSizeStep,
+                                  onChanged:
+                                      settings.setConstellationCardSizeStep,
+                                ),
+                              ),
+                            ),
+                          // The swipe affordance floats above the map rather than
+                          // occupying a separate page strip, so its transparency
+                          // reveals the constellation beneath it. Sideways the
+                          // map is too short to spare it; the header arrows
+                          // still change constellation.
+                          if (!phoneLandscape)
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              bottom: projectPosition.total > 1 ? 68 : 20,
+                              child: _ConstellationSwipeBar(
+                                onPrevious: () => _moveBy(-1),
+                                onNext: () => _moveBy(1),
+                                pulse: _watermarkPulse,
+                                pulseDirection: _watermarkPulseDirection,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: EdgeInsets.fromLTRB(
+                        12,
+                        phoneLandscape ? 6 : 16,
+                        12,
+                        (phoneLandscape ? _landscapeEdgeMargin : 16) +
+                            MediaQuery.paddingOf(context).bottom,
+                      ),
+                      child: _ScaledDown(
+                        scale: phoneLandscape ? _landscapeDockScale : 1,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(
-                              onPressed: () => _moveBy(-1),
-                              icon: Icon(
-                                Icons.chevron_left,
-                                color: colors.text,
+                            GroupedActionLayout(
+                              separatorBuilder: (dot) => StaggeredEntrance(
+                                index: 4,
+                                enabled: !_hasNavigatedConstellations,
+                                drift: 0,
+                                extraDelay: kActionGroupDotDelay,
+                                child: dot,
                               ),
-                            ),
-                            Expanded(
-                              child: StaggeredEntrance(
-                                key: ValueKey(
-                                  'constellation-title-${_project.id}',
-                                ),
-                                index: 0,
-                                axis: Axis.horizontal,
-                                reverse: _contentReverse,
-                                child: BalancedTitle(
-                                  key: ValueKey(
-                                    'constellation-title-${_project.id}',
+                              groups: [
+                                0,
+                                1,
+                                if (EntityInsightsScope.maybeOf(context) !=
+                                    null)
+                                  2,
+                                2,
+                                2,
+                                3,
+                              ],
+                              children: [
+                                StaggeredEntrance(
+                                  index: 0,
+                                  enabled: !_hasNavigatedConstellations,
+                                  drift: 0.7,
+                                  child: _ConstellationDockAction(
+                                    icon: Icons.auto_awesome,
+                                    label: 'Nuova stella',
+                                    onTap: _addStar,
+                                    isNew: true,
                                   ),
-                                  title: _project.displayName,
-                                  style: TextStyle(
-                                    fontFamily: kFontStarTitle,
-                                    fontSize: 24,
-                                    height: 1.25,
-                                    fontWeight: FontWeight.w800,
-                                    color: colors.text,
+                                ),
+
+                                StaggeredEntrance(
+                                  index: 1,
+                                  enabled: !_hasNavigatedConstellations,
+                                  drift: 0.7,
+                                  child: _ConstellationDockAction(
+                                    icon: Icons.share_outlined,
+                                    label: 'Condividi',
+                                    onTap: _share,
                                   ),
                                 ),
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () => _moveBy(1),
-                              icon: Icon(
-                                Icons.chevron_right,
-                                color: colors.text,
-                              ),
+
+                                if (EntityInsightsScope.maybeOf(context) !=
+                                    null)
+                                  StaggeredEntrance(
+                                    index: 2,
+                                    enabled: !_hasNavigatedConstellations,
+                                    drift: 0.7,
+                                    child: _ConstellationDockAction(
+                                      icon: Icons.bar_chart,
+                                      label: strings.statsTitle,
+                                      onTap: () => openEntityStatistics(
+                                        context,
+                                        InsightEntity.project(_project.id),
+                                      ),
+                                    ),
+                                  ),
+
+                                StaggeredEntrance(
+                                  index: 3,
+                                  enabled: !_hasNavigatedConstellations,
+                                  drift: 0.7,
+                                  child: _ConstellationDockAction(
+                                    icon: Icons.edit_outlined,
+                                    label: 'Modifica',
+                                    onTap: _editProject,
+                                  ),
+                                ),
+
+                                StaggeredEntrance(
+                                  index: 4,
+                                  enabled: !_hasNavigatedConstellations,
+                                  drift: 0.7,
+                                  child: _ConstellationDockAction(
+                                    icon: Icons.delete_outline,
+                                    label: 'Elimina',
+                                    onTap: _deleteProject,
+                                  ),
+                                ),
+                                StaggeredEntrance(
+                                  index: 5,
+                                  enabled: !_hasNavigatedConstellations,
+                                  drift: 0.7,
+                                  child: _ConstellationDockAction(
+                                    icon: Icons.navigation,
+                                    label: strings.actionFly,
+                                    onTap: () =>
+                                        Navigator.of(context).pop(_project),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
                     ),
-                  ),
-                ),
-                Expanded(
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: LogoWatermark(
-                          pulse: _watermarkPulse,
-                          pulseDirection: _watermarkPulseDirection,
-                          scale: logoWatermarkScale(_watermarkKind),
-                          color: logoWatermarkColor(colors, _watermarkKind),
-                        ),
-                      ),
-                      Positioned.fill(
-                        child: shape == null
-                            ? StaggeredEntrance(
-                                key: ValueKey(
-                                  'constellation-empty-${_project.id}',
-                                ),
-                                index: 2,
-                                axis: Axis.horizontal,
-                                reverse: _contentReverse,
-                                child: Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(24),
-                                    child: Text(
-                                      strings.constellationShapeMissing,
-                                      style: TextStyle(color: colors.muted),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                ),
-                              )
-                            : LayoutBuilder(
-                                builder: (context, constraints) {
-                                  final viewportSize = constraints.biggest;
-                                  WidgetsBinding.instance.addPostFrameCallback(
-                                    (_) => _frameShape(viewportSize),
-                                  );
-                                  // Not built until the shape has been framed, so its
-                                  // first frame never shows the unzoomed identity view.
-                                  if (!_framed) return const SizedBox.shrink();
-
-                                  // The header arrows and the dedicated swipe bar
-                                  // are the only ways to swap a constellation.
-                                  // Start its entrance only after
-                                  // the camera is framed, so the map never flashes
-                                  // at identity zoom before it settles in.
-                                  return StaggeredEntrance(
-                                    key: ValueKey(
-                                      'constellation-map-${_project.id}',
-                                    ),
-                                    index: 1,
-                                    axis: Axis.horizontal,
-                                    reverse: _contentReverse,
-                                    child: ConstellationMapView(
-                                      stars: _renderStars,
-                                      edges: _edges,
-                                      transformation: _transformationController,
-                                      homeTransform: _homeTransform,
-                                      canvasSize: _canvasSize,
-                                      fitScale: _fitScaleFor(viewportSize),
-                                      onStarTap: _openStar,
-                                      cardBuilder: _buildMapCard,
-                                      structureColor: Colors.white,
-                                      tooltipFrameColor: colors.night,
-                                      luminousStructure: true,
-                                      selectionEnabled: true,
-                                      autoFrame:
-                                          widget.initialTransform == null ||
-                                          _hasNavigatedConstellations,
-                                    ),
-                                  );
-                                },
-                              ),
-                      ),
-                      // The swipe affordance floats above the map rather than
-                      // occupying a separate page strip, so its transparency
-                      // reveals the constellation beneath it.
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 20,
-                        child: _ConstellationSwipeBar(
-                          onPrevious: () => _moveBy(-1),
-                          onNext: () => _moveBy(1),
-                          pulse: _watermarkPulse,
-                          pulseDirection: _watermarkPulseDirection,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.fromLTRB(
-                    12,
-                    16,
-                    12,
-                    16 + MediaQuery.paddingOf(context).bottom,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (projectPosition.total > 1) ...[
-                        PositionCounter(
-                          index: projectPosition.index,
-                          total: projectPosition.total,
-                          icon: Icons.insights,
-                        ),
-                        const SizedBox(height: PositionCounter.gapBelow),
-                      ],
-                      GroupedActionLayout(
-                        separatorBuilder: (dot) => StaggeredEntrance(
-                          index: 4,
-                          enabled: !_hasNavigatedConstellations,
-                          drift: 0,
-                          extraDelay: kActionGroupDotDelay,
-                          child: dot,
-                        ),
-                        groups: [
-                          0,
-                          1,
-                          if (EntityInsightsScope.maybeOf(context) != null) 2,
-                          2,
-                          2,
-                          3,
-                        ],
-                        children: [
-                          StaggeredEntrance(
-                            index: 0,
-                            enabled: !_hasNavigatedConstellations,
-                            drift: 0.7,
-                            child: _ConstellationDockAction(
-                              icon: Icons.auto_awesome,
-                              label: 'Nuova stella',
-                              onTap: _addStar,
-                              isNew: true,
-                            ),
-                          ),
-
-                          StaggeredEntrance(
-                            index: 1,
-                            enabled: !_hasNavigatedConstellations,
-                            drift: 0.7,
-                            child: _ConstellationDockAction(
-                              icon: Icons.share_outlined,
-                              label: 'Condividi',
-                              onTap: _share,
-                            ),
-                          ),
-
-                          if (EntityInsightsScope.maybeOf(context) != null)
-                            StaggeredEntrance(
-                              index: 2,
-                              enabled: !_hasNavigatedConstellations,
-                              drift: 0.7,
-                              child: _ConstellationDockAction(
-                                icon: Icons.bar_chart,
-                                label: strings.statsTitle,
-                                onTap: () => openEntityStatistics(
-                                  context,
-                                  InsightEntity.project(_project.id),
+                    SizedBox(
+                      width: 0,
+                      height: 0,
+                      // The sharing card has to stay in the render tree so its
+                      // RepaintBoundary can be captured. On web, however, an
+                      // OverflowBox is allowed to paint beyond this zero-sized
+                      // placeholder; the translated card could therefore leak into
+                      // the top-left of the constellation screen. Clip it from the
+                      // page while preserving the boundary for [_share].
+                      child: ClipRect(
+                        child: OverflowBox(
+                          maxWidth: 400,
+                          maxHeight: 600,
+                          alignment: Alignment.topLeft,
+                          child: Transform.translate(
+                            offset: const Offset(-1000, -1000),
+                            child: RepaintBoundary(
+                              key: _shareKey,
+                              child: SizedBox(
+                                width: 400,
+                                height: 600,
+                                child: ShareableConstellationCard(
+                                  project: _project,
+                                  shape:
+                                      shape ??
+                                      const ConstellationShape(
+                                        points: [],
+                                        edges: [],
+                                      ),
                                 ),
                               ),
-                            ),
-
-                          StaggeredEntrance(
-                            index: 3,
-                            enabled: !_hasNavigatedConstellations,
-                            drift: 0.7,
-                            child: _ConstellationDockAction(
-                              icon: Icons.edit_outlined,
-                              label: 'Modifica',
-                              onTap: _editProject,
-                            ),
-                          ),
-
-                          StaggeredEntrance(
-                            index: 4,
-                            enabled: !_hasNavigatedConstellations,
-                            drift: 0.7,
-                            child: _ConstellationDockAction(
-                              icon: Icons.delete_outline,
-                              label: 'Elimina',
-                              onTap: _deleteProject,
-                            ),
-                          ),
-                          StaggeredEntrance(
-                            index: 5,
-                            enabled: !_hasNavigatedConstellations,
-                            drift: 0.7,
-                            child: _ConstellationDockAction(
-                              icon: Icons.navigation,
-                              label: strings.actionFly,
-                              onTap: () => Navigator.of(context).pop(_project),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(
-                  width: 0,
-                  height: 0,
-                  // The sharing card has to stay in the render tree so its
-                  // RepaintBoundary can be captured. On web, however, an
-                  // OverflowBox is allowed to paint beyond this zero-sized
-                  // placeholder; the translated card could therefore leak into
-                  // the top-left of the constellation screen. Clip it from the
-                  // page while preserving the boundary for [_share].
-                  child: ClipRect(
-                    child: OverflowBox(
-                      maxWidth: 400,
-                      maxHeight: 600,
-                      alignment: Alignment.topLeft,
-                      child: Transform.translate(
-                        offset: const Offset(-1000, -1000),
-                        child: RepaintBoundary(
-                          key: _shareKey,
-                          child: SizedBox(
-                            width: 400,
-                            height: 600,
-                            child: ShareableConstellationCard(
-                              project: _project,
-                              shape:
-                                  shape ??
-                                  const ConstellationShape(
-                                    points: [],
-                                    edges: [],
-                                  ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
+                // Sideways the arrows are drawn slim, but each still answers
+                // a thumb-sized area like upright: from the screen's top edge
+                // down past the header into the map's faded top.
+                if (phoneLandscape)
+                  Positioned(
+                    top: 0,
+                    left: 12,
+                    right: 12,
+                    child: headerColumn(
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          for (final (key, delta) in const [
+                            ('constellation-previous-zone', -1),
+                            ('constellation-next-zone', 1),
+                          ])
+                            GestureDetector(
+                              key: Key(key),
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => _moveBy(delta),
+                              child: const SizedBox(
+                                width: _landscapeArrowZone,
+                                height: _landscapeArrowZone,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -1069,6 +1485,255 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
       ),
     );
   }
+}
+
+class _ConstellationEdgeVignette extends StatefulWidget {
+  const _ConstellationEdgeVignette({required this.gradient});
+
+  final RadialGradient gradient;
+
+  @override
+  State<_ConstellationEdgeVignette> createState() =>
+      _ConstellationEdgeVignetteState();
+}
+
+class _ConstellationEdgeVignetteState
+    extends State<_ConstellationEdgeVignette> {
+  Offset _pageOrigin = Offset.zero;
+
+  void _syncPageOrigin() {
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.hasSize) return;
+    final next = box.localToGlobal(Offset.zero);
+    if (next == _pageOrigin || !mounted) return;
+    setState(() => _pageOrigin = next);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncPageOrigin());
+    return CustomPaint(
+      painter: _ConstellationEdgeVignettePainter(
+        gradient: widget.gradient,
+        pageOrigin: _pageOrigin,
+        pageSize: MediaQuery.sizeOf(context),
+      ),
+    );
+  }
+}
+
+double _constellationVignetteBase(Size size) =>
+    size.width < kWideLayoutBreakpoint || size.shortestSide < 480
+    ? 72.0
+    : 112.0;
+
+/// How far the left and right vignette bands reach into the map.
+double _constellationVignetteSideDepth(Size size) => math.min(
+  _constellationVignetteBase(size),
+  math.min(size.width, size.height) / 2,
+);
+
+/// How far the top and bottom bands reach. A low map - a phone on its side -
+/// gets proportionally shallow ones, so they fade its edges instead of
+/// covering most of it.
+double _constellationVignetteDepth(Size size) => size.height < 400
+    ? math.min(_constellationVignetteBase(size), size.height * 0.12)
+    : _constellationVignetteSideDepth(size);
+
+class _ConstellationEdgeVignettePainter extends CustomPainter {
+  const _ConstellationEdgeVignettePainter({
+    required this.gradient,
+    required this.pageOrigin,
+    required this.pageSize,
+  });
+
+  final RadialGradient gradient;
+  final Offset pageOrigin;
+  final Size pageSize;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final depth = _constellationVignetteDepth(size);
+    final sideDepth = _constellationVignetteSideDepth(size);
+    final pageRect = Rect.fromLTWH(
+      -pageOrigin.dx,
+      -pageOrigin.dy,
+      pageSize.width,
+      pageSize.height,
+    );
+    final background = Paint()..shader = gradient.createShader(pageRect);
+
+    // Each band bleeds past the canvas' outer edge, where its mask clamps to
+    // opaque. Ending exactly on a fractional edge left that last pixel row
+    // only partly covered on web, so the map showed through as a thin line.
+    const bleed = 2.0;
+    void edge(Rect rect, LinearGradient mask) {
+      final reach = Rect.fromLTRB(
+        rect.left <= 0 ? -bleed : rect.left,
+        rect.top <= 0 ? -bleed : rect.top,
+        rect.right >= size.width ? size.width + bleed : rect.right,
+        rect.bottom >= size.height ? size.height + bleed : rect.bottom,
+      );
+      canvas.saveLayer(reach, Paint());
+      canvas.drawRect(reach, background);
+      canvas.drawRect(
+        reach,
+        Paint()
+          ..shader = mask.createShader(rect)
+          ..blendMode = BlendMode.dstIn,
+      );
+      canvas.restore();
+    }
+
+    const opaque = Color(0xFFFFFFFF);
+    const clear = Color(0x00FFFFFF);
+    const stops = [0.0, 0.42, 1.0];
+    edge(
+      Rect.fromLTWH(0, 0, size.width, depth),
+      const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [opaque, Color(0xCFFFFFFF), clear],
+        stops: stops,
+      ),
+    );
+    edge(
+      Rect.fromLTWH(0, size.height - depth, size.width, depth),
+      const LinearGradient(
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
+        colors: [opaque, Color(0xCFFFFFFF), clear],
+        stops: stops,
+      ),
+    );
+    edge(
+      Rect.fromLTWH(0, 0, sideDepth, size.height),
+      const LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: [opaque, Color(0xCFFFFFFF), clear],
+        stops: stops,
+      ),
+    );
+    edge(
+      Rect.fromLTWH(size.width - sideDepth, 0, sideDepth, size.height),
+      const LinearGradient(
+        begin: Alignment.centerRight,
+        end: Alignment.centerLeft,
+        colors: [opaque, Color(0xCFFFFFFF), clear],
+        stops: stops,
+      ),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ConstellationEdgeVignettePainter oldDelegate) =>
+      oldDelegate.gradient != gradient ||
+      oldDelegate.pageOrigin != pageOrigin ||
+      oldDelegate.pageSize != pageSize;
+}
+
+/// The card-size control, drawn in the map's own ink rather than as a
+/// panel: a hairline white rail like the constellation's lines, standing on
+/// the map's right edge between a large card glyph at the top and a small
+/// one at the bottom, with a plain white knob.
+class _ConstellationCardSizeControl extends StatelessWidget {
+  const _ConstellationCardSizeControl({
+    required this.label,
+    required this.step,
+    required this.onChanged,
+  });
+
+  final String label;
+  final int step;
+  final ValueChanged<int> onChanged;
+
+  static const _length = 132.0;
+
+  @override
+  Widget build(BuildContext context) {
+    // A small card under the rail, a large one above it, in one white. Both
+    // sit in the same square, so the rail between them stays centred.
+    Widget glyph(double size) => SizedBox.square(
+      dimension: 20,
+      child: Center(
+        child: Icon(
+          Icons.crop_portrait,
+          size: size,
+          color: Colors.white.withValues(alpha: 0.7),
+        ),
+      ),
+    );
+    final slider = SizedBox(
+      width: _length,
+      child: SliderTheme(
+        data: SliderTheme.of(context).copyWith(
+          trackHeight: 1.5,
+          activeTrackColor: Colors.white.withValues(alpha: 0.9),
+          inactiveTrackColor: Colors.white.withValues(alpha: 0.22),
+          thumbColor: Colors.white,
+          overlayColor: Colors.white.withValues(alpha: 0.08),
+          // A plain white knob: a glow drew the eye away from the map.
+          thumbShape: const RoundSliderThumbShape(
+            enabledThumbRadius: 6,
+            elevation: 0,
+            pressedElevation: 0,
+          ),
+          overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+          tickMarkShape: SliderTickMarkShape.noTickMark,
+          trackShape: const RoundedRectSliderTrackShape(),
+        ),
+        child: Slider(
+          key: const Key('constellation-card-size-slider'),
+          min: 0,
+          max: (kConstellationCardScales.length - 1).toDouble(),
+          divisions: kConstellationCardScales.length - 1,
+          value: clampConstellationCardSizeStep(step).toDouble(),
+          onChanged: (value) => onChanged(value.round()),
+        ),
+      ),
+    );
+    return Semantics(
+      key: const Key('constellation-card-size-control'),
+      label: label,
+      value: '${step + 1}/${kConstellationCardScales.length}',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          glyph(20),
+          // A quarter turn back: the slider's start (small cards) at the
+          // bottom, its end (large cards) at the top.
+          RotatedBox(quarterTurns: 3, child: slider),
+          glyph(13),
+        ],
+      ),
+    );
+  }
+}
+
+/// How to change view on a phone: just a rotation glyph floating over the
+/// map's top vignette, in the map controls' quiet white ink. Its words - [text] - are there for a
+/// long press and for screen readers.
+class _ConstellationRotateHint extends StatelessWidget {
+  const _ConstellationRotateHint({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 2, bottom: 2),
+    child: Tooltip(
+      key: const Key('constellation-rotate-hint'),
+      message: text,
+      child: Icon(
+        Icons.screen_rotation_rounded,
+        size: 16,
+        color: Colors.white.withValues(alpha: 0.6),
+        semanticLabel: text,
+      ),
+    ),
+  );
 }
 
 /// A deliberate, visible navigation zone: map gestures stay with the map,
@@ -1219,6 +1884,23 @@ class _OutlinedSwipeText extends StatelessWidget {
 
 /// The constellation dock sits on a transparent background, so each action
 /// carries its own white disc.
+/// Shrinks [child] by [scale] - the room it takes up included, not just how
+/// it looks - keeping it centred.
+class _ScaledDown extends StatelessWidget {
+  const _ScaledDown({required this.scale, required this.child});
+
+  final double scale;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => scale == 1
+      ? child
+      : Align(
+          heightFactor: scale,
+          child: Transform.scale(scale: scale, child: child),
+        );
+}
+
 class _ConstellationDockAction extends StatelessWidget {
   const _ConstellationDockAction({
     required this.icon,

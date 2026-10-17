@@ -3,7 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_motion.dart';
 import '../theme/app_style.dart';
+import 'app_field.dart';
 import 'staggered_entrance.dart';
 
 /// A numeric 0-9 + backspace keypad for entering a 4-digit PIN, shared by
@@ -17,9 +19,22 @@ import 'staggered_entrance.dart';
 /// numbered from [entranceStart] so the caller's own header (icon, title)
 /// can occupy the indexes before it.
 class PinKeypad extends StatefulWidget {
-  const PinKeypad({super.key, required this.onSubmit, this.entranceStart = 2});
+  const PinKeypad({
+    super.key,
+    required this.onSubmit,
+    this.onEdited,
+    this.error,
+    this.entranceStart = 2,
+  });
+
+  /// What was wrong with the last attempt, shown under the dots.
+  final String? error;
 
   final ValueChanged<String> onSubmit;
+
+  /// Called on every key press (digit or backspace), so the caller can take
+  /// back an error about the previous attempt as soon as a new one starts.
+  final VoidCallback? onEdited;
 
   /// [StaggeredEntrance] index of the first PIN dot; the keys follow.
   final int entranceStart;
@@ -66,6 +81,7 @@ class PinKeypadState extends State<PinKeypad>
 
   void _onDigit(String digit) {
     if (_digits.length >= _pinLength) return;
+    widget.onEdited?.call();
     setState(() => _digits += digit);
     if (_digits.length == _pinLength) {
       final pin = _digits;
@@ -75,6 +91,7 @@ class PinKeypadState extends State<PinKeypad>
 
   void _onBackspace() {
     if (_digits.isEmpty) return;
+    widget.onEdited?.call();
     setState(() => _digits = _digits.substring(0, _digits.length - 1));
   }
 
@@ -121,7 +138,21 @@ class PinKeypadState extends State<PinKeypad>
             }),
           ),
         ),
-        const SizedBox(height: 18),
+        // The error about the last attempt sits right under the dots it
+        // describes, with room around it; the keys make way for it.
+        AnimatedSize(
+          duration: motionDuration(context, kMotionBase),
+          curve: kMotionEnter,
+          child: widget.error == null
+              ? const SizedBox(height: 18)
+              : Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: StaggeredEntrance(
+                    index: 0,
+                    child: AppErrorMessage(widget.error!, center: true),
+                  ),
+                ),
+        ),
         _KeypadGrid(
           onDigit: _onDigit,
           onBackspace: _onBackspace,

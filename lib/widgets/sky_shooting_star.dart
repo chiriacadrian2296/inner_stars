@@ -7,14 +7,26 @@ import 'package:flutter/material.dart';
 import 'constellation_field.dart';
 import 'sky_clock.dart';
 
-/// STUDY (2026-10-14, shown in every build) — what a "shooting star" (a
-/// timed wish, see `ShootingStarsScreen`) could look like in the Galaxy.
-/// Nothing behind it yet: no data, no tap, one sample star near [anchor].
+const double _shootingStarSpeed = 2 * math.pi / 1200;
+const double _shootingStarBearing = 2.2;
+
+/// The moving head's current world position, shared by its painter, Galaxy
+/// hit testing and the camera that follows it after selection.
+Offset shootingStarWorldPosition(Offset anchor, double seconds) =>
+    offsetWorldPosition(
+      anchor,
+      seconds * _shootingStarSpeed - 0.35,
+      _shootingStarBearing,
+    );
+
+/// The Galaxy's moving shooting star: a tappable wish carried along a great
+/// circle near [anchor]. Hit testing and camera tracking use
+/// [shootingStarWorldPosition], the same position this painter renders.
 ///
 /// Unlike the background's comets (cold, thin, gone in under two seconds,
 /// pure scenery), a shooting star is the user's own: so it follows the
 /// Galaxy's "gold + rays = yours" rule — its head is a real lit star, drawn
-/// with the very same flare shader as the user's stars — and it lasts,
+/// in the same visual language as the user's stars — and it lasts,
 /// gliding calmly in a straight line across the sky, past [anchor].
 ///
 /// Its tail is a wake of stardust in the sky's own language: crisp little
@@ -23,8 +35,8 @@ import 'sky_clock.dart';
 /// shrinks and fades — gold near the head, warm white further back — a few
 /// with the web cursor's tiny cross sparkle. A hair-thin line joins the
 /// head to the freshest stretch of it.
-class SkyShootingStarStudy extends StatelessWidget {
-  const SkyShootingStarStudy({
+class SkyShootingStar extends StatelessWidget {
+  const SkyShootingStar({
     super.key,
     required this.anchor,
     required this.camera,
@@ -74,10 +86,10 @@ class _ShootingStarPainter extends CustomPainter {
 
   /// How fast it travels, in radians of sky a second: one full way round
   /// the sky in 20 minutes — calm, but clearly moving.
-  static const _speed = 2 * math.pi / 1200;
+  static const _speed = _shootingStarSpeed;
 
   /// Which way its straight path crosses [anchor].
-  static const _bearing = 2.2;
+  static const _bearing = _shootingStarBearing;
 
   /// How much of its path (radians of sky) the wake stretches over.
   static const _wakeAngle = 0.12;
@@ -262,8 +274,13 @@ class _ShootingStarPainter extends CustomPainter {
       if (projected == null) return;
       final point = projected.position;
       if (previous != null) {
-        final width =
-            (_spread(starSize, age) * 2 + starSize * 0.01) * _neck(age);
+        // At close follow zoom the angular width can project to well over a
+        // hundred pixels. A blur that wide is disproportionately expensive
+        // on the GPU while adding almost no visible softness past this cap.
+        final width = math.min(
+          (_spread(starSize, age) * 2 + starSize * 0.01) * _neck(age),
+          56.0,
+        );
         final color = Color.lerp(_gold, _warmWhite, age)!;
         canvas.drawLine(
           previous,
@@ -272,7 +289,10 @@ class _ShootingStarPainter extends CustomPainter {
             ..blendMode = BlendMode.plus
             ..strokeCap = StrokeCap.round
             ..strokeWidth = width
-            ..maskFilter = MaskFilter.blur(BlurStyle.normal, width * 0.45)
+            ..maskFilter = MaskFilter.blur(
+              BlurStyle.normal,
+              math.min(width * 0.45, 18),
+            )
             ..color = color.withValues(
               alpha: 0.13 * closeness * math.pow(1 - age, 1.3).toDouble(),
             ),
@@ -316,6 +336,7 @@ class _ShootingStarPainter extends CustomPainter {
   ) {
     final newestStep = (headAngle / _grainStep).floor();
     final steps = (_wakeAngle / _grainStep).ceil();
+    final visibleBounds = (Offset.zero & size).inflate(16);
     for (var s = 0; s < steps; s++) {
       final step = newestStep - s;
       final bornAt = step * _grainStep;
@@ -355,6 +376,11 @@ class _ShootingStarPainter extends CustomPainter {
         final side = _hash(index, 2) * 2 - 1;
         final spread = _spread(starSize, age) * (fine ? 0.6 : 1.0) * _neck(age);
         final center = at + normal * side * spread;
+        // Canvas clipping prevents off-screen pixels from appearing but does
+        // not avoid recording all their additive circles and sparkle lines.
+        // Up close most of the long wake is outside the viewport, so skip
+        // those grains before allocating paints and issuing draw calls.
+        if (!visibleBounds.contains(center)) continue;
 
         final twinkle =
             0.75 +

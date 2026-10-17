@@ -1215,6 +1215,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         habitRepository: widget.habitRepository,
         habitCompletionRepository: widget.habitCompletionRepository,
         starsShapeRepository: widget.starsShapeRepository,
+        settings: widget.settings,
       ),
     ),
   );
@@ -1696,7 +1697,9 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     await widget.starRepository.markAchieved(
       star.id,
       intensity: result.intensity,
+      achievedDate: result.achievedDate,
       photoPath: result.photoPath,
+      media: result.media,
     );
     _refreshAndRebuild();
   }
@@ -2272,9 +2275,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
 
     final action = _modeAction;
     return GestureDetector(
-      key: _dayContext == null
-          ? null
-          : const ValueKey('sky-day-swipe-surface'),
+      key: _dayContext == null ? null : const ValueKey('sky-day-swipe-surface'),
       onHorizontalDragEnd: (details) =>
           _swipeMode(details.velocity.pixelsPerSecond.dx),
       child: Stack(

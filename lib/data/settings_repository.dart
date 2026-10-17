@@ -2,7 +2,9 @@ import '../models/artwork_blend.dart';
 import '../models/artwork_layer.dart';
 import '../models/galaxy_navigation_mode.dart';
 import '../models/galaxy_quality.dart';
+import '../models/constellation_card_layout.dart';
 import '../settings/sky_grid_size.dart';
+import '../settings/constellation_card_size.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -23,6 +25,8 @@ class SettingsRepository {
   static const defaultArtworkBlend = ArtworkBlend.plus;
   static const defaultGalaxyNavigationMode = GalaxyNavigationMode.cinematic;
   static const defaultGalaxyCinematicGravity = 0.25;
+  static const defaultConstellationCardLayout =
+      ConstellationCardLayout.bottomGrid;
 
   static const _localeKey = 'settings.locale';
   static const _reminderEnabledKey = 'settings.reminderEnabled';
@@ -44,6 +48,13 @@ class SettingsRepository {
   static const _galaxyQualityKey = 'settings.galaxyQuality';
   static const _galaxyNavigationModeKey = 'settings.galaxyNavigationMode';
   static const _galaxyCinematicGravityKey = 'settings.galaxyCinematicGravity';
+  static const _constellationCardLayoutKey = 'settings.constellationCardLayout';
+  static const _constellationCardSizeStepKey =
+      'settings.constellationCardSizeStep';
+  static const _constellationCardLabelsOnLeftKey =
+      'settings.constellationCardLabelsOnLeft';
+  static const _constellationLandscapeEnabledKey =
+      'settings.constellationLandscapeEnabled';
 
   final SharedPreferences _prefs;
 
@@ -123,6 +134,36 @@ class SettingsRepository {
     _galaxyCinematicGravityKey,
     value.clamp(0.0, 1.0).toDouble(),
   );
+
+  ConstellationCardLayout get constellationCardLayout =>
+      ConstellationCardLayout.fromName(
+        _prefs.getString(_constellationCardLayoutKey),
+      );
+
+  Future<void> setConstellationCardLayout(ConstellationCardLayout value) =>
+      _prefs.setString(_constellationCardLayoutKey, value.name);
+
+  int get constellationCardSizeStep => clampConstellationCardSizeStep(
+    _prefs.getInt(_constellationCardSizeStepKey) ??
+        kConstellationCardDefaultSizeStep,
+  );
+
+  Future<void> setConstellationCardSizeStep(int value) => _prefs.setInt(
+    _constellationCardSizeStepKey,
+    clampConstellationCardSizeStep(value),
+  );
+
+  bool get constellationCardLabelsOnLeft =>
+      _prefs.getBool(_constellationCardLabelsOnLeftKey) ?? false;
+
+  Future<void> setConstellationCardLabelsOnLeft(bool value) =>
+      _prefs.setBool(_constellationCardLabelsOnLeftKey, value);
+
+  bool get constellationLandscapeEnabled =>
+      _prefs.getBool(_constellationLandscapeEnabledKey) ?? false;
+
+  Future<void> setConstellationLandscapeEnabled(bool value) =>
+      _prefs.setBool(_constellationLandscapeEnabledKey, value);
 
   /// Whether the Cosmo draws each life area's supernova (the giant star over
   /// its artwork, and the sigil around it) — on by default.

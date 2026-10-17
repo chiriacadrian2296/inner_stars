@@ -36,8 +36,16 @@ class SkyProjectTarget extends SkyNavigationTarget {
 /// falls back to that coarser, constellation-only landing — the only
 /// option before either caller threaded the id through.
 class SkyStarTarget extends SkyNavigationTarget {
-  const SkyStarTarget(this.project, {this.starId, this.habitId});
+  const SkyStarTarget(
+    this.project, {
+    this.starId,
+    this.habitId,
+    this.nascentSlot,
+  });
   final Project project;
   final int? starId;
   final int? habitId;
+
+  /// Empty slots have no record id; their permanent slot locates them instead.
+  final int? nascentSlot;
 }

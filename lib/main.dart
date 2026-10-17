@@ -29,6 +29,7 @@ import 'data/onboarding_prefs.dart';
 import 'data/project_repository.dart';
 import 'data/reflection_answer_repository.dart';
 import 'data/star_repository.dart';
+import 'data/shooting_star_wish_repository.dart';
 import 'l10n/strings_scope.dart';
 import 'notifications/reminder_service.dart';
 import 'models/star_kind.dart';
@@ -41,6 +42,7 @@ import 'theme/app_theme.dart';
 import 'tutorials/tour_storage.dart';
 import 'widgets/apk_download_prompt.dart';
 import 'widgets/app_lock_gate.dart';
+import 'utils/system_bars.dart';
 import 'utils/web_back_guard_stub.dart'
     if (dart.library.js_interop) 'utils/web_back_guard_web.dart';
 
@@ -105,6 +107,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
   StarsShapeRepository? _starsShapeRepository;
   AreaVisionRepository? _areaVisionRepository;
   ReflectionAnswerRepository? _reflectionAnswerRepository;
+  ShootingStarWishRepository? _shootingStarWishRepository;
   AudioSettingsRepository? _audioSettingsRepository;
   AudioService? _audioService;
   ReminderService? _reminderService;
@@ -138,6 +141,8 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
       final areaVisionRepository = await AreaVisionRepository.create();
       final reflectionAnswerRepository =
           await ReflectionAnswerRepository.create();
+      final shootingStarWishRepository =
+          await ShootingStarWishRepository.create();
       final audioSettingsRepository = await AudioSettingsRepository.create();
       final audioService = await AudioService.create(audioSettingsRepository);
       final onboardingPrefs = await OnboardingPrefs.create();
@@ -186,6 +191,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
         _starsShapeRepository = starsShapeRepository;
         _areaVisionRepository = areaVisionRepository;
         _reflectionAnswerRepository = reflectionAnswerRepository;
+        _shootingStarWishRepository = shootingStarWishRepository;
         _audioSettingsRepository = audioSettingsRepository;
         _audioService = audioService;
         _reminderService = reminderService;
@@ -286,6 +292,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
     final starsShapeRepository = _starsShapeRepository;
     final areaVisionRepository = _areaVisionRepository;
     final reflectionAnswerRepository = _reflectionAnswerRepository;
+    final shootingStarWishRepository = _shootingStarWishRepository;
     final audioSettingsRepository = _audioSettingsRepository;
     final audioService = _audioService;
     final reminderService = _reminderService;
@@ -321,6 +328,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
         starsShapeRepository == null ||
         areaVisionRepository == null ||
         reflectionAnswerRepository == null ||
+        shootingStarWishRepository == null ||
         audioSettingsRepository == null ||
         audioService == null ||
         reminderService == null ||
@@ -391,6 +399,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
       ),
       child: MaterialApp(
         navigatorKey: _navigatorKey,
+        navigatorObservers: [systemBarsRouteObserver],
         title: 'Inner Stars',
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(),
@@ -463,6 +472,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
               starsShapeRepository: starsShapeRepository,
               areaVisionRepository: areaVisionRepository,
               reflectionAnswerRepository: reflectionAnswerRepository,
+              shootingStarWishRepository: shootingStarWishRepository,
               audioSettingsRepository: audioSettingsRepository,
               audioService: audioService,
               reminderService: reminderService,

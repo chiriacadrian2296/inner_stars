@@ -49,11 +49,19 @@ class ShareableStoryLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return switch (ShareArrangementScope.of(context)) {
-      ShareArrangement.editorial => _editorial(context),
-      ShareArrangement.photographic => _photographic(context),
-      ShareArrangement.statement => _statement(context),
-    };
+    final colors = context.colors;
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: colors.nightBorder),
+      ),
+      child: switch (ShareArrangementScope.of(context)) {
+        ShareArrangement.editorial => _editorial(context),
+        ShareArrangement.photographic => _photographic(context),
+        ShareArrangement.statement => _statement(context),
+      },
+    );
   }
 
   Widget _backdrop(BuildContext context, {required Widget child}) {
@@ -61,7 +69,20 @@ class ShareableStoryLayout extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        ColoredBox(color: colors.night),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              center: const Alignment(0, -0.35),
+              radius: 1.15,
+              colors: [
+                colors.gold.withValues(alpha: 0.13),
+                colors.night,
+                colors.night,
+              ],
+              stops: const [0, 0.5, 1],
+            ),
+          ),
+        ),
         ?background,
         if (background != null)
           DecoratedBox(
@@ -182,14 +203,25 @@ class ShareableStoryLayout extends StatelessWidget {
                   Expanded(
                     child: _brand(context, alignment: Alignment.centerLeft),
                   ),
-                  SizedBox(
-                    width: 54,
-                    height: 54,
-                    child: FittedBox(child: hero),
-                  ),
+                  if (background != null)
+                    SizedBox(
+                      width: 54,
+                      height: 54,
+                      child: FittedBox(child: hero),
+                    ),
                 ],
               ),
-              const Spacer(),
+              if (background == null)
+                Expanded(
+                  child: Center(
+                    child: SizedBox.square(
+                      dimension: 150,
+                      child: FittedBox(child: hero),
+                    ),
+                  ),
+                )
+              else
+                const Spacer(),
               if (this.context != null) this.context!,
               if (this.context != null) const SizedBox(height: 14),
               Text(
@@ -241,69 +273,82 @@ class ShareableStoryLayout extends StatelessWidget {
 
   Widget _statement(BuildContext context) {
     final colors = context.colors;
-    return ColoredBox(
-      color: colors.night,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [colors.night, colors.nightPanel],
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Center(
+            child: Opacity(
+              opacity: 0.07,
+              child: SizedBox.square(
+                dimension: 280,
+                child: FittedBox(child: hero),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(
-                    width: 34,
-                    height: 34,
-                    child: FittedBox(child: hero),
-                  ),
-                  const Spacer(),
                   _brand(context, alignment: Alignment.centerRight),
+                  const Spacer(),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: colors.text,
+                      fontFamily: kFontStarTitle,
+                      fontSize: 36,
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w600,
+                      height: 1.08,
+                    ),
+                  ),
+                  if (description != null) ...[
+                    const SizedBox(height: 14),
+                    Text(
+                      description!,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: colors.muted,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
+                  Container(
+                    height: 1,
+                    color: colors.gold.withValues(alpha: 0.55),
+                  ),
+                  const SizedBox(height: 14),
+                  if (this.context != null) this.context!,
+                  if (meta != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      meta!,
+                      style: TextStyle(
+                        color: colors.muted,
+                        fontFamily: kFontMono,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                  if (footer != null) ...[const SizedBox(height: 10), footer!],
                 ],
               ),
-              const Spacer(),
-              Text(
-                title,
-                style: TextStyle(
-                  color: colors.text,
-                  fontFamily: kFontStarTitle,
-                  fontSize: 36,
-                  fontStyle: FontStyle.italic,
-                  fontWeight: FontWeight.w600,
-                  height: 1.08,
-                ),
-              ),
-              if (description != null) ...[
-                const SizedBox(height: 14),
-                Text(
-                  description!,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: colors.muted,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-              const Spacer(),
-              Container(height: 1, color: colors.gold.withValues(alpha: 0.55)),
-              const SizedBox(height: 14),
-              if (this.context != null) this.context!,
-              if (meta != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  meta!,
-                  style: TextStyle(
-                    color: colors.muted,
-                    fontFamily: kFontMono,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-              if (footer != null) ...[const SizedBox(height: 10), footer!],
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

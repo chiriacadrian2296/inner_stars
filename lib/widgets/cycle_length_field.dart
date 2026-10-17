@@ -56,7 +56,8 @@ class CycleLengthField extends StatelessWidget {
             strings.habitCycleLabel,
             canReset: canReset,
             onReset: onReset,
-            requirement: FieldRequirement.required,
+            // Starts on a preset length, so it can be left as it is.
+            requirement: FieldRequirement.optional,
           ),
           const SizedBox(height: kFieldLabelGap),
         ],

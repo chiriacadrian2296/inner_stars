@@ -108,7 +108,8 @@ void main() {
       );
       focus.value = 2;
       await tester.pump();
-      await tester.pump(); // Begin the close tween after the deferred controller reset.
+      await tester
+          .pump(); // Begin the close tween after the deferred controller reset.
       await tester.pump(const Duration(milliseconds: 100));
       final closingHeight = tester.getSize(firstSurface()).height;
       expect(closingHeight, greaterThan(118));

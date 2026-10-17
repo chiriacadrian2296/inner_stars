@@ -45,7 +45,7 @@ class StringsEn implements AppStrings {
   String get insightElapsed => 'Time elapsed';
 
   @override
-  String get insightDuration => 'Time to achievement';
+  String get insightDuration => 'Time To Achievement';
 
   @override
   String get insightRecentVictories => 'Victories in period';
@@ -290,7 +290,8 @@ class StringsEn implements AppStrings {
   String get menuLightYourSkyDescription =>
       'Enrich your sky with new sources of light.';
   @override
-  String get menuShootingStarsDescription => 'A wish, timed — coming soon.';
+  String get menuShootingStarsDescription =>
+      'Chase a shooting star, make a wish and take the first step.';
   @override
   String get menuFindYourLightDescription =>
       "For when you're in the dark and need some light.";
@@ -338,10 +339,22 @@ class StringsEn implements AppStrings {
   String get comingSoonBadge => 'COMING SOON';
   @override
   String get shootingStarsBody =>
-      'A wish you make the moment you spot it — then chase before it '
-      "burns out. Shooting stars are still taking shape; soon you'll be "
-      'able to set yourself a small, timed challenge and catch it in the '
-      'sky before your window closes.';
+      'Find the shooting star in the Galaxy. Tap it to reach it or hold it to open its tooltip, make a wish and choose one concrete step.';
+  @override
+  String get shootingStarWishTitle => 'Make a Wish';
+  @override
+  String get shootingStarWishPrompt =>
+      'Write what you would like to happen, then choose one real step in that direction.';
+  @override
+  String get shootingStarWishHint => 'I wish…';
+  @override
+  String get shootingStarWishSave => 'Save wish';
+  @override
+  String get shootingStarStepTitle => 'Take a concrete step';
+  @override
+  String get shootingStarCreateActivity => 'Create star';
+  @override
+  String get shootingStarReflectOnArea => 'Reflect on an area';
   @override
   String get friendsBody =>
       'Shared projects, messages and victories celebrated together: social features are coming soon.';
@@ -397,7 +410,7 @@ class StringsEn implements AppStrings {
   @override
   String get skyEmptyStars => 'No activities yet.';
   @override
-  String intensityCount(int value) => '$value intensity';
+  String intensityCount(int value) => '$value Intensity';
   @override
   String createdOnLabel(String date, String time) => 'Created $date at $time';
   @override
@@ -1404,11 +1417,6 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get placeThisStarAction => 'Save';
   @override
-  String get cannotSaveTitle => 'Missing Information';
-  @override
-  String get cannotSaveMissingInfo =>
-      'Complete the required fields shown below before saving.';
-  @override
   String get constellationFullTitle => 'Project Full';
   @override
   String get constellationFullCreateNew => 'Create';
@@ -1461,7 +1469,7 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get markAchievedAction => 'Mark as achieved';
   @override
-  String get markAchievedSheetTitle => 'How Much Did It Take to Get There?';
+  String get markAchievedSheetTitle => 'Goal Reached';
   @override
   String get markAchievedConfirm => 'Save';
   @override
@@ -1506,7 +1514,7 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get cycleHistoryTitle => 'Completed Cycles';
   @override
-  String cycleHistoryItem(int length) => length == 1 ? '1 day' : '$length days';
+  String cycleHistoryItem(int length) => length == 1 ? '1 Day' : '$length Days';
   @override
   String get cycleDoneTitle => 'You did it!';
   @override
@@ -1601,7 +1609,7 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get habitStatsTotalLabel => 'Total Completions';
   @override
-  String habitStatsDays(int count) => count == 1 ? '1 day' : '$count days';
+  String habitStatsDays(int count) => count == 1 ? '1 Day' : '$count Days';
 
   @override
   String activePulsarsBadge(int count) =>
@@ -1931,6 +1939,30 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get skyGridToggleLabel => 'Show coordinate grid on the sky';
   @override
+  String get constellationLayoutSection => 'Cards in View constellation';
+  @override
+  String get constellationLayoutBottomLabel => 'Grid below';
+  @override
+  String get constellationLayoutBottomDescription =>
+      'The shape stays above and cards sit below in two columns.';
+  @override
+  String get constellationLayoutSidesLabel => 'Side columns';
+  @override
+  String get constellationLayoutSidesDescription =>
+      'Cards split between the left and right. Narrow screens use the grid below.';
+  @override
+  String get constellationLayoutAroundLabel => 'Around the shape';
+  @override
+  String get constellationLayoutAroundDescription =>
+      'Each card stays near the star it refers to.';
+  @override
+  String get constellationCardSizeLabel => 'Card size';
+  @override
+  String get constellationRotateHint => 'Turn your phone for side cards';
+  @override
+  String get constellationRotateBackHint =>
+      'Turn your phone upright to go back';
+  @override
   String get galaxyQualitySection => 'Galaxy Quality';
   @override
   String get galaxyQualityLabel => 'Quality';
@@ -2138,16 +2170,26 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get onboardingSkipTooltip => 'Skip';
   @override
-  String get dateInputInvalidValues => 'Invalid values';
+  String dateInputDayRange(int lastDay) =>
+      'Choose a day between 1 and $lastDay.';
   @override
-  String get dateInputInvalidDay => 'Check the highlighted day.';
+  String get dateInputMonthRange => 'Choose a month between 1 and 12.';
   @override
-  String get dateInputInvalidMonth => 'The month must be between 1 and 12.';
+  String dateInputYearRange(int firstYear, int lastYear) =>
+      'Choose a year between $firstYear and $lastYear.';
   @override
-  String dateInputInvalidYear(int firstYear, int lastYear) =>
-      'The year must be between $firstYear and $lastYear.';
+  String get dateInputPickPastDate => 'Choose today or a past date.';
   @override
-  String get dateInputOutsideRange => 'This date is outside the allowed range.';
+  String get dateInputPickFutureDate => 'Choose today or a future date.';
+  @override
+  String timeInputInvalidHour(int first, int last) =>
+      'Choose an hour between $first and $last.';
+  @override
+  String get timeInputInvalidMinute => 'Choose minutes between 0 and 59.';
+  @override
+  String get victoryTimeInFuture =>
+      'This time hasn'
+      't come yet today.';
 
   @override
   String get galaxyAreaLabel => 'Supernova';

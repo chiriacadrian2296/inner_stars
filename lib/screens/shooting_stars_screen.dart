@@ -3,12 +3,8 @@ import 'package:flutter/material.dart';
 import '../l10n/strings_scope.dart';
 import 'placeholder_screen.dart';
 
-/// A wish, timed. The concept: spot a shooting star crossing the sky,
-/// make a wish, then chase it — a small effort against a real deadline
-/// (today, five hours, whatever the user sets), rewarded if caught in
-/// time. None of that exists yet — this is the menu entry for it, wired
-/// to [PlaceholderScreen] until the underlying system (and the button's
-/// own shimmer/countdown, once a shooting star is actually live) is built.
+/// Explains the shooting star now living directly in the Galaxy. The page
+/// remains informational; the interaction itself belongs to the sky element.
 class ShootingStarsScreen extends StatelessWidget {
   const ShootingStarsScreen({super.key});
 

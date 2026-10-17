@@ -15,7 +15,11 @@ class AppChoiceChip extends StatelessWidget {
     this.iconColor,
     this.leading,
     this.expand = false,
+    this.dense = false,
   });
+
+  /// Smaller footprint for tool panels with many options.
+  final bool dense;
 
   final String label;
   final bool selected;
@@ -62,8 +66,11 @@ class AppChoiceChip extends StatelessWidget {
           onTap: onPressed,
           borderRadius: BorderRadius.circular(kRadiusField),
           child: Container(
-            constraints: const BoxConstraints(minHeight: 48),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            constraints: BoxConstraints(minHeight: dense ? 32 : 48),
+            padding: EdgeInsets.symmetric(
+              horizontal: dense ? 10 : 14,
+              vertical: dense ? 5 : 12,
+            ),
             decoration: selectableDecoration(colors, selected: selected),
             child: ExcludeSemantics(child: content),
           ),
@@ -85,6 +92,7 @@ class AppChoiceChip extends StatelessWidget {
           ? TextAlign.start
           : TextAlign.center,
       style: context.typography.controlLabel.copyWith(
+        fontSize: dense ? 12 : null,
         color: selected ? colors.text : colors.muted,
         fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
       ),

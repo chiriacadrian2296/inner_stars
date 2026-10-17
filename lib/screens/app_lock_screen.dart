@@ -59,6 +59,10 @@ class _AppLockScreenState extends State<AppLockScreen> {
     if (success) widget.onUnlocked();
   }
 
+  void _clearError() {
+    if (_error != null) setState(() => _error = null);
+  }
+
   void _onPinSubmit(String pin) {
     if (widget.appLockRepository.verifyPin(pin)) {
       widget.onUnlocked();
@@ -91,23 +95,14 @@ class _AppLockScreenState extends State<AppLockScreen> {
             style: _sectionTitleStyle(colors),
           ),
         ),
-        // Same 16px as the icon-to-title gap above, doubling as the
-        // reserved slot for a wrong-PIN error so the keypad never jumps
-        // when one appears.
-        SizedBox(
-          height: 16,
-          child: _error == null
-              ? null
-              : StaggeredEntrance(
-                  index: 0,
-                  child: Text(
-                    _error!,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: colors.danger, fontSize: 11),
-                  ),
-                ),
+        // Same 16px as the icon-to-title gap above.
+        const SizedBox(height: 16),
+        PinKeypad(
+          key: _keypadKey,
+          onSubmit: _onPinSubmit,
+          onEdited: _clearError,
+          error: _error,
         ),
-        PinKeypad(key: _keypadKey, onSubmit: _onPinSubmit),
       ],
     );
   }

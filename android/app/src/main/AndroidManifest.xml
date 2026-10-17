@@ -25,6 +25,18 @@
         android:label="Inner Stars"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Impeller/Vulkan corrupts the constellation runtime-effect shader
+             into opaque white draw rectangles on some Android GPUs (confirmed
+             on the Xiaomi 14 / houji, Adreno), in debug and release alike.
+             Skia renders it correctly, so Android opts out of Impeller.
+             Pinning Impeller's GLES backend instead (ImpellerBackend =
+             opengles) fixed debug builds only: release builds ignore it and
+             still pick Vulkan (Flutter 3.47). The opt-out is deprecated and
+             logs an "Action Required" warning; revisit when the engine's
+             Vulkan issue is fixed or the opt-out goes away. -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

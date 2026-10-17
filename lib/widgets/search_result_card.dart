@@ -871,7 +871,7 @@ class _SearchQuickMenu extends StatelessWidget {
     required int index,
     required Widget child,
   }) {
-    const stagger = 0.2;
+    final stagger = actions.length > 1 ? 0.6 / (actions.length - 1) : 0.0;
     // Every action must complete by progress == 1. The previous shared span
     // left each later action partially translated upward at rest, most
     // visibly the final one in every card drawer.

@@ -544,7 +544,8 @@ class _QuoteEditorSheetState extends State<_QuoteEditorSheet>
                 const SizedBox(height: 16),
                 AppFieldLabel(
                   strings.moodboardQuoteStyleLabel,
-                  requirement: FieldRequirement.required,
+                  // One style is always already selected.
+                  requirement: FieldRequirement.optional,
                 ),
                 const SizedBox(height: kFieldLabelGap + 4),
                 SizedBox(

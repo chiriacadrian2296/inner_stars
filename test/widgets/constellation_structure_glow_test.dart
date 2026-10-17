@@ -5,15 +5,36 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inner_stars/widgets/constellation_map/constellation_structure_glow.dart';
 
 void main() {
-  test('connection mask excludes whole discs including crossing segments', () {
-    final outside = constellationOutsideDiscs(
-      const Rect.fromLTWH(0, 0, 120, 120),
-      [(const Offset(30, 60), 14), (const Offset(90, 60), 14)],
-    );
-    expect(outside.contains(const Offset(30, 60)), isFalse);
-    expect(outside.contains(const Offset(43, 60)), isFalse);
-    expect(outside.contains(const Offset(90, 60)), isFalse);
-    expect(outside.contains(const Offset(60, 60)), isTrue);
+  testWidgets('connection mask excludes whole discs including crossing '
+      'segments', (tester) async {
+    await tester.runAsync(() async {
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      paintOutsideDiscs(
+        canvas,
+        const Rect.fromLTWH(0, 0, 120, 120),
+        [(const Offset(30, 60), 14), (const Offset(90, 60), 14)],
+        () => canvas.drawLine(
+          const Offset(0, 60),
+          const Offset(120, 60),
+          Paint()
+            ..color = Colors.white
+            ..strokeWidth = 4,
+        ),
+      );
+      final picture = recorder.endRecording();
+      final image = await picture.toImage(120, 120);
+      final bytes = (await image.toByteData(
+        format: ui.ImageByteFormat.rawRgba,
+      ))!;
+      int alpha(int x, int y) => bytes.getUint8((y * 120 + x) * 4 + 3);
+      expect(alpha(30, 60), 0);
+      expect(alpha(42, 60), 0);
+      expect(alpha(90, 60), 0);
+      expect(alpha(60, 60), greaterThan(0));
+      image.dispose();
+      picture.dispose();
+    });
   });
   testWidgets('tooltip glow stays outside the white frame', (tester) async {
     await tester.runAsync(() async {

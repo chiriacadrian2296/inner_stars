@@ -581,35 +581,6 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     if (mounted) Navigator.of(context).pop(project);
   }
 
-  void _showCannotSaveMessage() {
-    final colors = context.colors;
-    final strings = context.strings;
-    showAppDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AppDialog(
-        title: Text(strings.cannotSaveTitle),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              strings.cannotSaveMissingInfo,
-              style: TextStyle(color: colors.text),
-            ),
-            const SizedBox(height: 16),
-            const FieldRequirementLegend(),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: AppButtonLabel(strings.gotIt, color: colors.gold),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final dirty = _hasUnsavedChanges;
@@ -762,7 +733,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
                 return SaveActionButton(
                   label: strings.saveChanges,
                   lit: canSave,
-                  onPressed: canSave ? _save : _showCannotSaveMessage,
+                  onPressed: _save,
                 );
               },
             ),

@@ -5,12 +5,14 @@ import 'package:inner_stars/l10n/strings_scope.dart';
 import 'package:inner_stars/screens/constellation_lab_screen.dart';
 import 'package:inner_stars/theme/app_colors.dart';
 import 'package:inner_stars/theme/app_theme.dart';
+import 'package:inner_stars/theme/app_style.dart';
 import 'package:inner_stars/widgets/constellation_map/constellation_map_view.dart';
 import 'package:inner_stars/widgets/search_result_card.dart';
 import 'package:inner_stars/screens/constellation_focus_lab.dart';
 import 'package:inner_stars/widgets/intensity_dots.dart';
 import 'package:inner_stars/widgets/photo_image.dart';
 import 'package:inner_stars/widgets/constellation_map/constellation_structure_glow.dart';
+import 'package:inner_stars/widgets/sky_search_tooltip_card.dart';
 
 void main() {
   testWidgets(
@@ -26,12 +28,17 @@ void main() {
         await tester.pumpAndSettle();
       }
 
+      final viewed = <(int, int?)>[];
+      final flown = <(int, int?)>[];
       await tester.pumpWidget(
         StringsScope(
           strings: const StringsIt(),
           child: MaterialApp(
             theme: buildAppTheme(),
-            home: const ConstellationLabScreen(),
+            home: ConstellationLabScreen(
+              onViewStar: (s) => viewed.add((s.entityId, s.slotSequence)),
+              onFlyStar: (s) => flown.add((s.entityId, s.slotSequence)),
+            ),
           ),
         ),
       );
@@ -52,6 +59,7 @@ void main() {
         ..scaleByDouble(1.15, 1.15, 1, 1);
       await settle();
       final camera = original.transformation.value.storage.toList();
+      await tester.ensureVisible(find.text('Bianco · notte'));
       await tester.tap(find.text('Bianco · notte'));
       await settle();
       final white = tester.widget<ConstellationMapView>(mapFinder);
@@ -84,24 +92,22 @@ void main() {
             (w.decoration as BoxDecoration).color == Colors.white,
       );
       expect(outerCircles, findsNWidgets(9));
+      await tester.ensureVisible(find.text('Cornici navy'));
       await tester.tap(find.text('Cornici navy'));
       await settle();
       final navyFrames = tester.widget<ConstellationMapView>(mapFinder);
-      final navyUi =
-          navyFrames.transformation.value.entry(0, 0) / navyFrames.fitScale;
-      final navyEdgeWeight =
-          tester
-              .widgetList<CustomPaint>(find.byType(CustomPaint))
-              .map((w) => w.painter)
-              .whereType<ConstellationStructureGlowPainter>()
-              .single
-              .strokeWidth /
-          navyUi;
+      // The scene is drawn once at the fit zoom, so these are already
+      // zoom-independent weights; the camera only scales them on screen.
+      final navyEdgeWeight = tester
+          .widgetList<CustomPaint>(find.byType(CustomPaint))
+          .map((w) => w.painter)
+          .whereType<ConstellationStructureGlowPainter>()
+          .single
+          .strokeWidth;
       final navyRingWeight =
           (tester.widgetList<Container>(outerCircles).first.padding!
                   as EdgeInsets)
-              .left /
-          navyUi;
+              .left;
       expect(navyFrames.structureColor, Colors.white);
       expect(navyFrames.luminousStructure, isTrue);
       expect(navyFrames.tooltipFrameColor, AppColors.dark.night);
@@ -127,6 +133,7 @@ void main() {
             .every((frame) => frame.color == AppColors.dark.night),
         isTrue,
       );
+      await tester.ensureVisible(find.text('Originale'));
       await tester.tap(find.text('Originale'));
       await settle();
       expect(
@@ -144,6 +151,7 @@ void main() {
       );
       expect(decoration().gradient, AppColors.dark.constellationGradient);
       expect(tester.takeException(), isNull);
+      await tester.ensureVisible(find.text('Leggera'));
       await tester.ensureVisible(find.text('Leggera'));
       await tester.tap(find.text('Leggera'));
       await settle();
@@ -190,6 +198,7 @@ void main() {
         0.32,
       );
       await tester.ensureVisible(find.text('Atlante'));
+      await tester.ensureVisible(find.text('Atlante'));
       await tester.tap(find.text('Atlante'));
       await settle();
       expect(find.byType(ConstellationFocusLab), findsOneWidget);
@@ -214,6 +223,7 @@ void main() {
         ('Punti luce', ConstellationNodeStyle.beacon),
         ('Fili', ConstellationNodeStyle.glyph),
       ]) {
+        await tester.ensureVisible(find.text(label));
         await tester.tap(find.text(label));
         await settle();
         final map = tester.widget<ConstellationMapView>(mapFinder);
@@ -236,6 +246,7 @@ void main() {
           findsNWidgets(8),
         );
       }
+      await tester.ensureVisible(find.text('Card complete'));
       await tester.tap(find.text('Card complete'));
       await settle();
       final complete = tester.widget<ConstellationMapView>(mapFinder);
@@ -321,14 +332,60 @@ void main() {
       final completeUi =
           complete.transformation.value.entry(0, 0) / complete.fitScale;
       final ringWidth = (equalCircles.first.padding! as EdgeInsets).left;
-      expect(nativeFrame.left * renderScale, closeTo(ringWidth, 0.01));
-      expect(ringWidth / completeUi, closeTo(navyRingWeight, 0.01));
+      // Nodes are drawn in scene units; the camera scales the scene by
+      // completeUi onto the screen, where they must match the card frame.
+      expect(
+        nativeFrame.left * renderScale,
+        closeTo(ringWidth * completeUi, 0.01),
+      );
+      final navyBands = tester.widgetList<Container>(
+        find.descendant(
+          of: nodes,
+          matching: find.byWidgetPredicate(
+            (w) =>
+                w is Container &&
+                w.padding != null &&
+                w.decoration is BoxDecoration &&
+                (w.decoration as BoxDecoration).shape == BoxShape.circle &&
+                (w.decoration as BoxDecoration).color == AppColors.dark.night,
+          ),
+        ),
+      );
+      expect(navyBands, hasLength(9));
+      for (final band in navyBands) {
+        expect(
+          (band.padding! as EdgeInsets).left * completeUi,
+          closeTo(nativeFrame.left * renderScale, 0.01),
+        );
+      }
+      final lightBorders = tester.widgetList<Container>(
+        find.descendant(
+          of: nodes,
+          matching: find.byWidgetPredicate(
+            (w) =>
+                w is Container &&
+                w.decoration is BoxDecoration &&
+                (w.decoration as BoxDecoration).shape == BoxShape.circle &&
+                (w.decoration as BoxDecoration).border != null,
+          ),
+        ),
+      );
+      expect(lightBorders, hasLength(9));
+      for (final surface in lightBorders) {
+        final border = (surface.decoration! as BoxDecoration).border! as Border;
+        expect(border.top.color, AppColors.dark.nightBorder);
+        expect(
+          border.top.width * completeUi,
+          closeTo(kBorderWidth * renderScale, 0.01),
+        );
+      }
+      expect(ringWidth, closeTo(navyRingWeight, 0.01));
       final graphGlow = tester
           .widgetList<CustomPaint>(find.byType(CustomPaint))
           .map((w) => w.painter)
           .whereType<ConstellationStructureGlowPainter>()
           .single;
-      expect(graphGlow.strokeWidth / completeUi, closeTo(navyEdgeWeight, 0.01));
+      expect(graphGlow.strokeWidth, closeTo(navyEdgeWeight, 0.01));
       expect(
         find.byWidgetPredicate(
           (w) => w is Material && w.elevation == 8 && w.color == Colors.white,
@@ -358,6 +415,7 @@ void main() {
             ),
         isTrue,
       );
+      await tester.ensureVisible(find.text('Cornici navy'));
       await tester.tap(find.text('Cornici navy'));
       await settle();
       expect(find.byType(SearchStarVisual), findsNothing);
@@ -365,6 +423,111 @@ void main() {
         tester.widget<ConstellationMapView>(mapFinder).simplifiedNodes,
         isFalse,
       );
+      for (final (label, style) in [
+        ('Connettori discreti', ConstellationConnectorStyle.discreet),
+        ('Riferimenti', ConstellationConnectorStyle.numbered),
+      ]) {
+        await tester.ensureVisible(find.text(label));
+        await tester.tap(find.text(label));
+        await settle();
+        final map = tester.widget<ConstellationMapView>(mapFinder);
+        expect(map.connectorStyle, style);
+        expect(map.showCardVisual, isTrue);
+        expect(map.simplifiedNodes, isTrue);
+        expect(find.byType(SearchResultCard), findsNWidgets(9));
+        var card = tester
+            .widgetList<SearchResultCard>(find.byType(SearchResultCard))
+            .first;
+        card.onTap();
+        await settle();
+        card = tester
+            .widgetList<SearchResultCard>(find.byType(SearchResultCard))
+            .first;
+        final expectedEntity = tester
+            .widget<SkyTooltipMenuScope>(
+              find.ancestor(
+                of: find.byWidget(card),
+                matching: find.byType(SkyTooltipMenuScope),
+              ),
+            )
+            .menuId;
+        card.actions
+            .singleWhere((a) => a.icon == Icons.open_in_new_rounded)
+            .onTap();
+        card.actions.singleWhere((a) => a.icon == Icons.navigation).onTap();
+        expect(viewed.last, expectedEntity);
+        expect(flown.last, viewed.last);
+        expect(card.actions.first.icon, Icons.open_in_new_rounded);
+        expect(card.actions.last.icon, Icons.navigation);
+        expect(card.actions.last.group, 3);
+        if (style == ConstellationConnectorStyle.numbered) {
+          for (var i = 0; i < 9; i++) {
+            expect(
+              find.byKey(ValueKey('constellation-reference-$i')),
+              findsNWidgets(2),
+            );
+          }
+          expect(
+            find.byKey(const Key('constellation-focused-connector')),
+            findsNothing,
+          );
+        } else {
+          expect(
+            find.byKey(const Key('constellation-focused-connector')),
+            findsOneWidget,
+          );
+        }
+      }
+      await tester.ensureVisible(find.text('Riferimenti · griglia'));
+      await tester.tap(find.text('Riferimenti · griglia'));
+      await settle();
+      final grid = tester.widget<ConstellationMapView>(mapFinder);
+      expect(grid.cardLayout, ConstellationCardLayout.bottomGrid);
+      expect(grid.connectorStyle, ConstellationConnectorStyle.numbered);
+      expect(find.byType(SearchResultCard), findsNWidgets(9));
+      List<Rect> cardRects() => tester
+          .widgetList<Positioned>(
+            find.byWidgetPredicate((w) => w is Positioned && w.key is ValueKey),
+          )
+          .map((w) => tester.getRect(find.byWidget(w)))
+          .toList();
+      final closedGrid = cardRects();
+      expect(closedGrid, hasLength(9));
+      expect(closedGrid[0].top, closeTo(closedGrid[1].top, 0.01));
+      for (var i = 0; i < 9; i++) {
+        for (var j = i + 1; j < 9; j++) {
+          expect(closedGrid[i].overlaps(closedGrid[j]), isFalse);
+        }
+      }
+      final nodeBounds = tester
+          .elementList(
+            find.byWidgetPredicate(
+              (w) => w.runtimeType.toString() == '_StarButton',
+            ),
+          )
+          .map((e) => tester.getRect(find.byWidget(e.widget)));
+      expect(nodeBounds.every((r) => r.bottom < closedGrid.first.top), isTrue);
+      final gridCard = tester
+          .widgetList<SearchResultCard>(find.byType(SearchResultCard))
+          .first;
+      gridCard.onTap();
+      await settle();
+      gridCard.menuController.toggle(gridCard.menuId);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
+      final movingGrid = cardRects();
+      expect(movingGrid[2].top, greaterThan(closedGrid[2].top));
+      await settle();
+      expect(cardRects()[2].top, greaterThan(movingGrid[2].top));
+      await tester.ensureVisible(find.text('Riferimenti'));
+      await tester.tap(find.text('Riferimenti'));
+      await settle();
+      expect(
+        tester.widget<ConstellationMapView>(mapFinder).cardLayout,
+        ConstellationCardLayout.aroundShape,
+      );
+      expect(find.byType(SearchResultCard), findsNWidgets(9));
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },

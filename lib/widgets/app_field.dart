@@ -363,7 +363,9 @@ class _AppTextFieldState extends State<AppTextField> {
           style: TextStyle(color: colors.text, fontSize: 15),
           decoration: InputDecoration(
             hintText: widget.hintText,
-            errorText: widget.errorText,
+            error: widget.errorText == null
+                ? null
+                : AppErrorMessage(widget.errorText!),
             counterText: widget.showCounter ? null : '',
             prefixIcon: widget.prefixIcon,
             suffixIcon: widget.suffixIcon,
@@ -422,6 +424,59 @@ class AppSearchField extends StatelessWidget {
     );
   }
 }
+
+/// The app's one look for a message about wrong or missing input — under a
+/// field, in a picker dialog, on the PIN screens — so every error reads as
+/// the same kind of thing. Set [center] where the surrounding content is
+/// centered.
+class AppErrorMessage extends StatelessWidget {
+  const AppErrorMessage(this.text, {super.key, this.center = false});
+
+  final String text;
+  final bool center;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Row(
+      mainAxisSize: center ? MainAxisSize.min : MainAxisSize.max,
+      mainAxisAlignment: center
+          ? MainAxisAlignment.center
+          : MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 1),
+          child: Icon(Icons.error_outline, size: 14, color: colors.danger),
+        ),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            text,
+            textAlign: center ? TextAlign.center : TextAlign.start,
+            style: TextStyle(
+              color: colors.danger,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              height: 1.3,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The red outline a field gets while its value is wrong — the same one
+/// [AppTextField] and [AppPickerField] draw, for inputs built by hand (the
+/// picker dialogs' digit boxes).
+OutlineInputBorder appErrorBorder(AppColors colors) => OutlineInputBorder(
+  borderRadius: BorderRadius.circular(kRadiusField),
+  borderSide: BorderSide(
+    color: fieldBorderColor(colors, FieldState.error),
+    width: fieldBorderWidth(FieldState.error),
+  ),
+);
 
 /// The app's one "tap to choose" field — a date, a constellation, a life
 /// area, an icon. Looks and lights exactly like [AppTextField], because to
@@ -528,12 +583,11 @@ class AppPickerField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Opacity(opacity: enabled ? 1 : 0.45, child: field),
-        if (errorText != null) ...[
+        // An icon-only field is too narrow for a sentence under it: there
+        // the red outline alone marks it.
+        if (errorText != null && !iconOnly) ...[
           const SizedBox(height: 6),
-          Text(
-            errorText!,
-            style: TextStyle(color: colors.danger, fontSize: 12),
-          ),
+          AppErrorMessage(errorText!),
         ],
       ],
     );

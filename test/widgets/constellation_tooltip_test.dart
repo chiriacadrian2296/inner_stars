@@ -9,6 +9,7 @@ import 'package:inner_stars/data/constellation_shape.dart';
 import 'package:inner_stars/data/habit_completion_repository.dart';
 import 'package:inner_stars/data/habit_repository.dart';
 import 'package:inner_stars/data/project_repository.dart';
+import 'package:inner_stars/data/settings_repository.dart';
 import 'package:inner_stars/data/star_repository.dart';
 import 'package:inner_stars/l10n/strings_it.dart';
 import 'package:inner_stars/l10n/strings_scope.dart';
@@ -17,6 +18,7 @@ import 'package:inner_stars/models/star_kind.dart';
 import 'package:inner_stars/models/life_area.dart';
 import 'package:inner_stars/screens/constellation_screen.dart';
 import 'package:inner_stars/screens/star_form_screen.dart';
+import 'package:inner_stars/settings/settings_controller.dart';
 import 'package:inner_stars/theme/app_theme.dart';
 import 'package:inner_stars/widgets/constellation_map/constellation_map_view.dart';
 import 'package:inner_stars/widgets/constellation_painter.dart';
@@ -40,6 +42,7 @@ void main() {
       final habits = HabitRepository(prefs);
       final completions = HabitCompletionRepository(prefs);
       final shapes = StarsShapeRepository(prefs);
+      final settings = SettingsController(await SettingsRepository.create());
       final shape = await shapes.add(
         name: 'Forma',
         shape: const ConstellationShape(
@@ -72,6 +75,7 @@ void main() {
                 habitRepository: habits,
                 habitCompletionRepository: completions,
                 starsShapeRepository: shapes,
+                settings: settings,
               ),
             ),
           ),
@@ -80,7 +84,44 @@ void main() {
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 200));
       await tester.pumpAndSettle();
-      final mapBounds = tester.getRect(find.byType(ConstellationMapView));
+      final vignette = find.byKey(const Key('constellation-edge-vignette'));
+      expect(vignette, findsOneWidget);
+      expect(tester.widget<IgnorePointer>(vignette).ignoring, isTrue);
+      final sizeSlider = find.byKey(
+        const Key('constellation-card-size-slider'),
+      );
+      expect(sizeSlider, findsOneWidget);
+      expect(
+        tester
+            .widget<ConstellationMapView>(find.byType(ConstellationMapView))
+            .tooltipScale,
+        0.58,
+      );
+      final openingMap = tester.widget<ConstellationMapView>(
+        find.byType(ConstellationMapView),
+      );
+      expect(
+        openingMap.transformation.value.entry(0, 0) / openingMap.fitScale,
+        closeTo(1.0, 0.001),
+      );
+      // Card size is the only choice left: the layout follows the screen
+      // (side columns on a desktop) and its tabs always face the shape.
+      expect(find.byType(Switch), findsNothing);
+      expect(
+        tester
+            .widget<ConstellationMapView>(find.byType(ConstellationMapView))
+            .cardLayout,
+        ConstellationCardLayout.sideColumns,
+      );
+      tester.widget<Slider>(sizeSlider).onChanged!(3);
+      await tester.pump();
+      expect(settings.constellationCardSizeStep, 3);
+      expect(
+        tester
+            .widget<ConstellationMapView>(find.byType(ConstellationMapView))
+            .tooltipScale,
+        0.72,
+      );
       for (final (type, icon) in [
         (SkyStarTooltip, StarKind.unlit.icon),
         (SkyPulsarTooltip, StarKind.pulsar.icon),
@@ -92,27 +133,9 @@ void main() {
               of: find.byWidget(element.widget),
               matching: find.byIcon(icon),
             ),
-            findsOneWidget,
+            // The card visual repeats the kind glyph beside the title row's.
+            findsNWidgets(2),
           );
-        }
-      }
-      for (final tooltip in [
-        SkyStarTooltip,
-        SkyPulsarTooltip,
-        SkyNascentStarTooltip,
-      ]) {
-        final placements = find.ancestor(
-          of: find.byType(tooltip),
-          matching: find.byWidgetPredicate(
-            (widget) => widget is Positioned && widget.key is ValueKey,
-          ),
-        );
-        for (final element in placements.evaluate()) {
-          final rect = tester.getRect(find.byWidget(element.widget));
-          expect(rect.left, greaterThanOrEqualTo(mapBounds.left + 15));
-          expect(rect.right, lessThanOrEqualTo(mapBounds.right - 15));
-          expect(rect.top, greaterThanOrEqualTo(mapBounds.top + 15));
-          expect(rect.bottom, lessThanOrEqualTo(mapBounds.bottom - 71));
         }
       }
       expect(tester.widget<Text>(find.text('Obiettivo')).maxLines, 1);
@@ -155,16 +178,33 @@ void main() {
         );
       }
 
+      // Selecting a card fades the others (and the rest of the structure).
+      Iterable<Element> fadedCards() => find
+          .ancestor(
+            of: find.byType(SearchResultCard),
+            matching: find.byWidgetPredicate(
+              (w) => w is AnimatedOpacity && w.opacity == 0.32,
+            ),
+          )
+          .evaluate();
+
       Finder toggle(Finder tooltip) => find.descendant(
         of: tooltip,
         matching: find.byKey(const Key('search-card-quick-menu-toggle')),
       );
+
+      // An idle card is dimmed: select it first, then open its drawer.
+      Future<void> openDrawer(Finder tooltip) async {
+        await tap(tooltip);
+        await tap(toggle(tooltip));
+      }
+
       expectOpenDrawers(0);
       expect(
         tester
             .widget<ConstellationMapView>(find.byType(ConstellationMapView))
             .fadeStructureOnFocus,
-        isFalse,
+        isTrue,
       );
       expect(
         tester
@@ -174,38 +214,23 @@ void main() {
       );
       await tap(find.text('Obiettivo'));
       expect(find.byType(StarFormScreen), findsNothing);
-      expect(
-        find.byWidgetPredicate(
-          (w) => w is AnimatedOpacity && w.opacity == 0.32,
-        ),
-        findsNWidgets(3),
-      );
+      expect(fadedCards(), hasLength(3));
       await tap(find.text('Abitudine'));
-      expect(
-        find.byWidgetPredicate(
-          (w) => w is AnimatedOpacity && w.opacity == 0.32,
-        ),
-        findsNWidgets(3),
-      );
+      expect(fadedCards(), hasLength(3));
       await tester.tapAt(
         tester.getRect(find.byType(ConstellationMapView)).topLeft +
             const Offset(5, 5),
       );
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pumpAndSettle();
-      expect(
-        find.byWidgetPredicate(
-          (w) => w is AnimatedOpacity && w.opacity == 0.32,
-        ),
-        findsNothing,
-      );
-      await tap(toggle(find.byType(SkyPulsarTooltip)));
+      expect(fadedCards(), isEmpty);
+      await openDrawer(find.byType(SkyPulsarTooltip));
       expectOpenDrawers(1);
       await tap(action(SkyPulsarTooltip, Icons.local_fire_department_rounded));
       expect(completions.getAllForHabit(habit.id), hasLength(1));
       await tap(action(SkyPulsarTooltip, Icons.local_fire_department_rounded));
       expect(completions.getAllForHabit(habit.id), isEmpty);
-      await tap(toggle(find.byType(SkyStarTooltip)));
+      await openDrawer(find.byType(SkyStarTooltip));
       expectOpenDrawers(1);
       final habitCard = tester.widget<SearchResultCard>(
         find.descendant(
@@ -220,9 +245,9 @@ void main() {
       expect(stars.getAllForProject(project.id).single.id, star.id);
       expect(action(SkyStarTooltip, Icons.model_training), findsOneWidget);
       expect(find.byType(SkyNascentStarTooltip), findsNWidgets(2));
-      await tap(toggle(find.byType(SkyNascentStarTooltip).first));
+      await openDrawer(find.byType(SkyNascentStarTooltip).first);
       expectOpenDrawers(1);
-      await tap(toggle(find.byType(SkyNascentStarTooltip).last));
+      await openDrawer(find.byType(SkyNascentStarTooltip).last);
       expectOpenDrawers(1);
       final firstNascent = tester.widget<SearchResultCard>(
         find.descendant(
@@ -231,7 +256,7 @@ void main() {
         ),
       );
       expect(firstNascent.menuController.isOpen(firstNascent.menuId), isFalse);
-      await tap(toggle(find.byType(SkyNascentStarTooltip).first));
+      await openDrawer(find.byType(SkyNascentStarTooltip).first);
       await tap(action(SkyNascentStarTooltip, Icons.auto_awesome));
       final form = tester.widget<StarFormScreen>(find.byType(StarFormScreen));
       expect(form.slotSequence, 2);
@@ -386,7 +411,13 @@ void main() {
           (ink.decoration! as BoxDecoration).color,
           tester.element(body).colors.nightPanel,
         );
-        await tester.tap(toggle);
+        resultCard.menuController.toggle(resultCard.menuId);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
+        expect(tester.getSize(surface).height, greaterThan(closedHeight));
+        expect(tester.getSize(surface).height, lessThan(closedHeight + 50));
+        expectPlacementMatchesTooltip();
         await tester.pump(const Duration(milliseconds: 350));
         await tester.pumpAndSettle();
         await tester.pump(const Duration(milliseconds: 200));
@@ -408,7 +439,13 @@ void main() {
         await tester.pump(const Duration(milliseconds: 200));
         await tester.pumpAndSettle();
         expect(lit, 1);
-        await tester.tap(toggle);
+        resultCard.menuController.toggle(resultCard.menuId);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
+        expect(tester.getSize(surface).height, greaterThan(closedHeight));
+        expect(tester.getSize(surface).height, lessThan(openHeight));
+        expectPlacementMatchesTooltip();
         await tester.pump(const Duration(milliseconds: 350));
         await tester.pumpAndSettle();
         await tester.pump(const Duration(milliseconds: 200));

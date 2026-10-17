@@ -13,6 +13,7 @@ import '../widgets/cycle_length_field.dart';
 import '../widgets/intensity_bolts.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
+import '../widgets/victory_fields.dart';
 
 /// How the user wants to go on after finishing a cycle.
 enum HabitCycleChoice { restart, change, close }
@@ -54,7 +55,12 @@ class _HabitCycleReflectionScreenState
   late int _length = widget.habit.cycleLength;
   late bool _lengthCustom = !kCyclePresets.contains(_length);
   late int _reward = widget.habit.intensity;
+  bool _rewardTouched = false;
   bool _saving = false;
+
+  /// Changing course needs the reward chosen again (see the reward field).
+  bool get _canConfirm =>
+      !_saving && (_choice != HabitCycleChoice.change || _rewardTouched);
 
   @override
   void initState() {
@@ -292,27 +298,22 @@ class _HabitCycleReflectionScreenState
                         ),
                       ),
                       const SizedBox(height: 20),
-                      AppFieldLabel(
-                        strings.habitRewardLabel,
-                        requirement: FieldRequirement.required,
-                      ),
-                      const SizedBox(height: kFieldLabelGap),
-                      Center(
-                        child: IntensityBolts(
-                          intensity: _reward,
-                          size: 26,
-                          spacing: 6,
-                          emphasizeLast: true,
-                          emphasizedScale: 1.6,
-                        ),
-                      ),
-                      Slider(
-                        value: _reward.toDouble(),
-                        min: 1,
-                        max: 5,
-                        divisions: 4,
-                        onChanged: (value) =>
-                            setState(() => _reward = value.round()),
+                      // Starts on the current reward, shown inactive: it
+                      // says where it was, but changing course means
+                      // choosing it again on purpose.
+                      IntensityField(
+                        label: strings.habitRewardLabel,
+                        intensity: _reward,
+                        touched: _rewardTouched,
+                        showUntouchedValue: true,
+                        onChanged: (value) => setState(() {
+                          _rewardTouched = true;
+                          _reward = value;
+                        }),
+                        onReset: () => setState(() {
+                          _rewardTouched = false;
+                          _reward = widget.habit.intensity;
+                        }),
                       ),
                     ],
                     const SizedBox(height: 24),
@@ -329,7 +330,7 @@ class _HabitCycleReflectionScreenState
                             child: AppButtonLabel(strings.cycleLaterAction),
                           ),
                           ElevatedButton(
-                            onPressed: _saving ? null : _confirm,
+                            onPressed: _canConfirm ? _confirm : null,
                             child: AppButtonLabel(
                               closing
                                   ? strings.cycleArchiveAction

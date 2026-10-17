@@ -17,15 +17,20 @@ import '../data/habit_repository.dart';
 import '../data/photo_storage.dart';
 import '../data/project_repository.dart';
 import '../data/reader_entries.dart';
+import '../data/star_media_storage.dart';
 import '../data/star_repository.dart';
 import '../l10n/strings_scope.dart';
+import '../settings/settings_controller.dart';
 import '../models/habit.dart';
 import '../models/project.dart';
 import '../models/star.dart';
+import '../models/star_media.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
+import '../utils/app_date_picker.dart';
+import '../utils/app_time_picker.dart';
 import '../tutorials/tour_intro_target.dart';
 import '../tutorials/tour_step_card.dart';
 import '../tutorials/tutorial_replay.dart';
@@ -33,7 +38,6 @@ import '../utils/habit_stats.dart';
 import '../utils/page_settled.dart';
 import '../utils/responsive.dart';
 import '../widgets/habit_stepper_dialog.dart';
-import '../widgets/intensity_bolts.dart';
 import '../widgets/logo_watermark.dart';
 import '../widgets/balanced_title.dart';
 import '../widgets/photo_image.dart';
@@ -45,6 +49,7 @@ import '../widgets/shareable_lit_star_card.dart';
 import '../widgets/shareable_goal_card.dart';
 import '../widgets/shareable_pulsar_card.dart';
 import '../widgets/staggered_entrance.dart';
+import '../widgets/victory_fields.dart';
 import 'photo_crop_screen.dart';
 import 'share_preview_screen.dart';
 import 'star_form_screen.dart';
@@ -83,6 +88,7 @@ class StarReaderScreen extends StatefulWidget {
     this.habitRepository,
     this.habitCompletionRepository,
     this.onNavigateTo,
+    this.settings,
   }) : assert(
          initialStars != null || initialEntries != null,
          'Either initialStars or initialEntries is required.',
@@ -133,6 +139,10 @@ class StarReaderScreen extends StatefulWidget {
   /// tooltip rather than just the constellation's (see `SkyStarTarget`).
   final void Function(Project project, {int? starId, int? habitId})?
   onNavigateTo;
+
+  /// App settings, forwarded by the Sky so screens opened from the reader
+  /// can honour them. Optional: the reader works without it.
+  final SettingsController? settings;
 
   @override
   State<StarReaderScreen> createState() => _StarReaderScreenState();
@@ -591,7 +601,9 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
     await widget.repository.markAchieved(
       current.id,
       intensity: result.intensity,
+      achievedDate: result.achievedDate,
       photoPath: result.photoPath,
+      media: result.media,
     );
     _refreshFrom(StarEntry(current));
   }
@@ -1449,11 +1461,9 @@ class _ReaderDock extends StatelessWidget {
   }
 }
 
-/// What the "mark achieved" sheet collects before handing control back to
-/// [_StarReaderScreenState._markAchieved].
-/// Asks for what lighting a goal needs — intensity and an optional photo —
-/// and returns it, or null if dismissed. Shared by the reader and the Search
-/// cards' quick menu.
+/// Asks for what lighting a goal needs — when it happened, its intensity
+/// and, behind Details, photos and other memories — and returns it, or null
+/// if dismissed. Shared by the reader and the Sky cards' quick menu.
 Future<MarkAchievedResult?> showMarkAchievedSheet(BuildContext context) {
   return showAppSheet<MarkAchievedResult>(
     context: context,
@@ -1462,16 +1472,27 @@ Future<MarkAchievedResult?> showMarkAchievedSheet(BuildContext context) {
   );
 }
 
+/// What the "mark achieved" sheet collects before handing control back to
+/// [_StarReaderScreenState._markAchieved].
 class MarkAchievedResult {
-  const MarkAchievedResult({required this.intensity, this.photoPath});
+  const MarkAchievedResult({
+    required this.intensity,
+    required this.achievedDate,
+    this.photoPath,
+    this.media = const [],
+  });
   final int intensity;
+  final DateTime achievedDate;
   final String? photoPath;
+
+  /// Extras added in the sheet, on top of whatever the goal already has.
+  final List<StarMedia> media;
 }
 
-/// Quick "log it now" sheet for a goal — lighter than the full edit form,
-/// but still covers the one thing a goal is missing next to a plain
-/// victory: intensity and an optional photo, exactly like [AddStarScreen]'s
-/// achieved fields.
+/// Quick "light it now" sheet for a goal — lighter than the full edit form,
+/// but asks for exactly what creating a victory in [StarFormScreen] does,
+/// with the same fields: date and time (already set to now, so something
+/// done earlier can still be logged), intensity, and the Details section.
 class MarkAchievedSheet extends StatefulWidget {
   const MarkAchievedSheet({super.key});
 
@@ -1481,7 +1502,66 @@ class MarkAchievedSheet extends StatefulWidget {
 
 class _MarkAchievedSheetState extends State<MarkAchievedSheet> {
   int _intensity = 3;
+  bool _intensityTouched = false;
+
+  /// Day only (midnight) and time of day, independent as in the form; a
+  /// reset one falls back to today / now on save.
+  DateTime? _date = _today();
+  TimeOfDay? _time = TimeOfDay.now();
+
   String? _photoPath;
+  List<StarMedia> _media = const [];
+  bool _detailsExpanded = false;
+  bool _saved = false;
+
+  static DateTime _today() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  @override
+  void dispose() {
+    // Photos and extras live on disk as soon as they are picked; dismissing
+    // the sheet means nobody will ever own them.
+    if (!_saved) {
+      final photoPath = _photoPath;
+      if (photoPath != null) unawaited(PhotoStorage.delete(photoPath));
+      unawaited(StarMediaStorage.deleteAll(_media));
+    }
+    super.dispose();
+  }
+
+  DateTime _combinedDateTime() {
+    final now = DateTime.now();
+    final day = _date ?? DateTime(now.year, now.month, now.day);
+    final time = _time ?? TimeOfDay.fromDateTime(now);
+    return DateTime(day.year, day.month, day.day, time.hour, time.minute);
+  }
+
+  /// Today, at a time that hasn't come yet: can't be saved.
+  bool get _timeInFuture => _combinedDateTime().isAfter(DateTime.now());
+
+  Future<void> _pickDate() async {
+    final today = _today();
+    final current = _date;
+    final picked = await showAppDatePicker(
+      context: context,
+      initialDate: current == null || current.isAfter(today) ? today : current,
+      firstDate: DateTime(2000),
+      lastDate: today,
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _date = DateTime(picked.year, picked.month, picked.day));
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showAppTimePicker(
+      context: context,
+      initialTime: _time ?? TimeOfDay.now(),
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _time = picked);
+  }
 
   Future<void> _pickPhoto() async {
     final strings = context.strings;
@@ -1503,6 +1583,7 @@ class _MarkAchievedSheetState extends State<MarkAchievedSheet> {
 
       final savedPath = await PhotoStorage.saveBytes(croppedBytes);
       if (!mounted) return;
+      _removePhoto();
       setState(() => _photoPath = savedPath);
     } catch (error) {
       if (!mounted) return;
@@ -1511,11 +1592,44 @@ class _MarkAchievedSheetState extends State<MarkAchievedSheet> {
     }
   }
 
-  void _removePhoto() => setState(() => _photoPath = null);
+  void _removePhoto() {
+    final photoPath = _photoPath;
+    if (photoPath != null) unawaited(PhotoStorage.delete(photoPath));
+    setState(() => _photoPath = null);
+  }
+
+  void _resetPhotos() {
+    _removePhoto();
+    _onMediaChanged([
+      for (final m in _media)
+        if (m.kind != StarMediaKind.photo) m,
+    ]);
+  }
+
+  void _onMediaChanged(List<StarMedia> next) {
+    // Everything here was added in this sheet, so whatever is dropped was
+    // never saved anywhere — free it now.
+    final nextIds = {for (final m in next) m.id};
+    unawaited(
+      StarMediaStorage.deleteAll(_media.where((m) => !nextIds.contains(m.id))),
+    );
+    setState(() => _media = next);
+  }
+
+  void _save() {
+    _saved = true;
+    Navigator.of(context).pop(
+      MarkAchievedResult(
+        intensity: _intensity,
+        achievedDate: _combinedDateTime(),
+        photoPath: _photoPath,
+        media: _media,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     final strings = context.strings;
 
     return SafeArea(
@@ -1523,6 +1637,7 @@ class _MarkAchievedSheetState extends State<MarkAchievedSheet> {
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             StaggeredEntrance(
               index: 0,
@@ -1532,49 +1647,49 @@ class _MarkAchievedSheetState extends State<MarkAchievedSheet> {
               ),
             ),
             const SizedBox(height: 20),
-            StaggeredEntrance(
-              index: 1,
-              child: IntensityBolts(
-                intensity: _intensity,
-                size: 26,
-                spacing: 6,
-                emphasizeLast: true,
-                emphasizedScale: 1.6,
-              ),
+            VictoryDateTimeFields(
+              entranceIndex: 1,
+              date: _date,
+              time: _time,
+              onPickDate: _pickDate,
+              onPickTime: _pickTime,
+              onResetDate: () => setState(() => _date = null),
+              onResetTime: () => setState(() => _time = null),
+              timeErrorText: _timeInFuture ? strings.victoryTimeInFuture : null,
             ),
-            StaggeredEntrance(
-              index: 1,
-              child: Slider(
-                value: _intensity.toDouble(),
-                min: 1,
-                max: 5,
-                divisions: 4,
-                onChanged: (v) => setState(() => _intensity = v.round()),
-              ),
-            ),
-            const SizedBox(height: 6),
-            StaggeredEntrance(
-              index: 2,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  strings.photoLabel,
-                  style: TextStyle(fontSize: 13, color: colors.muted),
-                ),
-              ),
-            ),
-            const SizedBox(height: 6),
-            StaggeredEntrance(
-              index: 2,
-              child: PhotoPicker(
-                photoPath: _photoPath,
-                onPick: _pickPhoto,
-                onRemove: _removePhoto,
-              ),
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             StaggeredEntrance(
               index: 3,
+              child: IntensityField(
+                label: strings.intensityLabel,
+                intensity: _intensity,
+                touched: _intensityTouched,
+                onChanged: (value) => setState(() {
+                  _intensityTouched = true;
+                  _intensity = value;
+                }),
+                onReset: () => setState(() {
+                  _intensityTouched = false;
+                  _intensity = 3;
+                }),
+              ),
+            ),
+            const SizedBox(height: 44),
+            VictoryDetailsSection(
+              entranceIndex: 4,
+              expanded: _detailsExpanded,
+              onToggle: () =>
+                  setState(() => _detailsExpanded = !_detailsExpanded),
+              photoPath: _photoPath,
+              onPickPhoto: _pickPhoto,
+              onRemovePhoto: _removePhoto,
+              onResetPhotos: _resetPhotos,
+              media: _media,
+              onMediaChanged: _onMediaChanged,
+            ),
+            const SizedBox(height: 44),
+            StaggeredEntrance(
+              index: 5,
               child: Align(
                 child: Wrap(
                   alignment: WrapAlignment.center,
@@ -1586,12 +1701,11 @@ class _MarkAchievedSheetState extends State<MarkAchievedSheet> {
                       child: AppButtonLabel(strings.cancel),
                     ),
                     ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(
-                        MarkAchievedResult(
-                          intensity: _intensity,
-                          photoPath: _photoPath,
-                        ),
-                      ),
+                      // Held back until an intensity is chosen on purpose:
+                      // the slider's starting value isn't an answer.
+                      onPressed: !_intensityTouched || _timeInFuture
+                          ? null
+                          : _save,
                       child: AppButtonLabel(strings.markAchievedConfirm),
                     ),
                   ],

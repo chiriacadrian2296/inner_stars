@@ -35,18 +35,18 @@ void main() {
 
     expect(find.text('Anteprima Condivisione'), findsOneWidget);
     expect(find.text('Editoriale'), findsOneWidget);
-    expect(find.text('Fotografica'), findsOneWidget);
-    expect(find.text('Frase'), findsOneWidget);
     expect(find.text('CONDIVIDI'), findsOneWidget);
     expect(find.text('editorial'), findsOneWidget);
 
-    await tester.tap(find.text('Fotografica'));
+    await tester.tap(find.byKey(const ValueKey('share-composition-next')));
     await tester.pump();
+    expect(find.text('Fotografica'), findsOneWidget);
     expect(tester.takeException(), isNull);
     expect(find.text('photographic'), findsOneWidget);
 
-    await tester.tap(find.text('Frase'));
+    await tester.tap(find.byKey(const ValueKey('share-composition-next')));
     await tester.pump();
+    expect(find.text('Frase'), findsOneWidget);
     expect(find.text('statement'), findsOneWidget);
   });
 
@@ -87,10 +87,10 @@ void main() {
       ),
     );
 
-    for (final label in ['Editoriale', 'Fotografica', 'Frase']) {
-      await tester.tap(find.text(label));
+    for (var i = 0; i < ShareArrangement.values.length; i++) {
       await tester.pump();
-      expect(tester.takeException(), isNull, reason: label);
+      expect(tester.takeException(), isNull, reason: 'composition $i');
+      await tester.tap(find.byKey(const ValueKey('share-composition-next')));
     }
   });
 }

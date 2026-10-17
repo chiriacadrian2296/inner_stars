@@ -130,27 +130,14 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 20,
-                  child: _error == null
-                      ? null
-                      : StaggeredEntrance(
-                          index: 0,
-                          child: Text(
-                            _error!,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: colors.danger,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 52),
                 PinKeypad(
                   key: _keypadKey,
                   onSubmit: _onSubmit,
+                  error: _error,
+                  onEdited: () {
+                    if (_error != null) setState(() => _error = null);
+                  },
                   entranceStart: 1,
                 ),
               ],

@@ -27,9 +27,9 @@ Future<void> showSharePreview({
   );
 }
 
-/// Lets the user inspect and style the image before opening the platform
-/// share sheet. The same three arrangements wrap every shareable subject, so
-/// stars, goals, pulsars and constellations all have the same interaction.
+/// Production version of the share lab: the user sees the real card, can move
+/// through three genuinely different compositions, and only then opens the
+/// platform share sheet.
 class SharePreviewScreen extends StatefulWidget {
   const SharePreviewScreen({
     super.key,
@@ -96,20 +96,31 @@ class _SharePreviewScreenState extends State<SharePreviewScreen> {
       strings.shareLayoutPostcard,
     ];
     return Scaffold(
-      appBar: AppBar(
-        title: Text(strings.sharePreviewTitle),
-        leading: IconButton(
-          tooltip: strings.cancel,
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.close),
-        ),
-      ),
       body: SafeArea(
         child: Column(
           children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 20, 4),
+              child: Row(
+                children: [
+                  IconButton(
+                    tooltip: strings.cancel,
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      strings.sharePreviewTitle,
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                  ),
+                ],
+              ),
+            ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
                 child: Center(
                   child: AspectRatio(
                     aspectRatio: 2 / 3,
@@ -136,19 +147,13 @@ class _SharePreviewScreenState extends State<SharePreviewScreen> {
             ),
             const SizedBox(height: 10),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SegmentedButton<ShareArrangement>(
-                showSelectedIcon: false,
-                segments: [
-                  for (var i = 0; i < ShareArrangement.values.length; i++)
-                    ButtonSegment(
-                      value: ShareArrangement.values[i],
-                      label: Text(labels[i]),
-                    ),
-                ],
-                selected: {_arrangement},
-                onSelectionChanged: (selection) =>
-                    setState(() => _arrangement = selection.single),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _CompositionPicker(
+                labels: labels,
+                selected: _arrangement.index,
+                onChanged: (index) => setState(
+                  () => _arrangement = ShareArrangement.values[index],
+                ),
               ),
             ),
             Padding(
@@ -165,6 +170,77 @@ class _SharePreviewScreenState extends State<SharePreviewScreen> {
                   label: AppButtonLabel(strings.shareNowAction),
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The compact stepper comes from the share lab. It keeps the control narrow
+/// on phones while the centre opens the complete list of compositions.
+class _CompositionPicker extends StatelessWidget {
+  const _CompositionPicker({
+    required this.labels,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final List<String> labels;
+  final int selected;
+  final ValueChanged<int> onChanged;
+
+  void _step(int delta) =>
+      onChanged((selected + delta + labels.length) % labels.length);
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Center(
+      child: Container(
+        width: 248,
+        height: 46,
+        decoration: BoxDecoration(
+          color: colors.nightPanel,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: colors.nightBorder),
+        ),
+        child: Row(
+          children: [
+            IconButton(
+              key: const ValueKey('share-composition-prev'),
+              tooltip: 'Precedente',
+              onPressed: () => _step(-1),
+              icon: const Icon(Icons.chevron_left_rounded),
+            ),
+            Expanded(
+              child: PopupMenuButton<int>(
+                key: const ValueKey('share-composition-menu'),
+                initialValue: selected,
+                tooltip: context.strings.shareChooseLayout,
+                onSelected: onChanged,
+                color: colors.nightPanel,
+                position: PopupMenuPosition.under,
+                itemBuilder: (_) => [
+                  for (var i = 0; i < labels.length; i++)
+                    PopupMenuItem(value: i, child: Text(labels[i])),
+                ],
+                child: Center(
+                  child: Text(
+                    labels[selected],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ),
+            IconButton(
+              key: const ValueKey('share-composition-next'),
+              tooltip: 'Successiva',
+              onPressed: () => _step(1),
+              icon: const Icon(Icons.chevron_right_rounded),
             ),
           ],
         ),

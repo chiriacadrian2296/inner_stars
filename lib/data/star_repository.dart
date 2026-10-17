@@ -253,7 +253,7 @@ class StarRepository extends ChangeNotifier {
       achievedDate: achievedDate ?? DateTime.now(),
       intensity: intensity,
       photoPath: photoPath ?? existing.photoPath,
-      media: existing.media,
+      media: [...existing.media, ...media],
       dead: existing.dead,
       deadDate: existing.deadDate,
     );

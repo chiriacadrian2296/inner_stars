@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
+import 'package:flutter/painting.dart' show AxisDirection;
+
 /// One star as the label layout sees it: where it sits on screen, how much
 /// room its button and visual effects take up, and how urgently it needs a
 /// good spot for its label.
@@ -103,6 +105,290 @@ class LabelLayout {
   /// How many label/label or label/star overlaps are left. Zero means every
   /// label sits in clear space.
   final int overlaps;
+}
+
+/// Resize annotations in their chosen slots without rerunning the solver.
+/// The edge facing the star stays fixed as a drawer grows away from it.
+LabelLayout resizeConstellationLabels(
+  LabelLayout layout,
+  Map<int, Size> sizes,
+  Map<int, Offset> centers,
+) => LabelLayout(
+  placements: {
+    for (final entry in layout.placements.entries)
+      entry.key: _resizePlacement(
+        entry.value,
+        sizes[entry.key],
+        centers[entry.key],
+      ),
+  },
+  labelScale: layout.labelScale,
+  overlaps: layout.overlaps,
+);
+
+LabelPlacement _resizePlacement(
+  LabelPlacement placement,
+  Size? size,
+  Offset? center,
+) {
+  if (size == null || center == null || placement.rect.size == size) {
+    return placement;
+  }
+  final rect = placement.rect;
+  final left = rect.right <= center.dx
+      ? rect.right - size.width
+      : rect.left >= center.dx
+      ? rect.left
+      : rect.center.dx - size.width / 2;
+  final top = rect.bottom <= center.dy
+      ? rect.bottom - size.height
+      : rect.top >= center.dy
+      ? rect.top
+      : rect.center.dy - size.height / 2;
+  return LabelPlacement(
+    id: placement.id,
+    rect: Rect.fromLTWH(left, top, size.width, size.height),
+    lineStart: placement.lineStart,
+    lineEnd: placement.lineEnd,
+    horizontal: placement.horizontal,
+    candidate: placement.candidate,
+  );
+}
+
+/// Numbered references free the cards from individual star positions. Keep
+/// reading order in aligned rows and make each row fit its current drawers.
+LabelLayout layoutNumberedCardGrid({
+  required Rect constellationBounds,
+  required List<Size> cardSizes,
+  required int columns,
+  required double scale,
+}) {
+  if (cardSizes.isEmpty) {
+    return const LabelLayout(placements: {}, labelScale: 1, overlaps: 0);
+  }
+  final count = columns.clamp(1, cardSizes.length);
+  final columnWidth = cardSizes.map((s) => s.width).reduce(math.max);
+  final gap = 24 * scale;
+  final width = count * columnWidth + (count - 1) * gap;
+  final left = constellationBounds.center.dx - width / 2;
+  var top = constellationBounds.bottom + 40 * scale;
+  final placements = <int, LabelPlacement>{};
+  for (var start = 0; start < cardSizes.length; start += count) {
+    var rowHeight = 0.0;
+    for (var col = 0; col < count && start + col < cardSizes.length; col++) {
+      final id = start + col;
+      final size = cardSizes[id];
+      final rect = Rect.fromLTWH(
+        left + col * (columnWidth + gap),
+        top,
+        size.width,
+        size.height,
+      );
+      placements[id] = LabelPlacement(
+        id: id,
+        rect: rect,
+        lineStart: rect.topCenter,
+        lineEnd: rect.topCenter,
+        horizontal: false,
+        candidate: id,
+      );
+      rowHeight = math.max(rowHeight, size.height);
+    }
+    top += rowHeight + gap;
+  }
+  return LabelLayout(placements: placements, labelScale: 1, overlaps: 0);
+}
+
+/// Splits numbered cards between vertical rails on the left and right of the
+/// constellation. Reading order alternates sides, then moves down each rail.
+/// Narrow viewports choose the bottom-grid strategy before calling this.
+LabelLayout layoutNumberedSideColumns({
+  required Rect constellationBounds,
+  required List<Size> cardSizes,
+  required double scale,
+  required double maxColumnHeight,
+}) {
+  if (cardSizes.isEmpty) {
+    return const LabelLayout(placements: {}, labelScale: 1, overlaps: 0);
+  }
+  final gap = 24 * scale;
+  final sideGap = 44 * scale;
+  final overflowId = cardSizes.length.isOdd ? cardSizes.length - 1 : null;
+  final sideCardCount = cardSizes.length - (overflowId == null ? 0 : 1);
+  final sideSizes = cardSizes.take(sideCardCount).toList();
+  final columnWidth = sideSizes.isEmpty
+      ? 0.0
+      : sideSizes.map((size) => size.width).reduce(math.max);
+  // Use the shortest (closed/front) card to keep column membership stable.
+  // Opening a drawer or flipping one card must never send cards to another
+  // column merely because that card became taller.
+  final baseCardHeight = sideSizes.isEmpty
+      ? 0.0
+      : sideSizes.map((size) => size.height).reduce(math.min);
+  final cardsPerSide = sideCardCount ~/ 2;
+  final rowsPerColumn = math.max(
+    1,
+    math.min(
+      cardsPerSide,
+      sideSizes.isEmpty
+          ? 1
+          : ((maxColumnHeight + gap) / (baseCardHeight + gap)).floor(),
+    ),
+  );
+  final placements = <int, LabelPlacement>{};
+  for (final onLeft in [true, false]) {
+    final sideIds = [
+      for (var id = onLeft ? 0 : 1; id < sideCardCount; id += 2) id,
+    ];
+    for (var start = 0; start < sideIds.length; start += rowsPerColumn) {
+      final ids = sideIds.sublist(
+        start,
+        math.min(start + rowsPerColumn, sideIds.length),
+      );
+      final column = start ~/ rowsPerColumn;
+      // Each column owns its vertical rhythm. If one card grows, only this
+      // column expands, equally above and below the constellation's centre.
+      final columnHeight =
+          ids.map((id) => cardSizes[id].height).reduce((a, b) => a + b) +
+          math.max(0, ids.length - 1) * gap;
+      var top = constellationBounds.center.dy - columnHeight / 2;
+      final outward = column * (columnWidth + gap);
+      for (final id in ids) {
+        final size = cardSizes[id];
+        final rect = Rect.fromLTWH(
+          onLeft
+              ? constellationBounds.left - sideGap - columnWidth - outward
+              : constellationBounds.right + sideGap + outward,
+          top,
+          size.width,
+          size.height,
+        );
+        placements[id] = LabelPlacement(
+          id: id,
+          rect: rect,
+          lineStart: onLeft ? rect.centerRight : rect.centerLeft,
+          lineEnd: onLeft ? rect.centerRight : rect.centerLeft,
+          horizontal: true,
+          candidate: id,
+        );
+        top += size.height + gap;
+      }
+    }
+  }
+  if (overflowId case final id?) {
+    final size = cardSizes[id];
+    final rect = Rect.fromLTWH(
+      constellationBounds.center.dx - size.width / 2,
+      constellationBounds.bottom + sideGap,
+      size.width,
+      size.height,
+    );
+    placements[id] = LabelPlacement(
+      id: id,
+      rect: rect,
+      lineStart: rect.topCenter,
+      lineEnd: rect.topCenter,
+      horizontal: false,
+      candidate: id,
+    );
+  }
+  return LabelLayout(placements: placements, labelScale: 1, overlaps: 0);
+}
+
+/// Where a star's number tab sits beside its disc: [across] wide along the
+/// rim and [out] deep away from it.
+Rect starTabRect(
+  Offset center,
+  double radius,
+  AxisDirection side, {
+  required double across,
+  required double out,
+}) {
+  final half = across / 2;
+  return switch (side) {
+    AxisDirection.up => Rect.fromLTRB(
+      center.dx - half,
+      center.dy - radius - out,
+      center.dx + half,
+      center.dy - radius,
+    ),
+    AxisDirection.down => Rect.fromLTRB(
+      center.dx - half,
+      center.dy + radius,
+      center.dx + half,
+      center.dy + radius + out,
+    ),
+    AxisDirection.left => Rect.fromLTRB(
+      center.dx - radius - out,
+      center.dy - half,
+      center.dx - radius,
+      center.dy + half,
+    ),
+    AxisDirection.right => Rect.fromLTRB(
+      center.dx + radius,
+      center.dy - half,
+      center.dx + radius + out,
+      center.dy + half,
+    ),
+  };
+}
+
+/// Picks a side for every star's number tab. A tab sits above its star
+/// unless another star's disc - or a tab already placed - would cover it;
+/// then it takes the first free side of below, left and right. When every
+/// side is blocked it keeps the least covered one.
+Map<int, AxisDirection> chooseStarTabSides({
+  required List<({int id, Offset center, double radius})> stars,
+  required double Function(int id) across,
+  required double out,
+}) {
+  const order = [
+    AxisDirection.up,
+    AxisDirection.down,
+    AxisDirection.left,
+    AxisDirection.right,
+  ];
+  final placed = <Rect>[];
+  final sides = <int, AxisDirection>{};
+  for (final star in stars) {
+    var best = AxisDirection.up;
+    var bestCover = double.infinity;
+    Rect? bestRect;
+    for (final side in order) {
+      final rect = starTabRect(
+        star.center,
+        star.radius,
+        side,
+        across: across(star.id),
+        out: out,
+      );
+      var cover = 0.0;
+      for (final other in stars) {
+        if (other.id == star.id) continue;
+        final nearest = Offset(
+          other.center.dx.clamp(rect.left, rect.right).toDouble(),
+          other.center.dy.clamp(rect.top, rect.bottom).toDouble(),
+        );
+        // How deep the other disc reaches into this tab.
+        cover += math.max(0, other.radius - (other.center - nearest).distance);
+      }
+      for (final tab in placed) {
+        final overlap = rect.intersect(tab);
+        if (overlap.width > 0 && overlap.height > 0) {
+          cover += math.min(overlap.width, overlap.height);
+        }
+      }
+      if (cover < bestCover - 0.5) {
+        best = side;
+        bestCover = cover;
+        bestRect = rect;
+      }
+      if (cover <= 0.5) break;
+    }
+    sides[star.id] = best;
+    placed.add(bestRect!);
+  }
+  return sides;
 }
 
 /// The editor's invisible square grid, expressed in layout coordinates.

@@ -28,7 +28,7 @@ const _kShowSkyAndCreateEntries = false;
 /// ahead of the features existing. Callbacks stay wired; flip on to restore.
 const _kShowSocialMenuEntries = false;
 
-// Keep every lab routed separately; only the three active studies are visible.
+// Keep every lab routed separately; only the active studies are visible.
 const _kShowOtherLabEntries = false;
 
 /// The Sky's side menu — the app's only navigation. There's exactly one
@@ -57,6 +57,7 @@ class SkyMenuDrawer extends StatelessWidget {
     this.onFabIconLab,
     this.onCardBackLab,
     this.onConstellationLab,
+    this.onShareLab,
     this.onBadgeLab,
     this.onUiStudiesLab,
     this.onSoundLab,
@@ -77,6 +78,7 @@ class SkyMenuDrawer extends StatelessWidget {
   final VoidCallback? onFabIconLab;
   final VoidCallback? onCardBackLab;
   final VoidCallback? onConstellationLab;
+  final VoidCallback? onShareLab;
   final VoidCallback? onBadgeLab;
   final VoidCallback? onUiStudiesLab;
   final VoidCallback? onSoundLab;
@@ -101,6 +103,7 @@ class SkyMenuDrawer extends StatelessWidget {
           onFabIconLab: onFabIconLab,
           onCardBackLab: onCardBackLab,
           onConstellationLab: onConstellationLab,
+          onShareLab: onShareLab,
           onBadgeLab: onBadgeLab,
           onUiStudiesLab: onUiStudiesLab,
           onSoundLab: onSoundLab,
@@ -175,6 +178,7 @@ class SkyMenuContent extends StatelessWidget {
     this.onFabIconLab,
     this.onCardBackLab,
     this.onConstellationLab,
+    this.onShareLab,
     this.onBadgeLab,
     this.onUiStudiesLab,
     this.onSoundLab,
@@ -198,6 +202,7 @@ class SkyMenuContent extends StatelessWidget {
   final VoidCallback? onFabIconLab;
   final VoidCallback? onCardBackLab;
   final VoidCallback? onConstellationLab;
+  final VoidCallback? onShareLab;
   final VoidCallback? onBadgeLab;
   final VoidCallback? onUiStudiesLab;
   final VoidCallback? onSoundLab;
@@ -588,6 +593,15 @@ class SkyMenuContent extends StatelessWidget {
             description:
                 'Confronti visivi della costellazione e delle sue schede.',
             onTap: onConstellationLab!,
+          ),
+        if (onShareLab != null)
+          entry(
+            index: 10,
+            icon: Icons.ios_share_outlined,
+            label: 'Share lab',
+            description:
+                'Template per categoria e opzioni grafiche di condivisione.',
+            onTap: onShareLab!,
           ),
         if (_kShowOtherLabEntries && onBadgeLab != null)
           entry(

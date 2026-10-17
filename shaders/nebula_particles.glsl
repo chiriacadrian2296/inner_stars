@@ -379,68 +379,75 @@ vec3 supernovaLight(vec3 dir) {
   return light * uSupernovaLight;
 }
 
-// Area nebulae: each life area has a reflection of itself near its
-// supernova — a cool, ray-less cloud of glowing gas, the place the area's
-// victories, goals and habits are born from. Same gas as the rest of the sky,
-// but drawn as ridges and filaments with a ragged outline, tinted per area,
-// and with a few young bright stars lit inside it. Sits a little off its
-// supernova so the two never compete. Scenery colors only: no gold, no rays.
+// One distant stellar nursery: a small, cool, ray-less knot of gas near the
+// first supernova. It is scenery rather than a tappable entity — no label,
+// gold or rays — and stays compact even at the closest Galaxy zoom.
 vec3 areaNebulae(vec3 dir) {
-  // COMPARISON (2026-10-16): the first two areas each carry one of the two
-  // looks, labeled on screen — see sky_compare_labels.dart.
-  vec3 light = vec3(0.0);
-  for (int i = 0; i < 2; i++) {
-    float fi = float(i);
-    vec3 s = uSupernovas[i];
-    vec3 ref = abs(s.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
-    vec3 a = normalize(cross(ref, s));
-    vec3 b = cross(s, a);
-    float bearing = fi * 2.4 + 0.7;
-    vec3 c = normalize(s + (a * cos(bearing) + b * sin(bearing)) * 0.36);
-    float theta2 = 2.0 * (1.0 - dot(dir, c));
-    const float kReach = 0.26;
-    if (theta2 > kReach * kReach * 4.0) continue;
+  vec3 s = uSupernovas[0];
+  vec3 ref = abs(s.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+  vec3 a = normalize(cross(ref, s));
+  vec3 b = cross(s, a);
+  vec3 c = normalize(s + (a * cos(0.7) + b * sin(0.7)) * 0.36);
 
-    vec3 tint = 0.5 + 0.5 * cos(6.2831853 * (fi / 8.0 + vec3(0.0, 0.33, 0.67)));
-    tint = mix(vec3(0.45, 0.62, 0.95), tint, 0.5);
+  // About one twelfth of the old comparison nebula's radius. The tangent
+  // frame is used only for the nursery's small, soft silhouette; its matter
+  // and embedded stars are sampled from the same spherical 3D fields as the
+  // rest of Galaxy, so it does not read as a flat decal attached to the sky.
+  const float kRadius = 0.018;
+  float cosAway = dot(dir, c);
+  if (cosAway < 0.998) return vec3(0.0);
+  vec3 localRef = abs(c.y) < 0.99
+      ? vec3(0.0, 1.0, 0.0)
+      : vec3(1.0, 0.0, 0.0);
+  vec3 u = normalize(cross(localRef, c));
+  vec3 v = cross(c, u);
+  vec2 p = vec2(dot(dir, u), dot(dir, v)) / kRadius;
+  p = mat2(0.921, -0.389, 0.389, 0.921) * p;
+  vec2 q = vec2(p.x / 1.22, p.y / 0.78);
+  float r = length(q);
+  if (r > 1.75) return vec3(0.0);
 
-    if (i == 0) {
-      // Look 1: a round haze with a cluster of pinpoints in its core.
-      float body = exp(-theta2 / (0.22 * 0.22));
-      float gas = fbm3(dir * 16.0 + fi * 7.0 + uTime * 0.01);
-      float haze = body * smoothstep(0.25, 0.8, gas);
-      float core = exp(-theta2 / (0.09 * 0.09));
-      vec3 g = dir * 160.0;
-      vec3 cell = floor(g);
-      vec3 local = fract(g) - 0.5;
-      float h = hash3(cell + fi * 31.0);
-      vec3 jitter = (vec3(
-        hash3(cell + 1.7), hash3(cell + 2.9), hash3(cell + 4.3)
-      ) - 0.5) * 0.6;
-      vec3 d = local - jitter;
-      float pinpoint = step(1.0 - 0.45 * core, h) * exp(-dot(d, d) / 0.03) *
-          (0.65 + 0.35 * sin(uTime * 2.0 + h * 60.0));
-      light += tint * haze * 0.2 + tint * core * haze * 0.14 +
-          mix(vec3(1.0), tint, 0.4) * pinpoint * 0.7;
-    } else {
-      // Look 2: ridges and filaments with a ragged outline and a few young
-      // stars lit inside.
-      vec3 warp = vec3(
-        valueNoise3(dir * 9.0 + fi * 4.0),
-        valueNoise3(dir * 9.0 + fi * 4.0 + 7.0),
-        valueNoise3(dir * 9.0 + fi * 4.0 + 13.0)
-      ) - 0.5;
-      vec3 wd = dir + warp * 0.12;
-      float body = exp(-2.0 * (1.0 - dot(normalize(wd), c)) / (kReach * kReach));
-      float n = fbm3lo(wd * 18.0 + vec3(fi * 5.0, uTime * 0.008, 0.0));
-      float ridge = pow(1.0 - abs(2.0 * n - 1.0), 3.0);
-      float veil = smoothstep(0.3, 0.8, fbm3lo(wd * 7.0 + fi * 3.0));
-      float gas = body * (ridge * 0.9 + veil * 0.35);
-      vec3 stars = nearStarLayer(dir, 55.0, 150.0 + fi, 0.93, 0.8) * body;
-      light += tint * gas * 0.3 + mix(vec3(1.0), tint, 0.35) * stars * 0.9;
-    }
-  }
-  return light;
+  vec3 drift = vec3(uTime * 0.004, -uTime * 0.003, uTime * 0.002);
+  float broad = fbm3(dir * 72.0 + drift + 17.0);
+  vec3 warp = vec3(
+    valueNoise3(dir * 105.0 + drift + 31.0),
+    valueNoise3(dir * 105.0 - drift + 47.0),
+    valueNoise3(dir * 105.0 + drift.yzx + 59.0)
+  ) - 0.5;
+  float fine = fbm3((dir + warp * 0.007) * 165.0 + drift * 1.7 + 73.0);
+  float ridge = pow(1.0 - abs(2.0 * fine - 1.0), 4.5);
+  float raggedRadius = r + (broad - 0.5) * 0.42 + (fine - 0.5) * 0.12;
+  float envelope = exp(-r * r * 1.55) *
+      (1.0 - smoothstep(0.98, 1.58, raggedRadius));
+  float clumps = smoothstep(0.34, 0.72, broad);
+  float filaments = envelope * ridge * smoothstep(0.22, 0.68, broad);
+  float haze = envelope * (0.28 + clumps * 0.72);
+
+  // Dust is another spherical field, not a line drawn in local coordinates.
+  // Its narrow ridges cut through the luminous gas and visually connect the
+  // nursery with the dark nebulae elsewhere in the sky.
+  float dustNoise = fbm3lo((dir - warp * 0.004) * 130.0 - drift + 109.0);
+  float lane = pow(1.0 - abs(2.0 * dustNoise - 1.0), 7.0) * envelope;
+
+  const vec3 kBlue = vec3(0.28, 0.48, 0.92);
+  const vec3 kViolet = vec3(0.58, 0.34, 0.88);
+  const vec3 kIce = vec3(0.78, 0.88, 1.0);
+  vec3 color = mix(kBlue, kViolet, fine) * haze * 0.22;
+  color += mix(kViolet, kIce, broad) * filaments * 0.24;
+  color *= 1.0 - lane * 0.82;
+  color += kBlue * haze * lane * 0.035;
+
+  // The embedded cluster reuses Galaxy's actual spherical star generators.
+  // It therefore has the same point shapes, twinkle and spatial behaviour as
+  // the surrounding sky instead of a separate local 2D grid.
+  float cluster = exp(-dot(p, p) * 1.7) *
+      (1.0 - smoothstep(0.8, 1.45, raggedRadius));
+  vec3 embedded =
+      dustStarLayer(dir, 260.0, 2.2, 149.0) * 0.38 +
+      dustStarLayer(dir, 190.0, 1.9, 137.0) * 0.48 +
+      nearStarLayer(dir, 75.0, 157.0, 0.86, 0.42) * 0.55;
+  color += embedded * cluster;
+  return color;
 }
 // This pixel's direction on the sky for a camera at [zoom] — the same
 // inverse stereographic projection main() explains. Layers sampled at a
@@ -462,6 +469,9 @@ vec3 skyDirection(float zoom) {
 }
 
 
+// Archived comparison experiments. They are excluded at preprocessing time,
+// not merely hidden by removing their labels or multiplying their output.
+#if 0
 // Distant galaxies: four big spirals seen almost exactly edge-on, at fixed
 // spots far from every supernova. Built from the sky's own ingredients — the
 // same pale-blue and cool-white stars as everywhere else (resolved as
@@ -645,13 +655,9 @@ vec3 edgeOnGalaxy(vec3 dir, vec3 c, int i) {
   return color * smoothstep(0.92, 0.95, cosAway);
 }
 vec3 galaxyLayer(vec3 dir) {
-  // COMPARISON (2026-10-16): one of each look, labeled on screen — see
-  // sky_compare_labels.dart. Keep the winner, drop the rest.
-  return galaxyOriginalAt(dir, galaxyCenter(0)) +
-      galaxySpiralAt(dir, galaxyCenter(1)) +
-      edgeOnGalaxy(dir, galaxyCenter(2), 0) +
-      edgeOnGalaxy(dir, galaxyCenter(3), 1);
+  return vec3(0.0);
 }
+#endif
 
 // Comets: now and then a thin, cold streak — a bright head with a tail
 // that widens and fades behind it — slides across the sky. Its end is a
@@ -799,6 +805,10 @@ void main() {
   vec3 dirClose1 = skyDirection(uZoom * pow(uZoom, 0.4));
   vec3 dirClose2 = skyDirection(uZoom * pow(uZoom, 0.55));
   vec3 dirClose3 = skyDirection(uZoom * pow(uZoom, 0.7));
+  // The nursery sits much farther away than the ordinary gas. Its apparent
+  // size grows slowly with zoom, so the closest view reveals detail without
+  // making the cloud or its embedded stars spread across the whole screen.
+  vec3 dirDistantNebula = skyDirection(pow(uZoom, 0.72));
 
   // A bigger sky sphere reads as one with finer, denser detail — more (and
   // smaller) stars, and finer-grained gas structure — the same way a
@@ -852,7 +862,7 @@ void main() {
   // wrong.)
   nebula += supernovaLight(dir) * cloud * 0.6;
   // The areas' own nebulae, on top of the gas and under the dust.
-  nebula += areaNebulae(dir);
+  nebula += areaNebulae(dirDistantNebula);
 
   // The dust dims the gas behind it.
   const vec3 kRimLight = vec3(0.32, 0.4, 0.62);
@@ -912,9 +922,7 @@ void main() {
       dustStarLayer(dir, 32.0, 2.6, 41.0) * 0.75 +
       dustStarLayer(dir, 22.0, 2.3, 7.0) * 0.85 +
       dustStarLayer(dir, 15.0, 1.6, 1.0);
-  // The galaxies stay at the sky's real depth: the stars do the parallax.
-  vec3 galaxies = galaxyLayer(dir);
-  deep = (farthest + far + galaxies) * (1.0 - 0.95 * darkness) +
+  deep = (farthest + far) * (1.0 - 0.95 * darkness) +
       mid * (1.0 - 0.5 * darkness);
   }
 

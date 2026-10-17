@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
 
-/// Remove the complete discs so translucent nodes never reveal graph lines.
-Path constellationOutsideDiscs(Rect bounds, List<(Offset, double)> discs) {
-  var outside = Path()..addRect(bounds);
+final _erase = Paint()..blendMode = BlendMode.clear;
+
+/// Paints [body] and then erases the complete discs, so translucent nodes
+/// never reveal graph lines. The discs are cleared in a layer rather than
+/// clipped out with `Path.combine`, whose difference is unreliable on web.
+void paintOutsideDiscs(
+  Canvas canvas,
+  Rect bounds,
+  List<(Offset, double)> discs,
+  VoidCallback body,
+) {
+  canvas.saveLayer(bounds, Paint());
+  body();
   for (final (center, radius) in discs) {
-    outside = Path.combine(
-      PathOperation.difference,
-      outside,
-      Path()..addOval(Rect.fromCircle(center: center, radius: radius)),
-    );
+    canvas.drawCircle(center, radius, _erase);
   }
-  return outside;
+  canvas.restore();
 }
 
 /// The same two light layers as the graph, outside a tooltip's frame only.
@@ -26,13 +32,7 @@ class ConstellationTooltipGlowPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
     final outer = RRect.fromRectAndRadius(rect, Radius.circular(radius));
-    final outside = Path.combine(
-      PathOperation.difference,
-      Path()..addRect(rect.inflate(frameWidth * 8)),
-      Path()..addRRect(outer),
-    );
-    canvas.save();
-    canvas.clipPath(outside);
+    canvas.saveLayer(rect.inflate(frameWidth * 8), Paint());
     for (final (alpha, blur) in const [(0.45, 1.6), (0.65, 0.65)]) {
       canvas.drawRRect(
         outer.deflate(frameWidth / 2),
@@ -43,6 +43,7 @@ class ConstellationTooltipGlowPainter extends CustomPainter {
           ..maskFilter = MaskFilter.blur(BlurStyle.normal, frameWidth * blur),
       );
     }
+    canvas.drawRRect(outer, _erase);
     canvas.restore();
   }
 
@@ -52,7 +53,7 @@ class ConstellationTooltipGlowPainter extends CustomPainter {
 }
 
 /// Blurred light outside the graph's solid strokes and circular discs.
-/// Subtracting whole discs also prevents nearby edges from lighting their
+/// Erasing whole discs also prevents nearby edges from lighting their
 /// interiors, including discs with semi-transparent photos.
 class ConstellationStructureGlowPainter extends CustomPainter {
   const ConstellationStructureGlowPainter({
@@ -77,15 +78,9 @@ class ConstellationStructureGlowPainter extends CustomPainter {
     final half = strokeWidth / 2;
     final graph = Path();
     final selectedGraph = Path();
-    var outside = Path()..addRect(Offset.zero & size);
-    canvas.save();
+    final strokes = Path();
     for (var i = 0; i < discs.length; i++) {
       final (center, radius) = discs[i];
-      outside = Path.combine(
-        PathOperation.difference,
-        outside,
-        Path()..addOval(Rect.fromCircle(center: center, radius: radius)),
-      );
       if (radius > half) {
         (i == focusedDiscIndex ? selectedGraph : graph).addOval(
           Rect.fromCircle(center: center, radius: radius - half),
@@ -96,35 +91,37 @@ class ConstellationStructureGlowPainter extends CustomPainter {
       final delta = b - a;
       if (delta.distance < 0.001) continue;
       final normal = Offset(-delta.dy, delta.dx) / delta.distance * half;
-      outside = Path.combine(
-        PathOperation.difference,
-        outside,
-        Path()
-          ..addPolygon([a + normal, b + normal, b - normal, a - normal], true),
-      );
+      strokes.addPolygon([
+        a + normal,
+        b + normal,
+        b - normal,
+        a - normal,
+      ], true);
       graph.moveTo(a.dx, a.dy);
       graph.lineTo(b.dx, b.dy);
     }
-    canvas.clipPath(outside);
-    for (final (alpha, blur) in const [(0.45, 1.6), (0.65, 0.65)]) {
-      for (final (path, opacity) in [
-        (graph, focusedDiscIndex == null ? 1.0 : inactiveOpacity),
-        (selectedGraph, 1.0),
-      ]) {
-        canvas.drawPath(
-          path,
-          Paint()
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = strokeWidth
-            ..color = color.withValues(alpha: alpha * opacity)
-            ..maskFilter = MaskFilter.blur(
-              BlurStyle.normal,
-              strokeWidth * blur,
-            ),
-        );
+    paintOutsideDiscs(canvas, Offset.zero & size, discs, () {
+      for (final (alpha, blur) in const [(0.45, 1.6), (0.65, 0.65)]) {
+        for (final (path, opacity) in [
+          (graph, focusedDiscIndex == null ? 1.0 : inactiveOpacity),
+          (selectedGraph, 1.0),
+        ]) {
+          canvas.drawPath(
+            path,
+            Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = strokeWidth
+              ..color = color.withValues(alpha: alpha * opacity)
+              ..maskFilter = MaskFilter.blur(
+                BlurStyle.normal,
+                strokeWidth * blur,
+              ),
+          );
+        }
       }
-    }
-    canvas.restore();
+      // The sharp strokes are painted separately; keep their own area dark.
+      canvas.drawPath(strokes, _erase);
+    });
   }
 
   @override

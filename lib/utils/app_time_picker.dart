@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../l10n/strings_scope.dart';
+import '../widgets/app_field.dart';
 import 'proper_case.dart';
 
 Future<TimeOfDay?> showAppTimePicker({
@@ -189,6 +190,15 @@ class _AppTimeInputDialogState extends State<_AppTimeInputDialog> {
   bool _invalidHour = false;
   bool _invalidMinute = false;
 
+  /// Any edit takes back the last error: it described the old values.
+  void _clearError() {
+    if (!_invalidHour && !_invalidMinute) return;
+    setState(() {
+      _invalidHour = false;
+      _invalidMinute = false;
+    });
+  }
+
   TimeOfDay? _value() {
     final rawHour = int.tryParse(_hourController.text);
     final minute = int.tryParse(_minuteController.text);
@@ -259,6 +269,7 @@ class _AppTimeInputDialogState extends State<_AppTimeInputDialog> {
                     nextFocus: _minuteFocus,
                     nextController: _minuteController,
                     invalid: _invalidHour,
+                    onEdited: _clearError,
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -271,6 +282,7 @@ class _AppTimeInputDialogState extends State<_AppTimeInputDialog> {
                     controller: _minuteController,
                     focusNode: _minuteFocus,
                     invalid: _invalidMinute,
+                    onEdited: _clearError,
                   ),
                   if (!widget.use24Hours) ...[
                     const SizedBox(width: 10),
@@ -292,6 +304,27 @@ class _AppTimeInputDialogState extends State<_AppTimeInputDialog> {
                   ],
                 ],
               ),
+              if (_invalidHour || _invalidMinute) ...[
+                const SizedBox(height: 16),
+                if (_invalidHour)
+                  Center(
+                    child: AppErrorMessage(
+                      context.strings.timeInputInvalidHour(
+                        widget.use24Hours ? 0 : 1,
+                        widget.use24Hours ? 23 : 12,
+                      ),
+                      center: true,
+                    ),
+                  ),
+                if (_invalidHour && _invalidMinute) const SizedBox(height: 6),
+                if (_invalidMinute)
+                  Center(
+                    child: AppErrorMessage(
+                      context.strings.timeInputInvalidMinute,
+                      center: true,
+                    ),
+                  ),
+              ],
               const SizedBox(height: 20),
               Row(
                 children: [
@@ -332,6 +365,7 @@ class _TimeInputSegment extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.invalid,
+    required this.onEdited,
     this.nextFocus,
     this.nextController,
   });
@@ -339,6 +373,7 @@ class _TimeInputSegment extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool invalid;
+  final VoidCallback onEdited;
   final FocusNode? nextFocus;
   final TextEditingController? nextController;
 
@@ -360,6 +395,7 @@ class _TimeInputSegment extends StatelessWidget {
         extentOffset: controller.text.length,
       ),
       onChanged: (value) {
+        onEdited();
         if (value.length == 2 && nextFocus != null) {
           nextFocus!.requestFocus();
           final target = nextController;
@@ -375,24 +411,8 @@ class _TimeInputSegment extends StatelessWidget {
       decoration: InputDecoration(
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(vertical: 14),
-        enabledBorder: invalid
-            ? OutlineInputBorder(
-                borderRadius: BorderRadius.circular(kRadiusField),
-                borderSide: BorderSide(
-                  color: Theme.of(context).colorScheme.error,
-                  width: kBorderWidthActive,
-                ),
-              )
-            : null,
-        focusedBorder: invalid
-            ? OutlineInputBorder(
-                borderRadius: BorderRadius.circular(kRadiusField),
-                borderSide: BorderSide(
-                  color: Theme.of(context).colorScheme.error,
-                  width: kBorderWidthActive,
-                ),
-              )
-            : null,
+        enabledBorder: invalid ? appErrorBorder(context.colors) : null,
+        focusedBorder: invalid ? appErrorBorder(context.colors) : null,
       ),
     ),
   );
