@@ -9,10 +9,12 @@ export default defineConfig({
   site: 'https://chiriacadrian2296.github.io',
   base: '/inner_stars',
   trailingSlash: 'always',
+  devToolbar: { enabled: false },
   integrations: [
     react(),
     sitemap({
-      i18n: { defaultLocale: 'it', locales: { it: 'it-IT', en: 'en-US' } },
+      filter: (page) => !new URL(page).pathname.split('/').includes('classic'),
+      i18n: { defaultLocale: 'it', locales: { it: 'it-IT', en: 'en-US', ro: 'ro-RO' } },
     }),
   ],
 });

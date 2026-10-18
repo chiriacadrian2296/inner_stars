@@ -1,0 +1,43 @@
+// One source of truth: the existing vector mark. No redraw or generated art.
+import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+const sharp = createRequire(new URL('../landing/package.json', import.meta.url))('sharp');
+const root = new URL('../', import.meta.url);
+const source = await readFile(new URL('assets/icon/Logo.svg', root), 'utf8');
+const gold = '#F2B84B', navy = '#0D1220';
+const body = source.match(/<g[\s\S]*<\/g>/)[0].replace('fill="#000000"', `fill="${gold}"`);
+const raster = await sharp(Buffer.from(source.replace('fill="#000000"', `fill="${gold}"`)), { density: 72 }).trim().png().toBuffer({resolveWithObject:true});
+const info = raster.info;
+const scale = 1;
+const box = [-info.trimOffsetLeft*scale,-info.trimOffsetTop*scale,info.width*scale,info.height*scale].join(' ');
+const mark = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${box}">${body}</svg>`;
+const glyph = await sharp(Buffer.from(mark)).resize({width:650,height:720,fit:'inside'}).png().toBuffer();
+const foreground = await sharp({create:{width:1024,height:1024,channels:4,background:'#00000000'}}).composite([{input:glyph,gravity:'centre'}]).png().toBuffer();
+const adaptiveGlyph = await sharp(Buffer.from(mark)).resize({width:530,height:590,fit:'inside'}).png().toBuffer();
+const adaptive = await sharp({create:{width:1024,height:1024,channels:4,background:'#00000000'}}).composite([{input:adaptiveGlyph,gravity:'centre'}]).png().toBuffer();
+const icon = await sharp(foreground).flatten({background:navy}).png().toBuffer();
+const write = (path,data) => writeFile(new URL(path,root),data);
+await write('landing/public/logo-mark.svg',mark);
+const ratio = info.width/info.height, h = 720, w = h*ratio;
+const faviconSvg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="185" fill="${navy}"/><svg x="${(1024-w)/2}" y="152" width="${w}" height="${h}" viewBox="${box}">${body}</svg></svg>`;
+await write('landing/public/favicon.svg',faviconSvg);
+await write('web/favicon.svg',faviconSvg);
+for(const name of ['app_icon.png','app_icon_ring_centered.png']) await write(`assets/icon/${name}`,icon);
+await write('assets/icon/app_icon_foreground_transparent.png',foreground);
+await write('assets/icon/app_icon_foreground_adaptive_ring.png',adaptive);
+const white = Buffer.from(mark.replaceAll(gold,'#F4F1E8'));
+const whiteGlyph = await sharp(white).resize({width:650,height:720,fit:'inside'}).png().toBuffer();
+await write('assets/icon/app_icon_ring_centered_white.png',await sharp({create:{width:1024,height:1024,channels:4,background:'#00000000'}}).composite([{input:whiteGlyph,gravity:'centre'}]).png().toBuffer());
+await write('landing/src/assets/icon.png',icon);
+await write('landing/public/favicon.png',await sharp(icon).resize(64).png().toBuffer());
+await write('landing/public/apple-touch-icon.png',await sharp(icon).resize(180).png().toBuffer());
+const social = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"><rect width="1200" height="630" fill="${navy}"/><text x="600" y="515" text-anchor="middle" fill="#F4F1E8" font-family="Georgia,serif" font-size="66">Inner Stars</text></svg>`);
+const socialGlyph=await sharp(Buffer.from(mark)).resize({width:230,height:280,fit:'inside'}).png().toBuffer({resolveWithObject:true});
+await write('landing/public/og-image.png',await sharp(social).composite([{input:socialGlyph.data,top:110,left:Math.round((1200-socialGlyph.info.width)/2)}]).png().toBuffer());
+await mkdir(new URL('landing/public/area-symbols/',root),{recursive:true});
+for(const filename of await readdir(new URL('assets/images/royal_symbols_negative_final/',root))) {
+  if(!/^0[1-8]-.*\.png$/.test(filename))continue;
+  await write(`landing/public/area-symbols/${filename.slice(0,2)}.webp`,await sharp(fileURLToPath(new URL(`assets/images/royal_symbols_negative_final/${filename}`,root))).resize(512,512,{fit:'inside'}).webp({quality:85}).toBuffer());
+}
+console.log('Updated S mark, landing favicon/social card, and launcher source assets.');

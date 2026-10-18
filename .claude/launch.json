@@ -14,6 +14,13 @@
         "tool/share_lab_preview.dart"
       ],
       "port": 8791
+    },
+    {
+      "name": "landing",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "landing", "--", "--host", "127.0.0.1", "--port", "4321"],
+      "port": 4321,
+      "url": "http://127.0.0.1:4321"
     }
   ]
 }

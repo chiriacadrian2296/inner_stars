@@ -1,0 +1,8 @@
+---
+import { showDiscoverPages } from '../../features';
+import ProductGuide from '../../components/ProductGuide.astro';
+import type { Topic } from '../../i18n/routes';
+export function getStaticPaths(){return showDiscoverPages ? [{params:{topic:'livelli'},props:{topic:'levels'}},{params:{topic:'navigazione'},props:{topic:'navigation'}},{params:{topic:'personalizzazione'},props:{topic:'customization'}}] : [];}
+const {topic}=Astro.props as {topic:Topic};
+---
+<ProductGuide lang="it" topic={topic}/>

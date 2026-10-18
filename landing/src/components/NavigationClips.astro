@@ -1,0 +1,36 @@
+---
+import type { Lang } from '../i18n/types';
+interface Props { lang:Lang }
+const {lang}=Astro.props,it=lang==='it',base=import.meta.env.BASE_URL;
+const clips=it?[
+  ['fly','Avvicinati a un progetto','Da un’area alla sua costellazione: cambia distanza senza perdere il contesto.'],
+  ['widen','Allarga lo sguardo','Torna verso l’area per ritrovare gli altri progetti intorno a te.'],
+  ['energy','Segui l’energia','Quando una forma è tutta illuminata, l’onda percorre i collegamenti e raggiunge ogni stella.'],
+]:[
+  ['fly','Move closer to a project','From an area to its constellation: change distance without losing context.'],
+  ['widen','Widen your perspective','Return to the area to find the other projects around you.'],
+  ['energy','Follow the energy','When a shape is fully lit, the wave travels along its connections and reaches each star.'],
+];
+---
+<section class="navigation-clips" aria-label={it?'Galaxy in movimento':'Galaxy in motion'}>
+  {clips.map(([id,title,description])=><figure class="navigation-clip" data-clip data-poster={`${base}clips/${id}-poster.webp`} data-animation={`${base}clips/${id}.webp`}>
+    <img src={`${base}clips/${id}-poster.webp`} width="512" height="320" loading="lazy" alt={title}/>
+    <figcaption><h2>{title}</h2><p>{description}</p><button hidden type="button" aria-pressed="false" data-play={it?'Riproduci clip':'Play clip'} data-pause={it?'Ferma clip':'Stop clip'} aria-label={`${it?'Riproduci':'Play'}: ${title}`}>{it?'Riproduci clip':'Play clip'} <span aria-hidden="true">▶</span></button></figcaption>
+  </figure>)}
+  <p class="clips-provenance">{it?'Clip registrate con i renderer originali di Galaxy e dati dimostrativi.':'Clips captured with the original Galaxy renderers and demonstration data.'}</p>
+</section>
+<script>
+  document.querySelectorAll<HTMLElement>('[data-clip]').forEach(clip=>{
+    const image=clip.querySelector('img')!,button=clip.querySelector('button')!,title=clip.querySelector('h2')!.textContent;
+    let playing=false;
+    const stop=()=>{playing=false;image.src=clip.dataset.poster!;button.setAttribute('aria-pressed','false');button.textContent=`${button.dataset.play} ▶`;button.setAttribute('aria-label',`${button.dataset.play}: ${title}`);};
+    button.hidden=false;
+    button.addEventListener('click',()=>{
+      if(playing){stop();return;}
+      playing=true;image.src=clip.dataset.animation!;button.setAttribute('aria-pressed','true');button.textContent=`${button.dataset.pause} ■`;button.setAttribute('aria-label',`${button.dataset.pause}: ${title}`);
+    });
+    const observer=new IntersectionObserver(([entry])=>{if(!entry.isIntersecting&&playing)stop();});observer.observe(clip);
+    document.addEventListener('visibilitychange',()=>{if(document.hidden&&playing)stop();});
+    image.addEventListener('error',()=>{if(playing)stop();else button.disabled=true;});
+  });
+</script>

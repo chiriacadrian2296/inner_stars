@@ -1,4 +1,6 @@
 export type Lang = 'it' | 'en';
+// The journey home also exists in Romanian; the older classic and guide pages stay Italian/English.
+export type SiteLang = Lang | 'ro';
 
 export interface Copy {
   lang: Lang;

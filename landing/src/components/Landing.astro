@@ -1,5 +1,6 @@
 ---
 import { Image } from 'astro:assets';
+import '../styles/global.css';
 import StarField from './StarField';
 import Phone from './Phone.astro';
 import Base from '../layouts/Base.astro';
@@ -10,7 +11,7 @@ interface Props {
 }
 const { copy } = Astro.props;
 
-const base = import.meta.env.BASE_URL;
+const base = `${import.meta.env.BASE_URL}classic/`;
 const APK_URL = 'https://github.com/chiriacadrian2296/inner_stars/releases/latest/download/inner-stars.apk';
 // Absolute on purpose: a relative /app/ 404s under `npm run dev`, where only
 // the landing is served. With a custom domain, change this in one place.
@@ -26,7 +27,7 @@ const areas = AREA_KEYS.map((key, i) => ({
   img: areaImages[`../assets/areas/${key}.jpg`].default,
 }));
 ---
-<Base copy={copy}>
+<Base copy={copy} classic>
   <header>
     <section class="hero">
       <StarField client:visible />

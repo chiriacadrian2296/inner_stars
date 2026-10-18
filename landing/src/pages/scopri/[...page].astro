@@ -1,0 +1,7 @@
+---
+import { showDiscoverPages } from '../../features';
+export function getStaticPaths(){ return showDiscoverPages ? [{ params: { page: undefined } }] : []; }
+import Overview from '../../components/Overview.astro';
+import { journeyIt } from '../../i18n/journey';
+---
+<Overview copy={journeyIt} />

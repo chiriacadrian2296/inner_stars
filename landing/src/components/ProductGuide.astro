@@ -1,0 +1,54 @@
+---
+import { Image,getImage } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import SiteHeader from './SiteHeader.astro';
+import { GalaxyExplorer } from './JourneyGalaxy';
+import { showGalaxySkyComparison } from '../features';
+import ShapePreview from './ShapePreview';
+import NavigationClips from './NavigationClips.astro';
+import { pagePath,topicSlugs,topicTitles,type Topic } from '../i18n/routes';
+import { journeyIt,journeyEn } from '../i18n/journey';
+import type { Lang } from '../i18n/types';
+import '../styles/journey.css';
+interface Props { lang:Lang;topic:Topic }
+const {lang,topic}=Astro.props,it=lang==='it',c=it?journeyIt:journeyEn,base=import.meta.env.BASE_URL;
+const current=import.meta.glob<{default:ImageMetadata}>('../assets/current/*.png',{eager:true});
+const shot=(name:string)=>current[`../assets/current/${lang}-${name}.png`].default;
+const comparisonShots=showGalaxySkyComparison ? await Promise.all(['areas','projects','activities'].map(async name=>(await getImage({src:shot(name),width:430,format:'webp'})).src)) : [];
+const intros={
+  levels:it?'La tua vita si può guardare da vicino o da lontano. In Galaxy e Sky ritrovi gli stessi tre livelli, con due modi diversi di esplorarli.':'Look at your life up close or from further away. Galaxy and Sky hold the same three levels, with two ways to explore them.',
+  navigation:it?'Galaxy per immergerti. Sky per trovare. Passa da una prospettiva all’altra senza perdere il filo del tuo percorso.':'Galaxy to immerse yourself. Sky to find things. Move between perspectives without losing your place in your journey.',
+  customization:it?'Ogni progetto ha una forma, un nome e un significato. Parti da qualcosa che ti rappresenta e costruisci la tua costellazione.':'Every project has a shape, a name and a meaning. Begin with something that represents you and build your constellation.',
+};
+const levels=it?[
+  ['Area → Supernova','Una delle otto aree di vita: per esempio Professionale. Raccoglie i progetti di quella parte del tuo percorso.'],
+  ['Progetto → Costellazione','Qualcosa a cui vuoi dare forma: “Un progetto mio”. La costellazione tiene insieme le attività che gli appartengono.'],
+  ['Attività → Stelle e pulsar','Le vittorie raccontano gli sforzi già compiuti, gli obiettivi i passi futuri. Le abitudini sono pulsar, con un ciclo da completare al tuo ritmo.'],
+]:[
+  ['Area → Supernova','One of eight areas of life, such as Professional. It holds projects in that part of your journey.'],
+  ['Project → Constellation','Something you want to give shape to: “A project of my own”. The constellation brings its activities together.'],
+  ['Activities → Stars and pulsars','Victories hold completed efforts, goals hold future steps. Habits are pulsars, with a cycle to complete at your own pace.'],
+];
+const navigation=it?[
+  ['Tocca per avvicinarti','Tocca una stella, una costellazione o una supernova: la camera vola verso di lei.'],
+  ['Tieni premuto per leggere','Su vittorie, progetti e aree, una pressione prolungata apre l’anteprima. Gli spazi ancora liberi aprono il modulo; una pulsar apre il suo lettore anche con un tocco.'],
+  ['Allarga lo sguardo','Trascina per muoverti e usa il gesto di zoom per cambiare distanza. Un doppio tocco sul cielo vuoto ti riporta a una prospettiva più ampia.'],
+  ['Trova in Sky, poi vola','Cerca e filtra aree, progetti e attività. L’azione Vola ti riporta al punto corrispondente in Galaxy.'],
+]:[
+  ['Tap to move closer','Tap a star, constellation or supernova and the camera flies towards it.'],
+  ['Hold to read','Hold a victory, project or area to open its preview. Empty slots open the form; a pulsar also opens its reader with a tap.'],
+  ['Widen your perspective','Drag to move around and pinch to change distance. Double tap empty sky to return to a wider perspective.'],
+  ['Find in Sky, then fly','Search and filter areas, projects and activities. Fly takes you to the corresponding place in Galaxy.'],
+];
+---
+<Base copy={{...c,title:`${topicTitles[lang][topic]} — Inner Stars`,description:intros[topic]}} topic={topic} faqSchema={false}>
+  <a class="skip-link" href="#guide">{c.nav.skip}</a><SiteHeader copy={c} topic={topic}/>
+  <main class="guide-page" id="guide" tabindex="-1">
+    <header class="guide-heading"><p class="overline">INNER STARS / {it?'SCOPRI L’APP':'EXPLORE THE APP'}</p><h1>{topicTitles[lang][topic]}</h1><p>{intros[topic]}</p></header>
+    {topic==='navigation'&&<NavigationClips lang={lang}/>}
+    {topic==='levels'&&<><div class="guide-explanation level-explanation">{levels.map(([title,text],i)=><article><span class="story-number">0{i+1}</span><h2>{title}</h2><p>{text}</p><figure><Image src={shot(['areas','projects','activities'][i])} alt={it?['Le otto aree di vita in Sky','I progetti in Sky','Vittorie, obiettivi e abitudini in Sky'][i]:['Eight life areas in Sky','Projects in Sky','Victories, goals and habits in Sky'][i]} width={430} format="webp"/><figcaption>{it?'Schermata dell’app · dati di esempio':'App screen · example data'}</figcaption></figure></article>)}</div>{showGalaxySkyComparison && <GalaxyExplorer lang={lang} shots={comparisonShots} client:visible/>}</>}
+    {topic==='navigation'&&<>{showGalaxySkyComparison && <GalaxyExplorer lang={lang} shots={comparisonShots} client:visible/>}<section class="guide-detail"><div><h2>{it?'Pochi gesti, tutte le distanze.':'A few gestures, every perspective.'}</h2><ol class="guide-steps">{navigation.map(([title,text])=><li><strong>{title}</strong><span>{text}</span></li>)}</ol></div><figure><Image src={shot('activities')} alt={it?'Le attività nel browser Sky aggiornato':'Activities in the current Sky browser'} width={430} format="webp"/><figcaption>{it?'Schermata attuale dell’app, con dati dimostrativi.':'Current app screen with demonstration data.'}</figcaption></figure></section></>}
+    {topic==='customization'&&<><section class="guide-detail"><div><h2>{it?'La forma racconta qualcosa.':'The shape means something.'}</h2><p>{it?'Una montagna per una sfida. Un albero per qualcosa che vuoi far crescere. Scegli dalla libreria oppure disegna punti e collegamenti nell’editor dell’app.':'A mountain for a challenge. A tree for something you want to grow. Choose from the library, or draw points and connections in the app’s editor.'}</p><ShapePreview lang={lang} client:visible/></div><figure><Image src={shot('customize')} alt={it?'Il modulo attuale per personalizzare un progetto':'The current form for customizing a project'} width={430} format="webp"/><figcaption>{it?'Nome, icona, area e forma nel modulo attuale.':'Name, icon, area and shape in the current form.'}</figcaption></figure></section><section class="guide-detail"><div><h2>{it?'Poi, riempila di significato.':'Then give it meaning.'}</h2><p>{it?'La forma è solo l’inizio. Dai un titolo alle attività, scegli le loro icone e racconta quanto ti è costato ogni sforzo. La stessa costellazione vive in Galaxy e nella mappa del progetto.':'The shape is only the beginning. Name your activities, choose their icons and describe what each effort meant to you. The same constellation lives in Galaxy and in the project map.'}</p></div><figure><Image src={shot('constellation')} alt={it?'La mappa attuale di una costellazione':'The current constellation map'} width={430} format="webp"/><figcaption>{it?'La mappa del progetto, con dati dimostrativi.':'The project map with demonstration data.'}</figcaption></figure></section></>}
+    <section class="guide-next"><a class="button-gold" href="https://chiriacadrian2296.github.io/inner_stars/app/">{c.closing.web} ↗</a><div class="guide-links">{(['levels','navigation','customization'] as Topic[]).filter(t=>t!==topic).map(t=><a href={`${base}${topicSlugs[lang][t]}`}><h3>{topicTitles[lang][t]}</h3><span aria-hidden="true">↗</span></a>)}</div></section>
+  </main><footer class="journey-footer"><a class="brand" href={pagePath(base,lang)}><img src={`${base}logo-mark.svg`} width="24" height="30" alt=""/><span>Inner <em>Stars</em></span></a><span>{c.footer}</span><a href={pagePath(base,lang)}>{it?'Torna al viaggio':'Back to the journey'} ↑</a></footer>
+</Base>
