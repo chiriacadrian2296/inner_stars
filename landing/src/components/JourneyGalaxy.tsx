@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { fragmentSource, supernovaFragmentSource, flareFragmentSource, vertexSource } from './journey-nebula';
-import { add, mul, norm, ease, artworkAxes, supernovaDirections, supernovaOffsets, areas, areaNames, basis, cameraAt, clamp, journeyStage, mix, projectPoint, projects, projectsPerArea, starDirection, type Vec } from './galaxy-model';
+import { add, mul, norm, ease, skyZoom, artworkAxes, supernovaDirections, supernovaOffsets, areas, areaNames, basis, cameraAt, clamp, journeyStage, mix, projectPoint, projects, projectsPerArea, starDirection, type Vec } from './galaxy-model';
 import { paintEnergy } from './galaxy-energy';
 import type { SiteLang as Lang } from '../i18n/types';
 type Flare = { x:number; y:number; seed:number[]; count:number };
@@ -36,7 +36,7 @@ void main(){fragColor=texture(uLines,vec2(gl_FragCoord.x/uResolution.x,1.-gl_Fra
     const loc = (p: WebGLProgram, n: string) => { let map = locations.get(p); if (!map) { map = new Map(); locations.set(p, map); } if (!map.has(n)) map.set(n, gl.getUniformLocation(p, n)); return map.get(n)!; };
     return {      
 dispose, draw(time: number, stage: number, width: number, height: number, offsetX: number, offsetY: number, area: number, direction: Vec, groups:FlareGroup[], lineCanvas:HTMLCanvasElement) {
-        const state = cameraAt(stage, area), camera = basis(direction);
+        const state = { zoom: skyZoom(stage, area, width, height) }, camera = basis(direction);
         gl.viewport(0, 0, canvas.width, canvas.height);
         for (const [index, program] of [background, supernova].entries()) {
           gl.useProgram(program);
@@ -141,13 +141,15 @@ export default function Galaxy({ lang = 'it', closing = false, level, area = 2, 
       const target = closing ? 3 : controls.current.level ?? journeyStage(step);
       if (reduced) renderedStage = controls.current.level ?? 3;
       else renderedStage += (target - renderedStage) * (interactive ? .09 : 1);
-      const p = renderedStage, state = cameraAt(p, controls.current.area);
+      const p = renderedStage, state = { ...cameraAt(p, controls.current.area), zoom: skyZoom(p, controls.current.area, w, h) };
       if(!reduced&&Math.abs(p-lastStage)<.004&&now-lastPaint<40)return;
       const lightAmount=interactive||reduced?1:clamp((p+.8)/1.3);
       canvas!.style.filter=`brightness(${interactive||reduced?1:.18+.82*clamp(p+1)})`;
       renderedDirection = reduced ? state.direction : mix(renderedDirection, state.direction, interactive ? .12 : 1);
       const camera = basis(renderedDirection);
-      const ox = interactive || closing ? 0 : w * (w < 600 ? .02 : .19), oy = interactive || closing ? 0 : h * (w < 600 ? .22 : 0);
+      // Keep the scene in the space to the right of the chapter text, whatever the window width.
+      const textRight = w * .07 + Math.min(600, w * .86 * .52);
+      const ox = interactive || closing ? 0 : w < 600 ? w * .02 : Math.min(w * .5 - h * .1, Math.max(w * .25, textRight + h * .16 + 40 - w / 2)), oy = interactive || closing ? 0 : h * (w < 600 ? .22 : 0) + (window.innerHeight - h) / 2; // the sky is as tall as the largest viewport; recentre on what is actually visible while a phone's address bar shows
       const project = (v: typeof starDirection) => projectPoint(v, camera, state.zoom, w, h, ox, oy);
       const flareGroups:FlareGroup[]=[];
       ctx.clearRect(0, 0, w, h);
@@ -206,14 +208,15 @@ export default function Galaxy({ lang = 'it', closing = false, level, area = 2, 
     function schedule() { if (visible && !document.hidden && !raf) raf = requestAnimationFrame(frame); }
     function resize() { if (!root || !canvas || !overlay || !ctx) return; w = root.clientWidth; h = root.clientHeight; const dpr = Math.min(devicePixelRatio || 1, 2); lineCanvas.width=Math.round(w*dpr);lineCanvas.height=Math.round(h*dpr);lineCtx.setTransform(dpr,0,0,dpr,0,0); overlay.width = Math.round(w * dpr); overlay.height = Math.round(h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // Render the sky at the screen's own density (not a fixed 1100px that CSS then stretches), within a pixel budget; `quality` backs off if frames stall.
       const ratio = Math.min(dpr * quality, Math.sqrt(2_400_000 / Math.max(1, w * h))); canvas.width = Math.max(1, Math.round(w * ratio)); canvas.height = Math.max(1, Math.round(h * ratio)); lastStage = -1; schedule(); }
+    function viewportChanged() { lastStage = -1; schedule(); }
     function visibility() { if (document.hidden) { cancelAnimationFrame(raf); raf = 0; last = 0; } else schedule(); }
     function changeMotion() { reduced = media.matches || !engine; lastStage = -1; schedule(); }
     function lost(event: Event) { event.preventDefault(); engine = null; canvas!.style.opacity = '0'; reduced = true; schedule(); }
     function restored() { engine = createSky(canvas!); canvas!.style.opacity = engine ? '1' : '0'; reduced = media.matches || !engine; lastStage = -1; schedule(); }
     const observer = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; if (visible) schedule(); else { cancelAnimationFrame(raf); raf = 0; last = 0; } }); observer.observe(root);
     const resizer = new ResizeObserver(resize); resizer.observe(root); resize(); redraw.current = schedule;
-    window.addEventListener('scroll', schedule, { passive: true }); document.addEventListener('visibilitychange', visibility); media.addEventListener('change', changeMotion); canvas.addEventListener('webglcontextlost', lost); canvas.addEventListener('webglcontextrestored', restored);
-    return () => { cancelAnimationFrame(raf); observer.disconnect(); resizer.disconnect(); engine?.dispose(); images.forEach(image => { image.onload = null; }); window.removeEventListener('scroll', schedule); document.removeEventListener('visibilitychange', visibility); media.removeEventListener('change', changeMotion); canvas.removeEventListener('webglcontextlost', lost); canvas.removeEventListener('webglcontextrestored', restored); redraw.current = () => { }; };
+    window.addEventListener('scroll', schedule, { passive: true }); window.addEventListener('resize', viewportChanged); document.addEventListener('visibilitychange', visibility); media.addEventListener('change', changeMotion); canvas.addEventListener('webglcontextlost', lost); canvas.addEventListener('webglcontextrestored', restored);
+    return () => { cancelAnimationFrame(raf); observer.disconnect(); resizer.disconnect(); engine?.dispose(); images.forEach(image => { image.onload = null; }); window.removeEventListener('scroll', schedule); window.removeEventListener('resize', viewportChanged); document.removeEventListener('visibilitychange', visibility); media.removeEventListener('change', changeMotion); canvas.removeEventListener('webglcontextlost', lost); canvas.removeEventListener('webglcontextrestored', restored); redraw.current = () => { }; };
   }, [closing, interactive, lang]);
   return <div ref={rootRef} className={`galaxy-scene${closing ? ' is-closing' : ''}${interactive ? ' is-interactive' : ''}`} aria-hidden="true"><svg className="galaxy-fallback" viewBox="0 0 1000 800"><g fill="none" stroke="#f2b84b" strokeWidth=".8"><circle cx="650" cy="360" r="55" /><circle cx="650" cy="360" r="80" /><path d="M450 440 500 400 550 440 550 500 450 500Z M790 300 820 250 860 310 830 340Z" /></g><g fill="#f4f1e8">{[[450, 440], [500, 400], [550, 440], [550, 500], [450, 500], [650, 360], [790, 300], [820, 250], [860, 310], [830, 340]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="2" />)}</g></svg><canvas ref={glRef} className="galaxy-nebula" /><canvas ref={starsRef} className="galaxy-stars" /></div>;
 }

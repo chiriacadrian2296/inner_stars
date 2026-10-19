@@ -81,3 +81,12 @@ export function projectPoint(v: Vec, camera: ReturnType<typeof basis>, zoom: num
   const scale = 2 / (1 + z);
   return { x: w * .5 + dot(v, camera.right) * scale * zoom * h + offsetX, y: h * .5 - dot(v, camera.up) * scale * zoom * h + offsetY, scale };
 }
+// The whole-sky view pulls the camera back a little so the neighbouring
+// supernovas sit closer to the main one, more so on tall narrow screens where
+// a height-based zoom throws them far outside the width.
+export function wholeSkyBoost(stage: number, width: number, height: number) {
+  const aspect = height / Math.max(1, width);
+  const target = .85 - .3 * clamp(aspect - 1);
+  return 1 + (target - 1) * ease(stage - 2);
+}
+export const skyZoom = (stage: number, area: number, width: number, height: number) => cameraAt(stage, area).zoom * wholeSkyBoost(stage, width, height);

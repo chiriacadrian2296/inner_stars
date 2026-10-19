@@ -42,7 +42,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
 .journey-nav nav { display: flex; gap: 28px; align-items: center; font-size: 12px; font-weight: 600; }
 .nav-story { color: #a4adbd; }
 .nav-try { padding: 10px 22px; border: 0; border-radius: 50px; color: var(--on-gold); background: var(--gold); white-space: nowrap; flex-shrink: 0; }
-.nav-try { display: inline-flex; align-items: center; gap: 10px; }
+.nav-try { display: inline-flex; align-items: center; gap: 8px; }
 .nav-try-icon { flex: none; }
 .locale { display: flex; align-items: center; gap: 8px; font-size: 10px; line-height: 1; color: #a4adbd; }
 .locale a { display: flex; align-items: center; }
@@ -70,13 +70,13 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
 .galaxy-scene::after { position: absolute; inset: 0; content: ''; background: linear-gradient(90deg,#0d1220e6, #0d122088 34%,transparent 65%); pointer-events: none; }
 .galaxy-scene.is-interactive::after { background: none; }
 .galaxy-scene.is-closing::after { background: radial-gradient(ellipse,#0d1220dc, #0d122080 65%,var(--night)); }
-.chapter { position: relative; min-height: 100svh; padding: 130px 7% 100px; display: flex; align-items: center; }
+.chapter { position: relative; min-height: 100svh; min-height: 100dvh; padding: 130px 7% 100px; display: flex; align-items: center; }
 .chapter-copy { width: min(600px,52%); position: relative; z-index: 1; }
 .chapter .overline { margin-bottom: 28px; }
 .chapter h1 { font-size: clamp(44px,5.1vw,78px); }
 .chapter h2 { font-size: clamp(40px,4.4vw,66px); }
 .chapter-text { max-width: 400px; margin-top: 30px; font-size: 18px; line-height: 1.75; color: #98a2bb; }
-.chapter-hero { padding-top: 150px; justify-content: center; text-align: center; }
+.chapter-hero { padding-block: 100px; align-items: center; justify-content: center; text-align: center; }
 .chapter-hero .chapter-copy { width: min(820px,100%); }
 .chapter-hero .chapter-text { margin-inline: auto; }
 .chapter-hero .chapter-nav { left: 50%; transform: translateX(-50%); }
@@ -148,7 +148,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
 .faq-list summary span { color: var(--gold); font-size: 20px; }
 .faq-list details[open] summary span { transform: rotate(45deg); }
 .faq-list details p { color: var(--muted); font-size: 13px; padding: 0 20px 24px 0; }
-.journey-closing { min-height: 100svh; position: relative; isolation: isolate; padding: 80px 24px 100px; display: grid; place-items: center; text-align: center; background: var(--night); }
+.journey-closing { min-height: 100svh; min-height: 100dvh; position: relative; isolation: isolate; padding: 80px 24px 100px; display: grid; place-items: center; text-align: center; background: var(--night); }
 .journey-closing>.galaxy-scene { z-index: -1; }
 .closing-copy { max-width: 800px; }
 .closing-copy .overline { margin-bottom: 30px; }
@@ -233,7 +233,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
   .discover-menu summary span { display: none; }
   .discover-menu>div { right: -110px; width: min(290px,85vw); }
   .chapter { padding: 110px 7% 90px; align-items: flex-start; }
-  .chapter-hero { padding-top: max(145px,18svh); }
+  .chapter-hero { padding-block: 100px; align-items: center; }
   .chapter-copy { width: 100%; }
   .chapter h1 { font-size: clamp(39px,9.3vw,55px); }
   .chapter h2 { font-size: clamp(37px,8.7vw,49px); }
@@ -297,7 +297,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
 .product-words p,.product-intro>p:last-child,.faq-list details p,.guide-heading>p:last-child,.guide-explanation p,.guide-detail p,.guide-steps span { color: #a4adbd; }
 @media(max-height:650px) and (min-width:601px) {
   .chapter { min-height: 720px; }
-  .chapter-hero { padding-top: 120px; }
+  .chapter-hero { padding-block: 100px; }
 }
 @media(max-width:360px) {
   .journey-nav { padding-inline: 5%; }

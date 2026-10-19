@@ -63,3 +63,15 @@ test('the narrative opens in an empty dark patch, then holds one star, then reve
   }
   assert.ok(new Set(model.projects.map(p=>p.shape)).size>25);
 });
+
+test('the whole sky draws its neighbours closer, most on tall narrow screens, and only from the area level on',()=>{
+  assert.ok(model.wholeSkyBoost(3,390,800)<model.wholeSkyBoost(3,1280,768));
+  assert.ok(model.wholeSkyBoost(3,1280,768)<.9);
+  assert.equal(model.wholeSkyBoost(1,390,800),1);
+  assert.ok(Math.abs(model.skyZoom(0,2,390,800)-model.cameraAt(0,2).zoom)<1e-12);
+  assert.ok(model.skyZoom(3,2,390,800)<model.cameraAt(3,2).zoom*.6);
+  // On a phone the nearest neighbouring supernova now lands within the screen width.
+  const camera=model.basis(model.areas[2]);let nearest=Infinity;
+  for(const [i,area] of model.areas.entries()){ if(i===2)continue; const pt=model.projectPoint(area,camera,model.skyZoom(3,2,390,800),390,800,0,0); if(pt)nearest=Math.min(nearest,Math.hypot(pt.x-195,pt.y-400)); }
+  assert.ok(nearest<330);
+});
