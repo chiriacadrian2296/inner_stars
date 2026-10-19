@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -5,12 +7,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/life_area.dart';
 import '../models/sync_text_value.dart';
 import 'repository_write.dart';
+import '../sync/local_collection.dart';
+import '../sync/syncable_repository.dart';
 
 /// Each area's vision is a keyed record, including a sync tombstone when cleared.
-class AreaVisionRepository {
+class AreaVisionRepository extends ChangeNotifier with SyncableRepository {
   AreaVisionRepository(this._prefs);
   static const storageKey = 'area-visions';
   final SharedPreferences _prefs;
+
+  @override
+  String get syncName => 'area-visions';
+
+  @override
+  late final LocalCollection syncCollection = LocalCollection.keyedMap(
+    _prefs,
+    storageKey,
+  );
   static Future<AreaVisionRepository> create() async =>
       AreaVisionRepository(await SharedPreferences.getInstance());
 

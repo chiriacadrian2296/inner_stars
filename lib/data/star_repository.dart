@@ -13,6 +13,8 @@ import '../models/star_media.dart';
 import 'constellation_layout.dart';
 import 'photo_storage.dart';
 import 'star_media_storage.dart';
+import '../sync/local_collection.dart';
+import '../sync/syncable_repository.dart';
 
 /// Reads and writes the user's stars — lit, unlit and dead all together,
 /// see [Star] — as a single JSON-encoded list under one [SharedPreferences]
@@ -21,12 +23,21 @@ import 'star_media_storage.dart';
 ///
 /// The whole list is small (personal milestones, not a high-volume log) and
 /// is always read/written together, so there's no need for a real database.
-class StarRepository extends ChangeNotifier {
+class StarRepository extends ChangeNotifier with SyncableRepository {
   StarRepository(this._prefs);
 
   static const _storageKey = 'stars-list-v1';
 
   final SharedPreferences _prefs;
+
+  @override
+  String get syncName => 'stars';
+
+  @override
+  late final LocalCollection syncCollection = LocalCollection(
+    _prefs,
+    _storageKey,
+  );
 
   /// Creates a repository backed by the platform's [SharedPreferences]
   /// instance. Call once during app startup and reuse it — after this

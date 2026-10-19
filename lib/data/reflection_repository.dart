@@ -7,11 +7,22 @@ import 'package:uuid/uuid.dart';
 import '../models/life_area.dart';
 import '../models/reflection.dart';
 import 'repository_write.dart';
+import '../sync/local_collection.dart';
+import '../sync/syncable_repository.dart';
 
-class ReflectionRepository extends ChangeNotifier {
+class ReflectionRepository extends ChangeNotifier with SyncableRepository {
   ReflectionRepository(this._prefs);
   static const storageKey = 'reflections-v2';
   final SharedPreferences _prefs;
+
+  @override
+  String get syncName => 'reflections';
+
+  @override
+  late final LocalCollection syncCollection = LocalCollection(
+    _prefs,
+    storageKey,
+  );
 
   static Future<ReflectionRepository> create() async =>
       ReflectionRepository(await SharedPreferences.getInstance());

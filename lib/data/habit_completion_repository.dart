@@ -9,6 +9,8 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/habit_completion.dart';
+import '../sync/local_collection.dart';
+import '../sync/syncable_repository.dart';
 
 DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
 
@@ -18,12 +20,21 @@ DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
 /// to read/write years of accumulated completion dates, and so stats
 /// utilities can bucket by day the same way `star_stats.dart` already does
 /// for stars.
-class HabitCompletionRepository extends ChangeNotifier {
+class HabitCompletionRepository extends ChangeNotifier with SyncableRepository {
   HabitCompletionRepository(this._prefs);
 
   static const _storageKey = 'habit-completions-list-v1';
 
   final SharedPreferences _prefs;
+
+  @override
+  String get syncName => 'habit-completions';
+
+  @override
+  late final LocalCollection syncCollection = LocalCollection(
+    _prefs,
+    _storageKey,
+  );
 
   static Future<HabitCompletionRepository> create() async {
     final prefs = await SharedPreferences.getInstance();

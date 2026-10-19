@@ -8,8 +8,9 @@ web e Android. Restano la prova manuale sul telefono e il worktree di profiling 
 A2 è completato: UUID, metadati, tombstone e contenuti d’area.
 A3 (Riflessioni) è implementato e verificato con test mirati. A4 è implementato, con
 verifica di release e prova di condivisione reale ancora da completare.
-**Pausa richiesta dall’autore per il limite di utilizzo:** riprendere dalle verifiche di A4,
-senza iniziare altri blocchi. Nessun nuovo deploy: il telefono conserva la build in prova.
+Le verifiche automatiche di A4 sono concluse (19 ottobre, ripresa dopo la pausa); resta
+solo la prova manuale della condivisione. Nessun nuovo deploy: il telefono conserva la
+build in prova.
 Le verifiche sul codice e sulle build sono distinte dalle prove manuali sul telefono: una voce
 si spunta solo quando tutte le verifiche indicate sono concluse.
 
@@ -217,10 +218,17 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
   l’originale e composizioni con testi lunghi su telefono, landscape e desktop.
   I **4 test del composer pubblico sono superati**; corretto lo spazio minimo dei
   pannelli in landscape. Nessun errore di compilazione o test mirato rimasto aperto.
-- **Ripresa:** completare audit della condivisione reale (PNG, foto locali/web e
-  apertura del foglio di condivisione), build release web/Android e controllo che i
-  sorgenti dei lab restino esclusi. Poi prova manuale con l’autore e chiusura di A4.
-  Non ripetere l’intera suite senza necessità. Nessuna nuova installazione eseguita.
+- 19 ottobre 2026, verifiche di ripresa concluse: audit del codice di condivisione
+  (`share_composer_page.dart`): precaricamento di foto locali, remote e moodboard con
+  errore esplicito, cattura PNG a pixel ratio 3 con immagine liberata a fine operazione,
+  `SharePlus` con file PNG e testo, snackbar localizzato in caso di errore. `flutter analyze
+  --no-pub` senza problemi; build web release e APK release ARM64 riuscite (APK circa 70 MB);
+  nessun sorgente dei nove lab/sandbox né nella source map web né nello snapshot AOT Android.
+  Nessun deploy. Su richiesta dell’autore l’APK è stato installato via USB sul telefono
+  `c2abd67f` (aggiornamento senza perdita di dati) e avviato con force-stop + start.
+- **Resta per chiudere A4:** prova manuale sul telefono della condivisione reale (foglio di
+  condivisione, foto locale, riflessione con testo lungo) e, sul web, la stessa prova.
+  Poi spuntare le due voci `[~]` sopra.
 
 ## A5. Pulizia residua
 
@@ -231,9 +239,10 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
       come richiesto; si verificano analisi, compilazione e installazione.
 
 - [x] Frame rate: scelto **Free**. Limitatore, sonde e riga "FPS Limit" eliminati dal codice.
-- [ ] Ripulire il worktree di scratch `baseline` del vecchio profiling: controllato il
-      19 ottobre, contiene 9 file modificati e 2 file non tracciati. Conservato intatto;
-      prima della rimozione occorre salvare o valutare quel lavoro.
+- [ ] Ripulire il worktree di scratch `baseline` del vecchio profiling: ricontrollato il
+      19 ottobre, è su un commit vecchio (`41c8a4b`) con circa 520 righe di esperimenti su
+      shader della Galaxy, stella cadente e sonda dei frame, più un test. Conservato intatto:
+      **decisione dell’autore** se salvarlo come patch o scartarlo.
 - [x] Sound Lab: verificati in Settings i controlli pubblici della musica di sottofondo:
       riproduzione/pausa e volume, persistiti tramite `AudioService`. La scelta dei singoli
       suoni e i controlli per categoria restano nel Sound Lab di sviluppo.
@@ -317,9 +326,28 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
 
 ## B2. Lavoro tecnico (in ordine)
 
-- [ ] Livello di sync astratto (`RemoteStore` con versione finta per i test), `exportChangesSince`
-      / `applyRemote` nei repository, `lib/sync/merge.dart` puro con test (conflitti, tombstone,
-      idempotenza).
+- [~] Livello di sync astratto: fatti `lib/sync/merge.dart` (puro: ultima scrittura vince,
+      a parità di orologio il tombstone vince, poi ordine canonico deterministico),
+      `lib/sync/remote_store.dart` (`RemoteStore` + `InMemoryRemoteStore` con offline simulato)
+      e `lib/sync/local_collection.dart` (`exportChangesSince`, `applyRemote` che conserva
+      l’orologio remoto, `syncCollection`). 11 test superati (`test/sync`), analisi pulita.
+      Collegati i sette repository a elenco (stelle, progetti, abitudini, check-in, cicli,
+      forme, riflessioni) tramite il mixin `SyncableRepository` (`syncName`,
+      `syncCollection`, `applyRemote` che notifica solo se qualcosa cambia; le forme ora sono
+      un `ChangeNotifier`). Suite completa: **576 test superati, 3 esclusi**, analisi pulita.
+      Aggiunte le collezioni a mappa: `LocalCollection.keyedMap` (visioni d’area, moodboard;
+      i valori legacy stringa contano come i più vecchi) e `LocalCollection.single` (desiderio),
+      con la stessa interfaccia `SyncCollection`; anche questi tre repository usano il mixin.
+      Impostazioni: `lib/sync/settings_collection.dart`, un record per chiave `settings.*` /
+      `audio-*`; i cambi sono rilevati confrontando col valore visto l’ultima volta e datati
+      al momento del rilevamento (al più al prossimo sync), così i 43 setter non cambiano.
+      Esclusi per dispositivo: qualità Galaxy, tutti i volumi, flag di migrazione. PIN e blocco
+      app non sono inclusi (decisione aperta in A6). Suite completa: **584 test superati,
+      3 esclusi**, analisi pulita.
+      **Restano:** `SyncService` con Firebase (dipende da B1); chiamare il rilevamento delle
+      impostazioni anche in pausa/chiusura; far ascoltare alla UI i repository dopo un
+      `applyRemote` (visioni, desiderio e moodboard ora sono `ChangeNotifier` ma le
+      schermate non li ascoltano ancora); riprendere le risposte vecchie alle domande se servono.
 - [ ] Firebase: `firebase_core`, `firebase_auth`, `cloud_firestore`, `google_sign_in`.
       Struttura `users/{uid}/<collezione>/{uuid}`. `SyncService` con listener per collezione,
       push debounced, ripresa al `resumed`, stato e nessun crash offline.

@@ -11,16 +11,27 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/habit.dart';
 import 'constellation_layout.dart';
 import 'habit_completion_repository.dart';
+import '../sync/local_collection.dart';
+import '../sync/syncable_repository.dart';
 
 /// Reads and writes the user's pulsars (habits) as a single JSON-encoded
 /// list under one [SharedPreferences] key — mirrors [StarRepository]'s shape
 /// exactly, tombstoning included.
-class HabitRepository extends ChangeNotifier {
+class HabitRepository extends ChangeNotifier with SyncableRepository {
   HabitRepository(this._prefs);
 
   static const _storageKey = 'habits-list-v1';
 
   final SharedPreferences _prefs;
+
+  @override
+  String get syncName => 'habits';
+
+  @override
+  late final LocalCollection syncCollection = LocalCollection(
+    _prefs,
+    _storageKey,
+  );
 
   static Future<HabitRepository> create() async {
     final prefs = await SharedPreferences.getInstance();

@@ -1,16 +1,30 @@
+import 'package:flutter/foundation.dart';
+
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/sync_text_value.dart';
 import 'repository_write.dart';
+import '../sync/local_collection.dart';
+import '../sync/syncable_repository.dart';
 
 /// The existing single Galaxy wish, stored with sync metadata rather than history.
-class ShootingStarWishRepository {
+class ShootingStarWishRepository extends ChangeNotifier
+    with SyncableRepository {
   ShootingStarWishRepository(this._prefs);
   static const legacyStorageKey = 'shooting-star-wish-v1';
   static const storageKey = 'shooting-star-wish-v2';
   final SharedPreferences _prefs;
+
+  @override
+  String get syncName => 'shooting-star-wish';
+
+  @override
+  late final LocalCollection syncCollection = LocalCollection.single(
+    _prefs,
+    storageKey,
+  );
   static Future<ShootingStarWishRepository> create() async =>
       ShootingStarWishRepository(await SharedPreferences.getInstance());
 

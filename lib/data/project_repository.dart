@@ -10,17 +10,28 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/life_area.dart';
 import '../models/project.dart';
+import '../sync/local_collection.dart';
+import '../sync/syncable_repository.dart';
 
 /// Reads and writes the user's projects as a single JSON-encoded list under
 /// one [SharedPreferences] key, newest first — mirrors [StarRepository]'s
 /// shape exactly, since the same "small list, always read/written whole"
 /// reasoning applies here.
-class ProjectRepository extends ChangeNotifier {
+class ProjectRepository extends ChangeNotifier with SyncableRepository {
   ProjectRepository(this._prefs);
 
   static const _storageKey = 'projects-list';
 
   final SharedPreferences _prefs;
+
+  @override
+  String get syncName => 'projects';
+
+  @override
+  late final LocalCollection syncCollection = LocalCollection(
+    _prefs,
+    _storageKey,
+  );
 
   static Future<ProjectRepository> create() async {
     final prefs = await SharedPreferences.getInstance();

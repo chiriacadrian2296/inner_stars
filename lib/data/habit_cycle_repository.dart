@@ -12,6 +12,8 @@ import '../models/habit.dart';
 import '../models/habit_completion.dart';
 import '../models/habit_cycle.dart';
 import '../utils/habit_stats.dart';
+import '../sync/local_collection.dart';
+import '../sync/syncable_repository.dart';
 
 /// Reads and writes every pulsar's completed cycles as a single JSON-encoded
 /// list under one [SharedPreferences] key — kept apart from [Habit] so a
@@ -19,12 +21,21 @@ import '../utils/habit_stats.dart';
 ///
 /// A cycle exists the moment its goal is reached (see [sync]); the reward is
 /// real from then on, whether or not the reflection page was ever opened.
-class HabitCycleRepository extends ChangeNotifier {
+class HabitCycleRepository extends ChangeNotifier with SyncableRepository {
   HabitCycleRepository(this._prefs);
 
   static const _storageKey = 'habit-cycles-v1';
 
   final SharedPreferences _prefs;
+
+  @override
+  String get syncName => 'habit-cycles';
+
+  @override
+  late final LocalCollection syncCollection = LocalCollection(
+    _prefs,
+    _storageKey,
+  );
 
   static Future<HabitCycleRepository> create() async {
     final prefs = await SharedPreferences.getInstance();

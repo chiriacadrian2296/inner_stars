@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -5,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/life_area.dart';
 import 'moodboard_storage.dart';
 import 'repository_write.dart';
+import '../sync/local_collection.dart';
+import '../sync/syncable_repository.dart';
 
 const kMaxMoodboardItems = 12;
 const moodboardStorageKey = 'moodboard-items-v2';
@@ -102,9 +106,19 @@ class MoodboardItem {
   }
 }
 
-class MoodboardRepository {
+class MoodboardRepository extends ChangeNotifier with SyncableRepository {
   MoodboardRepository(this.prefs);
   final SharedPreferences prefs;
+
+  @override
+  String get syncName => 'moodboard';
+
+  @override
+  late final LocalCollection syncCollection = LocalCollection.keyedMap(
+    prefs,
+    moodboardStorageKey,
+    keepId: true,
+  );
   static Future<MoodboardRepository> create() async =>
       MoodboardRepository(await SharedPreferences.getInstance());
 

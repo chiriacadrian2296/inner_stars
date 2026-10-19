@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'repository_write.dart';
 
 import 'package:uuid/uuid.dart';
@@ -9,17 +11,28 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/custom_constellation.dart';
 import 'constellation_presets.dart';
 import 'constellation_shape.dart';
+import '../sync/local_collection.dart';
+import '../sync/syncable_repository.dart';
 
 /// Reads and writes the user's own constellation shapes as a single
 /// JSON-encoded list under one [SharedPreferences] key, newest first —
 /// mirrors [ProjectRepository]'s shape exactly, since the same "small list,
 /// always read/written whole" reasoning applies here.
-class StarsShapeRepository {
+class StarsShapeRepository extends ChangeNotifier with SyncableRepository {
   StarsShapeRepository(this._prefs);
 
   static const _storageKey = 'custom-constellations-list';
 
   final SharedPreferences _prefs;
+
+  @override
+  String get syncName => 'shapes';
+
+  @override
+  late final LocalCollection syncCollection = LocalCollection(
+    _prefs,
+    _storageKey,
+  );
 
   static Future<StarsShapeRepository> create() async {
     final prefs = await SharedPreferences.getInstance();
