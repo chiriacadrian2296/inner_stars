@@ -83,7 +83,6 @@ abstract class AppStrings {
   String get reflectionQuestionsSubtitle;
   String get reflectionsPageDescription;
   String get reflectionAnswerHint;
-  String get reflectionDifficultyLabel;
   String get reflectionAnsweredCountLabel;
 
   // The Sky's own side menu — the app has exactly one screen now (the

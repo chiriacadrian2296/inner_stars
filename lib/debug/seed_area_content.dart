@@ -41,7 +41,7 @@ Future<void> seedAreaContent({
     }
 
     // Two of the area's four questions, with texts taken in turn from a
-    // small pool and an easy-to-hard intensity that varies.
+    // small pool.
     for (final questionIndex in const [0, 2]) {
       final id = '$questionIndex';
       if (reflectionAnswerRepository.getAnswer(area, id) != null) continue;
@@ -50,7 +50,6 @@ Future<void> seedAreaContent({
         id,
         answerText:
             content.answers[(index + questionIndex) % content.answers.length],
-        intensity: 1 + (index * 2 + questionIndex) % 5,
       );
     }
 

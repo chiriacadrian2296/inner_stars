@@ -243,9 +243,6 @@ class StringsIt implements AppStrings {
   @override
   String get reflectionAnswerHint => 'Scrivi qui la tua risposta...';
   @override
-  String get reflectionDifficultyLabel =>
-      'Quanto è stato difficile trovare questa risposta?';
-  @override
   String get reflectionAnsweredCountLabel => 'risposte';
 
   @override

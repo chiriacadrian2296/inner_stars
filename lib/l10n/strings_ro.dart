@@ -243,9 +243,6 @@ class StringsRo implements AppStrings {
   @override
   String get reflectionAnswerHint => 'Scrie aici răspunsul tău...';
   @override
-  String get reflectionDifficultyLabel =>
-      'Cât de greu a fost să găsești acest răspuns?';
-  @override
   String get reflectionAnsweredCountLabel => 'răspunsuri';
 
   @override

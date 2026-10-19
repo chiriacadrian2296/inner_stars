@@ -242,9 +242,6 @@ class StringsEn implements AppStrings {
   @override
   String get reflectionAnswerHint => 'Write your answer here...';
   @override
-  String get reflectionDifficultyLabel =>
-      'How difficult was it to find this answer?';
-  @override
   String get reflectionAnsweredCountLabel => 'answered';
 
   @override

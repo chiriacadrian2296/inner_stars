@@ -8,7 +8,6 @@ import '../models/reflection_answer.dart';
 import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
-import 'intensity_bolts.dart';
 import 'staggered_entrance.dart';
 
 class ReflectionQuestionsSection extends StatefulWidget {
@@ -164,9 +163,7 @@ class ReflectionQuestionsSectionState
 
 /// One question of [ReflectionQuestionsSection]: a header row that, on
 /// tap, expands downward — pushing the tiles below it rather than
-/// overlaying them — into a free-text answer field and a difficulty
-/// picker using the same 1-5 intensity scale a star's own effort is rated
-/// on. Collapsed, the header alone shows (via a small gold bolt) whether
+/// overlaying them — into a free-text answer field. Collapsed, the header alone shows (via a small gold bolt) whether
 /// the question's been answered; the answer text itself only exists while
 /// expanded, never truncated inline.
 class _ReflectionQuestionTile extends StatefulWidget {
@@ -198,7 +195,6 @@ class _ReflectionQuestionTileState extends State<_ReflectionQuestionTile> {
     text: _existing?.answerText ?? '',
   );
   late final _focusNode = FocusNode()..addListener(_handleFocusChange);
-  late int _intensity = _existing?.intensity ?? 3;
   bool _expanded = false;
 
   bool get _hasAnswer => _controller.text.trim().isNotEmpty;
@@ -224,15 +220,12 @@ class _ReflectionQuestionTileState extends State<_ReflectionQuestionTile> {
       widget.area,
       widget.questionId,
       answerText: _controller.text,
-      intensity: _intensity,
     );
     if (mounted) widget.onSaved();
   }
 
   // Collapsing (rather than losing focus) is the other moment an edit needs
-  // to be saved — a slider drag alone never touches the text field's focus,
-  // so relying on [_handleFocusChange] by itself could lose a difficulty
-  // change made without ever typing.
+  // to be saved.
   void _toggleExpanded() {
     if (_expanded) _save();
     setState(() => _expanded = !_expanded);
@@ -246,7 +239,6 @@ class _ReflectionQuestionTileState extends State<_ReflectionQuestionTile> {
         widget.area,
         widget.questionId,
         answerText: _controller.text,
-        intensity: _intensity,
       );
     }
     _focusNode.removeListener(_handleFocusChange);
@@ -332,49 +324,6 @@ class _ReflectionQuestionTileState extends State<_ReflectionQuestionTile> {
                             ),
                             decoration: InputDecoration(
                               hintText: strings.reflectionAnswerHint,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        StaggeredEntrance(
-                          index: 1,
-                          child: Text(
-                            strings.reflectionDifficultyLabel,
-                            style: TextStyle(fontSize: 12, color: colors.muted),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        StaggeredEntrance(
-                          index: 1,
-                          child: Center(
-                            child: IntensityBolts(
-                              intensity: _intensity,
-                              color: context.colors.gold,
-                              size: 22,
-                              spacing: 6,
-                              emphasizeLast: true,
-                            ),
-                          ),
-                        ),
-                        StaggeredEntrance(
-                          index: 2,
-                          child: Center(
-                            child: FractionallySizedBox(
-                              widthFactor: 0.7,
-                              child: SliderTheme(
-                                data: SliderTheme.of(context)
-                                    .copyWith(padding: EdgeInsets.zero),
-                                child: Slider(
-                                  value: _intensity.toDouble(),
-                                  min: 1,
-                                  max: 5,
-                                  divisions: 4,
-                                  onChanged: (value) {
-                                    setState(() => _intensity = value.round());
-                                    _save();
-                                  },
-                                ),
-                              ),
                             ),
                           ),
                         ),

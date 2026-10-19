@@ -64,7 +64,6 @@ class ReflectionAnswerRepository {
     LifeArea area,
     String questionId, {
     required String answerText,
-    required int intensity,
   }) async {
     final all = _readAll();
     final key = _key(area, questionId);
@@ -76,7 +75,6 @@ class ReflectionAnswerRepository {
         area: area,
         questionId: questionId,
         answerText: trimmed,
-        intensity: intensity,
         answeredDate: DateTime.now(),
       );
     }

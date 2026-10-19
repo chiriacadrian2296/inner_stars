@@ -24,13 +24,11 @@ void main() {
       LifeArea.physical,
       '0',
       answerText: 'Pretty good, actually.',
-      intensity: 3,
     );
 
     final answer = repo.getAnswer(LifeArea.physical, '0');
     expect(answer, isNotNull);
     expect(answer!.answerText, 'Pretty good, actually.');
-    expect(answer.intensity, 3);
   });
 
   test(
@@ -42,19 +40,16 @@ void main() {
         LifeArea.physical,
         '0',
         answerText: 'Physical answer',
-        intensity: 2,
       );
       await repo.setAnswer(
         LifeArea.physical,
         '1',
         answerText: 'Second physical answer',
-        intensity: 4,
       );
       await repo.setAnswer(
         LifeArea.financial,
         '0',
         answerText: 'Financial answer',
-        intensity: 5,
       );
 
       expect(
@@ -80,7 +75,6 @@ void main() {
       LifeArea.social,
       '0',
       answerText: '  Deep friendships.  ',
-      intensity: 1,
     );
 
     expect(
@@ -93,19 +87,9 @@ void main() {
     'setAnswer() with a blank string clears the entry rather than storing it',
     () async {
       final repo = await ReflectionAnswerRepository.create();
-      await repo.setAnswer(
-        LifeArea.spiritual,
-        '0',
-        answerText: 'Something',
-        intensity: 3,
-      );
+      await repo.setAnswer(LifeArea.spiritual, '0', answerText: 'Something');
 
-      await repo.setAnswer(
-        LifeArea.spiritual,
-        '0',
-        answerText: '   ',
-        intensity: 3,
-      );
+      await repo.setAnswer(LifeArea.spiritual, '0', answerText: '   ');
 
       expect(repo.getAnswer(LifeArea.spiritual, '0'), isNull);
     },
@@ -113,14 +97,9 @@ void main() {
 
   test('getAnswersForArea() returns only that area\'s answers, keyed by question id', () async {
     final repo = await ReflectionAnswerRepository.create();
-    await repo.setAnswer(LifeArea.physical, '0', answerText: 'A', intensity: 1);
-    await repo.setAnswer(LifeArea.physical, '2', answerText: 'B', intensity: 2);
-    await repo.setAnswer(
-      LifeArea.financial,
-      '0',
-      answerText: 'C',
-      intensity: 3,
-    );
+    await repo.setAnswer(LifeArea.physical, '0', answerText: 'A');
+    await repo.setAnswer(LifeArea.physical, '2', answerText: 'B');
+    await repo.setAnswer(LifeArea.financial, '0', answerText: 'C');
 
     final answers = repo.getAnswersForArea(LifeArea.physical);
 
@@ -131,8 +110,8 @@ void main() {
 
   test('clear() removes every saved answer', () async {
     final repo = await ReflectionAnswerRepository.create();
-    await repo.setAnswer(LifeArea.physical, '0', answerText: 'A', intensity: 1);
-    await repo.setAnswer(LifeArea.social, '0', answerText: 'B', intensity: 2);
+    await repo.setAnswer(LifeArea.physical, '0', answerText: 'A');
+    await repo.setAnswer(LifeArea.social, '0', answerText: 'B');
 
     await repo.clear();
 
@@ -148,7 +127,6 @@ void main() {
         LifeArea.professional,
         '0',
         answerText: 'Meaningful work.',
-        intensity: 4,
       );
 
       final second = await ReflectionAnswerRepository.create();
