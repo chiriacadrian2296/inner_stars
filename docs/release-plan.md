@@ -1,9 +1,31 @@
 # Piano di rilascio – Inner Stars
 
-Documento di lavoro: si procede per step, in ordine, spuntando le voci. Ogni sezione è
-autonoma quanto possibile. Aggiornare questo file quando una decisione cambia.
+Documento di lavoro: si procede per step, in ordine, spuntando le voci. Aggiornare questo file
+quando una decisione cambia.
 
 Terminologia: vedi `docs/terminology.md` (Galaxy, Sky, attività, ecc.).
+
+**Legenda**
+- `[x]` fatto · `[ ]` da fare · `[~]` fatto a metà
+- ⭐ **da rivedere con te**: prima di toccare il codice vanno chiesti i dettagli. Non partire senza
+  averne parlato.
+
+**Struttura**: prima tutte le modifiche all'app (parte A), poi l'infrastruttura e il resto, cioè
+Firebase, hosting, privacy e store (parte B), infine la rifinitura (parte C).
+
+## Da rivedere con te (indice delle ⭐)
+
+1. Dati per la sync: limite degli elementi della moodboard per area (proposta 12).
+2. Riflessioni: come si raggiungono l'elenco e "Vedi riflessione", archiviare o eliminare, ordine.
+3. Pagina di personalizzazione della scheda da condividere.
+4. Limite di frame rate (Free/40/30) e sonde TEMPORARY.
+5. Quali impostazioni si sincronizzano.
+6. Cosa mostrare nel pannello Account di Settings prima del login, e come cancellare i dati
+   locali in release finché non c'è il login.
+7. Piattaforme della prima uscita (web, Android, iOS).
+8. Strumento per la segnalazione degli errori.
+9. Tutorial: cosa resta nell'app prima di rivederli.
+10. File dei lab nella build pubblica: pesano abbastanza da toglierli?
 
 ## 0. Decisioni prese
 
@@ -20,101 +42,34 @@ Terminologia: vedi `docs/terminology.md` (Galaxy, Sky, attività, ecc.).
   Il resto dopo la v1.
 - Strumenti di sviluppo (lab, dati di esempio, reset) **solo nelle build di sviluppo**.
 - Comete: la frequenza attuale (`kCometPeriodScale = 0.45`) è quella definitiva.
-- Tutorial: da rivedere **alla fine**, quando è deciso cosa resta nell'app.
-- Sound Lab: resta per ora (serve per lavorare sull'audio), poi nascosto. Idea futura: pacchetti
-  di suoni a pagamento come contenuti extra.
+- Sound Lab: resta nelle build di sviluppo; idea futura: pacchetti di suoni a pagamento.
+- Backup dei dati locali / export JSON: non serve per ora, l'app la usa solo l'autore.
 
-## 1. Pulizia per il rilascio
+---
 
-Obiettivo: nessuna traccia di strumenti interni nelle build pubbliche.
+# PARTE A – Modifiche all'app (in ordine)
 
-- [x] Introdurre un unico interruttore `kDevTools = bool.fromEnvironment('DEV_TOOLS', defaultValue: kDebugMode)`,
-      letto da una costante condivisa. Per default è acceso solo nelle build debug, come deciso;
-      se vuoi vedere i lab in una build release (prova di velocità) basta `--dart-define=DEV_TOOLS=true`.
-      Le build pubbliche non lo passano e restano pulite.
-- [x] Dietro `kDevTools` (`lib/debug/dev_tools.dart`):
-  - [x] sezione "Lab" del menu (`lib/widgets/sky_menu_drawer.dart`): Moon visual lab, Card back lab,
-        Constellation lab, Share lab;
-  - [x] pulsante Moon lab nel ventaglio del pulsante stella (`lib/screens/sky_screen.dart`);
-  - [x] "Seed sample data" in Settings (`lib/screens/settings_screen.dart`);
-  - [x] "Reset all data" in Settings (in produzione viene sostituito da "Elimina account e dati", vedi sez. 5);
-  - [x] le voci già parcheggiate dietro `_kShowOtherLabEntries`.
-- [~] Sonde TEMPORARY: ora dietro `kDevTools` (non rimosse, perché la scelta Free/40/30 è ancora in sospeso nella TRB). Rimuovere le sonde TEMPORARY di `lib/main.dart` (`startFrameTimingProbe()`,
-      `installFrameRateLimiter()`; file in `lib/debug/`) e ripulire il worktree di scratch
-      della sessione di profiling.
-- [x] Settings: parcheggiati i tre pannelli segnaposto (`_kShowPlaceholderSections = false`) (Profile and Account, Customization,
-      Passkey and Social) e il badge "COMING SOON". Il pannello Account torna con il login (sez. 5).
-- [x] Sound Lab: resta nella versione debug (serve per lavorare sull'audio) ma **esce subito dalla
-      release**: dietro `kDevTools` sia la voce nel menu sia il pulsante "open Sound Lab" in Settings
-      (`settings_screen.dart` ~625) e in Quick Settings. Prima verificare che i controlli audio che
-      servono all'utente (volume, musica di sottofondo) esistano anche fuori dal Sound Lab.
-- [ ] Controllo localizzazione: nessuna stringa codificata a mano in italiano nelle schermate
-      che restano visibili.
-- [ ] Rimuovere o spostare i file dei lab fuori dalla build pubblica se pesano (valutare dopo).
+## A1. Già fatto
 
-## 2. Rimozioni dalla prima uscita
+- [x] `kDevTools` (`lib/debug/dev_tools.dart`): dietro di esso la sezione Lab del menu, il pulsante
+      Moon lab, "Seed sample data", "Reset all data", i pulsanti Sound Lab (Settings e Quick
+      Settings), le sonde dei frame e la riga "FPS Limit".
+- [x] Pannelli segnaposto di Settings (Customization, Passkey, Social) parcheggiati
+      (`_kShowPlaceholderSections = false`).
+- [x] Intensità tolta dalle riflessioni (`fromJson` tollera i dati vecchi).
+- [x] Stella cadente spenta (`_kShowShootingStar = false`); il codice resta (TRB).
+- [x] Gestione obiettivi e abitudini fuori dalle statistiche: il pulsante "Gestisci obiettivi e
+      abitudini" sta accanto ad "Aggiungi" in Vedi area, Vedi costellazione, nei tooltip di Galaxy
+      e nel menu (sezione Attività). La pagina è `lib/screens/today_habits_screen.dart`.
+- [x] Dettagli di "Crea vittoria": accanto alla foto principale una sola nota vocale (max 1 minuto)
+      e tre link con icona (canzone, posizione, sito; `StarMedia.linkKind`). Niente più foto
+      secondarie né video da aggiungere; i dati vecchi restano leggibili nel lettore.
+- [x] Statistiche: riga centrata se non c'è luce; scroll fino al pannello fissato al cambio di livello.
+- [x] Application id `app.innerstars`.
 
-- [x] **Intensità nelle riflessioni.** Rimuoverla da `lib/models/reflection_answer.dart`,
-      `lib/data/reflection_answer_repository.dart`, `lib/widgets/reflection_questions_section.dart`
-      (slider e fulmini), `lib/debug/seed_data.dart`, `lib/debug/seed_area_content.dart` e dai test.
-      `fromJson` resta tollerante verso i dati già salvati. Non toccare l'intensità di stelle,
-      abitudini e cicli (è parte del cuore dell'app).
-- [x] **Stella cadente** (`_kShowShootingStar = false`). Spegnere `_kShowShootingStar` e `_kShowShootingStarStudy` in
-      `lib/screens/sky_screen.dart`. Il codice resta (TRB). Il desiderio non entra nella sync.
-- [x] **Gestione obiettivi e abitudini fuori dalle statistiche.** La pagina esisteva già
-      (`lib/screens/today_habits_screen.dart`). Il pulsante "Gestisci obiettivi e abitudini" è tolto
-      da "La Tua Luce" e compare accanto ad "Aggiungi" nel dock di Vedi area, in quello di Vedi
-      costellazione, nel cassetto dei tooltip di area e costellazione in Galaxy e nel menu
-      (sezione Attività, sotto "Illumina il tuo cielo").
-- [x] **Dettagli di "Crea vittoria".** Niente più foto secondarie né video da aggiungere. Accanto
-      alla foto principale: in alto una sola nota vocale (max 1 minuto), poi tre link con icona
-      fissa: canzone, posizione (Maps), sito (`StarMedia.linkKind`; i link senza tipo contano come
-      sito). I dati già salvati (foto secondarie, video, più note vocali) restano leggibili nel
-      lettore ma non si modificano più dal form. Codice: `StarMediaEditor(sideColumn: true)` in
-      `lib/widgets/star_media_editor.dart`.
-- [x] **Statistiche: tornare in alto al cambio di livello.** Quando si scende di livello nella
-      pagina (area → costellazione → attività), o si sale verso aree e "tutto", la pagina deve
-      scorrere fino all'inizio della prima sezione "Overview", cioè il punto in cui il pannello del
-      percorso arriva in cima e resta fissato sopra il contenuto. Oggi lo scroll resta dov'era
-      (`LightScreen._setScope` in `lib/screens/light_screen.dart`, `_session.scrollOffset`).
-      Fatto: `_setScope` scorre fino al pannello fissato (`_titleKey`), con salto diretto se il movimento è ridotto.
-- [ ] Già parcheggiati, restano fuori: amici, onboarding, schermata Metaphor, vista a lista del Sky.
+## A2. Dati pronti per la sincronizzazione
 
-## 3. Nuova funzione: Riflessioni
-
-Oggi: 4 domande preimpostate per area, ne scegli una e rispondi. Obiettivo: riflessioni libere.
-
-- Una **riflessione** nasce da una domanda preimpostata **oppure da zero**, con un titolo/tema
-  scritto dall'utente, e un testo di sviluppo sotto. È **sempre legata a un'area**, come oggi.
-  Il testo è **unico** (modificabile, senza storico).
-- Elenco di tutte le riflessioni e una schermata **"Vedi riflessione"** per consultarle una a una,
-  sul modello di "Vedi stella" (azioni raggruppate come in "Vedi": statistiche/modifica/archivia
-  insieme, Fly ultima a destra).
-- Le domande preimpostate diventano **suggerimenti** per iniziare una riflessione.
-- Entità sincronizzabile: `id` UUID, `title`, `body`, area (obbligatoria), origine (suggerita o
-  libera), `createdAt`, `updatedAt`, `deleted`.
-- Migrare le risposte esistenti alla nuova entità.
-- **Condivisione come card, già nella v1**, come per le altre cose condivisibili (composer in
-  `lib/screens/share_preview_screen.dart`, `lib/widgets/share_arrangement.dart`, `shareable_*_card.dart`).
-  Condividere è una scelta esplicita dell'utente e una riflessione senza testo perde di senso:
-  di default la card mostra titolo/domanda, area e **testo**. Nella pagina di personalizzazione
-  (sez. 3b) l'utente può accorciare il testo o nasconderlo. Se il testo è lungo, gestire il
-  troncamento o la scelta di un estratto.
-- **Achievement: dopo la v1**, progettati per tutta l'app (stelle, costellazioni, abitudini,
-  riflessioni), non solo per le riflessioni. Con riflessioni libere il criterio cambia (es. "N
-  riflessioni in un'area" al posto di "tutte le domande di un'area").
-
-### 3b. Pagina di personalizzazione della scheda da condividere
-
-- [ ] Una pagina unica per scegliere cosa mostrare e come, valida per tutte le card condivisibili
-      (vittoria, obiettivo, stella accesa, pulsar, costellazione, contenuto d'area, riflessione).
-- [ ] Da progettare insieme prima di implementare (cosa è personalizzabile per tipo di card;
-      cosa include di default; anteprima).
-- Ordine: dopo la sez. 4, così la nuova entità nasce già pronta alla sync.
-
-## 4. Dati pronti per la sincronizzazione
-
-Nessuna dipendenza esterna; si può fare subito.
+Nessuna dipendenza esterna; si può fare subito. **Prima di partire parlare del punto ⭐.**
 
 - [ ] UUID v4 (`uuid`) per Star, Project, Habit, HabitCompletion, HabitCycle, StarsShape;
       riferimenti incrociati a stringa (~330 occorrenze in 34 file).
@@ -124,14 +79,77 @@ Nessuna dipendenza esterna; si può fare subito.
       (`lib/data/repository_write.dart` e gli `_saveAll`).
 - [ ] Flag `deleted` (tombstone) al posto delle cancellazioni vere: progetti, completion, cicli,
       forme, risposte/riflessioni, visioni, moodboard e reset. Le UI filtrano `deleted`.
-- [ ] Moodboard: un record per elemento con `{updatedAt, deleted}`, non più una lista JSON per area.
-      Rimuovere la possibilità di aggiungere video; limite rigido di elementi per area (proposta: 12).
 - [ ] Dati per area (visioni, desiderio): record `{value, updatedAt, deleted}` per chiave.
+- [ ] ⭐ Moodboard: un record per elemento con `{updatedAt, deleted}`, non più una lista JSON per
+      area. Rimuovere la possibilità di aggiungere video; limite rigido di elementi per area, anche
+      in locale (proposta: 12 — **da confermare**).
 - [ ] Test di migrazione e tombstone.
 
-## 5. Account, sync e hosting
+## A3. Nuova funzione: Riflessioni
 
-### 5a. Cose da fare tu (nell'ordine)
+Oggi: 4 domande preimpostate per area, ne scegli una e rispondi. Obiettivo: riflessioni libere.
+Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
+
+- Una **riflessione** nasce da una domanda preimpostata **oppure da zero**, con un titolo/tema
+  scritto dall'utente, e un testo di sviluppo sotto. È **sempre legata a un'area**, come oggi.
+  Il testo è **unico** (modificabile, senza storico).
+- Le domande preimpostate diventano **suggerimenti** per iniziare una riflessione.
+- Entità sincronizzabile: `id` UUID, `title`, `body`, area (obbligatoria), origine (suggerita o
+  libera), `createdAt`, `updatedAt`, `deleted`.
+- Migrare le risposte esistenti alla nuova entità.
+- **Condivisione come card, già nella v1**, come per le altre cose condivisibili (composer in
+  `lib/screens/share_preview_screen.dart`, `lib/widgets/share_arrangement.dart`, `shareable_*_card.dart`).
+  Di default la card mostra titolo/domanda, area e **testo**. Nella pagina di personalizzazione
+  (A4) l'utente può accorciare il testo o nasconderlo. Se il testo è lungo, gestire il troncamento
+  o la scelta di un estratto.
+- **Achievement: dopo la v1**, progettati per tutta l'app; con riflessioni libere il criterio cambia
+  (es. "N riflessioni in un'area").
+- [ ] ⭐ **Da definire con te prima di costruire**: dove vive l'elenco delle riflessioni (pagina
+      dell'area, menu, o entrambi); come si apre "Vedi riflessione" e cosa contiene il suo dock
+      (sul modello di "Vedi stella": statistiche/modifica/archivia insieme, Fly ultima a destra);
+      se una riflessione si archivia o si elimina; come sono ordinate; come appaiono i
+      suggerimenti nel form di creazione.
+
+## A4. Pagina di personalizzazione della scheda da condividere
+
+- [ ] ⭐ Una pagina unica per scegliere cosa mostrare e come, valida per tutte le card condivisibili
+      (vittoria, obiettivo, stella accesa, pulsar, costellazione, contenuto d'area, riflessione).
+      **Da progettare insieme prima di implementare**: cosa è personalizzabile per tipo di card,
+      cosa include di default, come funziona l'anteprima.
+
+## A5. Pulizia residua
+
+- [ ] ⭐ Limite di frame rate: scegliere Free/40/30; poi togliere le sonde TEMPORARY di
+      `lib/main.dart` (`startFrameTimingProbe()`, `installFrameRateLimiter()`; file in
+      `lib/debug/`), la riga "FPS Limit" e il worktree di scratch del profiling. Oggi sono solo
+      dietro `kDevTools`.
+- [ ] Sound Lab: verificare che i controlli audio che servono all'utente (volume, musica di
+      sottofondo) esistano anche fuori dal Sound Lab, ora che nelle build pubbliche non c'è.
+- [ ] Testi scritti a mano in italiano da portare nelle stringhe localizzate: i dock di Vedi
+      costellazione ("Nuova stella", "Condividi", "Modifica", "Elimina") e ogni altra schermata che
+      resta visibile in release.
+- [ ] ⭐ File dei lab nella build pubblica: valutare se pesano abbastanza da escluderli.
+- [ ] Provare sul telefono quanto fatto in A1 non ancora visto: dock con "Gestisci", tooltip
+      Galaxy, blocco nota vocale e link con una vera registrazione, statistiche vuote e scroll.
+
+## A6. Account e sync nell'app (dipende da B1–B3)
+
+- [ ] ⭐ Quali impostazioni si sincronizzano (tema, lingua, ...) e quali no; non i flag per
+      dispositivo (`app_lock.*`, `tour.*`, `audio-*`).
+- [ ] ⭐ Pannello Account in Settings: cosa mostra prima del login; e come cancellare i dati locali
+      in release finché non c'è il login ("Reset all data" è ora solo in sviluppo).
+- [ ] UI in Settings (Quick Settings restano nascoste): Accedi con Google, account, "Sincronizza
+      ora", ultimo sync, Disconnetti, **Elimina account e dati**. Dialog del primo sync quando
+      locale e cloud hanno entrambi dati (Cancel grigio).
+
+---
+
+# PARTE B – Infrastruttura, sync e store
+
+Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando vuoi).
+
+## B1. Cose da fare tu (nell'ordine)
+
 1. Comprare `innerstars.app` su Cloudflare Registrar.
 2. Cloudflare Pages: due progetti collegati a GitHub, uno per la landing (`innerstars.app`, `www`)
    e uno per la web app (`my.innerstars.app`).
@@ -140,11 +158,11 @@ Nessuna dipendenza esterna; si può fare subito.
    (`app.innerstars`), Web (`my.innerstars.app` e `localhost` tra i domini autorizzati).
 5. Passarmi i file di configurazione (`google-services.json`, `GoogleService-Info.plist`, config web).
 
-### 5b. Lavoro tecnico (in ordine)
+## B2. Lavoro tecnico (in ordine)
+
 - [ ] Livello di sync astratto (`RemoteStore` con versione finta per i test), `exportChangesSince`
       / `applyRemote` nei repository, `lib/sync/merge.dart` puro con test (conflitti, tombstone,
-      idempotenza). Sottoinsieme delle impostazioni sincronizzate; non i flag per dispositivo
-      (`app_lock.*`, `tour.*`, `audio-*`).
+      idempotenza).
 - [ ] Firebase: `firebase_core`, `firebase_auth`, `cloud_firestore`, `google_sign_in`.
       Struttura `users/{uid}/<collezione>/{uuid}`. `SyncService` con listener per collezione,
       push debounced, ripresa al `resumed`, stato e nessun crash offline.
@@ -154,38 +172,33 @@ Nessuna dipendenza esterna; si può fare subito.
       compressione prima dell'upload, cache locale (scarica solo quando serve), coda con
       ritenti, rimozione dei file orfani. Richiede il piano Blaze con avviso di budget; verificare
       prima le quote gratuite per la regione scelta.
-- [ ] UI in Settings (Quick Settings restano nascoste): Accedi con Google, account, "Sincronizza
-      ora", ultimo sync, Disconnetti, **Elimina account e dati**. Dialog del primo sync quando
-      locale e cloud hanno entrambi dati (Cancel grigio).
 - [ ] Hosting: nuovo workflow per Cloudflare Pages; la web app alla radice di `my.innerstars.app`
       (senza `--base-href /inner_stars/app/`). Il workflow attuale è `.github/workflows/deploy-web.yml`.
 
-## 6. Legale
+## B3. Legale
 
 - [ ] Pagine `/privacy` e `/terms` nella landing, in IT/EN/RO, scritte insieme.
 - [ ] Cancellazione account che elimina anche i dati cloud (Firestore e Storage).
-- [ ] **Cancellare i propri dati è un requisito, non un extra**: "Reset all data" è ora solo in
-      sviluppo, quindi in release serve "Elimina account e dati" (e, finché non c'è il login, un
-      modo per cancellare i dati locali). Gli store lo richiedono.
+- [ ] **Cancellare i propri dati è un requisito, non un extra** (gli store lo richiedono): vedi A6.
 - [ ] Consent screen Google: homepage `https://innerstars.app`, privacy `https://innerstars.app/privacy`,
       dominio autorizzato `innerstars.app`.
 
-## 7. Rifinitura finale
+## B4. Store e pubblicazione
 
-- [ ] **Decidere le piattaforme della prima uscita** (web, Android, iOS). Costi: Play Store 25 € una
-      tantum, App Store 99 $/anno.
+- [ ] ⭐ **Decidere le piattaforme della prima uscita** (web, Android, iOS). Costi: Play Store 25 €
+      una tantum, App Store 99 $/anno.
 - [ ] **Firma Android per la release**: verificare che la chiave di firma (keystore) esista, sia
       salvata al sicuro e che l'impronta SHA-1 di release sia registrata in Firebase.
 - [ ] **Requisiti degli store**: privacy policy online, scheda dei dati raccolti, classificazione per
       età, screenshot, icona e splash definitivi.
-- [ ] **Segnalazione degli errori** (crash reporting) per sapere cosa si rompe sui telefoni degli altri.
-- [ ] Provare sul telefono le modifiche non ancora viste (dock con "Gestisci", tooltip Galaxy, blocco
-      nota vocale e link con una vera registrazione, statistiche vuote) e fare i commit.
-- [ ] Testi scritti a mano in italiano nei dock di Vedi costellazione ("Nuova stella", "Condividi",
-      "Modifica", "Elimina") da portare nelle stringhe localizzate.
-- [ ] Scegliere Free/40/30 per il limite di frame rate e togliere le sonde TEMPORARY.
+- [ ] ⭐ **Segnalazione degli errori** (crash reporting): scegliere lo strumento.
 
-- [ ] Rivedere tutti i tutorial `hint_kit` una volta deciso cosa resta nell'app.
+---
+
+# PARTE C – Rifinitura finale
+
+- [ ] ⭐ Decidere cosa resta nell'app, poi rivedere tutti i tutorial `hint_kit` (dock, menu e
+      statistiche sono cambiati).
 - [ ] Aggiornare la TRB (rimuovere voci risolte, aggiungere quelle nuove).
 - [ ] Controllo build release su telefono (shader costellazione: Impeller/Skia, vedi memoria).
 - [ ] Controllo web: percorsi, cache, dominio.
@@ -193,15 +206,11 @@ Nessuna dipendenza esterna; si può fare subito.
 
 ## Ordine consigliato
 
-1. Sez. 1 e 2 (pulizia e rimozioni): piccole, indipendenti.
-2. Sez. 4 (dati pronti alla sync), in parallelo ai tuoi passi 5a.
-3. Sez. 3 (Riflessioni), costruite già sull'entità sync-ready.
-4. Sez. 5b e 6 (sync, media, legale).
-5. Sez. 7 (rifinitura).
-
-## Fuori dal piano (deciso)
-
-- Backup dei dati locali / export JSON: non serve per ora, l'app la usa solo l'autore.
+1. A5 (pulizia residua, dopo averne parlato) e, in parallelo, i tuoi passi B1.
+2. A2 (dati pronti alla sync).
+3. A3 (Riflessioni) e A4 (personalizzazione della scheda).
+4. B2 e A6 (sync, media, account).
+5. B3 e B4 (legale e store), poi la parte C.
 
 ## Idee per dopo la v1
 
