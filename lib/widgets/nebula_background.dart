@@ -39,6 +39,8 @@ class NebulaBackground extends StatefulWidget {
     this.showGrid = false,
     this.supernovaLight = 0,
     this.supernovaLevels = const [0, 0, 0, 0, 0, 0, 0, 0],
+    this.onReady,
+    this.onLoadError,
   });
 
   /// Drives the shader's animation — see [SkyClock].
@@ -62,6 +64,8 @@ class NebulaBackground extends StatefulWidget {
   /// [LifeArea] order: the higher, the wider and warmer its supernova's
   /// light on the gas.
   final List<double> supernovaLevels;
+  final VoidCallback? onReady;
+  final ValueChanged<Object>? onLoadError;
 
   @override
   State<NebulaBackground> createState() => _NebulaBackgroundState();
@@ -168,7 +172,14 @@ class _NebulaBackgroundState extends State<NebulaBackground> {
   @override
   void initState() {
     super.initState();
-    _loadShader();
+    _loadShader().catchError((Object error) {
+      if (!mounted) return;
+      if (widget.onLoadError case final callback?) {
+        callback(error);
+      } else {
+        FlutterError.reportError(FlutterErrorDetails(exception: error));
+      }
+    });
     widget.clock.addListener(_onTick);
   }
 
@@ -198,6 +209,7 @@ class _NebulaBackgroundState extends State<NebulaBackground> {
       _fullShaders = _SkyShaders(full);
       _liteShaders = _SkyShaders(lite);
     });
+    widget.onReady?.call();
   }
 
   /// Takes the snapshots the painter needs when the camera has stood still

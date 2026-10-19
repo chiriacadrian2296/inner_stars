@@ -1,8 +1,7 @@
 // Archived copy of the first landing texts (before the chapter rewrite). Not imported by any page.
-import type { JourneyCopy } from './journey';
 
 
-export const journeyItOriginal: JourneyCopy = {
+export const journeyItOriginal = {
   lang: 'it',
   title: 'Inner Stars — C’è un cielo, dentro di te.',
   description: 'Dai un posto agli sforzi che hai compiuto. Inner Stars trasforma vittorie, progetti e abitudini in un cielo da tornare a guardare.',
@@ -33,7 +32,7 @@ export const journeyItOriginal: JourneyCopy = {
   ui: { prev: 'Sezione precedente', mainNav: 'Navigazione principale', try: 'Prova Inner Stars', discover: 'Scopri l’app', overline: { day: 'QUANDO È DIFFICILE VEDERE', star: 'ATTIVITÀ · STELLA', distant: 'PROGETTO · COSTELLAZIONE', reveal: 'AREA · SUPERNOVA', whole: 'IL TUO CIELO INTERO' }, wholeBefore: 'Sei molto più di', wholeAccent: 'una giornata.', wholeText: 'Lavoro, relazioni, cura di te, cose in cui credi. Otto aree, tanti progetti, una vita che continua a prendere forma.', wholeLink: 'Dai un posto al tuo percorso', next: { day: 'AVVICINATI', star: 'UNA STELLA, POI UNA COSTELLAZIONE', distant: 'ALLARGA LO SGUARDO', reveal: 'GUARDA IL CIELO INTERO', whole: 'SCOPRI L’APP' } },
 };
 
-export const journeyEnOriginal: JourneyCopy = {
+export const journeyEnOriginal = {
   lang: 'en',
   title: 'Inner Stars — There’s a sky within you.',
   description: 'Make room for the efforts you have made. Inner Stars turns victories, projects and habits into a sky you can return to.',
@@ -64,7 +63,7 @@ export const journeyEnOriginal: JourneyCopy = {
   ui: { prev: 'Previous section', mainNav: 'Main navigation', try: 'Try Inner Stars', discover: 'Discover the app', overline: { day: 'WHEN IT’S HARD TO SEE', star: 'ACTIVITY · STAR', distant: 'PROJECT · CONSTELLATION', reveal: 'AREA · SUPERNOVA', whole: 'YOUR WHOLE SKY' }, wholeBefore: 'You are more than', wholeAccent: 'a single day.', wholeText: 'Work, relationships, looking after yourself, what you believe in. Eight areas, many projects, a life that keeps taking shape.', wholeLink: 'Give your journey a home', next: { day: 'COME CLOSER', star: 'FROM A STAR TO A CONSTELLATION', distant: 'WIDEN YOUR VIEW', reveal: 'SEE THE WHOLE SKY', whole: 'DISCOVER THE APP' } },
 };
 
-export const journeyRoOriginal: JourneyCopy = {
+export const journeyRoOriginal = {
   lang: 'ro',
   title: 'Inner Stars — Există un cer în tine.',
   description: 'Dă un loc eforturilor pe care le-ai făcut. Inner Stars transformă victoriile, proiectele și obiceiurile într-un cer la care te poți întoarce.',

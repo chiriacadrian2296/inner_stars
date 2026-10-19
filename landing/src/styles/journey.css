@@ -35,6 +35,15 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
 .brand { display: inline-flex; gap: 13px; align-items: center; font: 25px/1 var(--brand); white-space: nowrap; }
 .brand img { width: 25px; height: 34px; object-fit: contain; }
 .journey-nav { position: fixed; top: 0; left: 0; width: 100%; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 14px 5%; background: transparent; color: var(--text);  }
+/* The menu stays fully transparent. Chapter text and buttons fade out as they reach the menu's height, so nothing ever sits behind the logo and links (scroll-driven: fully gone 46px after crossing the line just below the menu). */
+@keyframes leave-at-top { to { opacity: 0; } }
+@supports (animation-timeline: view()) {
+  .chapter-copy>*,.closing-copy>*,.chapter-nav { animation: leave-at-top linear both; animation-timeline: view(block 124px 0px); animation-range: exit 0px exit 46px; }
+}
+/* Browsers without scroll-driven animations get a frosted-glass fade behind the menu instead. */
+@supports not (animation-timeline: view()) {
+  .journey-nav::before { content: ''; position: absolute; inset: 0 0 -34px; z-index: -1; pointer-events: none; background: linear-gradient(180deg, #ffffff17 0, #ffffff12 68%, #ffffff00 100%); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); -webkit-mask-image: linear-gradient(180deg, #000 68%, transparent 100%); mask-image: linear-gradient(180deg, #000 68%, transparent 100%); }
+}
 .journey-nav .brand { padding: 8px 14px; margin-left: -14px; color: var(--text); }
 .journey-nav a:focus-visible,.journey-nav summary:focus-visible { outline-color: var(--gold); }
 .journey-nav .brand:focus-visible,.journey-nav .nav-try:focus-visible { outline-offset: 3px; }
@@ -67,7 +76,10 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
 .galaxy-scene canvas,.galaxy-fallback { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .galaxy-fallback { opacity: .7; }
 .galaxy-scene.is-ready .galaxy-fallback { opacity: 0; }
-.galaxy-scene::after { position: absolute; inset: 0; content: ''; background: linear-gradient(90deg,#0d1220e6, #0d122088 34%,transparent 65%); pointer-events: none; }
+/* The area artwork is added onto the sky like the app's BlendMode.plus. */
+.galaxy-scene[data-renderer="galaxy-webgl2"] .galaxy-stars { mix-blend-mode: plus-lighter; }
+/* --scrim-k (set by the script) shortens it on narrower windows so it stops before the constellations. --wide (0 to 1, set by the script) swaps in a longer, evenly easing scrim for the whole-sky chapter, where the bright sky would otherwise outshine it. */
+.galaxy-scene::after { position: absolute; inset: 0; content: ''; background: linear-gradient(90deg, rgb(13 18 32 / calc(0.96 * var(--wide, 0))), rgb(13 18 32 / calc(0.9 * var(--wide, 0))) calc(14% * var(--scrim-k, 1)), rgb(13 18 32 / calc(0.8 * var(--wide, 0))) calc(28% * var(--scrim-k, 1)), rgb(13 18 32 / calc(0.65 * var(--wide, 0))) calc(42% * var(--scrim-k, 1)), rgb(13 18 32 / calc(0.45 * var(--wide, 0))) calc(56% * var(--scrim-k, 1)), rgb(13 18 32 / calc(0.26 * var(--wide, 0))) calc(68% * var(--scrim-k, 1)), rgb(13 18 32 / calc(0.11 * var(--wide, 0))) calc(78% * var(--scrim-k, 1)), rgb(13 18 32 / calc(0 * var(--wide, 0))) calc(88% * var(--scrim-k, 1))), linear-gradient(90deg, rgb(13 18 32 / calc(0.9 * (1 - var(--wide, 0)))), rgb(13 18 32 / calc(0.53 * (1 - var(--wide, 0)))) 34%, rgb(13 18 32 / calc(0 * (1 - var(--wide, 0)))) 52%); pointer-events: none; }
 .galaxy-scene.is-interactive::after { background: none; }
 .galaxy-scene.is-closing::after { background: radial-gradient(ellipse,#0d1220dc, #0d122080 65%,var(--night)); }
 .chapter { position: relative; min-height: 100svh; min-height: 100dvh; padding: 130px 7% 100px; display: flex; align-items: center; }
@@ -90,6 +102,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
 .chapter-coordinate { position: absolute; right: 5%; bottom: 44px; font-size: 9px; letter-spacing: .1em; color: var(--gold); }
 .chapter-coordinate span { margin-left: 24px; color: var(--muted); }
 .sky-caption { position: absolute; right: 7%; bottom: 5%; font-size: 9px; max-width: 270px; text-align: right; padding: 8px 12px; background: #0d1220b3; border-radius: 8px; }
+/* The fade from the whole-sky chapter into the closing page: a gradient on the chapter's own bottom edge, under its text and buttons. */
 .chapter-universe { background: linear-gradient(0deg,var(--night),transparent 25%); }
 .area-names { display: flex; flex-wrap: wrap; gap: 8px 15px; max-width: 350px; margin: 28px 0; color: var(--muted); font-size: 11px; }
 .text-link { display: inline-block; padding-block: 6px; font-size: 12px; color: var(--gold); }
@@ -239,7 +252,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
   .chapter h2 { font-size: clamp(37px,8.7vw,49px); }
   .chapter .overline { font-size: 8px; margin-bottom: 22px; }
   .chapter-text { font-size: 16px; max-width: 330px; margin-top: 24px; }
-  .galaxy-scene::after { background: linear-gradient(180deg,#0d1220e6, #0d1220cc 44%,#0d122044 60%,transparent 74%); }
+  .galaxy-scene::after { background: linear-gradient(180deg, rgb(13 18 32 / calc(.9 + .08 * var(--wide, 0))), rgb(13 18 32 / calc(.8 + .16 * var(--wide, 0))) 38%, rgb(13 18 32 / calc(.27 + .22 * var(--wide, 0))) calc(52% - 9% * var(--wide, 0)), transparent calc(63% - 14% * var(--wide, 0))); }
   .chapter-nav { left: 7%; bottom: 26px; gap: 8px; }
   .nav-down { height: 40px; padding: 0 16px; gap: 10px; font-size: 8px; }
   .nav-up { width: 40px; height: 40px; }

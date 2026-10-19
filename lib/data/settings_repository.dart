@@ -53,6 +53,7 @@ class SettingsRepository {
       'settings.constellationCardSizeStep';
   static const _constellationCardLabelsOnLeftKey =
       'settings.constellationCardLabelsOnLeft';
+  static const _avatarKey = 'settings.avatar';
   static const _constellationLandscapeEnabledKey =
       'settings.constellationLandscapeEnabled';
 
@@ -158,6 +159,11 @@ class SettingsRepository {
 
   Future<void> setConstellationCardLabelsOnLeft(bool value) =>
       _prefs.setBool(_constellationCardLabelsOnLeftKey, value);
+
+  /// 'male' or 'female'; null until the user picks one.
+  String? get avatar => _prefs.getString(_avatarKey);
+
+  Future<void> setAvatar(String value) => _prefs.setString(_avatarKey, value);
 
   bool get constellationLandscapeEnabled =>
       _prefs.getBool(_constellationLandscapeEnabledKey) ?? false;

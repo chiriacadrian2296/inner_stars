@@ -9,6 +9,8 @@ import '../models/star_kind.dart';
 /// string set is small enough that a plain Dart class is simpler to read,
 /// grep, and keep in sync than generated code.
 abstract class AppStrings {
+  String get splashLoadingLabel;
+  String get splashTagline;
   String get manageHabits;
   String get manageGoals;
   String get manageActivities;
@@ -161,6 +163,8 @@ abstract class AppStrings {
   // own; [socialSection] above doubles as this one's header too.
   String get profileSection;
   String get profilePlaceholderBody;
+  String get avatarMaleLabel;
+  String get avatarFemaleLabel;
   String get customizationSection;
   String get customizationPlaceholderBody;
   String get passkeySection;

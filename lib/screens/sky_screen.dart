@@ -10,7 +10,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, ValueListenable;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -189,6 +189,9 @@ class SkyScreen extends StatefulWidget {
     required this.audioSettingsRepository,
     required this.audioService,
     required this.reminderService,
+    this.onStartupReady,
+    this.onStartupError,
+    this.startupComplete,
   });
 
   final SettingsController settings;
@@ -205,6 +208,9 @@ class SkyScreen extends StatefulWidget {
   final AudioSettingsRepository audioSettingsRepository;
   final AudioService audioService;
   final ReminderService reminderService;
+  final VoidCallback? onStartupReady;
+  final ValueChanged<Object>? onStartupError;
+  final ValueListenable<bool>? startupComplete;
 
   @override
   State<SkyScreen> createState() => _SkyScreenState();
@@ -305,6 +311,45 @@ class _ConstellationShare extends _CreationShareSubject {
 
 class _SkyScreenState extends State<SkyScreen>
     with TickerProviderStateMixin, RouteAware {
+  final _startupLayers = <String>{};
+  bool _startupReported = false;
+  bool _startupTourStarted = false;
+
+  void _startupLayerReady(String layer) {
+    _startupLayers.add(layer);
+    if (_startupReported ||
+        !_startupLayers.containsAll(['nebula', 'stars', 'menu']) ||
+        (widget.settings.showSupernovae &&
+            !_startupLayers.contains('supernova'))) {
+      return;
+    }
+    _startupReported = true;
+    // All required resources are installed. Wait for their combined frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onStartupReady?.call();
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  void _startupError(Object error) {
+    if (!mounted) return;
+    if (widget.onStartupError case final callback?) {
+      callback(error);
+    } else {
+      FlutterError.reportError(FlutterErrorDetails(exception: error));
+    }
+  }
+
+  void _startStartupTour() {
+    if (!mounted ||
+        _startupTourStarted ||
+        widget.startupComplete?.value == false) {
+      return;
+    }
+    _startupTourStarted = true;
+    Tour.read(context).start('sky-navigation');
+  }
+
   // Galaxy is the whole sky: no status bar over it. Screens opened on top
   // get the usual bars back until Galaxy is uncovered again.
   @override
@@ -585,6 +630,12 @@ class _SkyScreenState extends State<SkyScreen>
   SkyCamera? _dragStartCamera;
   (double, double, double)? _dragAnchorDirection;
   bool _steeringCinematicInertia = false;
+
+  /// Once a Direct gesture has involved a pinch, it stays a zoom gesture
+  /// until every finger is released. Flutter can report a high end velocity
+  /// from the one finger left on screen after its partner lifts; treating that
+  /// as a drag release makes an accidental sky fling at the end of a zoom.
+  bool _directGestureIncludedZoom = false;
   double _lastSteeringRotation = 0;
 
   /// Whether each sky-overlay control is currently shown at all — not to
@@ -862,8 +913,9 @@ class _SkyScreenState extends State<SkyScreen>
     // (the invisible full-screen anchor, the menu button, the Sound Lab
     // button). Runs once, ever, same as every other tour (`PrefsTourStorage`).
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) Tour.read(context).start('sky-navigation');
+      _startStartupTour();
     });
+    widget.startupComplete?.addListener(_startStartupTour);
     // Drives the tour's placeholder constellation and fixed camera — see
     // [_handleTourChanged]. A listener rather than reading the controller
     // only from the `start()` call above, so a later "Replay" (from the
@@ -901,6 +953,7 @@ class _SkyScreenState extends State<SkyScreen>
 
   @override
   void dispose() {
+    widget.startupComplete?.removeListener(_startStartupTour);
     systemBarsRouteObserver.unsubscribe(this);
     SystemBars.release(this);
     _insightsController?.removeListener(_refreshOpenTooltip);
@@ -1131,12 +1184,17 @@ class _SkyScreenState extends State<SkyScreen>
   }
 
   Future<void> _loadFlareProgram() async {
-    final program = await buildConstellationFlareProgram();
-    if (!mounted) return;
-    setState(() {
-      _flareProgram = program;
-      _revision++;
-    });
+    try {
+      final program = await buildConstellationFlareProgram();
+      if (!mounted) return;
+      setState(() {
+        _flareProgram = program;
+        _revision++;
+      });
+      _startupLayerReady('stars');
+    } catch (error) {
+      _startupError(error);
+    }
   }
 
   /// Sorted ascending by id (== creation order, ids are timestamp-based) —
@@ -3511,6 +3569,8 @@ class _SkyScreenState extends State<SkyScreen>
     _zoomAtGestureStart = _zoom;
     _steeringCinematicInertia =
         widget.settings.galaxyNavigationMode == GalaxyNavigationMode.cinematic;
+    _directGestureIncludedZoom =
+        !_steeringCinematicInertia && details.pointerCount > 1;
     _lastSteeringRotation = 0;
     if (_steeringCinematicInertia) {
       // Tap-down began the soft brake before Flutter knew whether this would
@@ -3557,6 +3617,13 @@ class _SkyScreenState extends State<SkyScreen>
     // early also skips closing an open tooltip below for a "pan" that
     // was never really allowed to begin with.
     if (_flightInteractionLocked || _tourGestureLockActive) return;
+    if (!_steeringCinematicInertia &&
+        (details.pointerCount > 1 || details.scale != 1.0)) {
+      // Sticky on purpose: when one finger of a pinch lifts before the other,
+      // subsequent updates may look exactly like a one-finger pan. The whole
+      // sequence must still end without Direct inertia.
+      _directGestureIncludedZoom = true;
+    }
     // A genuine pan/zoom — not just the jitter above — closes any open
     // tooltip: letting the camera move out from under one used to leave
     // it pinned in place, still pointing at wherever the target *used*
@@ -3689,6 +3756,17 @@ class _SkyScreenState extends State<SkyScreen>
       return;
     }
     if (_flightInteractionLocked || _tourGestureLockActive) {
+      _directGestureIncludedZoom = false;
+      return;
+    }
+    final includedZoom = _directGestureIncludedZoom;
+    _directGestureIncludedZoom = false;
+    if (includedZoom) {
+      // Direct may pan around the pinch focal point while the fingers are
+      // down, but releasing a zoom never turns its final remaining finger
+      // into a launch.
+      _panVelocity = Offset.zero;
+      _stopInertia();
       return;
     }
     final size = context.size;
@@ -4777,6 +4855,8 @@ class _SkyScreenState extends State<SkyScreen>
                           ArtworkLayer.behindSky)
                         _artworkBackdrop(),
                       NebulaBackground(
+                        onReady: () => _startupLayerReady('nebula'),
+                        onLoadError: _startupError,
                         camera: _camera,
                         zoom: _zoom,
                         clock: _skyClock,
@@ -4815,6 +4895,8 @@ class _SkyScreenState extends State<SkyScreen>
                       // of the files are deleted.
                       if (widget.settings.showSupernovae)
                         SkySupernova(
+                          onReady: () => _startupLayerReady('supernova'),
+                          onLoadError: _startupError,
                           camera: _camera,
                           zoom: _zoom,
                           clock: _skyClock,
@@ -5418,6 +5500,8 @@ class _SkyScreenState extends State<SkyScreen>
                                   description: context.strings.skyTourMenuBody,
                                   child: _MenuStarButton(
                                     key: _menuStarButtonKey,
+                                    onReady: () => _startupLayerReady('menu'),
+                                    onLoadError: _startupError,
                                     clock: _skyClock,
                                     onTap: _openMenuModal,
                                     onQuickTap: _openSkyFromMenuButton,
@@ -7200,10 +7284,14 @@ class _MenuStarButton extends StatefulWidget {
     required this.onQuickTap,
     this.onDismissSkyTooltip,
     this.onPressChanged,
+    this.onReady,
+    this.onLoadError,
   });
 
   /// Drives the glow's animation — see [SkyClock].
   final SkyClock clock;
+  final VoidCallback? onReady;
+  final ValueChanged<Object>? onLoadError;
 
   final VoidCallback onTap;
 
@@ -7352,11 +7440,21 @@ class _MenuStarButtonState extends State<_MenuStarButton>
   }
 
   Future<void> _loadShader() async {
-    final program = await ui.FragmentProgram.fromAsset(
-      'shaders/menu_star_button.frag',
-    );
-    if (!mounted) return;
-    setState(() => _shader = program.fragmentShader());
+    try {
+      final program = await ui.FragmentProgram.fromAsset(
+        'shaders/menu_star_button.frag',
+      );
+      if (!mounted) return;
+      setState(() => _shader = program.fragmentShader());
+      widget.onReady?.call();
+    } catch (error) {
+      if (!mounted) return;
+      if (widget.onLoadError case final callback?) {
+        callback(error);
+      } else {
+        FlutterError.reportError(FlutterErrorDetails(exception: error));
+      }
+    }
   }
 
   void _handlePressStart() {

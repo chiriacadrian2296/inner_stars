@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../data/app_lock_repository.dart';
@@ -420,10 +421,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 10),
                   StaggeredEntrance(
                     index: 1,
-                    child: _PlaceholderPanel(
-                      icon: Icons.person_outline,
-                      body: strings.profilePlaceholderBody,
-                    ),
+                    child: _AvatarPicker(settings: widget.settings),
                   ),
                   const SizedBox(height: 28),
 
@@ -1044,6 +1042,70 @@ class _PlaceholderPanel extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The profile avatar choice: two tiles, the selected one outlined in gold.
+class _AvatarPicker extends StatelessWidget {
+  const _AvatarPicker({required this.settings});
+
+  final SettingsController settings;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = context.strings;
+    final colors = context.colors;
+    return ListenableBuilder(
+      listenable: settings,
+      builder: (context, _) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: panelDecoration(colors),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (final (id, label) in [
+              ('male', strings.avatarMaleLabel),
+              ('female', strings.avatarFemaleLabel),
+            ]) ...[
+              if (id == 'female') const SizedBox(width: 16),
+              GestureDetector(
+                onTap: () => settings.setAvatar(id),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 104,
+                      height: 104,
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: settings.avatar == id
+                              ? colors.gold
+                              : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
+                      child: SvgPicture.asset('assets/avatars/hoodie_$id.svg'),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: settings.avatar == id
+                            ? colors.text
+                            : colors.muted,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

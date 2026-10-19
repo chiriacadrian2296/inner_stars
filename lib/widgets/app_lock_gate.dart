@@ -24,11 +24,13 @@ class AppLockGate extends StatefulWidget {
     required this.appLockRepository,
     required this.biometricAuthService,
     required this.child,
+    this.onLaunchUnlocked,
   });
 
   final AppLockRepository appLockRepository;
   final BiometricAuthService biometricAuthService;
   final Widget child;
+  final VoidCallback? onLaunchUnlocked;
 
   @override
   State<AppLockGate> createState() => _AppLockGateState();
@@ -97,7 +99,10 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
     if (route != null && route.isActive) route.navigator?.removeRoute(route);
   }
 
-  void _unlockLaunch() => setState(() => _lockedAtLaunch = false);
+  void _unlockLaunch() {
+    setState(() => _lockedAtLaunch = false);
+    widget.onLaunchUnlocked?.call();
+  }
 
   @override
   Widget build(BuildContext context) {

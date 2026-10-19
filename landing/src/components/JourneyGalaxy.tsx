@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { fragmentSource, supernovaFragmentSource, flareFragmentSource, vertexSource } from './journey-nebula';
-import { add, mul, norm, ease, skyZoom, artworkAxes, supernovaDirections, supernovaOffsets, areas, areaNames, basis, cameraAt, clamp, journeyStage, mix, projectPoint, projects, projectsPerArea, starDirection, type Vec } from './galaxy-model';
+import { add, mul, norm, ease, skyZoom, flatMapUnitPx, layoutAt, type SkyLayout, artworkAxes, supernovaDirections, supernovaOffsets, areas, areaNames, basis, cameraAt, clamp, journeyStage, mix, projectPoint, projects, projectsPerArea, starDirection, type Vec } from './galaxy-model';
 import { paintEnergy } from './galaxy-energy';
 import type { SiteLang as Lang } from '../i18n/types';
 type Flare = { x:number; y:number; seed:number[]; count:number };
@@ -35,7 +35,7 @@ void main(){fragColor=texture(uLines,vec2(gl_FragCoord.x/uResolution.x,1.-gl_Fra
     const locations = new Map<WebGLProgram, Map<string, WebGLUniformLocation | null>>();
     const loc = (p: WebGLProgram, n: string) => { let map = locations.get(p); if (!map) { map = new Map(); locations.set(p, map); } if (!map.has(n)) map.set(n, gl.getUniformLocation(p, n)); return map.get(n)!; };
     return {      
-dispose, draw(time: number, stage: number, width: number, height: number, offsetX: number, offsetY: number, area: number, direction: Vec, groups:FlareGroup[], lineCanvas:HTMLCanvasElement) {
+dispose, draw(time: number, stage: number, width: number, height: number, offsetX: number, offsetY: number, area: number, direction: Vec, layout:SkyLayout, groups:FlareGroup[], lineCanvas:HTMLCanvasElement) {
         const state = { zoom: skyZoom(stage, area, width, height) }, camera = basis(direction);
         gl.viewport(0, 0, canvas.width, canvas.height);
         for (const [index, program] of [background, supernova].entries()) {
@@ -48,14 +48,16 @@ dispose, draw(time: number, stage: number, width: number, height: number, offset
           gl.uniform1f(loc(program, 'uZoom'), state.zoom);
           gl.uniform1f(loc(program, 'uMode'), 0); gl.uniform1f(loc(program, 'uShowGrid'), 0);
           gl.uniform1f(loc(program, 'uSupernovaLight'), .8*clamp(stage/2));
-          gl.uniform3fv(loc(program, 'uSupernovas[0]'), areas.flat());
+          gl.uniform3fv(loc(program, 'uSupernovas[0]'), layout.shaderPositions.flat());
           gl.uniform4f(loc(program, 'uSupernovaLevels0'), 0, 0, .7, 0); gl.uniform4f(loc(program, 'uSupernovaLevels1'), 0, 0, 0, 0);
-          gl.uniform1f(loc(program, 'uSize'), .9);
+          gl.uniform1f(loc(program, 'uSize'), .9 * Math.max(1, Math.sqrt(.3 / state.zoom))); // when the flat map is zoomed out, grow the glow only partly: full size would let the eight halos wash into each other
+          gl.uniform1f(loc(program, 'uFlat'), layout.flat);
+          gl.uniform1f(loc(program, 'uHalo'), 1 - .4 * layout.flat); // a softer wide halo in the whole-sky map, where eight of them add up
           // Let the close-up activity keep the visual focus; restore the app's
           // full area light as its supernova enters the narrative.
-          gl.uniform1f(loc(program, 'uIntensity'), .8 * clamp((stage-.1)/1.9));
-          gl.uniform1f(loc(program, 'uForeshorten'), .3);
-          gl.uniform4fv(loc(program, 'uVerticalOffsets0'), supernovaOffsets.slice(0,4)); gl.uniform4fv(loc(program, 'uVerticalOffsets1'), supernovaOffsets.slice(4));
+          gl.uniform1f(loc(program, 'uIntensity'), .8 * clamp((stage-.1)/1.9) * (index ? 1 + .12 * layout.flat : 1)); // a little brighter in the whole-sky map (supernovas only, not the nebula)
+          gl.uniform1f(loc(program, 'uForeshorten'), .3 * (1 - layout.flat));
+          gl.uniform4fv(loc(program, 'uVerticalOffsets0'), layout.shaderOffsets.slice(0,4)); gl.uniform4fv(loc(program, 'uVerticalOffsets1'), layout.shaderOffsets.slice(4));
           gl.uniform4f(loc(program, 'uIntensityLevels0'), 0, 0, .7, 0); gl.uniform4f(loc(program, 'uIntensityLevels1'), 0, 0, 0, 0);
           if (index) { gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE); } else gl.disable(gl.BLEND);
           gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -119,7 +121,50 @@ export default function Galaxy({ lang = 'it', closing = false, level, area = 2, 
     let renderedStage = closing ? 3 : controls.current.level ?? 0;
     let renderedDirection = cameraAt(renderedStage, controls.current.area).direction;
     const stageRoot = root.closest<HTMLElement>('.journey-stage');
-    const images = areas.map((_, i) => { const image = new Image(); image.src = `${import.meta.env.BASE_URL}area-symbols/${String(i + 1).padStart(2, '0')}.webp`; image.onload = () => schedule(); return image; });
+    // Phones: centre the scene in the space left between each chapter's text and its buttons, measured from the real layout (so it fits whatever the screen and text length), blended between neighbouring chapters while scrolling.
+    let freeCentres: number[] = [], freeXs: number[] = [], settled: { cx: number; cy: number }[] = [];
+    // Where the drawn constellations sit, with no offset, once each view has settled (star, project, area, whole sky). Worked out up front, so every glide heads straight for its final place and nothing has to be corrected on arrival.
+    const settledExtents = (k: number) => {
+      const state = { ...cameraAt(k, 2), zoom: skyZoom(k, 2, w, h) }, camera = basis(state.direction), flat = ease(k - 2), layout = layoutAt(flat);
+      let xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+      projects.forEach((pr, i) => {
+        const isMain = pr.area === 2 && pr.index === 0, bloom = isMain ? ease(clamp(k / .6)) : ease(clamp((k - .9) / .7));
+        if (!(pr.area === 2 || flat > .5)) return;
+        const pts = layout.projects[i].points, used = isMain && bloom < 1 ? pts.slice(0, 1) : bloom > .5 ? pts : [];
+        for (const v of used) { const q = projectPoint(v, camera, state.zoom, w, h, 0, 0); if (q) { xMin = Math.min(xMin, q.x); xMax = Math.max(xMax, q.x); yMin = Math.min(yMin, q.y); yMax = Math.max(yMax, q.y); } }
+      });
+      return xMin < xMax ? { cx: (xMin + xMax) / 2, cy: (yMin + yMax) / 2 } : { cx: w / 2, cy: h / 2 };
+    };
+    const measureFree = () => {
+      freeCentres = [...(stageRoot?.querySelectorAll<HTMLElement>('.chapter') ?? [])].map(el => {
+        const copy = el.querySelector<HTMLElement>('.chapter-copy'), buttons = el.querySelector<HTMLElement>('.chapter-nav');
+        return copy && buttons ? (copy.offsetTop + copy.offsetHeight + buttons.offsetTop) / 2 : NaN;
+      });
+      // Wide screens: the space is what lies between the real right edge of each chapter's text and the right side of the screen.
+      freeXs = [...(stageRoot?.querySelectorAll<HTMLElement>('.chapter') ?? [])].map(el => {
+        const copy = el.querySelector<HTMLElement>('.chapter-copy');
+        if (!copy) return NaN;
+        let right = 0;
+        for (const child of copy.children) { const range = document.createRange(); range.selectNodeContents(child); right = Math.max(right, range.getBoundingClientRect().right); }
+        return (right + root.clientWidth - 16) / 2;
+      });
+      settled = [0, 1, 2, 3].map(settledExtents);
+    };
+    const blend = (values: number[], step: number, fallback: number) => {
+      const i = Math.min(values.length - 1, Math.floor(step));
+      if (i < 0) return fallback;
+      const a = values[i], b = values[Math.min(i + 1, values.length - 1)];
+      return Number.isFinite(a) ? (Number.isFinite(b) ? a + (b - a) * (step - i) : a) : fallback;
+    };
+    // The app paints each area's artwork as a flat white silhouette added onto the sky at 10%; keep that look.
+    const silhouettes: (HTMLCanvasElement | null)[] = areas.map(() => null);
+    function silhouette(image: HTMLImageElement) {
+      const c = document.createElement('canvas'); c.width = image.naturalWidth; c.height = image.naturalHeight;
+      const g = c.getContext('2d'); if (!g) return null;
+      g.drawImage(image, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+      return c;
+    }
+    const images = areas.map((_, i) => { const image = new Image(); image.src = `${import.meta.env.BASE_URL}area-symbols/${String(i + 1).padStart(2, '0')}.webp`; image.onload = () => { silhouettes[i] = silhouette(image); schedule(); }; return image; });
     function star(x: number, y: number, size: number, lit: boolean, time: number, index: number) {
       if (!ctx) return;
       const radius = Math.min(140, Math.max(6, size * 13));
@@ -148,25 +193,26 @@ export default function Galaxy({ lang = 'it', closing = false, level, area = 2, 
       renderedDirection = reduced ? state.direction : mix(renderedDirection, state.direction, interactive ? .12 : 1);
       const camera = basis(renderedDirection);
       // Keep the scene in the space to the right of the chapter text, whatever the window width.
-      const textRight = w * .07 + Math.min(600, w * .86 * .52);
-      const ox = interactive || closing ? 0 : w < 600 ? w * .02 : Math.min(w * .5 - h * .1, Math.max(w * .25, textRight + h * .16 + 40 - w / 2)), oy = interactive || closing ? 0 : h * (w < 600 ? .22 : 0) + (window.innerHeight - h) / 2; // the sky is as tall as the largest viewport; recentre on what is actually visible while a phone's address bar shows
+      // Each chapter has a target offset that puts its drawn constellations in the middle of the free space; targets blend between neighbouring chapters while scrolling.
+      const settledAt = (idx: number) => settled[Math.max(0, Math.min(3, idx - 2))] ?? { cx: w / 2, cy: h / 2 };
+      const targetX = freeXs.map((fx, idx) => fx - settledAt(idx).cx), targetY = freeCentres.map((fy, idx) => fy - settledAt(idx).cy);
+      const ox = interactive || closing ? 0 : w < 600 ? 0 : blend(targetX, step, .25 * w), oy = interactive || closing ? 0 : (w < 600 ? blend(targetY, step, .73 * window.innerHeight - 66 - h / 2) : (window.innerHeight - h) / 2) + (interactive || closing ? 0 : window.innerHeight * (w < 600 ? 0 : .04) * ease(1 - Math.abs(p - 2) / .7)); // the area chapter (supernova with its constellations) sits a little lower; // phones: centre between the chapter text (about the top 46%) and the buttons (bottom 72px) of the visible screen; // the sky is as tall as the largest viewport; recentre on what is actually visible while a phone's address bar shows
       const project = (v: typeof starDirection) => projectPoint(v, camera, state.zoom, w, h, ox, oy);
       const flareGroups:FlareGroup[]=[];
       ctx.clearRect(0, 0, w, h);
       lineCtx.clearRect(0,0,w,h);
-      areas.forEach((v, i) => {
-        const point = project(v); if (!point) return;
-        const diameter = .30 * state.zoom * h * point.scale;
-        if (diameter < 12 || point.x + diameter < 0 || point.x - diameter > w || point.y + diameter < 0 || point.y - diameter > h) return;
-        const probe=project(norm(add(v,mul(artworkAxes(v).axisA,.01))));
-        const rotation=probe?Math.atan2(probe.y-point.y,probe.x-point.x):0;
-        // Keep each artwork upright on screen, turning it about its own supernova so the two stay aligned.
-        const light=project(supernovaDirections[i]);
-        let cx=point.x,cy=point.y;
-        if(light){const dx=point.x-light.x,dy=point.y-light.y,c=Math.cos(-rotation),n=Math.sin(-rotation);cx=light.x+dx*c-dy*n;cy=light.y+dx*n+dy*c;}
-        if (images[i].complete && images[i].naturalWidth && p>.6) { ctx.save(); ctx.translate(cx,cy); ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = .1*clamp(p-.6); ctx.drawImage(images[i], -diameter / 2, -diameter / 2, diameter, diameter); ctx.restore(); }
+      // From the area chapter on, the sphere flattens into an even map around the central area.
+      const flat = interactive || closing ? 0 : ease(p - 2), layout = layoutAt(flat);
+      areas.forEach((_, i) => {
+        // Artwork stays upright and sits just above its supernova's light by the app's per-area offset; anchoring it to the light keeps the two together all through the flattening.
+        const light = project(layout.lights[i]); if (!light) return;
+        const diameter = .30 * state.zoom * h * light.scale;
+        if (diameter < 12 || light.x + diameter < 0 || light.x - diameter > w || light.y + diameter < 0 || light.y - diameter > h) return;
+        const cx = light.x, cy = light.y - supernovaOffsets[i] * state.zoom * h * light.scale;
+        if (silhouettes[i] && p>.6) { ctx.save(); ctx.translate(cx,cy); ctx.globalAlpha = .1*clamp((p-.6)/.6); ctx.drawImage(silhouettes[i]!, -diameter / 2, -diameter / 2, diameter, diameter); ctx.restore(); }
       });
-      projects.forEach((projectData, k) => {
+      projects.forEach((projectBase, k) => {
+        const projectData = { ...projectBase, ...layout.projects[k] };
         if(lightAmount<=0)return;
         if (interactive && !(projectData.area === 2 && projectData.index === 0) && !(projectData.area === 0 && projectData.index === 0)) return;
         const center = project(projectData.center); if (!center) return;
@@ -201,21 +247,21 @@ export default function Galaxy({ lang = 'it', closing = false, level, area = 2, 
         if (projectData.area === 2 && projectData.index === 0 && bloom > .3) { const pulse = projectData.points[1], a = project(pulse); if (a) { const x=a.x+size*.13,y=a.y+size*.06; flareGroups.push({mode:1,radius:Math.max(3,size*.42*.55),stars:[{x,y,seed:[.31,.72],count:3}]}); if(!engine)star(x,y,Math.max(.8,size*.012),false,0,k); } }
       });
       if (!engine){ctx.save();ctx.globalCompositeOperation='destination-over';ctx.drawImage(lineCanvas,0,0,w,h);ctx.restore();}
-      if (now - lastPaint > 40 || Math.abs(p - lastStage) > .004) { engine?.draw(reduced ? 0 : clock, p, w, h, ox, oy, controls.current.area, renderedDirection,flareGroups,lineCanvas); lastPaint = now; lastStage = p; }
-      root.dataset.stage = p.toFixed(2); root.dataset.renderer = engine ? 'galaxy-webgl2' : 'static'; root.classList.add('is-ready');
+      if (now - lastPaint > 40 || Math.abs(p - lastStage) > .004) { engine?.draw(reduced ? 0 : clock, p, w, h, ox, oy, controls.current.area, renderedDirection,layout,flareGroups,lineCanvas); lastPaint = now; lastStage = p; }
+      root.style.setProperty('--wide', interactive ? '0' : ease(p - 2).toFixed(2)); root.style.setProperty('--scrim-k', Math.min(1, Math.max(.3, (w / 2 + ox - 1.07 * flatMapUnitPx(w, h) - 14) / (.88 * w))).toFixed(3)); root.dataset.stage = p.toFixed(2); root.dataset.renderer = engine ? 'galaxy-webgl2' : 'static'; root.classList.add('is-ready');
     }
     function frame(now: number) { raf = 0; if (!visible || document.hidden) { last = 0; return; } if (last) { clock += Math.min(.1, (now - last) / 1000); slow = now - last > 55 ? slow + 1 : Math.max(0, slow - 1); if (slow > 45 && quality > .55) { quality *= .8; slow = 0; resize(); } } last = now; draw(now); if (!reduced) raf = requestAnimationFrame(frame); }
     function schedule() { if (visible && !document.hidden && !raf) raf = requestAnimationFrame(frame); }
     function resize() { if (!root || !canvas || !overlay || !ctx) return; w = root.clientWidth; h = root.clientHeight; const dpr = Math.min(devicePixelRatio || 1, 2); lineCanvas.width=Math.round(w*dpr);lineCanvas.height=Math.round(h*dpr);lineCtx.setTransform(dpr,0,0,dpr,0,0); overlay.width = Math.round(w * dpr); overlay.height = Math.round(h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // Render the sky at the screen's own density (not a fixed 1100px that CSS then stretches), within a pixel budget; `quality` backs off if frames stall.
-      const ratio = Math.min(dpr * quality, Math.sqrt(2_400_000 / Math.max(1, w * h))); canvas.width = Math.max(1, Math.round(w * ratio)); canvas.height = Math.max(1, Math.round(h * ratio)); lastStage = -1; schedule(); }
-    function viewportChanged() { lastStage = -1; schedule(); }
+      const ratio = Math.min(dpr * quality, Math.sqrt(2_400_000 / Math.max(1, w * h))); canvas.width = Math.max(1, Math.round(w * ratio)); canvas.height = Math.max(1, Math.round(h * ratio)); lastStage = -1; measureFree(); schedule(); }
+    function viewportChanged() { lastStage = -1; measureFree(); schedule(); }
     function visibility() { if (document.hidden) { cancelAnimationFrame(raf); raf = 0; last = 0; } else schedule(); }
     function changeMotion() { reduced = media.matches || !engine; lastStage = -1; schedule(); }
     function lost(event: Event) { event.preventDefault(); engine = null; canvas!.style.opacity = '0'; reduced = true; schedule(); }
     function restored() { engine = createSky(canvas!); canvas!.style.opacity = engine ? '1' : '0'; reduced = media.matches || !engine; lastStage = -1; schedule(); }
     const observer = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; if (visible) schedule(); else { cancelAnimationFrame(raf); raf = 0; last = 0; } }); observer.observe(root);
     const resizer = new ResizeObserver(resize); resizer.observe(root); resize(); redraw.current = schedule;
-    window.addEventListener('scroll', schedule, { passive: true }); window.addEventListener('resize', viewportChanged); document.addEventListener('visibilitychange', visibility); media.addEventListener('change', changeMotion); canvas.addEventListener('webglcontextlost', lost); canvas.addEventListener('webglcontextrestored', restored);
+    window.addEventListener('scroll', schedule, { passive: true }); window.addEventListener('resize', viewportChanged); document.fonts?.ready.then(viewportChanged); document.addEventListener('visibilitychange', visibility); media.addEventListener('change', changeMotion); canvas.addEventListener('webglcontextlost', lost); canvas.addEventListener('webglcontextrestored', restored);
     return () => { cancelAnimationFrame(raf); observer.disconnect(); resizer.disconnect(); engine?.dispose(); images.forEach(image => { image.onload = null; }); window.removeEventListener('scroll', schedule); window.removeEventListener('resize', viewportChanged); document.removeEventListener('visibilitychange', visibility); media.removeEventListener('change', changeMotion); canvas.removeEventListener('webglcontextlost', lost); canvas.removeEventListener('webglcontextrestored', restored); redraw.current = () => { }; };
   }, [closing, interactive, lang]);
   return <div ref={rootRef} className={`galaxy-scene${closing ? ' is-closing' : ''}${interactive ? ' is-interactive' : ''}`} aria-hidden="true"><svg className="galaxy-fallback" viewBox="0 0 1000 800"><g fill="none" stroke="#f2b84b" strokeWidth=".8"><circle cx="650" cy="360" r="55" /><circle cx="650" cy="360" r="80" /><path d="M450 440 500 400 550 440 550 500 450 500Z M790 300 820 250 860 310 830 340Z" /></g><g fill="#f4f1e8">{[[450, 440], [500, 400], [550, 440], [550, 500], [450, 500], [650, 360], [790, 300], [820, 250], [860, 310], [830, 340]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="2" />)}</g></svg><canvas ref={glRef} className="galaxy-nebula" /><canvas ref={starsRef} className="galaxy-stars" /></div>;

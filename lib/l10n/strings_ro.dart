@@ -5,6 +5,10 @@ import 'reflection_groups_ro.dart';
 
 class StringsRo implements AppStrings {
   @override
+  String get splashLoadingLabel => 'Se încarcă Inner Stars';
+  @override
+  String get splashTagline => 'Fiecare efort este o stea.';
+  @override
   String get manageHabits => 'Gestionează obiceiurile';
   @override
   String get manageGoals => 'Gestionează obiectivele';
@@ -359,6 +363,12 @@ class StringsRo implements AppStrings {
   @override
   String get friendsBody =>
       'Proiecte comune, mesaje și victorii sărbătorite împreună: funcțiile sociale vor fi disponibile în curând.';
+
+  @override
+  String get avatarMaleLabel => 'Masculin';
+
+  @override
+  String get avatarFemaleLabel => 'Feminin';
 
   @override
   String get profileSection => 'Profil & Cont';

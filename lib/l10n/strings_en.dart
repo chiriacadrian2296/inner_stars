@@ -5,6 +5,10 @@ import 'reflection_groups_en.dart';
 
 class StringsEn implements AppStrings {
   @override
+  String get splashLoadingLabel => 'Loading Inner Stars';
+  @override
+  String get splashTagline => 'Every effort is a star.';
+  @override
   String get manageHabits => 'Manage habits';
   @override
   String get manageGoals => 'Manage goals';
@@ -358,6 +362,12 @@ class StringsEn implements AppStrings {
   @override
   String get friendsBody =>
       'Shared projects, messages and victories celebrated together: social features are coming soon.';
+
+  @override
+  String get avatarMaleLabel => 'Male';
+
+  @override
+  String get avatarFemaleLabel => 'Female';
 
   @override
   String get profileSection => 'Profile & Account';

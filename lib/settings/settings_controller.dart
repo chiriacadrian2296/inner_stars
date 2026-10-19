@@ -38,6 +38,7 @@ class SettingsController extends ChangeNotifier {
       constellationCardLabelsOnLeft = _repository.constellationCardLabelsOnLeft,
       constellationLandscapeEnabled = _repository.constellationLandscapeEnabled,
       _galaxyCinematicGravity = _repository.galaxyCinematicGravity,
+      avatar = _repository.avatar,
       galaxyQuality = _repository.galaxyQuality;
 
   final SettingsRepository _repository;
@@ -48,6 +49,9 @@ class SettingsController extends ChangeNotifier {
   }
 
   String locale;
+
+  /// 'male' / 'female' (see assets/avatars/hoodie_*.svg); null if unset.
+  String? avatar;
   bool reminderEnabled;
   int reminderHour;
   int reminderMinute;
@@ -81,6 +85,13 @@ class SettingsController extends ChangeNotifier {
   double get galaxyCinematicGravity =>
       _galaxyCinematicGravity ??
       SettingsRepository.defaultGalaxyCinematicGravity;
+
+  Future<void> setAvatar(String value) async {
+    if (value == avatar) return;
+    avatar = value;
+    notifyListeners();
+    await _repository.setAvatar(value);
+  }
 
   Future<void> setGalaxyNavigationMode(GalaxyNavigationMode value) async {
     if (value == galaxyNavigationMode) return;

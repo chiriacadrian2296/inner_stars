@@ -17,7 +17,8 @@ export const ease = (n: number) => { const t = clamp(n); return t * t * (3 - 2 *
 // Start away from the lights, approach one single star (held while its chapter
 // reads), then widen through constellation, supernova and the whole sky.
 // Reduced motion keeps the full sky throughout the narrative.
-export const journeyStage = (step: number) => step < 1 ? -1 + .2 * ease(step) : step < 1.9 ? -.8 + .8 * ease((step - 1) / .9) : step < 2.3 ? 0 : step < 3 ? (step - 2.3) / .7 : Math.min(3, step - 2);
+// Like every other chapter, the star's approach follows the scroll one-to-one: dark at step 1, the single star in place at step 2, held a moment while it is read.
+export const journeyStage = (step: number) => step < 1 ? -1 + .2 * ease(step) : step < 2 ? -.8 + .8 * (step - 1) : step < 2.3 ? 0 : step < 3 ? (step - 2.3) / .7 : Math.min(3, step - 2);
 export function basis(forward: Vec) {
   const azimuth = Math.atan2(forward[2], forward[0]);
   const right: Vec = [-Math.sin(azimuth), 0, Math.cos(azimuth)];
@@ -56,11 +57,11 @@ const areaShapes = [
 ] as const;
 export const projectsPerArea=6;
 export const projects = areas.flatMap((area, areaIndex) => Array.from({ length: projectsPerArea }, (_, i) => {
-  const center = offset(area, .18, i / 6 * Math.PI * 2);
+  const center = offset(supernovaDirections[areaIndex], .18, i / 6 * Math.PI * 2);
   const { right, up } = basis(center);
   const shape = areaIndex===2&&i===0 ? {points:house,edges} : presets[areaShapes[areaIndex][i]];
   const points = shape.points.map(([x, y]) => norm(add(center, add(mul(right, (x - .5) * .1), mul(up, (.5 - y) * .1)))));
-  return { area: areaIndex, index: i, center, points, edges: shape.edges, completed:i===0||i===2, shape:areaShapes[areaIndex][i] };
+  return { area: areaIndex, index: i, center, points, unit: shape.points as number[][], edges: shape.edges, completed:i===0||i===2, shape:areaShapes[areaIndex][i] };
 }));
 export const mainProject = projects[2*projectsPerArea];
 export const starDirection = mainProject.points[0];
@@ -81,12 +82,64 @@ export function projectPoint(v: Vec, camera: ReturnType<typeof basis>, zoom: num
   const scale = 2 / (1 + z);
   return { x: w * .5 + dot(v, camera.right) * scale * zoom * h + offsetX, y: h * .5 - dot(v, camera.up) * scale * zoom * h + offsetY, scale };
 }
-// The whole-sky view pulls the camera back a little so the neighbouring
-// supernovas sit closer to the main one, more so on tall narrow screens where
-// a height-based zoom throws them far outside the width.
+// ---- Whole-sky view as a flat map -------------------------------------------
+// In the last chapter the eight areas leave the sphere: Professional stays at the
+// centre and the other seven sit evenly on a ring around it, with every
+// constellation upright. Positions are planned on the plane seen by a camera that
+// looks at the central area (inverse stereographic projection), so the usual
+// projection, shaders and draw code render them without tilt.
+export const flatCentre = 2;
+export const flatRing = .8;
+const flatCam = basis(areas[flatCentre]);
+const planeScale = (sx: number, sy: number) => (4 + sx * sx + sy * sy) / 4;
+function unprojectPlane(sx: number, sy: number): Vec {
+  const r2 = sx * sx + sy * sy, z = (4 - r2) / (4 + r2), k = 4 / (4 + r2);
+  return norm(add(add(mul(flatCam.forward, z), mul(flatCam.right, sx * k)), mul(flatCam.up, sy * k)));
+}
+const ringAngles = (() => {
+  const others = areas.map((v, i) => ({ i, angle: Math.atan2(dot(v, flatCam.up), dot(v, flatCam.right)) })).filter(o => o.i !== flatCentre).sort((a, b) => a.angle - b.angle);
+  const angles: number[] = [];
+  others.forEach((o, k) => { angles[o.i] = others[0].angle + k * 2 * Math.PI / others.length; });
+  return angles;
+})();
+const flatArea = areas.map((_, i) => {
+  const x = i === flatCentre ? 0 : flatRing * Math.cos(ringAngles[i]), y = i === flatCentre ? 0 : flatRing * Math.sin(ringAngles[i]);
+  return { x, y, f: planeScale(x, y) };
+});
+export const areasFlat = flatArea.map(a => unprojectPlane(a.x, a.y));
+// The light sits below the artwork's centre by the app's per-area offset (artwork upright).
+export const lightsFlat = flatArea.map((a, i) => unprojectPlane(a.x, a.y - supernovaOffsets[i] * a.f));
+export const projectsFlat = projects.map(pr => {
+  const a = flatArea[pr.area], angle = pr.index / projectsPerArea * Math.PI * 2;
+  const lightY = a.y - supernovaOffsets[pr.area] * a.f, cx = a.x + .18 * a.f * Math.cos(angle), cy = lightY + .18 * a.f * Math.sin(angle); // the ring is centred on the supernova light
+  const f = planeScale(cx, cy);
+  return { center: unprojectPlane(cx, cy), points: pr.unit.map(([x, y]) => unprojectPlane(cx + (x - .5) * .1 * f, cy + (.5 - y) * .1 * f)) };
+});
+const baseLayout = { flat: 0, artCentres: areas, lights: supernovaDirections, shaderPositions: supernovaDirections, shaderOffsets: supernovaOffsets.map(() => 0), projects: projects.map(p => ({ center: p.center, points: p.points })) };
+export type SkyLayout = typeof baseLayout;
+// t = 0 is the app's sphere, t = 1 the flat map; in between each point glides.
+export function layoutAt(t: number): SkyLayout {
+  if (t <= 0) return baseLayout;
+  return {
+    flat: t,
+    artCentres: areas.map((v, i) => mix(v, areasFlat[i], t)),
+    lights: supernovaDirections.map((v, i) => mix(v, lightsFlat[i], t)),
+    shaderPositions: supernovaDirections.map((v, i) => mix(v, lightsFlat[i], t)),
+    shaderOffsets: supernovaOffsets.map(() => 0),
+    projects: projects.map((pr, k) => ({ center: mix(pr.center, projectsFlat[k].center, t), points: pr.points.map((v, j) => mix(v, projectsFlat[k].points[j], t)) })),
+  };
+}
+// Zoom that fits the flat map: the ring plus its constellations (about 1.07 plane
+// units out from the centre) must stay clear of the screen edge and, on wide
+// screens, of the chapter text.
+export function flatMapUnitPx(width: number, height: number) {
+  const reach = flatRing + .27;
+  if (width < 600) return Math.min((width / 2 - 12) / reach, .2 * height);
+  const textRight = width * .07 + Math.min(600, width * .86 * .52);
+  return Math.min((width * .25 - 12) / reach, (width * .75 - textRight - 30) / reach, .46 * height / reach);
+}
 export function wholeSkyBoost(stage: number, width: number, height: number) {
-  const aspect = height / Math.max(1, width);
-  const target = .85 - .3 * clamp(aspect - 1);
+  const target = flatMapUnitPx(width, height) / height / .3;
   return 1 + (target - 1) * ease(stage - 2);
 }
 export const skyZoom = (stage: number, area: number, width: number, height: number) => cameraAt(stage, area).zoom * wholeSkyBoost(stage, width, height);

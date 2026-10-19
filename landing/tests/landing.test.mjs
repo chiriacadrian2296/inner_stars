@@ -74,7 +74,7 @@ test('the discover pages are hidden for now: only the home pages are built', () 
 test('Romanian home keeps the journey and download links', () => {
   const page = html('ro');
   assert.ok(page.includes('Există un cer în tine'));
-  assert.ok(page.includes('Totul începe de la'));
+  assert.ok(page.includes('Totul reîncepe'));
   assert.ok(page.includes('Descarcă pentru Android'));
 });
 

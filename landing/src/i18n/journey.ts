@@ -13,9 +13,9 @@ export interface JourneyCopy {
   reveal: { before: string; accent: string; text: string; caption: string };
   product: { eyebrow: string; title: string; text: string; items: { title: string; text: string; caption: string }[] };
   faq: { title: string; items: { q: string; a: string }[] };
-  closing: { eyebrow: string; before: string; accent: string; text: string; apk: string; web: string; platforms: string };
+  closing: { eyebrow: string; title: string; text: string; apk: string; web: string; platforms: string };
   footer: string;
-  ui: { prev: string; mainNav: string; try: string; discover: string; overline: { day: string; star: string; distant: string; reveal: string; whole: string }; wholeBefore: string; wholeAccent: string; wholeText: string; wholeLink: string; next: { day: string; star: string; distant: string; reveal: string; whole: string } };
+  ui: { prev: string; mainNav: string; try: string; discover: string; overline: { day: string; star: string; distant: string; reveal: string; whole: string }; wholeTitle: string; wholeText: string; wholeLink: string; next: { day: string; star: string; distant: string; reveal: string; whole: string } };
 }
 
 export const journeyIt: JourneyCopy = {
@@ -24,11 +24,11 @@ export const journeyIt: JourneyCopy = {
   description: 'Dai un posto agli sforzi che hai compiuto. Inner Stars trasforma vittorie, progetti e abitudini in un cielo da tornare a guardare.',
   nav: { journey: 'Il viaggio', app: 'L’app', try: 'Provala', language: 'Lingua', skip: 'Vai al contenuto' },
   eyebrow: 'UN VIAGGIO DI POCHI PASSI',
-  hero: { before: 'Quando tutto', accent: 'sembra buio,', after: 'cerca una luce.', text: 'Nei giorni pesanti si vede solo ciò che pesa. Il resto c’è ancora, solo più lontano.', scroll: 'SCORRI' },
-  day: { before: 'Una giornata no', accent: 'non cancella', after: 'quello che hai fatto.', text: 'Ogni sforzo resta, anche quando non riesci a vederlo.' },
-  star: { before: 'Tutto parte da', accent: 'una stella.', text: 'Una conversazione affrontata, un primo tentativo, un passo che conosci solo tu.' },
-  distant: { before: 'Insieme, diventano', accent: 'una costellazione.', text: 'I passi verso la stessa cosa prendono forma: un progetto, una direzione.', examples: ['Hai affrontato quella conversazione.', 'Hai ricominciato dopo una pausa.', 'Hai chiesto una mano.'], caption: 'PICCOLI SFORZI. STORIE POSSIBILI.' },
-  reveal: { before: 'Ogni area ha', accent: 'la sua luce.', text: 'Lavoro, relazioni, cura di te: ogni parte della tua vita raccoglie i suoi progetti in un’unica supernova.', caption: 'OGNI LUCE, QUALCOSA CHE HAI ATTRAVERSATO.' },
+  hero: { before: 'Anche il buio', accent: 'ha le sue stelle.', after: '', text: 'Nei giorni pesanti si vede solo ciò che pesa. Il resto c’è ancora, solo più lontano.', scroll: 'SCORRI' },
+  day: { before: 'Un giorno o periodo buio', accent: 'non deve rappresentare tutta la tua storia.', after: '', text: 'Ogni sforzo fatto resta, anche quando oggi non riesci a vederlo.' },
+  star: { before: 'Tutto ricomincia', accent: 'da una stella.', text: 'Un piccolo o grande sforzo: che sia nel passato (vittoria), nel presente (abitudine) o nel futuro (obiettivo).' },
+  distant: { before: 'Le stelle', accent: 'formano una costellazione.', text: 'I tuoi sforzi nel tempo prendono forma diventando un progetto, una direzione.', examples: ['Hai affrontato quella conversazione.', 'Hai ricominciato dopo una pausa.', 'Hai chiesto una mano.'], caption: 'PICCOLI SFORZI. STORIE POSSIBILI.' },
+  reveal: { before: 'Le costellazioni', accent: 'orbitano intorno a una supernova.', text: 'Corpo, mente, lavoro, relazioni: ognuna delle 8 aree della tua vita è una supernova nella galassia.', caption: 'OGNI LUCE, QUALCOSA CHE HAI ATTRAVERSATO.' },
   product: {
     eyebrow: 'QUESTO È INNER STARS', title: 'Un posto per tutto questo.', text: 'Un’app per custodire ciò che hai affrontato, dare forma ai tuoi progetti e tornare a vedere il tuo percorso.', items: [
       { title: 'Dai valore a ciò che ti è costato.', text: 'Una conversazione difficile. Un primo tentativo. Una vittoria che conosci solo tu. Registra il tuo sforzo: conta quanto è stato grande per te.', caption: 'Una vittoria, nel lettore attuale dell’app.' },
@@ -44,9 +44,9 @@ export const journeyIt: JourneyCopy = {
       { q: 'Il cielo che vedo qui è il mio?', a: 'È un’anteprima di Galaxy con dati di esempio. Nell’app costruirai il tuo cielo con i tuoi progetti e le tue attività.' },
     ]
   },
-  closing: { eyebrow: 'IL PROSSIMO PASSO È TUO', before: 'Comincia da', accent: 'una sola luce.', text: 'Basta una cosa che hai affrontato. Il resto del cielo si costruisce un passo alla volta.', apk: 'Scarica per Android', web: 'Provala nel browser', platforms: 'Android · Web · iOS in arrivo' },
+  closing: { eyebrow: 'IL PROSSIMO PASSO È TUO', title: '[[Accendi]] la tua prima [[stella.]]', text: 'Basta una cosa che hai affrontato, anche piccola. Il resto del cielo si costruisce un passo alla volta.', apk: 'Scarica per Android', web: 'Provala nel browser', platforms: 'Android · Web · iOS in arrivo' },
   footer: 'Ogni sforzo ha il suo posto.',
-  ui: { prev: 'Sezione precedente', mainNav: 'Navigazione principale', try: 'Prova Inner Stars', discover: 'Scopri l’app', overline: { day: 'QUANDO È DIFFICILE VEDERE', star: 'ATTIVITÀ · STELLA', distant: 'PROGETTO · COSTELLAZIONE', reveal: 'AREA · SUPERNOVA', whole: 'IL TUO CIELO INTERO' }, wholeBefore: 'Sei molto più di', wholeAccent: 'una giornata.', wholeText: 'Tante aree, tanti progetti, un cielo che cresce insieme a te.', wholeLink: 'Dai un posto al tuo percorso', next: { day: 'AVVICINATI', star: 'UNA STELLA, POI UNA COSTELLAZIONE', distant: 'ALLARGA LO SGUARDO', reveal: 'GUARDA IL CIELO INTERO', whole: 'SCOPRI L’APP' } },
+  ui: { prev: 'Sezione precedente', mainNav: 'Navigazione principale', try: 'Prova Inner Stars', discover: 'Scopri l’app', overline: { day: 'QUANDO È DIFFICILE VEDERE', star: 'ATTIVITÀ · STELLA', distant: 'PROGETTO · COSTELLAZIONE', reveal: 'AREA · SUPERNOVA', whole: 'IL TUO CIELO INTERO' }, wholeTitle: '[[Sei molto di più]] del buio in cui ti puoi ritrovare a volte.', wholeText: 'Otto aree, tanti progetti, ancora più sforzi: un cielo intero che cresce insieme a te e che ti ricorda della luce che hai portato nella tua vita.', wholeLink: 'Dai un posto al tuo percorso', next: { day: 'AVVICINATI', star: 'UNA STELLA, POI UNA COSTELLAZIONE', distant: 'ALLARGA LO SGUARDO', reveal: 'GUARDA IL CIELO INTERO', whole: 'SCOPRI L’APP' } },
 };
 
 export const journeyEn: JourneyCopy = {
@@ -55,11 +55,11 @@ export const journeyEn: JourneyCopy = {
   description: 'Make room for the efforts you have made. Inner Stars turns victories, projects and habits into a sky you can return to.',
   nav: { journey: 'The journey', app: 'The app', try: 'Try it', language: 'Language', skip: 'Skip to content' },
   eyebrow: 'A JOURNEY OF A FEW STEPS',
-  hero: { before: 'When everything', accent: 'feels dark,', after: 'look for a light.', text: 'On heavy days you only see what weighs on you. The rest is still there, just further away.', scroll: 'SCROLL' },
-  day: { before: 'A bad day', accent: 'doesn’t erase', after: 'what you’ve done.', text: 'Every effort stays, even when you can’t see it.' },
-  star: { before: 'It all starts with', accent: 'a star.', text: 'A conversation faced, a first attempt, a step only you know about.' },
-  distant: { before: 'Together, they become', accent: 'a constellation.', text: 'Steps toward the same thing take shape: a project, a direction.', examples: ['You had that difficult conversation.', 'You started again after a break.', 'You asked for a hand.'], caption: 'SMALL EFFORTS. POSSIBLE STORIES.' },
-  reveal: { before: 'Every area has', accent: 'its own light.', text: 'Work, relationships, looking after yourself: each part of your life gathers its projects into a single supernova.', caption: 'EVERY LIGHT, SOMETHING YOU HAVE FACED.' },
+  hero: { before: 'Even the dark', accent: 'has its stars.', after: '', text: 'On heavy days you only see what weighs on you. The rest is still there, just further away.', scroll: 'SCROLL' },
+  day: { before: 'A dark day or period', accent: 'doesn’t have to be your whole story.', after: '', text: 'Every effort you made stays, even when you can’t see it today.' },
+  star: { before: 'It all begins again', accent: 'with a star.', text: 'A small or big effort: in the past (a victory), in the present (a habit) or in the future (a goal).' },
+  distant: { before: 'Stars', accent: 'form a constellation.', text: 'Your efforts over time take shape and become a project, a direction.', examples: ['You had that difficult conversation.', 'You started again after a break.', 'You asked for a hand.'], caption: 'SMALL EFFORTS. POSSIBLE STORIES.' },
+  reveal: { before: 'Constellations', accent: 'orbit a supernova.', text: 'Body, mind, work, relationships: each of the 8 areas of your life is a supernova in the galaxy.', caption: 'EVERY LIGHT, SOMETHING YOU HAVE FACED.' },
   product: {
     eyebrow: 'THIS IS INNER STARS', title: 'A place for all of this.', text: 'An app to keep what you have faced, give shape to your projects and see your journey again.', items: [
       { title: 'Value what took effort.', text: 'A difficult conversation. A first attempt. A victory only you know about. Record your effort: what matters is how much it meant to you.', caption: 'A victory in the app’s current reader.' },
@@ -75,9 +75,9 @@ export const journeyEn: JourneyCopy = {
       { q: 'Is this sky mine?', a: 'This is a preview of Galaxy with example data. In the app, you will build your own sky with your projects and activities.' },
     ]
   },
-  closing: { eyebrow: 'THE NEXT STEP IS YOURS', before: 'Begin with', accent: 'a single light.', text: 'One thing you faced is enough. The rest of the sky is built one step at a time.', apk: 'Download for Android', web: 'Try it in your browser', platforms: 'Android · Web · iOS coming soon' },
+  closing: { eyebrow: 'THE NEXT STEP IS YOURS', title: '[[Light]] your first [[star.]]', text: 'One thing you faced is enough, however small. The rest of the sky is built one step at a time.', apk: 'Download for Android', web: 'Try it in your browser', platforms: 'Android · Web · iOS coming soon' },
   footer: 'Every effort has its place.',
-  ui: { prev: 'Previous section', mainNav: 'Main navigation', try: 'Try Inner Stars', discover: 'Discover the app', overline: { day: 'WHEN IT’S HARD TO SEE', star: 'ACTIVITY · STAR', distant: 'PROJECT · CONSTELLATION', reveal: 'AREA · SUPERNOVA', whole: 'YOUR WHOLE SKY' }, wholeBefore: 'You are more than', wholeAccent: 'a single day.', wholeText: 'Many areas, many projects, a sky that grows with you.', wholeLink: 'Give your journey a home', next: { day: 'COME CLOSER', star: 'FROM A STAR TO A CONSTELLATION', distant: 'WIDEN YOUR VIEW', reveal: 'SEE THE WHOLE SKY', whole: 'DISCOVER THE APP' } },
+  ui: { prev: 'Previous section', mainNav: 'Main navigation', try: 'Try Inner Stars', discover: 'Discover the app', overline: { day: 'WHEN IT’S HARD TO SEE', star: 'ACTIVITY · STAR', distant: 'PROJECT · CONSTELLATION', reveal: 'AREA · SUPERNOVA', whole: 'YOUR WHOLE SKY' }, wholeTitle: '[[You are far more]] than the darkness you may find yourself in at times.', wholeText: 'Eight areas, many projects, even more efforts: a whole sky that grows with you and reminds you of the light you have brought into your life.', wholeLink: 'Give your journey a home', next: { day: 'COME CLOSER', star: 'FROM A STAR TO A CONSTELLATION', distant: 'WIDEN YOUR VIEW', reveal: 'SEE THE WHOLE SKY', whole: 'DISCOVER THE APP' } },
 };
 
 export const journeyRo: JourneyCopy = {
@@ -86,11 +86,11 @@ export const journeyRo: JourneyCopy = {
   description: 'Dă un loc eforturilor pe care le-ai făcut. Inner Stars transformă victoriile, proiectele și obiceiurile într-un cer la care te poți întoarce.',
   nav: { journey: 'Călătoria', app: 'Aplicația', try: 'Încearc-o', language: 'Limba', skip: 'Mergi la conținut' },
   eyebrow: 'O CĂLĂTORIE DIN CÂȚIVA PAȘI',
-  hero: { before: 'Când totul', accent: 'pare întunecat,', after: 'caută o lumină.', text: 'În zilele grele vezi doar ce te apasă. Restul e încă acolo, doar mai departe.', scroll: 'DERULEAZĂ' },
-  day: { before: 'O zi proastă', accent: 'nu șterge', after: 'ce ai făcut.', text: 'Fiecare efort rămâne, chiar și când nu îl vezi.' },
-  star: { before: 'Totul începe de la', accent: 'o stea.', text: 'O conversație purtată, o primă încercare, un pas pe care îl știi doar tu.' },
-  distant: { before: 'Împreună, devin', accent: 'o constelație.', text: 'Pașii spre același lucru prind formă: un proiect, o direcție.', examples: ['Ai purtat acea conversație.', 'Ai luat-o de la capăt după o pauză.', 'Ai cerut o mână de ajutor.'], caption: 'EFORTURI MICI. POVEȘTI POSIBILE.' },
-  reveal: { before: 'Fiecare zonă are', accent: 'lumina ei.', text: 'Muncă, relații, grija de tine: fiecare parte a vieții tale își adună proiectele într-o singură supernovă.', caption: 'FIECARE LUMINĂ, CEVA CE AI TRECUT.' },
+  hero: { before: 'Chiar și întunericul', accent: 'are stelele lui.', after: '', text: 'În zilele grele vezi doar ce te apasă. Restul e încă acolo, doar mai departe.', scroll: 'DERULEAZĂ' },
+  day: { before: 'O zi sau o perioadă întunecată', accent: 'nu trebuie să fie toată povestea ta.', after: '', text: 'Fiecare efort făcut rămâne, chiar și când azi nu îl poți vedea.' },
+  star: { before: 'Totul reîncepe', accent: 'de la o stea.', text: 'Un efort mic sau mare: în trecut (o victorie), în prezent (un obicei) sau în viitor (un obiectiv).' },
+  distant: { before: 'Stelele', accent: 'formează o constelație.', text: 'Eforturile tale, în timp, prind formă și devin un proiect, o direcție.', examples: ['Ai purtat acea conversație.', 'Ai luat-o de la capăt după o pauză.', 'Ai cerut o mână de ajutor.'], caption: 'EFORTURI MICI. POVEȘTI POSIBILE.' },
+  reveal: { before: 'Constelațiile', accent: 'orbitează în jurul unei supernove.', text: 'Corp, minte, muncă, relații: fiecare dintre cele 8 zone ale vieții tale este o supernovă în galaxie.', caption: 'FIECARE LUMINĂ, CEVA CE AI TRECUT.' },
   product: {
     eyebrow: 'ASTA ESTE INNER STARS', title: 'Un loc pentru toate acestea.', text: 'O aplicație în care păstrezi ce ai înfruntat, dai formă proiectelor tale și îți revezi drumul.', items: [
       { title: 'Dă valoare la ce te-a costat.', text: 'O conversație grea. O primă încercare. O victorie pe care o știi doar tu. Notează-ți efortul: contează cât de mare a fost pentru tine.', caption: 'O victorie, în cititorul actual al aplicației.' },
@@ -106,7 +106,7 @@ export const journeyRo: JourneyCopy = {
       { q: 'Cerul pe care îl văd aici este al meu?', a: 'Este o previzualizare Galaxy cu date de exemplu. În aplicație îți vei construi propriul cer, cu proiectele și activitățile tale.' },
     ]
   },
-  closing: { eyebrow: 'URMĂTORUL PAS ESTE AL TĂU', before: 'Începe de la', accent: 'o singură lumină.', text: 'E de ajuns un lucru cu care te-ai confruntat. Restul cerului se construiește pas cu pas.', apk: 'Descarcă pentru Android', web: 'Încearc-o în browser', platforms: 'Android · Web · iOS în curând' },
+  closing: { eyebrow: 'URMĂTORUL PAS ESTE AL TĂU', title: '[[Aprinde]] prima ta [[stea.]]', text: 'E de ajuns un lucru cu care te-ai confruntat, oricât de mic. Restul cerului se construiește pas cu pas.', apk: 'Descarcă pentru Android', web: 'Încearc-o în browser', platforms: 'Android · Web · iOS în curând' },
   footer: 'Fiecare efort are locul lui.',
-  ui: { prev: 'Secțiunea anterioară', mainNav: 'Navigare principală', try: 'Încearcă Inner Stars', discover: 'Descoperă aplicația', overline: { day: 'CÂND E GREU SĂ VEZI', star: 'ACTIVITATE · STEA', distant: 'PROIECT · CONSTELAȚIE', reveal: 'ZONĂ · SUPERNOVĂ', whole: 'CERUL TĂU ÎNTREG' }, wholeBefore: 'Ești mult mai mult de', wholeAccent: 'o singură zi.', wholeText: 'Multe zone, multe proiecte, un cer care crește odată cu tine.', wholeLink: 'Dă un loc drumului tău', next: { day: 'APROPIE-TE', star: 'DE LA O STEA LA O CONSTELAȚIE', distant: 'LARGEȘTE PRIVIREA', reveal: 'PRIVEȘTE CERUL ÎNTREG', whole: 'DESCOPERĂ APLICAȚIA' } },
+  ui: { prev: 'Secțiunea anterioară', mainNav: 'Navigare principală', try: 'Încearcă Inner Stars', discover: 'Descoperă aplicația', overline: { day: 'CÂND E GREU SĂ VEZI', star: 'ACTIVITATE · STEA', distant: 'PROIECT · CONSTELAȚIE', reveal: 'ZONĂ · SUPERNOVĂ', whole: 'CERUL TĂU ÎNTREG' }, wholeTitle: '[[Ești mult mai mult]] decât întunericul în care te poți regăsi uneori.', wholeText: 'Opt zone, multe proiecte, și mai multe eforturi: un cer întreg care crește odată cu tine și care îți amintește de lumina pe care ai adus-o în viața ta.', wholeLink: 'Dă un loc drumului tău', next: { day: 'APROPIE-TE', star: 'DE LA O STEA LA O CONSTELAȚIE', distant: 'LARGEȘTE PRIVIREA', reveal: 'PRIVEȘTE CERUL ÎNTREG', whole: 'DESCOPERĂ APLICAȚIA' } },
 };

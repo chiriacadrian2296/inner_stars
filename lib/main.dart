@@ -1,5 +1,7 @@
 import 'widgets/entity_insights_scope.dart';
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
@@ -42,6 +44,7 @@ import 'theme/app_theme.dart';
 import 'tutorials/tour_storage.dart';
 import 'widgets/apk_download_prompt.dart';
 import 'widgets/app_lock_gate.dart';
+import 'widgets/startup_splash.dart';
 import 'utils/system_bars.dart';
 import 'utils/web_back_guard_stub.dart'
     if (dart.library.js_interop) 'utils/web_back_guard_web.dart';
@@ -95,6 +98,34 @@ class InnerStarsApp extends StatefulWidget {
 
 class _InnerStarsAppState extends State<InnerStarsApp> {
   final _navigatorKey = GlobalKey<NavigatorState>();
+  final _startupRevealed = Completer<void>();
+  final _launchUnlocked = Completer<void>();
+  final _startupComplete = ValueNotifier<bool>(false);
+  bool _startupReady = false;
+
+  void _markStartupReady() {
+    if (mounted && !_startupReady) setState(() => _startupReady = true);
+  }
+
+  void _finishStartup() {
+    if (!_startupRevealed.isCompleted) _startupRevealed.complete();
+    _startupComplete.value = true;
+  }
+
+  void _markLaunchUnlocked() {
+    if (!_launchUnlocked.isCompleted) _launchUnlocked.complete();
+  }
+
+  Future<void> _waitForStartup() async {
+    await _startupRevealed.future;
+    await _launchUnlocked.future;
+  }
+
+  @override
+  void dispose() {
+    _startupComplete.dispose();
+    super.dispose();
+  }
 
   SettingsController? _settings;
   AppLockRepository? _appLockRepository;
@@ -179,6 +210,8 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
         );
       }
 
+      if (!mounted) return;
+      if (!appLockRepository.isEnabled) _markLaunchUnlocked();
       setState(() {
         _settings = settings;
         _appLockRepository = appLockRepository;
@@ -198,14 +231,22 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
         _tourStorage = tourStorage;
       });
 
-      if (await reminderService.launchedFromNotification()) {
+      // A locked launch reveals the lock's first frame, never personal data.
+      if (appLockRepository.isEnabled) {
         WidgetsBinding.instance.addPostFrameCallback(
-          (_) => _openAddStarFromNotification(),
+          (_) => _markStartupReady(),
         );
+      }
+
+      final launchedFromNotification = await reminderService
+          .launchedFromNotification();
+      await _waitForStartup();
+      if (!mounted) return;
+
+      if (launchedFromNotification) {
+        unawaited(_openAddStarFromNotification());
       } else if (_kShowOnboarding && !onboardingPrefs.hasSeenOnboarding) {
-        WidgetsBinding.instance.addPostFrameCallback(
-          (_) => _showOnboarding(onboardingPrefs),
-        );
+        unawaited(_showOnboarding(onboardingPrefs));
       }
 
       // Android browsers only: the site isn't installable as a PWA anymore
@@ -215,14 +256,13 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
       if (kIsWeb &&
           defaultTargetPlatform == TargetPlatform.android &&
           !apkPromptPrefs.dismissed) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final navigatorContext = _navigatorKey.currentContext;
-          if (navigatorContext == null) return;
+        final navigatorContext = _navigatorKey.currentContext;
+        if (navigatorContext != null && navigatorContext.mounted) {
           showApkDownloadPrompt(navigatorContext, apkPromptPrefs);
-        });
+        }
       }
     } catch (error) {
-      setState(() => _loadError = error);
+      if (mounted) setState(() => _loadError = error);
     }
   }
 
@@ -241,6 +281,8 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
   }
 
   Future<void> _openAddStarFromNotification() async {
+    await _waitForStartup();
+    if (!mounted) return;
     final starRepository = _starRepository;
     final projectRepository = _projectRepository;
     final starsShapeRepository = _starsShapeRepository;
@@ -281,6 +323,29 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Keep the splash State above both bootstrap MaterialApps, so loading
+    // repositories never restarts its animation or discards Galaxy's frame.
+    final locale =
+        _settings?.locale ??
+        WidgetsBinding.instance.platformDispatcher.locale.languageCode;
+    final splashStrings = stringsForLocale(locale);
+    return MediaQuery.fromView(
+      view: View.of(context),
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: StartupSplash(
+          ready: _startupReady,
+          failed: _loadError != null,
+          loadingLabel: splashStrings.splashLoadingLabel,
+          tagline: splashStrings.splashTagline,
+          onDismissed: _finishStartup,
+          child: _buildApp(context),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildApp(BuildContext context) {
     final settings = _settings;
     final appLockRepository = _appLockRepository;
     final biometricAuthService = _biometricAuthService;
@@ -461,7 +526,13 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
           child: AppLockGate(
             appLockRepository: appLockRepository,
             biometricAuthService: biometricAuthService,
+            onLaunchUnlocked: _markLaunchUnlocked,
             child: SkyScreen(
+              onStartupReady: _markStartupReady,
+              onStartupError: (error) {
+                if (mounted) setState(() => _loadError = error);
+              },
+              startupComplete: _startupComplete,
               settings: settings,
               appLockRepository: appLockRepository,
               biometricAuthService: biometricAuthService,

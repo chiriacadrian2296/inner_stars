@@ -62,6 +62,8 @@ class SkySupernova extends StatefulWidget {
     this.scale = 1,
     this.intensity = 1,
     this.intensityLevels = const [0, 0, 0, 0, 0, 0, 0, 0],
+    this.onReady,
+    this.onLoadError,
   });
 
   /// Drives the shader's animation — see [SkyClock].
@@ -74,6 +76,8 @@ class SkySupernova extends StatefulWidget {
   /// Each area's intensity level, in [LifeArea] order — see
   /// [supernovaIntensityLevel]: one orbiting moon per whole milestone.
   final List<double> intensityLevels;
+  final VoidCallback? onReady;
+  final ValueChanged<Object>? onLoadError;
 
   @override
   State<SkySupernova> createState() => _SkySupernovaState();
@@ -85,7 +89,14 @@ class _SkySupernovaState extends State<SkySupernova> {
   @override
   void initState() {
     super.initState();
-    _loadShader();
+    _loadShader().catchError((Object error) {
+      if (!mounted) return;
+      if (widget.onLoadError case final callback?) {
+        callback(error);
+      } else {
+        FlutterError.reportError(FlutterErrorDetails(exception: error));
+      }
+    });
   }
 
   Future<void> _loadShader() async {
@@ -94,6 +105,7 @@ class _SkySupernovaState extends State<SkySupernova> {
     );
     if (!mounted) return;
     setState(() => _shader = program.fragmentShader());
+    widget.onReady?.call();
   }
 
   @override

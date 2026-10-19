@@ -13,7 +13,7 @@
 
          This Theme is only used starting with V2 of Flutter's Android embedding. -->
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
-        <item name="android:windowBackground">?android:colorBackground</item>
+        <item name="android:windowBackground">@color/ic_launcher_background</item>
         <!-- Tints the buttons of any system dialog hosted by this Activity
              with the app's own gold rather than the platform default blue
              — in practice, the biometric prompt's Cancel button (see

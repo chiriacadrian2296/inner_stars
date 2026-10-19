@@ -25,7 +25,7 @@ test('artwork offsets match the app and projected labels follow each shifted lig
 test('every area, project and activity stays on the same unit sky sphere',()=>{
   assert.equal(model.areas.length,8);
   for(const vector of [...model.areas,...model.projects.flatMap(p=>[p.center,...p.points])])assert.ok(Math.abs(Math.hypot(...vector)-1)<1e-9);
-  for(const p of model.projects)assert.ok(Math.abs(Math.acos(model.dot(model.areas[p.area],p.center))-.18)<1e-9);
+  for(const p of model.projects)assert.ok(Math.abs(Math.acos(model.dot(model.supernovaDirections[p.area],p.center))-.18)<1e-9);
 });
 test('all four perspectives focus their target and widen continuously',()=>{
   for(let area=0;area<8;area++){
@@ -64,14 +64,47 @@ test('the narrative opens in an empty dark patch, then holds one star, then reve
   assert.ok(new Set(model.projects.map(p=>p.shape)).size>25);
 });
 
-test('the whole sky draws its neighbours closer, most on tall narrow screens, and only from the area level on',()=>{
-  assert.ok(model.wholeSkyBoost(3,390,800)<model.wholeSkyBoost(3,1280,768));
-  assert.ok(model.wholeSkyBoost(3,1280,768)<.9);
+test('the whole sky is a flat map: centre area, seven evenly spaced neighbours, upright constellations',()=>{
+  const camera=model.basis(model.cameraAt(3,2).direction);
+  const at=v=>{const pt=model.projectPoint(v,camera,1,1000,1000,0,0);assert.ok(pt);return pt;};
+  const centre=at(model.areasFlat[2]);
+  assert.ok(Math.abs(centre.x-500)<1e-6&&Math.abs(centre.y-500)<1e-6);
+  const dist=[],angles=[];
+  for(let i=0;i<8;i++){ if(i===2)continue; const pt=at(model.areasFlat[i]); dist.push(Math.hypot(pt.x-500,pt.y-500)); angles.push(Math.atan2(pt.y-500,pt.x-500)); }
+  for(const d of dist)assert.ok(Math.abs(d-dist[0])<1e-6);
+  angles.sort((a,b)=>a-b);
+  for(let k=0;k<7;k++){ const gap=(angles[(k+1)%7]-angles[k]+2*Math.PI)%(2*Math.PI); assert.ok(Math.abs(gap-2*Math.PI/7)<1e-6); }
+  // Every constellation keeps its drawn orientation: unit y runs down the screen, x to the right.
+  for(const [k,pr] of model.projects.entries()){
+    const flat=model.projectsFlat[k], c=at(flat.center);
+    const sx=[],sy=[];
+    pr.unit.forEach(([x,y],j)=>{const pt=at(flat.points[j]); sx.push([x-.5,pt.x-c.x]); sy.push([y-.5,pt.y-c.y]);});
+    const corr=pairs=>{const n=pairs.length,ma=pairs.reduce((s,p)=>s+p[0],0)/n,mb=pairs.reduce((s,p)=>s+p[1],0)/n;let num=0,da=0,db=0;for(const [a,b] of pairs){num+=(a-ma)*(b-mb);da+=(a-ma)**2;db+=(b-mb)**2;}return num/Math.sqrt(da*db||1);};
+    assert.ok(corr(sx)>.97&&corr(sy)>.97,'project '+k);
+  }
+  assert.equal(model.layoutAt(0).artCentres,model.areas);
+  assert.ok(model.layoutAt(1).artCentres.every((v,i)=>model.dot(v,model.areasFlat[i])>1-1e-9));
+});
+test('the flat map zoom fits narrow phones and wide screens, and applies only from the area level on',()=>{
+  const phone=model.flatMapUnitPx(390,800),desk=model.flatMapUnitPx(1280,768);
+  assert.ok(phone*(model.flatRing+.27)<=390/2);
+  assert.ok(desk*(model.flatRing+.27)<=1280*.25);
   assert.equal(model.wholeSkyBoost(1,390,800),1);
   assert.ok(Math.abs(model.skyZoom(0,2,390,800)-model.cameraAt(0,2).zoom)<1e-12);
-  assert.ok(model.skyZoom(3,2,390,800)<model.cameraAt(3,2).zoom*.6);
-  // On a phone the nearest neighbouring supernova now lands within the screen width.
-  const camera=model.basis(model.areas[2]);let nearest=Infinity;
-  for(const [i,area] of model.areas.entries()){ if(i===2)continue; const pt=model.projectPoint(area,camera,model.skyZoom(3,2,390,800),390,800,0,0); if(pt)nearest=Math.min(nearest,Math.hypot(pt.x-195,pt.y-400)); }
-  assert.ok(nearest<330);
+  assert.ok(Math.abs(model.skyZoom(3,2,390,800)-phone/800)<1e-12);
+});
+
+test('the shader is handed the finished lights, so it can never disagree with the artwork anchored to them',()=>{
+  for(const t of [0,.25,.5,.75,1]){
+    const layout=model.layoutAt(t);
+    assert.ok(layout.shaderOffsets.every(o=>o===0),'t='+t);
+    layout.shaderPositions.forEach((v,i)=>assert.ok(model.dot(v,layout.lights[i])>1-1e-12,'t='+t+' area '+i));
+  }
+  // At t = 0 those lights are exactly where the app's shader puts them: area centre plus its own vertical offset.
+  const base=model.layoutAt(0);
+  for(let i=0;i<8;i++){
+    const {axisB}=model.artworkAxes(model.areas[i]);
+    const appLight=model.norm(model.add(model.areas[i],model.mul(axisB,model.supernovaOffsets[i])));
+    assert.ok(model.dot(appLight,base.lights[i])>1-1e-12,'area '+i);
+  }
 });
