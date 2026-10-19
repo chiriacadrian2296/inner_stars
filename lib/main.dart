@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hint_kit/hint_kit.dart';
 import 'package:marionette_flutter/marionette_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'audio/audio_service.dart';
 import 'data/apk_prompt_prefs.dart';
@@ -24,9 +25,10 @@ import 'widgets/habit_cycle_host.dart';
 import 'widgets/habit_cycle_scope.dart';
 import 'data/habit_repository.dart';
 import 'data/legacy_constellation_migration.dart';
+import 'data/local_data_migration.dart';
 import 'data/onboarding_prefs.dart';
 import 'data/project_repository.dart';
-import 'data/reflection_answer_repository.dart';
+import 'data/reflection_repository.dart';
 import 'data/star_repository.dart';
 import 'data/shooting_star_wish_repository.dart';
 import 'l10n/strings_scope.dart';
@@ -132,7 +134,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
   HabitCycleRepository? _habitCycleRepository;
   StarsShapeRepository? _starsShapeRepository;
   AreaVisionRepository? _areaVisionRepository;
-  ReflectionAnswerRepository? _reflectionAnswerRepository;
+  ReflectionRepository? _reflectionAnswerRepository;
   ShootingStarWishRepository? _shootingStarWishRepository;
   AudioSettingsRepository? _audioSettingsRepository;
   AudioService? _audioService;
@@ -153,6 +155,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
 
   Future<void> _load() async {
     try {
+      await migrateLocalData(await SharedPreferences.getInstance());
       final settings = await SettingsController.create();
       settings.addListener(() => setState(() {}));
       final appLockRepository = await AppLockRepository.create();
@@ -166,7 +169,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
       final starsShapeRepository = await StarsShapeRepository.create();
       final areaVisionRepository = await AreaVisionRepository.create();
       final reflectionAnswerRepository =
-          await ReflectionAnswerRepository.create();
+          await ReflectionRepository.create();
       final shootingStarWishRepository =
           await ShootingStarWishRepository.create();
       final audioSettingsRepository = await AudioSettingsRepository.create();

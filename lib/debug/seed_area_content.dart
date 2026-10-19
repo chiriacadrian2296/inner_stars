@@ -3,16 +3,18 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:uuid/uuid.dart';
 
 import '../data/area_vision_repository.dart';
 import '../data/moodboard_repository.dart';
 import '../data/moodboard_storage.dart';
-import '../data/reflection_answer_repository.dart';
+import '../data/reflection_repository.dart';
 import '../l10n/app_strings.dart';
 import '../l10n/strings_en.dart';
 import '../l10n/strings_it.dart';
 import '../l10n/strings_ro.dart';
 import '../models/life_area.dart';
+import '../models/reflection.dart';
 
 /// Debug helper, run by the "seed sample data" action: gives the areas
 /// (supernovas) something to show — a written vision, answers to a couple of
@@ -26,7 +28,7 @@ import '../models/life_area.dart';
 Future<void> seedAreaContent({
   required String languageCode,
   required AreaVisionRepository areaVisionRepository,
-  required ReflectionAnswerRepository reflectionAnswerRepository,
+  required ReflectionRepository reflectionAnswerRepository,
   required MoodboardRepository moodboardRepository,
 }) async {
   final strings = _stringsFor(languageCode);
@@ -40,23 +42,27 @@ Future<void> seedAreaContent({
       await areaVisionRepository.setVision(area, content.vision(name));
     }
 
-    // Two of the area's four questions, with texts taken in turn from a
+    // Two of the area's suggested questions, with texts taken in turn from a
     // small pool.
     for (final questionIndex in const [0, 2]) {
       final id = '$questionIndex';
-      if (reflectionAnswerRepository.getAnswer(area, id) != null) continue;
-      await reflectionAnswerRepository.setAnswer(
-        area,
-        id,
-        answerText:
-            content.answers[(index + questionIndex) % content.answers.length],
+      if (reflectionAnswerRepository
+          .getForArea(area)
+          .any((r) => r.questionId == id)) {
+        continue;
+      }
+      await reflectionAnswerRepository.add(
+        area: area,
+        questionId: id,
+        origin: ReflectionOrigin.suggested,
+        title: area.reflectionQuestions(strings)[questionIndex],
+        body: content.answers[(index + questionIndex) % content.answers.length],
       );
     }
 
     if (moodboardRepository.getItems(area).isEmpty) {
       final items = <MoodboardItem>[];
-      var stamp = DateTime.now().microsecondsSinceEpoch;
-      String nextId() => '${stamp++}';
+      String nextId() => const Uuid().v4();
       for (var i = 0; i < 2; i++) {
         final quote = content.quotes[(index * 2 + i) % content.quotes.length];
         items.add(

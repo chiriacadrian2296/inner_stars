@@ -1,3 +1,5 @@
+import 'package:uuid/uuid.dart';
+
 import 'repository_write.dart';
 
 import 'package:flutter/foundation.dart';
@@ -28,51 +30,40 @@ class HabitRepository extends ChangeNotifier {
   /// Every pulsar ever created, dead ones included — a dead pulsar still
   /// has a place in the sky (as a dead star), so most callers want this and
   /// tell the two apart via [Habit.dead].
-  List<Habit> getAll() {
+  List<Habit> getAll({bool includeDeleted = false}) {
     final raw = _prefs.getString(_storageKey);
     if (raw == null) return const [];
     try {
       final decoded = jsonDecode(raw) as List<dynamic>;
       return decoded
           .map((entry) => Habit.fromJson(entry as Map<String, dynamic>))
+          .where((record) => includeDeleted || !record.deleted)
           .toList();
     } catch (_) {
       return const [];
     }
   }
 
-  List<Habit> getAllForProject(int projectId) {
+  List<Habit> getAllForProject(String projectId) {
     return getAll().where((h) => h.projectId == projectId).toList();
   }
 
   /// Only the pulsars still beating — what "how many pulsars does this
   /// constellation have" means everywhere it's counted.
-  List<Habit> getActiveForProject(int projectId) {
+  List<Habit> getActiveForProject(String projectId) {
     return getAllForProject(projectId).where((h) => h.isActive).toList();
   }
 
   /// Whether [projectId]'s constellation can take no more pulsars. Dead ones
   /// still hold their scattered spot, so they count.
-  bool isFull(int projectId) =>
+  bool isFull(String projectId) =>
       getAllForProject(projectId).length >= kMaxConstellationPulsars;
-
-  /// Ids are millisecondsSinceEpoch, which two adds inside the same
-  /// millisecond would collide on. Steps past anything already taken, as
-  /// `ProjectRepository` does.
-  static int _nextId(List<Habit> existing) {
-    var id = DateTime.now().millisecondsSinceEpoch;
-    final taken = existing.map((h) => h.id).toSet();
-    while (taken.contains(id)) {
-      id++;
-    }
-    return id;
-  }
 
   Future<Habit> add({
     required String title,
     String? iconSlug,
     String? description,
-    required int projectId,
+    required String projectId,
     int intensity = 3,
     int cycleLength = kDefaultCycleLength,
     HabitFrequency frequency = HabitFrequency.daily,
@@ -90,7 +81,7 @@ class HabitRepository extends ChangeNotifier {
     }
     final trimmedDescription = description?.trim();
     final habit = Habit(
-      id: _nextId(habits),
+      id: const Uuid().v4(),
       projectId: projectId,
       title: title.trim(),
       iconSlug: iconSlug ?? '',
@@ -106,16 +97,16 @@ class HabitRepository extends ChangeNotifier {
       reminderMinute: reminderMinute,
     );
 
-    await _saveAll([habit, ...habits]);
-    return habit;
+    final savedRecords = await _saveAll([habit, ...habits]);
+    return savedRecords.firstWhere((record) => record.id == habit.id);
   }
 
   Future<Habit> update({
-    required int id,
+    required String id,
     required String title,
     String? iconSlug,
     String? description,
-    required int projectId,
+    required String projectId,
     int intensity = 3,
     int? cycleLength,
     HabitFrequency frequency = HabitFrequency.daily,
@@ -152,8 +143,8 @@ class HabitRepository extends ChangeNotifier {
     );
 
     final nextHabits = [...habits]..[index] = updated;
-    await _saveAll(nextHabits);
-    return updated;
+    final savedRecords = await _saveAll(nextHabits);
+    return savedRecords.firstWhere((record) => record.id == updated.id);
   }
 
   /// "Deletes" the pulsar identified by [id] — but never actually removes
@@ -163,7 +154,7 @@ class HabitRepository extends ChangeNotifier {
   ///
   /// Its completion history is left untouched here — that's [resurrect]'s
   /// job to clear, since a reignited pulsar is a *new* pulsar.
-  Future<Habit> delete(int id) async {
+  Future<Habit> delete(String id) async {
     final habits = getAll();
     final index = habits.indexWhere((h) => h.id == id);
     if (index == -1) {
@@ -176,8 +167,8 @@ class HabitRepository extends ChangeNotifier {
       updatedAt: now,
     );
     final nextHabits = [...habits]..[index] = updated;
-    await _saveAll(nextHabits);
-    return updated;
+    final savedRecords = await _saveAll(nextHabits);
+    return savedRecords.firstWhere((record) => record.id == updated.id);
   }
 
   /// Brings a dead pulsar back to life as a brand new pulsar — same [id]
@@ -190,11 +181,11 @@ class HabitRepository extends ChangeNotifier {
   /// than inheriting a run it broke long ago. Cycles it already completed
   /// stay, though: that reward was earned and is never taken back.
   Future<Habit> resurrect(
-    int id, {
+    String id, {
     required String title,
     String? iconSlug,
     String? description,
-    required int projectId,
+    required String projectId,
     int intensity = 3,
     int cycleLength = kDefaultCycleLength,
     HabitFrequency frequency = HabitFrequency.daily,
@@ -230,9 +221,9 @@ class HabitRepository extends ChangeNotifier {
     );
 
     final nextHabits = [...habits]..[index] = updated;
-    await _saveAll(nextHabits);
+    final savedRecords = await _saveAll(nextHabits);
     await completionRepository.deleteAllForHabit(id);
-    return updated;
+    return savedRecords.firstWhere((record) => record.id == updated.id);
   }
 
   /// Opens the pulsar's next cycle after the user finished the reflection on
@@ -240,7 +231,7 @@ class HabitRepository extends ChangeNotifier {
   /// length and reward default to the current ones, and the user may change
   /// either (or keep both for a plain restart).
   Future<Habit> startNextCycle(
-    int id, {
+    String id, {
     required DateTime start,
     int? cycleLength,
     int? intensity,
@@ -257,18 +248,17 @@ class HabitRepository extends ChangeNotifier {
       intensity: intensity,
       updatedAt: DateTime.now(),
     );
-    await _saveAll([...habits]..[index] = updated);
-    return updated;
+    final savedRecords = await _saveAll([...habits]..[index] = updated);
+    return savedRecords.firstWhere((record) => record.id == updated.id);
   }
 
   Future<void> clear() async {
-    await writeRepositoryValue(_prefs, _storageKey, null);
-    notifyListeners();
+    await _saveAll([]);
   }
 
-  /// Physically removes a constellation's pulsars. Their completion history
+  /// Marks a project's habits deleted for sync. Their completion history
   /// is cleaned by the caller, which has access to its separate repository.
-  Future<List<int>> deleteAllForProject(int projectId) async {
+  Future<List<String>> deleteAllForProject(String projectId) async {
     final habits = getAll();
     final removed = habits
         .where((habit) => habit.projectId == projectId)
@@ -279,9 +269,15 @@ class HabitRepository extends ChangeNotifier {
     return removed.map((habit) => habit.id).toList();
   }
 
-  Future<void> _saveAll(List<Habit> habits) async {
-    final encoded = jsonEncode(habits.map((h) => h.toJson()).toList());
-    await writeRepositoryValue(_prefs, _storageKey, encoded);
+  Future<List<Habit>> _saveAll(List<Habit> habits) async {
+    final saved = await writeSyncList<Habit>(
+      _prefs,
+      _storageKey,
+      habits,
+      encode: (record) => record.toJson(),
+      decode: Habit.fromJson,
+    );
     notifyListeners();
+    return saved;
   }
 }

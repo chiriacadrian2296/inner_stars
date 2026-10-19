@@ -42,8 +42,8 @@ class _BadgeLabScreenState extends State<BadgeLabScreen> {
       createdAt: created,
     );
     final victory = Star(
-      id: 1,
-      projectId: 1,
+      id: '1',
+      projectId: '1',
       slotSequence: 1,
       title: 'Victory',
       createdAt: created,
@@ -58,16 +58,16 @@ class _BadgeLabScreenState extends State<BadgeLabScreen> {
       ],
     );
     final goal = Star(
-      id: 2,
-      projectId: 1,
+      id: '2',
+      projectId: '1',
       slotSequence: 2,
       title: 'Goal',
       createdAt: created,
       targetDate: DateTime(now.year, now.month, now.day + 20),
     );
     final dead = Star(
-      id: 3,
-      projectId: 1,
+      id: '3',
+      projectId: '1',
       slotSequence: 3,
       title: 'Dead',
       createdAt: created,
@@ -75,16 +75,16 @@ class _BadgeLabScreenState extends State<BadgeLabScreen> {
       deadDate: created,
     );
     final dailyHabit = Habit(
-      id: 1,
-      projectId: 1,
+      id: '1',
+      projectId: '1',
       title: 'Daily',
       createdAt: created,
       frequency: HabitFrequency.daily,
       targetPerPeriod: 3,
     );
     final weeklyHabit = Habit(
-      id: 2,
-      projectId: 1,
+      id: '2',
+      projectId: '1',
       title: 'Weekly',
       createdAt: created,
       frequency: HabitFrequency.weekly,

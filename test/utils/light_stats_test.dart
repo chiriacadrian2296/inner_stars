@@ -11,7 +11,7 @@ import 'package:inner_stars/utils/light_stats.dart';
 final _now = DateTime(2026, 10, 14, 12);
 
 Project _project(int id, LifeArea area) => Project(
-  id: id,
+  id: id.toString(),
   name: 'Project $id',
   area: area,
   iconSlug: 'star',
@@ -25,8 +25,8 @@ Star _star(
   int intensity = 3,
   bool dead = false,
 }) => Star(
-  id: id,
-  projectId: project,
+  id: id.toString(),
+  projectId: project.toString(),
   slotSequence: id,
   title: 'Star $id',
   createdAt: DateTime(2026, 1),
@@ -37,19 +37,19 @@ Star _star(
 );
 
 Habit _habit(int id, {int project = 1}) => Habit(
-  id: id,
-  projectId: project,
+  id: id.toString(),
+  projectId: project.toString(),
   title: 'Habit $id',
   createdAt: DateTime(2026, 1),
 );
 
 HabitCompletion _done(int id, int habit, DateTime day) =>
-    HabitCompletion(id: id, habitId: habit, date: day);
+    HabitCompletion(id: id.toString(), habitId: habit.toString(), date: day);
 
 HabitCycle _cycle(int id, int habit, DateTime day, {int intensity = 4}) =>
     HabitCycle(
-      id: id,
-      habitId: habit,
+      id: id.toString(),
+      habitId: habit.toString(),
       startDate: day.subtract(const Duration(days: 6)),
       completedDate: day,
       length: 7,
@@ -93,7 +93,7 @@ void main() {
       cycles: [_cycle(1, 1, DateTime(2026, 10, 7), intensity: 4)],
     );
     expect(stats.light, 2 + 5 + 4);
-    expect(stats.victories.map((s) => s.id), [1, 2]);
+    expect(stats.victories.map((s) => s.id), ['1', '2']);
     expect(stats.cycles, hasLength(1));
   });
 
@@ -146,7 +146,7 @@ void main() {
 
   test('a pulsar curve counts its days done', () {
     final stats = _build(
-      scope: const InsightEntity.habit(1),
+      scope: const InsightEntity.habit('1'),
       habits: [_habit(1)],
       completions: [
         _done(1, 1, DateTime(2026, 10, 1)),
@@ -181,19 +181,19 @@ void main() {
     );
     expect(area.light, 11);
     expect(area.breakdown.map((s) => (s.entity, s.light)), [
-      (const InsightEntity.project(1), 6),
-      (const InsightEntity.project(2), 5),
+      (const InsightEntity.project('1'), 6),
+      (const InsightEntity.project('2'), 5),
     ]);
 
     final project = _build(
-      scope: const InsightEntity.project(1),
+      scope: const InsightEntity.project('1'),
       stars: stars,
       habits: habits,
       cycles: cycles,
     );
     expect(project.breakdown.map((s) => (s.entity, s.light)), [
-      (const InsightEntity.habit(1), 4),
-      (const InsightEntity.star(1), 2),
+      (const InsightEntity.habit('1'), 4),
+      (const InsightEntity.star('1'), 2),
     ]);
   });
 
@@ -207,8 +207,8 @@ void main() {
       ],
     );
     final moments = stats.moments;
-    expect(moments.firstVictory?.id, 1);
-    expect(moments.latestVictory?.id, 4);
+    expect(moments.firstVictory?.id, '1');
+    expect(moments.latestVictory?.id, '4');
     expect(moments.brightestDay, DateTime(2026, 9, 10));
     expect(moments.brightestDayLight, 5);
     expect(moments.longestRun?.length, 3);

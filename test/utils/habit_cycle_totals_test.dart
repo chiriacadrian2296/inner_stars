@@ -8,8 +8,8 @@ import 'package:inner_stars/utils/project_card_info.dart';
 import 'package:inner_stars/utils/star_stats.dart';
 
 HabitCycle _cycle(int day, int intensity, {int habitId = 1}) => HabitCycle(
-  id: day * 10 + intensity + habitId * 1000,
-  habitId: habitId,
+  id: (day * 10 + intensity + habitId * 1000).toString(),
+  habitId: habitId.toString(),
   startDate: DateTime(2026, 1, 1),
   completedDate: DateTime(2026, 2, day, 18, 30),
   length: 7,
@@ -44,17 +44,22 @@ void main() {
       final cycles = [_cycle(3, 4), _cycle(9, 5)];
 
       expect(cycleIntensityTotal(cycles), 9);
-      expect(cycleIntensityTotal(cycles, habitIds: {2}), 0);
+      expect(cycleIntensityTotal(cycles, habitIds: {'2'}), 0);
     });
   });
 
   test('completed cycles add their reward to a card\'s intensity total', () {
     final created = DateTime(2026, 1, 1);
-    final walk = Habit(id: 7, projectId: 1, title: 'Walk', createdAt: created);
+    final walk = Habit(
+      id: '7',
+      projectId: '1',
+      title: 'Walk',
+      createdAt: created,
+    );
     Star victory(int intensity) => Star(
-      id: intensity,
+      id: intensity.toString(),
       slotSequence: intensity,
-      projectId: 1,
+      projectId: '1',
       title: 'Win',
       createdAt: created,
       achievedDate: created,

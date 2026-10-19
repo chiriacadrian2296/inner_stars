@@ -8,6 +8,8 @@ import '../l10n/strings_scope.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 import '../widgets/share_arrangement.dart';
+import '../utils/share_content_from_card.dart';
+import 'share_composer_screen.dart';
 
 Future<void> showSharePreview({
   required BuildContext context,
@@ -18,8 +20,8 @@ Future<void> showSharePreview({
   await Navigator.of(context).push<void>(
     MaterialPageRoute(
       fullscreenDialog: true,
-      builder: (_) => SharePreviewScreen(
-        content: content,
+      builder: (_) => ShareComposerScreen(
+        data: shareContentFromCard(context, content),
         shareText: shareText,
         fileName: fileName,
       ),
@@ -210,7 +212,7 @@ class _CompositionPicker extends StatelessWidget {
           children: [
             IconButton(
               key: const ValueKey('share-composition-prev'),
-              tooltip: 'Precedente',
+              tooltip: context.strings.sharePreviousLayout,
               onPressed: () => _step(-1),
               icon: const Icon(Icons.chevron_left_rounded),
             ),
@@ -238,7 +240,7 @@ class _CompositionPicker extends StatelessWidget {
             ),
             IconButton(
               key: const ValueKey('share-composition-next'),
-              tooltip: 'Successiva',
+              tooltip: context.strings.shareNextLayout,
               onPressed: () => _step(1),
               icon: const Icon(Icons.chevron_right_rounded),
             ),

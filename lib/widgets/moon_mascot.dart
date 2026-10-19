@@ -4,6 +4,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../debug/moon_body_svg.dart';
+
 /// Persistent moods that Moon can smoothly transition between.
 enum MoonExpression { neutral, happy, sleepy, curious, concerned, surprised }
 
@@ -216,10 +218,6 @@ enum _MicroBehavior { glance, contented }
 
 class _MoonMascotState extends State<MoonMascot>
     with TickerProviderStateMixin, WidgetsBindingObserver {
-  static const _originalBodyAsset = 'assets/mascots/moon_body.svg';
-  static const _appBodyAsset = 'assets/mascots/moon_body_app.svg';
-  static const _goldBodyAsset = 'assets/mascots/moon_body_gold.svg';
-
   late final AnimationController _blinkController;
   late final AnimationController _idleController;
   late final AnimationController _expressionController;
@@ -586,11 +584,11 @@ class _MoonMascotState extends State<MoonMascot>
                           if (widget.appearance case final appearance?)
                             CustomPaint(painter: _MoonBodyPainter(appearance))
                           else
-                            SvgPicture.asset(
+                            SvgPicture.string(
                               switch (widget.palette) {
-                                MoonPalette.original => _originalBodyAsset,
-                                MoonPalette.app => _appBodyAsset,
-                                MoonPalette.gold => _goldBodyAsset,
+                                MoonPalette.original => moonBodyOriginalSvg,
+                                MoonPalette.app => moonBodyAppSvg,
+                                MoonPalette.gold => moonBodyGoldSvg,
                               },
                               fit: BoxFit.contain,
                               excludeFromSemantics: true,

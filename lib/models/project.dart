@@ -18,36 +18,40 @@ class Project {
     this.starsShapeId,
     this.description,
     required this.createdAt,
-    this.updatedAt,
-  });
+    DateTime? updatedAt,
+    this.deleted = false,
+  }) : updatedAt = updatedAt ?? createdAt;
 
-  final int id;
+  final String id;
   final String name;
   final LifeArea area;
   final String iconSlug;
-  final int? starsShapeId;
+  final String? starsShapeId;
 
   /// Optional, freeform — what this project is about. Never required,
   /// unlike [name].
   final String? description;
   final DateTime createdAt;
 
-  /// Stamped by the repository on every save. Null on records stored before
-  /// this field existed; read it through [lastModified].
-  final DateTime? updatedAt;
+  /// The last local write, falling back to creation time for legacy records.
+  final DateTime updatedAt;
+
+  /// Permanent sync deletion, distinct from archiving an activity.
+  final bool deleted;
 
   /// When this project was last edited, falling back to [createdAt].
-  DateTime get lastModified => updatedAt ?? createdAt;
+  DateTime get lastModified => updatedAt;
 
   Project copyWith({
-    int? id,
+    String? id,
     String? name,
     LifeArea? area,
     String? iconSlug,
-    int? starsShapeId,
+    String? starsShapeId,
     String? description,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? deleted,
   }) {
     return Project(
       id: id ?? this.id,
@@ -58,20 +62,20 @@ class Project {
       description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      deleted: deleted ?? this.deleted,
     );
   }
 
   factory Project.fromJson(Map<String, dynamic> json) {
     return Project(
-      id: json['id'] as int,
+      id: json['id'] as String,
+      deleted: json['deleted'] as bool? ?? false,
       name: json['name'] as String,
       area: LifeArea.values.byName(json['area'] as String),
       iconSlug: json['iconSlug'] as String,
-      // Reads from the pre-rename storage key on purpose — every project
-      // already saved on a device has this key, and there's no migration
-      // step that runs before this parse, so changing it here would drop
-      // every existing project's shape assignment on next launch.
-      starsShapeId: json['customConstellationId'] as int?,
+      // Keep the persisted storage key compatible. The UUID migration remaps
+      // its value before parsing without renaming the key.
+      starsShapeId: json['customConstellationId'] as String?,
       description: json['description'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: switch (json['updatedAt'] as String?) {
@@ -84,6 +88,7 @@ class Project {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'deleted': deleted,
       'name': name,
       'area': area.name,
       'iconSlug': iconSlug,
@@ -91,7 +96,7 @@ class Project {
       if (starsShapeId != null) 'customConstellationId': starsShapeId,
       if (description != null) 'description': description,
       'createdAt': createdAt.toIso8601String(),
-      if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
     };
   }
 
@@ -99,6 +104,7 @@ class Project {
   bool operator ==(Object other) {
     return other is Project &&
         other.id == id &&
+        other.deleted == deleted &&
         other.name == name &&
         other.area == area &&
         other.iconSlug == iconSlug &&
@@ -111,6 +117,7 @@ class Project {
   @override
   int get hashCode => Object.hash(
     id,
+    deleted,
     name,
     area,
     iconSlug,

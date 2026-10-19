@@ -5,6 +5,34 @@ import 'reflection_groups_en.dart';
 
 class StringsEn implements AppStrings {
   @override
+  String get reflectionNew => 'New reflection';
+  @override
+  String get reflectionFree => 'Start from scratch';
+  @override
+  String get reflectionSuggested => 'Choose a suggestion';
+  @override
+  String get reflectionTitleLabel => 'Title or theme';
+  @override
+  String get reflectionBodyLabel => 'Your reflection';
+  @override
+  String get reflectionEmpty =>
+      'A question or a thought can be the beginning. Write your first reflection.';
+  @override
+  String get reflectionRequired => 'Write both a title and a reflection.';
+  @override
+  String get reflectionSaveError =>
+      'Could not save the reflection. Please try again.';
+  @override
+  String get reflectionDeleteTitle => 'Delete reflection?';
+  @override
+  String get reflectionDeleteBody =>
+      'This reflection will be permanently deleted.';
+  @override
+  String get reflectionDiscardTitle => 'Discard changes?';
+  @override
+  String reflectionCount(int count) => '$count reflections';
+
+  @override
   String get splashLoadingLabel => 'Loading Inner Stars';
   @override
   String get splashTagline => 'Every effort is a star.';
@@ -76,6 +104,8 @@ class StringsEn implements AppStrings {
       'Collect images, videos and words that make the life you want in this area visible. Add what inspires you and return here to keep your direction alive.';
   @override
   String get moodboardAddLabel => 'Add';
+  @override
+  String get moodboardLimitReached => 'You can add up to 12 items per area.';
   @override
   String get moodboardEmpty =>
       'Collect photos, videos and words that bring your vision to life.';
@@ -1877,6 +1907,10 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get shareChooseLayout => 'Choose a layout';
   @override
+  String get sharePreviousLayout => 'Previous layout';
+  @override
+  String get shareNextLayout => 'Next layout';
+  @override
   String get shareLayoutImmersive => 'Editorial';
   @override
   String get shareLayoutFramed => 'Photo';
@@ -1904,6 +1938,10 @@ My contribution meets a real need and is something I can sustain.
 
   @override
   String get constellationQuickLookAddStarAction => '+ Star';
+  @override
+  String get constellationNewStarAction => 'New star';
+  @override
+  String get constellationSwipeHint => 'SWIPE';
 
   @override
   String get areaQuickLookReflectionsAction => 'Reflections';

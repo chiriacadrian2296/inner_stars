@@ -4,7 +4,7 @@ import 'package:markdown/markdown.dart' as markdown;
 
 import '../data/area_vision_repository.dart';
 import '../data/project_repository.dart';
-import '../data/reflection_answer_repository.dart';
+import '../data/reflection_repository.dart';
 import '../data/star_repository.dart';
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
@@ -40,7 +40,7 @@ class VisionsScreen extends StatefulWidget {
   });
 
   final AreaVisionRepository areaVisionRepository;
-  final ReflectionAnswerRepository reflectionAnswerRepository;
+  final ReflectionRepository reflectionAnswerRepository;
   final ProjectRepository projectRepository;
   final StarRepository starRepository;
 

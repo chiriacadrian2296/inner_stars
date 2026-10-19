@@ -11,10 +11,10 @@ import '../models/background_track.dart';
 import '../models/sky_sound_effect.dart';
 import '../models/sky_whoosh_effect.dart';
 
-/// The Sky's own audio: one looping background track, a short sound for a
+/// Galaxy audio: one looping background track, a short sound for a
 /// tap/hold on it, and a whoosh for the camera flying in or out — see
-/// `AudioSettingsRepository` for what's persisted, and the Sound Lab
-/// screen for the only place any of this is ever surfaced to the user.
+/// `AudioSettingsRepository` for what's persisted. Settings exposes background
+/// playback and volume; Sound Lab adds development controls for individual sounds.
 /// Three [AudioPlayer]s, kept deliberately separate: a tap/hold or
 /// zoom sound stopping and restarting the *background* player would cut
 /// the loop's own position, and a zoom whoosh stopping the tap/hold

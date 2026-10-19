@@ -32,8 +32,8 @@ void main() {
   );
 
   Star victory({List<StarMedia> extras = const []}) => Star(
-    id: 1,
-    projectId: 1,
+    id: '1',
+    projectId: '1',
     slotSequence: 1,
     title:
         'Un titolo molto lungo che occupa tre righe nella tile della griglia',
@@ -51,7 +51,7 @@ void main() {
     ],
   );
   final project = Project(
-    id: 1,
+    id: '1',
     name: 'Una costellazione con un nome piuttosto lungo',
     area: LifeArea.physical,
     iconSlug: 'pool',
@@ -178,8 +178,8 @@ void main() {
   ) async {
     Widget box(Widget child) => SizedBox(width: 348, child: child);
     final habit = Habit(
-      id: 1,
-      projectId: 1,
+      id: '1',
+      projectId: '1',
       title: 'Nuoto',
       createdAt: created,
       frequency: HabitFrequency.weekly,
@@ -251,8 +251,8 @@ void main() {
     tester,
   ) async {
     final habit = Habit(
-      id: 1,
-      projectId: 1,
+      id: '1',
+      projectId: '1',
       title: 'Nuoto',
       createdAt: created,
       frequency: HabitFrequency.weekly,

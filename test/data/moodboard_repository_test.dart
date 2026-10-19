@@ -23,7 +23,7 @@ void main() {
         quoteStyle: MoodboardQuoteStyle.editorial,
       );
       await repo.save(LifeArea.physical, [item]);
-      await repo.save(LifeArea.social, [item]);
+      await repo.save(LifeArea.social, [item.copyWith(id: 'b')]);
       final reopened = await MoodboardRepository.create();
       expect(reopened.getItems(LifeArea.physical).single.content, 'A vision');
       expect(reopened.getItems(LifeArea.physical).single.author, 'Anaïs Nin');
@@ -68,14 +68,14 @@ void main() {
     );
     final source = XFile.fromData(
       Uint8List.fromList([1, 2, 3, 4]),
-      name: 'sample.mp4',
+      name: 'sample.png',
     );
     final path = await MoodboardStorage.save(source);
     expect(await File(path).exists(), isTrue);
     expect(await MoodboardStorage.read(path), [1, 2, 3, 4]);
     final repo = await MoodboardRepository.create();
     await repo.save(LifeArea.physical, [
-      MoodboardItem(id: 'v', kind: MoodboardKind.video, content: path),
+      MoodboardItem(id: 'p', kind: MoodboardKind.photo, content: path),
     ]);
     await repo.clear();
     expect(await File(path).exists(), isFalse);

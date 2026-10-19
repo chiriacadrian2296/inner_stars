@@ -232,7 +232,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
   }
 
   List<ConstellationStar> _buildRenderStars() {
-    final completionsByHabit = <int, List<HabitCompletion>>{};
+    final completionsByHabit = <String, List<HabitCompletion>>{};
     for (final completion in widget.habitCompletionRepository.getAll()) {
       completionsByHabit
           .putIfAbsent(completion.habitId, () => [])
@@ -1344,7 +1344,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                                   drift: 0.7,
                                   child: _ConstellationDockAction(
                                     icon: Icons.auto_awesome,
-                                    label: 'Nuova stella',
+                                    label: strings.constellationNewStarAction,
                                     onTap: _addStar,
                                     isNew: true,
                                   ),
@@ -1372,7 +1372,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                                   drift: 0.7,
                                   child: _ConstellationDockAction(
                                     icon: Icons.share_outlined,
-                                    label: 'Condividi',
+                                    label: strings.shareNowAction,
                                     onTap: _share,
                                   ),
                                 ),
@@ -1399,7 +1399,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                                   drift: 0.7,
                                   child: _ConstellationDockAction(
                                     icon: Icons.edit_outlined,
-                                    label: 'Modifica',
+                                    label: strings.starQuickLookEditAction,
                                     onTap: _editProject,
                                   ),
                                 ),
@@ -1410,7 +1410,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                                   drift: 0.7,
                                   child: _ConstellationDockAction(
                                     icon: Icons.delete_outline,
-                                    label: 'Elimina',
+                                    label: strings.deleteStarAction,
                                     onTap: _deleteProject,
                                   ),
                                 ),
@@ -1888,7 +1888,7 @@ class _OutlinedSwipeText extends StatelessWidget {
     child: Stack(
       children: [
         Text(
-          'SWIPE',
+          context.strings.constellationSwipeHint,
           style: _style.copyWith(
             foreground: Paint()
               ..style = PaintingStyle.stroke
@@ -1896,7 +1896,10 @@ class _OutlinedSwipeText extends StatelessWidget {
               ..color = Colors.black,
           ),
         ),
-        Text('SWIPE', style: _style.copyWith(color: Colors.white)),
+        Text(
+          context.strings.constellationSwipeHint,
+          style: _style.copyWith(color: Colors.white),
+        ),
       ],
     ),
   );

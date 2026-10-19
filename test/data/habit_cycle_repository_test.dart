@@ -12,8 +12,8 @@ DateTime _day(int offset) {
 
 Habit _habit({int cycleLength = 3, int intensity = 4, DateTime? cycleStart}) =>
     Habit(
-      id: 1,
-      projectId: 1,
+      id: '1',
+      projectId: '1',
       title: 'Walk',
       createdAt: _day(20),
       cycleLength: cycleLength,
@@ -23,7 +23,11 @@ Habit _habit({int cycleLength = 3, int intensity = 4, DateTime? cycleStart}) =>
 
 List<HabitCompletion> _done(Iterable<int> offsets, {int habitId = 1}) => [
   for (final offset in offsets)
-    HabitCompletion(id: offset + 1, habitId: habitId, date: _day(offset)),
+    HabitCompletion(
+      id: (offset + 1).toString(),
+      habitId: habitId.toString(),
+      date: _day(offset),
+    ),
 ];
 
 void main() {
@@ -47,7 +51,7 @@ void main() {
       expect(cycle.intensity, 4);
       expect(cycle.completedDate, _day(1));
       expect(cycle.resolved, isFalse);
-      expect(repo.pendingFor(1)?.id, cycle.id);
+      expect(repo.pendingFor('1')?.id, cycle.id);
     },
   );
 
@@ -97,7 +101,7 @@ void main() {
     expect(saved.resolved, isTrue);
     expect(saved.whatHelped, 'routine');
     expect(saved.whatWasHard, isNull);
-    expect(repo.pendingFor(1), isNull);
+    expect(repo.pendingFor('1'), isNull);
   });
 
   test('days before the cycle start do not count', () async {
@@ -132,8 +136,8 @@ void main() {
   test('deleteAllForHabits() removes only those habits\' cycles', () async {
     final repo = await HabitCycleRepository.create();
     HabitCycle cycle(int id, int habitId) => HabitCycle(
-      id: id,
-      habitId: habitId,
+      id: id.toString(),
+      habitId: habitId.toString(),
       startDate: _day(5),
       completedDate: _day(1),
       length: 3,
@@ -141,8 +145,8 @@ void main() {
     );
     await repo.addMany([cycle(1, 1), cycle(2, 2), cycle(3, 1)]);
 
-    await repo.deleteAllForHabits([1]);
+    await repo.deleteAllForHabits(['1']);
 
-    expect(repo.getAll().map((c) => c.id), [2]);
+    expect(repo.getAll().map((c) => c.id), ['2']);
   });
 }

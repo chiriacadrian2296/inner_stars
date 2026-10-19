@@ -31,7 +31,8 @@ class Star {
     this.iconSlug = '',
     this.description,
     required this.createdAt,
-    this.updatedAt,
+    DateTime? updatedAt,
+    this.deleted = false,
     this.targetDate,
     this.achievedDate,
     this.intensity,
@@ -39,7 +40,8 @@ class Star {
     this.media = const [],
     this.dead = false,
     this.deadDate,
-  }) : assert(
+  }) : updatedAt = updatedAt ?? createdAt,
+       assert(
          intensity == null || (intensity >= 1 && intensity <= 5),
          'intensity must be 1-5, was $intensity',
        ),
@@ -48,8 +50,8 @@ class Star {
          'intensity is required once achievedDate is set',
        );
 
-  final int id;
-  final int projectId;
+  final String id;
+  final String projectId;
   final int slotSequence;
   final int? number;
   final String title;
@@ -59,12 +61,14 @@ class Star {
   final String? description;
   final DateTime createdAt;
 
-  /// Stamped by the repository on every save. Null on records stored before
-  /// this field existed; read it through [lastModified].
-  final DateTime? updatedAt;
+  /// The last local write, falling back to creation time for legacy records.
+  final DateTime updatedAt;
+
+  /// Permanent sync deletion, distinct from archiving an activity.
+  final bool deleted;
 
   /// When this star was last edited, falling back to [createdAt].
-  DateTime get lastModified => updatedAt ?? createdAt;
+  DateTime get lastModified => updatedAt;
 
   /// Optional, aspirational only — set while the star is still unlit.
   /// Never affects [slotSequence], and isn't cleared once lit (it can still
@@ -87,7 +91,7 @@ class Star {
   /// links), on top of the cover [photoPath]. Empty for anything not lit.
   final List<StarMedia> media;
 
-  /// Tombstone: true once this star has been "deleted" — its slot is kept
+  /// Archived: its slot is kept
   /// forever, but it stops counting as lit or unlit anywhere. What it can
   /// be reignited as is decided by what it was: a star here, a pulsar in
   /// [Habit].
@@ -99,14 +103,14 @@ class Star {
   final DateTime? deadDate;
 
   /// Lit — a victory, an effort already made.
-  bool get isLit => achievedDate != null && !dead;
+  bool get isLit => achievedDate != null && !dead && !deleted;
 
   /// How many extras of [kind] this star carries.
   int mediaCount(StarMediaKind kind) =>
       media.where((item) => item.kind == kind).length;
 
   /// Unlit — a goal, an effort still ahead.
-  bool get isUnlit => achievedDate == null && !dead;
+  bool get isUnlit => achievedDate == null && !dead && !deleted;
 
   /// Which of the five families this star currently belongs to. Never
   /// [StarKind.nascent] (that's a slot with no star in it yet) and never
@@ -120,8 +124,8 @@ class Star {
       achievedDate != null ? StarKind.lit : StarKind.unlit;
 
   Star copyWith({
-    int? id,
-    int? projectId,
+    String? id,
+    String? projectId,
     int? slotSequence,
     int? number,
     String? title,
@@ -129,6 +133,7 @@ class Star {
     String? description,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? deleted,
     DateTime? targetDate,
     DateTime? achievedDate,
     int? intensity,
@@ -147,6 +152,7 @@ class Star {
       description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      deleted: deleted ?? this.deleted,
       targetDate: targetDate ?? this.targetDate,
       achievedDate: achievedDate ?? this.achievedDate,
       intensity: intensity ?? this.intensity,
@@ -159,8 +165,9 @@ class Star {
 
   factory Star.fromJson(Map<String, dynamic> json) {
     return Star(
-      id: json['id'] as int,
-      projectId: json['projectId'] as int,
+      id: json['id'] as String,
+      deleted: json['deleted'] as bool? ?? false,
+      projectId: json['projectId'] as String,
       slotSequence: json['slotSequence'] as int,
       number: json['number'] as int?,
       title: json['title'] as String,
@@ -184,6 +191,7 @@ class Star {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'deleted': deleted,
       'projectId': projectId,
       'slotSequence': slotSequence,
       'number': number,
@@ -191,7 +199,7 @@ class Star {
       'iconSlug': iconSlug,
       'description': description,
       'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
       'targetDate': targetDate?.toIso8601String(),
       'achievedDate': achievedDate?.toIso8601String(),
       'intensity': intensity,
@@ -206,6 +214,7 @@ class Star {
   bool operator ==(Object other) {
     return other is Star &&
         other.id == id &&
+        other.deleted == deleted &&
         other.projectId == projectId &&
         other.slotSequence == slotSequence &&
         other.number == number &&
@@ -226,6 +235,7 @@ class Star {
   @override
   int get hashCode => Object.hash(
     id,
+    deleted,
     projectId,
     slotSequence,
     number,

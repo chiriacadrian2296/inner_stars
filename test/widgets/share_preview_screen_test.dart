@@ -57,14 +57,14 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     final createdAt = DateTime(2026, 9, 18);
     final project = Project(
-      id: 1,
+      id: '1',
       name: 'Maratona',
       area: LifeArea.physical,
       iconSlug: 'flag',
       createdAt: createdAt,
     );
     final star = Star(
-      id: 1,
+      id: '1',
       projectId: project.id,
       slotSequence: 1,
       title: 'Completare la mia prima maratona',

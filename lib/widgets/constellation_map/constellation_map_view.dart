@@ -185,9 +185,9 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
   double? _layoutZoom;
   Object? _layoutStars;
   Size? _layoutEnvironment;
-  final Map<(int, int?), Size> _tooltipSizes = {};
-  final Map<(int, int?), Size> _pendingTooltipSizes = {};
-  final Map<(int, int?), Widget> _cardContents = {};
+  final Map<(String, int?), Size> _tooltipSizes = {};
+  final Map<(String, int?), Size> _pendingTooltipSizes = {};
+  final Map<(String, int?), Widget> _cardContents = {};
   _MapGeometry? _geometry;
 
   Map<int, int> _previousCandidates = const {};
@@ -804,7 +804,7 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
     return null;
   }
 
-  (int, int?) _tooltipId(ConstellationStar star) =>
+  (String, int?) _tooltipId(ConstellationStar star) =>
       (star.entityId, star.slotSequence);
 
   Widget _cardContent(BuildContext context, ConstellationStar star) =>
@@ -865,7 +865,7 @@ class _ConstellationMapViewState extends State<ConstellationMapView>
     );
   }
 
-  void _onTooltipSize((int, int?) id, Size measured) {
+  void _onTooltipSize((String, int?) id, Size measured) {
     if (!mounted || measured.isEmpty) return;
     final frame = 2 * _tooltipFrameWidth();
     final size = Size(measured.width - frame, measured.height - frame);

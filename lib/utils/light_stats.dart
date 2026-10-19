@@ -166,7 +166,7 @@ class LightStats {
     for (final cycle in cycles) {
       add(cycle.completedDate);
     }
-    final seen = <(int, DateTime)>{};
+    final seen = <(String, DateTime)>{};
     for (final completion in completions) {
       if (seen.add((completion.habitId, dateOnly(completion.date)))) {
         add(completion.date);
@@ -207,7 +207,7 @@ class LightStats {
       totals[entity] = (totals[entity] ?? 0) + value;
     }
 
-    InsightEntity? childOf(int projectId, InsightEntity activity) {
+    InsightEntity? childOf(String projectId, InsightEntity activity) {
       final project = projectsById[projectId];
       if (project == null) return null;
       return switch (scope?.kind) {

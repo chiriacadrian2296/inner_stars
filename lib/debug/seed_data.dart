@@ -1,7 +1,9 @@
+import 'package:uuid/uuid.dart';
+
 import '../data/area_vision_repository.dart';
 import '../data/constellation_layout.dart' show kMaxConstellationStars;
 import '../data/moodboard_repository.dart';
-import '../data/reflection_answer_repository.dart';
+import '../data/reflection_repository.dart';
 import '../data/habit_completion_repository.dart';
 import '../data/habit_cycle_repository.dart';
 import '../data/habit_repository.dart';
@@ -142,7 +144,7 @@ Future<int> seedSampleData({
   required String languageCode,
   HabitCycleRepository? habitCycleRepository,
   AreaVisionRepository? areaVisionRepository,
-  ReflectionAnswerRepository? reflectionAnswerRepository,
+  ReflectionRepository? reflectionAnswerRepository,
   MoodboardRepository? moodboardRepository,
 }) async {
   final starsBefore = starRepository.getAll().length;
@@ -269,10 +271,6 @@ Future<int> seedSampleData({
           achievedDate: date,
         ),
       );
-      // Star ids are millisecondsSinceEpoch; a tight loop without this could
-      // mint duplicate ids, which every id-based lookup in the app assumes
-      // can't happen.
-      await Future.delayed(const Duration(milliseconds: 2));
     }
 
     if (!isNewProject) continue;
@@ -657,7 +655,6 @@ Future<void> _seedCycles({
   final distinct = {for (final d in days) dateOnly(d)}.toList()..sort();
   var start = dateOnly(habit.createdAt);
   final cycles = <HabitCycle>[];
-  final baseId = DateTime.now().microsecondsSinceEpoch;
   while (true) {
     final inCycle = distinct.where((d) => !d.isBefore(start)).toList();
     if (inCycle.length < habit.cycleLength) break;
@@ -666,7 +663,7 @@ Future<void> _seedCycles({
     final sample = _cycleReflectionSample(languageCode, cycles.length);
     cycles.add(
       HabitCycle(
-        id: baseId + cycles.length,
+        id: const Uuid().v4(),
         habitId: habit.id,
         startDate: start,
         completedDate: completed,

@@ -5,6 +5,34 @@ import 'reflection_groups_it.dart';
 
 class StringsIt implements AppStrings {
   @override
+  String get reflectionNew => 'Nuova riflessione';
+  @override
+  String get reflectionFree => 'Parti da zero';
+  @override
+  String get reflectionSuggested => 'Scegli un suggerimento';
+  @override
+  String get reflectionTitleLabel => 'Titolo o tema';
+  @override
+  String get reflectionBodyLabel => 'La tua riflessione';
+  @override
+  String get reflectionEmpty =>
+      'Una domanda o un pensiero possono essere un inizio. Scrivi la tua prima riflessione.';
+  @override
+  String get reflectionRequired => 'Scrivi sia un titolo sia una riflessione.';
+  @override
+  String get reflectionSaveError =>
+      'Impossibile salvare la riflessione. Riprova.';
+  @override
+  String get reflectionDeleteTitle => 'Eliminare la riflessione?';
+  @override
+  String get reflectionDeleteBody =>
+      'Questa riflessione verrà eliminata definitivamente.';
+  @override
+  String get reflectionDiscardTitle => 'Scartare le modifiche?';
+  @override
+  String reflectionCount(int count) => '$count riflessioni';
+
+  @override
   String get splashLoadingLabel => 'Caricamento di Inner Stars';
   @override
   String get splashTagline => 'Ogni sforzo è una stella.';
@@ -76,6 +104,9 @@ class StringsIt implements AppStrings {
       'Raccogli immagini, video e frasi che rendono visibile la vita che desideri in quest’area. Aggiungi ciò che ti ispira e torna qui per mantenere viva la direzione.';
   @override
   String get moodboardAddLabel => 'Add';
+  @override
+  String get moodboardLimitReached =>
+      'Puoi aggiungere al massimo 12 elementi per area.';
   @override
   String get moodboardEmpty =>
       'Raccogli foto, video e frasi che danno forma alla tua visione.';
@@ -1897,6 +1928,10 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get shareChooseLayout => 'Scegli una composizione';
   @override
+  String get sharePreviousLayout => 'Composizione precedente';
+  @override
+  String get shareNextLayout => 'Composizione successiva';
+  @override
   String get shareLayoutImmersive => 'Editoriale';
   @override
   String get shareLayoutFramed => 'Fotografica';
@@ -1924,6 +1959,10 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
 
   @override
   String get constellationQuickLookAddStarAction => '+ Stella';
+  @override
+  String get constellationNewStarAction => 'Nuova stella';
+  @override
+  String get constellationSwipeHint => 'SCORRI';
 
   @override
   String get areaQuickLookReflectionsAction => 'Riflessioni';

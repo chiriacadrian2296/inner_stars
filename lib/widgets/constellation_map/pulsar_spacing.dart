@@ -1,3 +1,5 @@
+import '../../utils/id_seed.dart';
+
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -44,7 +46,7 @@ List<ConstellationStar> spreadScatteredStars(
         if (distance < 0.001) {
           // Exactly on top of each other: pick a direction from the stars'
           // own ids so the result is still deterministic.
-          final angle = (stars[i].entityId * 2.399963) % (2 * math.pi);
+          final angle = (idSeed(stars[i].entityId) * 2.399963) % (2 * math.pi);
           delta = Offset(math.cos(angle), math.sin(angle));
           distance = 1;
         }

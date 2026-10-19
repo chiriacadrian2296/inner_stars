@@ -88,12 +88,12 @@ Future<Project?> pickProject(
 /// constellations can be chosen, then applied. Nothing chosen means no
 /// filter (every constellation shows). Returns the chosen ids (empty for no
 /// filter), or null if dismissed without applying.
-Future<Set<int>?> pickProjectFilter(
+Future<Set<String>?> pickProjectFilter(
   BuildContext context,
   ProjectRepository repository,
   StarsShapeRepository starsShapeRepository, {
-  required Set<int> selected,
-  FilterPreview<Set<int>>? preview,
+  required Set<String> selected,
+  FilterPreview<Set<String>>? preview,
 }) async {
   final result = await _pickProjectFlat(
     context,
@@ -111,7 +111,7 @@ Future<Set<int>?> pickProjectFilter(
 class _ProjectIdsChosen {
   const _ProjectIdsChosen(this.ids);
 
-  final Set<int> ids;
+  final Set<String> ids;
 }
 
 Future<Object?> _pickProjectFlat(
@@ -119,10 +119,10 @@ Future<Object?> _pickProjectFlat(
   ProjectRepository repository,
   StarsShapeRepository starsShapeRepository, {
   required bool allowCreate,
-  required int? initialId,
+  required String? initialId,
   required bool allowClear,
-  Set<int>? filterIds,
-  FilterPreview<Set<int>>? preview,
+  Set<String>? filterIds,
+  FilterPreview<Set<String>>? preview,
   LifeArea? initialArea,
 }) {
   final maxHeight = MediaQuery.sizeOf(context).height * 0.85;
@@ -166,15 +166,15 @@ class _FlatProjectPickerSheet extends StatefulWidget {
   /// Filter mode (the Sky's constellation filter) when set: the constellations
   /// chosen so far; the sheet is then a multi-select chip list with Apply.
   /// Unset, it is the one-tap picker.
-  final Set<int>? filterIds;
+  final Set<String>? filterIds;
 
   /// Filter mode only: previews the cards the pending choice would leave.
-  final FilterPreview<Set<int>>? preview;
+  final FilterPreview<Set<String>>? preview;
   final List<Project> projects;
   final StarsShapeRepository starsShapeRepository;
   final double maxHeight;
   final bool allowCreate;
-  final int? initialId;
+  final String? initialId;
   final bool allowClear;
 
   @override
@@ -195,7 +195,7 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
     super.dispose();
   }
 
-  late Set<int> _selectedIds = {...?widget.filterIds};
+  late Set<String> _selectedIds = {...?widget.filterIds};
   late Set<LifeArea> _areaFilter = switch (widget.initialArea) {
     final area? => {area},
     null => {...LifeArea.values},
@@ -473,10 +473,10 @@ class _FlatProjectPickerSheetState extends State<_FlatProjectPickerSheet> {
   // every keystroke of the search box — and typing never changes it, only the
   // selection does. So it is recomputed only when the selection differs from
   // the one it was last computed for.
-  Set<int>? _previewSelection;
+  Set<String>? _previewSelection;
   Widget? _previewRow;
 
-  Widget _previewRowFor(FilterPreview<Set<int>> preview) {
+  Widget _previewRowFor(FilterPreview<Set<String>> preview) {
     final cached = _previewRow;
     if (cached != null && setEquals(_previewSelection, _selectedIds)) {
       return cached;

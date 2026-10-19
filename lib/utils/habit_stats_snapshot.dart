@@ -37,7 +37,7 @@ class HabitStatsSnapshot {
     required HabitStatsRange range,
     DateTime? now,
   }) {
-    final byHabit = <int, List<HabitCompletion>>{};
+    final byHabit = <String, List<HabitCompletion>>{};
     for (final completion in allCompletions) {
       (byHabit[completion.habitId] ??= []).add(completion);
     }

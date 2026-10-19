@@ -79,7 +79,7 @@ class _ConstellationLabScreenState extends State<ConstellationLabScreen> {
   late final _project =
       widget.project ??
       Project(
-        id: -100,
+        id: '-100',
         name: 'Save for a house',
         area: LifeArea.financial,
         iconSlug: 'home',
@@ -121,7 +121,7 @@ class _ConstellationLabScreenState extends State<ConstellationLabScreen> {
     return [
       for (var i = 0; i < titles.length; i++)
         Star(
-          id: -200 - i,
+          id: 'lab-star-$i',
           projectId: _project.id,
           slotSequence: i + 1,
           title: titles[i],

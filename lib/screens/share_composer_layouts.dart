@@ -1,4 +1,4 @@
-part of 'share_lab_screen.dart';
+part of 'share_composer_screen.dart';
 
 /// Layout archetypes for a share card. Each one has its own feeling, taken
 /// from the Victory Stars design board: [centered] is the classic supernova
@@ -22,50 +22,50 @@ enum _Layout {
 
 /// Which archetype (and variant) each composition chip of each subject uses.
 /// Order matches the composition labels of the control panel.
-const _layoutMap = <_ShareSubject, List<(_Layout, int)>>{
-  _ShareSubject.victory: [
+const _layoutMap = <ShareSubject, List<(_Layout, int)>>{
+  ShareSubject.victory: [
     (_Layout.centered, 0),
     (_Layout.hero, 0),
     (_Layout.polaroid, 0),
     (_Layout.minimal, 0),
     (_Layout.free, 0),
   ],
-  _ShareSubject.goal: [
+  ShareSubject.goal: [
     (_Layout.centered, 0),
     (_Layout.poster, 0),
     (_Layout.free, 0),
     (_Layout.minimal, 0),
     (_Layout.hero, 0),
   ],
-  _ShareSubject.habit: [
+  ShareSubject.habit: [
     (_Layout.tiles, 0),
     (_Layout.hero, 0),
     (_Layout.centered, 0),
     (_Layout.minimal, 0),
     (_Layout.free, 0),
   ],
-  _ShareSubject.project: [
+  ShareSubject.project: [
     (_Layout.constellation, 0),
     (_Layout.hero, 0),
     (_Layout.poster, 0),
     (_Layout.free, 0),
     (_Layout.tiles, 0),
   ],
-  _ShareSubject.vision: [
+  ShareSubject.vision: [
     (_Layout.poster, 0),
     (_Layout.editorial, 1),
     (_Layout.editorial, 2),
     (_Layout.editorial, 3),
     (_Layout.minimal, 0),
   ],
-  _ShareSubject.moodboard: [
+  ShareSubject.moodboard: [
     (_Layout.collage, 0),
     (_Layout.free, 0),
     (_Layout.gallery, 0),
     (_Layout.polaroid, 0),
     (_Layout.editorial, 3),
   ],
-  _ShareSubject.quote: [
+  ShareSubject.quote: [
     (_Layout.poster, 0),
     (_Layout.centered, 0),
     (_Layout.minimal, 0),
@@ -101,35 +101,10 @@ extension _SpecimenLayouts on _ShareSpecimen {
     return list[composition.clamp(0, list.length - 1)];
   }
 
-  String get _typeLabel => switch (subject) {
-    _ShareSubject.victory => 'Vittoria',
-    _ShareSubject.goal => 'Obiettivo',
-    _ShareSubject.habit => 'Abitudine',
-    _ShareSubject.project => 'Progetto',
-    _ShareSubject.vision => 'Visione',
-    _ShareSubject.moodboard => 'Moodboard',
-    _ShareSubject.quote => 'Citazione',
-  };
-
-  String? get _statText => switch (subject) {
-    _ShareSubject.habit => 'Serie di 21 giorni',
-    _ShareSubject.goal => 'Al 60%',
-    _ShareSubject.project => '7 stelle',
-    _ => null,
-  };
-
-  /// Big number and caption for the [_Layout.hero] card.
-  (String, String) get _hero => switch (subject) {
-    _ShareSubject.victory => ('10', 'chilometri'),
-    _ShareSubject.goal => ('60%', 'del cammino'),
-    _ShareSubject.habit => ('21', 'giorni consecutivi'),
-    _ShareSubject.project => ('7', 'stelle accese'),
-    _ShareSubject.vision => ('3', 'capitoli'),
-    _ShareSubject.moodboard => ('12', 'immagini'),
-    _ShareSubject.quote => ('1', 'frase'),
-  };
-
-  bool get _hasStat => subject == _ShareSubject.victory || _statText != null;
+  String get _typeLabel => data.typeLabel;
+  String? get _statText => data.statLabel;
+  (String, String) get _hero => (data.heroValue ?? '', data.heroCaption ?? '');
+  bool get _hasStat => data.intensity != null || data.statLabel != null;
 
   Widget _layoutContent(_Look l) {
     final (layout, variant) = _layout;
@@ -210,7 +185,7 @@ extension _SpecimenLayouts on _ShareSpecimen {
         (type && showType) || showDate || showArea || showProject || anyStat;
     if (!any) return const SizedBox.shrink();
     return _BadgeWrap(
-      subject: subject,
+      data: data,
       showType: type && showType,
       showDate: showDate,
       showArea: showArea,
@@ -226,8 +201,12 @@ extension _SpecimenLayouts on _ShareSpecimen {
   /// The stat on its own (bolts for a victory, a pill otherwise).
   Widget _stat(_Look l) {
     if (!showStats || !_hasStat) return const SizedBox.shrink();
-    if (subject == _ShareSubject.victory) {
-      return _IntensityBolts(lit: 4, accent: l.accent, unlit: l.secondary);
+    if (data.intensity != null) {
+      return _IntensityBolts(
+        lit: data.intensity!,
+        accent: l.accent,
+        unlit: l.secondary,
+      );
     }
     return _StatPill(label: _statText!, accent: l.accent);
   }
@@ -246,12 +225,12 @@ extension _SpecimenLayouts on _ShareSpecimen {
         ),
         padding: const EdgeInsets.all(4),
         child: ClipOval(
-          child: _LabPhoto(url: _photoUrl, fit: BoxFit.cover),
+          child: _ContentPhoto(url: _photoUrl, fit: BoxFit.cover),
         ),
       );
     }
-    final lit = burning ?? subject == _ShareSubject.victory;
-    if (subject == _ShareSubject.quote) {
+    final lit = burning ?? subject == ShareSubject.victory;
+    if (subject == ShareSubject.quote) {
       return Text(
         '“',
         style: TextStyle(
@@ -336,6 +315,8 @@ extension _SpecimenLayouts on _ShareSpecimen {
           _mark(l, 22),
           _gap(l, 26),
           _titleText(l, 31),
+          if (showDescription) ...[_gap(l, 16), _descText(l)],
+          if (data.isReflection) ...[_gap(l, 16), _meta(l)],
           if (showStats && _hasStat) ...[_gap(l, 22), _stat(l)],
         ],
       ),
@@ -345,7 +326,7 @@ extension _SpecimenLayouts on _ShareSpecimen {
   /// One number, as large as it gets.
   Widget _heroLayout(_Look l) {
     final (value, caption) = _hero;
-    final goal = subject == _ShareSubject.goal;
+    final goal = subject == ShareSubject.goal;
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -401,7 +382,12 @@ extension _SpecimenLayouts on _ShareSpecimen {
                             child: const SizedBox.expand(),
                           ),
                           FractionallySizedBox(
-                            widthFactor: .6,
+                            widthFactor: data.total == null || data.total == 0
+                                ? 0
+                                : ((data.completed ?? 0) / data.total!).clamp(
+                                    0.0,
+                                    1.0,
+                                  ),
                             child: ColoredBox(
                               color: l.accent,
                               child: const SizedBox.expand(),
@@ -429,10 +415,10 @@ extension _SpecimenLayouts on _ShareSpecimen {
 
   /// A recap grid: tiles that are lit or not, and what they add up to.
   Widget _tilesLayout(_Look l) {
-    final habit = subject == _ShareSubject.habit;
+    final habit = subject == ShareSubject.habit;
     final cols = habit ? 7 : 4;
-    final total = habit ? 21 : 12;
-    final lit = habit ? 18 : 7;
+    final total = data.total ?? 0;
+    final lit = data.completed ?? 0;
     final size = (habit ? 38.0 : 56.0) * (l.compact ? .8 : 1);
     return _fit(
       Column(
@@ -459,7 +445,7 @@ extension _SpecimenLayouts on _ShareSpecimen {
           ),
           _gap(l, 18),
           Text(
-            habit ? '18' : '7',
+            '$lit',
             style: TextStyle(
               color: l.foreground,
               fontFamily: kFontMono,
@@ -470,7 +456,7 @@ extension _SpecimenLayouts on _ShareSpecimen {
           ),
           _gap(l, 4),
           Text(
-            habit ? 'giorni su 21' : 'stelle accese su 12',
+            data.heroCaption ?? '',
             style: TextStyle(color: l.secondary, fontSize: 12 * l.k),
           ),
           _gap(l, 18),
@@ -485,7 +471,7 @@ extension _SpecimenLayouts on _ShareSpecimen {
 
   /// Typography only. Variant 1 is the centred "poster" with rules.
   Widget _poster(_Look l, int variant) {
-    final quote = subject == _ShareSubject.quote;
+    final quote = subject == ShareSubject.quote;
     if (variant == 1) {
       return _fit(
         Padding(
@@ -633,7 +619,7 @@ extension _SpecimenLayouts on _ShareSpecimen {
                         color: l.foreground.withValues(alpha: .25),
                       ),
                       _gap(l, 14),
-                      _monoLabel(l, 'Capitolo 01'),
+                      _monoLabel(l, _typeLabel),
                       _gap(l, 10),
                       _titleText(l, 31, align: TextAlign.left, maxLines: 5),
                       if (showDescription) ...[
@@ -739,7 +725,7 @@ extension _SpecimenLayouts on _ShareSpecimen {
                     children: [
                       AspectRatio(
                         aspectRatio: 1,
-                        child: _LabPhoto(url: _photoUrl, fit: BoxFit.cover),
+                        child: _ContentPhoto(url: _photoUrl, fit: BoxFit.cover),
                       ),
                       const SizedBox(height: 14),
                       _titleText(
@@ -777,7 +763,7 @@ extension _SpecimenLayouts on _ShareSpecimen {
   Widget _collage(_Look l) {
     final mosaic = ClipRRect(
       borderRadius: BorderRadius.circular(14),
-      child: _MoodboardArtwork(photoUrl: _photoUrl, composition: 1),
+      child: data.artwork ?? _photoAt(0),
     );
     final words = Column(
       mainAxisSize: MainAxisSize.min,
@@ -822,11 +808,6 @@ extension _SpecimenLayouts on _ShareSpecimen {
 
   /// Three staggered frames, words centred underneath.
   Widget _gallery(_Look l) {
-    const urls = [
-      'https://picsum.photos/seed/inner-stars-mood-2/500/700',
-      'https://picsum.photos/seed/inner-stars-share-interior/500/700',
-      'https://picsum.photos/seed/inner-stars-mood-3/500/700',
-    ];
     final frames = Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -840,7 +821,7 @@ extension _SpecimenLayouts on _ShareSpecimen {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: _LabPhoto(url: urls[i], fit: BoxFit.cover),
+                child: _photoAt(i),
               ),
             ),
           ),
@@ -885,7 +866,7 @@ extension _SpecimenLayouts on _ShareSpecimen {
       Expanded(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 22),
-          child: CustomPaint(painter: _ConstellationPainter(l.accent)),
+          child: data.artwork ?? const SizedBox.shrink(),
         ),
       ),
       _titleText(l, 28, maxLines: 3),

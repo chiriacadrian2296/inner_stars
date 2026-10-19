@@ -76,7 +76,7 @@ class _AdmireStarsScreenState extends State<AdmireStarsScreen>
     );
   }
 
-  Map<int, Project> _projectsById() {
+  Map<String, Project> _projectsById() {
     return {
       for (final project in widget.projectRepository.getAll())
         project.id: project,

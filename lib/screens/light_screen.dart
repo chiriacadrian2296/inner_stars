@@ -615,9 +615,9 @@ class _Names {
   });
 
   final AppStrings strings;
-  final Map<int, Project> projects;
-  final Map<int, Star> stars;
-  final Map<int, Habit> habits;
+  final Map<String, Project> projects;
+  final Map<String, Star> stars;
+  final Map<String, Habit> habits;
 
   Project? projectOf(InsightEntity entity) => switch (entity.kind) {
     InsightEntityKind.project => projects[entity.id],

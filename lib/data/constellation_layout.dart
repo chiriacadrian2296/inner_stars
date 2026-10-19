@@ -1,3 +1,4 @@
+import '../utils/id_seed.dart';
 import '../models/display_text.dart';
 
 import 'dart:math' as math;
@@ -258,7 +259,7 @@ buildConstellationRenderStars({
   required List<Star> stars,
   required List<Habit> habits,
   required ConstellationShape? shape,
-  required Map<int, List<HabitCompletion>> completionsByHabit,
+  required Map<String, List<HabitCompletion>> completionsByHabit,
   // When set (only by the Galaxy), stars lit and pulsars checked on this
   // day are flagged [ConstellationStar.litToday].
   DateTime? today,
@@ -289,7 +290,7 @@ buildConstellationRenderStars({
         entityId: star.id,
         position: index >= 0 && index < layout.points.length
             ? layout.points[index]
-            : seededOverflowPosition(star.id),
+            : seededOverflowPosition(idSeed(star.id)),
         kind: star.kind,
         originalKind: star.originalKind,
         lit: star.isLit,
@@ -309,7 +310,7 @@ buildConstellationRenderStars({
     if (claimedSlots.contains(index)) continue;
     renderStars.add(
       ConstellationStar(
-        entityId: 0,
+        entityId: '',
         position: layout.points[index],
         kind: StarKind.nascent,
         lit: false,
@@ -319,14 +320,18 @@ buildConstellationRenderStars({
     );
   }
 
-  // By id, not list order: a new pulsar lands at the front of the stored
-  // list, and each placement avoids the ones before it, so placing in list
-  // order would move existing pulsars whenever another was added.
+  // By creation time and id, not list order: a new pulsar lands at the front
+  // of the stored list, and each placement avoids the ones before it, so placing
+  // in list order would move existing pulsars whenever another was added.
   final placedPulsars = <Offset>[];
-  final orderedHabits = [...habits]..sort((a, b) => a.id.compareTo(b.id));
+  final orderedHabits = [...habits]
+    ..sort((a, b) {
+      final byDate = a.createdAt.compareTo(b.createdAt);
+      return byDate != 0 ? byDate : a.id.compareTo(b.id);
+    });
   for (final habit in orderedHabits) {
     final pulsarPosition = seededPulsarPosition(
-      habit.id,
+      idSeed(habit.id),
       shape: shape,
       avoid: placedPulsars,
     );

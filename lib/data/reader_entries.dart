@@ -17,7 +17,7 @@ sealed class ReaderEntry {
   const ReaderEntry();
 
   /// The project (constellation) this belongs to.
-  int get projectId;
+  String get projectId;
 
   /// Which slot on the shape this sits on (1-based), or null for a pulsar,
   /// which scatters around the shape instead of being part of it.
@@ -35,7 +35,7 @@ class StarEntry extends ReaderEntry {
   final Star star;
 
   @override
-  int get projectId => star.projectId;
+  String get projectId => star.projectId;
 
   @override
   int? get slot => star.slotSequence;
@@ -53,7 +53,7 @@ class PulsarEntry extends ReaderEntry {
   final Habit habit;
 
   @override
-  int get projectId => habit.projectId;
+  String get projectId => habit.projectId;
 
   @override
   int? get slot => null;
@@ -70,7 +70,7 @@ class NascentEntry extends ReaderEntry {
   const NascentEntry({required this.projectId, required this.slot});
 
   @override
-  final int projectId;
+  final String projectId;
 
   @override
   final int slot;
@@ -96,7 +96,7 @@ List<ReaderEntry> starEntries(Iterable<Star> stars) => [
 /// least its own point count of slots, more only as far as the highest slot
 /// a star actually occupies, and only the shape's own slots go nascent.
 List<ReaderEntry> buildReaderEntries({
-  required int projectId,
+  required String projectId,
   required List<Star> stars,
   required List<Habit> habits,
   required ConstellationShape? shape,

@@ -4,8 +4,8 @@ import 'package:inner_stars/models/star_media.dart';
 import 'package:inner_stars/widgets/star_media_views.dart';
 
 Star _star({List<StarMedia> media = const []}) => Star(
-  id: 1,
-  projectId: 1,
+  id: '1',
+  projectId: '1',
   slotSequence: 1,
   title: 'Run',
   createdAt: DateTime(2024, 1, 1),

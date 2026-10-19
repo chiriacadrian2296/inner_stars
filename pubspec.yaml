@@ -15,6 +15,7 @@ dependencies:
   flutter_timezone: ^5.1.0
   package_info_plus: ^10.2.1
   shared_preferences: ^2.5.5
+  uuid: ^4.6.0
   local_auth: ^2.3.0
   local_auth_android: ^1.0.56
   local_auth_darwin: ^1.6.1
@@ -41,6 +42,7 @@ dependencies:
   record: ^7.1.1
   fc_native_video_thumbnail: ^3.0.1
 dev_dependencies:
+  shared_preferences_platform_interface: ^2.4.2
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
@@ -80,13 +82,6 @@ flutter:
     - assets/icon/app_star.svg
     - assets/icon/Logo.svg
     - assets/icon/Star.svg
-    - assets/mascots/moon.svg
-    - assets/mascots/moon_body.svg
-    - assets/mascots/moon_body_app.svg
-    - assets/mascots/moon_body_gold.svg
-    - assets/mascots/moon_refined.svg
-    - assets/mascots/moon_ethereal.svg
-    - assets/mascots/moon_celestial.svg
     - assets/avatars/hoodie_male.svg
     - assets/avatars/hoodie_female.svg
     - assets/audio/bg/
@@ -107,7 +102,6 @@ flutter:
     - assets/images/7. Spiritual.png
     - assets/images/8. Philanthropic - CENTER CROP.jpg
     - assets/images/8. Philanthropic.png
-    - assets/images/royal_symbols_preview/
     - assets/images/royal_symbols_negative_final/
     - assets/images/area_icons/
   shaders:

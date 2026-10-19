@@ -26,7 +26,7 @@ void main() {
           stars: [
             for (var i = 0; i < 4; i++)
               ConstellationStar(
-                entityId: i + 1,
+                entityId: (i + 1).toString(),
                 position: Offset(0.2 + i * 0.2, 0.3 + (i % 2) * 0.2),
                 kind: StarKind.unlit,
                 lit: false,
@@ -46,7 +46,7 @@ void main() {
           cardBuilder: (_, star) => SizedBox(
             width: 300,
             // Uneven heights: the grid's rows depend on measured sizes.
-            height: 70 + star.entityId * 12.0,
+            height: 70 + star.slotSequence! * 12.0,
             child: Text(star.label),
           ),
         ),
@@ -89,7 +89,7 @@ void main() {
           body: ConstellationMapView(
             stars: const [
               ConstellationStar(
-                entityId: 1,
+                entityId: '1',
                 position: Offset(0.3, 0.3),
                 kind: StarKind.unlit,
                 lit: false,
@@ -97,7 +97,7 @@ void main() {
                 slotSequence: 1,
               ),
               ConstellationStar(
-                entityId: 2,
+                entityId: '2',
                 position: Offset(0.7, 0.6),
                 kind: StarKind.lit,
                 lit: true,

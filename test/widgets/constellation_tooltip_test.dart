@@ -290,8 +290,8 @@ void main() {
         );
         addTearDown(camera.dispose);
         final star = Star(
-          id: 1,
-          projectId: 1,
+          id: '1',
+          projectId: '1',
           slotSequence: 1,
           title: 'Obiettivo',
           iconSlug: scale == 0.45 ? 'home' : '',
@@ -312,7 +312,7 @@ void main() {
                   body: ConstellationMapView(
                     stars: const [
                       ConstellationStar(
-                        entityId: 1,
+                        entityId: '1',
                         position: Offset(0.5, 0.5),
                         kind: StarKind.unlit,
                         lit: false,

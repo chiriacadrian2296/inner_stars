@@ -1,3 +1,5 @@
+import 'repository_write.dart';
+
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -25,21 +27,28 @@ class ReflectionAnswerRepository {
   static String _key(LifeArea area, String questionId) =>
       '${area.name}|$questionId';
 
-  Map<String, ReflectionAnswer> _readAll() {
+  Map<String, ReflectionAnswer> _readAll({bool includeDeleted = false}) {
     final raw = _prefs.getString(_storageKey);
     if (raw == null) return {};
     try {
       final decoded = jsonDecode(raw) as Map<String, dynamic>;
-      return decoded.map(
+      final answers = decoded.map(
         (key, value) => MapEntry(
           key,
           ReflectionAnswer.fromJson(value as Map<String, dynamic>),
         ),
       );
+      return {
+        for (final entry in answers.entries)
+          if (includeDeleted || !entry.value.deleted) entry.key: entry.value,
+      };
     } catch (_) {
       return {};
     }
   }
+
+  Map<String, ReflectionAnswer> getAll({bool includeDeleted = false}) =>
+      _readAll(includeDeleted: includeDeleted);
 
   /// Null when this question hasn't been answered yet.
   ReflectionAnswer? getAnswer(LifeArea area, String questionId) =>
@@ -56,10 +65,8 @@ class ReflectionAnswerRepository {
     };
   }
 
-  /// A blank (or all-whitespace) [answerText] removes the entry entirely
-  /// rather than storing an empty string, so [getAnswer] and "has the user
-  /// answered this question" stay the same question — same rule
-  /// [AreaVisionRepository.setVision] uses for a whole area's vision.
+  /// A blank answer becomes a hidden deletion record, preserving its identity
+  /// and modification time for synchronization.
   Future<void> setAnswer(
     LifeArea area,
     String questionId, {
@@ -83,13 +90,16 @@ class ReflectionAnswerRepository {
 
   /// Used by the "reset all data" action — there's no undo.
   Future<void> clear() async {
-    await _prefs.remove(_storageKey);
+    await _saveAll({});
   }
 
   Future<void> _saveAll(Map<String, ReflectionAnswer> answers) async {
-    final encoded = jsonEncode(
-      answers.map((key, value) => MapEntry(key, value.toJson())),
+    await writeSyncMap<ReflectionAnswer>(
+      _prefs,
+      _storageKey,
+      answers,
+      encode: (record) => record.toJson(),
+      decode: ReflectionAnswer.fromJson,
     );
-    await _prefs.setString(_storageKey, encoded);
   }
 }

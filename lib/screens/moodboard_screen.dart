@@ -2,6 +2,7 @@ import '../utils/area_section_icons.dart';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:uuid/uuid.dart';
 
 import '../data/moodboard_repository.dart';
 import '../data/moodboard_storage.dart';
@@ -51,31 +52,50 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
     }
   }
 
-  Future<void> _addMedia(MoodboardKind kind) async {
+  void _showLimit() {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.strings.moodboardLimitReached)),
+      );
+    }
+  }
+
+  Future<void> _addPhotos() async {
+    final remaining = kMaxMoodboardItems - _items.length;
+    if (remaining <= 0) {
+      _showLimit();
+      return;
+    }
     setState(() => _busy = true);
     final paths = <String>[];
     var saved = false;
     try {
       final picker = ImagePicker();
-      // Photos come several at a time; a video is still one.
-      final List<XFile> files;
-      if (kind == MoodboardKind.photo) {
-        files = await picker.pickMultiImage(maxWidth: 2400, imageQuality: 90);
-      } else {
-        final video = await picker.pickVideo(source: ImageSource.gallery);
-        files = video == null ? const [] : [video];
-      }
+      final files = await picker.pickMultiImage(
+        maxWidth: 2400,
+        imageQuality: 90,
+        limit: remaining,
+      );
       if (files.isEmpty) return;
+      if (_items.length + files.length > kMaxMoodboardItems) {
+        _showLimit();
+        return;
+      }
       for (final file in files) {
         paths.add(await MoodboardStorage.save(file));
       }
-      final stamp = DateTime.now().microsecondsSinceEpoch;
       await widget.repository.save(widget.area, [
         ..._items,
         for (var i = 0; i < paths.length; i++)
-          MoodboardItem(id: '${stamp + i}', kind: kind, content: paths[i]),
+          MoodboardItem(
+            id: const Uuid().v4(),
+            kind: MoodboardKind.photo,
+            content: paths[i],
+          ),
       ]);
       saved = true;
+    } on MoodboardLimitException {
+      _showLimit();
     } catch (_) {
       _error();
     } finally {
@@ -92,6 +112,10 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
 
   /// Asks which kind to add, in the same sheet as the menu's Light Your Sky.
   Future<void> _add() async {
+    if (_items.length >= kMaxMoodboardItems) {
+      _showLimit();
+      return;
+    }
     final strings = context.strings;
     final kind = await showAppSheet<String>(
       context: context,
@@ -121,19 +145,18 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                   0,
                 ),
                 const SizedBox(height: 10),
-                choice(
-                  Icons.video_library_outlined,
-                  strings.moodboardVideo,
-                  'video',
-                  1,
-                ),
-                const SizedBox(height: 10),
-                choice(Icons.format_quote, strings.moodboardQuote, 'quote', 2),
+                choice(Icons.format_quote, strings.moodboardQuote, 'quote', 1),
                 const SizedBox(height: 24),
                 Align(
-                  child: ElevatedButton(
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      foregroundColor: context.colors.muted,
+                    ),
                     onPressed: () => Navigator.of(sheetContext).pop(),
-                    child: AppButtonLabel(strings.cancel),
+                    child: AppButtonLabel(
+                      strings.cancel,
+                      color: context.colors.muted,
+                    ),
                   ),
                 ),
               ],
@@ -145,15 +168,17 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
     if (!mounted) return;
     switch (kind) {
       case 'photo':
-        await _addMedia(MoodboardKind.photo);
-      case 'video':
-        await _addMedia(MoodboardKind.video);
+        await _addPhotos();
       case 'quote':
         await _quote();
     }
   }
 
   Future<void> _quote([MoodboardItem? existing]) async {
+    if (existing == null && _items.length >= kMaxMoodboardItems) {
+      _showLimit();
+      return;
+    }
     // Fixed sheet: the keyboard covers its lower part instead of moving it.
     final result = await showFixedAppSheet<_QuoteDraft>(
       context: context,
@@ -163,7 +188,7 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
     setState(() => _busy = true);
     try {
       final item = MoodboardItem(
-        id: existing?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
+        id: existing?.id ?? const Uuid().v4(),
         kind: MoodboardKind.quote,
         content: result.text,
         author: result.author,
@@ -323,6 +348,13 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                             onTap: _busy ? null : _open,
                             showEmptyMessage: false,
                           ),
+                          if (_items.length >= kMaxMoodboardItems) ...[
+                            const SizedBox(height: 16),
+                            Text(
+                              strings.moodboardLimitReached,
+                              style: TextStyle(color: context.colors.muted),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -349,7 +381,11 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                         ),
                         const SizedBox(width: 12),
                         ElevatedButton(
-                          onPressed: _busy ? null : _add,
+                          key: const ValueKey('moodboard-add'),
+                          onPressed:
+                              _busy || _items.length >= kMaxMoodboardItems
+                              ? null
+                              : _add,
                           child: AppButtonLabel(strings.moodboardAddLabel),
                         ),
                       ],

@@ -1,3 +1,5 @@
+import 'package:uuid/uuid.dart';
+
 import 'repository_write.dart';
 
 import 'package:flutter/foundation.dart';
@@ -26,13 +28,14 @@ class ProjectRepository extends ChangeNotifier {
   }
 
   /// All projects currently stored, newest first.
-  List<Project> getAll() {
+  List<Project> getAll({bool includeDeleted = false}) {
     final raw = _prefs.getString(_storageKey);
     if (raw == null) return const [];
     try {
       final decoded = jsonDecode(raw) as List<dynamic>;
       return decoded
           .map((entry) => Project.fromJson(entry as Map<String, dynamic>))
+          .where((record) => includeDeleted || !record.deleted)
           .toList();
     } catch (_) {
       return const [];
@@ -48,13 +51,13 @@ class ProjectRepository extends ChangeNotifier {
     required String name,
     required LifeArea area,
     required String iconSlug,
-    int? starsShapeId,
+    String? starsShapeId,
     String? description,
   }) async {
     final projects = getAll();
     final trimmedDescription = description?.trim();
     final project = Project(
-      id: _nextId(projects),
+      id: const Uuid().v4(),
       name: name.trim(),
       area: area,
       iconSlug: iconSlug,
@@ -65,26 +68,8 @@ class ProjectRepository extends ChangeNotifier {
       createdAt: DateTime.now(),
     );
 
-    await _saveAll([project, ...projects]);
-    return project;
-  }
-
-  /// Ids are millisecondsSinceEpoch, which two adds inside the same
-  /// millisecond would collide on — and a duplicate id is not cosmetic here:
-  /// [assignStarsShape] and [renameProject] both find their target
-  /// by id, so they'd keep resolving to whichever twin comes first and the
-  /// other would silently never be updated (`backfillMissingConstellations`
-  /// leaving the second of two same-icon projects with no shape at all is
-  /// how this first showed up). Stepping past anything already taken makes
-  /// back-to-back adds safe — `seedSampleData` creates two dozen projects in a
-  /// loop — without callers having to sleep between them.
-  static int _nextId(List<Project> existing) {
-    var id = DateTime.now().millisecondsSinceEpoch;
-    final taken = existing.map((p) => p.id).toSet();
-    while (taken.contains(id)) {
-      id++;
-    }
-    return id;
+    final savedRecords = await _saveAll([project, ...projects]);
+    return savedRecords.firstWhere((record) => record.id == project.id);
   }
 
   /// Backfills a [Project] that predates the hand-drawn constellation editor
@@ -93,8 +78,8 @@ class ProjectRepository extends ChangeNotifier {
   /// project's position in the list. Throws if [projectId] doesn't match
   /// anything saved.
   Future<Project> assignStarsShape({
-    required int projectId,
-    required int starsShapeId,
+    required String projectId,
+    required String starsShapeId,
   }) async {
     final projects = getAll();
     final index = projects.indexWhere((p) => p.id == projectId);
@@ -104,8 +89,8 @@ class ProjectRepository extends ChangeNotifier {
 
     final updated = projects[index].copyWith(starsShapeId: starsShapeId);
     projects[index] = updated;
-    await _saveAll(projects);
-    return updated;
+    final savedRecords = await _saveAll(projects);
+    return savedRecords.firstWhere((record) => record.id == updated.id);
   }
 
   /// Renames a project in place, keeping its id (and every star/habit tied
@@ -114,7 +99,7 @@ class ProjectRepository extends ChangeNotifier {
   /// new locale's name instead of spawning a duplicate under it. Throws if
   /// [projectId] doesn't match anything saved.
   Future<Project> renameProject({
-    required int projectId,
+    required String projectId,
     required String name,
   }) async {
     final projects = getAll();
@@ -125,18 +110,18 @@ class ProjectRepository extends ChangeNotifier {
 
     final updated = projects[index].copyWith(name: name);
     projects[index] = updated;
-    await _saveAll(projects);
-    return updated;
+    final savedRecords = await _saveAll(projects);
+    return savedRecords.firstWhere((record) => record.id == updated.id);
   }
 
   /// Updates a constellation without changing its identity or its position in
   /// the newest-first list. Its stars and pulsars remain attached by id.
   Future<Project> update({
-    required int projectId,
+    required String projectId,
     required String name,
     required LifeArea area,
     required String iconSlug,
-    required int? starsShapeId,
+    required String? starsShapeId,
     String? description,
   }) async {
     final projects = getAll();
@@ -157,28 +142,32 @@ class ProjectRepository extends ChangeNotifier {
       updatedAt: DateTime.now(),
     );
     projects[index] = updated;
-    await _saveAll(projects);
-    return updated;
+    final savedRecords = await _saveAll(projects);
+    return savedRecords.firstWhere((record) => record.id == updated.id);
   }
 
-  /// Permanently removes just this project. Related records are deliberately
+  /// Deletes this project from the UI and keeps a sync tombstone. Related records are
   /// removed by the coordinating screen/repositories, where their photos and
   /// completion history can be cleaned up too.
-  Future<void> delete(int projectId) async {
+  Future<void> delete(String projectId) async {
     final projects = getAll();
     await _saveAll(projects.where((p) => p.id != projectId).toList());
   }
 
-  /// Permanently deletes every project. Used by the "reset all data" action
-  /// — there's no undo.
+  /// Deletes every project from the UI, retaining tombstones for synchronization.
   Future<void> clear() async {
-    await writeRepositoryValue(_prefs, _storageKey, null);
-    notifyListeners();
+    await _saveAll([]);
   }
 
-  Future<void> _saveAll(List<Project> projects) async {
-    final encoded = jsonEncode(projects.map((p) => p.toJson()).toList());
-    await writeRepositoryValue(_prefs, _storageKey, encoded);
+  Future<List<Project>> _saveAll(List<Project> projects) async {
+    final saved = await writeSyncList<Project>(
+      _prefs,
+      _storageKey,
+      projects,
+      encode: (record) => record.toJson(),
+      decode: Project.fromJson,
+    );
     notifyListeners();
+    return saved;
   }
 }

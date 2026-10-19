@@ -202,7 +202,7 @@ void main() {
   group('spreadScatteredStars', () {
     ConstellationStar star(int id, Offset position, {int? slot}) =>
         ConstellationStar(
-          entityId: id,
+          entityId: id.toString(),
           position: position,
           kind: slot == null ? StarKind.pulsar : StarKind.lit,
           lit: true,

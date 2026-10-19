@@ -66,7 +66,7 @@ Future<bool> openHabitCycleReflection({
 }
 
 class _HabitCycleHostState extends State<HabitCycleHost> {
-  final _queue = Queue<(int, int)>();
+  final _queue = Queue<(String, String)>();
   bool _syncing = false;
   bool _syncAgain = false;
   bool _showing = false;

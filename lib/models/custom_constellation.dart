@@ -18,13 +18,17 @@ import '../data/constellation_shape.dart';
 class StarsShape {
   const StarsShape({
     required this.id,
+    DateTime? updatedAt,
+    this.deleted = false,
     required this.name,
     required this.shape,
     required this.createdAt,
     this.presetId,
-  });
+  }) : updatedAt = updatedAt ?? createdAt;
 
-  final int id;
+  final String id;
+  final DateTime updatedAt;
+  final bool deleted;
   final String name;
   final ConstellationShape shape;
   final DateTime createdAt;
@@ -42,7 +46,11 @@ class StarsShape {
 
   factory StarsShape.fromJson(Map<String, dynamic> json) {
     return StarsShape(
-      id: json['id'] as int,
+      updatedAt: (json['updatedAt'] as String?) == null
+          ? null
+          : DateTime.parse(json['updatedAt'] as String),
+      deleted: json['deleted'] as bool? ?? false,
+      id: json['id'] as String,
       name: json['name'] as String,
       shape: ConstellationShape(
         points: (json['points'] as List<dynamic>)
@@ -62,6 +70,8 @@ class StarsShape {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'updatedAt': updatedAt.toIso8601String(),
+      'deleted': deleted,
       'name': name,
       'points': shape.points.map((p) => [p.dx, p.dy]).toList(),
       'edges': shape.edges.map((e) => [e.$1, e.$2]).toList(),
@@ -74,6 +84,8 @@ class StarsShape {
   bool operator ==(Object other) {
     if (other is! StarsShape) return false;
     if (other.id != id ||
+        other.updatedAt != updatedAt ||
+        other.deleted != deleted ||
         other.name != name ||
         other.createdAt != createdAt ||
         other.presetId != presetId ||
@@ -93,6 +105,8 @@ class StarsShape {
   @override
   int get hashCode => Object.hash(
     id,
+    updatedAt,
+    deleted,
     name,
     createdAt,
     presetId,

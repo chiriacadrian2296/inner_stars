@@ -55,7 +55,7 @@ void main() {
                             child: SkySearchTooltipCard(
                               key: ValueKey('card-$id'),
                               menuId: id,
-                              entity: InsightEntity.star(id),
+                              entity: InsightEntity.star(id.toString()),
                               baseBodyHeight: 118,
                               visual: const SizedBox.shrink(),
                               content: Text('Card $id'),

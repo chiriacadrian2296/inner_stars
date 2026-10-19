@@ -43,8 +43,8 @@ class SkyStarTarget extends SkyNavigationTarget {
     this.nascentSlot,
   });
   final Project project;
-  final int? starId;
-  final int? habitId;
+  final String? starId;
+  final String? habitId;
 
   /// Empty slots have no record id; their permanent slot locates them instead.
   final int? nascentSlot;

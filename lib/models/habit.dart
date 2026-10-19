@@ -39,7 +39,8 @@ class Habit {
     this.iconSlug = '',
     this.description,
     required this.createdAt,
-    this.updatedAt,
+    DateTime? updatedAt,
+    this.deleted = false,
     this.frequency = HabitFrequency.daily,
     this.targetPerPeriod = 1,
     this.intensity = 3,
@@ -49,7 +50,8 @@ class Habit {
     this.reminderMinute,
     this.dead = false,
     this.deadDate,
-  }) : assert(
+  }) : updatedAt = updatedAt ?? createdAt,
+       assert(
          intensity >= 1 && intensity <= 5,
          'intensity must be 1-5, was $intensity',
        ),
@@ -59,8 +61,8 @@ class Habit {
          'was $cycleLength',
        );
 
-  final int id;
-  final int projectId;
+  final String id;
+  final String projectId;
   final String title;
 
   /// An empty slug keeps the original activity icon for older records.
@@ -68,12 +70,14 @@ class Habit {
   final String? description;
   final DateTime createdAt;
 
-  /// Stamped by the repository on every save. Null on records stored before
-  /// this field existed; read it through [lastModified].
-  final DateTime? updatedAt;
+  /// The last local write, falling back to creation time for legacy records.
+  final DateTime updatedAt;
+
+  /// Permanent sync deletion, distinct from archiving an activity.
+  final bool deleted;
 
   /// When this habit was last edited, falling back to [createdAt].
-  DateTime get lastModified => updatedAt ?? createdAt;
+  DateTime get lastModified => updatedAt;
 
   final HabitFrequency frequency;
 
@@ -109,7 +113,7 @@ class Habit {
   final int? reminderHour;
   final int? reminderMinute;
 
-  /// Tombstone: true once this pulsar has been "deleted". It stops counting
+  /// Archived: this pulsar stops counting
   /// as an active pulsar anywhere, and renders as a dead star instead.
   final bool dead;
 
@@ -117,17 +121,18 @@ class Habit {
   /// cleared on resurrection along with [dead] itself.
   final DateTime? deadDate;
 
-  bool get isActive => !dead;
+  bool get isActive => !dead && !deleted;
 
   Habit copyWith({
-    int? id,
-    int? projectId,
+    String? id,
+    String? projectId,
     String? title,
     String? iconSlug,
     String? description,
     DateTime? createdAt,
     DateTime? updatedAt,
     HabitFrequency? frequency,
+    bool? deleted,
     int? targetPerPeriod,
     int? intensity,
     int? cycleLength,
@@ -145,6 +150,7 @@ class Habit {
       description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      deleted: deleted ?? this.deleted,
       frequency: frequency ?? this.frequency,
       targetPerPeriod: targetPerPeriod ?? this.targetPerPeriod,
       intensity: intensity ?? this.intensity,
@@ -159,8 +165,9 @@ class Habit {
 
   factory Habit.fromJson(Map<String, dynamic> json) {
     return Habit(
-      id: json['id'] as int,
-      projectId: json['projectId'] as int,
+      id: json['id'] as String,
+      deleted: json['deleted'] as bool? ?? false,
+      projectId: json['projectId'] as String,
       title: json['title'] as String,
       iconSlug: json['iconSlug'] as String? ?? '',
       description: json['description'] as String?,
@@ -192,12 +199,13 @@ class Habit {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'deleted': deleted,
       'projectId': projectId,
       'title': title,
       'iconSlug': iconSlug,
       'description': description,
       'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
       'frequency': frequency.name,
       'targetPerPeriod': targetPerPeriod,
       'intensity': intensity,
@@ -214,6 +222,7 @@ class Habit {
   bool operator ==(Object other) {
     return other is Habit &&
         other.id == id &&
+        other.deleted == deleted &&
         other.projectId == projectId &&
         other.title == title &&
         other.iconSlug == iconSlug &&
@@ -234,6 +243,7 @@ class Habit {
   @override
   int get hashCode => Object.hash(
     id,
+    deleted,
     projectId,
     title,
     iconSlug,

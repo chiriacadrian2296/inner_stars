@@ -7,7 +7,7 @@ import '../data/custom_constellation_repository.dart';
 import '../data/habit_completion_repository.dart';
 import '../data/habit_repository.dart';
 import '../data/project_repository.dart';
-import '../data/reflection_answer_repository.dart';
+import '../data/reflection_repository.dart';
 import '../data/star_repository.dart';
 import '../settings/settings_controller.dart';
 import '../utils/entity_insights.dart';
@@ -37,7 +37,7 @@ class EntityInsightsController extends ChangeNotifier
   final HabitCompletionRepository completions;
   final StarsShapeRepository shapes;
   final AreaVisionRepository? areaVisions;
-  final ReflectionAnswerRepository? reflections;
+  final ReflectionRepository? reflections;
   final SettingsController? settings;
   Iterable<ChangeNotifier> get _repositories => [
     projects,
@@ -131,7 +131,7 @@ class EntityInsightsHost extends StatefulWidget {
   final HabitCompletionRepository completions;
   final StarsShapeRepository shapes;
   final AreaVisionRepository? areaVisions;
-  final ReflectionAnswerRepository? reflections;
+  final ReflectionRepository? reflections;
   final SettingsController? settings;
   final Widget child;
   @override

@@ -5,7 +5,7 @@ import '../data/custom_constellation_repository.dart';
 import '../data/habit_completion_repository.dart';
 import '../data/habit_repository.dart';
 import '../data/project_repository.dart';
-import '../data/reflection_answer_repository.dart';
+import '../data/reflection_repository.dart';
 import '../data/star_repository.dart';
 import '../settings/settings_controller.dart';
 import '../theme/app_colors.dart';
@@ -35,7 +35,7 @@ class SkySearchScreen extends StatefulWidget {
   final HabitCompletionRepository habitCompletionRepository;
   final StarsShapeRepository starsShapeRepository;
   final AreaVisionRepository areaVisionRepository;
-  final ReflectionAnswerRepository reflectionAnswerRepository;
+  final ReflectionRepository reflectionAnswerRepository;
   final SettingsController settings;
   final SkyExplorerSession session;
 

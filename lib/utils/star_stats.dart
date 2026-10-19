@@ -98,7 +98,7 @@ Map<DateTime, int> addDayTotals(Map<DateTime, int> a, Map<DateTime, int> b) {
 /// The total reward of the completed [cycles] belonging to [habitIds] (all
 /// of them when null) — what a pulsar's finished cycles add to a
 /// constellation's or an area's intensity.
-int cycleIntensityTotal(Iterable<HabitCycle> cycles, {Set<int>? habitIds}) =>
+int cycleIntensityTotal(Iterable<HabitCycle> cycles, {Set<String>? habitIds}) =>
     cycles
         .where((c) => habitIds == null || habitIds.contains(c.habitId))
         .fold<int>(0, (sum, c) => sum + c.intensity);
@@ -177,7 +177,7 @@ class StarFilter {
 
   /// Whether [star] passes. A star whose project no longer exists has no
   /// area, so it only passes while the area filter is untouched.
-  bool matches(Star star, Map<int, Project> projectsById) {
+  bool matches(Star star, Map<String, Project> projectsById) {
     final achieved = star.achievedDate;
     if (achieved == null) return false;
     if (isAreaNarrowed) {
@@ -201,7 +201,7 @@ extension StarFilterCycles on StarFilter {
   bool matchesCycle(
     HabitCycle cycle,
     Habit? habit,
-    Map<int, Project> projectsById,
+    Map<String, Project> projectsById,
   ) {
     if (isAreaNarrowed) {
       final area = habit == null ? null : projectsById[habit.projectId]?.area;
@@ -221,7 +221,7 @@ extension StarFilterCycles on StarFilter {
 /// left out.
 List<MapEntry<LifeArea, int>> starCountsByArea(
   Iterable<Star> stars,
-  Map<int, Project> projectsById,
+  Map<String, Project> projectsById,
 ) {
   final counts = <LifeArea, int>{};
   for (final star in stars) {

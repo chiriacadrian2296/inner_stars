@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hint_kit/hint_kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:inner_stars/data/area_vision_repository.dart';
-import 'package:inner_stars/data/reflection_answer_repository.dart';
+import 'package:inner_stars/data/reflection_repository.dart';
 import 'package:inner_stars/data/project_repository.dart';
 import 'package:inner_stars/data/star_repository.dart';
 import 'package:inner_stars/data/moodboard_repository.dart';
@@ -15,7 +15,6 @@ import 'package:inner_stars/screens/moodboard_screen.dart';
 import 'package:inner_stars/screens/new_project_screen.dart';
 import 'package:inner_stars/screens/star_form_screen.dart';
 import 'package:inner_stars/screens/vision_editor_screen.dart';
-import 'package:inner_stars/widgets/reflection_questions_section.dart';
 import 'package:inner_stars/theme/app_colors.dart';
 import 'package:inner_stars/theme/app_theme.dart';
 
@@ -42,7 +41,7 @@ void main() {
             home: AreaDetailScreen(
               area: LifeArea.physical,
               areaVisionRepository: AreaVisionRepository(prefs),
-              reflectionAnswerRepository: ReflectionAnswerRepository(prefs),
+              reflectionAnswerRepository: ReflectionRepository(prefs),
               projectRepository: ProjectRepository(prefs),
               starRepository: StarRepository(prefs),
             ),
@@ -85,7 +84,7 @@ void main() {
             home: AreaDetailScreen(
               area: LifeArea.physical,
               areaVisionRepository: visions,
-              reflectionAnswerRepository: ReflectionAnswerRepository(prefs),
+              reflectionAnswerRepository: ReflectionRepository(prefs),
               projectRepository: ProjectRepository(prefs),
               starRepository: StarRepository(prefs),
             ),
@@ -117,12 +116,13 @@ void main() {
     await tester.tap(find.byTooltip('Riflessioni'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull, reason: 'reflections');
-    expect(find.byType(ReflectionQuestionsSection), findsOneWidget);
-    final reflectionTheme = Theme.of(
-      tester.element(find.byType(ReflectionQuestionsSection)),
+    expect(find.byType(AreaReflectionsScreen), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('reflection-new')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.text(const StringsIt().reflectionSuggested.toUpperCase()),
     );
-    expect(reflectionTheme.sliderTheme.thumbColor, AppColors.dark.gold);
-    expect(reflectionTheme.sliderTheme.activeTrackColor, AppColors.dark.gold);
+    await tester.pumpAndSettle();
     final question = LifeArea.physical
         .reflectionQuestions(const StringsIt())
         .first;
@@ -133,16 +133,15 @@ void main() {
     await tester.tap(find.text(question));
     await tester.pumpAndSettle();
     await tester.enterText(
-      find.byType(TextField).first,
+      find.byKey(const ValueKey('reflection-body')),
       'Una risposta da conservare',
     );
     await tester.pumpAndSettle();
-    await tester.binding.handlePopRoute();
+    await tester.ensureVisible(find.byKey(const ValueKey('reflection-save')));
+    await tester.tap(find.byKey(const ValueKey('reflection-save')));
     await tester.pumpAndSettle();
     expect(
-      ReflectionAnswerRepository(prefs)
-          .getAnswer(LifeArea.physical, '0')!
-          .answerText,
+      ReflectionRepository(prefs).getForArea(LifeArea.physical).single.body,
       'Una risposta da conservare',
     );
     expect(tester.takeException(), isNull);

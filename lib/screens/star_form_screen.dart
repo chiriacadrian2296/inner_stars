@@ -83,7 +83,7 @@ class StarFormResult {
   final String title;
   final String iconSlug;
   final String? description;
-  final int projectId;
+  final String projectId;
 
   /// Set only when this form was opened by tapping a *nascent* star — the
   /// exact slot on the constellation's shape the new star has to land on.
@@ -404,7 +404,7 @@ class _StarFormScreenState extends State<StarFormScreen> {
   // _hasUnsavedChanges has something to compare against regardless of
   // whether this is a blank new-star form or one seeded from something that
   // already exists. Deliberately mirrors each field's own initializer.
-  late final int? _initialProjectId =
+  late final String? _initialProjectId =
       (widget.lockedProject ?? widget.contextProject)?.id;
   late final LifeArea? _initialArea = _selectedArea;
   late final StarKind _initialKind = _kind;

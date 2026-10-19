@@ -114,7 +114,7 @@ class StarReaderScreen extends StatefulWidget {
   /// Resolves each star's project (and, through it, its area) for display.
   /// A star whose id isn't in here (stale data) still renders — just
   /// without that context row.
-  final Map<int, Project> projectsById;
+  final Map<String, Project> projectsById;
   final bool allowEdit;
 
   final ProjectRepository? projectRepository;
@@ -137,7 +137,7 @@ class StarReaderScreen extends StatefulWidget {
   /// handing the current star's project *and* id back to the sky camera
   /// to jump to — the id is what lets it land on that exact star's own
   /// tooltip rather than just the constellation's (see `SkyStarTarget`).
-  final void Function(Project project, {int? starId, int? habitId})?
+  final void Function(Project project, {String? starId, String? habitId})?
   onNavigateTo;
 
   /// App settings, forwarded by the Sky so screens opened from the reader
@@ -852,16 +852,19 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
     return actions;
   }
 
-  ReaderAction _takeMeThere(Project project, {int? starId, int? habitId}) =>
-      ReaderAction(
-        icon: Icons.navigation,
-        label: context.strings.actionFly,
-        onTap: () {
-          Navigator.of(context).pop();
-          widget.onNavigateTo!(project, starId: starId, habitId: habitId);
-        },
-        group: 3,
-      );
+  ReaderAction _takeMeThere(
+    Project project, {
+    String? starId,
+    String? habitId,
+  }) => ReaderAction(
+    icon: Icons.navigation,
+    label: context.strings.actionFly,
+    onTap: () {
+      Navigator.of(context).pop();
+      widget.onNavigateTo!(project, starId: starId, habitId: habitId);
+    },
+    group: 3,
+  );
 
   ReaderAction _editAction() => ReaderAction(
     icon: Icons.edit_outlined,

@@ -11,8 +11,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   Star star(int id) => Star(
-    id: id,
-    projectId: 1,
+    id: id.toString(),
+    projectId: '1',
     slotSequence: id,
     title: 'Star $id',
     createdAt: DateTime(2026, 1, id),

@@ -19,22 +19,22 @@ class InsightEntity {
     : kind = InsightEntityKind.area,
       area = value,
       id = null;
-  const InsightEntity.project(int value)
+  const InsightEntity.project(String value)
     : kind = InsightEntityKind.project,
       id = value,
       area = null;
-  const InsightEntity.star(int value)
+  const InsightEntity.star(String value)
     : kind = InsightEntityKind.star,
       id = value,
       area = null;
-  const InsightEntity.habit(int value)
+  const InsightEntity.habit(String value)
     : kind = InsightEntityKind.habit,
       id = value,
       area = null;
 
   final InsightEntityKind kind;
   final LifeArea? area;
-  final int? id;
+  final String? id;
   bool get aggregate =>
       kind == InsightEntityKind.area || kind == InsightEntityKind.project;
   @override
@@ -97,7 +97,7 @@ class EntityInsights {
   int get habitsDoneToday => activeHabits.where(doneToday).length;
 
   /// Archived history ends at archiving; future-created records have no observations.
-  final _summaries = <int, HabitStatsSummary>{};
+  final _summaries = <String, HabitStatsSummary>{};
   HabitStatsSummary summary(Habit habit) => _summaries.putIfAbsent(
     habit.id,
     () => habitStatsSummary(

@@ -24,13 +24,13 @@ void main() {
     cycles = await HabitCycleRepository.create();
     habit = await habits.add(
       title: 'Camminata',
-      projectId: 1,
+      projectId: '1',
       cycleLength: 7,
       intensity: 4,
       createdAt: DateTime(2026, 3, 1),
     );
     cycle = HabitCycle(
-      id: 1,
+      id: '1',
       habitId: habit.id,
       startDate: DateTime(2026, 3, 1),
       completedDate: DateTime(2026, 3, 9),

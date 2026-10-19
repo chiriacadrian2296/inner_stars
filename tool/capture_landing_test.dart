@@ -15,7 +15,7 @@ import 'package:inner_stars/data/custom_constellation_repository.dart';
 import 'package:inner_stars/data/habit_completion_repository.dart';
 import 'package:inner_stars/data/habit_repository.dart';
 import 'package:inner_stars/data/project_repository.dart';
-import 'package:inner_stars/data/reflection_answer_repository.dart';
+import 'package:inner_stars/data/reflection_repository.dart';
 import 'package:inner_stars/data/settings_repository.dart';
 import 'package:inner_stars/data/star_repository.dart';
 import 'package:inner_stars/l10n/strings_en.dart';
@@ -62,7 +62,7 @@ void main() {
       final completions = HabitCompletionRepository(prefs);
       final shapes = StarsShapeRepository(prefs);
       final visions = AreaVisionRepository(prefs);
-      final reflections = ReflectionAnswerRepository(prefs);
+      final reflections = ReflectionRepository(prefs);
       final settings = SettingsController(SettingsRepository(prefs));
       settings.tutorialsEnabled = false;
       final it = lang == 'it';

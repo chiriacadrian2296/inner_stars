@@ -434,7 +434,7 @@ class _ConstellationPicture extends StatelessWidget {
 
   static const _stars = [
     ConstellationStar(
-      entityId: 1,
+      entityId: '1',
       position: Offset(0.20, 0.72),
       kind: StarKind.lit,
       lit: true,
@@ -442,7 +442,7 @@ class _ConstellationPicture extends StatelessWidget {
       slotSequence: 1,
     ),
     ConstellationStar(
-      entityId: 2,
+      entityId: '2',
       position: Offset(0.42, 0.30),
       kind: StarKind.lit,
       lit: true,
@@ -450,7 +450,7 @@ class _ConstellationPicture extends StatelessWidget {
       slotSequence: 2,
     ),
     ConstellationStar(
-      entityId: 3,
+      entityId: '3',
       position: Offset(0.66, 0.56),
       kind: StarKind.unlit,
       lit: false,
@@ -458,7 +458,7 @@ class _ConstellationPicture extends StatelessWidget {
       slotSequence: 3,
     ),
     ConstellationStar(
-      entityId: 4,
+      entityId: '4',
       position: Offset(0.84, 0.22),
       kind: StarKind.nascent,
       lit: false,
@@ -466,7 +466,7 @@ class _ConstellationPicture extends StatelessWidget {
       slotSequence: 4,
     ),
     ConstellationStar(
-      entityId: 5,
+      entityId: '5',
       position: Offset(0.55, 0.85),
       kind: StarKind.pulsar,
       lit: true,

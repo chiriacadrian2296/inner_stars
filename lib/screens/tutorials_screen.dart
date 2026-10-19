@@ -8,7 +8,7 @@ import '../data/custom_constellation_repository.dart';
 import '../data/habit_completion_repository.dart';
 import '../data/habit_repository.dart';
 import '../data/project_repository.dart';
-import '../data/reflection_answer_repository.dart';
+import '../data/reflection_repository.dart';
 import '../data/star_repository.dart';
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
@@ -61,7 +61,7 @@ class TutorialsScreen extends StatefulWidget {
   final HabitCompletionRepository habitCompletionRepository;
   final StarsShapeRepository starsShapeRepository;
   final AreaVisionRepository areaVisionRepository;
-  final ReflectionAnswerRepository reflectionAnswerRepository;
+  final ReflectionRepository reflectionAnswerRepository;
   final void Function(NavigatorState navigator) reopen;
 
   @override
@@ -233,7 +233,7 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
         if (!s.dead && s.achievedDate != null) s,
     ];
     final real = lit();
-    final Map<int, Project> projects;
+    final Map<String, Project> projects;
     final List<Star> stars;
     final List<Star> Function() refresh;
     if (real.isNotEmpty) {
@@ -244,7 +244,7 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
       final strings = context.strings;
       final now = DateTime.now();
       final project = Project(
-        id: -1,
+        id: '-1',
         name: strings.tutorialDemoProjectName,
         area: LifeArea.physical,
         iconSlug: 'park',
@@ -253,7 +253,7 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
       projects = {project.id: project};
       stars = [
         Star(
-          id: -1,
+          id: '-1',
           projectId: project.id,
           slotSequence: 0,
           number: 1,

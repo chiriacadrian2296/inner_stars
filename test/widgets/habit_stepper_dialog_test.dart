@@ -15,8 +15,8 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final repository = await HabitCompletionRepository.create();
     final habit = Habit(
-      id: 7,
-      projectId: 1,
+      id: '7',
+      projectId: '1',
       title: 'Bere acqua',
       createdAt: DateTime(2026, 1, 1),
       targetPerPeriod: 3,

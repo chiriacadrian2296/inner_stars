@@ -21,13 +21,13 @@ void main() {
 
       final first = await repo.add(
         title: 'First step',
-        projectId: 1,
+        projectId: '1',
         achievedDate: DateTime(2024, 1, 1),
         intensity: 3,
       );
       final second = await repo.add(
         title: 'Second step',
-        projectId: 1,
+        projectId: '1',
         achievedDate: DateTime(2024, 1, 2),
         intensity: 3,
       );
@@ -44,7 +44,7 @@ void main() {
     () async {
       final repo = await StarRepository.create();
 
-      final goal = await repo.add(title: 'Someday', projectId: 1);
+      final goal = await repo.add(title: 'Someday', projectId: '1');
 
       expect(goal.isUnlit, isTrue);
       expect(goal.number, isNull);
@@ -55,9 +55,9 @@ void main() {
   test('add() assigns a per-project slotSequence, starting at 1', () async {
     final repo = await StarRepository.create();
 
-    final a = await repo.add(title: 'A', projectId: 1);
-    final b = await repo.add(title: 'B', projectId: 1);
-    final c = await repo.add(title: 'C', projectId: 2);
+    final a = await repo.add(title: 'A', projectId: '1');
+    final b = await repo.add(title: 'B', projectId: '1');
+    final c = await repo.add(title: 'C', projectId: '2');
 
     expect(a.slotSequence, 1);
     expect(b.slotSequence, 2);
@@ -70,7 +70,7 @@ void main() {
     final star = await repo.add(
       title: 'A star',
       description: '   ',
-      projectId: 1,
+      projectId: '1',
       achievedDate: DateTime.now(),
       intensity: 3,
     );
@@ -85,7 +85,7 @@ void main() {
       await repo.add(
         title: 'A star',
         description: 'Some details',
-        projectId: 1,
+        projectId: '1',
         achievedDate: DateTime.now(),
         intensity: 4,
       );
@@ -104,7 +104,7 @@ void main() {
     final original = await repo.add(
       title: 'Original',
       description: 'Original details',
-      projectId: 1,
+      projectId: '1',
       achievedDate: DateTime(2024, 1, 1),
       intensity: 2,
     );
@@ -113,7 +113,7 @@ void main() {
       id: original.id,
       title: 'Updated',
       description: '',
-      projectId: 1,
+      projectId: '1',
       achievedDate: original.achievedDate,
       intensity: 5,
     );
@@ -133,11 +133,11 @@ void main() {
       final repo = await StarRepository.create();
       await repo.add(
         title: 'Already a victory',
-        projectId: 1,
+        projectId: '1',
         achievedDate: DateTime.now(),
         intensity: 3,
       );
-      final goal = await repo.add(title: 'A goal', projectId: 1);
+      final goal = await repo.add(title: 'A goal', projectId: '1');
 
       final achieved = await repo.update(
         id: goal.id,
@@ -156,7 +156,7 @@ void main() {
     final repo = await StarRepository.create();
     final star = await repo.add(
       title: 'A victory',
-      projectId: 1,
+      projectId: '1',
       achievedDate: DateTime.now(),
       intensity: 3,
     );
@@ -176,18 +176,18 @@ void main() {
     'update() never changes slotSequence, even across a project reassignment',
     () async {
       final repo = await StarRepository.create();
-      final original = await repo.add(title: 'A star', projectId: 1);
+      final original = await repo.add(title: 'A star', projectId: '1');
 
       final updated = await repo.update(
         id: original.id,
         title: original.title,
-        projectId: 2,
+        projectId: '2',
       );
 
-      expect(updated.projectId, 2);
+      expect(updated.projectId, '2');
       expect(updated.slotSequence, original.slotSequence);
-      expect(repo.getAllForProject(1), isEmpty);
-      expect(repo.getAllForProject(2).map((s) => s.id), [original.id]);
+      expect(repo.getAllForProject('1'), isEmpty);
+      expect(repo.getAllForProject('2').map((s) => s.id), [original.id]);
     },
   );
 
@@ -195,7 +195,7 @@ void main() {
     final repo = await StarRepository.create();
 
     expect(
-      () => repo.update(id: 999, title: 'Nope', projectId: 1),
+      () => repo.update(id: '999', title: 'Nope', projectId: '1'),
       throwsStateError,
     );
   });
@@ -203,21 +203,23 @@ void main() {
   test('getAllForProject() returns only that project\'s stars, ordered by slotSequence', () async {
     final repo = await StarRepository.create();
 
-    await repo.add(title: 'Project 1, star A', projectId: 1);
-    await repo.add(title: 'Project 2, star A', projectId: 2);
-    await repo.add(title: 'Project 1, star B', projectId: 1);
+    await repo.add(title: 'Project 1, star A', projectId: '1');
+    await repo.add(title: 'Project 2, star A', projectId: '2');
+    await repo.add(title: 'Project 1, star B', projectId: '1');
 
-    expect(repo.getAllForProject(1).map((s) => s.title), [
+    expect(repo.getAllForProject('1').map((s) => s.title), [
       'Project 1, star A',
       'Project 1, star B',
     ]);
-    expect(repo.getAllForProject(2).map((s) => s.title), ['Project 2, star A']);
-    expect(repo.getAllForProject(3), isEmpty);
+    expect(repo.getAllForProject('2').map((s) => s.title), [
+      'Project 2, star A',
+    ]);
+    expect(repo.getAllForProject('3'), isEmpty);
   });
 
   test('markAchieved() lights up a goal and assigns a number', () async {
     final repo = await StarRepository.create();
-    final goal = await repo.add(title: 'A goal', projectId: 1);
+    final goal = await repo.add(title: 'A goal', projectId: '1');
 
     final achieved = await repo.markAchieved(goal.id, intensity: 4);
 
@@ -231,7 +233,7 @@ void main() {
     final repo = await StarRepository.create();
     final star = await repo.add(
       title: 'A victory',
-      projectId: 1,
+      projectId: '1',
       achievedDate: DateTime.now(),
       intensity: 3,
     );
@@ -247,25 +249,25 @@ void main() {
     'delete() tombstones a star instead of removing it, keeping its slot',
     () async {
       final repo = await StarRepository.create();
-      final keep = await repo.add(title: 'Keep me', projectId: 1);
+      final keep = await repo.add(title: 'Keep me', projectId: '1');
       // Star ids are millisecondsSinceEpoch — without this, two adds this
       // close together could mint the same id, which the id-based lookups
       // below assume can't happen (see debug/seed_data.dart's own note).
       await Future.delayed(const Duration(milliseconds: 2));
-      final remove = await repo.add(title: 'Remove me', projectId: 1);
+      final remove = await repo.add(title: 'Remove me', projectId: '1');
 
       final deleted = await repo.delete(remove.id);
 
       expect(deleted.dead, isTrue);
       expect(deleted.deadDate, isNotNull);
-      expect(repo.getAllForProject(1).map((s) => s.id), [keep.id, remove.id]);
+      expect(repo.getAllForProject('1').map((s) => s.id), [keep.id, remove.id]);
       expect(
-        repo.getAllForProject(1).firstWhere((s) => s.id == remove.id).dead,
+        repo.getAllForProject('1').firstWhere((s) => s.id == remove.id).dead,
         isTrue,
       );
 
       final reloaded = await StarRepository.create();
-      expect(reloaded.getAllForProject(1).map((s) => s.id), [
+      expect(reloaded.getAllForProject('1').map((s) => s.id), [
         keep.id,
         remove.id,
       ]);
@@ -274,13 +276,13 @@ void main() {
 
   test('resurrect() revives a dead star with new content, same id and slotSequence', () async {
     final repo = await StarRepository.create();
-    final star = await repo.add(title: 'Original', projectId: 1);
+    final star = await repo.add(title: 'Original', projectId: '1');
     await repo.delete(star.id);
 
     final resurrected = await repo.resurrect(
       star.id,
       title: 'Reborn',
-      projectId: 1,
+      projectId: '1',
       achievedDate: DateTime.now(),
       intensity: 5,
     );
@@ -296,7 +298,7 @@ void main() {
 
   test('clear() deletes every star, including from a repository reloaded afterward', () async {
     final repo = await StarRepository.create();
-    await repo.add(title: 'A star', projectId: 1);
+    await repo.add(title: 'A star', projectId: '1');
 
     await repo.clear();
 
@@ -308,29 +310,29 @@ void main() {
   test('add() with an explicit slotSequence lands on exactly that slot — how '
       'a nascent star gets configured', () async {
     final repo = await StarRepository.create();
-    await repo.add(title: 'First', projectId: 1);
+    await repo.add(title: 'First', projectId: '1');
 
     final placed = await repo.add(
       title: 'Fourth slot',
-      projectId: 1,
+      projectId: '1',
       slotSequence: 4,
     );
 
     expect(placed.slotSequence, 4);
     // Slots 2 and 3 stay free, so their nascent stars are still there to be
     // configured later; the next unplaced star appends past the highest.
-    final next = await repo.add(title: 'Next', projectId: 1);
+    final next = await repo.add(title: 'Next', projectId: '1');
     expect(next.slotSequence, 5);
   });
 
   test('add() falls back to appending when the requested slot is already '
       'taken', () async {
     final repo = await StarRepository.create();
-    final first = await repo.add(title: 'First', projectId: 1);
+    final first = await repo.add(title: 'First', projectId: '1');
 
     final second = await repo.add(
       title: 'Second',
-      projectId: 1,
+      projectId: '1',
       slotSequence: first.slotSequence,
     );
 
@@ -341,7 +343,7 @@ void main() {
     final repo = await StarRepository.create();
     // Spread over projects so no constellation fills up.
     for (var i = 0; i < 20; i++) {
-      await repo.add(title: 'Star $i', projectId: i);
+      await repo.add(title: 'Star $i', projectId: i.toString());
     }
     final ids = repo.getAll().map((s) => s.id).toList();
     expect(ids.toSet(), hasLength(ids.length));
@@ -360,12 +362,16 @@ void main() {
 
       final victory = await repo.add(
         title: 'Won',
-        projectId: 1,
+        projectId: '1',
         achievedDate: DateTime(2024, 1, 1),
         intensity: 3,
         media: [link],
       );
-      final goal = await repo.add(title: 'Later', projectId: 1, media: [link]);
+      final goal = await repo.add(
+        title: 'Later',
+        projectId: '1',
+        media: [link],
+      );
 
       expect(repo.getAll().firstWhere((s) => s.id == victory.id).media, [link]);
       expect(goal.media, isEmpty);
@@ -375,7 +381,7 @@ void main() {
       final repo = await StarRepository.create();
       final victory = await repo.add(
         title: 'Won',
-        projectId: 1,
+        projectId: '1',
         achievedDate: DateTime(2024, 1, 1),
         intensity: 3,
       );
@@ -383,7 +389,7 @@ void main() {
       final updated = await repo.update(
         id: victory.id,
         title: 'Won',
-        projectId: 1,
+        projectId: '1',
         achievedDate: DateTime(2024, 1, 1),
         intensity: 3,
         media: [link],

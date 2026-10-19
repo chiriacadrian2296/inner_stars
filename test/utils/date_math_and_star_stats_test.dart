@@ -46,27 +46,31 @@ void main() {
     test('lists unlit habits first and sums the days done', () {
       final now = DateTime(2026, 5, 20, 12);
       final lit = Habit(
-        id: 1,
+        id: '1',
         title: 'a',
-        projectId: 1,
+        projectId: '1',
         createdAt: DateTime(2026, 5, 10),
       );
       final dark = Habit(
-        id: 2,
+        id: '2',
         title: 'b',
-        projectId: 1,
+        projectId: '1',
         createdAt: DateTime(2026, 5, 10),
       );
       final snapshot = HabitStatsSnapshot.build(
         habits: [lit, dark],
         allCompletions: [
           for (final d in [18, 19, 20])
-            HabitCompletion(id: d, habitId: 1, date: DateTime(2026, 5, d)),
+            HabitCompletion(
+              id: d.toString(),
+              habitId: '1',
+              date: DateTime(2026, 5, d),
+            ),
         ],
         range: HabitStatsRange.days7,
         now: now,
       );
-      expect(snapshot.entries.first.habit.id, 2);
+      expect(snapshot.entries.first.habit.id, '2');
       expect(snapshot.doneTodayCount, 1);
       expect(snapshot.totalDaysDone, greaterThan(0));
     });
@@ -74,15 +78,15 @@ void main() {
 
   group('StarFilter', () {
     final projects = {
-      1: Project(
-        id: 1,
+      '1': Project(
+        id: '1',
         name: 'gym',
         area: LifeArea.physical,
         iconSlug: 'x',
         createdAt: DateTime(2026, 1, 1),
       ),
-      2: Project(
-        id: 2,
+      '2': Project(
+        id: '2',
         name: 'work',
         area: LifeArea.professional,
         iconSlug: 'x',
@@ -90,8 +94,8 @@ void main() {
       ),
     };
     Star star(int id, int projectId, DateTime day) => Star(
-      id: id,
-      projectId: projectId,
+      id: id.toString(),
+      projectId: projectId.toString(),
       slotSequence: id,
       title: 't$id',
       createdAt: day,
@@ -116,7 +120,7 @@ void main() {
       final ids = stars
           .where((s) => filter.matches(s, projects))
           .map((s) => s.id);
-      expect(ids, [2, 3]);
+      expect(ids, ['2', '3']);
     });
 
     test('date range is inclusive of the whole end day', () {
@@ -127,7 +131,7 @@ void main() {
       final ids = stars
           .where((s) => filter.matches(s, projects))
           .map((s) => s.id);
-      expect(ids, [1, 2]);
+      expect(ids, ['1', '2']);
     });
 
     test('starCountsByArea sorts largest first and skips orphans', () {

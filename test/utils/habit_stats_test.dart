@@ -10,8 +10,8 @@ Habit habit({
   bool dead = false,
   DateTime? deadDate,
 }) => Habit(
-  id: 1,
-  projectId: 1,
+  id: '1',
+  projectId: '1',
   title: 'Read',
   createdAt: createdAt ?? DateTime(2026, 1, 1),
   frequency: frequency,
@@ -25,7 +25,7 @@ List<HabitCompletion> logs(Map<DateTime, int> values) {
   return [
     for (final entry in values.entries)
       for (var i = 0; i < entry.value; i++)
-        HabitCompletion(id: ++id, habitId: 1, date: entry.key),
+        HabitCompletion(id: (++id).toString(), habitId: '1', date: entry.key),
   ];
 }
 
@@ -150,8 +150,8 @@ void main() {
 
 void cycleStatsTests() {
   Habit cycleHabit({DateTime? cycleStart, int cycleLength = 3}) => Habit(
-    id: 1,
-    projectId: 1,
+    id: '1',
+    projectId: '1',
     title: 'Walk',
     createdAt: DateTime(2026, 1, 1),
     cycleLength: cycleLength,

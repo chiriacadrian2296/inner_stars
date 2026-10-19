@@ -187,10 +187,10 @@ class _TodayHabitsScreenState extends State<TodayHabitsScreen> {
     return entries;
   }
 
-  int _projectId(ReaderEntry entry) => switch (entry) {
+  String _projectId(ReaderEntry entry) => switch (entry) {
     StarEntry(:final star) => star.projectId,
     PulsarEntry(:final habit) => habit.projectId,
-    _ => -1,
+    _ => '',
   };
 
   Future<void> _view(ReaderEntry entry) async {
@@ -224,7 +224,7 @@ class _TodayHabitsScreenState extends State<TodayHabitsScreen> {
     List<ReaderEntry> entries,
     _ManagementData data,
   ) {
-    final grouped = <int, List<ReaderEntry>>{};
+    final grouped = <String, List<ReaderEntry>>{};
     for (final entry in entries) {
       (grouped[_projectId(entry)] ??= []).add(entry);
     }

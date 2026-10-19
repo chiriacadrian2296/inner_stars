@@ -1,3 +1,5 @@
+import 'package:uuid/uuid.dart';
+
 import 'repository_write.dart';
 
 import 'package:flutter/foundation.dart';
@@ -28,7 +30,7 @@ class HabitCompletionRepository extends ChangeNotifier {
     return HabitCompletionRepository(prefs);
   }
 
-  List<HabitCompletion> getAll() {
+  List<HabitCompletion> getAll({bool includeDeleted = false}) {
     final raw = _prefs.getString(_storageKey);
     if (raw == null) return const [];
     try {
@@ -37,20 +39,21 @@ class HabitCompletionRepository extends ChangeNotifier {
           .map(
             (entry) => HabitCompletion.fromJson(entry as Map<String, dynamic>),
           )
+          .where((record) => includeDeleted || !record.deleted)
           .toList();
     } catch (_) {
       return const [];
     }
   }
 
-  List<HabitCompletion> getAllForHabit(int habitId) {
+  List<HabitCompletion> getAllForHabit(String habitId) {
     return getAll().where((c) => c.habitId == habitId).toList();
   }
 
   /// Marks [habitId] done for [date] (defaults to today), normalized to
   /// day-only. Idempotent — a habit already marked done that day is left
   /// untouched, at most one completion record per (habit, day).
-  Future<void> markDone(int habitId, {DateTime? date}) async {
+  Future<void> markDone(String habitId, {DateTime? date}) async {
     final day = _dateOnly(date ?? DateTime.now());
     final completions = getAll();
     final alreadyDone = completions.any(
@@ -59,9 +62,10 @@ class HabitCompletionRepository extends ChangeNotifier {
     if (alreadyDone) return;
 
     final completion = HabitCompletion(
-      id: DateTime.now().microsecondsSinceEpoch,
+      id: const Uuid().v4(),
       habitId: habitId,
       date: day,
+      createdAt: DateTime.now(),
     );
     await _saveAll([completion, ...completions]);
   }
@@ -70,15 +74,14 @@ class HabitCompletionRepository extends ChangeNotifier {
   /// (a day listed twice logs two instances, like [logInstance]) — with
   /// guaranteed-unique ids. For sample data, where hundreds of one-at-a-time
   /// writes would be slow and could mint colliding ids.
-  Future<void> addMany(int habitId, Iterable<DateTime> days) async {
-    final base = DateTime.now().microsecondsSinceEpoch;
-    var offset = 0;
+  Future<void> addMany(String habitId, Iterable<DateTime> days) async {
     final added = [
       for (final day in days)
         HabitCompletion(
-          id: base + offset++,
+          id: const Uuid().v4(),
           habitId: habitId,
           date: _dateOnly(day),
+          createdAt: DateTime.now(),
         ),
     ];
     if (added.isEmpty) return;
@@ -87,7 +90,7 @@ class HabitCompletionRepository extends ChangeNotifier {
 
   /// Undoes a mis-tap: removes [habitId]'s completion record for [date] (day
   /// granularity), if any.
-  Future<void> unmarkDone(int habitId, DateTime date) async {
+  Future<void> unmarkDone(String habitId, DateTime date) async {
     final day = _dateOnly(date);
     final completions = getAll();
     final nextCompletions = completions
@@ -101,37 +104,39 @@ class HabitCompletionRepository extends ChangeNotifier {
   /// (defaults to today) rather than refusing a second one; that day's count
   /// (see `habitCompletionCountsByDay`) is simply how many rows exist for it.
   /// Not idempotent on purpose — each tap is one more instance logged.
-  Future<void> logInstance(int habitId, {DateTime? date}) async {
+  Future<void> logInstance(String habitId, {DateTime? date}) async {
     final day = _dateOnly(date ?? DateTime.now());
     final completion = HabitCompletion(
-      id: DateTime.now().microsecondsSinceEpoch,
+      id: const Uuid().v4(),
       habitId: habitId,
       date: day,
+      createdAt: DateTime.now(),
     );
     await _saveAll([completion, ...getAll()]);
   }
 
   /// [logInstance]'s own undo — removes just the most recently logged
-  /// instance for [habitId] on [date] (the highest `id`, since ids are
-  /// `microsecondsSinceEpoch`), leaving any earlier same-day instances
+  /// instance for [habitId] on [date], using its creation time and keeping
+  /// the newest-first storage order to break ties. Leaves earlier instances
   /// alone. Unlike [unmarkDone], never clears the whole day at once.
-  Future<void> unlogLastInstance(int habitId, DateTime date) async {
+  Future<void> unlogLastInstance(String habitId, DateTime date) async {
     final day = _dateOnly(date);
     final completions = getAll();
     HabitCompletion? latest;
     for (final completion in completions) {
       if (completion.habitId != habitId || completion.date != day) continue;
-      if (latest == null || completion.id > latest.id) latest = completion;
+      if (latest == null || completion.createdAt.isAfter(latest.createdAt)) {
+        latest = completion;
+      }
     }
     if (latest == null) return;
     final target = latest;
     await _saveAll(completions.where((c) => c.id != target.id).toList());
   }
 
-  /// Permanently removes every completion for [habitId] — called by
-  /// [HabitRepository.delete], since a deleted habit has no tombstone to
-  /// keep its history attached to.
-  Future<void> deleteAllForHabit(int habitId) async {
+  /// Deletes a habit's completions for sync, when its project is permanently
+  /// deleted or the archived habit starts afresh through resurrection.
+  Future<void> deleteAllForHabit(String habitId) async {
     final completions = getAll();
     final nextCompletions = completions
         .where((c) => c.habitId != habitId)
@@ -140,13 +145,20 @@ class HabitCompletionRepository extends ChangeNotifier {
   }
 
   Future<void> clear() async {
-    await writeRepositoryValue(_prefs, _storageKey, null);
-    notifyListeners();
+    await _saveAll([]);
   }
 
-  Future<void> _saveAll(List<HabitCompletion> completions) async {
-    final encoded = jsonEncode(completions.map((c) => c.toJson()).toList());
-    await writeRepositoryValue(_prefs, _storageKey, encoded);
+  Future<List<HabitCompletion>> _saveAll(
+    List<HabitCompletion> completions,
+  ) async {
+    final saved = await writeSyncList<HabitCompletion>(
+      _prefs,
+      _storageKey,
+      completions,
+      encode: (record) => record.toJson(),
+      decode: HabitCompletion.fromJson,
+    );
     notifyListeners();
+    return saved;
   }
 }

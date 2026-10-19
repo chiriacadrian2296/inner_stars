@@ -18,7 +18,7 @@ import '../data/habit_repository.dart';
 import '../data/moodboard_repository.dart';
 import '../data/project_repository.dart';
 import '../data/reader_entries.dart';
-import '../data/reflection_answer_repository.dart';
+import '../data/reflection_repository.dart';
 import '../data/star_repository.dart';
 import '../l10n/app_strings.dart';
 import '../l10n/strings_scope.dart';
@@ -116,7 +116,7 @@ class SkyExplorerSession {
   Set<LifeArea> areaFilter = {...LifeArea.values};
 
   /// Stars only: the one constellation to show stars from (null = all).
-  Set<int> projectFilterIds = {};
+  Set<String> projectFilterIds = {};
   final scrollOffsets = <int, double>{};
   Object? openCardMenuId;
 
@@ -166,7 +166,7 @@ class ResumeArea extends SkyResume {
 
 class ResumeProject extends SkyResume {
   const ResumeProject(this.projectId, {this.transform});
-  final int projectId;
+  final String projectId;
 
   /// The constellation map's zoom/pan when it was left.
   final Matrix4? transform;
@@ -277,7 +277,7 @@ class SkyExplorerView extends StatefulWidget {
   final HabitCompletionRepository habitCompletionRepository;
   final StarsShapeRepository starsShapeRepository;
   final AreaVisionRepository areaVisionRepository;
-  final ReflectionAnswerRepository reflectionAnswerRepository;
+  final ReflectionRepository reflectionAnswerRepository;
 
   /// Holds the list/grid choice and the grid's card size — listened to, so
   /// changing either from the view-mode sheet shows up here live.
@@ -402,7 +402,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   // and an empty set really means that nothing matches.
   late Set<StarKind> _kindFilter;
   late Set<LifeArea> _areaFilter;
-  Set<int> _projectFilterIds = {};
+  Set<String> _projectFilterIds = {};
 
   /// Which chip (if any) produced [_dateRangeFilter] — kept alongside it
   /// purely so a reopened sheet can still show the right chip highlighted
@@ -461,11 +461,11 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
   late List<Project> _projectsCache;
   late List<Star> _starsCache;
   late List<Habit> _habitsCache;
-  late Map<int, List<Star>> _starsByProjectCache;
-  late Map<int, Map<DateTime, int>> _completionCountsCache;
+  late Map<String, List<Star>> _starsByProjectCache;
+  late Map<String, Map<DateTime, int>> _completionCountsCache;
 
-  late Map<int, List<HabitCompletion>> _completionsByHabitCache;
-  late Map<int, ConstellationShape> _shapesByIdCache;
+  late Map<String, List<HabitCompletion>> _completionsByHabitCache;
+  late Map<String, ConstellationShape> _shapesByIdCache;
 
   void _refreshDataCache() {
     _allEntriesMemo.clear();
@@ -480,7 +480,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       for (final shape in widget.starsShapeRepository.getAll())
         shape.id: shape.shape,
     };
-    _starsByProjectCache = <int, List<Star>>{};
+    _starsByProjectCache = <String, List<Star>>{};
     for (final star in _starsCache) {
       (_starsByProjectCache[star.projectId] ??= <Star>[]).add(star);
     }
@@ -488,7 +488,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       stars.sort((a, b) => a.slotSequence.compareTo(b.slotSequence));
     }
     final completions = widget.habitCompletionRepository.getAll();
-    _completionsByHabitCache = <int, List<HabitCompletion>>{};
+    _completionsByHabitCache = <String, List<HabitCompletion>>{};
     for (final completion in completions) {
       (_completionsByHabitCache[completion.habitId] ??= []).add(completion);
     }
@@ -546,14 +546,14 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         .toList();
   }
 
-  Map<int, Project> get _projectsById => {
+  Map<String, Project> get _projectsById => {
     for (final project in _filteredAreaProjects) project.id: project,
   };
 
-  List<Star> _starsForProject(int projectId) =>
+  List<Star> _starsForProject(String projectId) =>
       _starsByProjectCache[projectId] ?? const <Star>[];
 
-  Map<DateTime, int> _countsByDayFor(int habitId) {
+  Map<DateTime, int> _countsByDayFor(String habitId) {
     return _completionCountsCache[habitId] ?? const <DateTime, int>{};
   }
 
@@ -692,7 +692,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     Set<LifeArea>? areas,
     Set<StarKind>? kinds,
     ({DateTimeRange? range, SkyDateField field})? dateRange,
-    Set<int>? projects,
+    Set<String>? projects,
   }) {
     final query = _query.trim().toLowerCase();
     final range = dateRange != null ? dateRange.range : _dateRangeFilter;
@@ -796,7 +796,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     Set<LifeArea>? areas,
     Set<StarKind>? kinds,
     ({DateTimeRange? range, SkyDateField field})? dateRange,
-    Set<int>? projects,
+    Set<String>? projects,
   }) => _mode == _SkyMode.stars
       ? _entriesMatching(
           areas: areas,
@@ -1888,7 +1888,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       widget.projectRepository,
       widget.starsShapeRepository,
       selected: _projectFilterIds,
-      preview: FilterPreview<Set<int>>(
+      preview: FilterPreview<Set<String>>(
         icon: _modeIcon,
         countFor: (ids) => _previewCount(projects: ids),
         wordFor: _resultsWord,
@@ -2758,30 +2758,30 @@ class _AreaCard extends StatelessWidget {
       actions: [
         SearchCardAction(
           icon: Icons.insights,
-          label: '+ Costellazione',
+          label: strings.areaQuickLookNewConstellationAction,
           onTap: onNewConstellation,
         ),
         SearchCardAction(
           icon: kAreaVisionIcon,
-          label: 'Vision',
+          label: strings.areaCoverVisionTitle,
           onTap: onVision,
           group: 1,
         ),
         SearchCardAction(
           icon: kAreaMoodboardIcon,
-          label: 'Moodboard',
+          label: strings.moodboardTitle,
           onTap: onMoodboard,
           group: 1,
         ),
         SearchCardAction(
           icon: kAreaReflectionsIcon,
-          label: 'Riflessioni',
+          label: strings.areaQuickLookReflectionsAction,
           onTap: onReflections,
           group: 1,
         ),
         SearchCardAction(
           icon: Icons.navigation,
-          label: 'Vola',
+          label: strings.actionFly,
           onTap: onNavigateTo,
           group: 2,
         ),
@@ -3349,8 +3349,8 @@ class _FlatList extends StatelessWidget {
 
   final bool hasAnyEntries;
   final List<_SkyEntry> entries;
-  final Map<int, Project> projectsById;
-  final Map<DateTime, int> Function(int habitId) countsByDayFor;
+  final Map<String, Project> projectsById;
+  final Map<DateTime, int> Function(String habitId) countsByDayFor;
   final CardBadges Function(_SkyEntry entry) badgesFor;
   final String query;
   final SearchCardMenuController menuController;
@@ -3676,30 +3676,30 @@ class _ProjectCard extends StatelessWidget {
       actions: [
         SearchCardAction(
           icon: Icons.auto_awesome,
-          label: '+ Stella',
+          label: strings.constellationQuickLookAddStarAction,
           onTap: onAddStar,
         ),
         SearchCardAction(
           icon: Icons.share_outlined,
-          label: 'Condividi',
+          label: strings.shareNowAction,
           onTap: onShare,
           group: 1,
         ),
         SearchCardAction(
           icon: Icons.navigation,
-          label: 'Vola',
+          label: strings.actionFly,
           onTap: onNavigateTo,
           group: 2,
         ),
         SearchCardAction(
           icon: Icons.edit_outlined,
-          label: 'Modifica',
+          label: strings.starQuickLookEditAction,
           onTap: onEdit,
           group: 2,
         ),
         SearchCardAction(
           icon: Icons.delete_outline,
-          label: 'Elimina',
+          label: strings.deleteStarAction,
           onTap: onDelete,
           group: 2,
         ),

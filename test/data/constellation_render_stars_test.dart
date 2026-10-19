@@ -19,8 +19,8 @@ Star _star({
   bool dead = false,
 }) {
   return Star(
-    id: id,
-    projectId: 1,
+    id: id.toString(),
+    projectId: '1',
     slotSequence: slotSequence,
     title: 'Star $id',
     createdAt: DateTime(2024, 1, 1),
@@ -32,8 +32,8 @@ Star _star({
 
 Habit _habit({required int id, bool dead = false}) {
   return Habit(
-    id: id,
-    projectId: 1,
+    id: id.toString(),
+    projectId: '1',
     title: 'Pulsar $id',
     createdAt: DateTime(2024, 1, 1),
     dead: dead,
@@ -69,7 +69,7 @@ void main() {
         completionsByHabit: const {},
       );
 
-      final placed = built.stars.singleWhere((s) => s.entityId == 7);
+      final placed = built.stars.singleWhere((s) => s.entityId == '7');
       expect(placed.kind, StarKind.unlit);
       expect(placed.position, _shape.points[1]);
 
@@ -95,8 +95,8 @@ void main() {
       );
 
       expect(
-        after.stars.singleWhere((s) => s.entityId == 7).position,
-        before.stars.singleWhere((s) => s.entityId == 7).position,
+        after.stars.singleWhere((s) => s.entityId == '7').position,
+        before.stars.singleWhere((s) => s.entityId == '7').position,
       );
     });
 
@@ -114,7 +114,7 @@ void main() {
 
       expect(
         {for (final s in built.stars) s.entityId: s.kind},
-        {1: StarKind.lit, 2: StarKind.unlit, 3: StarKind.dead},
+        {'1': StarKind.lit, '2': StarKind.unlit, '3': StarKind.dead},
       );
       expect(built.stars.any((s) => s.kind == StarKind.nascent), isFalse);
     });
@@ -128,7 +128,7 @@ void main() {
         completionsByHabit: const {},
       );
 
-      final pulsar = built.stars.singleWhere((s) => s.entityId == 42);
+      final pulsar = built.stars.singleWhere((s) => s.entityId == '42');
       expect(pulsar.kind, StarKind.pulsar);
       expect(pulsar.slotSequence, isNull);
       // Unbroken today, so it isn't burning.
@@ -143,7 +143,7 @@ void main() {
         completionsByHabit: const {},
       );
 
-      final pulsar = built.stars.singleWhere((s) => s.entityId == 42);
+      final pulsar = built.stars.singleWhere((s) => s.entityId == '42');
       expect(pulsar.kind, StarKind.dead);
       expect(pulsar.lit, isFalse);
       expect(pulsar.slotSequence, isNull);
@@ -166,7 +166,7 @@ void main() {
             .map((s) => s.slotSequence),
         [1, 2, 3],
       );
-      expect(built.stars.singleWhere((s) => s.entityId == 1).slotSequence, 5);
+      expect(built.stars.singleWhere((s) => s.entityId == '1').slotSequence, 5);
       expect(built.edges.length, greaterThan(_shape.edges.length));
     });
   });

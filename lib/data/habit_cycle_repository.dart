@@ -1,3 +1,5 @@
+import 'package:uuid/uuid.dart';
+
 import 'repository_write.dart';
 
 import 'package:flutter/foundation.dart';
@@ -29,13 +31,14 @@ class HabitCycleRepository extends ChangeNotifier {
     return HabitCycleRepository(prefs);
   }
 
-  List<HabitCycle> getAll() {
+  List<HabitCycle> getAll({bool includeDeleted = false}) {
     final raw = _prefs.getString(_storageKey);
     if (raw == null) return const [];
     try {
       final decoded = jsonDecode(raw) as List<dynamic>;
       return decoded
           .map((entry) => HabitCycle.fromJson(entry as Map<String, dynamic>))
+          .where((record) => includeDeleted || !record.deleted)
           .toList();
     } catch (_) {
       return const [];
@@ -43,14 +46,14 @@ class HabitCycleRepository extends ChangeNotifier {
   }
 
   /// Newest first.
-  List<HabitCycle> getAllForHabit(int habitId) {
+  List<HabitCycle> getAllForHabit(String habitId) {
     return getAll().where((c) => c.habitId == habitId).toList()
       ..sort((a, b) => b.completedDate.compareTo(a.completedDate));
   }
 
   /// The cycle of [habitId] whose goal was reached but whose reflection
   /// hasn't been finished yet, if any.
-  HabitCycle? pendingFor(int habitId) {
+  HabitCycle? pendingFor(String habitId) {
     for (final cycle in getAll()) {
       if (cycle.habitId == habitId && !cycle.resolved) return cycle;
     }
@@ -94,15 +97,15 @@ class HabitCycleRepository extends ChangeNotifier {
     if (completedDay == null) return null;
 
     final cycle = HabitCycle(
-      id: DateTime.now().microsecondsSinceEpoch,
+      id: const Uuid().v4(),
       habitId: habit.id,
       startDate: start,
       completedDate: completedDay,
       length: habit.cycleLength,
       intensity: habit.intensity,
     );
-    await _saveAll([cycle, ...all]);
-    return cycle;
+    final savedRecords = await _saveAll([cycle, ...all]);
+    return savedRecords.firstWhere((record) => record.id == cycle.id);
   }
 
   /// Writes already-built cycles — for sample data, which backdates whole
@@ -115,7 +118,7 @@ class HabitCycleRepository extends ChangeNotifier {
 
   /// Marks [cycleId] as reflected on, saving the optional answers.
   Future<HabitCycle> resolve(
-    int cycleId, {
+    String cycleId, {
     String? whatHelped,
     String? whatWasHard,
     String? howItFeels,
@@ -142,13 +145,12 @@ class HabitCycleRepository extends ChangeNotifier {
       whatWasHard: clean(whatWasHard),
       howItFeels: clean(howItFeels),
     );
-    await _saveAll([...all]..[index] = updated);
-    return updated;
+    final savedRecords = await _saveAll([...all]..[index] = updated);
+    return savedRecords.firstWhere((record) => record.id == updated.id);
   }
 
-  /// Permanently removes every cycle of [habitIds] — for a constellation
-  /// that is physically deleted along with its pulsars.
-  Future<void> deleteAllForHabits(Iterable<int> habitIds) async {
+  /// Deletes the cycles of a permanently deleted project's habits for sync.
+  Future<void> deleteAllForHabits(Iterable<String> habitIds) async {
     final ids = habitIds.toSet();
     if (ids.isEmpty) return;
     final all = getAll();
@@ -156,13 +158,18 @@ class HabitCycleRepository extends ChangeNotifier {
   }
 
   Future<void> clear() async {
-    await writeRepositoryValue(_prefs, _storageKey, null);
-    notifyListeners();
+    await _saveAll([]);
   }
 
-  Future<void> _saveAll(List<HabitCycle> cycles) async {
-    final encoded = jsonEncode(cycles.map((c) => c.toJson()).toList());
-    await writeRepositoryValue(_prefs, _storageKey, encoded);
+  Future<List<HabitCycle>> _saveAll(List<HabitCycle> cycles) async {
+    final saved = await writeSyncList<HabitCycle>(
+      _prefs,
+      _storageKey,
+      cycles,
+      encode: (record) => record.toJson(),
+      decode: HabitCycle.fromJson,
+    );
     notifyListeners();
+    return saved;
   }
 }

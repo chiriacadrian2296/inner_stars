@@ -15,7 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:inner_stars/data/custom_constellation_repository.dart';
 import 'package:inner_stars/data/area_vision_repository.dart';
-import 'package:inner_stars/data/reflection_answer_repository.dart';
+import 'package:inner_stars/data/reflection_repository.dart';
 import 'package:inner_stars/data/settings_repository.dart';
 import 'package:inner_stars/data/habit_completion_repository.dart';
 import 'package:inner_stars/data/habit_repository.dart';
@@ -48,7 +48,7 @@ import 'package:inner_stars/widgets/pill_action_button.dart';
 
 final _now = DateTime(2026, 10, 12, 12);
 Project _project(int id, LifeArea area) => Project(
-  id: id,
+  id: id.toString(),
   name: 'Project $id',
   area: area,
   iconSlug: 'star',
@@ -62,8 +62,8 @@ Habit _habit(
   HabitFrequency frequency = HabitFrequency.daily,
   DateTime? created,
 }) => Habit(
-  id: id,
-  projectId: project,
+  id: id.toString(),
+  projectId: project.toString(),
   title: 'Habit $id',
   createdAt: created ?? DateTime(2026, 9, 1),
   targetPerPeriod: target,
@@ -73,8 +73,8 @@ Habit _habit(
 );
 Star _star(int id, DateTime? achieved, {int project = 1, bool dead = false}) =>
     Star(
-      id: id,
-      projectId: project,
+      id: id.toString(),
+      projectId: project.toString(),
       slotSequence: id,
       title: 'Star $id',
       createdAt: DateTime(2026, 1),
@@ -109,7 +109,7 @@ Future<EntityInsightsController> _controller({
     completions: HabitCompletionRepository(prefs),
     shapes: StarsShapeRepository(prefs),
     areaVisions: withSkyDependencies ? AreaVisionRepository(prefs) : null,
-    reflections: withSkyDependencies ? ReflectionAnswerRepository(prefs) : null,
+    reflections: withSkyDependencies ? ReflectionRepository(prefs) : null,
     settings: withSkyDependencies
         ? SettingsController(SettingsRepository(prefs))
         : null,
@@ -150,7 +150,7 @@ Widget _app(
 class _RejectingCompletions extends HabitCompletionRepository {
   _RejectingCompletions(super.prefs);
   @override
-  Future<void> markDone(int habitId, {DateTime? date}) async {
+  Future<void> markDone(String habitId, {DateTime? date}) async {
     throw StateError('Storage unavailable');
   }
 }
@@ -171,25 +171,30 @@ void main() {
     addTearDown(c.dispose);
     expect(c.habits.getAll().single.iconSlug, 'fitness_center');
     await c.habits.update(
-      id: 1,
+      id: '1',
       title: 'Habit 1',
-      projectId: 1,
+      projectId: '1',
       iconSlug: 'eco',
     );
-    await c.habits.delete(1);
+    await c.habits.delete('1');
     expect(c.habits.getAll().single.iconSlug, 'eco');
     await c.habits.resurrect(
-      1,
+      '1',
       title: 'Habit 1',
-      projectId: 1,
+      projectId: '1',
       completionRepository: c.completions,
     );
     expect(c.habits.getAll().single.iconSlug, 'eco');
-    await c.stars.markAchieved(1, intensity: 4);
+    await c.stars.markAchieved('1', intensity: 4);
     expect(c.stars.getAll().single.iconSlug, 'park');
-    await c.stars.delete(1);
+    await c.stars.delete('1');
     expect(c.stars.getAll().single.iconSlug, 'park');
-    await c.habits.update(id: 1, title: 'Habit 1', projectId: 1, iconSlug: '');
+    await c.habits.update(
+      id: '1',
+      title: 'Habit 1',
+      projectId: '1',
+      iconSlug: '',
+    );
     expect(c.habits.getAll().single.iconSlug, '');
   });
 
@@ -206,7 +211,7 @@ void main() {
         ],
       );
       await tester.pumpWidget(
-        _app(c, const TodayHabitsScreen(entity: InsightEntity.project(1))),
+        _app(c, const TodayHabitsScreen(entity: InsightEntity.project('1'))),
       );
       await tester.pumpAndSettle();
       expect(
@@ -240,7 +245,7 @@ void main() {
       expect(find.byType(MarkAchievedSheet), findsOneWidget);
       await tester.tap(find.text(StringsIt().cancel.toUpperCase()));
       await tester.pumpAndSettle();
-      expect(c.stars.getAll().firstWhere((s) => s.id == 1).isUnlit, true);
+      expect(c.stars.getAll().firstWhere((s) => s.id == '1').isUnlit, true);
       await tester.tap(check);
       await tester.pumpAndSettle();
       final save = find.widgetWithText(
@@ -259,7 +264,7 @@ void main() {
       await tester.ensureVisible(save);
       await tester.tap(save);
       await tester.pumpAndSettle();
-      final victory = c.stars.getAll().firstWhere((s) => s.id == 1);
+      final victory = c.stars.getAll().firstWhere((s) => s.id == '1');
       expect(victory.isLit, true);
       expect(victory.intensity, 5);
       expect(victory.iconSlug, 'park');
@@ -321,7 +326,7 @@ void main() {
           storage: tours,
           child: _app(
             c,
-            const TodayHabitsScreen(entity: InsightEntity.project(1)),
+            const TodayHabitsScreen(entity: InsightEntity.project('1')),
           ),
         ),
       );
@@ -341,7 +346,7 @@ void main() {
                 width: 340,
                 child: SkySearchTooltipCard(
                   menuId: 'habit',
-                  entity: const InsightEntity.habit(1),
+                  entity: const InsightEntity.habit('1'),
                   visual: const Icon(Icons.restart_alt),
                   content: const Text('Habit'),
                   actions: const [],
@@ -386,7 +391,7 @@ void main() {
                         builder: (_) => StarFormScreen(
                           existingHabit: c.habits.getAll().single,
                           contextProject: c.projects.getAll().firstWhere(
-                            (p) => p.id == 1,
+                            (p) => p.id == '1',
                           ),
                           projectRepository: c.projects,
                           starsShapeRepository: c.shapes,
@@ -463,12 +468,12 @@ void main() {
     expect(area.victories, 3);
     expect(area.recentVictories, 1);
     expect(area.goals, 1);
-    expect(area.activeHabits.map((h) => h.id), [1]);
+    expect(area.activeHabits.map((h) => h.id), ['1']);
     expect(
-      _read(c, const InsightEntity.project(1)).recentVictories,
+      _read(c, const InsightEntity.project('1')).recentVictories,
       area.recentVictories,
     );
-    expect(_read(c, const InsightEntity.project(2)).recentVictories, 1);
+    expect(_read(c, const InsightEntity.project('2')).recentVictories, 1);
   });
 
   test(
@@ -481,16 +486,16 @@ void main() {
           _habit(2, target: 5, frequency: HabitFrequency.weekly),
         ],
         completions: [
-          HabitCompletion(id: 1, habitId: 1, date: day),
-          HabitCompletion(id: 2, habitId: 1, date: day),
-          HabitCompletion(id: 3, habitId: 2, date: day),
+          HabitCompletion(id: '1', habitId: '1', date: day),
+          HabitCompletion(id: '2', habitId: '1', date: day),
+          HabitCompletion(id: '3', habitId: '2', date: day),
         ],
       );
       addTearDown(c.dispose);
-      final data = _read(c, const InsightEntity.project(1));
-      expect(data.todayCount(data.habits.firstWhere((h) => h.id == 1)), 2);
+      final data = _read(c, const InsightEntity.project('1'));
+      expect(data.todayCount(data.habits.firstWhere((h) => h.id == '1')), 2);
       expect(data.habitsDoneToday, 1);
-      expect(data.doneToday(data.habits.firstWhere((h) => h.id == 2)), true);
+      expect(data.doneToday(data.habits.firstWhere((h) => h.id == '2')), true);
     },
   );
 
@@ -501,32 +506,32 @@ void main() {
         _habit(2, dead: true),
       ],
       completions: [
-        HabitCompletion(id: 1, habitId: 2, date: DateTime(2026, 9, 29)),
+        HabitCompletion(id: '1', habitId: '2', date: DateTime(2026, 9, 29)),
       ],
     );
     addTearDown(c.dispose);
-    expect(_read(c, const InsightEntity.project(2)).daysDone, isNull);
-    expect(_read(c, const InsightEntity.habit(1)).daysDone, isNull);
-    final archived = _read(c, const InsightEntity.habit(2));
+    expect(_read(c, const InsightEntity.project('2')).daysDone, isNull);
+    expect(_read(c, const InsightEntity.habit('1')).daysDone, isNull);
+    final archived = _read(c, const InsightEntity.habit('2'));
     expect(archived.completions, hasLength(1));
     expect(
       archived.summary(archived.habits.single).trend.last.date,
       DateTime(2026, 9, 30),
     );
-    expect(_read(c, const InsightEntity.star(99)).stars, isEmpty);
+    expect(_read(c, const InsightEntity.star('99')).stars, isEmpty);
   });
 
   test('repository commits invalidate cached summaries and resume refreshes the day', () async {
     final c = await _controller(habits: [_habit(1)]);
     addTearDown(c.dispose);
-    final old = c.read(const InsightEntity.project(1));
-    expect(identical(old, c.read(const InsightEntity.project(1))), true);
-    await c.completions.markDone(1);
-    final updated = c.read(const InsightEntity.project(1));
+    final old = c.read(const InsightEntity.project('1'));
+    expect(identical(old, c.read(const InsightEntity.project('1'))), true);
+    await c.completions.markDone('1');
+    final updated = c.read(const InsightEntity.project('1'));
     expect(identical(old, updated), false);
     expect(updated.habitsDoneToday, 1);
     c.didChangeAppLifecycleState(AppLifecycleState.resumed);
-    expect(identical(updated, c.read(const InsightEntity.project(1))), false);
+    expect(identical(updated, c.read(const InsightEntity.project('1'))), false);
   });
 
   testWidgets(
@@ -545,7 +550,7 @@ void main() {
                 height: 135,
                 child: StatefulBuilder(
                   builder: (context, setState) => EntityFlipCard(
-                    entity: const InsightEntity.project(1),
+                    entity: const InsightEntity.project('1'),
                     flipped: flipped,
                     onFlip: () => setState(() => flipped = !flipped),
                     front: TextButton(
@@ -608,7 +613,7 @@ void main() {
               height: 98,
               child: StatefulBuilder(
                 builder: (context, setState) => EntityFlipCard(
-                  entity: const InsightEntity.project(1),
+                  entity: const InsightEntity.project('1'),
                   flipped: flipped,
                   onFlip: () => setState(() => flipped = !flipped),
                   front: const ColoredBox(color: Colors.black),
@@ -641,7 +646,7 @@ void main() {
         ],
       );
       await tester.pumpWidget(
-        _app(c, const TodayHabitsScreen(entity: InsightEntity.project(1))),
+        _app(c, const TodayHabitsScreen(entity: InsightEntity.project('1'))),
       );
       // Rows slide in (StaggeredEntrance); let them land before tapping.
       await tester.pumpAndSettle();
@@ -652,7 +657,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(c.read(const InsightEntity.project(1)).habitsDoneToday, 1);
+      expect(c.read(const InsightEntity.project('1')).habitsDoneToday, 1);
       expect(find.text('Habit 1'), findsOneWidget);
       await tester.tap(
         find.descendant(
@@ -665,7 +670,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('habit-stepper-save')));
       await tester.pumpAndSettle();
-      expect(c.completions.getAllForHabit(2), hasLength(1));
+      expect(c.completions.getAllForHabit('2'), hasLength(1));
       await tester.tap(
         find.descendant(
           of: find.byKey(const ValueKey('p2')),
@@ -677,7 +682,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('habit-stepper-save')));
       await tester.pumpAndSettle();
-      expect(c.completions.getAllForHabit(2), isEmpty);
+      expect(c.completions.getAllForHabit('2'), isEmpty);
       await tester.tap(
         find.descendant(
           of: find.byKey(const ValueKey('p3')),
@@ -685,7 +690,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(c.completions.getAllForHabit(3), hasLength(1));
+      expect(c.completions.getAllForHabit('3'), hasLength(1));
       await tester.tap(
         find.descendant(
           of: find.byKey(const ValueKey('p3')),
@@ -693,7 +698,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(c.completions.getAllForHabit(3), isEmpty);
+      expect(c.completions.getAllForHabit('3'), isEmpty);
       await tester.pumpWidget(const SizedBox());
       c.dispose();
     },
@@ -713,7 +718,7 @@ void main() {
       );
       initial.dispose();
       await tester.pumpWidget(
-        _app(c, const TodayHabitsScreen(entity: InsightEntity.project(1))),
+        _app(c, const TodayHabitsScreen(entity: InsightEntity.project('1'))),
       );
       // Rows slide in (StaggeredEntrance); let them land before tapping.
       await tester.pumpAndSettle();
@@ -728,7 +733,7 @@ void main() {
         tester.widget<ActivityCheckCard>(find.byType(ActivityCheckCard)).lit,
         false,
       );
-      expect(c.completions.getAllForHabit(1), isEmpty);
+      expect(c.completions.getAllForHabit('1'), isEmpty);
       expect(find.text(StringsIt().insightSaveError), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
@@ -743,13 +748,13 @@ void main() {
         stars: [_star(1, DateTime(2026, 9, 29), dead: true)],
         habits: [_habit(2, dead: true)],
         completions: [
-          HabitCompletion(id: 1, habitId: 2, date: DateTime(2026, 9, 29)),
+          HabitCompletion(id: '1', habitId: '2', date: DateTime(2026, 9, 29)),
         ],
       );
       await tester.pumpWidget(
         _app(
           c,
-          const LightScreen(initialScope: InsightEntity.star(1)),
+          const LightScreen(initialScope: InsightEntity.star('1')),
           reduceMotion: true,
         ),
       );
@@ -761,7 +766,7 @@ void main() {
           c,
           const LightScreen(
             key: ValueKey('habit'),
-            initialScope: InsightEntity.habit(2),
+            initialScope: InsightEntity.habit('2'),
           ),
           reduceMotion: true,
         ),
@@ -769,7 +774,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(find.byType(HeatmapPanel), 300);
       expect(find.byType(HeatmapPanel), findsOneWidget);
-      expect(c.read(const InsightEntity.habit(2)).completions, hasLength(1));
+      expect(c.read(const InsightEntity.habit('2')).completions, hasLength(1));
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
       c.dispose();
@@ -795,7 +800,7 @@ void main() {
                     update = setState;
                     return SkySearchTooltipCard(
                       menuId: id,
-                      entity: InsightEntity.project(id),
+                      entity: InsightEntity.project(id.toString()),
                       visual: const Icon(Icons.star),
                       content: const Text('Title'),
                       actions: const [],
@@ -915,7 +920,7 @@ void main() {
                   habitCompletionRepository: c.completions,
                   starsShapeRepository: c.shapes,
                   areaVisionRepository: AreaVisionRepository(prefs),
-                  reflectionAnswerRepository: ReflectionAnswerRepository(prefs),
+                  reflectionAnswerRepository: ReflectionRepository(prefs),
                   settings: settings,
                   session: SkyExplorerSession()..modeIndex = 1,
                   onNavigateTo: (_) {},
@@ -929,10 +934,10 @@ void main() {
       await tester.tap(find.byTooltip(StringsIt().insightFlip).first);
       await tester.pumpAndSettle();
       expect(find.byTooltip(StringsIt().insightReturn), findsOneWidget);
-      await c.completions.markDone(1);
+      await c.completions.markDone('1');
       await tester.pumpAndSettle();
       expect(find.byTooltip(StringsIt().insightReturn), findsOneWidget);
-      expect(c.read(const InsightEntity.project(1)).habitsDoneToday, 1);
+      expect(c.read(const InsightEntity.project('1')).habitsDoneToday, 1);
       if (const bool.fromEnvironment('INSIGHTS_PREVIEW')) {
         final image = await tester.runAsync(() async {
           final render =
@@ -1070,8 +1075,8 @@ void main() {
     for (final scope in const <InsightEntity?>[
       null,
       InsightEntity.area(LifeArea.physical),
-      InsightEntity.project(1),
-      InsightEntity.star(1),
+      InsightEntity.project('1'),
+      InsightEntity.star('1'),
     ]) {
       await tester.pumpWidget(const SizedBox());
       await tester.pumpWidget(
@@ -1149,7 +1154,7 @@ void main() {
     await tester.pumpWidget(
       _app(
         c,
-        const LightScreen(initialScope: InsightEntity.project(1)),
+        const LightScreen(initialScope: InsightEntity.project('1')),
         reduceMotion: true,
       ),
     );
@@ -1346,7 +1351,7 @@ void main() {
           storage: tours,
           child: _app(
             c,
-            const LightScreen(initialScope: InsightEntity.project(1)),
+            const LightScreen(initialScope: InsightEntity.project('1')),
             reduceMotion: true,
           ),
         ),
@@ -1449,7 +1454,7 @@ void main() {
       await tester.pumpWidget(
         _app(
           c,
-          const LightScreen(initialScope: InsightEntity.star(1)),
+          const LightScreen(initialScope: InsightEntity.star('1')),
           reduceMotion: true,
         ),
       );
@@ -1492,7 +1497,7 @@ void main() {
               onPressed: () => Navigator.of(context).push<void>(
                 MaterialPageRoute<void>(
                   builder: (_) =>
-                      const LightScreen(initialScope: InsightEntity.star(1)),
+                      const LightScreen(initialScope: InsightEntity.star('1')),
                 ),
               ),
               child: const Text('Open'),
@@ -1573,7 +1578,7 @@ void main() {
     await tester.pumpWidget(
       _app(
         c,
-        const LightScreen(initialScope: InsightEntity.star(1)),
+        const LightScreen(initialScope: InsightEntity.star('1')),
         reduceMotion: true,
       ),
     );

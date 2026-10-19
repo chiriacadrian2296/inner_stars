@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inner_stars/data/area_vision_repository.dart';
 import 'package:inner_stars/data/moodboard_repository.dart';
-import 'package:inner_stars/data/reflection_answer_repository.dart';
+import 'package:inner_stars/data/reflection_repository.dart';
 import 'package:inner_stars/debug/seed_area_content.dart';
 import 'package:inner_stars/models/life_area.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,7 +26,7 @@ void main() {
 
       await tester.runAsync(() async {
         final visions = await AreaVisionRepository.create();
-        final answers = await ReflectionAnswerRepository.create();
+        final answers = await ReflectionRepository.create();
         final moodboard = await MoodboardRepository.create();
 
         Future<void> seed() => seedAreaContent(
@@ -40,7 +40,7 @@ void main() {
         for (final area in LifeArea.values) {
           final seeded = area != LifeArea.spiritual;
           expect(visions.getVision(area).isNotEmpty, seeded, reason: '$area');
-          expect(answers.getAnswersForArea(area).length, seeded ? 2 : 0);
+          expect(answers.getForArea(area).length, seeded ? 2 : 0);
           expect(moodboard.getItems(area).length, seeded ? 4 : 0);
         }
 

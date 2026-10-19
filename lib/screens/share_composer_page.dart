@@ -1,4 +1,4 @@
-part of 'share_lab_screen.dart';
+part of 'share_composer_screen.dart';
 
 /// Composer for the shareable picture of a victory, goal, habit, project,
 /// vision, moodboard or quote.
@@ -6,13 +6,22 @@ part of 'share_lab_screen.dart';
 /// The preview sits beside a panel of option blocks on wide screens; on
 /// narrow ones the blocks become a bar under the preview that scrolls
 /// sideways. Every option is a stepper: arrows to flip through the choices,
-/// or tap the value to see them all. Choices are not persisted or wired to the
-/// production share flow yet.
-class ShareLabScreen extends StatefulWidget {
-  const ShareLabScreen({super.key});
+/// or tap the value to see them all. Choices affect only the shared image.
+class ShareComposerScreen extends StatefulWidget {
+  const ShareComposerScreen({
+    super.key,
+    required this.data,
+    this.variants,
+    this.shareText = '',
+    this.fileName = 'inner-stars.png',
+  });
+  final ShareContent data;
+  final List<ShareContent>? variants;
+  final String shareText;
+  final String fileName;
 
   @override
-  State<ShareLabScreen> createState() => _ShareLabScreenState();
+  State<ShareComposerScreen> createState() => _ShareComposerScreenState();
 }
 
 /// A whole look in one tap: background, inks, brand and watermark together.
@@ -97,8 +106,30 @@ const _stylePresets = [
   ),
 ];
 
-class _ShareLabScreenState extends State<ShareLabScreen> {
-  _ShareSubject _subject = _ShareSubject.victory;
+class _ShareComposerScreenState extends State<ShareComposerScreen> {
+  int _subjectIndex = 0;
+  ShareContent get _data => widget.variants?[_subjectIndex] ?? widget.data;
+  ShareSubject get _subject => _data.subject;
+  late final _excerpt = TextEditingController(text: widget.data.description);
+  List<int> get _availableCompositions => [
+    for (var i = 0; i < _layoutMap[_subject]!.length; i++)
+      if ((_layoutMap[_subject]![i].$1 != _Layout.hero ||
+              _data.heroValue != null) &&
+          (_layoutMap[_subject]![i].$1 != _Layout.tiles || _data.total != null))
+        i,
+  ];
+  @override
+  void dispose() {
+    _excerpt.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _watermarkArea = _data.area?.index ?? 0;
+  }
+
   int _composition = 0;
   _ShareFormat _format = _ShareFormat.story;
 
@@ -170,27 +201,58 @@ class _ShareLabScreenState extends State<ShareLabScreen> {
   }
 
   bool get _freeLayout =>
-      _layoutMap[_subject]![_composition.clamp(0, 4)].$1 == _Layout.free;
+      _layoutMap[_subject]![_availableCompositions[_composition]].$1 ==
+      _Layout.free;
 
   Future<void> _share() async {
     if (_sharing) return;
     setState(() => _sharing = true);
+    ui.Image? capturedImage;
     try {
+      for (final path in _data.photos) {
+        final ImageProvider provider;
+        if (PhotoStorage.isRemote(path)) {
+          provider = NetworkImage(path);
+        } else {
+          final bytes = await _readSharePhoto(
+            path,
+            _subject == ShareSubject.moodboard,
+          );
+          if (bytes == null) throw StateError('Missing share photo');
+          provider = MemoryImage(bytes);
+        }
+        if (!mounted) return;
+        Object? imageError;
+        await precacheImage(
+          provider,
+          context,
+          onError: (error, stack) => imageError = error,
+        );
+        if (imageError != null) throw StateError('Could not load share photo');
+      }
+      if (!mounted) return;
       await WidgetsBinding.instance.endOfFrame;
       final boundary =
           _captureKey.currentContext?.findRenderObject()
               as RenderRepaintBoundary?;
       if (boundary == null) throw StateError('Preview is not ready');
       final image = await boundary.toImage(pixelRatio: 3);
+      capturedImage = image;
       final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
       if (bytes == null) throw StateError('Could not encode the picture');
+      if (!mounted) return;
+      final origin = context.findRenderObject() as RenderBox?;
       await SharePlus.instance.share(
         ShareParams(
+          sharePositionOrigin: origin == null
+              ? null
+              : origin.localToGlobal(Offset.zero) & origin.size,
+          text: widget.shareText,
           files: [
             XFile.fromData(
               bytes.buffer.asUint8List(),
               mimeType: 'image/png',
-              name: 'inner-stars.png',
+              name: widget.fileName,
             ),
           ],
         ),
@@ -198,17 +260,78 @@ class _ShareLabScreenState extends State<ShareLabScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Impossibile condividere l\'immagine.')),
+          SnackBar(content: Text(context.strings.shareContentError)),
         );
       }
     } finally {
+      capturedImage?.dispose();
       if (mounted) setState(() => _sharing = false);
     }
   }
 
+  Future<void> _editExcerpt() async {
+    final draft = TextEditingController(text: _excerpt.text);
+    final value = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(shareComposerLabel(context, 'Modifica estratto')),
+        content: SizedBox(
+          width: 500,
+          child: SingleChildScrollView(
+            child: TextField(
+              key: const ValueKey('share-excerpt-field'),
+              controller: draft,
+              minLines: 4,
+              maxLines: 10,
+              decoration: InputDecoration(
+                labelText: context.strings.reflectionBodyLabel,
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            style: TextButton.styleFrom(foregroundColor: context.colors.muted),
+            child: AppButtonLabel(
+              context.strings.cancel,
+              color: context.colors.muted,
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, draft.text),
+            child: AppButtonLabel(context.strings.saveChanges),
+          ),
+        ],
+      ),
+    );
+    // The dialog route animates out before releasing its controller.
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    draft.dispose();
+    if (value != null && mounted) setState(() => _excerpt.text = value);
+  }
+
   Widget _specimen() => _ShareSpecimen(
-    subject: _subject,
-    composition: _composition,
+    data: ShareContent(
+      subject: _data.subject,
+      title: _data.title,
+      typeLabel: _data.typeLabel,
+      description: _data.isReflection ? _excerpt.text : _data.description,
+      area: _data.area,
+      areaLabel: _data.areaLabel,
+      projectLabel: _data.projectLabel,
+      dateLabel: _data.dateLabel,
+      statLabel: _data.statLabel,
+      intensity: _data.intensity,
+      artwork: _data.artwork,
+      photos: _data.photos,
+      heroValue: _data.heroValue,
+      heroCaption: _data.heroCaption,
+      total: _data.total,
+      completed: _data.completed,
+      isReflection: _data.isReflection,
+    ),
+    composition: _availableCompositions[_composition],
     gradient: _gradient,
     palette: _palette,
     format: _format,
@@ -242,23 +365,40 @@ class _ShareLabScreenState extends State<ShareLabScreen> {
     title: 'Scheda',
     icon: Icons.dashboard_customize_outlined,
     children: [
-      _OptionStepper(
-        fieldKey: 'scheda-contenuto',
-        label: 'Contenuto',
-        labels: [for (final s in _ShareSubject.values) _subjectLabel(s)],
-        index: _subject.index,
-        onChanged: (i) => _edit(() {
-          _subject = _ShareSubject.values[i];
-          _composition = 0;
-          _titlePosition = _subject == _ShareSubject.quote
-              ? _TitlePosition.center
-              : _TitlePosition.bottomLeft;
-        }),
-      ),
+      if (widget.variants != null)
+        _OptionStepper(
+          fieldKey: 'scheda-contenuto',
+          label: 'Contenuto',
+          labels: [for (final item in widget.variants!) item.typeLabel],
+          index: _subjectIndex,
+          onChanged: (i) => _edit(() {
+            _subjectIndex = i;
+            _composition = 0;
+            _excerpt.text = _data.description;
+            _titlePosition = _subject == ShareSubject.quote
+                ? _TitlePosition.center
+                : _TitlePosition.bottomLeft;
+          }),
+        )
+      else
+        SizedBox(
+          height: _slotHeight,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _data.typeLabel,
+              key: const ValueKey('share-content-type'),
+              style: TextStyle(color: context.colors.gold),
+            ),
+          ),
+        ),
       _OptionStepper(
         fieldKey: 'scheda-composizione',
         label: 'Composizione',
-        labels: _compositionLabels(_subject),
+        labels: [
+          for (final i in _availableCompositions)
+            _compositionLabels(_subject)[i],
+        ],
         index: _composition,
         onChanged: (i) => _edit(() => _composition = i),
       ),
@@ -326,6 +466,7 @@ class _ShareLabScreenState extends State<ShareLabScreen> {
       ),
       _OptionStepper(
         fieldKey: 'sfondo-foto',
+        enabled: _data.photos.isNotEmpty,
         label: 'Foto',
         labels: [for (final m in _PhotoMode.values) _photoLabel(m)],
         index: _photoMode.index,
@@ -362,15 +503,19 @@ class _ShareLabScreenState extends State<ShareLabScreen> {
         label: 'Dati',
         toggles: [
           ('Tipo', _showType, (v) => _edit(() => _showType = v)),
-          ('Data', _showDate, (v) => _edit(() => _showDate = v)),
-          ('Area', _showArea, (v) => _edit(() => _showArea = v)),
-          ('Progetto', _showProject, (v) => _edit(() => _showProject = v)),
+          if (_data.dateLabel != null)
+            ('Data', _showDate, (v) => _edit(() => _showDate = v)),
+          if (_data.areaLabel != null)
+            ('Area', _showArea, (v) => _edit(() => _showArea = v)),
+          if (_data.projectLabel != null)
+            ('Progetto', _showProject, (v) => _edit(() => _showProject = v)),
           (
-            'Descrizione',
+            _data.isReflection ? 'Testo' : 'Descrizione',
             _showDescription,
             (v) => _edit(() => _showDescription = v),
           ),
-          ('Statistiche', _showStats, (v) => _edit(() => _showStats = v)),
+          if (_data.statLabel != null || _data.intensity != null)
+            ('Statistiche', _showStats, (v) => _edit(() => _showStats = v)),
         ],
       ),
     ],
@@ -479,7 +624,8 @@ class _ShareLabScreenState extends State<ShareLabScreen> {
     final kinds = [
       for (final w in _Watermark.values)
         if (w != _Watermark.area) _watermarkLabel(w),
-      for (final name in _areaNames) 'Arte · $name',
+      for (final area in LifeArea.values)
+        '${shareComposerLabel(context, 'Arte')} · ${area.displayName(context.strings)}',
     ];
     return _BlockCard(
       title: 'Watermark',
@@ -530,11 +676,12 @@ class _ShareLabScreenState extends State<ShareLabScreen> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: colors.night,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final wide = constraints.maxWidth >= 1000;
+            final wide = constraints.maxWidth >= 1000 || (constraints.maxWidth >= 650 && constraints.maxHeight < 600);
             // The same space separates preview, panels and the share button.
             const gap = 16.0;
             final gutter = wide ? 20.0 : 12.0;
@@ -583,7 +730,7 @@ class _ShareLabScreenState extends State<ShareLabScreen> {
               // whatever is left over goes to the preview.
               final panelsWidth =
                   (constraints.maxWidth - 2 * gutter - gap - 420).clamp(
-                    _blockWidth(1),
+                    _blockWidth(2),
                     _blockWidth(1) * 4 + 30,
                   );
               body = Row(
@@ -641,12 +788,28 @@ class _ShareLabScreenState extends State<ShareLabScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Row(
+                    children: [
+                      const BackButton(),
+                      Expanded(child: Text(context.strings.sharePreviewTitle)),
+                      if (_data.isReflection)
+                        IconButton(
+                          key: const ValueKey('share-reflection-excerpt'),
+                          tooltip: shareComposerLabel(
+                            context,
+                            'Modifica estratto',
+                          ),
+                          onPressed: _editExcerpt,
+                          icon: const Icon(Icons.edit_note),
+                        ),
+                    ],
+                  ),
                   Expanded(child: body),
                   const SizedBox(height: gap),
                   Center(
                     child: ElevatedButton(
                       onPressed: _sharing ? null : _share,
-                      child: const AppButtonLabel('Condividi'),
+                      child: AppButtonLabel(context.strings.shareNowAction),
                     ),
                   ),
                 ],
@@ -660,60 +823,50 @@ class _ShareLabScreenState extends State<ShareLabScreen> {
 }
 // ----- labels -----
 
-String _subjectLabel(_ShareSubject subject) => switch (subject) {
-  _ShareSubject.victory => 'Vittoria',
-  _ShareSubject.goal => 'Obiettivo',
-  _ShareSubject.habit => 'Abitudine',
-  _ShareSubject.project => 'Progetto',
-  _ShareSubject.vision => 'Visione',
-  _ShareSubject.moodboard => 'Moodboard',
-  _ShareSubject.quote => 'Citazione',
-};
-
-List<String> _compositionLabels(_ShareSubject subject) => switch (subject) {
-  _ShareSubject.victory => const [
+List<String> _compositionLabels(ShareSubject subject) => switch (subject) {
+  ShareSubject.victory => const [
     'Celebrazione',
     'Traguardo',
     'Diario',
     'Essenziale',
     'Risultati',
   ],
-  _ShareSubject.goal => const [
+  ShareSubject.goal => const [
     'Direzione',
     'Promessa',
     'Piano',
     'Essenziale',
     'Progresso',
   ],
-  _ShareSubject.habit => const [
+  ShareSubject.habit => const [
     'Ritmo',
     'Serie',
     'Rituale',
     'Essenziale',
     'Statistiche',
   ],
-  _ShareSubject.project => const [
+  ShareSubject.project => const [
     'Costellazione',
     'Progresso',
     'Manifesto',
     'Mappa',
     'Statistiche',
   ],
-  _ShareSubject.vision => const [
+  ShareSubject.vision => const [
     'Manifesto',
     'Estratto',
     'Capitolo',
     'Editoriale',
     'Essenziale',
   ],
-  _ShareSubject.moodboard => const [
+  ShareSubject.moodboard => const [
     'Collage',
     'Copertina',
     'Galleria',
     'Polaroid',
     'Editoriale',
   ],
-  _ShareSubject.quote => const [
+  ShareSubject.quote => const [
     'Tipografica',
     'Celestiale',
     'Minimale',
@@ -780,17 +933,6 @@ String _positionLabel(_TitlePosition value) => switch (value) {
   _TitlePosition.bottomCenter => 'Basso Centro',
   _TitlePosition.bottomRight => 'Basso Destra',
 };
-
-const _areaNames = [
-  'Fisica',
-  'Psicologica',
-  'Professionale',
-  'Finanziaria',
-  'Personale',
-  'Sociale',
-  'Spirituale',
-  'Filantropica',
-];
 
 // ----- control widgets -----
 
@@ -865,7 +1007,7 @@ class _BlockCard extends StatelessWidget {
                 Icon(icon, size: 15, color: colors.gold),
                 const SizedBox(width: 6),
                 Text(
-                  title.toUpperCase(),
+                  shareComposerLabel(context, title).toUpperCase(),
                   style: context.typography.compactSectionLabel,
                 ),
               ],
@@ -932,7 +1074,7 @@ class _OptionStepper extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final labelText = Text(
-      label,
+      shareComposerLabel(context, label),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: context.typography.supporting.copyWith(fontSize: 12),
@@ -950,7 +1092,10 @@ class _OptionStepper extends StatelessWidget {
                 height: 16,
                 child: hint == null
                     ? labelText
-                    : Tooltip(message: hint!, child: labelText),
+                    : Tooltip(
+                        message: shareComposerLabel(context, hint!),
+                        child: labelText,
+                      ),
               ),
               const SizedBox(height: 4),
               SizedBox(
@@ -960,13 +1105,13 @@ class _OptionStepper extends StatelessWidget {
                     _ArrowButton(
                       key: ValueKey('$fieldKey-prev'),
                       icon: Icons.chevron_left_rounded,
-                      tooltip: 'Precedente',
+                      tooltip: shareComposerLabel(context, 'Precedente'),
                       onTap: () => _step(-1),
                     ),
                     Expanded(
                       child: PopupMenuButton<int>(
                         key: ValueKey('$fieldKey-menu'),
-                        tooltip: label,
+                        tooltip: shareComposerLabel(context, label),
                         initialValue: index,
                         onSelected: onChanged,
                         color: colors.nightPanel,
@@ -985,7 +1130,7 @@ class _OptionStepper extends StatelessWidget {
                               height: 36,
                               child: _ValueRow(
                                 leading: leadingOf?.call(i),
-                                text: labels[i],
+                                text: shareComposerLabel(context, labels[i]),
                                 selected: i == index && placeholder == null,
                                 trailingCheck: true,
                               ),
@@ -1005,7 +1150,10 @@ class _OptionStepper extends StatelessWidget {
                                   leading: placeholder != null
                                       ? null
                                       : leadingOf?.call(index),
-                                  text: placeholder ?? labels[index],
+                                  text: shareComposerLabel(
+                                    context,
+                                    placeholder ?? labels[index],
+                                  ),
                                   selected: false,
                                 ),
                               ),
@@ -1022,7 +1170,7 @@ class _OptionStepper extends StatelessWidget {
                     _ArrowButton(
                       key: ValueKey('$fieldKey-next'),
                       icon: Icons.chevron_right_rounded,
-                      tooltip: 'Successivo',
+                      tooltip: shareComposerLabel(context, 'Successivo'),
                       onTap: () => _step(1),
                     ),
                   ],
@@ -1113,7 +1261,7 @@ class _Toggles extends StatelessWidget {
       SizedBox(
         height: 16,
         child: Text(
-          label,
+          shareComposerLabel(context, label),
           style: context.typography.supporting.copyWith(fontSize: 12),
         ),
       ),
@@ -1128,7 +1276,7 @@ class _Toggles extends StatelessWidget {
               if (j > i) const SizedBox(width: 6),
               Expanded(
                 child: _ToggleChip(
-                  label: toggles[j].$1,
+                  label: shareComposerLabel(context, toggles[j].$1),
                   selected: toggles[j].$2,
                   onTap: () => toggles[j].$3(!toggles[j].$2),
                 ),
@@ -1222,7 +1370,7 @@ class _ToggleChip extends StatelessWidget {
           decoration: selectableDecoration(colors, selected: selected),
           child: ExcludeSemantics(
             child: Text(
-              label,
+              shareComposerLabel(context, label),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: context.typography.controlLabel.copyWith(

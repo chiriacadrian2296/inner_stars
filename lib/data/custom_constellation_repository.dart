@@ -1,3 +1,7 @@
+import 'repository_write.dart';
+
+import 'package:uuid/uuid.dart';
+
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,20 +27,21 @@ class StarsShapeRepository {
   }
 
   /// All saved custom shapes, newest first.
-  List<StarsShape> getAll() {
+  List<StarsShape> getAll({bool includeDeleted = false}) {
     final raw = _prefs.getString(_storageKey);
     if (raw == null) return const [];
     try {
       final decoded = jsonDecode(raw) as List<dynamic>;
       return decoded
           .map((entry) => StarsShape.fromJson(entry as Map<String, dynamic>))
+          .where((record) => includeDeleted || !record.deleted)
           .toList();
     } catch (_) {
       return const [];
     }
   }
 
-  StarsShape? getById(int id) {
+  StarsShape? getById(String id) {
     for (final shape in getAll()) {
       if (shape.id == id) return shape;
     }
@@ -78,29 +83,15 @@ class StarsShapeRepository {
   }) async {
     final shapes = getAll();
     final created = StarsShape(
-      id: _nextId(shapes),
+      id: const Uuid().v4(),
       name: name.trim(),
       shape: shape,
       createdAt: DateTime.now(),
       presetId: presetId,
     );
 
-    await _saveAll([created, ...shapes]);
-    return created;
-  }
-
-  /// Ids are millisecondsSinceEpoch, which two adds in the same millisecond
-  /// would collide on — [getById] would then resolve both projects' shapes
-  /// to whichever came first. Stepping past anything already taken makes
-  /// back-to-back adds safe without callers having to sleep between them
-  /// (which is exactly what `backfillMissingConstellations` used to do).
-  static int _nextId(List<StarsShape> existing) {
-    var id = DateTime.now().millisecondsSinceEpoch;
-    final taken = existing.map((s) => s.id).toSet();
-    while (taken.contains(id)) {
-      id++;
-    }
-    return id;
+    final savedRecords = await _saveAll([created, ...shapes]);
+    return savedRecords.firstWhere((record) => record.id == created.id);
   }
 
   /// Replaces the name/shape of an existing custom constellation in place,
@@ -114,7 +105,7 @@ class StarsShapeRepository {
   /// user's own shape now, and leaving the tag on would make the next
   /// project that picks that library shape silently inherit these edits.
   Future<StarsShape> update({
-    required int id,
+    required String id,
     required String name,
     required ConstellationShape shape,
   }) async {
@@ -131,24 +122,30 @@ class StarsShapeRepository {
       createdAt: shapes[index].createdAt,
     );
     shapes[index] = updated;
-    await _saveAll(shapes);
-    return updated;
+    final savedRecords = await _saveAll(shapes);
+    return savedRecords.firstWhere((record) => record.id == updated.id);
   }
 
   /// Permanently deletes every custom shape. Used by the "reset all data"
   /// action — there's no undo.
   Future<void> clear() async {
-    await _prefs.remove(_storageKey);
+    await _saveAll([]);
   }
 
   /// Removes an orphaned saved shape. Callers must first ensure no project
   /// still refers to it, since preset shapes may be shared.
-  Future<void> delete(int id) async {
+  Future<void> delete(String id) async {
     await _saveAll(getAll().where((shape) => shape.id != id).toList());
   }
 
-  Future<void> _saveAll(List<StarsShape> shapes) async {
-    final encoded = jsonEncode(shapes.map((s) => s.toJson()).toList());
-    await _prefs.setString(_storageKey, encoded);
+  Future<List<StarsShape>> _saveAll(List<StarsShape> shapes) async {
+    final saved = await writeSyncList<StarsShape>(
+      _prefs,
+      _storageKey,
+      shapes,
+      encode: (record) => record.toJson(),
+      decode: StarsShape.fromJson,
+    );
+    return saved;
   }
 }

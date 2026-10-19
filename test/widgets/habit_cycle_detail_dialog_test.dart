@@ -29,8 +29,8 @@ void main() {
   }
 
   HabitCycle cycle({String? helped, String? hard, String? feel}) => HabitCycle(
-    id: 1,
-    habitId: 1,
+    id: '1',
+    habitId: '1',
     startDate: DateTime(2026, 3, 1),
     completedDate: DateTime(2026, 3, 9),
     length: 7,

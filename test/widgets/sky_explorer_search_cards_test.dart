@@ -8,7 +8,7 @@ import 'package:inner_stars/data/custom_constellation_repository.dart';
 import 'package:inner_stars/data/habit_completion_repository.dart';
 import 'package:inner_stars/data/habit_repository.dart';
 import 'package:inner_stars/data/project_repository.dart';
-import 'package:inner_stars/data/reflection_answer_repository.dart';
+import 'package:inner_stars/data/reflection_repository.dart';
 import 'package:inner_stars/data/settings_repository.dart';
 import 'package:inner_stars/data/star_repository.dart';
 import 'package:inner_stars/l10n/strings_it.dart';
@@ -34,7 +34,7 @@ void main() {
       HabitCompletionRepository completions,
       StarsShapeRepository shapes,
       AreaVisionRepository visions,
-      ReflectionAnswerRepository reflections,
+      ReflectionRepository reflections,
     })
   >
   repositories() async {
@@ -47,7 +47,7 @@ void main() {
       completions: HabitCompletionRepository(prefs),
       shapes: StarsShapeRepository(prefs),
       visions: AreaVisionRepository(prefs),
-      reflections: ReflectionAnswerRepository(prefs),
+      reflections: ReflectionRepository(prefs),
     );
   }
 
@@ -60,7 +60,7 @@ void main() {
       HabitCompletionRepository completions,
       StarsShapeRepository shapes,
       AreaVisionRepository visions,
-      ReflectionAnswerRepository reflections,
+      ReflectionRepository reflections,
     })
     repositories, {
     SkyExplorerSession? session,

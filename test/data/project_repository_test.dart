@@ -112,11 +112,11 @@ void main() {
 
     final updated = await repo.assignStarsShape(
       projectId: project.id,
-      starsShapeId: 42,
+      starsShapeId: '42',
     );
 
-    expect(updated.starsShapeId, 42);
-    expect(repo.getAll().single.starsShapeId, 42);
+    expect(updated.starsShapeId, '42');
+    expect(repo.getAll().single.starsShapeId, '42');
   });
 
   test(
@@ -134,7 +134,7 @@ void main() {
         iconSlug: 'work',
       );
 
-      await repo.assignStarsShape(projectId: first.id, starsShapeId: 1);
+      await repo.assignStarsShape(projectId: first.id, starsShapeId: '1');
 
       expect(repo.getAll().map((p) => p.name), ['Second', 'First']);
     },
@@ -144,7 +144,7 @@ void main() {
     final repo = await ProjectRepository.create();
 
     expect(
-      () => repo.assignStarsShape(projectId: -1, starsShapeId: 1),
+      () => repo.assignStarsShape(projectId: '-1', starsShapeId: '1'),
       throwsStateError,
     );
   });

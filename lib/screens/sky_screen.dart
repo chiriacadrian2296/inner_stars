@@ -33,7 +33,7 @@ import '../data/habit_repository.dart';
 import '../data/moodboard_repository.dart';
 import '../data/project_repository.dart';
 import '../data/reader_entries.dart';
-import '../data/reflection_answer_repository.dart';
+import '../data/reflection_repository.dart';
 import '../data/star_repository.dart';
 import '../data/shooting_star_wish_repository.dart';
 import '../l10n/strings_scope.dart';
@@ -205,7 +205,7 @@ class SkyScreen extends StatefulWidget {
   final HabitCompletionRepository habitCompletionRepository;
   final StarsShapeRepository starsShapeRepository;
   final AreaVisionRepository areaVisionRepository;
-  final ReflectionAnswerRepository reflectionAnswerRepository;
+  final ReflectionRepository reflectionAnswerRepository;
   final ShootingStarWishRepository shootingStarWishRepository;
   final AudioSettingsRepository audioSettingsRepository;
   final AudioService audioService;
@@ -248,8 +248,8 @@ class _PulsarTooltip extends _SkyTooltip {
 /// or a checked pulsar ([habitId]), and when it lit.
 class _TodayLight {
   const _TodayLight({this.starId, this.habitId, required this.at});
-  final int? starId;
-  final int? habitId;
+  final String? starId;
+  final String? habitId;
   final DateTime at;
 }
 
@@ -485,12 +485,11 @@ class _SkyScreenState extends State<SkyScreen>
   static const _tutorialArea = LifeArea.personal;
 
   /// The sentinel [Project.id]/[Star.id]s the tour's placeholder
-  /// constellation uses — negative, so they can never collide with a real
-  /// one (real ids are `millisecondsSinceEpoch`, always positive). See
+  /// constellation uses — reserved strings outside the real UUID namespace. See
   /// [_buildTutorialDemoPlaced]: this constellation is never written to
   /// [widget.projectRepository]/[widget.starRepository], only added to
   /// [_placed] in memory for as long as the tour is on screen.
-  static const _tutorialProjectId = -1;
+  static const _tutorialProjectId = 'tutorial-project';
 
   /// Whether the `'sky-navigation'` tour's placeholder constellation is
   /// currently mixed into [_placed] — see [_loadData]/[_handleTourChanged].
@@ -829,7 +828,7 @@ class _SkyScreenState extends State<SkyScreen>
   double _longestTrip() {
     final directions = [
       for (final placed in _placed)
-        if (placed.project.id >= 0)
+        if (placed.project.id != _tutorialProjectId)
           SkyCamera.lookingAt(
             azimuthTurns: placed.worldPosition.dx,
             elevationTurns: placed.worldPosition.dy,
@@ -1208,7 +1207,7 @@ class _SkyScreenState extends State<SkyScreen>
     final projects = widget.projectRepository.getAll().toList()
       ..sort((a, b) => a.id.compareTo(b.id));
 
-    final completionsByHabit = <int, List<HabitCompletion>>{};
+    final completionsByHabit = <String, List<HabitCompletion>>{};
     for (final completion in widget.habitCompletionRepository.getAll()) {
       completionsByHabit
           .putIfAbsent(completion.habitId, () => [])
@@ -1253,7 +1252,7 @@ class _SkyScreenState extends State<SkyScreen>
   PlacedConstellation _buildPlaced(
     Project project,
     int indexInArea,
-    Map<int, List<HabitCompletion>> completionsByHabit,
+    Map<String, List<HabitCompletion>> completionsByHabit,
   ) {
     final shape = project.starsShapeId != null
         ? widget.starsShapeRepository.getById(project.starsShapeId!)?.shape
@@ -1286,7 +1285,7 @@ class _SkyScreenState extends State<SkyScreen>
   /// while [_tutorialDemoActive] is true, and simply stops being included
   /// in [_placed] once the tour ends — nothing to clean up, nothing that
   /// can be left behind by a killed app. Its [Project.id]/[Star.id]s are
-  /// negative sentinels (see [_tutorialProjectId]) so they can never
+  /// reserved tutorial identities (see [_tutorialProjectId]) so they can never
   /// collide with a real project/star, and its
   /// [PlacedConstellation.worldPosition] comes from
   /// [tutorialDemoWorldPosition] rather than [constellationWorldPosition],
@@ -1309,7 +1308,7 @@ class _SkyScreenState extends State<SkyScreen>
     // filled.
     final stars = [
       Star(
-        id: _tutorialProjectId - 1,
+        id: 'tutorial-star-1',
         projectId: _tutorialProjectId,
         slotSequence: 1,
         title: name,
@@ -1318,7 +1317,7 @@ class _SkyScreenState extends State<SkyScreen>
         intensity: 3,
       ),
       Star(
-        id: _tutorialProjectId - 2,
+        id: 'tutorial-star-2',
         projectId: _tutorialProjectId,
         slotSequence: 2,
         title: name,
@@ -1327,7 +1326,7 @@ class _SkyScreenState extends State<SkyScreen>
         intensity: 3,
       ),
       Star(
-        id: _tutorialProjectId - 3,
+        id: 'tutorial-star-3',
         projectId: _tutorialProjectId,
         slotSequence: 3,
         title: name,
@@ -1996,7 +1995,7 @@ class _SkyScreenState extends State<SkyScreen>
   /// than threaded through as a parameter, the same "look it back up by
   /// id" reasoning [PlacedConstellation.stars]'s own doc comment already
   /// gives for keeping it alongside [PlacedConstellation.renderStars].
-  PlacedConstellation? _placedForStar(int starId) {
+  PlacedConstellation? _placedForStar(String starId) {
     for (final placed in _placed) {
       if (placed.stars.any((s) => s.id == starId)) return placed;
     }
@@ -2016,9 +2015,9 @@ class _SkyScreenState extends State<SkyScreen>
       return cached;
     }
     final totals = List<int>.filled(LifeArea.values.length, 0);
-    final areaOfHabit = <int, LifeArea>{};
+    final areaOfHabit = <String, LifeArea>{};
     for (final placed in _placed) {
-      if (placed.project.id < 0) continue;
+      if (placed.project.id == _tutorialProjectId) continue;
       final area = placed.project.area.index;
       for (final star in placed.stars) {
         if (star.isLit) totals[area] += star.intensity ?? 0;
@@ -2045,7 +2044,7 @@ class _SkyScreenState extends State<SkyScreen>
   /// Where the shooting star passes by: the constellation the Galaxy
   /// opens on ("Love"), else the first one; null with none at all.
   Offset? _shootingStarAnchor() {
-    final real = _placed.where((p) => p.project.id >= 0);
+    final real = _placed.where((p) => p.project.id != _tutorialProjectId);
     for (final placed in real) {
       if (placed.project.name == 'Love') return placed.worldPosition;
     }
@@ -2083,21 +2082,17 @@ class _SkyScreenState extends State<SkyScreen>
     final lights = <_TodayLight>[];
     for (final placed in _placed) {
       // The tour's placeholder constellation isn't the user's light.
-      if (placed.project.id < 0) continue;
+      if (placed.project.id == _tutorialProjectId) continue;
       for (final star in placed.stars) {
         final achieved = star.achievedDate;
         if (!star.isLit || achieved == null || !isToday(achieved)) continue;
-        final createdToday = isToday(
-          DateTime.fromMillisecondsSinceEpoch(star.id),
-        );
+        final createdToday = isToday(star.createdAt);
         final hasTime =
             achieved.hour != 0 || achieved.minute != 0 || achieved.second != 0;
         lights.add(
           _TodayLight(
             starId: star.id,
-            at: hasTime || !createdToday
-                ? achieved
-                : DateTime.fromMillisecondsSinceEpoch(star.id),
+            at: hasTime || !createdToday ? achieved : star.createdAt,
           ),
         );
       }
@@ -2107,8 +2102,8 @@ class _SkyScreenState extends State<SkyScreen>
         for (final completion
             in widget.habitCompletionRepository.getAllForHabit(habit.id)) {
           if (!isToday(completion.date)) continue;
-          // A completion's id is the moment it was logged.
-          final at = DateTime.fromMicrosecondsSinceEpoch(completion.id);
+          // The logging time is independent of the completion day.
+          final at = completion.createdAt;
           if (first == null || at.isBefore(first)) first = at;
         }
         if (first != null) {
@@ -2184,7 +2179,7 @@ class _SkyScreenState extends State<SkyScreen>
   }
 
   /// Same as [_placedForStar], for a pulsar's own [Habit] id.
-  PlacedConstellation? _placedForHabit(int habitId) {
+  PlacedConstellation? _placedForHabit(String habitId) {
     for (final placed in _placed) {
       if (placed.habits.any((h) => h.id == habitId)) return placed;
     }
@@ -2200,7 +2195,7 @@ class _SkyScreenState extends State<SkyScreen>
   /// [SkyStarTarget.starId]).
   void _flyToStarWithHoldFeedback(
     PlacedConstellation constellation,
-    int starId, {
+    String starId, {
     bool holdFeedback = true,
   }) {
     final index = constellation.stars.indexWhere((s) => s.id == starId);
@@ -2221,7 +2216,7 @@ class _SkyScreenState extends State<SkyScreen>
   /// [Habit] id.
   void _flyToPulsarWithHoldFeedback(
     PlacedConstellation constellation,
-    int habitId, {
+    String habitId, {
     bool holdFeedback = true,
   }) {
     Habit? habit;
@@ -2719,15 +2714,16 @@ class _SkyScreenState extends State<SkyScreen>
               onFriends: _openFriends,
               onSettings: _openSettings,
               onMetaphor: _openMetaphor,
-              onMoonLab: _openUiSandbox,
-              onCardBackLab: _openCardBackLab,
-              onConstellationLab: _openConstellationLab,
-              onShareLab: _openShareLab,
-              onBadgeLab: _openBadgeLab,
-              onUiStudiesLab: _openUiStudiesLab,
-              onSoundLab: _openSoundLab,
-              onAreaIconLab: _openAreaIconLab,
-              onFabIconLab: _openFabIconLab,
+              // Gate callbacks too so public builds can discard the lab code.
+              onMoonLab: kDevTools ? _openUiSandbox : () {},
+              onCardBackLab: kDevTools ? _openCardBackLab : null,
+              onConstellationLab: kDevTools ? _openConstellationLab : null,
+              onShareLab: kDevTools ? _openShareLab : null,
+              onBadgeLab: kDevTools ? _openBadgeLab : null,
+              onUiStudiesLab: kDevTools ? _openUiStudiesLab : null,
+              onSoundLab: kDevTools ? _openSoundLab : null,
+              onAreaIconLab: kDevTools ? _openAreaIconLab : null,
+              onFabIconLab: kDevTools ? _openFabIconLab : null,
               detailed: true,
               scrollController: scrollController,
               physics: physics,
@@ -4816,15 +4812,15 @@ class _SkyScreenState extends State<SkyScreen>
           onFriends: _openFriends,
           onSettings: _openSettings,
           onMetaphor: _openMetaphor,
-          onMoonLab: _openUiSandbox,
-          onCardBackLab: _openCardBackLab,
-          onConstellationLab: _openConstellationLab,
-          onShareLab: _openShareLab,
-          onBadgeLab: _openBadgeLab,
-          onUiStudiesLab: _openUiStudiesLab,
-          onSoundLab: _openSoundLab,
-          onAreaIconLab: _openAreaIconLab,
-          onFabIconLab: _openFabIconLab,
+          onMoonLab: kDevTools ? _openUiSandbox : () {},
+          onCardBackLab: kDevTools ? _openCardBackLab : null,
+          onConstellationLab: kDevTools ? _openConstellationLab : null,
+          onShareLab: kDevTools ? _openShareLab : null,
+          onBadgeLab: kDevTools ? _openBadgeLab : null,
+          onUiStudiesLab: kDevTools ? _openUiStudiesLab : null,
+          onSoundLab: kDevTools ? _openSoundLab : null,
+          onAreaIconLab: kDevTools ? _openAreaIconLab : null,
+          onFabIconLab: kDevTools ? _openFabIconLab : null,
         ),
         // Its own [Overlay]: the sky tooltip (see [_buildSkyTooltipOverlay])
         // lives in it, below any route pushed on top, so it is still there

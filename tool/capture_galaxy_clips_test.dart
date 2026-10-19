@@ -51,7 +51,7 @@ void main() {
       placed.add(
         PlacedConstellation(
           project: Project(
-            id: i + 1,
+            id: 'capture-project-$i',
             name: '',
             area: LifeArea.professional,
             iconSlug: preset.iconSlug,
@@ -65,7 +65,7 @@ void main() {
           renderStars: [
             for (var j = 0; j < shape.points.length; j++)
               ConstellationStar(
-                entityId: j + 1,
+                entityId: 'capture-star-$j',
                 position: shape.points[j],
                 kind: StarKind.lit,
                 lit: true,

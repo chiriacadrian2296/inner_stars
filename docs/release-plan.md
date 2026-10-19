@@ -3,6 +3,16 @@
 Documento di lavoro: si procede per step, in ordine, spuntando le voci. Aggiornare questo file
 quando una decisione cambia.
 
+**Stato al 19 ottobre 2026:** completata la pulizia del codice di A5 e verificate le release
+web e Android. Restano la prova manuale sul telefono e il worktree di profiling da sistemare.
+A2 è completato: UUID, metadati, tombstone e contenuti d’area.
+A3 (Riflessioni) è implementato e verificato con test mirati. A4 è implementato, con
+verifica di release e prova di condivisione reale ancora da completare.
+**Pausa richiesta dall’autore per il limite di utilizzo:** riprendere dalle verifiche di A4,
+senza iniziare altri blocchi. Nessun nuovo deploy: il telefono conserva la build in prova.
+Le verifiche sul codice e sulle build sono distinte dalle prove manuali sul telefono: una voce
+si spunta solo quando tutte le verifiche indicate sono concluse.
+
 Terminologia: vedi `docs/terminology.md` (Galaxy, Sky, attività, ecc.).
 
 **Legenda**
@@ -30,11 +40,15 @@ Firebase, hosting, privacy e store (parte B), infine la rifinitura (parte C).
   accettata, con privacy policy e cancellazione account.
 - L'app resta **local-first**: SharedPreferences è il database principale, Firestore è la copia
   remota sincronizzata.
-- ID migrati a **UUID**; nessun utente reale, quindi nessuna cautela particolare di migrazione.
+- ID **UUID v4** (primo blocco di A2 completato); migrazione automatica dei dati locali
+  all'avvio. Nessun utente reale, quindi nessuna cautela particolare di migrazione.
 - Media sincronizzati nella v1: foto principale di ogni vittoria, **un audio per vittoria (max 60 s)**,
   moodboard con **foto e citazioni** (niente video, limite rigido di elementi per area, anche in locale).
   Il resto dopo la v1.
 - Strumenti di sviluppo (lab, dati di esempio, reset) **solo nelle build di sviluppo**.
+  **Eccezione temporanea del 19 ottobre:** il solo pulsante per caricare i dati di esempio
+  resta visibile anche in release, per le prove dell'autore. Da disattivare prima dell'uscita
+  ufficiale (A5); lab e reset restano di sviluppo.
 - Comete: la frequenza attuale (`kCometPeriodScale = 0.45`) è quella definitiva.
 - Sound Lab: resta nelle build di sviluppo; idea futura: pacchetti di suoni a pagamento.
 - Backup dei dati locali / export JSON: non serve per ora, l'app la usa solo l'autore.
@@ -61,6 +75,8 @@ Firebase, hosting, privacy e store (parte B), infine la rifinitura (parte C).
 - [x] `kDevTools` (`lib/debug/dev_tools.dart`): dietro di esso la sezione Lab del menu, il pulsante
       Moon lab, "Seed sample data", "Reset all data", i pulsanti Sound Lab (Settings e Quick
       Settings), le sonde dei frame e la riga "FPS Limit".
+      Eccezione temporanea successiva: solo "Seed sample data" riabilitato in release per
+      le prove dell'autore, da rimuovere prima dell'uscita ufficiale (A5).
 - [x] Pannelli segnaposto di Settings (Customization, Passkey, Social) parcheggiati
       (`_kShowPlaceholderSections = false`).
 - [x] Intensità tolta dalle riflessioni (`fromJson` tollera i dati vecchi).
@@ -78,23 +94,60 @@ Firebase, hosting, privacy e store (parte B), infine la rifinitura (parte C).
 
 Nessuna dipendenza esterna; si può fare subito, nessuna domanda aperta.
 
-- [ ] UUID v4 (`uuid`) per Star, Project, Habit, HabitCompletion, HabitCycle, StarsShape;
-      riferimenti incrociati a stringa (~330 occorrenze in 34 file).
-- [ ] Migrazione una tantum degli id esistenti (modello: `lib/data/legacy_constellation_migration.dart`),
-      idempotente, con versione schema.
-- [ ] `updatedAt` non nullo, aggiornato nel punto unico di scrittura
-      (`lib/data/repository_write.dart` e gli `_saveAll`).
-- [ ] Flag `deleted` (tombstone) al posto delle cancellazioni vere: progetti, completion, cicli,
-      forme, risposte/riflessioni, visioni, moodboard e reset. Le UI filtrano `deleted`.
-- [ ] Dati per area (visioni, desiderio): record `{value, updatedAt, deleted}` per chiave.
-- [ ] Moodboard: un record per elemento con `{updatedAt, deleted}`, non più una lista JSON per
-      area. Rimuovere la possibilità di aggiungere video; limite rigido di **12 elementi per area**,
-      anche in locale (la UI non permette di aggiungerne oltre).
-- [ ] Test di migrazione e tombstone.
+- [x] UUID v4 (`uuid`) per Star, Project, Habit, HabitCompletion, HabitCycle, StarsShape;
+      riferimenti incrociati a stringa in repository, navigazione, filtri, statistiche e grafica.
+- [x] Migrazione una tantum degli id esistenti (`lib/data/uuid_migration.dart`),
+      idempotente, con versione schema e ripresa dopo scritture interrotte.
+- [x] `updatedAt` non nullo, aggiornato nel punto unico di scrittura soltanto sui record
+      cambiati, con timestamp monotoni.
+- [x] Flag `deleted` (tombstone) per tutte le entità, conservato anche nei reset;
+      le query UI lo filtrano. L’archiviazione (`dead`) resta distinta.
+- [x] Visioni per area e desiderio globale esistente: `{value, updatedAt, deleted}`.
+- [x] Moodboard: record UUID per elemento con area, posizione, `updatedAt` e `deleted`.
+      Massimo 12 elementi attivi per area in UI e repository; vietati nuovi video.
+      I video preesistenti restano leggibili. Elementi oltre il limite conservati come
+      tombstone, senza cancellare i file nella migrazione.
+- [x] Test di migrazione UUID, collegamenti, idempotenza e ripresa dopo errori di scrittura.
+- [x] Test di migrazione metadati/contenuti, tombstone, limiti e rollback delle scritture.
+
+### Registro di A2
+
+- 19 ottobre 2026: primo intervento su ID e riferimenti incrociati. UUID v4 per le sei
+  entità; la migrazione `lib/data/uuid_migration.dart` parte all'avvio prima dei repository,
+  conserva i collegamenti e usa schema versione 1 e un journal persistito per riprendere
+  senza cambiare UUID dopo un'interruzione. I dati non validi fermano la migrazione prima
+  delle scritture. **30 test dedicati superati**, inclusi errori di scrittura simulati
+  su ogni collezione, journal e versione schema, riferimenti orfani, creazione rapida di
+  UUID nelle sei entità e annullamento dell'ultimo check-in.
+- Tolte le dipendenze dalla natura numerica degli ID: date dei check-in in `createdAt`,
+  esclusione esplicita dei dati tutorial e seed grafico deterministico da UUID. Restano
+  interi le posizioni nelle forme, i numeri delle vittorie e gli indici del layout.
+- La posizione dei pulsar viene ricalcolata con il seed UUID al primo avvio migrato e resta
+  deterministica in seguito; i posti delle stelle nella forma (`slotSequence`) non cambiano.
+- Verifiche: `flutter analyze --no-pub` senza problemi; suite completa con **485 test
+  superati e 3 esclusi** (vista elenco di Sky nascosta). Build web release riuscita;
+  la source map include la migrazione ed esclude ancora tutti i lab. Anche la build APK
+  release ARM64 è riuscita (`flutter build apk --release --target-platform android-arm64
+  --no-pub`, circa 66 MB). La migrazione si esegue al primo avvio della nuova build installata.
+- 19 ottobre 2026, installazione sul telefono: ripetuti analyze e suite completa
+  (485 test superati, 3 esclusi); costruito l'APK release completo e installato via USB
+  sul dispositivo `c2abd67f`. Avviata `app.innerstars/.MainActivity`, confermata in primo
+  piano e senza errori di avvio nel log controllato. La build non è debuggabile.
+  Sul telefono era presente solo `com.example.inner_stars`: **scelta esplicita dell'autore**,
+  installare la nuova app **senza trasferire i dati**. La vecchia installazione e i suoi
+  contenuti restano intatti; nessun dato personale è stato copiato sul PC. Le prove manuali
+  dei flussi elencati in A5 restano da fare.
+- 19 ottobre 2026, secondo intervento completato: schema 2 per metadati e schema 3
+  per visioni, desiderio e moodboard. Journal persistiti e versione scritta per ultima;
+  ripresa dopo interruzioni senza cambiare le identità. Timestamp centralizzati,
+  rollback della cache su errori, tombstone conservati nei salvataggi successivi e reset.
+  **293 test mirati superati**, analisi senza problemi e build web release riuscita.
+  Verificati anche il limite moodboard e l’assenza della scelta video nella UI.
+  Nessun nuovo deploy: sul telefono resta la build che l’autore sta provando.
 
 ## A3. Nuova funzione: Riflessioni
 
-Oggi: 4 domande preimpostate per area, ne scegli una e rispondi. Obiettivo: riflessioni libere.
+Oggi: domande preimpostate per area, ne scegli una e rispondi. Obiettivo: riflessioni libere.
 Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
 
 - Una **riflessione** nasce da una domanda preimpostata **oppure da zero**, con un titolo/tema
@@ -119,30 +172,109 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
     corrispettivo nella Galaxy (vedi le nebulose, dopo la v1).
   - **Elimina** è definitivo, senza archivio (in sync diventa un tombstone, vedi A2).
   - Ordine nell'elenco di un'area: dalla più recente (confermato).
-- [ ] Costruire: modello, elenco per area con "nuova riflessione" (libera o da suggerimento),
+- [x] Costruire: modello, elenco per area con "nuova riflessione" (libera o da suggerimento),
       "Vedi riflessione", migrazione delle risposte esistenti, condivisione come card.
+
+### Registro di A3
+
+- 19 ottobre 2026: nuova entità `Reflection` con UUID, titolo, testo, area, origine,
+  date e tombstone. Elenco per area dalla più recente, creazione libera o da suggerimento,
+  dettaglio a tutta pagina con condividi/modifica/elimina, nessun Fly né archivio.
+  Conferma per scartare modifiche, campi obbligatori e gestione degli errori di salvataggio.
+- Schema locale 4: le risposte precedenti diventano riflessioni con il titolo della domanda
+  nella lingua corrente. Testo, date, dati aggiuntivi e tombstone vengono conservati;
+  journal e ripresa dopo errori mantengono gli UUID stabili. Seed di esempio aggiornato.
+- Analisi pulita e **104 test mirati superati**: migrazioni, repository, flussi UI,
+  card con testi lunghi, sezioni d’area, seed e statistiche collegate.
+  Verifica manuale e nuove build su dispositivo ancora da fare insieme ad A4.
 
 ## A4. Pagina di personalizzazione della scheda da condividere
 
-- [ ] Ogni volta che si condivide qualcosa (vittoria, obiettivo, stella accesa, pulsar,
+- [~] Ogni volta che si condivide qualcosa (vittoria, obiettivo, stella accesa, pulsar,
       costellazione, contenuto d'area, riflessione) si apre **la pagina che oggi è nel Share Lab**
-      (`lib/screens/share_lab_screen.dart`, `share_lab_page.dart`). Il tipo di contenuto non è più
+      (`lib/screens/share_composer_screen.dart` e relativi part; il lab è ora un wrapper di sviluppo). Il tipo di contenuto non è più
       un parametro che si sceglie: è automatico in base a ciò da cui si preme "Condividi".
-- [ ] Sostituisce l'attuale flusso di anteprima (`share_preview_screen.dart`); il Share Lab come
+- [~] Sostituisce l'attuale flusso di anteprima (`share_preview_screen.dart`); il Share Lab come
       strumento di sviluppo resta dietro `kDevTools`.
-- [ ] Di default la card di una riflessione mostra titolo/domanda, area e testo (vedi A3).
+- [x] Di default la card di una riflessione mostra titolo/domanda, area e testo (vedi A3).
+
+### Registro di A4 e punto di ripresa
+
+- 19 ottobre 2026: estratti pagina, controlli e layout del Share Lab in un composer comune.
+  `showSharePreview` apre il nuovo composer per tutti i chiamanti esistenti. Il tipo viene
+  ricavato dalla card selezionata, senza selettore pubblico. `ShareContent` conserva una
+  fotografia dei dati reali: nessuna scrittura sui repository quando si personalizza la card.
+- Il lab conserva soltanto il wrapper con dati dimostrativi dietro `kDevTools`; i vecchi
+  `share_lab_page.dart` e `share_lab_layouts.dart` sono diventati i part `share_composer_*`.
+  Il vecchio widget `SharePreviewScreen` resta per compatibilità, ma il flusso pubblico
+  passa dal nuovo composer.
+- Titoli, descrizioni, metadati, intensità, foto e forma della costellazione provengono
+  dal contenuto scelto. Le composizioni che richiedono statistiche non disponibili
+  non vengono proposte. Controlli localizzati IT/EN/RO. Estratto delle riflessioni
+  modificabile e testo nascondibile nella sola immagine condivisa.
+- Analisi senza problemi. Test mirati del lab, delle riflessioni e della migrazione
+  superati. Aggiunti test del punto d’ingresso pubblico, estratto senza modificare
+  l’originale e composizioni con testi lunghi su telefono, landscape e desktop.
+  I **4 test del composer pubblico sono superati**; corretto lo spazio minimo dei
+  pannelli in landscape. Nessun errore di compilazione o test mirato rimasto aperto.
+- **Ripresa:** completare audit della condivisione reale (PNG, foto locali/web e
+  apertura del foglio di condivisione), build release web/Android e controllo che i
+  sorgenti dei lab restino esclusi. Poi prova manuale con l’autore e chiusura di A4.
+  Non ripetere l’intera suite senza necessità. Nessuna nuova installazione eseguita.
 
 ## A5. Pulizia residua
 
-- [x] Frame rate: scelto **Free**. Limitatore, sonde e riga "FPS Limit" eliminati dal codice; resta da ripulire il worktree di scratch `baseline` del vecchio profiling (`git worktree list`).
-- [ ] Sound Lab: verificare che i controlli audio che servono all'utente (volume, musica di
-      sottofondo) esistano anche fuori dal Sound Lab, ora che nelle build pubbliche non c'è.
-- [ ] Testi scritti a mano in italiano da portare nelle stringhe localizzate: i dock di Vedi
-      costellazione ("Nuova stella", "Condividi", "Modifica", "Elimina") e ogni altra schermata che
-      resta visibile in release.
-- [ ] Build pubblica senza lab: con `kDevTools` falso il codice dei lab viene tolto in release; verificare costruendo la release senza `DEV_TOOLS` e controllando anche che non restino asset usati solo dai lab.
+- [ ] **Prima della release ufficiale:** impostare `_kShowSampleDataForTesting = false` in
+      `lib/screens/settings_screen.dart`. Il pulsante dei dati di esempio è stato ripristinato
+      temporaneamente in Settings su richiesta dell'autore per provare la release sul telefono;
+      non abilita reset né lab. Per questa piccola modifica non si ripete l'intera suite di test,
+      come richiesto; si verificano analisi, compilazione e installazione.
+
+- [x] Frame rate: scelto **Free**. Limitatore, sonde e riga "FPS Limit" eliminati dal codice.
+- [ ] Ripulire il worktree di scratch `baseline` del vecchio profiling: controllato il
+      19 ottobre, contiene 9 file modificati e 2 file non tracciati. Conservato intatto;
+      prima della rimozione occorre salvare o valutare quel lavoro.
+- [x] Sound Lab: verificati in Settings i controlli pubblici della musica di sottofondo:
+      riproduzione/pausa e volume, persistiti tramite `AudioService`. La scelta dei singoli
+      suoni e i controlli per categoria restano nel Sound Lab di sviluppo.
+- [x] Testi pubblici scritti a mano: localizzati in IT/EN/RO i quattro pulsanti di Vedi
+      costellazione ("Nuova stella", "Condividi", "Modifica", "Elimina"), il gesto "Scorri",
+      i tooltip per cambiare composizione nella condivisione e le azioni delle card di Sky.
+      Audit dei testi delle schermate e dei widget pubblici eseguito; i testi dei lab restano
+      di sviluppo. Ricontrollare i nuovi flussi quando si implementano A3 e A4.
+- [x] Build pubblica senza lab: release web e APK Android ARM64 verificate senza `DEV_TOOLS`;
+      nessun sorgente dei lab nella source map web o nello snapshot AOT Android.
+      Corretto il mantenimento involontario dei lab nel compilato:
+      ora anche i callback dei due menu della Galaxy sono condizionati a `kDevTools`.
+      Rimossi dal bundle tutti gli asset della luna e `royal_symbols_preview`; i tre corpi SVG
+      usati dal Moon lab sono ora costanti Dart eliminabili insieme al lab
+      (`lib/debug/moon_body_svg.dart`). I file SVG originali restano nel repository.
+      Nessun asset di queste due famiglie nel bundle web o nell'APK Android.
 - [ ] Provare sul telefono quanto fatto in A1 non ancora visto: dock con "Gestisci", tooltip
       Galaxy, blocco nota vocale e link con una vera registrazione, statistiche vuote e scroll.
+
+### Registro di A5
+
+- 19 ottobre 2026, prove sul telefono: ripristinato temporaneamente il solo pulsante
+  **"Genera dati di esempio"** in Settings → Strumenti di debug, anche nelle build release.
+  `flutter analyze --no-pub` senza problemi; APK release ARM64 ricostruito, aggiornato via USB
+  sul telefono e avviato. Suite di test non ripetuta, su richiesta esplicita per questa piccola
+  modifica. La rimozione del pulsante prima dell'uscita ufficiale resta una voce aperta di A5.
+- 19 ottobre 2026: `flutter analyze --no-pub` senza problemi. Suite mirata conclusiva:
+  **44 test superati, 3 già esclusi** perché la vista elenco di Sky è nascosta. Coperti Moon,
+  sandbox, condivisione, card di Sky, azioni e layout di Vedi costellazione, preferenze audio.
+  Aggiornata l'aspettativa del test del gesto alla dicitura localizzata.
+- Release web: `flutter build web --release --source-maps --no-pub` riuscita; controllati
+  `build/web/main.dart.js.map` e gli asset. Nessun sorgente di lab, Moon o sandbox incluso.
+  Le source map servono alla verifica locale; non è stato effettuato un deploy.
+- Release Android: `flutter build apk --release --target-platform android-arm64 --analyze-size
+  --code-size-directory=build/release-audit --no-pub` riuscita (APK circa 66 MB).
+  Controllati `build/release-audit/snapshot.arm64-v8a.json` e il contenuto dell'APK:
+  nessun sorgente dei lab e nessun asset di Moon o `royal_symbols_preview`.
+  APK costruito per la verifica locale, non installato sul telefono né pubblicato.
+- Avvisi della toolchain da tenere presenti: il build web segnala il font opzionale
+  CupertinoIcons assente; la build Android segnala l'uso del vecchio plugin Kotlin in
+  `flutter_timezone`. Non sono stati aggiornati pacchetti durante A5.
 
 ## A6. Account e sync nell'app (dipende da B1–B3)
 
@@ -175,7 +307,7 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
 
 ## B1. Cose da fare tu (nell'ordine)
 
-1. Comprare `innerstars.app` su Cloudflare Registrar.
+1. [x] Comprare `innerstars.app` su Cloudflare Registrar (già registrato nelle decisioni).
 2. Cloudflare Pages: due progetti collegati a GitHub, uno per la landing (`innerstars.app`, `www`)
    e uno per la web app (`my.innerstars.app`).
 3. Progetto Firebase: abilitare Authentication → Google; creare Firestore in produzione, regione `eur3`.
@@ -213,6 +345,8 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
 - [x] **Piattaforme della prima uscita**: Android e web (landing + web app). iOS in futuro. Costo: Play Store 25 € una tantum.
 - [ ] **Firma Android per la release**: verificare che la chiave di firma (keystore) esista, sia
       salvata al sicuro e che l'impronta SHA-1 di release sia registrata in Firebase.
+      Controllo del 19 ottobre: `android/app/build.gradle.kts` firma ancora la release
+      con la configurazione debug; le build locali di A5 non sono pronte per lo store.
 - [ ] **Requisiti degli store**: privacy policy online, scheda dei dati raccolti, classificazione per
       età, screenshot, icona e splash definitivi.
 - [ ] **Segnalazione degli errori** con Firebase Crashlytics (deciso): Android coperto. Il plugin

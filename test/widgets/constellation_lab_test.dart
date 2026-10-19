@@ -28,8 +28,8 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      final viewed = <(int, int?)>[];
-      final flown = <(int, int?)>[];
+      final viewed = <(String, int?)>[];
+      final flown = <(String, int?)>[];
       await tester.pumpWidget(
         StringsScope(
           strings: const StringsIt(),

@@ -19,7 +19,7 @@ import '../data/habit_completion_repository.dart';
 import '../data/habit_repository.dart';
 import '../data/legacy_constellation_migration.dart';
 import '../data/project_repository.dart';
-import '../data/reflection_answer_repository.dart';
+import '../data/reflection_repository.dart';
 import '../data/star_repository.dart';
 import '../data/shooting_star_wish_repository.dart';
 import '../audio/audio_service.dart';
@@ -54,6 +54,10 @@ const _kShowOnboarding = false;
 /// of the systems behind them existing (see [_PlaceholderPanel]). A public
 /// build shouldn't show "coming soon" panels; flip on to restore.
 const _kShowPlaceholderSections = false;
+
+// Temporary testing aid for the author's release builds. Disable before the
+// official release; tracked in docs/release-plan.md (A5).
+const _kShowSampleDataForTesting = true;
 
 /// Settings, opened from the Sky's own side menu — the drawer carries only
 /// one entry for it, everything else here is a section of this one page.
@@ -94,7 +98,7 @@ class SettingsScreen extends StatefulWidget {
   final HabitCompletionRepository habitCompletionRepository;
   final StarsShapeRepository starsShapeRepository;
   final AreaVisionRepository areaVisionRepository;
-  final ReflectionAnswerRepository reflectionAnswerRepository;
+  final ReflectionRepository reflectionAnswerRepository;
   // Kept only for the reset-all-data action's own `.clear()` call — the
   // sound section itself moved to `SoundLabScreen`.
   final AudioSettingsRepository audioSettingsRepository;
@@ -889,13 +893,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       },
                     ),
                   ),
-                  // Dev tooling (seed/reset data) — development builds only (see
-                  // [kDevTools]). Each button carries its own panel
+                  // Sample data is temporarily available in release for testing.
+                  // Reset and other tools remain gated by [kDevTools]. Each button carries its own panel
                   // background (see [_debugButtonStyle]) so it reads as
                   // tappable rather than as a stray line of text; each is
                   // [Expanded] so together they fill the row edge to edge
                   // instead of leaving empty space beside them.
-                  if (kDevTools) ...[
+                  if (kDevTools || _kShowSampleDataForTesting) ...[
                     const SizedBox(height: 28),
                     StaggeredEntrance(
                       index: 10,
@@ -923,29 +927,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: StaggeredEntrance(
-                            index: 11,
-                            axis: Axis.horizontal,
-                            child: TextButton.icon(
-                              onPressed: _resetAllData,
-                              style: _debugButtonStyle(colors, colors.danger),
-                              icon: Icon(
-                                Icons.delete_outline,
-                                size: 16,
-                                color: colors.danger,
-                              ),
-                              label: AppButtonLabel(
-                                strings.resetAllData,
-                                color: colors.danger,
+                        if (kDevTools) const SizedBox(width: 8),
+                        if (kDevTools)
+                          Expanded(
+                            child: StaggeredEntrance(
+                              index: 11,
+                              axis: Axis.horizontal,
+                              child: TextButton.icon(
+                                onPressed: _resetAllData,
+                                style: _debugButtonStyle(colors, colors.danger),
+                                icon: Icon(
+                                  Icons.delete_outline,
+                                  size: 16,
+                                  color: colors.danger,
+                                ),
+                                label: AppButtonLabel(
+                                  strings.resetAllData,
+                                  color: colors.danger,
+                                ),
                               ),
                             ),
                           ),
-                        ),
                       ],
                     ),
-                    if (_kShowOnboarding) ...[
+                    if (kDevTools && _kShowOnboarding) ...[
                       const SizedBox(height: 8),
                       // Onboarding replay lived in the menu's own Info
                       // section briefly; moved back here — a dev/QA aid for

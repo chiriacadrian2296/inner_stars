@@ -18,7 +18,7 @@ import '../data/custom_constellation_repository.dart';
 import '../data/habit_repository.dart';
 import '../data/project_repository.dart';
 import '../data/star_repository.dart';
-import '../data/reflection_answer_repository.dart';
+import '../data/reflection_repository.dart';
 import '../data/moodboard_repository.dart';
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
@@ -30,10 +30,10 @@ import '../tutorials/tour_step_card.dart';
 import '../utils/area_hero_art.dart';
 import '../utils/area_hero_art_tone.dart';
 import '../widgets/balanced_title.dart';
-import '../widgets/area_section_header.dart';
 import '../widgets/moodboard_grid.dart';
 import '../widgets/logo_watermark.dart';
-import '../widgets/reflection_questions_section.dart';
+import 'area_reflections_screen.dart';
+export 'area_reflections_screen.dart';
 import '../utils/responsive.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
@@ -70,54 +70,11 @@ class AreaDetailScreen extends StatefulWidget {
   final double initialScrollOffset;
   final ValueChanged<double>? onScrollChanged;
   final AreaVisionRepository areaVisionRepository;
-  final ReflectionAnswerRepository reflectionAnswerRepository;
+  final ReflectionRepository reflectionAnswerRepository;
   final ProjectRepository projectRepository;
   final StarRepository starRepository;
   @override
   State<AreaDetailScreen> createState() => _AreaDetailScreenState();
-}
-
-/// The full reflection editor, shared by an area's section action and dock.
-class AreaReflectionsScreen extends StatelessWidget {
-  const AreaReflectionsScreen({
-    super.key,
-    required this.area,
-    required this.repository,
-  });
-
-  final LifeArea area;
-  final ReflectionAnswerRepository repository;
-
-  @override
-  Widget build(BuildContext context) {
-    final strings = context.strings;
-    return Scaffold(
-      backgroundColor: context.colors.night,
-      body: SafeArea(
-        // Full-width scroll view, capped content — see [SettingsScreen].
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: ResponsiveContent(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                StaggeredEntrance(
-                  index: 0,
-                  child: AreaSectionHeader(
-                    title: area.displayName(strings),
-                    icon: kAreaReflectionsIcon,
-                    description: strings.reflectionsPageDescription,
-                  ),
-                ),
-                const SizedBox(height: 26),
-                ReflectionQuestionsSection(area: area, repository: repository),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _AreaDetailScreenState extends State<AreaDetailScreen> {
@@ -214,8 +171,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
     final strings = context.strings;
     final area = _area;
     final vision = widget.areaVisionRepository.getVision(area);
-    final questions = area.reflectionQuestions(strings);
-    final answers = widget.reflectionAnswerRepository.getAnswersForArea(area);
+    final answers = widget.reflectionAnswerRepository.getForArea(area);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
@@ -404,19 +360,26 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  '${answers.length}/${questions.length} ${strings.reflectionAnsweredCountLabel}',
+                                                  strings.reflectionCount(
+                                                    answers.length,
+                                                  ),
                                                   style: TextStyle(
                                                     color: context.colors.muted,
                                                   ),
                                                 ),
                                                 const SizedBox(height: 12),
-                                                for (
-                                                  var i = 0;
-                                                  i < questions.length;
-                                                  i++
-                                                ) ...[
+                                                if (answers.isEmpty)
                                                   Text(
-                                                    questions[i],
+                                                    strings.reflectionEmpty,
+                                                    style: TextStyle(
+                                                      color:
+                                                          context.colors.muted,
+                                                    ),
+                                                  ),
+                                                for (final reflection
+                                                    in answers.take(3)) ...[
+                                                  Text(
+                                                    reflection.title,
                                                     style: TextStyle(
                                                       fontFamily:
                                                           kFontStarTitle,
@@ -428,9 +391,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                                   ),
                                                   const SizedBox(height: 6),
                                                   Text(
-                                                    answers['$i']?.answerText ??
-                                                        strings
-                                                            .reflectionAnswerHint,
+                                                    reflection.body,
                                                     maxLines: 2,
                                                     overflow:
                                                         TextOverflow.ellipsis,

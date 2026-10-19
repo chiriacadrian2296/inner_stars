@@ -72,11 +72,11 @@ class ConstellationStar {
     this.litToday = false,
   });
 
-  /// The [Star]/[Habit] this stands for. Always 0 for a
+  /// The [Star]/[Habit] this stands for. Always empty for a
   /// [StarKind.nascent] star — there's no entity behind an empty slot yet,
   /// which is exactly what makes it nascent; [slotSequence] identifies it
   /// instead.
-  final int entityId;
+  final String entityId;
 
   final Offset position;
   final StarKind kind;

@@ -79,14 +79,17 @@ void main() {
   ) async {
     final upright = await open(tester, const Size(390, 844));
     // Drawn twice: the outline and the fill.
-    expect(find.text('SWIPE'), findsNWidgets(2));
+    expect(
+      find.text(const StringsIt().constellationSwipeHint),
+      findsNWidgets(2),
+    );
     await tester.pumpWidget(const SizedBox.shrink());
 
     final sideways = await open(tester, const Size(844, 390));
     // Stars are drawn at the same size whichever way the phone is held.
     expect(sideways.width, closeTo(upright.width, 0.5));
     // The short map has no room for the swipe bar; the arrows remain.
-    expect(find.text('SWIPE'), findsNothing);
+    expect(find.text(const StringsIt().constellationSwipeHint), findsNothing);
     // The title has the full width now, so a short one stays on one line.
     final title = tester.getSize(find.byType(BalancedTitle));
     expect(title.height, lessThan(20 * 1.25 * 1.5));

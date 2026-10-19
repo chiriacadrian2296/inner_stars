@@ -50,8 +50,8 @@ void main() {
   for (final type in [StarKind.lit, StarKind.unlit, StarKind.pulsar]) {
     final date = DateTime(2026, 10, 11);
     final star = Star(
-      id: 1,
-      projectId: 1,
+      id: '1',
+      projectId: '1',
       slotSequence: 1,
       title: 'Attività',
       createdAt: date,
@@ -60,8 +60,8 @@ void main() {
       dead: true,
     );
     final habit = Habit(
-      id: 2,
-      projectId: 1,
+      id: '2',
+      projectId: '1',
       title: 'Abitudine',
       createdAt: date,
       dead: true,

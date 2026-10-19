@@ -9,6 +9,19 @@ import '../models/star_kind.dart';
 /// string set is small enough that a plain Dart class is simpler to read,
 /// grep, and keep in sync than generated code.
 abstract class AppStrings {
+  String get reflectionNew;
+  String get reflectionFree;
+  String get reflectionSuggested;
+  String get reflectionTitleLabel;
+  String get reflectionBodyLabel;
+  String get reflectionEmpty;
+  String get reflectionRequired;
+  String get reflectionSaveError;
+  String get reflectionDeleteTitle;
+  String get reflectionDeleteBody;
+  String get reflectionDiscardTitle;
+  String reflectionCount(int count);
+
   String get splashLoadingLabel;
   String get splashTagline;
   String get manageHabits;
@@ -985,6 +998,7 @@ abstract class AppStrings {
   String get moodboardTitle;
   String get moodboardPageDescription;
   String get moodboardAddLabel;
+  String get moodboardLimitReached;
   String get moodboardEmpty;
   String get moodboardQuote;
   String get moodboardQuoteDescription;
@@ -1052,6 +1066,8 @@ abstract class AppStrings {
   String get shareContentError;
   String get sharePreviewTitle;
   String get shareChooseLayout;
+  String get sharePreviousLayout;
+  String get shareNextLayout;
   String get shareLayoutImmersive;
   String get shareLayoutFramed;
   String get shareLayoutPostcard;
@@ -1073,6 +1089,8 @@ abstract class AppStrings {
   /// meant for a full-width button elsewhere, too long for this one.
   String get starQuickLookShareAction;
   String get constellationQuickLookAddStarAction;
+  String get constellationNewStarAction;
+  String get constellationSwipeHint;
   String get areaQuickLookReflectionsAction;
   String get areaQuickLookNewConstellationAction;
 

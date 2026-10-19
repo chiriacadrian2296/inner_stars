@@ -5,6 +5,34 @@ import 'reflection_groups_ro.dart';
 
 class StringsRo implements AppStrings {
   @override
+  String get reflectionNew => 'Reflecție nouă';
+  @override
+  String get reflectionFree => 'Începe de la zero';
+  @override
+  String get reflectionSuggested => 'Alege o sugestie';
+  @override
+  String get reflectionTitleLabel => 'Titlu sau temă';
+  @override
+  String get reflectionBodyLabel => 'Reflecția ta';
+  @override
+  String get reflectionEmpty =>
+      'O întrebare sau un gând pot fi un început. Scrie prima ta reflecție.';
+  @override
+  String get reflectionRequired => 'Scrie atât un titlu, cât și o reflecție.';
+  @override
+  String get reflectionSaveError =>
+      'Reflecția nu a putut fi salvată. Încearcă din nou.';
+  @override
+  String get reflectionDeleteTitle => 'Ștergi reflecția?';
+  @override
+  String get reflectionDeleteBody =>
+      'Această reflecție va fi ștearsă definitiv.';
+  @override
+  String get reflectionDiscardTitle => 'Renunți la modificări?';
+  @override
+  String reflectionCount(int count) => '$count reflecții';
+
+  @override
   String get splashLoadingLabel => 'Se încarcă Inner Stars';
   @override
   String get splashTagline => 'Fiecare efort este o stea.';
@@ -76,6 +104,9 @@ class StringsRo implements AppStrings {
       'Adună imagini, videoclipuri și cuvinte care fac vizibilă viața pe care ți-o dorești în această arie. Adaugă ceea ce te inspiră și revino aici pentru a-ți păstra direcția vie.';
   @override
   String get moodboardAddLabel => 'Add';
+  @override
+  String get moodboardLimitReached =>
+      'Poți adăuga cel mult 12 elemente în fiecare domeniu.';
   @override
   String get moodboardEmpty =>
       'Adună fotografii, videoclipuri și fraze care dau formă viziunii tale.';
@@ -1889,6 +1920,10 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get shareChooseLayout => 'Alege un aranjament';
   @override
+  String get sharePreviousLayout => 'Aranjamentul anterior';
+  @override
+  String get shareNextLayout => 'Aranjamentul următor';
+  @override
   String get shareLayoutImmersive => 'Editorial';
   @override
   String get shareLayoutFramed => 'Fotografic';
@@ -1916,6 +1951,10 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
 
   @override
   String get constellationQuickLookAddStarAction => '+ Stea';
+  @override
+  String get constellationNewStarAction => 'Stea nouă';
+  @override
+  String get constellationSwipeHint => 'GLISEAZĂ';
 
   @override
   String get areaQuickLookReflectionsAction => 'Reflecții';

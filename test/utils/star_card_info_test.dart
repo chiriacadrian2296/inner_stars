@@ -25,8 +25,8 @@ void main() {
   );
 
   Star victory({int intensity = 4, List<StarMedia> extras = const []}) => Star(
-    id: 1,
-    projectId: 1,
+    id: '1',
+    projectId: '1',
     slotSequence: 1,
     title: 'Run',
     createdAt: created,
@@ -35,8 +35,8 @@ void main() {
     media: extras,
   );
   Star goal({DateTime? date}) => Star(
-    id: 2,
-    projectId: 1,
+    id: '2',
+    projectId: '1',
     slotSequence: 2,
     title: 'Goal',
     createdAt: created,
@@ -45,7 +45,7 @@ void main() {
 
   Map<DateTime, int> counts(List<DateTime> days) => habitCompletionCountsByDay([
     for (var i = 0; i < days.length; i++)
-      HabitCompletion(id: i + 1, habitId: 1, date: days[i]),
+      HabitCompletion(id: (i + 1).toString(), habitId: '1', date: days[i]),
   ]);
 
   List<List<BadgeSlot>> slots(CardBadges badges) => [
@@ -107,8 +107,8 @@ void main() {
 
     test('a dead star is one date badge', () {
       final dead = Star(
-        id: 3,
-        projectId: 1,
+        id: '3',
+        projectId: '1',
         slotSequence: 3,
         title: 'Gone',
         createdAt: created,
@@ -127,8 +127,8 @@ void main() {
       int target = 1,
       bool dead = false,
     }) => Habit(
-      id: 1,
-      projectId: 1,
+      id: '1',
+      projectId: '1',
       title: 'Swim',
       createdAt: created,
       frequency: frequency,
@@ -221,8 +221,8 @@ void main() {
     test('shows how far the current cycle is next to the days done', () {
       final row = habitCardBadges(
         Habit(
-          id: 1,
-          projectId: 1,
+          id: '1',
+          projectId: '1',
           title: 'Swim',
           createdAt: created,
           cycleLength: 7,

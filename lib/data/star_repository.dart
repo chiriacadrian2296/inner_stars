@@ -1,3 +1,5 @@
+import 'package:uuid/uuid.dart';
+
 import 'repository_write.dart';
 
 import 'package:flutter/foundation.dart';
@@ -42,13 +44,14 @@ class StarRepository extends ChangeNotifier {
   /// Never throws on missing or corrupted data — returns an empty list
   /// instead, since a blank archive is a safe fallback for a personal-growth
   /// log.
-  List<Star> getAll() {
+  List<Star> getAll({bool includeDeleted = false}) {
     final raw = _prefs.getString(_storageKey);
     if (raw == null) return const [];
     try {
       final decoded = jsonDecode(raw) as List<dynamic>;
       final stars = decoded
           .map((entry) => Star.fromJson(entry as Map<String, dynamic>))
+          .where((record) => includeDeleted || !record.deleted)
           .toList();
       stars.sort((a, b) {
         final aKey = a.achievedDate ?? a.createdAt;
@@ -66,7 +69,7 @@ class StarRepository extends ChangeNotifier {
   /// together), sorted by [Star.slotSequence] — this is the order a
   /// constellation's star slots are assigned against, so it lives here once
   /// rather than being re-derived at each call site.
-  List<Star> getAllForProject(int projectId) {
+  List<Star> getAllForProject(String projectId) {
     final stars = getAll().where((s) => s.projectId == projectId).toList();
     stars.sort((a, b) => a.slotSequence.compareTo(b.slotSequence));
     return stars;
@@ -75,7 +78,7 @@ class StarRepository extends ChangeNotifier {
   /// Whether [projectId]'s constellation can take no more stars (dead ones
   /// count — they keep their slot). Pulsars are capped separately, see
   /// [kMaxConstellationPulsars].
-  bool isFull(int projectId) =>
+  bool isFull(String projectId) =>
       getAllForProject(projectId).length >= kMaxConstellationStars;
 
   /// Records a new star. Pass [achievedDate] (and [intensity]) to light it
@@ -94,7 +97,7 @@ class StarRepository extends ChangeNotifier {
     required String title,
     String? iconSlug,
     String? description,
-    required int projectId,
+    required String projectId,
     int? slotSequence,
     DateTime? targetDate,
     DateTime? achievedDate,
@@ -132,7 +135,7 @@ class StarRepository extends ChangeNotifier {
     final trimmedDescription = description?.trim();
 
     final star = Star(
-      id: _nextId(stars),
+      id: const Uuid().v4(),
       projectId: projectId,
       slotSequence: nextSlot,
       number: achievedDate == null ? null : _nextNumber(stars),
@@ -149,8 +152,8 @@ class StarRepository extends ChangeNotifier {
       media: achievedDate == null ? const [] : media,
     );
 
-    await _saveAll([star, ...stars]);
-    return star;
+    final savedRecords = await _saveAll([star, ...stars]);
+    return savedRecords.firstWhere((record) => record.id == star.id);
   }
 
   /// Updates the title/description/project/target date/achieved state of
@@ -163,11 +166,11 @@ class StarRepository extends ChangeNotifier {
   /// resolve it from a currently-displayed [Star], so a missing id would
   /// mean the list changed under them.
   Future<Star> update({
-    required int id,
+    required String id,
     required String title,
     String? iconSlug,
     String? description,
-    required int projectId,
+    required String projectId,
     DateTime? targetDate,
     DateTime? achievedDate,
     int? intensity,
@@ -212,7 +215,7 @@ class StarRepository extends ChangeNotifier {
     );
 
     final nextStars = [...stars]..[index] = updated;
-    await _saveAll(nextStars);
+    final savedRecords = await _saveAll(nextStars);
     await _deleteDroppedMedia(existing.media, nextMedia);
 
     final previousPhotoPath = existing.photoPath;
@@ -220,14 +223,14 @@ class StarRepository extends ChangeNotifier {
       await PhotoStorage.delete(previousPhotoPath);
     }
 
-    return updated;
+    return savedRecords.firstWhere((record) => record.id == updated.id);
   }
 
   /// Quick "light it now" action for an unlit star, without going through
   /// the full form: sets [Star.achievedDate]/[Star.intensity] and assigns a
   /// fresh [Star.number].
   Future<Star> markAchieved(
-    int id, {
+    String id, {
     DateTime? achievedDate,
     required int intensity,
     String? photoPath,
@@ -259,15 +262,15 @@ class StarRepository extends ChangeNotifier {
     );
 
     final nextStars = [...stars]..[index] = updated;
-    await _saveAll(nextStars);
-    return updated;
+    final savedRecords = await _saveAll(nextStars);
+    return savedRecords.firstWhere((record) => record.id == updated.id);
   }
 
   /// Undoes [markAchieved] (or an edit that achieved this star): clears
   /// [Star.achievedDate]/[Star.intensity]/[Star.number], turning it back
   /// into an unlit goal. The photo, if any, is left alone — it isn't tied
   /// exclusively to being achieved.
-  Future<Star> markNotAchieved(int id) async {
+  Future<Star> markNotAchieved(String id) async {
     final stars = getAll();
     final index = stars.indexWhere((s) => s.id == id);
     if (index == -1) {
@@ -291,8 +294,8 @@ class StarRepository extends ChangeNotifier {
     );
 
     final nextStars = [...stars]..[index] = updated;
-    await _saveAll(nextStars);
-    return updated;
+    final savedRecords = await _saveAll(nextStars);
+    return savedRecords.firstWhere((record) => record.id == updated.id);
   }
 
   /// "Deletes" the star identified by [id] — but never actually removes its
@@ -301,7 +304,7 @@ class StarRepository extends ChangeNotifier {
   /// position. Everything else about the star (title, description, whether
   /// it was achieved) is left exactly as it was, ready to be inspected or
   /// brought back via [resurrect].
-  Future<Star> delete(int id) async {
+  Future<Star> delete(String id) async {
     final stars = getAll();
     final index = stars.indexWhere((s) => s.id == id);
     if (index == -1) {
@@ -314,8 +317,8 @@ class StarRepository extends ChangeNotifier {
       updatedAt: now,
     );
     final nextStars = [...stars]..[index] = updated;
-    await _saveAll(nextStars);
-    return updated;
+    final savedRecords = await _saveAll(nextStars);
+    return savedRecords.firstWhere((record) => record.id == updated.id);
   }
 
   /// Brings a dead star back to life as a new star — same [id] and
@@ -324,11 +327,11 @@ class StarRepository extends ChangeNotifier {
   /// [achievedDate] is given (never the star's old number, even if it had
   /// one before being deleted).
   Future<Star> resurrect(
-    int id, {
+    String id, {
     required String title,
     String? iconSlug,
     String? description,
-    required int projectId,
+    required String projectId,
     DateTime? targetDate,
     DateTime? achievedDate,
     int? intensity,
@@ -364,28 +367,30 @@ class StarRepository extends ChangeNotifier {
     );
 
     final nextStars = [...stars]..[index] = updated;
-    await _saveAll(nextStars);
+    final savedRecords = await _saveAll(nextStars);
     await _deleteDroppedMedia(existing.media, nextMedia);
 
     if (existing.photoPath != null && existing.photoPath != photoPath) {
       await PhotoStorage.delete(existing.photoPath!);
     }
 
-    return updated;
+    return savedRecords.firstWhere((record) => record.id == updated.id);
   }
 
-  /// Permanently deletes every star. Used by the "reset all data" action —
-  /// there's no undo. Unlike [delete], this really does erase everything;
-  /// tombstoning has no purpose once the whole archive is being wiped.
+  /// Removes every star from the UI, retaining sync tombstones. Unlike
+  /// [delete], this is a permanent deletion rather than archiving an activity.
   Future<void> clear() async {
-    await writeRepositoryValue(_prefs, _storageKey, null);
-    notifyListeners();
+    final cleared = getAll();
+    await _saveAll([]);
+    for (final star in cleared) {
+      if (star.photoPath != null) await PhotoStorage.delete(star.photoPath!);
+    }
     await StarMediaStorage.clear();
   }
 
-  /// Physically removes every star in one deleted constellation, including
-  /// any photo files they owned. This is intentionally unlike [delete].
-  Future<void> deleteAllForProject(int projectId) async {
+  /// Marks a deleted project's stars as deleted for sync and cleans their files.
+  /// This is intentionally distinct from [delete], which archives an activity.
+  Future<void> deleteAllForProject(String projectId) async {
     final stars = getAll();
     final removed = stars.where((star) => star.projectId == projectId);
     await _saveAll(stars.where((star) => star.projectId != projectId).toList());
@@ -407,18 +412,6 @@ class StarRepository extends ChangeNotifier {
     );
   }
 
-  /// Ids are millisecondsSinceEpoch, which two adds inside the same
-  /// millisecond would collide on — and every update/delete finds its star
-  /// by id. Steps past anything already taken, as `ProjectRepository` does.
-  static int _nextId(List<Star> existing) {
-    var id = DateTime.now().millisecondsSinceEpoch;
-    final taken = existing.map((s) => s.id).toSet();
-    while (taken.contains(id)) {
-      id++;
-    }
-    return id;
-  }
-
   int _nextNumber(List<Star> stars) {
     return stars.fold<int>(
           0,
@@ -427,9 +420,15 @@ class StarRepository extends ChangeNotifier {
         1;
   }
 
-  Future<void> _saveAll(List<Star> stars) async {
-    final encoded = jsonEncode(stars.map((s) => s.toJson()).toList());
-    await writeRepositoryValue(_prefs, _storageKey, encoded);
+  Future<List<Star>> _saveAll(List<Star> stars) async {
+    final saved = await writeSyncList<Star>(
+      _prefs,
+      _storageKey,
+      stars,
+      encode: (record) => record.toJson(),
+      decode: Star.fromJson,
+    );
     notifyListeners();
+    return saved;
   }
 }

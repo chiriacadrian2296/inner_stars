@@ -37,7 +37,7 @@ void main() {
       final created = await repo.add(name: 'My path', shape: shape);
 
       expect(repo.getById(created.id)?.name, 'My path');
-      expect(repo.getById(-1), isNull);
+      expect(repo.getById('-1'), isNull);
     },
   );
 
@@ -96,7 +96,7 @@ void main() {
     final repo = await StarsShapeRepository.create();
 
     expect(
-      () => repo.update(id: -1, name: 'Nope', shape: shape),
+      () => repo.update(id: '-1', name: 'Nope', shape: shape),
       throwsStateError,
     );
   });
@@ -114,7 +114,7 @@ void main() {
 
   test('StarsShape.fromJson/toJson round-trips points and edges exactly', () {
     final original = StarsShape(
-      id: 1,
+      id: '1',
       name: 'My path',
       shape: shape,
       createdAt: DateTime(2026, 1, 1),

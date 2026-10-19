@@ -8,6 +8,8 @@
 class HabitCycle {
   const HabitCycle({
     required this.id,
+    DateTime? updatedAt,
+    this.deleted = false,
     required this.habitId,
     required this.startDate,
     required this.completedDate,
@@ -17,13 +19,16 @@ class HabitCycle {
     this.whatHelped,
     this.whatWasHard,
     this.howItFeels,
-  }) : assert(
+  }) : updatedAt = updatedAt ?? completedDate,
+       assert(
          intensity >= 1 && intensity <= 5,
          'intensity must be 1-5, was $intensity',
        );
 
-  final int id;
-  final int habitId;
+  final String id;
+  final DateTime updatedAt;
+  final bool deleted;
+  final String habitId;
 
   /// First day (midnight) that counted toward this cycle.
   final DateTime startDate;
@@ -53,6 +58,8 @@ class HabitCycle {
       (howItFeels?.isNotEmpty ?? false);
 
   HabitCycle copyWith({
+    DateTime? updatedAt,
+    bool? deleted,
     bool? resolved,
     String? whatHelped,
     String? whatWasHard,
@@ -65,6 +72,8 @@ class HabitCycle {
       completedDate: completedDate,
       length: length,
       intensity: intensity,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deleted: deleted ?? this.deleted,
       resolved: resolved ?? this.resolved,
       whatHelped: whatHelped ?? this.whatHelped,
       whatWasHard: whatWasHard ?? this.whatWasHard,
@@ -74,8 +83,12 @@ class HabitCycle {
 
   factory HabitCycle.fromJson(Map<String, dynamic> json) {
     return HabitCycle(
-      id: json['id'] as int,
-      habitId: json['habitId'] as int,
+      id: json['id'] as String,
+      updatedAt: (json['updatedAt'] as String?) == null
+          ? null
+          : DateTime.parse(json['updatedAt'] as String),
+      deleted: json['deleted'] as bool? ?? false,
+      habitId: json['habitId'] as String,
       startDate: DateTime.parse(json['startDate'] as String),
       completedDate: DateTime.parse(json['completedDate'] as String),
       length: json['length'] as int,
@@ -90,6 +103,8 @@ class HabitCycle {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'updatedAt': updatedAt.toIso8601String(),
+      'deleted': deleted,
       'habitId': habitId,
       'startDate': startDate.toIso8601String(),
       'completedDate': completedDate.toIso8601String(),
@@ -106,6 +121,8 @@ class HabitCycle {
   bool operator ==(Object other) {
     return other is HabitCycle &&
         other.id == id &&
+        other.updatedAt == updatedAt &&
+        other.deleted == deleted &&
         other.habitId == habitId &&
         other.startDate == startDate &&
         other.completedDate == completedDate &&
@@ -120,6 +137,8 @@ class HabitCycle {
   @override
   int get hashCode => Object.hash(
     id,
+    updatedAt,
+    deleted,
     habitId,
     startDate,
     completedDate,
