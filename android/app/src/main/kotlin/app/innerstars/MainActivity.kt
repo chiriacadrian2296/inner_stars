@@ -1,4 +1,4 @@
-package com.example.inner_stars
+package app.innerstars
 
 import android.content.Context
 import android.os.Build
