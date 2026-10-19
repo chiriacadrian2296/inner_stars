@@ -91,35 +91,57 @@ void main() {
       prefs = await SharedPreferences.getInstance();
     });
 
+    // Two devices sharing the remote; each has its own storage key.
+    LocalCollection device(String key) => LocalCollection(prefs, key);
+
     test('two devices converge through the remote', () async {
       final remote = InMemoryRemoteStore();
-      SharedPreferences.setMockInitialValues({});
-      final a = LocalCollection(prefs, 'items');
+      final a = device('a');
+      final b = device('b');
       await a.applyRemote([rec('one', 1), rec('two', 2)]);
       await syncCollection(name: 'items', local: a, remote: remote);
-      expect(remote.data['items']!.keys, {'one', 'two'});
+      expect(remote.records('items').keys, {'one', 'two'});
 
-      final b = LocalCollection(prefs, 'other');
       await syncCollection(name: 'items', local: b, remote: remote);
       expect(b.readAll().map((r) => r['id']).toSet(), {'one', 'two'});
 
       // Device B deletes 'one' later; device A receives the tombstone.
       await b.applyRemote([rec('one', 9, deleted: true)]);
-      await syncCollection(name: 'items', local: b, remote: remote);
+      await syncCollection(
+        name: 'items',
+        local: b,
+        remote: remote,
+        pushSince: DateTime.utc(2026, 10, 19, 12, 5),
+      );
       await syncCollection(name: 'items', local: a, remote: remote);
       final one = a.readAll().firstWhere((r) => r['id'] == 'one');
       expect(one['deleted'], true);
     });
 
+    test('a first sync merges both sides by record', () async {
+      final remote = InMemoryRemoteStore();
+      await remote.push('items', [rec('cloud', 1), rec('both', 3, v: 'cloud')]);
+      final local = device('a');
+      await local.applyRemote([rec('phone', 2), rec('both', 5, v: 'phone')]);
+      await syncCollection(name: 'items', local: local, remote: remote);
+      expect(local.readAll().map((r) => r['id']).toSet(), {
+        'cloud',
+        'phone',
+        'both',
+      });
+      expect(remote.records('items').keys, {'cloud', 'phone', 'both'});
+      expect(remote.records('items')['both']!['v'], 'phone');
+    });
+
     test('remote clock is kept, not restamped', () async {
-      final local = LocalCollection(prefs, 'items');
+      final local = device('a');
       await local.applyRemote([rec('one', 7)]);
       expect(local.readAll().single['updatedAt'], rec('one', 7)['updatedAt']);
     });
 
     test('offline failure leaves local data untouched and can retry', () async {
       final remote = InMemoryRemoteStore();
-      final local = LocalCollection(prefs, 'items');
+      final local = device('a');
       await local.applyRemote([rec('one', 1)]);
       remote.failNext = StateError('offline');
       await expectLater(
@@ -128,21 +150,56 @@ void main() {
       );
       expect(local.readAll(), hasLength(1));
       await syncCollection(name: 'items', local: local, remote: remote);
-      expect(remote.data['items']!.keys, {'one'});
+      expect(remote.records('items').keys, {'one'});
     });
 
-    test('since only fetches newer remote changes', () async {
+    test(
+      'the pull cursor follows the server, so a lagging clock is not missed',
+      () async {
+        final remote = InMemoryRemoteStore();
+        final a = device('a');
+        final b = device('b');
+
+        // A pushes, then syncs again to get a server position to resume from.
+        await a.applyRemote([rec('a1', 30)]);
+        await syncCollection(name: 'items', local: a, remote: remote);
+        final first = await syncCollection(
+          name: 'items',
+          local: a,
+          remote: remote,
+          pushSince: DateTime.utc(2026, 10, 19, 12, 30),
+        );
+        expect(first.pullCursor, isNotNull);
+
+        // B's clock is far behind: its record is dated before everything A has.
+        await b.applyRemote([rec('b1', 1)]);
+        await syncCollection(name: 'items', local: b, remote: remote);
+
+        // A still receives it, because it resumes from the server's position.
+        final second = await syncCollection(
+          name: 'items',
+          local: a,
+          remote: remote,
+          pullCursor: first.pullCursor,
+          pushSince: DateTime.utc(2026, 10, 19, 12, 30),
+        );
+        expect(second.pulled, greaterThan(0));
+        expect(a.readAll().map((r) => r['id']), contains('b1'));
+      },
+    );
+
+    test('only changes after pushSince are sent', () async {
       final remote = InMemoryRemoteStore();
-      await remote.push('items', [rec('old', 1), rec('new', 10)]);
-      final local = LocalCollection(prefs, 'items');
-      final next = await syncCollection(
+      final local = device('a');
+      await local.applyRemote([rec('old', 1), rec('new', 20)]);
+      final out = await syncCollection(
         name: 'items',
         local: local,
         remote: remote,
-        since: DateTime.utc(2026, 10, 19, 12, 5),
+        pushSince: DateTime.utc(2026, 10, 19, 12, 10),
       );
-      expect(local.readAll().map((r) => r['id']), ['new']);
-      expect(next, DateTime.utc(2026, 10, 19, 12, 10));
+      expect(out.pushed, 1);
+      expect(remote.records('items').keys, {'new'});
     });
   });
 }

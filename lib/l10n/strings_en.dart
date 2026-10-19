@@ -417,6 +417,14 @@ class StringsEn implements AppStrings {
   String get accountSignOutNote =>
       'Signing out keeps your data on this device and stops syncing.';
   @override
+  String get accountSyncing => 'Updating…';
+  @override
+  String get accountSyncError => 'Could not update. Trying again soon.';
+  @override
+  String get accountNeverSynced => 'Not updated yet';
+  @override
+  String accountLastSync(String when) => 'Last updated: $when';
+  @override
   String get profilePlaceholderBody =>
       'Sign-in, your profile picture, a short description of yourself, '
       'and your friends list will live here.';

@@ -28,6 +28,7 @@ import 'widgets/habit_cycle_scope.dart';
 import 'data/habit_repository.dart';
 import 'data/legacy_constellation_migration.dart';
 import 'data/local_data_migration.dart';
+import 'data/moodboard_repository.dart';
 import 'data/onboarding_prefs.dart';
 import 'data/project_repository.dart';
 import 'data/reflection_repository.dart';
@@ -40,6 +41,10 @@ import 'screens/onboarding_screen.dart';
 import 'screens/sky_screen.dart';
 import 'screens/star_form_screen.dart';
 import 'settings/settings_controller.dart';
+import 'sync/firestore_remote_store.dart';
+import 'sync/settings_collection.dart';
+import 'sync/sync_scope.dart';
+import 'sync/sync_service.dart';
 import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
 import 'tutorials/tour_storage.dart';
@@ -57,6 +62,10 @@ import 'utils/web_back_guard_stub.dart'
 /// See the TRB entry for this. Flip back on to restore the old flow
 /// exactly as it was.
 const _kShowOnboarding = false;
+
+/// Remembers that an account was signed in, so Firebase is brought up at launch
+/// and syncing resumes without opening Settings.
+const _kWasSignedInKey = 'auth.wasSignedIn';
 
 Future<void> main() async {
   // Explicit opt-in to edge-to-edge (mandatory on Android 15+ regardless):
@@ -103,7 +112,17 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
   bool _startupReady = false;
   // Created now but inert until Settings asks for it: Firebase only starts
   // when the Account section is first shown (see AuthService.ensureReady).
-  final _authService = AuthService();
+  final _authService = AuthService(
+    onSignInChanged: (signedIn) => SharedPreferences.getInstance().then(
+      (prefs) => prefs.setBool(_kWasSignedInKey, signedIn),
+    ),
+  );
+  SyncService? _syncService;
+
+  Widget _withSync(Widget child) {
+    final sync = _syncService;
+    return sync == null ? child : SyncScope(service: sync, child: child);
+  }
 
   void _markStartupReady() {
     if (mounted && !_startupReady) setState(() => _startupReady = true);
@@ -125,6 +144,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
 
   @override
   void dispose() {
+    _syncService?.dispose();
     _authService.dispose();
     _startupComplete.dispose();
     super.dispose();
@@ -213,6 +233,33 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
         );
       }
 
+      final prefs = await SharedPreferences.getInstance();
+      final moodboardRepository = await MoodboardRepository.create();
+      final syncService = SyncService(
+        account: _authService,
+        prefs: prefs,
+        targets: [
+          SyncTarget.repository('stars', starRepository),
+          SyncTarget.repository('projects', projectRepository),
+          SyncTarget.repository('habits', habitRepository),
+          SyncTarget.repository('habit-completions', habitCompletionRepository),
+          SyncTarget.repository('habit-cycles', habitCycleRepository),
+          SyncTarget.repository('shapes', starsShapeRepository),
+          SyncTarget.repository('reflections', reflectionAnswerRepository),
+          SyncTarget.repository('area-visions', areaVisionRepository),
+          SyncTarget.repository(
+            'shooting-star-wish',
+            shootingStarWishRepository,
+          ),
+          SyncTarget.repository('moodboard', moodboardRepository),
+          SyncTarget.settings(
+            SettingsCollection(prefs),
+            settings.reloadFromStorage,
+          ),
+        ],
+        remote: (uid) => FirestoreRemoteStore(FirebaseFirestorePort(uid)),
+      );
+
       if (!mounted) return;
       if (!appLockRepository.isEnabled) _markLaunchUnlocked();
       setState(() {
@@ -232,7 +279,12 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
         _audioService = audioService;
         _reminderService = reminderService;
         _tourStorage = tourStorage;
+        _syncService = syncService;
       });
+      syncService.start();
+      if (prefs.getBool(_kWasSignedInKey) == true) {
+        unawaited(_authService.ensureReady());
+      }
 
       // A locked launch reveals the lock's first frame, never personal data.
       if (appLockRepository.isEnabled) {
@@ -482,23 +534,25 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
           strings: strings,
           child: AuthScope(
             service: _authService,
-            child: HabitCycleScope(
-              repository: habitCycleRepository,
-              child: HabitCycleHost(
-                navigatorKey: _navigatorKey,
-                habitRepository: habitRepository,
-                completionRepository: habitCompletionRepository,
-                cycleRepository: habitCycleRepository,
-                child: EntityInsightsHost(
-                  projects: projectRepository,
-                  stars: starRepository,
-                  habits: habitRepository,
-                  completions: habitCompletionRepository,
-                  shapes: starsShapeRepository,
-                  areaVisions: areaVisionRepository,
-                  reflections: reflectionAnswerRepository,
-                  settings: settings,
-                  child: child!,
+            child: _withSync(
+              HabitCycleScope(
+                repository: habitCycleRepository,
+                child: HabitCycleHost(
+                  navigatorKey: _navigatorKey,
+                  habitRepository: habitRepository,
+                  completionRepository: habitCompletionRepository,
+                  cycleRepository: habitCycleRepository,
+                  child: EntityInsightsHost(
+                    projects: projectRepository,
+                    stars: starRepository,
+                    habits: habitRepository,
+                    completions: habitCompletionRepository,
+                    shapes: starsShapeRepository,
+                    areaVisions: areaVisionRepository,
+                    reflections: reflectionAnswerRepository,
+                    settings: settings,
+                    child: child!,
+                  ),
                 ),
               ),
             ),

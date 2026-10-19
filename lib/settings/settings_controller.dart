@@ -48,6 +48,36 @@ class SettingsController extends ChangeNotifier {
     return SettingsController(repository);
   }
 
+  /// Re-reads every setting from storage, after sync wrote newer values
+  /// received from another device.
+  void reloadFromStorage() {
+    locale = _repository.locale;
+    reminderEnabled = _repository.reminderEnabled;
+    reminderHour = _repository.reminderHour;
+    reminderMinute = _repository.reminderMinute;
+    showGrid = _repository.showGrid;
+    showSupernovae = _repository.showSupernovae;
+    supernovaScale = _repository.supernovaScale;
+    supernovaIntensity = _repository.supernovaIntensity;
+    artworkOpacity = _repository.artworkOpacity;
+    artworkBlend = _repository.artworkBlend;
+    artworkScale = _repository.artworkScale;
+    artworkColor = Color(_repository.artworkColor);
+    artworkLayer = _repository.artworkLayer;
+    tutorialsEnabled = _repository.tutorialsEnabled;
+    skyGridView = _repository.skyGridView;
+    skyGridSizeStep = _repository.skyGridSizeStep;
+    galaxyNavigationMode = _repository.galaxyNavigationMode;
+    constellationCardLayout = _repository.constellationCardLayout;
+    constellationCardSizeStep = _repository.constellationCardSizeStep;
+    constellationCardLabelsOnLeft = _repository.constellationCardLabelsOnLeft;
+    constellationLandscapeEnabled = _repository.constellationLandscapeEnabled;
+    _galaxyCinematicGravity = _repository.galaxyCinematicGravity;
+    avatar = _repository.avatar;
+    galaxyQuality = _repository.galaxyQuality;
+    notifyListeners();
+  }
+
   String locale;
 
   /// 'male' / 'female' (see assets/avatars/hoodie_*.svg); null if unset.

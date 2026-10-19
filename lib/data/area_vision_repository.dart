@@ -76,14 +76,17 @@ class AreaVisionRepository extends ChangeNotifier with SyncableRepository {
   Future<void> _save(
     Map<String, SyncTextValue> previous,
     Map<String, SyncTextValue> next,
-  ) => writeRepositoryValue(
-    _prefs,
-    storageKey,
-    jsonEncode(
-      reconcileLocalRecords(
-        previous.map((key, record) => MapEntry(key, record.toJson())),
-        next.map((key, record) => MapEntry(key, record.toJson())),
+  ) async {
+    await writeRepositoryValue(
+      _prefs,
+      storageKey,
+      jsonEncode(
+        reconcileLocalRecords(
+          previous.map((key, record) => MapEntry(key, record.toJson())),
+          next.map((key, record) => MapEntry(key, record.toJson())),
+        ),
       ),
-    ),
-  );
+    );
+    notifyListeners();
+  }
 }

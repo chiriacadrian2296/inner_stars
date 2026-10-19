@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../firebase_options.dart';
+import '../sync/sync_service.dart';
 
 /// Google sign-in for the cloud copy of the user's data. Nothing here runs
 /// until [ensureReady] is called, so the app stays fully usable offline and
@@ -14,10 +15,18 @@ import '../firebase_options.dart';
 /// The Google account is verified by `google_sign_in`, which hands over an ID
 /// token; Firebase only checks that token (`signInWithCredential`). That is
 /// why Firebase's list of authorized domains is not involved on the web.
-class AuthService extends ChangeNotifier {
-  AuthService({GoogleSignIn? google, FirebaseAuth Function()? auth})
-    : _google = google ?? GoogleSignIn.instance,
-      _authFactory = auth ?? (() => FirebaseAuth.instance);
+class AuthService extends ChangeNotifier implements SyncAccount {
+  AuthService({
+    GoogleSignIn? google,
+    FirebaseAuth Function()? auth,
+    this.onSignInChanged,
+  }) : _google = google ?? GoogleSignIn.instance,
+       _authFactory = auth ?? (() => FirebaseAuth.instance);
+
+  /// Told whenever Firebase reports a sign-in or sign-out (not on the first
+  /// initialization), so the app can remember that an account exists and
+  /// bring Firebase up at launch to resume syncing.
+  final void Function(bool signedIn)? onSignInChanged;
 
   final GoogleSignIn _google;
   final FirebaseAuth Function() _authFactory;
@@ -32,6 +41,8 @@ class AuthService extends ChangeNotifier {
   /// The signed-in Firebase user, or null.
   User? get user => _user;
   bool get isSignedIn => _user != null;
+  @override
+  String? get uid => _user?.uid;
   String? get email => _user?.email;
   String? get displayName => _user?.displayName;
   String? get photoUrl => _user?.photoURL;
@@ -60,6 +71,7 @@ class AuthService extends ChangeNotifier {
       _user = auth.currentUser;
       _userSub = auth.authStateChanges().listen((user) {
         _user = user;
+        onSignInChanged?.call(user != null);
         notifyListeners();
       });
       await _google.initialize(

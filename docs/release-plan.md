@@ -421,7 +421,38 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
       (serve Java e `firebase-tools`); SHA-1 di release in Firebase quando esisterà il keystore;
       prova reale del login sul web e su Android; eventuale `google-services.json` scaricato dalla
       console al posto di quello ricostruito.
-- [ ] Firebase, parte residua: `SyncService`, listener, push, ripresa al `resumed`.
+- [~] **`SyncService` — fatto il 19 ottobre sera, da provare con un accesso reale.**
+      **Decisione dell’autore:** la sincronizzazione è solo automatica, **niente pulsante
+      “Sincronizza ora”**; il pannello Account mostra soltanto “ultimo aggiornamento”
+      (o “in corso”, o l’errore con nuovo tentativo).
+      Come funziona (`lib/sync/sync_service.dart`, `firestore_remote_store.dart`): parte
+      da sola dopo l’accesso, 5 s dopo una modifica locale, al ritorno in primo piano, alla
+      messa in secondo piano e ogni 2 minuti. Un errore (offline, timeout di 30 s) non blocca
+      l’app né tocca i dati locali: riprova con attesa crescente (30 s … 10 min). Documenti
+      `users/{uid}/{collezione}/{id}` con il record intero come testo JSON nel campo `data`
+      (Firestore rifiuta le liste annidate), più `id`, `updatedAt`, `deleted` e `_syncedAt`.
+      Undici collezioni: stelle, progetti, abitudini, check-in, cicli, forme, riflessioni,
+      visioni d’area, desiderio, moodboard e impostazioni (queste ricaricate nell’app).
+      **Correzione di progetto emersa lungo la strada:** il punto di ripresa dello scarico ora
+      segue l’orario del **server** (`_syncedAt`), non l’orologio dei record; l’invio segue
+      l’orologio del dispositivo. Prima un dispositivo con l’orologio indietro avrebbe
+      scritto modifiche che gli altri non avrebbero mai scaricato (test dedicato).
+      Al riavvio l’app ricorda che c’era un accesso (`auth.wasSignedIn`) e riattiva Firebase
+      da sola. Test: 35 in `test/sync` + 7 del pannello; suite **605 superati, 3 esclusi**,
+      analisi pulita, build web release e APK debug arm64 riuscite.
+      **Note e rischi da tenere presenti:**
+      - Cambiare account Google sullo stesso dispositivo carica i dati locali (rimasti dopo
+        l’uscita) nel nuovo account, come previsto dall’unione automatica.
+      - Le impostazioni sono datate quando il cambio viene rilevato (al più al sync
+        successivo), non nell’istante della modifica.
+      - Un promemoria cambiato da un altro dispositivo viene riprogrammato a questo
+        solo al prossimo avvio (lì l’app ricalcola le notifiche).
+      - Media (foto, audio) non ancora sincronizzati: serve il blocco “Media” sotto.
+      - Costo: con i limiti gratuiti Spark conta ogni documento letto; i punti di ripresa
+        tengono le letture basse, ma da misurare con un uso reale.
+      **Restano:** prova reale (due dispositivi, offline, scambio account), le due voci di
+      cancellazione (dati del dispositivo senza tombstone; account e dati cloud), test delle
+      regole sull’emulatore, e una schermata che spieghi un errore persistente.
       Struttura `users/{uid}/<collezione>/{uuid}`. `SyncService` con listener per collezione,
       push debounced, ripresa al `resumed`, stato e nessun crash offline.
       Regole di sicurezza: ognuno accede solo a `users/{uid}/**`, con test sull'emulatore.

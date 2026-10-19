@@ -136,24 +136,41 @@ class LocalCollection implements SyncCollection {
   }
 }
 
-/// Pulls changes newer than [since], merges, pushes what the remote lacks.
-/// Returns the newest clock seen, to use as the next `since`.
-Future<DateTime?> syncCollection({
+/// What one collection sync did.
+class SyncOutcome {
+  const SyncOutcome(this.pullCursor, this.pulled, this.pushed);
+
+  /// Where the next pull resumes (the remote store's own cursor).
+  final DateTime? pullCursor;
+  final int pulled;
+  final int pushed;
+}
+
+/// Pulls what the server has written since [pullCursor], merges it into the
+/// local collection, and pushes the local changes made after [pushSince] that
+/// the remote lacks. The two positions are deliberately separate: pulls follow
+/// the server's clock, pushes follow this device's own clock (its records
+/// are stamped with it), so a wrong clock on either side cannot hide changes.
+/// First sync (both null) sends and receives everything, merged by record.
+Future<SyncOutcome> syncCollection({
   required String name,
   required SyncCollection local,
   required RemoteStore remote,
-  DateTime? since,
+  DateTime? pullCursor,
+  DateTime? pushSince,
 }) async {
-  final pulled = await remote.fetchChangesSince(name, since);
-  await local.applyRemote(pulled);
-  final merge = mergeCollections(await local.exportChangesSince(since), pulled);
+  final pulled = await remote.fetchChangesSince(name, pullCursor);
+  await local.applyRemote(pulled.records);
+  final merge = mergeCollections(
+    await local.exportChangesSince(pushSince),
+    pulled.records,
+  );
   if (merge.pushRemotely.isNotEmpty) {
     await remote.push(name, merge.pushRemotely);
   }
-  DateTime? newest = since;
-  for (final record in [...pulled, ...merge.pushRemotely]) {
-    final time = DateTime.parse(record['updatedAt'] as String);
-    if (newest == null || time.isAfter(newest)) newest = time;
-  }
-  return newest;
+  return SyncOutcome(
+    pulled.cursor,
+    pulled.records.length,
+    merge.pushRemotely.length,
+  );
 }

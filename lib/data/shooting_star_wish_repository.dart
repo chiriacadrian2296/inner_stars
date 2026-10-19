@@ -70,6 +70,7 @@ class ShootingStarWishRepository extends ChangeNotifier
         storageKey,
         jsonEncode(records['current']),
       );
+      notifyListeners();
     }
   }
 

@@ -202,6 +202,7 @@ class MoodboardRepository extends ChangeNotifier with SyncableRepository {
       encode: (item) => item.toJson(),
       decode: MoodboardItem.fromJson,
     );
+    notifyListeners();
   }
 
   Future<void> clear() async {

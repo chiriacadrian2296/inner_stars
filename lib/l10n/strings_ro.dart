@@ -419,6 +419,15 @@ class StringsRo implements AppStrings {
   String get accountSignOutNote =>
       'La deconectare, datele rămân pe acest dispozitiv și sincronizarea se oprește.';
   @override
+  String get accountSyncing => 'Se actualizează…';
+  @override
+  String get accountSyncError =>
+      'Actualizarea nu a reușit. Încerc din nou în curând.';
+  @override
+  String get accountNeverSynced => 'Încă neactualizat';
+  @override
+  String accountLastSync(String when) => 'Ultima actualizare: $when';
+  @override
   String get profilePlaceholderBody =>
       'Autentificarea, poza ta de profil, o scurtă descriere despre tine și '
       'lista ta de prieteni vor avea loc aici.';

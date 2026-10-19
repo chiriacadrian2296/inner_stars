@@ -7,6 +7,9 @@ import '../auth/google_button_stub.dart'
     if (dart.library.js_interop) '../auth/google_button_web.dart';
 import '../l10n/app_strings.dart';
 import '../l10n/strings_scope.dart';
+import '../sync/sync_scope.dart';
+import '../sync/sync_service.dart';
+import '../utils/date_format.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_style.dart';
 
@@ -120,6 +123,30 @@ class _AccountPanelState extends State<AccountPanel> {
     );
   }
 
+  /// Syncing is automatic, so this only reports: updating, a problem, or when
+  /// the cloud copy was last brought up to date.
+  Widget _syncLine(AppColors colors, AppStrings strings) {
+    final sync = SyncScope.maybeOf(context);
+    if (sync == null) return const SizedBox.shrink();
+    final last = sync.lastSyncAt;
+    final text = switch (sync.status) {
+      SyncStatus.syncing => strings.accountSyncing,
+      SyncStatus.error => strings.accountSyncError,
+      SyncStatus.idle =>
+        last == null
+            ? strings.accountNeverSynced
+            : strings.accountLastSync(formatDisplayDateTime(last, strings)),
+    };
+    return Text(
+      text,
+      key: const ValueKey('account-sync-status'),
+      style: TextStyle(
+        color: sync.status == SyncStatus.error ? colors.danger : colors.muted,
+        fontSize: 12,
+      ),
+    );
+  }
+
   Widget _signedIn(AuthService auth, AppColors colors, AppStrings strings) {
     final name = auth.displayName;
     final photo = auth.photoUrl;
@@ -163,6 +190,8 @@ class _AccountPanelState extends State<AccountPanel> {
             ),
           ],
         ),
+        const SizedBox(height: 10),
+        _syncLine(colors, strings),
         const SizedBox(height: 14),
         OutlinedButton.icon(
           key: const ValueKey('account-sign-out'),

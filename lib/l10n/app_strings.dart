@@ -181,6 +181,10 @@ abstract class AppStrings {
   String get accountSignedInAs;
   String get accountSignOut;
   String get accountSignOutNote;
+  String get accountSyncing;
+  String get accountSyncError;
+  String get accountNeverSynced;
+  String accountLastSync(String when);
   String get profilePlaceholderBody;
   String get avatarMaleLabel;
   String get avatarFemaleLabel;

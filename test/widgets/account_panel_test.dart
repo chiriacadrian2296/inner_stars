@@ -4,8 +4,12 @@ import 'package:inner_stars/auth/auth_scope.dart';
 import 'package:inner_stars/auth/auth_service.dart';
 import 'package:inner_stars/l10n/strings_en.dart';
 import 'package:inner_stars/l10n/strings_scope.dart';
+import 'package:inner_stars/sync/remote_store.dart';
+import 'package:inner_stars/sync/sync_scope.dart';
+import 'package:inner_stars/sync/sync_service.dart';
 import 'package:inner_stars/theme/app_theme.dart';
 import 'package:inner_stars/widgets/account_panel.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeAuth extends AuthService {
   _FakeAuth({this.ready = true, this.signedInEmail, this.failSignIn = false});
@@ -21,6 +25,8 @@ class _FakeAuth extends AuthService {
   bool get isSignedIn => signedInEmail != null;
   @override
   String? get email => signedInEmail;
+  @override
+  String? get uid => signedInEmail == null ? null : 'uid-1';
   @override
   String? get displayName => signedInEmail == null ? null : 'Ada Lovelace';
   @override
@@ -118,5 +124,38 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('not available right now'), findsOneWidget);
     expect(find.byKey(const ValueKey('account-sign-in')), findsNothing);
+  });
+
+  testWidgets('signed in: reports the last update, with no sync button', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final auth = _FakeAuth(signedInEmail: 'ada@example.com');
+    final sync = SyncService(
+      account: auth,
+      prefs: prefs,
+      targets: const [],
+      remote: (_) => InMemoryRemoteStore(),
+      now: () => DateTime.utc(2026, 10, 19, 12, 30),
+    );
+    addTearDown(sync.dispose);
+    await tester.pumpWidget(
+      _host(
+        SyncScope(service: sync, child: const AccountPanel()),
+        auth: auth,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Not updated yet'), findsOneWidget);
+
+    await tester.runAsync(sync.syncNow);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Last updated:'), findsOneWidget);
+    // Syncing is automatic: there is nothing to press.
+    expect(
+      find.textContaining(RegExp('sync now', caseSensitive: false)),
+      findsNothing,
+    );
   });
 }

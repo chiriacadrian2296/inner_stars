@@ -419,6 +419,14 @@ class StringsIt implements AppStrings {
   String get accountSignOutNote =>
       'Uscendo, i tuoi dati restano su questo dispositivo e la sincronizzazione si ferma.';
   @override
+  String get accountSyncing => 'Aggiornamento in corso…';
+  @override
+  String get accountSyncError => 'Aggiornamento non riuscito. Riprovo a breve.';
+  @override
+  String get accountNeverSynced => 'Non ancora aggiornato';
+  @override
+  String accountLastSync(String when) => 'Ultimo aggiornamento: $when';
+  @override
   String get profilePlaceholderBody =>
       'Accesso, la tua foto profilo, una breve descrizione di te e la tua '
       'lista amici troveranno posto qui.';
