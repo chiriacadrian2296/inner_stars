@@ -57,7 +57,7 @@ test('the journey and download links are present before JavaScript runs', () => 
     assert.ok(!page.includes('class="hero-actions"'));
     assert.ok(!page.includes('memory-form'));
     assert.ok(page.includes('https://github.com/chiriacadrian2296/inner_stars/releases/latest/download/inner-stars.apk'));
-    assert.ok(page.includes('https://chiriacadrian2296.github.io/inner_stars/app/'));
+    assert.ok(page.includes('https://my.innerstars.app/'));
     assert.ok(!page.includes('id="product-title"') && !page.includes('id="faq-title"') && !page.includes('FAQPage'), path);
   }
 });

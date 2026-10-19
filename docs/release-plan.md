@@ -325,10 +325,15 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
      `CF_PAGES` e il sottopercorso su GitHub Pages. Online su `innerstars-landing.pages.dev`.
      Collegati `innerstars.app` e `www.innerstars.app` (CNAME su Cloudflare DNS); il dominio
      principale risponde già con la landing, i certificati possono impiegare ancora un po’.
-     **Resta:** cambiare i link “Prova” della landing verso `https://my.innerstars.app/`
-     quando la web app è lì.
-   - [ ] **Web app**: Cloudflare non ha Flutter nella build, quindi la compila GitHub Actions e la
-     carica con `wrangler` (serve un token API Cloudflare creato dall’autore).
+     I link “Prova” della landing puntano ora a `https://my.innerstars.app/`.
+   - [x] **Web app** (19 ottobre): Cloudflare non ha Flutter nella build, quindi la compila
+     GitHub Actions (`.github/workflows/deploy-app-cloudflare.yml`, `--base-href /`) e la carica
+     con `wrangler` nel progetto Pages `innerstars-app`. Segreti del repo:
+     `CLOUDFLARE_API_TOKEN` (token limitato a Pages: Edit, creato dall’autore) e
+     `CLOUDFLARE_ACCOUNT_ID`. Prima esecuzione riuscita; `my.innerstars.app` collegato e
+     servito (200, splash dell’app caricato). **Resta:** prova manuale dell’app completa su
+     `my.innerstars.app`; vecchio workflow GitHub Pages (`deploy-web.yml`) ancora attivo
+     da ritirare quando sarà sicuro (B2, Hosting).
 3. Progetto Firebase: abilitare Authentication → Google; creare Firestore in produzione, regione `eur3`.
 4. Registrare le app in Firebase: Android (`app.innerstars` + SHA-1 debug e release) e Web
    (`my.innerstars.app` e `localhost` tra i domini autorizzati). iOS (`app.innerstars`) più avanti.
