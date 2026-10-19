@@ -312,6 +312,14 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
       3 esclusi**, analisi pulita, build web e APK debug riuscite. **Da provare a mano:** accesso
       reale su Android e web, con PIN attivo e senza. **Aperto:** l’onboarding dopo il primo
       accesso (A7); la musica di sottofondo parte già sulla pagina di login.
+- [x] **Versione vecchia dalla cache del browser (scoperto il 19 ottobre sera):** l’autore, dal
+      telefono, è entrato in Galaxy senza login dopo splash e richiesta dell’APK. Causa:
+      Cloudflare serviva `main.dart.js` con `Cache-Control: max-age=14400` (4 ore), quindi il
+      browser riusava la copia precedente al login. Il sito pubblicato era corretto (verificato
+      con un browser pulito). Correzione: `web/_headers` (`Cache-Control: no-cache` per tutto,
+      che il browser traduce in una richiesta con ETag e, se nulla è cambiato, una risposta 304).
+      Il service worker di Flutter è già quello che si autodisinstalla, non c’entra. Chi ha già
+      la copia vecchia deve ricaricare senza cache o cancellare i dati del sito, una volta sola.
 - [~] Pannello Account in Settings. **Decisioni dell’autore (19 ottobre):** prima del login solo
       il pulsante “Accedi con Google” e una frase (i dati restano sul dispositivo, accedendo si
       sincronizzano); al primo sync con dati sia locali sia cloud si **uniscono

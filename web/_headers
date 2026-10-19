@@ -1,0 +1,6 @@
+# Cloudflare Pages: always ask the server whether a file changed (a cheap 304
+# when it did not). Without this, the app's script is reused from the
+# browser's cache for hours after a new version goes live, and an old build
+# (for example one without the login page) keeps opening.
+/*
+  Cache-Control: no-cache
