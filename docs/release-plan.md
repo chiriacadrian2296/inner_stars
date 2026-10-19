@@ -327,8 +327,8 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
       con `curl`: ora `main.dart.js`, `flutter_bootstrap.js` e `index.html` rispondono
       `Cache-Control: no-cache`. Si può rimettere a 4 ore dalla stessa pagina (Caching →
       Configuration), ma tornerebbe il problema.
-- [~] **Web: “Exit the App?” non sempre sul telefono (segnalato dall’autore il 19 ottobre
-      sera):** sul PC il tasto Indietro del browser chiede sempre conferma, su Chrome Android non
+- [x] **Web: “Exit the App?” non sempre sul telefono (segnalato dall’autore il 19 ottobre
+      sera; risolto: l’autore ha confermato che ora funziona sul telefono):** sul PC il tasto Indietro del browser chiede sempre conferma, su Chrome Android non
       sempre. Il meccanismo (`lib/utils/web_back_guard_web.dart`) aggiunge voci alla cronologia
       al primo tocco; se quel tocco arrivava quando la cronologia non era sulla voce di Flutter,
       il codice rinunciava per tutta la sessione. Ora aspetta il tocco successivo. **Non
