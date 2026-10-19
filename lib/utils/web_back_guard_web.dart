@@ -35,6 +35,13 @@ void installWebBackGuard() {
         (type == 'pointerup' && pointerType != 'mouse') ||
         type == 'keydown';
     if (!activates) return;
+    final state = _history['state'];
+    final onFlutterEntry =
+        state.isA<JSObject>() && (state as JSObject)['flutter'] != null;
+    // Not on the engine's entry right now (a page change, a sign-in that
+    // moved the history): wait for the next tap instead of giving up for the
+    // whole session, which used to leave Back unguarded on some phones.
+    if (!onFlutterEntry) return;
     for (final name in const ['pointerdown', 'pointerup', 'keydown']) {
       globalContext.callMethod(
         'removeEventListener'.toJS,
@@ -43,10 +50,6 @@ void installWebBackGuard() {
         true.toJS,
       );
     }
-    final state = _history['state'];
-    final onFlutterEntry =
-        state.isA<JSObject>() && (state as JSObject)['flutter'] != null;
-    if (!onFlutterEntry) return;
     _history.callMethod(
       'pushState'.toJS,
       <String, Object?>{'origin': true, 'state': null}.jsify(),
