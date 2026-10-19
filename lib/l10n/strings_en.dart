@@ -415,7 +415,7 @@ class StringsEn implements AppStrings {
   String get accountSignOut => 'Sign Out';
   @override
   String get accountSignOutNote =>
-      'Signing out keeps your data on this device and stops syncing.';
+      'Signing out takes you back to the login page. Your data stays on this device until a different account signs in.';
   @override
   String get accountSyncing => 'Updating…';
   @override

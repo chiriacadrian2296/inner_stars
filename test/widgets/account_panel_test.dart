@@ -91,7 +91,10 @@ void main() {
     expect(auth.signInCalls, 1);
     expect(find.text('ada@example.com'), findsOneWidget);
     expect(find.byKey(const ValueKey('account-sign-out')), findsOneWidget);
-    expect(find.textContaining('keeps your data on this device'), findsOne);
+    expect(
+      find.textContaining('stays on this device until a different account'),
+      findsOne,
+    );
   });
 
   testWidgets('signing out returns to the sign-in state', (tester) async {

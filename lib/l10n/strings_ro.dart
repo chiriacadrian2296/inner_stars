@@ -417,7 +417,7 @@ class StringsRo implements AppStrings {
   String get accountSignOut => 'Deconectează-te';
   @override
   String get accountSignOutNote =>
-      'La deconectare, datele rămân pe acest dispozitiv și sincronizarea se oprește.';
+      'La deconectare revii la pagina de conectare. Datele rămân pe acest dispozitiv până când se conectează alt cont.';
   @override
   String get accountSyncing => 'Se actualizează…';
   @override

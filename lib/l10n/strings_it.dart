@@ -417,7 +417,7 @@ class StringsIt implements AppStrings {
   String get accountSignOut => 'Esci';
   @override
   String get accountSignOutNote =>
-      'Uscendo, i tuoi dati restano su questo dispositivo e la sincronizzazione si ferma.';
+      'Uscendo torni alla pagina di accesso. I tuoi dati restano su questo dispositivo finché non entra un altro account.';
   @override
   String get accountSyncing => 'Aggiornamento in corso…';
   @override
