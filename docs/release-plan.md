@@ -335,8 +335,22 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
      `my.innerstars.app`; vecchio workflow GitHub Pages (`deploy-web.yml`) ancora attivo
      da ritirare quando sarà sicuro (B2, Hosting).
 3. Progetto Firebase: abilitare Authentication → Google; creare Firestore in produzione, regione `eur3`.
+   - [x] **Fatto il 19 ottobre con l’autore nel browser.** Progetto `Inner Stars`
+     (ID `inner-stars-5e6d6`, numero `331506513097`), piano **Spark**; Gemini e Google Analytics
+     disattivati alla creazione (si possono attivare dopo). Authentication con **Google**
+     abilitato (nome pubblico “Inner Stars”, email di supporto dell’autore). Firestore
+     **(default)**, edizione Standard, **eur3**, modalità produzione (tutto negato finché non
+     scrivo le regole in B2). Backup programmati non attivati: richiedono Blaze.
+   - [ ] **Dominio autorizzato `my.innerstars.app`:** la console non lo lascia aggiungere senza
+     l’upgrade a Identity Platform. ⭐ **Da decidere con l’autore.** Per ora esistono solo i
+     domini predefiniti (`localhost`, `inner-stars-5e6d6.firebaseapp.com`, `.web.app`).
 4. Registrare le app in Firebase: Android (`app.innerstars` + SHA-1 debug e release) e Web
    (`my.innerstars.app` e `localhost` tra i domini autorizzati). iOS (`app.innerstars`) più avanti.
+   - [x] Android `app.innerstars` registrata (ID app `1:331506513097:android:1b30e1073bb8f5b6694918`)
+     con l’**SHA-1 debug** (`AA:FB:B5:03:…:83:A2`). **Manca l’SHA-1 di release**, perché la
+     release è ancora firmata con la chiave debug (vedi B4, firma Android).
+   - [x] Web registrata come “Inner Stars Web” (ID `1:331506513097:web:477a75d3fa3eb360694918`),
+     senza Firebase Hosting (il sito sta su Cloudflare). Il dominio autorizzato resta aperto (3).
 5. Passarmi i file di configurazione (`google-services.json`, `GoogleService-Info.plist`, config web).
 
 ## B2. Lavoro tecnico (in ordine)
