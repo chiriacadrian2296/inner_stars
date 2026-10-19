@@ -323,8 +323,10 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
      collegato al repo `inner_stars` (accesso GitHub limitato a quel solo repo), branch `main`,
      root `landing`, build `npm run build`, output `dist`. `astro.config.mjs` usa la radice con
      `CF_PAGES` e il sottopercorso su GitHub Pages. Online su `innerstars-landing.pages.dev`.
-     **Restano:** collegare `innerstars.app` e `www`; cambiare i link “Prova” della landing
-     verso `https://my.innerstars.app/` quando la web app è lì.
+     Collegati `innerstars.app` e `www.innerstars.app` (CNAME su Cloudflare DNS); il dominio
+     principale risponde già con la landing, i certificati possono impiegare ancora un po’.
+     **Resta:** cambiare i link “Prova” della landing verso `https://my.innerstars.app/`
+     quando la web app è lì.
    - [ ] **Web app**: Cloudflare non ha Flutter nella build, quindi la compila GitHub Actions e la
      carica con `wrangler` (serve un token API Cloudflare creato dall’autore).
 3. Progetto Firebase: abilitare Authentication → Google; creare Firestore in produzione, regione `eur3`.
