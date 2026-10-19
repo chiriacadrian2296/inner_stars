@@ -73,6 +73,15 @@ class SettingsCollection implements SyncCollection {
     'deleted': false,
   };
 
+  /// Removes every synced setting and the bookkeeping about them, so the
+  /// next account starts from its own cloud values. Per-device settings stay.
+  Future<void> clearSynced() async {
+    for (final key in _prefs.getKeys().where(isSynced).toList()) {
+      await _prefs.remove(key);
+    }
+    await _prefs.remove(metaKey);
+  }
+
   @override
   List<SyncRecord> readAll() => [
     for (final e in _readMeta().entries)

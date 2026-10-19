@@ -10,6 +10,9 @@ class _FakePort implements FirestorePort {
   final deleted = <int>[];
 
   @override
+  Stream<void> watchNewest(String collection) => const Stream<void>.empty();
+
+  @override
   Future<int> deleteSome(String collection, int limit) async {
     final bucket = docs[collection] ?? {};
     final ids = bucket.keys.take(limit).toList();

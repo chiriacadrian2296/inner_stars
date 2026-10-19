@@ -681,7 +681,9 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final wide = constraints.maxWidth >= 1000 || (constraints.maxWidth >= 650 && constraints.maxHeight < 600);
+            final wide =
+                constraints.maxWidth >= 1000 ||
+                (constraints.maxWidth >= 650 && constraints.maxHeight < 600);
             // The same space separates preview, panels and the share button.
             const gap = 16.0;
             final gutter = wide ? 20.0 : 12.0;

@@ -165,7 +165,10 @@ class _PreviewPane extends StatelessWidget {
               child: SizedBox(
                 width: canvasWidth,
                 height: canvasWidth / _aspectRatio,
-                child: RepaintBoundary(key: captureKey, child: MediaQuery.withNoTextScaling(child: specimen)),
+                child: RepaintBoundary(
+                  key: captureKey,
+                  child: MediaQuery.withNoTextScaling(child: specimen),
+                ),
               ),
             ),
           ),
@@ -1038,7 +1041,8 @@ class _ContentPhotoState extends State<_ContentPhoto> {
   @override
   void didUpdateWidget(_ContentPhoto oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.url != widget.url || oldWidget.moodboard != widget.moodboard) {
+    if (oldWidget.url != widget.url ||
+        oldWidget.moodboard != widget.moodboard) {
       _load();
     }
   }

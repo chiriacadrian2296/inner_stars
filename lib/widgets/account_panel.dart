@@ -52,6 +52,11 @@ class _AccountPanelState extends State<AccountPanel> {
   Future<void> _signOut(AuthService auth) async {
     setState(() => _busy = true);
     try {
+      // One last update while still signed in, so nothing made on this device
+      // is left only on it. A failure (offline) does not stop signing out.
+      await SyncScope.maybeOf(context)
+          ?.syncNow()
+          .timeout(const Duration(seconds: 15), onTimeout: () {});
       await auth.signOut();
     } finally {
       if (mounted) setState(() => _busy = false);

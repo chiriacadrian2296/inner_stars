@@ -99,6 +99,24 @@ void main() {
     },
   );
 
+  test(
+    'clearSynced removes synced settings and their bookkeeping only',
+    () async {
+      await settings.setLocale('it');
+      await prefs.setDouble('audio-tap-volume', 0.4);
+      await settings.setGalaxyQuality(settings.galaxyQuality);
+      await sync.exportChangesSince(null);
+      expect(prefs.containsKey(SettingsCollection.metaKey), isTrue);
+
+      await sync.clearSynced();
+      expect(prefs.containsKey('settings.locale'), isFalse);
+      expect(prefs.containsKey(SettingsCollection.metaKey), isFalse);
+      // Per-device settings stay.
+      expect(prefs.getDouble('audio-tap-volume'), 0.4);
+      expect(prefs.containsKey('settings.galaxyQuality'), isTrue);
+    },
+  );
+
   test('a fresh device takes a setting the cloud already has', () async {
     final changed = await sync.applyRemote([
       remote('settings.locale', 'ro', DateTime.utc(2026).toIso8601String()),

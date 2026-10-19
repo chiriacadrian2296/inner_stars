@@ -440,13 +440,25 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
       Al riavvio l’app ricorda che c’era un accesso (`auth.wasSignedIn`) e riattiva Firebase
       da sola. Test: 35 in `test/sync` + 7 del pannello; suite **605 superati, 3 esclusi**,
       analisi pulita, build web release e APK debug arm64 riuscite.
+      **Correzioni chieste dall’autore (19 ottobre sera, fatte):**
+      - **Ogni account ha i suoi dati, mai mescolati.** Il dispositivo ricorda a quale account
+        appartengono (`data.owner`). Il primo account che si connette adotta ciò che era stato
+        fatto prima del login (unione automatica, come deciso); se poi entra un altro
+        account, i dati dell’altro vengono **sostituiti** da quelli del nuovo (rimossi dal
+        telefono, impostazioni sincronizzate comprese) e non salgono mai nel suo cloud; il
+        cloud del primo account non viene toccato. Senza modo di svuotare, la sync si rifiuta
+        di partire. Prima dell’uscita l’app fa un ultimo aggiornamento (15 s al massimo) perché
+        nulla resti solo sul telefono. Dopo “Elimina account” i dati diventano adottabili dal
+        prossimo account. Limite noto: ciò che si crea da disconnessi *dopo* l’uscita di un
+        account e prima che entri un altro account diverso viene sostituito insieme al resto.
+      - **Promemoria:** dopo che arriva da un altro dispositivo, viene ri-armato subito
+        (o annullato) invece che al prossimo avvio.
+      - **Impostazioni:** ogni cambio avvisa il servizio, che aggiorna dopo ~5 s; la data è
+        quindi quella della modifica con scarto di pochi secondi.
+      - **Aggiornamenti quasi in tempo reale:** oltre al giro ogni 2 minuti, l’app ascolta
+        Firestore (un solo documento per collezione, quindi una lettura per modifica): quando
+        un altro dispositivo scrive, questo scarica in ~2 s.
       **Note e rischi da tenere presenti:**
-      - Cambiare account Google sullo stesso dispositivo carica i dati locali (rimasti dopo
-        l’uscita) nel nuovo account, come previsto dall’unione automatica.
-      - Le impostazioni sono datate quando il cambio viene rilevato (al più al sync
-        successivo), non nell’istante della modifica.
-      - Un promemoria cambiato da un altro dispositivo viene riprogrammato a questo
-        solo al prossimo avvio (lì l’app ricalcola le notifiche).
       - Media (foto, audio) non ancora sincronizzati: serve il blocco “Media” sotto.
       - Costo: con i limiti gratuiti Spark conta ogni documento letto; i punti di ripresa
         tengono le letture basse, ma da misurare con un uso reale.

@@ -28,6 +28,7 @@ import 'widgets/habit_cycle_scope.dart';
 import 'data/habit_repository.dart';
 import 'data/legacy_constellation_migration.dart';
 import 'data/local_data_migration.dart';
+import 'data/local_data_wipe.dart';
 import 'data/moodboard_repository.dart';
 import 'data/onboarding_prefs.dart';
 import 'data/project_repository.dart';
@@ -95,6 +96,25 @@ Future<void> main() async {
   ]);
   runApp(const InnerStarsApp());
   if (kIsWeb) installWebBackGuard();
+}
+
+/// Re-arms (or cancels) the daily reminder from the current settings, after
+/// sync brought in a change made on another device.
+Future<void> _rearmReminder(
+  SettingsController settings,
+  ReminderService reminders,
+) async {
+  if (!settings.reminderEnabled) {
+    await reminders.cancel();
+    return;
+  }
+  final strings = stringsForLocale(settings.locale);
+  await reminders.scheduleUpcoming(
+    hour: settings.reminderHour,
+    minute: settings.reminderMinute,
+    title: strings.reminderNotificationTitle,
+    bodies: strings.reminderNotificationBodies,
+  );
 }
 
 class InnerStarsApp extends StatefulWidget {
@@ -235,9 +255,33 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
 
       final prefs = await SharedPreferences.getInstance();
       final moodboardRepository = await MoodboardRepository.create();
+      final settingsCollection = SettingsCollection(prefs);
       final syncService = SyncService(
         account: _authService,
         prefs: prefs,
+        // A different account signing in replaces this device's data instead
+        // of merging into it; each account keeps only its own.
+        clearLocalData: () async {
+          await wipeLocalData(
+            prefs: prefs,
+            stars: starRepository,
+            moodboard: moodboardRepository,
+            repositories: [
+              starRepository,
+              projectRepository,
+              habitRepository,
+              habitCompletionRepository,
+              habitCycleRepository,
+              starsShapeRepository,
+              reflectionAnswerRepository,
+              areaVisionRepository,
+              shootingStarWishRepository,
+              moodboardRepository,
+            ],
+          );
+          await settingsCollection.clearSynced();
+          settings.reloadFromStorage();
+        },
         targets: [
           SyncTarget.repository('stars', starRepository),
           SyncTarget.repository('projects', projectRepository),
@@ -252,10 +296,11 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
             shootingStarWishRepository,
           ),
           SyncTarget.repository('moodboard', moodboardRepository),
-          SyncTarget.settings(
-            SettingsCollection(prefs),
-            settings.reloadFromStorage,
-          ),
+          SyncTarget.settings(settingsCollection, () {
+            settings.reloadFromStorage();
+            // A reminder changed on another device must ring here too.
+            unawaited(_rearmReminder(settings, reminderService));
+          }, changes: settings),
         ],
         remote: (uid) => FirestoreRemoteStore(FirebaseFirestorePort(uid)),
       );

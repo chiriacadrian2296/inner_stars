@@ -49,12 +49,17 @@ void main() {
     _Account account, {
     ChangeNotifier? changes,
     Duration debounce = const Duration(milliseconds: 40),
+    Future<void> Function()? clear,
+    String ownerKey = 'data.owner',
   }) => SyncService(
     account: account,
     prefs: prefs,
     targets: [SyncTarget('items', items, changes: changes)],
     remote: (_) => remote,
     debounce: debounce,
+    watchDelay: const Duration(milliseconds: 40),
+    clearLocalData: clear,
+    ownerKey: ownerKey,
     interval: const Duration(hours: 1),
     now: () => clock,
   );
@@ -153,6 +158,7 @@ void main() {
       prefs: prefs,
       targets: [SyncTarget('items', other)],
       remote: (_) => remote,
+      ownerKey: 'data.owner.b',
       now: () => clock,
     );
     await b.syncNow();
@@ -166,6 +172,124 @@ void main() {
     a.dispose();
     b.dispose();
   });
+
+  group('one account per set of data', () {
+    test(
+      'a different account replaces the data instead of receiving it',
+      () async {
+        // Account A's data, synced.
+        final a = build(_Account('uid-a'));
+        await items.applyRemote([rec('a-private', clock)]);
+        await a.syncNow();
+        a.dispose();
+        final cloudA = Map.of(remote.records('items'));
+
+        // Account B has its own cloud copy; its device is the same phone.
+        final cloudB = InMemoryRemoteStore();
+        await cloudB.push('items', [rec('b-data', clock)]);
+        var cleared = 0;
+        final b = SyncService(
+          account: _Account('uid-b'),
+          prefs: prefs,
+          targets: [SyncTarget('items', items)],
+          remote: (_) => cloudB,
+          clearLocalData: () async {
+            cleared++;
+            await prefs.remove('items');
+          },
+          now: () => clock,
+        );
+        await b.syncNow();
+
+        expect(cleared, 1);
+        // B sees only B's data, and none of A's reached B's cloud.
+        expect(items.readAll().map((r) => r['id']), ['b-data']);
+        expect(cloudB.records('items').keys, {'b-data'});
+        // A's cloud is exactly as it was.
+        expect(remote.records('items'), cloudA);
+        b.dispose();
+      },
+    );
+
+    test('without a way to clear, it refuses to mix', () async {
+      final a = build(_Account('uid-a'));
+      await items.applyRemote([rec('a-private', clock)]);
+      await a.syncNow();
+      a.dispose();
+
+      final cloudB = InMemoryRemoteStore();
+      final b = SyncService(
+        account: _Account('uid-b'),
+        prefs: prefs,
+        targets: [SyncTarget('items', items)],
+        remote: (_) => cloudB,
+        now: () => clock,
+      );
+      await b.syncNow();
+      expect(b.status, SyncStatus.error);
+      expect(cloudB.records('items'), isEmpty);
+      expect(items.readAll().map((r) => r['id']), ['a-private']);
+      b.dispose();
+    });
+
+    test('the same account coming back keeps its data', () async {
+      var cleared = 0;
+      final a = build(_Account('uid-a'), clear: () async => cleared++);
+      await items.applyRemote([rec('mine', clock)]);
+      await a.syncNow();
+      await a.syncNow();
+      expect(cleared, 0);
+      expect(items.readAll(), hasLength(1));
+      a.dispose();
+    });
+
+    test(
+      'data made before any sign-in is adopted by the first account',
+      () async {
+        var cleared = 0;
+        final a = build(_Account('uid-a'), clear: () async => cleared++);
+        await items.applyRemote([rec('made-offline', clock)]);
+        await a.syncNow();
+        expect(cleared, 0);
+        expect(remote.records('items').keys, {'made-offline'});
+        a.dispose();
+      },
+    );
+
+    test(
+      'after the account is deleted the next one can adopt the data',
+      () async {
+        var cleared = 0;
+        final a = build(_Account('uid-a'), clear: () async => cleared++);
+        await items.applyRemote([rec('mine', clock)]);
+        await a.syncNow();
+        await a.deleteCloudData();
+        a.dispose();
+
+        final again = build(_Account('uid-new'), clear: () async => cleared++);
+        await again.syncNow();
+        expect(cleared, 0);
+        expect(remote.records('items').keys, {'mine'});
+        again.dispose();
+      },
+    );
+  });
+
+  test(
+    'a write by another device is pulled within seconds, with no timer wait',
+    () async {
+      final service = build(_Account('uid-1'));
+      service.start();
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+      expect(items.readAll(), isEmpty);
+
+      // Another device writes; this one is told and pulls by itself.
+      await remote.push('items', [rec('from-elsewhere', clock)]);
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      expect(items.readAll().map((r) => r['id']), ['from-elsewhere']);
+      service.dispose();
+    },
+  );
 
   test('pausedWhile holds syncing off and asks for one afterwards', () async {
     final service = build(_Account('uid-1'));

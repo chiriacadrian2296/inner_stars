@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'merge.dart';
 
 /// What a pull returned: the records, and the server-side position to resume
@@ -28,6 +30,12 @@ abstract class RemoteStore {
   /// Removes every document of [collection] (account deletion). Real
   /// removal, not tombstones.
   Future<void> deleteCollection(String collection);
+
+  /// Emits whenever something in [collection] was written, by any device, so
+  /// the app can pull within seconds instead of waiting for its next round.
+  /// May also emit once on subscribing and after the app's own writes; pulling
+  /// is idempotent. Stores that cannot watch return an empty stream.
+  Stream<void> watch(String collection) => const Stream<void>.empty();
 }
 
 class InMemoryRemoteStore implements RemoteStore {
@@ -35,6 +43,13 @@ class InMemoryRemoteStore implements RemoteStore {
 
   /// The server clock: moves forward by a second on every push.
   DateTime serverTime = DateTime.utc(2026, 1, 1);
+
+  final _watchers = <String, StreamController<void>>{};
+
+  @override
+  Stream<void> watch(String collection) => _watchers
+      .putIfAbsent(collection, () => StreamController<void>.broadcast())
+      .stream;
 
   /// When set, the next call throws it, to simulate being offline.
   Object? failNext;
@@ -72,6 +87,7 @@ class InMemoryRemoteStore implements RemoteStore {
   Future<void> deleteCollection(String collection) async {
     _check();
     data.remove(collection);
+    _watchers[collection]?.add(null);
   }
 
   @override
@@ -85,5 +101,6 @@ class InMemoryRemoteStore implements RemoteStore {
         at: serverTime,
       );
     }
+    _watchers[collection]?.add(null);
   }
 }

@@ -28,10 +28,12 @@ class SyncTarget {
       changes = repository;
 
   /// The settings, reloaded into the running app when remote values arrive.
-  SyncTarget.settings(SettingsCollection settings, VoidCallback onApplied)
-    : name = 'settings',
-      collection = _CallbackCollection(settings, onApplied),
-      changes = null;
+  SyncTarget.settings(
+    SettingsCollection settings,
+    VoidCallback onApplied, {
+    this.changes,
+  }) : name = 'settings',
+       collection = _CallbackCollection(settings, onApplied);
 
   final String name;
   final SyncCollection collection;
@@ -83,7 +85,10 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
     required SharedPreferences prefs,
     required List<SyncTarget> targets,
     required RemoteStore Function(String uid) remote,
+    this.clearLocalData,
+    this.ownerKey = 'data.owner',
     this.debounce = const Duration(seconds: 5),
+    this.watchDelay = const Duration(seconds: 2),
     this.interval = const Duration(minutes: 2),
     DateTime Function()? now,
   }) : _account = account,
@@ -98,7 +103,15 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
   final SharedPreferences _prefs;
   final List<SyncTarget> _targets;
   final RemoteStore Function(String uid) _remoteFactory;
+
+  /// Empties this device's content (and synced settings). Called when a
+  /// different account signs in, so data of two accounts never mixes. Without
+  /// it, a sync that finds another account's data refuses to run.
+  final Future<void> Function()? clearLocalData;
   final Duration debounce;
+
+  /// How long after another device's write this one waits before pulling.
+  final Duration watchDelay;
   final Duration interval;
   final DateTime Function() _now;
 
@@ -113,6 +126,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
   Timer? _debounceTimer;
   Timer? _retryTimer;
   Timer? _periodic;
+  final List<StreamSubscription<void>> _watchers = [];
 
   SyncStatus get status => _status;
   Object? get lastError => _lastError;
@@ -144,12 +158,34 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
     _lastUid = uid;
     _failures = 0;
     _retryTimer?.cancel();
+    _stopWatching();
     if (uid == null) {
       _debounceTimer?.cancel();
       _setStatus(SyncStatus.idle);
     } else {
+      _startWatching(uid);
       schedule(const Duration(milliseconds: 300));
     }
+  }
+
+  /// Listens for writes by other devices so their changes arrive within
+  /// seconds. A burst of events becomes one sync through the debounce.
+  void _startWatching(String uid) {
+    final remote = _remoteFactory(uid);
+    for (final target in _targets) {
+      _watchers.add(
+        remote.watch(target.name).listen((_) {
+          if (!_running) schedule(watchDelay);
+        }, onError: (Object _) {}),
+      );
+    }
+  }
+
+  void _stopWatching() {
+    for (final subscription in _watchers) {
+      unawaited(subscription.cancel());
+    }
+    _watchers.clear();
   }
 
   void _onLocalChange() {
@@ -187,6 +223,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
     _retryTimer?.cancel();
     _setStatus(SyncStatus.syncing);
     try {
+      await _claimDataFor(uid);
       final remote = _remoteFactory(uid);
       final startedAt = _now().toUtc();
       for (final target in _targets) {
@@ -275,7 +312,34 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
       await remote.deleteCollection(target.name);
     }
     await resetPositions();
+    await releaseOwnership();
   }
+
+  /// Where the owning account is remembered. Only tests, which run two
+  /// "devices" over one preferences store, use another name.
+  final String ownerKey;
+
+  /// A device's data belongs to one account. The first account to sync adopts
+  /// whatever was made before any sign-in; if a different account signs in
+  /// later, the previous one's data is replaced by the new account's own,
+  /// never merged into it. (The previous account keeps its copy in its cloud.)
+  Future<void> _claimDataFor(String uid) async {
+    final owner = _prefs.getString(ownerKey);
+    if (owner == uid) return;
+    if (owner != null) {
+      final clear = clearLocalData;
+      if (clear == null) {
+        throw StateError('This device holds the data of another account');
+      }
+      await clear();
+      await resetPositions();
+    }
+    await _prefs.setString(ownerKey, uid);
+  }
+
+  /// Lets the next account adopt what is on the device (after the account that
+  /// owned it was deleted).
+  Future<void> releaseOwnership() => _prefs.remove(ownerKey);
 
   DateTime? _readTime(String key) {
     final raw = _prefs.getString(key);
@@ -296,6 +360,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
         target.changes?.removeListener(_onLocalChange);
       }
     }
+    _stopWatching();
     _debounceTimer?.cancel();
     _retryTimer?.cancel();
     _periodic?.cancel();

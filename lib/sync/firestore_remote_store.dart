@@ -23,6 +23,9 @@ abstract class FirestorePort {
   /// Deletes up to [limit] documents of [collection]; returns how many it
   /// deleted (0 when the collection is empty).
   Future<int> deleteSome(String collection, int limit);
+
+  /// Emits when the newest document of [collection] changes.
+  Stream<void> watchNewest(String collection);
 }
 
 class RemoteDocWrite {
@@ -67,6 +70,9 @@ class FirestoreRemoteStore implements RemoteStore {
     }
     return RemoteChanges(records, newest);
   }
+
+  @override
+  Stream<void> watch(String collection) => _port.watchNewest(collection);
 
   @override
   Future<void> deleteCollection(String collection) async {
@@ -126,6 +132,17 @@ class FirebaseFirestorePort implements FirestorePort {
         ),
     ];
   }
+
+  /// One document is enough: any write by any device makes it the newest, so
+  /// each change costs a single read rather than a read per changed document.
+  @override
+  Stream<void> watchNewest(String collection) =>
+      _collection(collection)
+          .orderBy('_syncedAt', descending: true)
+          .limit(1)
+          .snapshots()
+          .map<void>((_) {})
+          .handleError((Object _) {});
 
   @override
   Future<int> deleteSome(String collection, int limit) async {
