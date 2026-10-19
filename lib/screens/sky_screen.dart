@@ -113,6 +113,7 @@ import 'constellation_screen.dart';
 import 'shooting_stars_screen.dart';
 import 'star_form_screen.dart';
 import 'star_reader_screen.dart';
+import '../debug/dev_tools.dart';
 import 'light_screen.dart';
 import 'today_habits_screen.dart' show openTodayHabits;
 import 'ui_sandbox_screen.dart';
@@ -5690,8 +5691,11 @@ class _SkyScreenState extends State<SkyScreen>
                                       ),
                                       // Development builds only (see
                                       // [kDevTools]).
-                                      onUiSandbox: () =>
-                                          _selectQuickAccess(_openUiSandbox),
+                                      onUiSandbox: kDevTools
+                                          ? () => _selectQuickAccess(
+                                              _openUiSandbox,
+                                            )
+                                          : null,
                                       onPressChanged: _setMenuControlPressed,
                                     ),
                                   ),

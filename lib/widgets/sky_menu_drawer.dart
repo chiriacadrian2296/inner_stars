@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../debug/dev_tools.dart';
+
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hint_kit/hint_kit.dart';
 
@@ -580,79 +582,82 @@ class SkyMenuContent extends StatelessWidget {
           ),
         ],
 
-        if (!detailed) Divider(color: colors.nightBorder, height: 1),
-        sectionHeader(strings.menuLabSection, 7),
-        if (!detailed) const SizedBox(height: 8),
-        entry(
-          index: 7,
-          icon: Icons.nightlight_round,
-          label: strings.menuMoonLab,
-          description: strings.menuMoonLabDescription,
-          onTap: onMoonLab,
-        ),
-        if (onCardBackLab != null)
+        // Internal labs: development builds only (see [kDevTools]).
+        if (kDevTools) ...[
+          if (!detailed) Divider(color: colors.nightBorder, height: 1),
+          sectionHeader(strings.menuLabSection, 7),
+          if (!detailed) const SizedBox(height: 8),
           entry(
-            index: 8,
-            icon: Icons.flip_rounded,
-            label: 'Card back lab',
-            description: 'Statistiche dietro le card e i tooltip.',
-            onTap: onCardBackLab!,
+            index: 7,
+            icon: Icons.nightlight_round,
+            label: strings.menuMoonLab,
+            description: strings.menuMoonLabDescription,
+            onTap: onMoonLab,
           ),
-        if (onConstellationLab != null)
-          entry(
-            index: 9,
-            icon: Icons.hub_outlined,
-            label: 'Constellation lab',
-            description:
-                'Confronti visivi della costellazione e delle sue schede.',
-            onTap: onConstellationLab!,
-          ),
-        if (onShareLab != null)
-          entry(
-            index: 10,
-            icon: Icons.ios_share_outlined,
-            label: 'Share lab',
-            description:
-                'Template per categoria e opzioni grafiche di condivisione.',
-            onTap: onShareLab!,
-          ),
-        if (_kShowOtherLabEntries && onBadgeLab != null)
-          entry(
-            index: 10,
-            icon: Icons.straighten_rounded,
-            label: 'Badge lab',
-            onTap: onBadgeLab!,
-          ),
-        if (_kShowOtherLabEntries && onUiStudiesLab != null)
-          entry(
-            index: 11,
-            icon: Icons.inventory_2_outlined,
-            label: 'UI studies lab',
-            onTap: onUiStudiesLab!,
-          ),
-        if (_kShowOtherLabEntries && onSoundLab != null)
-          entry(
-            index: 12,
-            icon: Icons.music_note_outlined,
-            label: 'Sound lab',
-            onTap: onSoundLab!,
-          ),
-        if (_kShowOtherLabEntries && onAreaIconLab != null)
-          entry(
-            index: 8,
-            icon: Icons.diversity_1,
-            label: strings.menuAreaIconLab,
-            description: strings.menuAreaIconLabDescription,
-            onTap: onAreaIconLab!,
-          ),
-        if (_kShowOtherLabEntries && onFabIconLab != null)
-          entry(
-            index: 9,
-            icon: Icons.add_circle_outline,
-            label: 'FAB icon lab',
-            description: 'Candidate icons for the Sky add button.',
-            onTap: onFabIconLab!,
-          ),
+          if (onCardBackLab != null)
+            entry(
+              index: 8,
+              icon: Icons.flip_rounded,
+              label: 'Card back lab',
+              description: 'Statistiche dietro le card e i tooltip.',
+              onTap: onCardBackLab!,
+            ),
+          if (onConstellationLab != null)
+            entry(
+              index: 9,
+              icon: Icons.hub_outlined,
+              label: 'Constellation lab',
+              description:
+                  'Confronti visivi della costellazione e delle sue schede.',
+              onTap: onConstellationLab!,
+            ),
+          if (onShareLab != null)
+            entry(
+              index: 10,
+              icon: Icons.ios_share_outlined,
+              label: 'Share lab',
+              description:
+                  'Template per categoria e opzioni grafiche di condivisione.',
+              onTap: onShareLab!,
+            ),
+          if (_kShowOtherLabEntries && onBadgeLab != null)
+            entry(
+              index: 10,
+              icon: Icons.straighten_rounded,
+              label: 'Badge lab',
+              onTap: onBadgeLab!,
+            ),
+          if (_kShowOtherLabEntries && onUiStudiesLab != null)
+            entry(
+              index: 11,
+              icon: Icons.inventory_2_outlined,
+              label: 'UI studies lab',
+              onTap: onUiStudiesLab!,
+            ),
+          if (_kShowOtherLabEntries && onSoundLab != null)
+            entry(
+              index: 12,
+              icon: Icons.music_note_outlined,
+              label: 'Sound lab',
+              onTap: onSoundLab!,
+            ),
+          if (_kShowOtherLabEntries && onAreaIconLab != null)
+            entry(
+              index: 8,
+              icon: Icons.diversity_1,
+              label: strings.menuAreaIconLab,
+              description: strings.menuAreaIconLabDescription,
+              onTap: onAreaIconLab!,
+            ),
+          if (_kShowOtherLabEntries && onFabIconLab != null)
+            entry(
+              index: 9,
+              icon: Icons.add_circle_outline,
+              label: 'FAB icon lab',
+              description: 'Candidate icons for the Sky add button.',
+              onTap: onFabIconLab!,
+            ),
+        ],
 
         // In [detailed] mode (the modal), Settings is just one more
         // section in the same scrollable list as everything else —

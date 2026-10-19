@@ -4,6 +4,9 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+
+import '../debug/dev_tools.dart';
+
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -46,6 +49,11 @@ import 'tutorials_screen.dart';
 /// (`OnboardingScreen` and the `_push` call are both untouched), just not
 /// drawn.
 const _kShowOnboarding = false;
+
+/// Parks the Customization, Passkey and Social sections, sketched in ahead
+/// of the systems behind them existing (see [_PlaceholderPanel]). A public
+/// build shouldn't show "coming soon" panels; flip on to restore.
+const _kShowPlaceholderSections = false;
 
 /// Settings, opened from the Sky's own side menu — the drawer carries only
 /// one entry for it, everything else here is a section of this one page.
@@ -619,16 +627,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
                   ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: _openSoundLab,
-                      icon: const Icon(Icons.graphic_eq, size: 18),
-                      label: AppButtonLabel(
-                        strings.quickSettingsOpenSoundLabAction,
+                  if (kDevTools)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: _openSoundLab,
+                        icon: const Icon(Icons.graphic_eq, size: 18),
+                        label: AppButtonLabel(
+                          strings.quickSettingsOpenSoundLabAction,
+                        ),
                       ),
                     ),
-                  ),
                   const SizedBox(height: 28),
 
                   StaggeredEntrance(
@@ -726,47 +735,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 28),
 
-                  StaggeredEntrance(
-                    index: 6,
-                    child: _SectionLabel(strings.customizationSection),
-                  ),
-                  const SizedBox(height: 10),
-                  StaggeredEntrance(
-                    index: 6,
-                    child: _PlaceholderPanel(
-                      icon: Icons.palette_outlined,
-                      body: strings.customizationPlaceholderBody,
+                  if (_kShowPlaceholderSections) ...[
+                    StaggeredEntrance(
+                      index: 6,
+                      child: _SectionLabel(strings.customizationSection),
                     ),
-                  ),
-                  const SizedBox(height: 28),
+                    const SizedBox(height: 10),
+                    StaggeredEntrance(
+                      index: 6,
+                      child: _PlaceholderPanel(
+                        icon: Icons.palette_outlined,
+                        body: strings.customizationPlaceholderBody,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
 
-                  StaggeredEntrance(
-                    index: 7,
-                    child: _SectionLabel(strings.passkeySection),
-                  ),
-                  const SizedBox(height: 10),
-                  StaggeredEntrance(
-                    index: 7,
-                    child: _PlaceholderPanel(
-                      icon: Icons.key_outlined,
-                      body: strings.passkeyPlaceholderBody,
+                    StaggeredEntrance(
+                      index: 7,
+                      child: _SectionLabel(strings.passkeySection),
                     ),
-                  ),
-                  const SizedBox(height: 28),
+                    const SizedBox(height: 10),
+                    StaggeredEntrance(
+                      index: 7,
+                      child: _PlaceholderPanel(
+                        icon: Icons.key_outlined,
+                        body: strings.passkeyPlaceholderBody,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
 
-                  StaggeredEntrance(
-                    index: 8,
-                    child: _SectionLabel(strings.socialSection),
-                  ),
-                  const SizedBox(height: 10),
-                  StaggeredEntrance(
-                    index: 8,
-                    child: _PlaceholderPanel(
-                      icon: Icons.groups_outlined,
-                      body: strings.socialPlaceholderBody,
+                    StaggeredEntrance(
+                      index: 8,
+                      child: _SectionLabel(strings.socialSection),
                     ),
-                  ),
-                  const SizedBox(height: 28),
+                    const SizedBox(height: 10),
+                    StaggeredEntrance(
+                      index: 8,
+                      child: _PlaceholderPanel(
+                        icon: Icons.groups_outlined,
+                        body: strings.socialPlaceholderBody,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                  ],
 
                   StaggeredEntrance(
                     index: 9,
@@ -878,15 +889,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       },
                     ),
                   ),
-                  // Dev tooling (seed/reset data) — shown in every build,
-                  // debug and release alike, so it stays available for
-                  // hands-on testing on a release install too, not just in
-                  // a debug build. Each button carries its own panel
+                  // Dev tooling (seed/reset data) — development builds only (see
+                  // [kDevTools]). Each button carries its own panel
                   // background (see [_debugButtonStyle]) so it reads as
                   // tappable rather than as a stray line of text; each is
                   // [Expanded] so together they fill the row edge to edge
                   // instead of leaving empty space beside them.
-                  ...[
+                  if (kDevTools) ...[
                     const SizedBox(height: 28),
                     StaggeredEntrance(
                       index: 10,

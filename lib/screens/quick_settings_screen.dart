@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../debug/dev_tools.dart';
+
 import '../audio/audio_service.dart';
 import '../l10n/strings_scope.dart';
 import '../settings/settings_controller.dart';
@@ -149,24 +151,25 @@ class _QuickSettingsScreenState extends State<QuickSettingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    StaggeredEntrance(
-                      index: 1,
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton.icon(
-                          onPressed: _openSoundLab,
-                          icon: Icon(
-                            Icons.graphic_eq,
-                            size: 18,
-                            color: colors.gold,
-                          ),
-                          label: AppButtonLabel(
-                            strings.quickSettingsOpenSoundLabAction,
-                            color: colors.gold,
+                    if (kDevTools)
+                      StaggeredEntrance(
+                        index: 1,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: _openSoundLab,
+                            icon: Icon(
+                              Icons.graphic_eq,
+                              size: 18,
+                              color: colors.gold,
+                            ),
+                            label: AppButtonLabel(
+                              strings.quickSettingsOpenSoundLabAction,
+                              color: colors.gold,
+                            ),
                           ),
                         ),
                       ),
-                    ),
                     const SizedBox(height: 24),
 
                     StaggeredEntrance(
