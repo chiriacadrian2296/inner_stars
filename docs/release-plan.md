@@ -534,6 +534,16 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
 ## B4. Store e pubblicazione
 
 - [x] **Piattaforme della prima uscita**: Android e web (landing + web app). iOS in futuro. Costo: Play Store 25 € una tantum.
+- [ ] **APK scaricabile dalla landing — decisione dell’autore (19 ottobre sera): non
+      aggiornarlo ora.** Il pulsante della landing scarica `inner-stars.apk` dalla release
+      GitHub `v0.1.0+2`, che è del **4 ottobre**: prima di login, sincronizzazione e cambio di
+      application id, quindi vecchio. Verrà sostituito quando l’app sarà su Play Store,
+      mettendo **direttamente il link di Play** nella landing (`Landing.astro`, `Journey.astro`
+      e `SiteHeader.astro` puntano oggi all’APK GitHub; la richiesta di scaricare l’APK dal
+      browser sul telefono si rivedrà allo stesso momento). Nota tecnica: un APK costruito
+      fuori da questo PC non funzionerebbe con il login Google finché la firma di release non
+      è registrata in Firebase (l’SHA-1 di release manca, vedi sotto), e le build di release
+      contengono ancora il pulsante temporaneo dei dati di esempio (A5).
 - [ ] **Firma Android per la release**: verificare che la chiave di firma (keystore) esista, sia
       salvata al sicuro e che l'impronta SHA-1 di release sia registrata in Firebase.
       Controllo del 19 ottobre: `android/app/build.gradle.kts` firma ancora la release
