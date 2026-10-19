@@ -6,10 +6,6 @@ import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 
-import 'debug/dev_tools.dart';
-import 'debug/frame_rate_limiter.dart'; // TEMPORARY
-import 'debug/frame_timing_probe.dart'; // TEMPORARY
-
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hint_kit/hint_kit.dart';
@@ -86,11 +82,6 @@ Future<void> main() async {
   ]);
   runApp(const InnerStarsApp());
   if (kIsWeb) installWebBackGuard();
-  // TEMPORARY measurement tools: development builds only.
-  if (kDevTools) {
-    startFrameTimingProbe(); // Galaxy optimization measurements.
-    installFrameRateLimiter(); // 40/30 fps smoothness test.
-  }
 }
 
 class InnerStarsApp extends StatefulWidget {

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../debug/dev_tools.dart';
-import '../debug/frame_rate_limiter.dart';
 import '../l10n/strings_scope.dart';
 import '../models/galaxy_quality.dart';
 import '../settings/settings_controller.dart';
@@ -47,29 +45,6 @@ class GalaxyQualityPicker extends StatelessWidget {
             strings.galaxyQualityDescription,
             style: TextStyle(color: colors.muted, fontSize: 12.5),
           ),
-          // TEMPORARY — 40/30 fps smoothness test, see frame_rate_limiter.
-          // Development builds only.
-          if (kDevTools) ...[
-            const SizedBox(height: 16),
-            Text(
-              'FPS Limit (Test)',
-              style: TextStyle(color: colors.muted, fontSize: 12.5),
-            ),
-            const SizedBox(height: 8),
-            ValueListenableBuilder<int>(
-              valueListenable: frameRateLimit,
-              builder: (context, limit, _) => SegmentedButton<int>(
-                segments: const [
-                  ButtonSegment(value: 0, label: Text('Free')),
-                  ButtonSegment(value: 40, label: Text('40')),
-                  ButtonSegment(value: 30, label: Text('30')),
-                ],
-                selected: {limit},
-                onSelectionChanged: (selection) =>
-                    frameRateLimit.value = selection.first,
-              ),
-            ),
-          ],
         ],
       ),
     );

@@ -15,17 +15,10 @@ Firebase, hosting, privacy e store (parte B), infine la rifinitura (parte C).
 
 ## Da rivedere con te (indice delle ⭐)
 
-1. Dati per la sync: limite degli elementi della moodboard per area (proposta 12).
-2. Riflessioni: come si raggiungono l'elenco e "Vedi riflessione", archiviare o eliminare, ordine.
-3. Pagina di personalizzazione della scheda da condividere.
-4. Limite di frame rate (Free/40/30) e sonde TEMPORARY.
-5. Quali impostazioni si sincronizzano.
-6. Cosa mostrare nel pannello Account di Settings prima del login, e come cancellare i dati
-   locali in release finché non c'è il login.
-7. Piattaforme della prima uscita (web, Android, iOS).
-8. Strumento per la segnalazione degli errori.
-9. Tutorial: cosa resta nell'app prima di rivederli.
-10. File dei lab nella build pubblica: pesano abbastanza da toglierli?
+1. Blocco app e promemoria anche sul web: cosa è possibile e cosa vuoi esattamente (A6).
+2. Cosa mostrare nel pannello Account di Settings prima del login, e come cancellare i dati
+   locali in release finché non c'è il login (A6).
+3. Tutorial: cosa resta nell'app prima di rivederli (parte C).
 
 ## 0. Decisioni prese
 
@@ -44,6 +37,19 @@ Firebase, hosting, privacy e store (parte B), infine la rifinitura (parte C).
 - Comete: la frequenza attuale (`kCometPeriodScale = 0.45`) è quella definitiva.
 - Sound Lab: resta nelle build di sviluppo; idea futura: pacchetti di suoni a pagamento.
 - Backup dei dati locali / export JSON: non serve per ora, l'app la usa solo l'autore.
+- Moodboard: massimo **12 elementi per area**, rigido anche in locale.
+- Condivisione: ogni "Condividi" apre la pagina di personalizzazione già presente nel Share Lab;
+  il tipo di contenuto non è più un parametro ma è automatico in base a ciò da cui si condivide.
+- Frame rate: **Free**. Limitatore e sonde dei frame eliminati dal codice.
+- Prima uscita: **Android e web** (con landing page e web app). iOS in futuro, senza data.
+- Build pubblica: nessun file dei lab dentro.
+- Riflessioni: l'elenco sta nella sezione Riflessioni di ogni area (quindi già raggruppato per
+  area); aprendone una si vede a tutta pagina con condividi, modifica, elimina; l'eliminazione è
+  definitiva (nessun archivio).
+- Impostazioni sincronizzate: tutte, **tranne** qualità della Galaxy e volume audio, che restano
+  per dispositivo.
+- Segnalazione degli errori: sì, con Firebase Crashlytics (vedi B4 per il web).
+- Blocco app (PIN) e promemoria giornaliero vanno aggiunti anche sul web.
 
 ---
 
@@ -69,7 +75,7 @@ Firebase, hosting, privacy e store (parte B), infine la rifinitura (parte C).
 
 ## A2. Dati pronti per la sincronizzazione
 
-Nessuna dipendenza esterna; si può fare subito. **Prima di partire parlare del punto ⭐.**
+Nessuna dipendenza esterna; si può fare subito, nessuna domanda aperta.
 
 - [ ] UUID v4 (`uuid`) per Star, Project, Habit, HabitCompletion, HabitCycle, StarsShape;
       riferimenti incrociati a stringa (~330 occorrenze in 34 file).
@@ -80,9 +86,9 @@ Nessuna dipendenza esterna; si può fare subito. **Prima di partire parlare del 
 - [ ] Flag `deleted` (tombstone) al posto delle cancellazioni vere: progetti, completion, cicli,
       forme, risposte/riflessioni, visioni, moodboard e reset. Le UI filtrano `deleted`.
 - [ ] Dati per area (visioni, desiderio): record `{value, updatedAt, deleted}` per chiave.
-- [ ] ⭐ Moodboard: un record per elemento con `{updatedAt, deleted}`, non più una lista JSON per
-      area. Rimuovere la possibilità di aggiungere video; limite rigido di elementi per area, anche
-      in locale (proposta: 12 — **da confermare**).
+- [ ] Moodboard: un record per elemento con `{updatedAt, deleted}`, non più una lista JSON per
+      area. Rimuovere la possibilità di aggiungere video; limite rigido di **12 elementi per area**,
+      anche in locale (la UI non permette di aggiungerne oltre).
 - [ ] Test di migrazione e tombstone.
 
 ## A3. Nuova funzione: Riflessioni
@@ -104,38 +110,48 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
   o la scelta di un estratto.
 - **Achievement: dopo la v1**, progettati per tutta l'app; con riflessioni libere il criterio cambia
   (es. "N riflessioni in un'area").
-- [ ] ⭐ **Da definire con te prima di costruire**: dove vive l'elenco delle riflessioni (pagina
-      dell'area, menu, o entrambi); come si apre "Vedi riflessione" e cosa contiene il suo dock
-      (sul modello di "Vedi stella": statistiche/modifica/archivia insieme, Fly ultima a destra);
-      se una riflessione si archivia o si elimina; come sono ordinate; come appaiono i
-      suggerimenti nel form di creazione.
+- **Decisioni su elenco e "Vedi riflessione":**
+  - L'elenco sta nella **sezione Riflessioni di ogni area** (`AreaReflectionsScreen`), quindi è già
+    raggruppato per area; non c'è un elenco globale nel menu.
+  - "Vedi riflessione" a tutta pagina, sul modello di "Vedi stella", con i pulsanti in basso:
+    **condividi, modifica, elimina**. Come negli altri "Vedi", Fly (torna alla Galaxy) resta l'ultima
+    azione a destra, da sola.
+  - **Elimina** è definitivo, senza archivio (in sync diventa un tombstone, vedi A2).
+  - Ordine nell'elenco di un'area: dalla più recente (da riconfermare vedendola).
+- [ ] Costruire: modello, elenco per area con "nuova riflessione" (libera o da suggerimento),
+      "Vedi riflessione", migrazione delle risposte esistenti, condivisione come card.
 
 ## A4. Pagina di personalizzazione della scheda da condividere
 
-- [ ] ⭐ Una pagina unica per scegliere cosa mostrare e come, valida per tutte le card condivisibili
-      (vittoria, obiettivo, stella accesa, pulsar, costellazione, contenuto d'area, riflessione).
-      **Da progettare insieme prima di implementare**: cosa è personalizzabile per tipo di card,
-      cosa include di default, come funziona l'anteprima.
+- [ ] Ogni volta che si condivide qualcosa (vittoria, obiettivo, stella accesa, pulsar,
+      costellazione, contenuto d'area, riflessione) si apre **la pagina che oggi è nel Share Lab**
+      (`lib/screens/share_lab_screen.dart`, `share_lab_page.dart`). Il tipo di contenuto non è più
+      un parametro che si sceglie: è automatico in base a ciò da cui si preme "Condividi".
+- [ ] Sostituisce l'attuale flusso di anteprima (`share_preview_screen.dart`); il Share Lab come
+      strumento di sviluppo resta dietro `kDevTools`.
+- [ ] Di default la card di una riflessione mostra titolo/domanda, area e testo (vedi A3).
 
 ## A5. Pulizia residua
 
-- [ ] ⭐ Limite di frame rate: scegliere Free/40/30; poi togliere le sonde TEMPORARY di
-      `lib/main.dart` (`startFrameTimingProbe()`, `installFrameRateLimiter()`; file in
-      `lib/debug/`), la riga "FPS Limit" e il worktree di scratch del profiling. Oggi sono solo
-      dietro `kDevTools`.
+- [x] Frame rate: scelto **Free**. Limitatore, sonde e riga "FPS Limit" eliminati dal codice; resta da ripulire il worktree di scratch `baseline` del vecchio profiling (`git worktree list`).
 - [ ] Sound Lab: verificare che i controlli audio che servono all'utente (volume, musica di
       sottofondo) esistano anche fuori dal Sound Lab, ora che nelle build pubbliche non c'è.
 - [ ] Testi scritti a mano in italiano da portare nelle stringhe localizzate: i dock di Vedi
       costellazione ("Nuova stella", "Condividi", "Modifica", "Elimina") e ogni altra schermata che
       resta visibile in release.
-- [ ] ⭐ File dei lab nella build pubblica: valutare se pesano abbastanza da escluderli.
+- [ ] Build pubblica senza lab: con `kDevTools` falso il codice dei lab viene tolto in release; verificare costruendo la release senza `DEV_TOOLS` e controllando anche che non restino asset usati solo dai lab.
 - [ ] Provare sul telefono quanto fatto in A1 non ancora visto: dock con "Gestisci", tooltip
       Galaxy, blocco nota vocale e link con una vera registrazione, statistiche vuote e scroll.
 
 ## A6. Account e sync nell'app (dipende da B1–B3)
 
-- [ ] ⭐ Quali impostazioni si sincronizzano (tema, lingua, ...) e quali no; non i flag per
-      dispositivo (`app_lock.*`, `tour.*`, `audio-*`).
+- [ ] Impostazioni: si sincronizzano tutte **tranne la qualità della Galaxy e il volume audio**
+      (restano per dispositivo).
+- [ ] ⭐ **Blocco app e promemoria sul web**: vuoi portarli anche sul web. Da parlarne prima di
+      costruire: il PIN è semplice; l'impronta sul web richiederebbe un metodo diverso (passkey o
+      WebAuthn); il promemoria giornaliero nel browser richiede il permesso per le notifiche e un
+      servizio di notifiche push (Firebase Cloud Messaging), che funziona solo se il browser lo
+      permette. Da decidere anche se PIN e orario del promemoria si sincronizzano tra i dispositivi.
 - [ ] ⭐ Pannello Account in Settings: cosa mostra prima del login; e come cancellare i dati locali
       in release finché non c'è il login ("Reset all data" è ora solo in sviluppo).
 - [ ] UI in Settings (Quick Settings restano nascoste): Accedi con Google, account, "Sincronizza
@@ -154,8 +170,8 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
 2. Cloudflare Pages: due progetti collegati a GitHub, uno per la landing (`innerstars.app`, `www`)
    e uno per la web app (`my.innerstars.app`).
 3. Progetto Firebase: abilitare Authentication → Google; creare Firestore in produzione, regione `eur3`.
-4. Registrare le app in Firebase: Android (`app.innerstars` + SHA-1 debug e release), iOS
-   (`app.innerstars`), Web (`my.innerstars.app` e `localhost` tra i domini autorizzati).
+4. Registrare le app in Firebase: Android (`app.innerstars` + SHA-1 debug e release) e Web
+   (`my.innerstars.app` e `localhost` tra i domini autorizzati). iOS (`app.innerstars`) più avanti.
 5. Passarmi i file di configurazione (`google-services.json`, `GoogleService-Info.plist`, config web).
 
 ## B2. Lavoro tecnico (in ordine)
@@ -185,13 +201,14 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
 
 ## B4. Store e pubblicazione
 
-- [ ] ⭐ **Decidere le piattaforme della prima uscita** (web, Android, iOS). Costi: Play Store 25 €
-      una tantum, App Store 99 $/anno.
+- [x] **Piattaforme della prima uscita**: Android e web (landing + web app). iOS in futuro. Costo: Play Store 25 € una tantum.
 - [ ] **Firma Android per la release**: verificare che la chiave di firma (keystore) esista, sia
       salvata al sicuro e che l'impronta SHA-1 di release sia registrata in Firebase.
 - [ ] **Requisiti degli store**: privacy policy online, scheda dei dati raccolti, classificazione per
       età, screenshot, icona e splash definitivi.
-- [ ] ⭐ **Segnalazione degli errori** (crash reporting): scegliere lo strumento.
+- [ ] **Segnalazione degli errori** con Firebase Crashlytics (deciso): Android coperto. Il plugin
+      Crashlytics non supporta il web: per la web app valutare più avanti un altro strumento
+      (es. Sentry) o rinunciare nella prima uscita.
 
 ---
 
@@ -206,7 +223,7 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
 
 ## Ordine consigliato
 
-1. A5 (pulizia residua, dopo averne parlato) e, in parallelo, i tuoi passi B1.
+1. A5 (pulizia residua) e, in parallelo, i tuoi passi B1.
 2. A2 (dati pronti alla sync).
 3. A3 (Riflessioni) e A4 (personalizzazione della scheda).
 4. B2 e A6 (sync, media, account).
