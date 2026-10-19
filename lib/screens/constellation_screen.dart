@@ -11,6 +11,7 @@ import '../utils/entity_insights.dart';
 import '../widgets/entity_insights_scope.dart';
 import '../widgets/grouped_action_layout.dart';
 import 'light_screen.dart' show openEntityStatistics;
+import 'today_habits_screen.dart' show openTodayHabits;
 
 import '../widgets/icon_with_new_badge.dart';
 import '../models/display_text.dart';
@@ -1325,6 +1326,9 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                               ),
                               groups: [
                                 0,
+                                if (EntityInsightsScope.maybeOf(context) !=
+                                    null)
+                                  0,
                                 1,
                                 if (EntityInsightsScope.maybeOf(context) !=
                                     null)
@@ -1346,8 +1350,24 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                                   ),
                                 ),
 
+                                if (EntityInsightsScope.maybeOf(context) !=
+                                    null)
+                                  StaggeredEntrance(
+                                    index: 1,
+                                    enabled: !_hasNavigatedConstellations,
+                                    drift: 0.7,
+                                    child: _ConstellationDockAction(
+                                      icon: Icons.checklist_rounded,
+                                      label: strings.manageActivities,
+                                      onTap: () => openTodayHabits(
+                                        context,
+                                        InsightEntity.project(_project.id),
+                                      ),
+                                    ),
+                                  ),
+
                                 StaggeredEntrance(
-                                  index: 1,
+                                  index: 2,
                                   enabled: !_hasNavigatedConstellations,
                                   drift: 0.7,
                                   child: _ConstellationDockAction(
@@ -1360,7 +1380,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                                 if (EntityInsightsScope.maybeOf(context) !=
                                     null)
                                   StaggeredEntrance(
-                                    index: 2,
+                                    index: 3,
                                     enabled: !_hasNavigatedConstellations,
                                     drift: 0.7,
                                     child: _ConstellationDockAction(
@@ -1374,7 +1394,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                                   ),
 
                                 StaggeredEntrance(
-                                  index: 3,
+                                  index: 4,
                                   enabled: !_hasNavigatedConstellations,
                                   drift: 0.7,
                                   child: _ConstellationDockAction(
@@ -1385,7 +1405,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                                 ),
 
                                 StaggeredEntrance(
-                                  index: 4,
+                                  index: 5,
                                   enabled: !_hasNavigatedConstellations,
                                   drift: 0.7,
                                   child: _ConstellationDockAction(
@@ -1395,7 +1415,7 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
                                   ),
                                 ),
                                 StaggeredEntrance(
-                                  index: 5,
+                                  index: 6,
                                   enabled: !_hasNavigatedConstellations,
                                   drift: 0.7,
                                   child: _ConstellationDockAction(

@@ -1062,61 +1062,31 @@ void main() {
     c.dispose();
   });
 
-  testWidgets(
-    'Your Light opens management only for Everything, area and project',
-    (tester) async {
-      final c = await _controller(habits: [_habit(1)], stars: [_star(1, null)]);
-      await tester.pumpWidget(_app(c, const LightScreen(), reduceMotion: true));
-      await tester.pumpAndSettle();
-
-      final manage = find.byKey(const ValueKey('light-manage-activities'));
-      expect(manage, findsOneWidget);
-      await tester.dragUntilVisible(
-        manage,
-        find.byType(CustomScrollView),
-        const Offset(0, -300),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(manage);
-      await tester.pumpAndSettle();
-      expect(find.byType(TodayHabitsScreen), findsOneWidget);
-      expect(find.text(StringsIt().lightScopeAll), findsOneWidget);
-
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-      for (final scope in const [
-        InsightEntity.area(LifeArea.physical),
-        InsightEntity.project(1),
-      ]) {
-        await tester.pumpWidget(const SizedBox());
-        await tester.pumpWidget(
-          _app(c, LightScreen(initialScope: scope), reduceMotion: true),
-        );
-        await tester.pumpAndSettle();
-        expect(
-          find.byKey(const ValueKey('light-manage-activities')),
-          findsOneWidget,
-        );
-      }
+  testWidgets('Your Light no longer offers goal and habit management', (
+    tester,
+  ) async {
+    final c = await _controller(habits: [_habit(1)], stars: [_star(1, null)]);
+    for (final scope in const <InsightEntity?>[
+      null,
+      InsightEntity.area(LifeArea.physical),
+      InsightEntity.project(1),
+      InsightEntity.star(1),
+    ]) {
       await tester.pumpWidget(const SizedBox());
       await tester.pumpWidget(
-        _app(
-          c,
-          const LightScreen(initialScope: InsightEntity.star(1)),
-          reduceMotion: true,
-        ),
+        _app(c, LightScreen(initialScope: scope), reduceMotion: true),
       );
       await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey('light-manage-activities')),
         findsNothing,
       );
-      expect(tester.takeException(), isNull);
+    }
+    expect(tester.takeException(), isNull);
 
-      await tester.pumpWidget(const SizedBox());
-      c.dispose();
-    },
-  );
+    await tester.pumpWidget(const SizedBox());
+    c.dispose();
+  });
 
   testWidgets(
     'Your Light exposes interactive aggregate Moments and hides project runs',

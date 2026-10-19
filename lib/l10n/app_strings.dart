@@ -14,7 +14,7 @@ abstract class AppStrings {
   String get manageHabits;
   String get manageGoals;
   String get manageActivities;
-  String get managementSectionLabel;
+  String get menuManageActivitiesDescription;
   String get manageGoalsEmpty;
   String get insightFlip;
   String get insightReturn;

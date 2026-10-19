@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import '../utils/entity_insights.dart';
 import '../screens/light_screen.dart' show openEntityStatistics;
+import '../screens/today_habits_screen.dart' show openTodayHabits;
 import '../l10n/strings_scope.dart';
 import 'entity_flip_card.dart';
 import 'entity_insights_scope.dart';
@@ -211,6 +212,19 @@ class _SkySearchTooltipCardState extends State<SkySearchTooltipCard> {
           label: context.strings.actionFly,
           onTap: scope!.onFly!,
           group: 3,
+        ),
+      );
+    }
+    if (hasInsights && entity.aggregate) {
+      // Right after "add", in its own group: the goals and habits of this
+      // area or constellation.
+      final afterAdd = actions.indexWhere((action) => action.group >= 1);
+      actions.insert(
+        afterAdd < 0 ? actions.length : afterAdd,
+        SearchCardAction(
+          icon: Icons.checklist_rounded,
+          label: context.strings.manageActivities,
+          onTap: () => openTodayHabits(context, entity),
         ),
       );
     }

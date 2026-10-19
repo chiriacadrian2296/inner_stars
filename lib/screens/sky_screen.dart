@@ -114,6 +114,7 @@ import 'shooting_stars_screen.dart';
 import 'star_form_screen.dart';
 import 'star_reader_screen.dart';
 import 'light_screen.dart';
+import 'today_habits_screen.dart' show openTodayHabits;
 import 'ui_sandbox_screen.dart';
 import 'constellation_lab_screen.dart';
 import 'area_icon_lab_screen.dart';
@@ -2456,6 +2457,8 @@ class _SkyScreenState extends State<SkyScreen>
     );
   }
 
+  Future<void> _openManageActivities() => openTodayHabits(context, null);
+
   Future<void> _openStatistics() async {
     final target = await openLightPage(context, session: _lightSession);
     _refresh();
@@ -2706,6 +2709,7 @@ class _SkyScreenState extends State<SkyScreen>
             builder: (scrollController, physics) => SkyMenuContent(
               onLightAStar: _openStarForm,
               onNewConstellation: _openNewConstellation,
+              onManageActivities: _openManageActivities,
               onVisions: _openVisions,
               onShootingStars: _openShootingStars,
               onSearch: _openSearch,
@@ -4802,6 +4806,7 @@ class _SkyScreenState extends State<SkyScreen>
         drawer: SkyMenuDrawer(
           onLightAStar: _openStarForm,
           onNewConstellation: _openNewConstellation,
+          onManageActivities: _openManageActivities,
           onVisions: _openVisions,
           onShootingStars: _openShootingStars,
           onSearch: _openSearch,
@@ -5683,9 +5688,8 @@ class _SkyScreenState extends State<SkyScreen>
                                       onSearch: () => _openSearch(
                                         onCloseMenu: _closeQuickAccessMenu,
                                       ),
-                                      // Every build, release included: the
-                                      // app isn't public, release is only
-                                      // for seeing it at full speed.
+                                      // Development builds only (see
+                                      // [kDevTools]).
                                       onUiSandbox: () =>
                                           _selectQuickAccess(_openUiSandbox),
                                       onPressChanged: _setMenuControlPressed,

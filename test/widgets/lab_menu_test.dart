@@ -28,6 +28,7 @@ void main() {
                     detailed: detailed,
                     onLightAStar: noop,
                     onNewConstellation: noop,
+                    onManageActivities: noop,
                     onVisions: noop,
                     onShootingStars: noop,
                     onNightlight: noop,

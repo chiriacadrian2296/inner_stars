@@ -15,7 +15,8 @@ class StringsEn implements AppStrings {
   @override
   String get manageActivities => 'Manage goals and habits';
   @override
-  String get managementSectionLabel => 'Goals and habits';
+  String get menuManageActivitiesDescription =>
+      'Check off and review your goals and habits.';
   @override
   String get manageGoalsEmpty => 'No goals to achieve';
   @override

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hint_kit/hint_kit.dart';
 
@@ -45,6 +46,7 @@ class SkyMenuDrawer extends StatelessWidget {
     super.key,
     required this.onLightAStar,
     required this.onNewConstellation,
+    required this.onManageActivities,
     required this.onVisions,
     required this.onShootingStars,
     required this.onNightlight,
@@ -66,6 +68,7 @@ class SkyMenuDrawer extends StatelessWidget {
 
   final VoidCallback onLightAStar;
   final VoidCallback onNewConstellation;
+  final VoidCallback onManageActivities;
   final VoidCallback onVisions;
   final VoidCallback onShootingStars;
   final VoidCallback onNightlight;
@@ -91,6 +94,7 @@ class SkyMenuDrawer extends StatelessWidget {
         child: SkyMenuContent(
           onLightAStar: onLightAStar,
           onNewConstellation: onNewConstellation,
+          onManageActivities: onManageActivities,
           onVisions: onVisions,
           onShootingStars: onShootingStars,
           onNightlight: onNightlight,
@@ -166,6 +170,7 @@ class SkyMenuContent extends StatelessWidget {
     super.key,
     required this.onLightAStar,
     required this.onNewConstellation,
+    required this.onManageActivities,
     required this.onVisions,
     required this.onShootingStars,
     required this.onNightlight,
@@ -190,6 +195,7 @@ class SkyMenuContent extends StatelessWidget {
 
   final VoidCallback onLightAStar;
   final VoidCallback onNewConstellation;
+  final VoidCallback onManageActivities;
   final VoidCallback onVisions;
   final VoidCallback onShootingStars;
   final VoidCallback onNightlight;
@@ -503,6 +509,13 @@ class SkyMenuContent extends StatelessWidget {
                 _openLightYourSkyChooser(context);
               });
             },
+          ),
+          entry(
+            index: 2,
+            icon: Icons.checklist_rounded,
+            label: strings.manageActivities,
+            description: strings.menuManageActivitiesDescription,
+            onTap: onManageActivities,
           ),
         ],
 

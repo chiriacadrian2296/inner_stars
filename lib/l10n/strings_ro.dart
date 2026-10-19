@@ -15,7 +15,8 @@ class StringsRo implements AppStrings {
   @override
   String get manageActivities => 'Gestionează obiectivele și obiceiurile';
   @override
-  String get managementSectionLabel => 'Obiective și obiceiuri';
+  String get menuManageActivitiesDescription =>
+      'Bifează și revezi obiectivele și obiceiurile tale.';
   @override
   String get manageGoalsEmpty => 'Niciun obiectiv de realizat';
   @override

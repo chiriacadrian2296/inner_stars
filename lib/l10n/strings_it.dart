@@ -15,7 +15,8 @@ class StringsIt implements AppStrings {
   @override
   String get manageActivities => 'Gestisci obiettivi e abitudini';
   @override
-  String get managementSectionLabel => 'Obiettivi e abitudini';
+  String get menuManageActivitiesDescription =>
+      'Spunta e rivedi i tuoi obiettivi e le tue abitudini.';
   @override
   String get manageGoalsEmpty => 'Nessun obiettivo da raggiungere';
   @override

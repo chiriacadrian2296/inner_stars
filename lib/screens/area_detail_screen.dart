@@ -3,6 +3,7 @@ import '../utils/entity_insights.dart';
 import '../widgets/entity_insights_scope.dart';
 import '../widgets/grouped_action_layout.dart';
 import 'light_screen.dart' show openEntityStatistics;
+import 'today_habits_screen.dart' show openTodayHabits;
 
 import '../widgets/icon_with_new_badge.dart';
 
@@ -487,6 +488,12 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                   child: ResponsiveContent(
                     shrinkHeight: true,
                     child: _AreaDock(
+                      onManage: EntityInsightsScope.maybeOf(context) == null
+                          ? null
+                          : () => openTodayHabits(
+                              context,
+                              InsightEntity.area(area),
+                            ),
                       onStatistics: EntityInsightsScope.maybeOf(context) == null
                           ? null
                           : () => openEntityStatistics(
@@ -624,8 +631,10 @@ class _AreaDock extends StatelessWidget {
     required this.onReflections,
     required this.onFly,
     this.onStatistics,
+    this.onManage,
   });
   final bool animate;
+  final VoidCallback? onManage;
   final VoidCallback onVision;
   final VoidCallback onMoodboard;
   final VoidCallback onNewConstellation;
@@ -641,6 +650,12 @@ class _AreaDock extends StatelessWidget {
         onTap: onNewConstellation,
         isNew: true,
       ),
+      if (onManage != null)
+        _AreaDockAction(
+          icon: Icons.checklist_rounded,
+          label: context.strings.manageActivities,
+          onTap: onManage!,
+        ),
       _AreaDockAction(
         icon: kAreaVisionIcon,
         label: context.strings.visionPageTitle,
@@ -695,7 +710,15 @@ class _AreaDock extends StatelessWidget {
             extraDelay: kActionGroupDotDelay,
             child: dot,
           ),
-          groups: [0, 1, 1, 1, if (onStatistics != null) 2, 3],
+          groups: [
+            0,
+            if (onManage != null) 0,
+            1,
+            1,
+            1,
+            if (onStatistics != null) 2,
+            3,
+          ],
           children: [
             for (var i = 0; i < actions.length; i++)
               StaggeredEntrance(
