@@ -2,12 +2,14 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 
-// No custom domain yet: the landing lives at the root of the repo's GitHub
-// Pages site and the Flutter web app under /app/ (see deploy-web.yml). With a
-// domain, change `site`, drop `base`, and add a CNAME.
+// Two deployments: Cloudflare Pages (CF_PAGES is set there) serves the landing
+// at the root of innerstars.app; the GitHub Pages workflow keeps the repo
+// subpath until it is retired.
+const onCloudflare = Boolean(process.env.CF_PAGES);
+
 export default defineConfig({
-  site: 'https://chiriacadrian2296.github.io',
-  base: '/inner_stars',
+  site: onCloudflare ? "https://innerstars.app" : "https://chiriacadrian2296.github.io",
+  ...(onCloudflare ? {} : { base: "/inner_stars" }),
   trailingSlash: 'always',
   devToolbar: { enabled: false },
   integrations: [
