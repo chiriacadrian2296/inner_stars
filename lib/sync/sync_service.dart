@@ -107,6 +107,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
   bool _running = false;
   bool _again = false;
   bool _started = false;
+  bool _paused = false;
   int _failures = 0;
   String? _lastUid;
   Timer? _debounceTimer;
@@ -177,7 +178,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
   /// one extra run after the current one.
   Future<void> syncNow() async {
     final uid = _account.uid;
-    if (uid == null) return;
+    if (uid == null || _paused) return;
     if (_running) {
       _again = true;
       return;
@@ -234,6 +235,46 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
         schedule(const Duration(seconds: 1));
       }
     }
+  }
+
+  /// Runs [action] with syncing held off: waits for a sync in progress, keeps
+  /// new ones from starting, and asks for one afterwards. For actions that
+  /// must not race with a sync (wiping local data, deleting the account).
+  Future<T> pausedWhile<T>(Future<T> Function() action) async {
+    _paused = true;
+    _debounceTimer?.cancel();
+    _retryTimer?.cancel();
+    try {
+      while (_running) {
+        await Future<void>.delayed(const Duration(milliseconds: 25));
+      }
+      return await action();
+    } finally {
+      _paused = false;
+      if (_account.uid != null) schedule(const Duration(seconds: 1));
+    }
+  }
+
+  /// Forgets where every sync left off, so the next one starts from scratch
+  /// and sends and receives everything. Keeps the settings' own bookkeeping.
+  Future<void> resetPositions() async {
+    for (final key in _prefs.getKeys().toList()) {
+      if (key.startsWith('sync.') && key != SettingsCollection.metaKey) {
+        await _prefs.remove(key);
+      }
+    }
+  }
+
+  /// Deletes every collection of the signed-in account from the cloud. Local
+  /// data stays. Call inside [pausedWhile].
+  Future<void> deleteCloudData() async {
+    final uid = _account.uid;
+    if (uid == null) throw StateError('Not signed in');
+    final remote = _remoteFactory(uid);
+    for (final target in _targets) {
+      await remote.deleteCollection(target.name);
+    }
+    await resetPositions();
   }
 
   DateTime? _readTime(String key) {

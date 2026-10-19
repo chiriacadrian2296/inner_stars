@@ -424,6 +424,42 @@ class StringsRo implements AppStrings {
   String get accountSyncError =>
       'Actualizarea nu a reușit. Încerc din nou în curând.';
   @override
+  String get deleteLocalData => 'Șterge Datele De Pe Acest Dispozitiv';
+  @override
+  String get deleteLocalDataConfirmTitle =>
+      'Ștergi datele de pe acest dispozitiv?';
+  @override
+  String get deleteLocalDataConfirmBodySignedOut =>
+      'Stelele, proiectele, obiceiurile, reflecțiile, fotografiile și înregistrările sunt eliminate de pe acest dispozitiv. Acțiunea nu poate fi anulată.';
+  @override
+  String get deleteLocalDataConfirmBodySignedIn =>
+      'Stelele, proiectele, obiceiurile, reflecțiile, fotografiile și înregistrările sunt eliminate de pe acest dispozitiv. Contul tău păstrează copia din cloud, care revine la următoarea actualizare.';
+  @override
+  String get deleteLocalDataConfirm => 'Șterge';
+  @override
+  String get localDataDeleted =>
+      'Datele de pe acest dispozitiv au fost șterse.';
+  @override
+  String get deleteLocalDataFailed =>
+      'Datele nu au putut fi șterse. Încearcă din nou.';
+  @override
+  String get deleteAccount => 'Șterge Contul Și Datele Din Cloud';
+  @override
+  String get deleteAccountConfirmTitle => 'Ștergi contul?';
+  @override
+  String get deleteAccountConfirmBody =>
+      'Contul și tot ce este salvat în cloud sunt șterse definitiv. Datele de pe acest dispozitiv rămân. Acțiunea nu poate fi anulată.';
+  @override
+  String get deleteAccountConfirm => 'Șterge Contul';
+  @override
+  String get accountDeleted => 'Contul și datele din cloud au fost șterse.';
+  @override
+  String get deleteAccountFailed =>
+      'Contul nu a putut fi șters. Încearcă din nou.';
+  @override
+  String get deleteAccountSignInAgain =>
+      'Pentru siguranța ta, deconectează-te, conectează-te din nou și apoi șterge contul.';
+  @override
   String get accountNeverSynced => 'Încă neactualizat';
   @override
   String accountLastSync(String when) => 'Ultima actualizare: $when';

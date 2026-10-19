@@ -421,6 +421,40 @@ class StringsEn implements AppStrings {
   @override
   String get accountSyncError => 'Could not update. Trying again soon.';
   @override
+  String get deleteLocalData => 'Delete Data On This Device';
+  @override
+  String get deleteLocalDataConfirmTitle => 'Delete data on this device?';
+  @override
+  String get deleteLocalDataConfirmBodySignedOut =>
+      'Your stars, projects, habits, reflections, photos and recordings are removed from this device. This cannot be undone.';
+  @override
+  String get deleteLocalDataConfirmBodySignedIn =>
+      'Your stars, projects, habits, reflections, photos and recordings are removed from this device. Your account keeps its copy in the cloud, and it comes back at the next update.';
+  @override
+  String get deleteLocalDataConfirm => 'Delete';
+  @override
+  String get localDataDeleted => 'Data on this device deleted.';
+  @override
+  String get deleteLocalDataFailed =>
+      'Could not delete the data. Please try again.';
+  @override
+  String get deleteAccount => 'Delete Account And Cloud Data';
+  @override
+  String get deleteAccountConfirmTitle => 'Delete your account?';
+  @override
+  String get deleteAccountConfirmBody =>
+      'Your account and everything stored in the cloud are permanently deleted. The data on this device stays. This cannot be undone.';
+  @override
+  String get deleteAccountConfirm => 'Delete Account';
+  @override
+  String get accountDeleted => 'Account and cloud data deleted.';
+  @override
+  String get deleteAccountFailed =>
+      'Could not delete the account. Please try again.';
+  @override
+  String get deleteAccountSignInAgain =>
+      'For your security, sign out, sign in again, and then delete the account.';
+  @override
   String get accountNeverSynced => 'Not updated yet';
   @override
   String accountLastSync(String when) => 'Last updated: $when';

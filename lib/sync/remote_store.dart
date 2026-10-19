@@ -24,6 +24,10 @@ abstract class RemoteStore {
   /// Stores [records], replacing any remote record with the same id, and
   /// stamps them with the server's time.
   Future<void> push(String collection, List<SyncRecord> records);
+
+  /// Removes every document of [collection] (account deletion). Real
+  /// removal, not tombstones.
+  Future<void> deleteCollection(String collection);
 }
 
 class InMemoryRemoteStore implements RemoteStore {
@@ -62,6 +66,12 @@ class InMemoryRemoteStore implements RemoteStore {
       if (newest == null || entry.at.isAfter(newest)) newest = entry.at;
     }
     return RemoteChanges(out, newest);
+  }
+
+  @override
+  Future<void> deleteCollection(String collection) async {
+    _check();
+    data.remove(collection);
   }
 
   @override

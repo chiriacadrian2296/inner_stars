@@ -13,6 +13,10 @@ mixin SyncableRepository on ChangeNotifier {
   /// The persisted collection behind this repository.
   SyncCollection get syncCollection;
 
+  /// Tells listeners the stored data changed outside this repository (data
+  /// wiped, or replaced wholesale).
+  void refreshFromStorage() => notifyListeners();
+
   /// Writes the remote records that win the merge and notifies listeners.
   /// Returns how many local records changed.
   Future<int> applyRemote(List<SyncRecord> records) async {

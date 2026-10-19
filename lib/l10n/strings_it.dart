@@ -423,6 +423,39 @@ class StringsIt implements AppStrings {
   @override
   String get accountSyncError => 'Aggiornamento non riuscito. Riprovo a breve.';
   @override
+  String get deleteLocalData => 'Elimina Dati Su Questo Dispositivo';
+  @override
+  String get deleteLocalDataConfirmTitle =>
+      'Eliminare i dati su questo dispositivo?';
+  @override
+  String get deleteLocalDataConfirmBodySignedOut =>
+      "Stelle, progetti, abitudini, riflessioni, foto e registrazioni vengono rimossi da questo dispositivo. L'azione non si può annullare.";
+  @override
+  String get deleteLocalDataConfirmBodySignedIn =>
+      'Stelle, progetti, abitudini, riflessioni, foto e registrazioni vengono rimossi da questo dispositivo. Il tuo account conserva la sua copia nel cloud, che tornerà al prossimo aggiornamento.';
+  @override
+  String get deleteLocalDataConfirm => 'Elimina';
+  @override
+  String get localDataDeleted => 'Dati su questo dispositivo eliminati.';
+  @override
+  String get deleteLocalDataFailed => 'Impossibile eliminare i dati. Riprova.';
+  @override
+  String get deleteAccount => 'Elimina Account e Dati Cloud';
+  @override
+  String get deleteAccountConfirmTitle => 'Eliminare il tuo account?';
+  @override
+  String get deleteAccountConfirmBody =>
+      "Il tuo account e tutto ciò che è salvato nel cloud vengono eliminati definitivamente. I dati su questo dispositivo restano. L'azione non si può annullare.";
+  @override
+  String get deleteAccountConfirm => 'Elimina Account';
+  @override
+  String get accountDeleted => 'Account e dati cloud eliminati.';
+  @override
+  String get deleteAccountFailed => "Impossibile eliminare l'account. Riprova.";
+  @override
+  String get deleteAccountSignInAgain =>
+      "Per sicurezza, esci, accedi di nuovo e poi elimina l'account.";
+  @override
   String get accountNeverSynced => 'Non ancora aggiornato';
   @override
   String accountLastSync(String when) => 'Ultimo aggiornamento: $when';

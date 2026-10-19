@@ -7,6 +7,16 @@ class _FakePort implements FirestorePort {
   final docs = <String, Map<String, RemoteDoc>>{};
   var clock = DateTime.utc(2026, 10, 19);
   final batches = <int>[];
+  final deleted = <int>[];
+
+  @override
+  Future<int> deleteSome(String collection, int limit) async {
+    final bucket = docs[collection] ?? {};
+    final ids = bucket.keys.take(limit).toList();
+    ids.forEach(bucket.remove);
+    if (ids.isNotEmpty) deleted.add(ids.length);
+    return ids.length;
+  }
 
   @override
   Future<List<RemoteDoc>> readSince(
@@ -95,5 +105,16 @@ void main() {
     await store.push('items', [rec('one')]);
     final raw = port.docs['items']!.values.single.data;
     expect(jsonDecode(raw)['id'], 'one');
+  });
+
+  test('deleting a collection removes every document, in batches', () async {
+    final port = _FakePort();
+    final store = FirestoreRemoteStore(port);
+    await store.push('items', [for (var i = 0; i < 950; i++) rec('r$i')]);
+    await store.push('other', [rec('keep')]);
+    await store.deleteCollection('items');
+    expect(port.docs['items'], isEmpty);
+    expect(port.deleted, [400, 400, 150]);
+    expect(port.docs['other'], hasLength(1));
   });
 }

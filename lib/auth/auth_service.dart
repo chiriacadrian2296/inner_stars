@@ -129,6 +129,41 @@ class AuthService extends ChangeNotifier implements SyncAccount {
     }
   }
 
+  /// Firebase only deletes an account that signed in a moment ago.
+  bool get hasRecentSignIn {
+    final last = _user?.metadata.lastSignInTime;
+    return last != null &&
+        DateTime.now().difference(last) < const Duration(minutes: 4);
+  }
+
+  /// Asks Google for the account again so a sensitive action is allowed
+  /// (Android). Returns false where that needs Google's own button (the web):
+  /// the person must then sign out and in again.
+  Future<bool> reauthenticate() async {
+    final user = _auth?.currentUser;
+    if (user == null || needsGoogleButton) return false;
+    final account = await _google.authenticate();
+    final idToken = account.authentication.idToken;
+    if (idToken == null) throw StateError('Google returned no ID token');
+    await user.reauthenticateWithCredential(
+      GoogleAuthProvider.credential(idToken: idToken),
+    );
+    return true;
+  }
+
+  /// Deletes the Firebase account and revokes this app's Google access. The
+  /// caller deletes the cloud data first (the rules need the signed-in user).
+  Future<void> deleteAccount() async {
+    final user = _auth?.currentUser;
+    if (user == null) throw StateError('Not signed in');
+    await user.delete();
+    try {
+      await _google.disconnect();
+    } catch (_) {
+      // The account is already gone; revoking access is best effort.
+    }
+  }
+
   Future<void> signOut() async {
     if (_auth == null) return;
     await _google.signOut();

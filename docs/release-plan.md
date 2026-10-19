@@ -450,9 +450,17 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
       - Media (foto, audio) non ancora sincronizzati: serve il blocco “Media” sotto.
       - Costo: con i limiti gratuiti Spark conta ogni documento letto; i punti di ripresa
         tengono le letture basse, ma da misurare con un uso reale.
-      **Restano:** prova reale (due dispositivi, offline, scambio account), le due voci di
-      cancellazione (dati del dispositivo senza tombstone; account e dati cloud), test delle
-      regole sull’emulatore, e una schermata che spieghi un errore persistente.
+      **Cancellazione (fatta il 19 ottobre sera):** sezione “Dati” di Settings sempre visibile
+      (anche in release): “Elimina dati su questo dispositivo” (`lib/data/local_data_wipe.dart`:
+      rimuove i record senza tombstone, più foto, registrazioni e file del moodboard; restano
+      impostazioni, blocco app e marcatori di schema; per un account connesso i dati tornano al
+      prossimo aggiornamento perché si azzerano i punti di ripresa) e, solo da loggati,
+      “Elimina account e dati cloud” (cancella ogni collezione su Firestore, poi l’utente
+      Firebase e l’accesso Google; prima controlla l’accesso recente e, su Android, chiede di
+      nuovo l’account; sul web chiede di uscire, rientrare e riprovare). Sync in pausa durante
+      entrambe. 610 test superati.
+      **Restano:** prova reale (due dispositivi, offline, scambio account), test delle regole
+      sull’emulatore, e una schermata che spieghi un errore persistente.
       Struttura `users/{uid}/<collezione>/{uuid}`. `SyncService` con listener per collezione,
       push debounced, ripresa al `resumed`, stato e nessun crash offline.
       Regole di sicurezza: ognuno accede solo a `users/{uid}/**`, con test sull'emulatore.

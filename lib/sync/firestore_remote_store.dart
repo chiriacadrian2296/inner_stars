@@ -19,6 +19,10 @@ class RemoteDoc {
 abstract class FirestorePort {
   Future<List<RemoteDoc>> readSince(String collection, DateTime? cursor);
   Future<void> writeBatch(String collection, List<RemoteDocWrite> docs);
+
+  /// Deletes up to [limit] documents of [collection]; returns how many it
+  /// deleted (0 when the collection is empty).
+  Future<int> deleteSome(String collection, int limit);
 }
 
 class RemoteDocWrite {
@@ -62,6 +66,11 @@ class FirestoreRemoteStore implements RemoteStore {
       if (newest == null || doc.at.isAfter(newest)) newest = doc.at;
     }
     return RemoteChanges(records, newest);
+  }
+
+  @override
+  Future<void> deleteCollection(String collection) async {
+    while (await _port.deleteSome(collection, batchSize) > 0) {}
   }
 
   @override
@@ -116,6 +125,21 @@ class FirebaseFirestorePort implements FirestorePort {
           at: (doc.data()['_syncedAt'] as Timestamp).toDate(),
         ),
     ];
+  }
+
+  @override
+  Future<int> deleteSome(String collection, int limit) async {
+    final snapshot = await _collection(collection)
+        .limit(limit)
+        .get(const GetOptions(source: Source.server))
+        .timeout(timeout);
+    if (snapshot.docs.isEmpty) return 0;
+    final batch = _db.batch();
+    for (final doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit().timeout(timeout);
+    return snapshot.docs.length;
   }
 
   @override

@@ -1,3 +1,5 @@
+import '../auth/auth_scope.dart';
+import '../data/local_data_wipe.dart';
 import '../data/moodboard_repository.dart';
 
 import 'dart:async';
@@ -26,6 +28,10 @@ import '../audio/audio_service.dart';
 import '../debug/seed_data.dart';
 import '../l10n/strings_scope.dart';
 import '../notifications/reminder_service.dart';
+import '../sync/sync_scope.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../settings/settings_controller.dart';
 import '../theme/app_colors.dart';
 import '../widgets/galaxy_navigation_mode_picker.dart';
@@ -112,6 +118,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _biometricAvailable = false;
+  bool _deleting = false;
 
   Future<void> _toggleBackgroundPlayback() async {
     if (widget.audioService.backgroundPaused) {
@@ -390,6 +397,103 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(strings.allDataCleared)));
+    }
+  }
+
+  void _say(String text) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  /// Empties this device without telling the cloud: no tombstones, so a signed
+  /// in account gets its copy back at the next update.
+  Future<void> _deleteLocalData() async {
+    final strings = context.strings;
+    final signedIn = AuthScope.maybeOf(context)?.isSignedIn ?? false;
+    final sync = SyncScope.maybeOf(context);
+    final cycles = HabitCycleScope.read(context);
+    final confirmed = await showAppConfirmation(
+      context: context,
+      title: strings.deleteLocalDataConfirmTitle,
+      body: signedIn
+          ? strings.deleteLocalDataConfirmBodySignedIn
+          : strings.deleteLocalDataConfirmBodySignedOut,
+      cancelLabel: strings.cancel,
+      confirmLabel: strings.deleteLocalDataConfirm,
+      tone: AppConfirmationTone.destructive,
+    );
+    if (!confirmed || !mounted) return;
+    setState(() => _deleting = true);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final moodboard = await MoodboardRepository.create();
+      final wish = await ShootingStarWishRepository.create();
+      Future<void> wipe() => wipeLocalData(
+        prefs: prefs,
+        stars: widget.starRepository,
+        moodboard: moodboard,
+        repositories: [
+          widget.starRepository,
+          widget.projectRepository,
+          widget.habitRepository,
+          widget.habitCompletionRepository,
+          ?cycles,
+          widget.starsShapeRepository,
+          widget.reflectionAnswerRepository,
+          widget.areaVisionRepository,
+          wish,
+          moodboard,
+        ],
+      );
+      if (sync == null) {
+        await wipe();
+      } else {
+        await sync.pausedWhile(() async {
+          await wipe();
+          await sync.resetPositions();
+        });
+      }
+      _say(strings.localDataDeleted);
+    } catch (_) {
+      _say(strings.deleteLocalDataFailed);
+    } finally {
+      if (mounted) setState(() => _deleting = false);
+    }
+  }
+
+  /// Deletes the cloud copy and the account itself (the stores require it).
+  /// The data on this device stays.
+  Future<void> _deleteAccount() async {
+    final strings = context.strings;
+    final auth = AuthScope.maybeOf(context);
+    final sync = SyncScope.maybeOf(context);
+    if (auth == null || sync == null || !auth.isSignedIn) return;
+    final confirmed = await showAppConfirmation(
+      context: context,
+      title: strings.deleteAccountConfirmTitle,
+      body: strings.deleteAccountConfirmBody,
+      cancelLabel: strings.cancel,
+      confirmLabel: strings.deleteAccountConfirm,
+      tone: AppConfirmationTone.destructive,
+    );
+    if (!confirmed || !mounted) return;
+    setState(() => _deleting = true);
+    try {
+      // Firebase only deletes an account that signed in a moment ago. Check
+      // before touching anything, so a refusal never leaves a half-done job.
+      if (!auth.hasRecentSignIn && !await auth.reauthenticate()) {
+        _say(strings.deleteAccountSignInAgain);
+        return;
+      }
+      await sync.pausedWhile(() async {
+        await sync.deleteCloudData();
+        await auth.deleteAccount();
+      });
+      _say(strings.accountDeleted);
+    } catch (_) {
+      _say(strings.deleteAccountFailed);
+    } finally {
+      if (mounted) setState(() => _deleting = false);
     }
   }
 
@@ -902,13 +1006,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   // tappable rather than as a stray line of text; each is
                   // [Expanded] so together they fill the row edge to edge
                   // instead of leaving empty space beside them.
-                  if (kDevTools || _kShowSampleDataForTesting) ...[
-                    const SizedBox(height: 28),
-                    StaggeredEntrance(
-                      index: 10,
-                      child: _SectionLabel(strings.dataSection),
+                  const SizedBox(height: 28),
+                  StaggeredEntrance(
+                    index: 10,
+                    child: _SectionLabel(strings.dataSection),
+                  ),
+                  const SizedBox(height: 10),
+                  StaggeredEntrance(
+                    index: 10,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        TextButton.icon(
+                          key: const ValueKey('delete-local-data'),
+                          onPressed: _deleting ? null : _deleteLocalData,
+                          style: _debugButtonStyle(colors, colors.danger),
+                          icon: Icon(
+                            Icons.phone_android,
+                            size: 16,
+                            color: colors.danger,
+                          ),
+                          label: AppButtonLabel(
+                            strings.deleteLocalData,
+                            color: colors.danger,
+                          ),
+                        ),
+                        if (AuthScope.maybeOf(context)?.isSignedIn ?? false)
+                          TextButton.icon(
+                            key: const ValueKey('delete-account'),
+                            onPressed: _deleting ? null : _deleteAccount,
+                            style: _debugButtonStyle(colors, colors.danger),
+                            icon: Icon(
+                              Icons.cloud_off_outlined,
+                              size: 16,
+                              color: colors.danger,
+                            ),
+                            label: AppButtonLabel(
+                              strings.deleteAccount,
+                              color: colors.danger,
+                            ),
+                          ),
+                      ],
                     ),
-                    const SizedBox(height: 10),
+                  ),
+                  if (kDevTools || _kShowSampleDataForTesting) ...[
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Expanded(

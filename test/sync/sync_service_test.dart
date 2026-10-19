@@ -167,6 +167,56 @@ void main() {
     b.dispose();
   });
 
+  test('pausedWhile holds syncing off and asks for one afterwards', () async {
+    final service = build(_Account('uid-1'));
+    await items.applyRemote([rec('one', clock)]);
+    var ranInside = false;
+    await service.pausedWhile(() async {
+      await service.syncNow(); // refused while paused
+      ranInside = true;
+      expect(remote.records('items'), isEmpty);
+    });
+    expect(ranInside, isTrue);
+    await Future<void>.delayed(const Duration(milliseconds: 1300));
+    expect(remote.records('items').keys, {'one'});
+    service.dispose();
+  });
+
+  test(
+    'deleteCloudData empties every collection and forgets the positions',
+    () async {
+      final service = build(_Account('uid-1'));
+      await items.applyRemote([rec('one', clock)]);
+      await service.syncNow();
+      expect(remote.records('items'), isNotEmpty);
+      await prefs.setString('sync.settings-meta', '{}');
+
+      await service.deleteCloudData();
+      expect(remote.records('items'), isEmpty);
+      expect(
+        prefs.getKeys().where(
+          (k) => k.startsWith('sync.') && k != 'sync.settings-meta',
+        ),
+        isEmpty,
+      );
+      expect(prefs.containsKey('sync.settings-meta'), isTrue);
+      // Local data is untouched.
+      expect(items.readAll(), hasLength(1));
+      service.dispose();
+    },
+  );
+
+  test('after the positions are reset a sync brings everything back', () async {
+    final service = build(_Account('uid-1'));
+    await remote.push('items', [rec('cloud', clock)]);
+    await service.syncNow();
+    await prefs.remove('items'); // the device was emptied
+    await service.resetPositions();
+    await service.syncNow();
+    expect(items.readAll().map((r) => r['id']), ['cloud']);
+    service.dispose();
+  });
+
   test('settings target runs its callback when remote values arrive', () async {
     var applied = 0;
     final target = SyncTarget('items', _Counting(items, () => applied++));
