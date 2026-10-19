@@ -366,7 +366,7 @@ class _SkyScreenState extends State<SkyScreen>
   bool _subscribedToRoutes = false;
 
   /// The interactive shooting star shown in Galaxy.
-  static const _kShowShootingStar = true;
+  static const _kShowShootingStar = false;
 
   final _skySession = SkyExplorerSession();
   final _lightSession = LightSession();
