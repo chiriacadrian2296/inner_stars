@@ -1135,6 +1135,55 @@ void main() {
     c.dispose();
   });
 
+  testWidgets('Your Light returns to the pinned panel when the level changes', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final today = DateTime.now();
+    final c = await _controller(
+      stars: [for (var i = 1; i <= 6; i++) _star(i, today)],
+    );
+    await tester.pumpWidget(
+      _app(
+        c,
+        const LightScreen(initialScope: InsightEntity.project(1)),
+        reduceMotion: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final scrollable = find.byType(Scrollable).first;
+    ScrollPosition position() =>
+        tester.state<ScrollableState>(scrollable).position;
+    final titleHeight = tester
+        .getSize(
+          find.byWidgetPredicate(
+            (widget) => widget.runtimeType.toString() == '_LightTitleHero',
+          ),
+        )
+        .height;
+
+    await tester.drag(scrollable, const Offset(0, -2000));
+    await tester.pumpAndSettle();
+    expect(position().pixels, greaterThan(titleHeight));
+
+    // Going up a level (system back) lands on the pinned panel, overview
+    // right under it.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(
+      position().pixels,
+      closeTo(titleHeight.clamp(0.0, position().maxScrollExtent), 1),
+    );
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox());
+    c.dispose();
+  });
+
   testWidgets(
     'Your Light exposes interactive aggregate Moments and hides project runs',
     (tester) async {

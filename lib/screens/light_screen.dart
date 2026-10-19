@@ -12,6 +12,7 @@ import '../models/star_media.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
+import '../theme/app_motion.dart';
 import '../theme/app_style.dart';
 import '../theme/app_typography.dart';
 import '../utils/app_modals.dart';
@@ -113,8 +114,32 @@ class _LightScreenState extends State<LightScreen> {
     super.dispose();
   }
 
-  void _setScope(InsightEntity? scope) =>
-      setState(() => _session.scope = scope);
+  final _titleKey = GlobalKey();
+
+  /// Going down or up a level starts the new level at its first section: the
+  /// page scrolls until the navigation panel reaches the top and pins there,
+  /// with the overview right under it.
+  void _setScope(InsightEntity? scope) {
+    setState(() => _session.scope = scope);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final titleHeight = _titleKey.currentContext?.size?.height ?? 0;
+      final position = _scrollController.position;
+      final target = titleHeight.clamp(0.0, position.maxScrollExtent);
+      if ((position.pixels - target).abs() < 1) return;
+      final duration = motionDuration(context, kMotionBase);
+      // Reduced motion makes the duration zero, which animateTo rejects.
+      if (duration == Duration.zero) {
+        _scrollController.jumpTo(target);
+      } else {
+        _scrollController.animateTo(
+          target,
+          duration: duration,
+          curve: kMotionEnter,
+        );
+      }
+    });
+  }
 
   void _setPeriod(LightPeriod period) =>
       setState(() => _session.period = period);
@@ -279,7 +304,10 @@ class _LightScreenState extends State<LightScreen> {
             controller: _scrollController,
             slivers: [
               SliverToBoxAdapter(
-                child: _LightTitleHero(title: strings.lightPageTitle),
+                child: KeyedSubtree(
+                  key: _titleKey,
+                  child: _LightTitleHero(title: strings.lightPageTitle),
+                ),
               ),
               SliverPersistentHeader(
                 pinned: true,
