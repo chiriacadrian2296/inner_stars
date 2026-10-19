@@ -61,7 +61,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
 
 /* The scroll moves one spherical camera through all four perspectives. */
 .journey-stage { position: relative; isolation: isolate; overflow: clip; }
-.sky-sticky { position: sticky; top: 0; height: 100svh; margin-bottom: -100svh; z-index: -1; overflow: hidden; }
+/* The sky is as tall as the *largest* viewport (lvh), so when a phone's address bar slides away nothing is left uncovered below it; chapters stay on the small viewport (svh). */
+.sky-sticky { position: sticky; top: 0; height: 100svh; margin-bottom: -100svh; height: 100lvh; margin-bottom: -100lvh; z-index: -1; overflow: hidden; }
 .galaxy-scene { position: absolute; inset: 0; overflow: hidden; pointer-events: none; background: radial-gradient(ellipse at 68% 45%,#1c2747,#10162b 48%,#05070d); }
 .galaxy-scene canvas,.galaxy-fallback { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .galaxy-fallback { opacity: .7; }

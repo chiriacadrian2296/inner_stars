@@ -133,8 +133,11 @@ export default function Galaxy({ lang = 'it', closing = false, level, area = 2, 
     function draw(now: number) {
       if (!ctx || !root) return;
       const rect = stageRoot?.getBoundingClientRect();
-      const chapters = Math.max(1, (stageRoot?.querySelectorAll('.chapter').length ?? 5) - 1);
-      const step = clamp(-(rect?.top ?? 0) / Math.max(1, (stageRoot?.offsetHeight ?? h) - h)) * chapters;
+      // Progress counts whole chapters of scroll, so it stays put when a phone's address bar changes the viewport height.
+      const chapterEls = stageRoot?.querySelectorAll<HTMLElement>('.chapter');
+      const chapters = Math.max(1, (chapterEls?.length ?? 5) - 1);
+      const unit = chapterEls && chapterEls.length > 1 ? Math.max(1, chapterEls[1].offsetTop - chapterEls[0].offsetTop) : Math.max(1, h);
+      const step = Math.min(chapters, Math.max(0, -(rect?.top ?? 0) / unit));
       const target = closing ? 3 : controls.current.level ?? journeyStage(step);
       if (reduced) renderedStage = controls.current.level ?? 3;
       else renderedStage += (target - renderedStage) * (interactive ? .09 : 1);
