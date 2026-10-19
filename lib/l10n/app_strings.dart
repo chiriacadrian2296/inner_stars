@@ -174,6 +174,13 @@ abstract class AppStrings {
   // but as panels within the Settings page rather than screens of their
   // own; [socialSection] above doubles as this one's header too.
   String get profileSection;
+  String get accountSignedOutNote;
+  String get accountSignIn;
+  String get accountSignInFailed;
+  String get accountUnavailable;
+  String get accountSignedInAs;
+  String get accountSignOut;
+  String get accountSignOutNote;
   String get profilePlaceholderBody;
   String get avatarMaleLabel;
   String get avatarFemaleLabel;

@@ -402,6 +402,23 @@ class StringsRo implements AppStrings {
   @override
   String get profileSection => 'Profil & Cont';
   @override
+  String get accountSignedOutNote =>
+      'Datele tale rămân pe acest dispozitiv. Conectează-te ca să le sincronizezi între dispozitive.';
+  @override
+  String get accountSignIn => 'Conectează-te cu Google';
+  @override
+  String get accountSignInFailed => 'Conectarea nu a reușit. Încearcă din nou.';
+  @override
+  String get accountUnavailable =>
+      'Conectarea nu este disponibilă acum. Aplicația funcționează în continuare pe acest dispozitiv.';
+  @override
+  String get accountSignedInAs => 'Conectat ca';
+  @override
+  String get accountSignOut => 'Deconectează-te';
+  @override
+  String get accountSignOutNote =>
+      'La deconectare, datele rămân pe acest dispozitiv și sincronizarea se oprește.';
+  @override
   String get profilePlaceholderBody =>
       'Autentificarea, poza ta de profil, o scurtă descriere despre tine și '
       'lista ta de prieteni vor avea loc aici.';

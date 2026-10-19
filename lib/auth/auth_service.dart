@@ -33,6 +33,8 @@ class AuthService extends ChangeNotifier {
   User? get user => _user;
   bool get isSignedIn => _user != null;
   String? get email => _user?.email;
+  String? get displayName => _user?.displayName;
+  String? get photoUrl => _user?.photoURL;
 
   /// The last sign-in failure, cleared by the next attempt.
   Object? get lastError => _lastError;

@@ -400,6 +400,23 @@ class StringsEn implements AppStrings {
   @override
   String get profileSection => 'Profile & Account';
   @override
+  String get accountSignedOutNote =>
+      'Your data stays on this device. Sign in to keep it in sync across your devices.';
+  @override
+  String get accountSignIn => 'Sign In With Google';
+  @override
+  String get accountSignInFailed => 'Could not sign in. Please try again.';
+  @override
+  String get accountUnavailable =>
+      'Sign-in is not available right now. The app keeps working on this device.';
+  @override
+  String get accountSignedInAs => 'Signed in as';
+  @override
+  String get accountSignOut => 'Sign Out';
+  @override
+  String get accountSignOutNote =>
+      'Signing out keeps your data on this device and stops syncing.';
+  @override
   String get profilePlaceholderBody =>
       'Sign-in, your profile picture, a short description of yourself, '
       'and your friends list will live here.';

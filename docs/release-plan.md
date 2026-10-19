@@ -294,8 +294,25 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
       WebAuthn); il promemoria giornaliero nel browser richiede il permesso per le notifiche e un
       servizio di notifiche push (Firebase Cloud Messaging), che funziona solo se il browser lo
       permette. Da decidere anche se PIN e orario del promemoria si sincronizzano tra i dispositivi.
-- [ ] ⭐ Pannello Account in Settings: cosa mostra prima del login; e come cancellare i dati locali
-      in release finché non c'è il login ("Reset all data" è ora solo in sviluppo).
+- [~] Pannello Account in Settings. **Decisioni dell’autore (19 ottobre):** prima del login solo
+      il pulsante “Accedi con Google” e una frase (i dati restano sul dispositivo, accedendo si
+      sincronizzano); al primo sync con dati sia locali sia cloud si **uniscono
+      automaticamente** (record più recente, nessuna scelta richiesta); all’uscita (logout) i
+      dati **restano sul telefono**; cancellazione in **due voci distinte**: “Elimina dati su
+      questo dispositivo” (sempre) e, da loggati, “Elimina account e dati cloud” (richiesta
+      degli store), entrambe con conferma rossa.
+      **Fatto:** `lib/widgets/account_panel.dart` sotto il profilo in Settings, con
+      `AuthScope`/`AuthService` creati in `main.dart` (inerti finché Settings non lo mostra);
+      stato non connesso (frase + pulsante Google; sul web il pulsante renderizzato da Google
+      `google_sign_in_web`), connesso (nome, email, “Esci” grigio e nota) e “non disponibile”;
+      testi IT/EN/RO; 6 test (`account_panel_test.dart`); suite **590 test superati, 3 esclusi**,
+      analisi pulita, build web release riuscita. **Da provare a mano:** accesso reale su
+      Android e sul web (`my.innerstars.app`).
+      **Resta:** le due voci di cancellazione. Vanno fatte insieme a `SyncService`, perché i
+      `clear()` attuali scrivono tombstone che una sync propagherebbe al cloud: “su questo
+      dispositivo” dovrà rimuovere i dati senza tombstone (e quindi tornare con la sync),
+      mentre “account e dati cloud” cancella Firestore e l’utente (con ri-autenticazione).
+      Finché non ci sono, in release non esiste modo di cancellare i dati (Reset resta in sviluppo).
 - [ ] UI in Settings (Quick Settings restano nascoste): Accedi con Google, account, "Sincronizza
       ora", ultimo sync, Disconnetti, **Elimina account e dati**. Dialog del primo sync quando
       locale e cloud hanno entrambi dati (Cancel grigio).

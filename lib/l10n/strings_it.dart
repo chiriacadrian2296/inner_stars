@@ -402,6 +402,23 @@ class StringsIt implements AppStrings {
   @override
   String get profileSection => 'Profilo & Account';
   @override
+  String get accountSignedOutNote =>
+      'I tuoi dati restano su questo dispositivo. Accedi per tenerli sincronizzati tra i tuoi dispositivi.';
+  @override
+  String get accountSignIn => 'Accedi con Google';
+  @override
+  String get accountSignInFailed => 'Accesso non riuscito. Riprova.';
+  @override
+  String get accountUnavailable =>
+      "L'accesso non è disponibile al momento. L'app continua a funzionare su questo dispositivo.";
+  @override
+  String get accountSignedInAs => 'Connesso come';
+  @override
+  String get accountSignOut => 'Esci';
+  @override
+  String get accountSignOutNote =>
+      'Uscendo, i tuoi dati restano su questo dispositivo e la sincronizzazione si ferma.';
+  @override
   String get profilePlaceholderBody =>
       'Accesso, la tua foto profilo, una breve descrizione di te e la tua '
       'lista amici troveranno posto qui.';

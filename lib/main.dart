@@ -13,6 +13,8 @@ import 'package:marionette_flutter/marionette_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'audio/audio_service.dart';
+import 'auth/auth_scope.dart';
+import 'auth/auth_service.dart';
 import 'data/apk_prompt_prefs.dart';
 import 'data/app_lock_repository.dart';
 import 'data/area_vision_repository.dart';
@@ -99,6 +101,9 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
   final _launchUnlocked = Completer<void>();
   final _startupComplete = ValueNotifier<bool>(false);
   bool _startupReady = false;
+  // Created now but inert until Settings asks for it: Firebase only starts
+  // when the Account section is first shown (see AuthService.ensureReady).
+  final _authService = AuthService();
 
   void _markStartupReady() {
     if (mounted && !_startupReady) setState(() => _startupReady = true);
@@ -120,6 +125,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
 
   @override
   void dispose() {
+    _authService.dispose();
     _startupComplete.dispose();
     super.dispose();
   }
@@ -168,8 +174,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
       final habitCycleRepository = await HabitCycleRepository.create();
       final starsShapeRepository = await StarsShapeRepository.create();
       final areaVisionRepository = await AreaVisionRepository.create();
-      final reflectionAnswerRepository =
-          await ReflectionRepository.create();
+      final reflectionAnswerRepository = await ReflectionRepository.create();
       final shootingStarWishRepository =
           await ShootingStarWishRepository.create();
       final audioSettingsRepository = await AudioSettingsRepository.create();
@@ -475,23 +480,26 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
         ],
         builder: (context, child) => StringsScope(
           strings: strings,
-          child: HabitCycleScope(
-            repository: habitCycleRepository,
-            child: HabitCycleHost(
-              navigatorKey: _navigatorKey,
-              habitRepository: habitRepository,
-              completionRepository: habitCompletionRepository,
-              cycleRepository: habitCycleRepository,
-              child: EntityInsightsHost(
-                projects: projectRepository,
-                stars: starRepository,
-                habits: habitRepository,
-                completions: habitCompletionRepository,
-                shapes: starsShapeRepository,
-                areaVisions: areaVisionRepository,
-                reflections: reflectionAnswerRepository,
-                settings: settings,
-                child: child!,
+          child: AuthScope(
+            service: _authService,
+            child: HabitCycleScope(
+              repository: habitCycleRepository,
+              child: HabitCycleHost(
+                navigatorKey: _navigatorKey,
+                habitRepository: habitRepository,
+                completionRepository: habitCompletionRepository,
+                cycleRepository: habitCycleRepository,
+                child: EntityInsightsHost(
+                  projects: projectRepository,
+                  stars: starRepository,
+                  habits: habitRepository,
+                  completions: habitCompletionRepository,
+                  shapes: starsShapeRepository,
+                  areaVisions: areaVisionRepository,
+                  reflections: reflectionAnswerRepository,
+                  settings: settings,
+                  child: child!,
+                ),
               ),
             ),
           ),

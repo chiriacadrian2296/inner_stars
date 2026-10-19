@@ -35,6 +35,7 @@ import '../theme/app_style.dart';
 import '../theme/app_typography.dart';
 import '../utils/app_modals.dart';
 import '../utils/app_time_picker.dart';
+import '../widgets/account_panel.dart';
 import '../widgets/apk_download_prompt.dart';
 import '../widgets/habit_cycle_scope.dart';
 import '../widgets/responsive_content.dart';
@@ -435,6 +436,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     index: 1,
                     child: _AvatarPicker(settings: widget.settings),
                   ),
+                  const SizedBox(height: 14),
+                  const StaggeredEntrance(index: 1, child: AccountPanel()),
                   const SizedBox(height: 28),
 
                   StaggeredEntrance(
