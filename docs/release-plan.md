@@ -320,6 +320,13 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
       che il browser traduce in una richiesta con ETag e, se nulla è cambiato, una risposta 304).
       Il service worker di Flutter è già quello che si autodisinstalla, non c’entra. Chi ha già
       la copia vecchia deve ricaricare senza cache o cancellare i dati del sito, una volta sola.
+      **Seconda causa, trovata subito dopo:** sul dominio `my.innerstars.app` Cloudflare
+      sovrascriveva comunque le intestazioni con l’impostazione di zona “Browser Cache TTL: 4
+      ore” (sul dominio tecnico `pages.dev` la correzione funzionava già). Con il permesso
+      dell’autore, impostata la zona `innerstars.app` su **“Respect Existing Headers”**; verificato
+      con `curl`: ora `main.dart.js`, `flutter_bootstrap.js` e `index.html` rispondono
+      `Cache-Control: no-cache`. Si può rimettere a 4 ore dalla stessa pagina (Caching →
+      Configuration), ma tornerebbe il problema.
 - [~] Pannello Account in Settings. **Decisioni dell’autore (19 ottobre):** prima del login solo
       il pulsante “Accedi con Google” e una frase (i dati restano sul dispositivo, accedendo si
       sincronizzano); al primo sync con dati sia locali sia cloud si **uniscono
