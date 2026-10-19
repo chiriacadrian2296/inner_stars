@@ -16,7 +16,7 @@ import '../utils/app_modals.dart';
 typedef VoiceNoteRecording = ({String path, int durationMs});
 
 /// Longest a single voice note can run before it stops by itself.
-const Duration kMaxVoiceNote = Duration(minutes: 5);
+const Duration kMaxVoiceNote = Duration(minutes: 1);
 
 String formatVoiceDuration(Duration d) {
   final minutes = d.inMinutes;

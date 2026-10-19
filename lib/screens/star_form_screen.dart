@@ -952,15 +952,6 @@ class _StarFormScreenState extends State<StarFormScreen> {
     setState(() => _photoPath = null);
   }
 
-  /// The Photos section's Reset: the main photo and every secondary one.
-  void _resetPhotos() {
-    _removePhoto();
-    _onMediaChanged([
-      for (final m in _media)
-        if (m.kind != StarMediaKind.photo) m,
-    ]);
-  }
-
   /// The day and time the person set, each defaulting on its own to today /
   /// now when left empty.
   DateTime _combinedDateTime() {
@@ -1727,7 +1718,6 @@ class _StarFormScreenState extends State<StarFormScreen> {
                           photoPath: _photoPath,
                           onPickPhoto: _pickPhoto,
                           onRemovePhoto: _removePhoto,
-                          onResetPhotos: _resetPhotos,
                           media: _media,
                           onMediaChanged: _onMediaChanged,
                         ),

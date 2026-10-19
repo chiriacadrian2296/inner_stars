@@ -1380,6 +1380,16 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get linkUrlHint => 'https://exemplu.ro';
   @override
+  String get linkSongLabel => 'Melodie';
+  @override
+  String get linkPlaceLabel => 'Locație';
+  @override
+  String get linkSiteLabel => 'Site';
+  @override
+  String get linkSongUrlHint => 'https://open.spotify.com/…';
+  @override
+  String get linkPlaceUrlHint => 'https://maps.app.goo.gl/…';
+  @override
   String get linkUrlLabel => 'Link';
   @override
   String get linkLabelLabel => 'Etichetă';

@@ -27,6 +27,7 @@ class StarMediaEditor extends StatelessWidget {
     this.kinds = StarMediaKind.values,
     this.compact = false,
     this.gridHeight,
+    this.sideColumn = false,
   });
 
   final List<StarMedia> media;
@@ -41,6 +42,11 @@ class StarMediaEditor extends StatelessWidget {
 
   /// With [compact], the exact height the photo grid should fill.
   final double? gridHeight;
+
+  /// The victory form's half-width column beside the main photo: one voice
+  /// note on top, then one link each for a song, a place and a site, filling
+  /// exactly [gridHeight]. Ignores [kinds].
+  final bool sideColumn;
 
   int _countOf(StarMediaKind kind) => media.where((m) => m.kind == kind).length;
 
@@ -155,17 +161,20 @@ class StarMediaEditor extends StatelessWidget {
     }
   }
 
-  Future<void> _addLink(BuildContext context) async {
+  Future<void> _addLink(
+    BuildContext context, [
+    StarLinkKind kind = StarLinkKind.site,
+  ]) async {
     if (!_checkLimit(context, StarMediaKind.link)) return;
     final result = kLinkAsSheet
         ? await showAppSheet<({String url, String? label})>(
             context: context,
             isScrollControlled: true,
-            builder: (_) => const _LinkDialog(asSheet: true),
+            builder: (_) => _LinkDialog(asSheet: true, kind: kind),
           )
         : await showAppDialog<({String url, String? label})>(
             context: context,
-            builder: (_) => const _LinkDialog(),
+            builder: (_) => _LinkDialog(kind: kind),
           );
     if (result == null) return;
     _addAll([
@@ -174,6 +183,7 @@ class StarMediaEditor extends StatelessWidget {
         kind: StarMediaKind.link,
         url: result.url,
         label: result.label,
+        linkKind: kind,
         createdAt: DateTime.now(),
       ),
     ]);
@@ -190,6 +200,92 @@ class StarMediaEditor extends StatelessWidget {
       if (m.kind != kind) m,
   ]);
 
+  StarMedia? _linkOf(StarLinkKind kind) => media
+      .where(
+        (m) =>
+            m.kind == StarMediaKind.link &&
+            (m.linkKind ?? StarLinkKind.site) == kind,
+      )
+      .firstOrNull;
+
+  Widget _sideColumn(BuildContext context) {
+    assert(gridHeight != null, 'the side column needs the height to fill');
+    final strings = context.strings;
+    final colors = context.colors;
+    final voice = media.where((m) => m.kind == StarMediaKind.voice).firstOrNull;
+    final slots = [
+      (StarLinkKind.song, strings.linkSongLabel),
+      (StarLinkKind.place, strings.linkPlaceLabel),
+      (StarLinkKind.site, strings.linkSiteLabel),
+    ];
+    return SizedBox(
+      height: gridHeight,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (voice == null)
+            _CompactSlot(
+              icon: Icons.mic_none_outlined,
+              text: '0:00',
+              height: _kTileHeight,
+              onTap: () => _addVoice(context),
+            )
+          else
+            _RemovableRow(
+              key: ValueKey(voice.id),
+              onRemove: () => _remove(voice),
+              child: VoiceNotePlayer(
+                media: voice,
+                framed: false,
+                accent: colors.gold,
+                badgeSize: 16,
+                timeSize: 12,
+                timeInset: 5,
+                contentColor: Colors.white,
+                timeColor: colors.gold,
+              ),
+            ),
+          MemoryCaption(
+            strings.voiceNoteLabel(formatVoiceDuration(kMaxVoiceNote)),
+          ),
+          const Spacer(),
+          for (final (kind, name) in slots)
+            if (_linkOf(kind) case final item?)
+              _RemovableRow(
+                key: ValueKey(item.id),
+                minHeight: _kCompactTileHeight,
+                onRemove: () => _remove(item),
+                onTap: () => openExtraLink(context, item),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Row(
+                    children: [
+                      Icon(linkKindIcon(kind), color: colors.gold, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          linkDisplayText(item),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: colors.text, fontSize: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              _CompactSlot(
+                icon: linkKindIcon(kind),
+                text: name,
+                height: _kCompactTileHeight,
+                onTap: () => _addLink(context, kind),
+              ),
+        ],
+      ),
+    );
+  }
+
   /// Below this width (a phone) voice notes and links stack at full width
   /// instead of sharing a row.
   static const _pairedMinWidth = 520.0;
@@ -203,6 +299,7 @@ class StarMediaEditor extends StatelessWidget {
   }
 
   Widget _content(BuildContext context, {required bool wide}) {
+    if (sideColumn) return _sideColumn(context);
     final strings = context.strings;
     final colors = context.colors;
     List<StarMedia> of(StarMediaKind kind) =>
@@ -423,9 +520,11 @@ class _RemovableRow extends StatelessWidget {
     required this.child,
     required this.onRemove,
     this.onTap,
+    this.minHeight = _kTileHeight,
   });
 
   final Widget child;
+  final double minHeight;
 
   /// Tapping anywhere on the tile (but its remove badge).
   final VoidCallback? onTap;
@@ -445,7 +544,7 @@ class _RemovableRow extends StatelessWidget {
             child: DecoratedBox(
               decoration: _tileBody(colors),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: _kTileHeight),
+                constraints: BoxConstraints(minHeight: minHeight),
                 child: Center(child: child),
               ),
             ),
@@ -639,7 +738,10 @@ const bool kLinkAsSheet = true;
 /// Link entry: a dialog, so it moves clear of the keyboard by itself, or
 /// (see [kLinkAsSheet]) a fixed bottom sheet the keyboard covers instead.
 class _LinkDialog extends StatefulWidget {
-  const _LinkDialog({this.asSheet = false});
+  const _LinkDialog({this.asSheet = false, required this.kind});
+
+  /// What the link points to: sets the title and the address hint.
+  final StarLinkKind kind;
 
   /// Lays the same form out as a bottom sheet instead of a dialog.
   final bool asSheet;
@@ -686,6 +788,11 @@ class _LinkDialogState extends State<_LinkDialog> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final strings = context.strings;
     final colors = context.colors;
+    final title = switch (widget.kind) {
+      StarLinkKind.song => strings.linkSongLabel,
+      StarLinkKind.place => strings.linkPlaceLabel,
+      StarLinkKind.site => strings.linkSiteLabel,
+    };
     final fields = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -700,7 +807,11 @@ class _LinkDialogState extends State<_LinkDialog> with WidgetsBindingObserver {
           controller: _url,
           maxLength: kMaxLinkUrlLength,
           showCounter: false,
-          hintText: strings.linkUrlHint,
+          hintText: switch (widget.kind) {
+            StarLinkKind.song => strings.linkSongUrlHint,
+            StarLinkKind.place => strings.linkPlaceUrlHint,
+            StarLinkKind.site => strings.linkUrlHint,
+          },
           textCapitalization: TextCapitalization.none,
           textInputAction: TextInputAction.next,
           errorText: _invalid ? strings.linkInvalid : null,
@@ -748,7 +859,7 @@ class _LinkDialogState extends State<_LinkDialog> with WidgetsBindingObserver {
       return Padding(
         padding: EdgeInsets.only(bottom: keyboard.bottom),
         child: AppSheetFrame(
-          title: AppSheetTitle(strings.linkTitle),
+          title: AppSheetTitle(title),
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
             child: Column(
@@ -772,7 +883,7 @@ class _LinkDialogState extends State<_LinkDialog> with WidgetsBindingObserver {
       // Top matches the 16 between title and first field, bottom the 24
       // above the title.
       actionsPadding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      title: Text(strings.linkTitle),
+      title: Text(title),
       content: fields,
       actions: actions,
     );
@@ -908,6 +1019,60 @@ class _KindPlaceholder extends StatelessWidget {
     );
   }
 }
+
+/// A free half-width slot: the stand-in is the add button, drawn faint with
+/// the kind's icon and a short word.
+class _CompactSlot extends StatelessWidget {
+  const _CompactSlot({
+    required this.icon,
+    required this.text,
+    required this.height,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String text;
+  final double height;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ghost = context.colors.muted;
+    return Semantics(
+      button: true,
+      label: context.strings.addExtraAction,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(kRadiusField),
+          child: Container(
+            height: height,
+            decoration: _tileBody(context.colors),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              children: [
+                Icon(icon, color: ghost, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    text,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: ghost, fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The half-width link slots are a little shorter than a full-width field.
+const double _kCompactTileHeight = 40;
 
 /// As tall as the single-line fields above (a picker field: 12 of padding
 /// either side of a ~21 px line of text, plus its 1.5 px border each side).

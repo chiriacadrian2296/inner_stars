@@ -1598,14 +1598,6 @@ class _MarkAchievedSheetState extends State<MarkAchievedSheet> {
     setState(() => _photoPath = null);
   }
 
-  void _resetPhotos() {
-    _removePhoto();
-    _onMediaChanged([
-      for (final m in _media)
-        if (m.kind != StarMediaKind.photo) m,
-    ]);
-  }
-
   void _onMediaChanged(List<StarMedia> next) {
     // Everything here was added in this sheet, so whatever is dropped was
     // never saved anywhere — free it now.
@@ -1683,7 +1675,6 @@ class _MarkAchievedSheetState extends State<MarkAchievedSheet> {
               photoPath: _photoPath,
               onPickPhoto: _pickPhoto,
               onRemovePhoto: _removePhoto,
-              onResetPhotos: _resetPhotos,
               media: _media,
               onMediaChanged: _onMediaChanged,
             ),

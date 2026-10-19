@@ -1373,6 +1373,16 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get linkUrlHint => 'https://example.com';
   @override
+  String get linkSongLabel => 'Song';
+  @override
+  String get linkPlaceLabel => 'Location';
+  @override
+  String get linkSiteLabel => 'Website';
+  @override
+  String get linkSongUrlHint => 'https://open.spotify.com/…';
+  @override
+  String get linkPlaceUrlHint => 'https://maps.app.goo.gl/…';
+  @override
   String get linkUrlLabel => 'Link';
   @override
   String get linkLabelLabel => 'Label';

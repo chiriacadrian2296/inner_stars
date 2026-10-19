@@ -261,14 +261,23 @@ void main() {
 
     final detailsToggle = find.byKey(const ValueKey('victory-details-toggle'));
     expect(detailsToggle, findsOneWidget);
-    expect(find.text('Photos'), findsNothing);
+    expect(find.text('Song'), findsNothing);
 
     await tester.ensureVisible(detailsToggle);
     await tester.tap(detailsToggle);
     await tester.pumpAndSettle();
 
     expect(find.byIcon(Icons.expand_less), findsWidgets);
-    expect(find.text('Photos'), findsOneWidget);
+    // Beside the main photo: one voice note (a minute at most), then a song,
+    // a place and a site link — and no secondary photos or videos.
+    expect(find.text('Voice note · 1:00'), findsOneWidget);
+    expect(find.text('Song'), findsOneWidget);
+    expect(find.text('Location'), findsOneWidget);
+    expect(find.text('Website'), findsOneWidget);
+    expect(find.byIcon(Icons.music_note_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.place_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.language_rounded), findsOneWidget);
+    expect(find.text('Videos'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

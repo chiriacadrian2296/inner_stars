@@ -615,11 +615,7 @@ class StarLinkRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 5),
-              const Icon(
-                Icons.arrow_outward_rounded,
-                color: Colors.white,
-                size: 14,
-              ),
+              Icon(linkKindIcon(media.linkKind), color: Colors.white, size: 14),
             ],
           ),
         ),
@@ -627,6 +623,14 @@ class StarLinkRow extends StatelessWidget {
     );
   }
 }
+
+/// The mark on a link: a note for a song, a pin for a place, a globe for a
+/// site (also what a link saved before kinds existed shows).
+IconData linkKindIcon(StarLinkKind? kind) => switch (kind) {
+  StarLinkKind.song => Icons.music_note_rounded,
+  StarLinkKind.place => Icons.place_outlined,
+  StarLinkKind.site || null => Icons.language_rounded,
+};
 
 /// Opens a link extra in the browser, or says it could not be opened.
 Future<void> openExtraLink(BuildContext context, StarMedia link) async {

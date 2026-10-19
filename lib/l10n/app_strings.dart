@@ -695,6 +695,11 @@ abstract class AppStrings {
   String get micPermissionDenied;
   String get linkTitle;
   String get linkUrlHint;
+  String get linkSongLabel;
+  String get linkPlaceLabel;
+  String get linkSiteLabel;
+  String get linkSongUrlHint;
+  String get linkPlaceUrlHint;
   String get linkUrlLabel;
   String get linkLabelLabel;
   String get linkLabelHint;

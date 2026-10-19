@@ -206,9 +206,8 @@ class IntensityField extends StatelessWidget {
   }
 }
 
-/// The "Details" toggle and, once open, a victory's photos (main photo on
-/// the left, secondary ones on the right) and its videos, voice notes and
-/// links.
+/// The "Details" toggle and, once open, a victory's main photo (on the left)
+/// beside its one voice note and its song, place and site links.
 class VictoryDetailsSection extends StatelessWidget {
   const VictoryDetailsSection({
     super.key,
@@ -217,7 +216,6 @@ class VictoryDetailsSection extends StatelessWidget {
     required this.photoPath,
     required this.onPickPhoto,
     required this.onRemovePhoto,
-    required this.onResetPhotos,
     required this.media,
     required this.onMediaChanged,
     this.entranceIndex = 0,
@@ -230,8 +228,6 @@ class VictoryDetailsSection extends StatelessWidget {
   final VoidCallback onPickPhoto;
   final VoidCallback onRemovePhoto;
 
-  /// The Photos section's Reset: the main photo and every secondary one.
-  final VoidCallback onResetPhotos;
   final List<StarMedia> media;
   final ValueChanged<List<StarMedia>> onMediaChanged;
 
@@ -313,81 +309,46 @@ class VictoryDetailsSection extends StatelessWidget {
                       const SizedBox(height: 44),
                       StaggeredEntrance(
                         index: 0,
-                        // The photo section, split in two halves: main photo
-                        // on the left, secondary photos on the right.
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                        // Split in two halves: the main photo on the left; on
+                        // the right one voice note, then a song, a place and
+                        // a site link, down to the photo's own bottom edge.
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            const gap = 12.0;
+                            final half = (constraints.maxWidth - gap) / 2;
+                            final gridHeight = half * 16 / 9;
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                AppFieldLabel(
-                                  strings.photosLabel,
-                                  requirement: FieldRequirement.optional,
-                                ),
-                                FieldResetButton(
-                                  onReset: onResetPhotos,
-                                  canReset:
-                                      photoPath != null ||
-                                      media.any(
-                                        (m) => m.kind == StarMediaKind.photo,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      PhotoPicker(
+                                        photoPath: photoPath,
+                                        onPick: onPickPhoto,
+                                        onRemove: onRemovePhoto,
+                                        compact: true,
+                                        compactWidth: half,
+                                        compactHeight: gridHeight,
                                       ),
+                                      MemoryCaption(strings.mainPhotoLabel),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: gap),
+                                Expanded(
+                                  child: StarMediaEditor(
+                                    media: media,
+                                    onChanged: onMediaChanged,
+                                    sideColumn: true,
+                                    gridHeight: gridHeight,
+                                  ),
                                 ),
                               ],
-                            ),
-                            const SizedBox(height: kFieldLabelGap),
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                const gap = 12.0;
-                                final half = (constraints.maxWidth - gap) / 2;
-                                final gridHeight = half * 16 / 9;
-                                return Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          PhotoPicker(
-                                            photoPath: photoPath,
-                                            onPick: onPickPhoto,
-                                            onRemove: onRemovePhoto,
-                                            compact: true,
-                                            compactWidth: half,
-                                            compactHeight: gridHeight,
-                                          ),
-                                          MemoryCaption(strings.mainPhotoLabel),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: gap),
-                                    Expanded(
-                                      child: StarMediaEditor(
-                                        media: media,
-                                        onChanged: onMediaChanged,
-                                        kinds: const [StarMediaKind.photo],
-                                        compact: true,
-                                        gridHeight: gridHeight,
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      StaggeredEntrance(
-                        index: 1,
-                        child: StarMediaEditor(
-                          media: media,
-                          onChanged: onMediaChanged,
-                          kinds: const [
-                            StarMediaKind.video,
-                            StarMediaKind.voice,
-                            StarMediaKind.link,
-                          ],
+                            );
+                          },
                         ),
                       ),
                     ],

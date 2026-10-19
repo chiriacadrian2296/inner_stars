@@ -2,11 +2,15 @@
 /// top of its cover photo.
 enum StarMediaKind { voice, photo, video, link }
 
+/// What a link extra points to: a song, a place (e.g. on Maps) or a site.
+/// A link saved before kinds existed has none and counts as a site.
+enum StarLinkKind { song, place, site }
+
 /// Most extras of each kind a single victory can carry.
 const Map<StarMediaKind, int> kMaxStarMediaPerKind = {
   StarMediaKind.photo: 8,
   StarMediaKind.video: 5,
-  StarMediaKind.voice: 3,
+  StarMediaKind.voice: 1,
   StarMediaKind.link: 3,
 };
 
@@ -29,6 +33,7 @@ class StarMedia {
     this.url,
     this.label,
     this.durationMs,
+    this.linkKind,
     required this.createdAt,
   }) : assert(
          kind == StarMediaKind.link ? url != null : path != null,
@@ -41,6 +46,9 @@ class StarMedia {
   final String? url;
   final String? label;
   final int? durationMs;
+
+  /// [StarMediaKind.link] only; null reads as [StarLinkKind.site].
+  final StarLinkKind? linkKind;
   final DateTime createdAt;
 
   bool get isFile => kind != StarMediaKind.link;
@@ -60,6 +68,9 @@ class StarMedia {
       url: json['url'] as String?,
       label: json['label'] as String?,
       durationMs: json['durationMs'] as int?,
+      linkKind: StarLinkKind.values
+          .where((k) => k.name == json['linkKind'])
+          .firstOrNull,
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }
@@ -71,6 +82,7 @@ class StarMedia {
     'url': url,
     'label': label,
     'durationMs': durationMs,
+    if (linkKind != null) 'linkKind': linkKind!.name,
     'createdAt': createdAt.toIso8601String(),
   };
 
@@ -83,9 +95,10 @@ class StarMedia {
       other.url == url &&
       other.label == label &&
       other.durationMs == durationMs &&
+      other.linkKind == linkKind &&
       other.createdAt == createdAt;
 
   @override
   int get hashCode =>
-      Object.hash(id, kind, path, url, label, durationMs, createdAt);
+      Object.hash(id, kind, path, url, label, durationMs, linkKind, createdAt);
 }

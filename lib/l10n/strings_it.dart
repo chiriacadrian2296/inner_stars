@@ -1384,6 +1384,16 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get linkUrlHint => 'https://esempio.it';
   @override
+  String get linkSongLabel => 'Canzone';
+  @override
+  String get linkPlaceLabel => 'Posizione';
+  @override
+  String get linkSiteLabel => 'Sito';
+  @override
+  String get linkSongUrlHint => 'https://open.spotify.com/…';
+  @override
+  String get linkPlaceUrlHint => 'https://maps.app.goo.gl/…';
+  @override
   String get linkUrlLabel => 'Link';
   @override
   String get linkLabelLabel => 'Etichetta';
