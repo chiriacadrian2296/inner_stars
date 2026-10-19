@@ -25,12 +25,18 @@ class AppLockGate extends StatefulWidget {
     required this.biometricAuthService,
     required this.child,
     this.onLaunchUnlocked,
+    this.startLocked,
   });
 
   final AppLockRepository appLockRepository;
   final BiometricAuthService biometricAuthService;
   final Widget child;
   final VoidCallback? onLaunchUnlocked;
+
+  /// Whether the lock stands in front of the app at first. Defaults to
+  /// whether the lock is enabled; false right after signing in, since the
+  /// person has just proven who they are.
+  final bool? startLocked;
 
   @override
   State<AppLockGate> createState() => _AppLockGateState();
@@ -49,7 +55,8 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    _lockedAtLaunch = widget.appLockRepository.isEnabled;
+    _lockedAtLaunch =
+        widget.appLockRepository.isEnabled && (widget.startLocked ?? true);
     WidgetsBinding.instance.addObserver(this);
   }
 

@@ -424,6 +424,22 @@ class StringsRo implements AppStrings {
   String get accountSyncError =>
       'Actualizarea nu a reușit. Încerc din nou în curând.';
   @override
+  String get loginHeroBefore => 'Chiar și întunericul';
+  @override
+  String get loginHeroAccent => 'are stelele lui.';
+  @override
+  String get loginText =>
+      'Conectează-te ca să-ți regăsești stelele pe fiecare dispozitiv.';
+  @override
+  String get loginNote => 'Contul tău păstrează și sincronizează datele tale.';
+  @override
+  String get loginUnavailable =>
+      'Conectarea nu a putut porni. Verifică conexiunea și încearcă din nou.';
+  @override
+  String get loginRetry => 'Încearcă din nou';
+  @override
+  String get loginLanguageLabel => 'Limbă';
+  @override
   String get deleteLocalData => 'Șterge Datele De Pe Acest Dispozitiv';
   @override
   String get deleteLocalDataConfirmTitle =>

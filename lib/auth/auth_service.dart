@@ -8,9 +8,9 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../firebase_options.dart';
 import '../sync/sync_service.dart';
 
-/// Google sign-in for the cloud copy of the user's data. Nothing here runs
-/// until [ensureReady] is called, so the app stays fully usable offline and
-/// without an account (local-first).
+/// Google sign-in. The app requires an account: nothing past the login page
+/// opens without one. Nothing here runs until [start] (or [ensureReady]) is
+/// called, and once signed in the app keeps working offline.
 ///
 /// The Google account is verified by `google_sign_in`, which hands over an ID
 /// token; Firebase only checks that token (`signInWithCredential`). That is
@@ -37,6 +37,17 @@ class AuthService extends ChangeNotifier implements SyncAccount {
   StreamSubscription<GoogleSignInAuthenticationEvent>? _googleSub;
   User? _user;
   Object? _lastError;
+  bool _resolved = false;
+  bool _initFailed = false;
+
+  /// Whether the first answer to "is someone signed in?" has arrived (or
+  /// Firebase could not start, see [initFailed]). Until then the app shows
+  /// neither the login page nor the Galaxy.
+  bool get isResolved => _resolved;
+
+  /// Firebase could not be started (offline on the web, missing SDK): no
+  /// answer is coming, and signing in is not possible until [retry] works.
+  bool get initFailed => _initFailed;
 
   /// The signed-in Firebase user, or null.
   User? get user => _user;
@@ -59,6 +70,24 @@ class AuthService extends ChangeNotifier implements SyncAccount {
   /// SDK, missing configuration).
   Future<bool> ensureReady() => _ready ??= _initialize();
 
+  /// Brings Firebase up at launch and waits at most [timeout] for it to say
+  /// whether someone is signed in; after that the app decides with what it
+  /// has (see [initFailed]).
+  Future<void> start({Duration timeout = const Duration(seconds: 8)}) async {
+    final ready = await ensureReady().timeout(timeout, onTimeout: () => false);
+    if (!ready && !_resolved) {
+      _resolved = true;
+      _initFailed = true;
+      notifyListeners();
+    }
+  }
+
+  /// Tries to bring Firebase up again (the login page's "try again").
+  Future<bool> retry() {
+    _lastError = null;
+    return ensureReady();
+  }
+
   Future<bool> _initialize() async {
     try {
       if (Firebase.apps.isEmpty) {
@@ -71,6 +100,8 @@ class AuthService extends ChangeNotifier implements SyncAccount {
       _user = auth.currentUser;
       _userSub = auth.authStateChanges().listen((user) {
         _user = user;
+        _resolved = true;
+        _initFailed = false;
         onSignInChanged?.call(user != null);
         notifyListeners();
       });
@@ -96,6 +127,10 @@ class AuthService extends ChangeNotifier implements SyncAccount {
     } catch (error) {
       _ready = null;
       _lastError = error;
+      if (!_resolved) {
+        _resolved = true;
+        _initFailed = true;
+      }
       notifyListeners();
       return false;
     }

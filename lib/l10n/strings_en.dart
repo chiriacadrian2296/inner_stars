@@ -421,6 +421,21 @@ class StringsEn implements AppStrings {
   @override
   String get accountSyncError => 'Could not update. Trying again soon.';
   @override
+  String get loginHeroBefore => 'Even the dark';
+  @override
+  String get loginHeroAccent => 'has its stars.';
+  @override
+  String get loginText => 'Sign in to find your stars on every device.';
+  @override
+  String get loginNote => 'Your account keeps your data safe and in sync.';
+  @override
+  String get loginUnavailable =>
+      'Sign-in could not start. Check your connection and try again.';
+  @override
+  String get loginRetry => 'Try Again';
+  @override
+  String get loginLanguageLabel => 'Language';
+  @override
   String get deleteLocalData => 'Delete Data On This Device';
   @override
   String get deleteLocalDataConfirmTitle => 'Delete data on this device?';

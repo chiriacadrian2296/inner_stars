@@ -183,6 +183,13 @@ abstract class AppStrings {
   String get accountSignOutNote;
   String get accountSyncing;
   String get accountSyncError;
+  String get loginHeroBefore;
+  String get loginHeroAccent;
+  String get loginText;
+  String get loginNote;
+  String get loginUnavailable;
+  String get loginRetry;
+  String get loginLanguageLabel;
   String get deleteLocalData;
   String get deleteLocalDataConfirmTitle;
   String get deleteLocalDataConfirmBodySignedOut;

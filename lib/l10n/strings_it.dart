@@ -423,6 +423,22 @@ class StringsIt implements AppStrings {
   @override
   String get accountSyncError => 'Aggiornamento non riuscito. Riprovo a breve.';
   @override
+  String get loginHeroBefore => 'Anche il buio';
+  @override
+  String get loginHeroAccent => 'ha le sue stelle.';
+  @override
+  String get loginText =>
+      'Accedi per ritrovare le tue stelle su ogni dispositivo.';
+  @override
+  String get loginNote => 'Il tuo account conserva e sincronizza i tuoi dati.';
+  @override
+  String get loginUnavailable =>
+      "Impossibile avviare l'accesso. Controlla la connessione e riprova.";
+  @override
+  String get loginRetry => 'Riprova';
+  @override
+  String get loginLanguageLabel => 'Lingua';
+  @override
   String get deleteLocalData => 'Elimina Dati Su Questo Dispositivo';
   @override
   String get deleteLocalDataConfirmTitle =>

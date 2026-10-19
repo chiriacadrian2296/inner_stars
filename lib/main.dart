@@ -13,6 +13,7 @@ import 'package:marionette_flutter/marionette_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'audio/audio_service.dart';
+import 'auth/auth_gate.dart';
 import 'auth/auth_scope.dart';
 import 'auth/auth_service.dart';
 import 'data/apk_prompt_prefs.dart';
@@ -38,6 +39,7 @@ import 'data/shooting_star_wish_repository.dart';
 import 'l10n/strings_scope.dart';
 import 'notifications/reminder_service.dart';
 import 'models/star_kind.dart';
+import 'screens/login_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/sky_screen.dart';
 import 'screens/star_form_screen.dart';
@@ -138,6 +140,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
     ),
   );
   SyncService? _syncService;
+  bool _wasSignedIn = false;
 
   Widget _withSync(Widget child) {
     final sync = _syncService;
@@ -200,6 +203,8 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
   }
 
   Future<void> _load() async {
+    // The app opens only for a signed-in account, so ask Firebase right away.
+    unawaited(_authService.start());
     try {
       await migrateLocalData(await SharedPreferences.getInstance());
       final settings = await SettingsController.create();
@@ -254,6 +259,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
       }
 
       final prefs = await SharedPreferences.getInstance();
+      _wasSignedIn = prefs.getBool(_kWasSignedInKey) ?? false;
       final moodboardRepository = await MoodboardRepository.create();
       final settingsCollection = SettingsCollection(prefs);
       final syncService = SyncService(
@@ -306,7 +312,6 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
       );
 
       if (!mounted) return;
-      if (!appLockRepository.isEnabled) _markLaunchUnlocked();
       setState(() {
         _settings = settings;
         _appLockRepository = appLockRepository;
@@ -327,16 +332,6 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
         _syncService = syncService;
       });
       syncService.start();
-      if (prefs.getBool(_kWasSignedInKey) == true) {
-        unawaited(_authService.ensureReady());
-      }
-
-      // A locked launch reveals the lock's first frame, never personal data.
-      if (appLockRepository.isEnabled) {
-        WidgetsBinding.instance.addPostFrameCallback(
-          (_) => _markStartupReady(),
-        );
-      }
 
       final launchedFromNotification = await reminderService
           .launchedFromNotification();
@@ -628,30 +623,51 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
           // above SkyScreen so a locked launch never reveals a frame of
           // real content first, and re-checked on every background/resume
           // (see AppLockGate's own doc comment for the lifecycle rule).
-          child: AppLockGate(
-            appLockRepository: appLockRepository,
-            biometricAuthService: biometricAuthService,
-            onLaunchUnlocked: _markLaunchUnlocked,
-            child: SkyScreen(
-              onStartupReady: _markStartupReady,
-              onStartupError: (error) {
-                if (mounted) setState(() => _loadError = error);
-              },
-              startupComplete: _startupComplete,
-              settings: settings,
+          child: AuthGate(
+            auth: _authService,
+            wasSignedIn: _wasSignedIn,
+            // The splash lifts over the login page's first frame.
+            onLoginShown: _markStartupReady,
+            onOpened: (startLocked) {
+              if (startLocked && appLockRepository.isEnabled) {
+                // A locked launch reveals the lock's first frame, never
+                // personal data; the PIN screen marks the launch unlocked.
+                _markStartupReady();
+              } else {
+                _markLaunchUnlocked();
+              }
+            },
+            login: LoginScreen(
+              auth: _authService,
+              locale: settings.locale,
+              onLocaleChanged: settings.setLocale,
+            ),
+            childBuilder: (startLocked) => AppLockGate(
               appLockRepository: appLockRepository,
               biometricAuthService: biometricAuthService,
-              starRepository: starRepository,
-              projectRepository: projectRepository,
-              habitRepository: habitRepository,
-              habitCompletionRepository: habitCompletionRepository,
-              starsShapeRepository: starsShapeRepository,
-              areaVisionRepository: areaVisionRepository,
-              reflectionAnswerRepository: reflectionAnswerRepository,
-              shootingStarWishRepository: shootingStarWishRepository,
-              audioSettingsRepository: audioSettingsRepository,
-              audioService: audioService,
-              reminderService: reminderService,
+              onLaunchUnlocked: _markLaunchUnlocked,
+              startLocked: startLocked,
+              child: SkyScreen(
+                onStartupReady: _markStartupReady,
+                onStartupError: (error) {
+                  if (mounted) setState(() => _loadError = error);
+                },
+                startupComplete: _startupComplete,
+                settings: settings,
+                appLockRepository: appLockRepository,
+                biometricAuthService: biometricAuthService,
+                starRepository: starRepository,
+                projectRepository: projectRepository,
+                habitRepository: habitRepository,
+                habitCompletionRepository: habitCompletionRepository,
+                starsShapeRepository: starsShapeRepository,
+                areaVisionRepository: areaVisionRepository,
+                reflectionAnswerRepository: reflectionAnswerRepository,
+                shootingStarWishRepository: shootingStarWishRepository,
+                audioSettingsRepository: audioSettingsRepository,
+                audioService: audioService,
+                reminderService: reminderService,
+              ),
             ),
           ),
         ),

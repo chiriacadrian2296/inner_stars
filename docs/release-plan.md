@@ -41,6 +41,9 @@ Firebase, hosting, privacy e store (parte B), infine la rifinitura (parte C).
   accettata, con privacy policy e cancellazione account.
 - L'app resta **local-first**: SharedPreferences è il database principale, Firestore è la copia
   remota sincronizzata.
+- **Accesso obbligatorio (deciso il 19 ottobre sera):** nessuno entra nella Galaxy senza un
+  account Google. Davanti a tutto c’è una pagina di login (A6). La prima volta serve internet;
+  dopo, l’app si apre anche offline perché i dati stanno sul dispositivo.
 - ID **UUID v4** (primo blocco di A2 completato); migrazione automatica dei dati locali
   all'avvio. Nessun utente reale, quindi nessuna cautela particolare di migrazione.
 - Media sincronizzati nella v1: foto principale di ogni vittoria, **un audio per vittoria (max 60 s)**,
@@ -294,6 +297,21 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
       WebAuthn); il promemoria giornaliero nel browser richiede il permesso per le notifiche e un
       servizio di notifiche push (Firebase Cloud Messaging), che funziona solo se il browser lo
       permette. Da decidere anche se PIN e orario del promemoria si sincronizzano tra i dispositivi.
+- [x] **Pagina di login obbligatoria (19 ottobre sera, su richiesta dell’autore):** su
+      browser e su Android, prima di tutto (`lib/screens/login_screen.dart`,
+      `lib/auth/auth_gate.dart`). Stile della landing (stesso sfondo con velo blu e stelle
+      ferme, titolo grande con la seconda riga in oro — “Anche il buio / ha le sue stelle.” —,
+      testo azzurro-grigio, marchio in alto a sinistra, lingue IT / EN / RO in alto a destra,
+      pulsante oro a pillola su Android; sul web il pulsante lo disegna Google, nero a pillola,
+      e non si può cambiare). Sequenza: splash → login (se non c’è un account) → blocco con
+      PIN, solo al riavvio con l’account già presente (dopo un login appena fatto non si
+      chiede) → Galaxy. Uscendo si torna al login chiudendo tutte le pagine aperte. Se Firebase
+      non parte (web offline) ma c’era un accesso, l’app si apre comunque; altrimenti il login
+      mostra “Riprova”. Verificata nel browser in locale (porta 5000, già origine autorizzata)
+      senza premere il pulsante; 12 test nuovi (`login_gate_test.dart`), suite **629 superati,
+      3 esclusi**, analisi pulita, build web e APK debug riuscite. **Da provare a mano:** accesso
+      reale su Android e web, con PIN attivo e senza. **Aperto:** l’onboarding dopo il primo
+      accesso (A7); la musica di sottofondo parte già sulla pagina di login.
 - [~] Pannello Account in Settings. **Decisioni dell’autore (19 ottobre):** prima del login solo
       il pulsante “Accedi con Google” e una frase (i dati restano sul dispositivo, accedendo si
       sincronizzano); al primo sync con dati sia locali sia cloud si **uniscono
