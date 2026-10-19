@@ -504,8 +504,14 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
       Firebase e l’accesso Google; prima controlla l’accesso recente e, su Android, chiede di
       nuovo l’account; sul web chiede di uscire, rientrare e riprovare). Sync in pausa durante
       entrambe. 610 test superati.
-      **Restano:** prova reale (due dispositivi, offline, scambio account), test delle regole
-      sull’emulatore, e una schermata che spieghi un errore persistente.
+      **Prova reale del 19 ottobre sera (autore, web):** accesso con l’account Google personale
+      riuscito su `my.innerstars.app`; creata una costellazione e una vittoria, aperta una finestra
+      in incognito (secondo “dispositivo”) con lo stesso account e i dati sono arrivati.
+      Visto in console: utente in Authentication e, sotto `users/{uid}`, le collezioni
+      sincronizzate. **Restano da provare:** Android (la build installata è ancora quella
+      senza login), secondo account Google sullo stesso browser (deve vedere solo i suoi dati),
+      offline, cancellazione dati/account; test delle regole sull’emulatore; una schermata che
+      spieghi un errore persistente.
       Struttura `users/{uid}/<collezione>/{uuid}`. `SyncService` con listener per collezione,
       push debounced, ripresa al `resumed`, stato e nessun crash offline.
       Regole di sicurezza: ognuno accede solo a `users/{uid}/**`, con test sull'emulatore.
