@@ -41,6 +41,10 @@ dependencies:
   animated_toggle_switch: ^0.8.7
   record: ^7.1.1
   fc_native_video_thumbnail: ^3.0.1
+  firebase_core: ^5.0.0
+  firebase_auth: ^7.0.0
+  cloud_firestore: ^7.0.0
+  google_sign_in: ^7.2.0
 dev_dependencies:
   shared_preferences_platform_interface: ^2.4.2
   flutter_test:

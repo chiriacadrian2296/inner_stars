@@ -383,7 +383,28 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
       impostazioni anche in pausa/chiusura; far ascoltare alla UI i repository dopo un
       `applyRemote` (visioni, desiderio e moodboard ora sono `ChangeNotifier` ma le
       schermate non li ascoltano ancora); riprendere le risposte vecchie alle domande se servono.
-- [ ] Firebase: `firebase_core`, `firebase_auth`, `cloud_firestore`, `google_sign_in`.
+- [~] **Collegamento Firebase — stato al 19 ottobre sera.** Fatto: pacchetti `firebase_core` 5,
+      `firebase_auth` 7, `cloud_firestore` 7, `google_sign_in` 7.2; plugin Gradle
+      `com.google.gms.google-services` 4.4.4; `android/app/google-services.json` **ricostruito
+      a mano** dai valori della Cloud Console (il browser integrato non scarica file; contiene
+      chiave Android, client OAuth Android con SHA-1 debug e client web); `lib/firebase_options.dart`
+      (Android e web); `lib/auth/auth_service.dart` (`AuthService`: inizializza Firebase e
+      Google Sign-In solo alla prima necessità, scambia l’ID token con `signInWithCredential`,
+      `signInWithGoogle` per Android, eventi di Google per il web) **non ancora usato da nessuna
+      schermata**, quindi l’app e la build in prova non cambiano. `firestore.rules`,
+      `firebase.json` e `.firebaserc` nel repo; **regole pubblicate nella console** (solo
+      `users/{uid}/**` e solo con `request.auth.uid == uid`; tutto il resto negato).
+      Origine `https://my.innerstars.app` aggiunta al client OAuth web in Google Cloud
+      (accettati i Termini di servizio di Google Cloud; prova gratuita da 300 $ **non** attivata).
+      Verifiche: analisi pulita, 584 test superati (3 esclusi), `flutter build apk --debug`
+      arm64 e `flutter build web --release` riusciti. Avviso nuovo della toolchain: `firebase_auth`
+      e `firebase_core` applicano ancora il vecchio plugin Kotlin, come `flutter_timezone`.
+      **Restano:** schermata Account (⭐ A6) che usi `AuthService` con il pulsante Google sul web;
+      `SyncService` con listener Firestore e push debounced; test delle regole sull’emulatore
+      (serve Java e `firebase-tools`); SHA-1 di release in Firebase quando esisterà il keystore;
+      prova reale del login sul web e su Android; eventuale `google-services.json` scaricato dalla
+      console al posto di quello ricostruito.
+- [ ] Firebase, parte residua: `SyncService`, listener, push, ripresa al `resumed`.
       Struttura `users/{uid}/<collezione>/{uuid}`. `SyncService` con listener per collezione,
       push debounced, ripresa al `resumed`, stato e nessun crash offline.
       Regole di sicurezza: ognuno accede solo a `users/{uid}/**`, con test sull'emulatore.
