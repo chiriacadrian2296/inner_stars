@@ -1,0 +1,42 @@
+name: Deploy web app (Cloudflare Pages)
+
+# Builds the Flutter web app for the root of my.innerstars.app and uploads it
+# to the `innerstars-app` Cloudflare Pages project. Cloudflare's own build
+# image has no Flutter, so the build happens here and only the result is
+# uploaded. Needs the repository secrets CLOUDFLARE_API_TOKEN (permission
+# "Cloudflare Pages: Edit") and CLOUDFLARE_ACCOUNT_ID.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-app
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter build web --release --base-href /
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      # Creates the project on the first run; later runs find it and go on.
+      - run: npx --yes wrangler@4 pages project create innerstars-app --production-branch main || true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - run: npx --yes wrangler@4 pages deploy build/web --project-name innerstars-app --branch main
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
