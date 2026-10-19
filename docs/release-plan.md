@@ -18,7 +18,8 @@ Firebase, hosting, privacy e store (parte B), infine la rifinitura (parte C).
 1. Blocco app e promemoria anche sul web: cosa è possibile e cosa vuoi esattamente (A6).
 2. Cosa mostrare nel pannello Account di Settings prima del login, e come cancellare i dati
    locali in release finché non c'è il login (A6).
-3. Tutorial: cosa resta nell'app prima di rivederli (parte C).
+3. Onboarding: va fatto come si deve, da discutere (A7).
+4. Tutorial: cosa resta nell'app prima di rivederli (parte C).
 
 ## 0. Decisioni prese
 
@@ -114,10 +115,10 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
   - L'elenco sta nella **sezione Riflessioni di ogni area** (`AreaReflectionsScreen`), quindi è già
     raggruppato per area; non c'è un elenco globale nel menu.
   - "Vedi riflessione" a tutta pagina, sul modello di "Vedi stella", con i pulsanti in basso:
-    **condividi, modifica, elimina**. Come negli altri "Vedi", Fly (torna alla Galaxy) resta l'ultima
-    azione a destra, da sola.
+    **condividi, modifica, elimina**. **Niente Fly**: le riflessioni non hanno ancora un
+    corrispettivo nella Galaxy (vedi le nebulose, dopo la v1).
   - **Elimina** è definitivo, senza archivio (in sync diventa un tombstone, vedi A2).
-  - Ordine nell'elenco di un'area: dalla più recente (da riconfermare vedendola).
+  - Ordine nell'elenco di un'area: dalla più recente (confermato).
 - [ ] Costruire: modello, elenco per area con "nuova riflessione" (libera o da suggerimento),
       "Vedi riflessione", migrazione delle risposte esistenti, condivisione come card.
 
@@ -157,6 +158,14 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
 - [ ] UI in Settings (Quick Settings restano nascoste): Accedi con Google, account, "Sincronizza
       ora", ultimo sync, Disconnetti, **Elimina account e dati**. Dialog del primo sync quando
       locale e cloud hanno entrambi dati (Cancel grigio).
+
+## A7. Onboarding
+
+- [ ] ⭐ **Punto aperto**: da pensarci meglio, se ne riparla più avanti. Un onboarding fatto bene per chi apre l'app la prima volta. Da discutere prima di
+      costruirlo: cosa deve capire in pochi secondi (stella, costellazione, area), se è una breve
+      sequenza di schermate o guidata dentro il cielo, se si salta, se si può rivedere da Settings.
+      Le vecchie `OnboardingScreen` e `MetaphorScreen` sono parcheggiate (`_kShowOnboarding`) e il
+      loro testo può servire da punto di partenza. Si lega ai tutorial `hint_kit` (parte C).
 
 ---
 
@@ -221,6 +230,13 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
 - [ ] Controllo web: percorsi, cache, dominio.
 - [ ] Scheda store e screenshot.
 
+## Versione
+
+- [ ] Numero di versione dell'app in `pubspec.yaml` (`version: nome+build`): oggi `0.1.0+2`. È solo
+      un numero nel file, non dipende da GitHub né dagli store: finché l'app non è caricata su Play,
+      si può impostare liberamente a **`1.0.0+1`** poco prima del primo caricamento. Da lì il
+      numero di build (dopo il `+`) cresce a ogni caricamento. Il tag git `v0.1.0+2` resta com'è.
+
 ## Ordine consigliato
 
 1. A5 (pulizia residua) e, in parallelo, i tuoi passi B1.
@@ -230,6 +246,10 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
 5. B3 e B4 (legale e store), poi la parte C.
 
 ## Idee per dopo la v1
+
+- **Nebulose**: le riflessioni diventeranno un nuovo tipo di elemento nel cielo della Galaxy (le
+  nebulose), dal quale potranno nascere le stelle di oggi. Allora le riflessioni avranno anche il
+  loro Fly. Da fare **dopo l'uscita della prima versione**.
 
 - Pacchetti di suoni a pagamento come contenuti extra (Sound Lab nascosto per ora).
 - Stella cadente con desideri a tempo e storico.
