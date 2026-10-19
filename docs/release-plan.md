@@ -341,9 +341,15 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
      abilitato (nome pubblico “Inner Stars”, email di supporto dell’autore). Firestore
      **(default)**, edizione Standard, **eur3**, modalità produzione (tutto negato finché non
      scrivo le regole in B2). Backup programmati non attivati: richiedono Blaze.
-   - [ ] **Dominio autorizzato `my.innerstars.app`:** la console non lo lascia aggiungere senza
-     l’upgrade a Identity Platform. ⭐ **Da decidere con l’autore.** Per ora esistono solo i
-     domini predefiniti (`localhost`, `inner-stars-5e6d6.firebaseapp.com`, `.web.app`).
+   - [x] **Dominio autorizzato `my.innerstars.app` — deciso il 19 ottobre: niente upgrade.** La
+     console non lascia modificare la lista dei domini di Firebase senza l’upgrade a Identity
+     Platform. L’upgrade è fattibile anche su Spark e senza carta, ma impone un limite nuovo di
+     **3.000 utenti attivi al giorno** (senza limite solo su Blaze, che richiede una carta) e non
+     è reversibile. L’autore ha deciso di non farlo: il login Google usa `google_sign_in`
+     (Android e web) più `signInWithCredential`, senza il popup di Firebase, quindi la lista dei
+     domini di Firebase non entra in gioco. Sul web l’origine `https://my.innerstars.app` va
+     autorizzata come “Origine JavaScript autorizzata” del client OAuth web nella Google Cloud
+     Console (gratis). **Da verificare alla prima prova reale sul web.** One Tap non serve.
 4. Registrare le app in Firebase: Android (`app.innerstars` + SHA-1 debug e release) e Web
    (`my.innerstars.app` e `localhost` tra i domini autorizzati). iOS (`app.innerstars`) più avanti.
    - [x] Android `app.innerstars` registrata (ID app `1:331506513097:android:1b30e1073bb8f5b6694918`)
