@@ -317,8 +317,16 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
 ## B1. Cose da fare tu (nell'ordine)
 
 1. [x] Comprare `innerstars.app` su Cloudflare Registrar (già registrato nelle decisioni).
-2. Cloudflare Pages: due progetti collegati a GitHub, uno per la landing (`innerstars.app`, `www`)
-   e uno per la web app (`my.innerstars.app`).
+2. Cloudflare Pages: due progetti, uno per la landing (`innerstars.app`, `www`) e uno per la web
+   app (`my.innerstars.app`).
+   - [x] **Landing** (19 ottobre, fatto con l’autore nel browser): progetto `innerstars-landing`
+     collegato al repo `inner_stars` (accesso GitHub limitato a quel solo repo), branch `main`,
+     root `landing`, build `npm run build`, output `dist`. `astro.config.mjs` usa la radice con
+     `CF_PAGES` e il sottopercorso su GitHub Pages. Online su `innerstars-landing.pages.dev`.
+     **Restano:** collegare `innerstars.app` e `www`; cambiare i link “Prova” della landing
+     verso `https://my.innerstars.app/` quando la web app è lì.
+   - [ ] **Web app**: Cloudflare non ha Flutter nella build, quindi la compila GitHub Actions e la
+     carica con `wrangler` (serve un token API Cloudflare creato dall’autore).
 3. Progetto Firebase: abilitare Authentication → Google; creare Firestore in produzione, regione `eur3`.
 4. Registrare le app in Firebase: Android (`app.innerstars` + SHA-1 debug e release) e Web
    (`my.innerstars.app` e `localhost` tra i domini autorizzati). iOS (`app.innerstars`) più avanti.
