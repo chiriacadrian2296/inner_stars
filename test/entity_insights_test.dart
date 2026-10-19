@@ -37,6 +37,7 @@ import 'package:inner_stars/theme/app_theme.dart';
 import 'package:inner_stars/settings/settings_controller.dart';
 import 'package:inner_stars/utils/date_format.dart';
 import 'package:inner_stars/utils/entity_insights.dart';
+import 'package:inner_stars/utils/light_stats.dart';
 import 'package:inner_stars/widgets/entity_flip_card.dart';
 import 'package:inner_stars/widgets/entity_insights_scope.dart';
 import 'package:inner_stars/widgets/grouped_action_layout.dart';
@@ -1082,6 +1083,52 @@ void main() {
         findsNothing,
       );
     }
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox());
+    c.dispose();
+  });
+
+  testWidgets('Your Light shows one centred line when nothing was lit', (
+    tester,
+  ) async {
+    final c = await _controller(habits: const [], stars: const []);
+    await tester.pumpWidget(_app(c, const LightScreen(), reduceMotion: true));
+    await tester.pumpAndSettle();
+
+    // Looking at the whole history: nothing to widen to.
+    expect(find.byKey(const ValueKey('light-empty-state')), findsOneWidget);
+    expect(find.text(StringsIt().lightNoData), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('light-empty-state')),
+        matching: find.byType(TextButton),
+      ),
+      findsNothing,
+    );
+    // The zeroed overview and its explanation are gone.
+    expect(find.text(StringsIt().lightOverviewNote), findsNothing);
+    expect(find.text(StringsIt().lightOverviewLabel), findsNothing);
+
+    // A narrower period offers the way out to the whole history.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(
+      _app(
+        c,
+        LightScreen(session: LightSession()..period = LightPeriod.month),
+        reduceMotion: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(StringsIt().lightNoDataPeriod), findsOneWidget);
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const ValueKey('light-empty-state')),
+        matching: find.byType(TextButton),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(StringsIt().lightNoData), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     await tester.pumpWidget(const SizedBox());

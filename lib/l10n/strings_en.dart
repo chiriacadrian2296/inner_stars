@@ -2263,7 +2263,9 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get lightOverviewLabel => 'Overview';
   @override
-  String get lightHeadlineEmpty => 'Your light will take shape here.';
+  String get lightNoData => 'No data to show here.';
+  @override
+  String get lightNoDataPeriod => 'No data in this period.';
   @override
   String lightCyclesCount(int count) =>
       count == 1 ? '1 Cycle' : '$count Cycles';

@@ -155,7 +155,20 @@ class _LightScreenState extends State<LightScreen> {
     );
 
     final sections = <Widget>[];
-    if (stats.isStarScope) {
+    final habit = stats.isHabitScope ? stats.habits.firstOrNull : null;
+    final habitCycles = habit == null
+        ? const <HabitCycle>[]
+        : [
+            for (final cycle in cycles)
+              if (cycle.habitId == habit.id) cycle,
+          ];
+    final hasLight = stats.activeDays.isNotEmpty;
+    // Nothing lit here (in this period): no zeroed overview and no
+    // explanations of sections that are not there, just one centred line.
+    final isEmpty = !stats.isStarScope && !hasLight && habitCycles.isEmpty;
+    if (isEmpty) {
+      // sections stay empty
+    } else if (stats.isStarScope) {
       final star = stats.stars.firstOrNull;
       sections.addAll([
         StatsSectionLabel(strings.lightOverviewLabel),
@@ -167,19 +180,8 @@ class _LightScreenState extends State<LightScreen> {
       sections.addAll([
         StatsSectionLabel(strings.lightOverviewLabel),
         _LightHero(stats: stats),
-        StatsNote(
-          (stats.isHabitScope ? stats.daysDone : stats.light) > 0
-              ? strings.lightOverviewNote
-              : '${strings.lightHeadlineEmpty} ${strings.lightOverviewNote}',
-        ),
+        StatsNote(strings.lightOverviewNote),
       ]);
-      final habit = stats.isHabitScope ? stats.habits.firstOrNull : null;
-      final habitCycles = habit == null
-          ? const <HabitCycle>[]
-          : [
-              for (final cycle in cycles)
-                if (cycle.habitId == habit.id) cycle,
-            ];
       if (habit != null && habitCycles.isNotEmpty) {
         habitCycles.sort((a, b) => b.completedDate.compareTo(a.completedDate));
         sections.addAll([
@@ -191,7 +193,6 @@ class _LightScreenState extends State<LightScreen> {
           StatsNote(strings.cycleHistoryNote),
         ]);
       }
-      final hasLight = stats.activeDays.isNotEmpty;
       if (!hasLight && _session.period != LightPeriod.allTime) {
         sections.add(
           Center(
@@ -294,35 +295,58 @@ class _LightScreenState extends State<LightScreen> {
                   ),
                 ),
               ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(
-                  kPageInsetCompact,
-                  kSpaceLg,
-                  kPageInsetCompact,
-                  kSpaceXxl,
-                ),
-                sliver: SliverToBoxAdapter(
-                  child: ResponsiveContent(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        for (var i = 0; i < sections.length; i++) ...[
-                          if (i > 0)
-                            SizedBox(
-                              height: sections[i] is StatsSectionLabel
-                                  ? kSpaceLg
-                                  : kSpaceSm,
+              if (isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      kPageInsetCompact,
+                      kSpaceLg,
+                      kPageInsetCompact,
+                      kSpaceXxl,
+                    ),
+                    child: Center(
+                      child: _LightEmptyState(
+                        text: _session.period == LightPeriod.allTime
+                            ? strings.lightNoData
+                            : strings.lightNoDataPeriod,
+                        onSeeAllTime: _session.period == LightPeriod.allTime
+                            ? null
+                            : () => _setPeriod(LightPeriod.allTime),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    kPageInsetCompact,
+                    kSpaceLg,
+                    kPageInsetCompact,
+                    kSpaceXxl,
+                  ),
+                  sliver: SliverToBoxAdapter(
+                    child: ResponsiveContent(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (var i = 0; i < sections.length; i++) ...[
+                            if (i > 0)
+                              SizedBox(
+                                height: sections[i] is StatsSectionLabel
+                                    ? kSpaceLg
+                                    : kSpaceSm,
+                              ),
+                            StaggeredEntrance(
+                              index: 2 + i ~/ 2,
+                              child: sections[i],
                             ),
-                          StaggeredEntrance(
-                            index: 2 + i ~/ 2,
-                            child: sections[i],
-                          ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
@@ -949,6 +973,35 @@ class _PinnedLightNavigationDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(_PinnedLightNavigationDelegate oldDelegate) =>
       oldDelegate.height != height || oldDelegate.child != child;
+}
+
+/// The one centred line shown when nothing has been lit in the chosen scope
+/// and period, with a way out to the whole history when only the period is
+/// the reason.
+class _LightEmptyState extends StatelessWidget {
+  const _LightEmptyState({required this.text, this.onSeeAllTime});
+
+  final String text;
+  final VoidCallback? onSeeAllTime;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = context.strings;
+    return Column(
+      key: const ValueKey('light-empty-state'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        StatsEmptyState(text),
+        if (onSeeAllTime != null) ...[
+          const SizedBox(height: kSpaceSm),
+          TextButton(
+            onPressed: onSeeAllTime,
+            child: AppButtonLabel(strings.lightSeeAllTimeAction),
+          ),
+        ],
+      ],
+    );
+  }
 }
 
 /// The headline: how much light (or, for a pulsar, how many days done),

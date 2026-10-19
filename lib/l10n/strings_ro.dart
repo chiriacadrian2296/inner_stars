@@ -2276,7 +2276,9 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get lightOverviewLabel => 'Privire de Ansamblu';
   @override
-  String get lightHeadlineEmpty => 'Aici va prinde formă lumina ta.';
+  String get lightNoData => 'Nu există date de afișat aici.';
+  @override
+  String get lightNoDataPeriod => 'Nu există date în această perioadă.';
   @override
   String lightCyclesCount(int count) =>
       count == 1 ? '1 Ciclu' : '$count Cicluri';

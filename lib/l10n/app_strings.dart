@@ -1241,7 +1241,8 @@ abstract class AppStrings {
   String get lightPeriodMonth;
   String get lightPeriodFilterLabel;
   String get lightOverviewLabel;
-  String get lightHeadlineEmpty;
+  String get lightNoData;
+  String get lightNoDataPeriod;
   String lightCyclesCount(int count);
   String lightDaysCount(int count);
   String get lightCurveLabel;

@@ -2285,7 +2285,9 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get lightOverviewLabel => 'Panoramica';
   @override
-  String get lightHeadlineEmpty => 'Qui prenderà forma la tua luce.';
+  String get lightNoData => 'Nessun dato da mostrare qui.';
+  @override
+  String get lightNoDataPeriod => 'Nessun dato in questo periodo.';
   @override
   String lightCyclesCount(int count) => count == 1 ? '1 Ciclo' : '$count Cicli';
   @override
