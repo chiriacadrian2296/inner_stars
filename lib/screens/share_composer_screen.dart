@@ -18,7 +18,6 @@ import '../utils/area_hero_art.dart';
 import '../models/share_content.dart';
 import '../l10n/strings_scope.dart';
 import '../widgets/photo_image.dart';
-import '../widgets/app_choice_chip.dart';
 import '../widgets/app_field.dart';
 import '../data/photo_storage.dart';
 import '../data/moodboard_storage.dart';
@@ -176,7 +175,6 @@ class _ShareSpecimen extends StatelessWidget {
     required this.data,
     required this.composition,
     required this.gradient,
-    this.reverseColors = false,
     required this.palette,
     required this.titleInk,
     required this.watermarkInk,
@@ -205,7 +203,6 @@ class _ShareSpecimen extends StatelessWidget {
   ShareSubject get subject => data.subject;
   final int composition;
   final _GradientShape gradient;
-  final bool reverseColors;
   final int palette;
   final _Ink titleInk;
   final _Ink watermarkInk;
@@ -259,11 +256,7 @@ class _ShareSpecimen extends StatelessWidget {
       color: _lightBackground ? const Color(0xFFBEB6A7) : colors.nightBorder,
       width: kBorderWidth,
     ),
-    gradient: _backgroundGradient(
-      gradient,
-      _palettes[palette],
-      reversed: reverseColors,
-    ),
+    gradient: _backgroundGradient(gradient, _palettes[palette]),
   );
 
   @override
@@ -1066,7 +1059,7 @@ class _ShareInks {
   final bool photoBackground;
 
   // Photos already have their shared night scrim; gradients are checked
-  // against every stop so reversing their direction stays equally readable.
+  // against every stop, including the brightest area.
   List<Color> get _backgrounds =>
       photoBackground ? [colors.night] : palette.colors;
   bool get _light => palette.light && !photoBackground;
@@ -1108,12 +1101,8 @@ Color _readableShareInk(Color preferred, List<Color> backgrounds) {
 }
 
 /// Any gradient [shape] applied to any [palette]'s colours.
-Gradient _backgroundGradient(
-  _GradientShape shape,
-  _Palette palette, {
-  bool reversed = false,
-}) {
-  final colors = reversed ? palette.colors.reversed.toList() : palette.colors;
+Gradient _backgroundGradient(_GradientShape shape, _Palette palette) {
+  final colors = palette.colors;
   final evenStops = [
     for (var i = 0; i < colors.length; i++) i / (colors.length - 1),
   ];

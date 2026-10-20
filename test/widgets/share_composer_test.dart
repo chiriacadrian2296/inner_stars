@@ -851,7 +851,7 @@ void main() {
   );
 
   testWidgets(
-    'reversing colors preserves every gradient shape and supports history',
+    'gradient shapes support history without a reverse colors control',
     (tester) async {
       await tester.pumpWidget(
         app(
@@ -884,40 +884,26 @@ void main() {
       }
 
       expect(find.byKey(const ValueKey('sfondo-forma-4')), findsNothing);
+      expect(find.byKey(const ValueKey('share-reverse-colors')), findsNothing);
       for (var shape = 0; shape < 4; shape++) {
+        final original = background();
         final choice = find.byKey(ValueKey('sfondo-forma-$shape'));
         await tester.ensureVisible(choice);
         await tapVisible(tester, choice);
         await tester.pump();
-        final original = background();
-        final reverse = find.byKey(const ValueKey('share-reverse-colors'));
-        await tester.ensureVisible(reverse);
-        await tapVisible(tester, reverse);
-        await tester.pump();
-        final inverted = background();
-        expect(inverted.colors, original.colors.reversed.toList());
-        expect(inverted.stops, original.stops);
-        if (original is RadialGradient) {
-          expect(inverted, isA<RadialGradient>());
-          expect((inverted as RadialGradient).center, original.center);
-          expect(inverted.radius, original.radius);
-        } else {
-          expect(inverted, isA<LinearGradient>());
-          expect(
-            (inverted as LinearGradient).begin,
-            (original as LinearGradient).begin,
-          );
-          expect(inverted.end, original.end);
-        }
+        final changed = background();
+        expect(changed.colors, original.colors);
+        expect(
+          changed,
+          shape < 2 ? isA<RadialGradient>() : isA<LinearGradient>(),
+        );
+        if (shape == 0) continue;
         await tapVisible(tester, find.byKey(const ValueKey('share-undo')));
         await tester.pump();
         expect(background(), original);
         await tapVisible(tester, find.byKey(const ValueKey('share-redo')));
         await tester.pump();
-        expect(background(), inverted);
-        await tapVisible(tester, reverse);
-        await tester.pump();
-        expect(background(), original);
+        expect(background(), changed);
       }
       expect(tester.takeException(), isNull);
     },

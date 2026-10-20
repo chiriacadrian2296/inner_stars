@@ -67,7 +67,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       (style) =>
           style.gradient == _gradient &&
           style.palette == _palette &&
-          !_reverseColors &&
           style.watermark == _effectiveWatermark,
     );
     return match < 0 ? null : match;
@@ -78,7 +77,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
   // Background.
   _GradientShape _gradient = _GradientShape.halo;
   int _palette = 0;
-  bool _reverseColors = false;
   _PhotoMode _photoMode = _PhotoMode.none;
 
   // Signature colors are linked to the title and watermark.
@@ -107,7 +105,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       format: _format,
       gradient: _gradient,
       palette: _palette,
-      reverseColors: _reverseColors,
       photoMode: _photoMode,
       brandContent: _brandContent,
       brandLayout: _brandLayout,
@@ -120,7 +117,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       _format = draft.format;
       _gradient = draft.gradient;
       _palette = draft.palette;
-      _reverseColors = draft.reverseColors;
       _photoMode = draft.photoMode;
       _brandContent = draft.brandContent;
       _brandLayout = draft.brandLayout;
@@ -149,7 +145,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     _change(() {
       _gradient = s.gradient;
       _palette = s.palette;
-      _reverseColors = false;
       _watermark = s.watermark;
     });
   }
@@ -299,7 +294,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     ),
     composition: composition ?? _composition,
     gradient: _gradient,
-    reverseColors: _reverseColors,
     palette: _palette,
     format: _format,
     photoMode: _photoMode,
@@ -464,7 +458,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                   gradient: _backgroundGradient(
                     _GradientShape.values[i],
                     _palettes[_palette],
-                    reversed: _reverseColors,
                   ),
                 ),
               ),
@@ -477,24 +470,10 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         fieldKey: 'sfondo-colori',
         label: 'Colori',
         labels: [for (final p in _palettes) p.label],
-        preview: (i) => _PaletteDot(_palettes[i], reversed: _reverseColors),
+        preview: (i) => _PaletteDot(_palettes[i]),
         columns: 7,
         index: _palette,
         onChanged: (i) => _edit(() => _palette = i),
-      ),
-      Align(
-        alignment: Alignment.center,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: AppChoiceChip(
-            key: const ValueKey('share-reverse-colors'),
-            label: shareComposerLabel(context, 'Inverti Colori'),
-            icon: Icons.swap_vert_rounded,
-            selected: _reverseColors,
-            dense: true,
-            onPressed: () => _edit(() => _reverseColors = !_reverseColors),
-          ),
-        ),
       ),
       if (_data.photos.isNotEmpty)
         _VisualChoices(
@@ -1277,9 +1256,8 @@ Color? _inkDotColor(AppColors colors, _Ink ink) => switch (ink) {
 
 /// A small preview of a background palette.
 class _PaletteDot extends StatelessWidget {
-  const _PaletteDot(this.palette, {this.reversed = false});
+  const _PaletteDot(this.palette);
   final _Palette palette;
-  final bool reversed;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -1291,7 +1269,7 @@ class _PaletteDot extends StatelessWidget {
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: reversed ? palette.colors.reversed.toList() : palette.colors,
+        colors: palette.colors,
       ),
     ),
   );
