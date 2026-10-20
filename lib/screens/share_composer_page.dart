@@ -89,7 +89,7 @@ const _stylePresets = [
     palette: 2,
     titleInk: _Ink.white,
     brandInk: _Ink.white,
-    watermark: _Watermark.constellation,
+    watermark: _Watermark.logo,
     watermarkSize: _WatermarkSize.large,
     brandContent: _BrandContent.logo,
     brandPosition: _TitlePosition.topCenter,
@@ -106,6 +106,7 @@ const _stylePresets = [
 ];
 
 class _ShareComposerScreenState extends State<ShareComposerScreen> {
+  final _categoryScroll = ScrollController();
   int _category = 0;
   int _subjectIndex = 0;
   ShareContent get _data => widget.variants?[_subjectIndex] ?? widget.data;
@@ -120,14 +121,9 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
   ];
   @override
   void dispose() {
+    _categoryScroll.dispose();
     _excerpt.dispose();
     super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _watermarkArea = _data.area?.index ?? 0;
   }
 
   int _composition = 0;
@@ -167,7 +163,11 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
   // Watermark.
   _Watermark _watermark = _Watermark.none;
   _WatermarkSize _watermarkSize = _WatermarkSize.medium;
-  int _watermarkArea = 0;
+  int get _watermarkArea => _data.area?.index ?? 0;
+  _Watermark get _effectiveWatermark =>
+      _watermark == _Watermark.area && _data.area == null
+      ? _Watermark.none
+      : _watermark;
   _Ink? _watermarkInk;
 
   final _captureKey = GlobalKey();
@@ -206,7 +206,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       logoSize: _logoSize,
       watermark: _watermark,
       watermarkSize: _watermarkSize,
-      watermarkArea: _watermarkArea,
       watermarkInk: _watermarkInk,
       excerpt: _excerpt.text,
     );
@@ -238,7 +237,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       _logoSize = draft.logoSize;
       _watermark = draft.watermark;
       _watermarkSize = draft.watermarkSize;
-      _watermarkArea = draft.watermarkArea;
       _watermarkInk = draft.watermarkInk;
       _excerpt.text = draft.excerpt;
     };
@@ -426,7 +424,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     brandPosition: _brandPosition,
     badgePosition: _badgePosition,
     titleInk: _titleInk,
-    watermark: _watermark,
+    watermark: _effectiveWatermark,
     watermarkInk: _watermarkInk ?? _brandInk,
     watermarkSize: _watermarkSize,
     watermarkArea: _watermarkArea,
@@ -562,11 +560,24 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
 
   Widget _backgroundBlock() => _BlockCard(
     children: [
-      _OptionStepper(
+      _VisualChoices(
         fieldKey: 'sfondo-forma',
         label: 'Forma',
         labels: [for (final g in _GradientShape.values) _gradientLabel(g)],
         index: _gradient.index,
+        columns: 3,
+        preview: (i) => Container(
+          width: 76,
+          height: 30,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: context.colors.nightBorder),
+            gradient: _backgroundGradient(
+              _GradientShape.values[i],
+              _palettes[_palette],
+            ),
+          ),
+        ),
         onChanged: (i) => _edit(() => _gradient = _GradientShape.values[i]),
       ),
       _VisualChoices(
@@ -728,31 +739,45 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
   }
 
   Widget _watermarkBlock() {
-    final on = _watermark != _Watermark.none;
-    // The area artworks are part of the type list, one entry per area.
+    final on = _effectiveWatermark != _Watermark.none;
     final kinds = [
-      for (final w in _Watermark.values)
-        if (w != _Watermark.area) _watermarkLabel(w),
-      for (final area in LifeArea.values)
-        '${shareComposerLabel(context, 'Arte')} · ${area.displayName(context.strings)}',
+      _Watermark.none,
+      _Watermark.logo,
+      if (_data.area != null) _Watermark.area,
     ];
     return _BlockCard(
       children: [
-        _OptionStepper(
+        _VisualChoices(
           fieldKey: 'watermark-tipo',
           label: 'Filigrana',
-          labels: kinds,
-          index: _watermark == _Watermark.area
-              ? _Watermark.area.index + _watermarkArea
-              : _watermark.index,
-          onChanged: (i) => _edit(() {
-            if (i >= _Watermark.area.index) {
-              _watermark = _Watermark.area;
-              _watermarkArea = i - _Watermark.area.index;
-            } else {
-              _watermark = _Watermark.values[i];
-            }
-          }),
+          labels: [for (final kind in kinds) _watermarkLabel(kind)],
+          index: kinds.indexOf(_effectiveWatermark),
+          columns: 3,
+          previewHeight: 32,
+          preview: (i) => switch (kinds[i]) {
+            _Watermark.none => Icon(
+              Icons.block_rounded,
+              color: context.colors.muted,
+            ),
+            _Watermark.logo => SvgPicture.asset(
+              'assets/icon/Logo.svg',
+              width: 32,
+              height: 32,
+              colorFilter: ColorFilter.mode(
+                context.colors.gold,
+                BlendMode.srcIn,
+              ),
+            ),
+            _Watermark.area => Image.asset(
+              kAreaHeroArt[_data.area]!.coverAsset,
+              width: 32,
+              height: 32,
+              fit: BoxFit.contain,
+              color: context.colors.gold,
+              colorBlendMode: BlendMode.srcIn,
+            ),
+          },
+          onChanged: (i) => _edit(() => _watermark = kinds[i]),
         ),
         if (on)
           _OptionStepper(
@@ -855,41 +880,48 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                       PointerDeviceKind.stylus,
                     },
                   ),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        for (var i = 0; i < categories.length; i++) ...[
-                          if (i > 0) const SizedBox(width: 8),
-                          Semantics(
-                            selected: _category == i,
-                            child: TextButton.icon(
-                              key: ValueKey('share-category-$i'),
-                              onPressed: () => setState(() => _category = i),
-                              style: TextButton.styleFrom(
-                                foregroundColor: _category == i
-                                    ? colors.gold
-                                    : colors.muted,
-                                backgroundColor: _category == i
-                                    ? colors.nightPanel
-                                    : Colors.transparent,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
+                  child: Scrollbar(
+                    controller: _categoryScroll,
+                    thumbVisibility: true,
+                    interactive: true,
+                    child: SingleChildScrollView(
+                      controller: _categoryScroll,
+                      padding: const EdgeInsets.only(bottom: 10),
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (var i = 0; i < categories.length; i++) ...[
+                            if (i > 0) const SizedBox(width: 8),
+                            Semantics(
+                              selected: _category == i,
+                              child: TextButton.icon(
+                                key: ValueKey('share-category-$i'),
+                                onPressed: () => setState(() => _category = i),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: _category == i
+                                      ? colors.gold
+                                      : colors.muted,
+                                  backgroundColor: _category == i
+                                      ? colors.nightPanel
+                                      : Colors.transparent,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  textStyle: const TextStyle(
+                                    fontSize: 14,
+                                    letterSpacing: 0,
+                                  ),
                                 ),
-                                textStyle: const TextStyle(
-                                  fontSize: 14,
-                                  letterSpacing: 0,
+                                icon: Icon(categories[i].$2, size: 20),
+                                label: Text(
+                                  shareComposerLabel(context, categories[i].$1),
                                 ),
-                              ),
-                              icon: Icon(categories[i].$2, size: 20),
-                              label: Text(
-                                shareComposerLabel(context, categories[i].$1),
                               ),
                             ),
-                          ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -1086,9 +1118,7 @@ String _photoLabel(_PhotoMode value) => switch (value) {
 String _watermarkLabel(_Watermark value) => switch (value) {
   _Watermark.none => 'Nessuno',
   _Watermark.logo => 'Logo App',
-  _Watermark.sparkle => 'Scintilla',
-  _Watermark.constellation => 'Costellazione',
-  _Watermark.area => 'Arte Area',
+  _Watermark.area => 'Artwork',
 };
 
 String _positionLabel(_TitlePosition value) => switch (value) {
@@ -1126,7 +1156,7 @@ class _BlockCard extends StatelessWidget {
   }
 }
 
-/// A compact label and value, with optional arrows for quick stepping.
+/// A compact label and value with the full list of choices.
 class _OptionStepper extends StatelessWidget {
   const _OptionStepper({
     required this.fieldKey,
@@ -1134,7 +1164,6 @@ class _OptionStepper extends StatelessWidget {
     required this.labels,
     required this.index,
     required this.onChanged,
-    this.arrows = false,
   });
 
   /// Stable id, used to key the arrows (tests, semantics).
@@ -1143,7 +1172,6 @@ class _OptionStepper extends StatelessWidget {
   final List<String> labels;
   final int index;
   final ValueChanged<int> onChanged;
-  final bool arrows;
 
   @override
   Widget build(BuildContext context) {
@@ -1164,18 +1192,6 @@ class _OptionStepper extends StatelessWidget {
             flex: 7,
             child: Row(
               children: [
-                if (arrows)
-                  SizedBox(
-                    width: 44,
-                    child: IconButton(
-                      key: ValueKey('$fieldKey-prev'),
-                      tooltip: shareComposerLabel(context, 'Precedente'),
-                      onPressed: () => onChanged(
-                        (index + labels.length - 1) % labels.length,
-                      ),
-                      icon: const Icon(Icons.chevron_left_rounded),
-                    ),
-                  ),
                 Expanded(
                   child: PopupMenuButton<int>(
                     key: ValueKey('$fieldKey-menu'),
@@ -1227,16 +1243,6 @@ class _OptionStepper extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (arrows)
-                  SizedBox(
-                    width: 44,
-                    child: IconButton(
-                      key: ValueKey('$fieldKey-next'),
-                      tooltip: shareComposerLabel(context, 'Successivo'),
-                      onPressed: () => onChanged((index + 1) % labels.length),
-                      icon: const Icon(Icons.chevron_right_rounded),
-                    ),
-                  ),
               ],
             ),
           ),
@@ -1260,6 +1266,7 @@ class _VisualChoices extends StatelessWidget {
     this.placeholder,
     this.previewHeight = 26,
     this.minItemWidth,
+    this.showHeader = true,
   });
   final String fieldKey;
   final String label;
@@ -1272,18 +1279,20 @@ class _VisualChoices extends StatelessWidget {
   final String? placeholder;
   final double previewHeight;
   final double? minItemWidth;
+  final bool showHeader;
 
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Text(
-          '${shareComposerLabel(context, label)} · ${shareComposerLabel(context, placeholder ?? labels[index])}',
-          style: context.typography.supporting.copyWith(fontSize: 12),
+      if (showHeader)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Text(
+            '${shareComposerLabel(context, label)} · ${shareComposerLabel(context, placeholder ?? labels[index])}',
+            style: context.typography.supporting.copyWith(fontSize: 12),
+          ),
         ),
-      ),
       LayoutBuilder(
         builder: (context, constraints) {
           final maxColumns = columns.clamp(1, labels.length);
@@ -1371,13 +1380,42 @@ class _PositionChoices extends StatelessWidget {
   final ValueChanged<int> onChanged;
 
   @override
-  Widget build(BuildContext context) => _OptionStepper(
-    fieldKey: fieldKey,
-    label: label,
-    labels: [for (final p in _TitlePosition.values) _positionLabel(p)],
-    index: index,
-    arrows: true,
-    onChanged: onChanged,
+  Widget build(BuildContext context) => Row(
+    children: [
+      Expanded(
+        child: Text(
+          '${shareComposerLabel(context, label)}\n${shareComposerLabel(context, _positionLabel(_TitlePosition.values[index]))}',
+          style: context.typography.supporting.copyWith(fontSize: 12),
+        ),
+      ),
+      SizedBox(
+        width: 144,
+        child: _VisualChoices(
+          fieldKey: fieldKey,
+          label: label,
+          labels: [for (final p in _TitlePosition.values) _positionLabel(p)],
+          index: index,
+          columns: 3,
+          showHeader: false,
+          preview: (i) => Icon(
+            const [
+              Icons.north_west_rounded,
+              Icons.north_rounded,
+              Icons.north_east_rounded,
+              Icons.west_rounded,
+              Icons.center_focus_strong_rounded,
+              Icons.east_rounded,
+              Icons.south_west_rounded,
+              Icons.south_rounded,
+              Icons.south_east_rounded,
+            ][i],
+            color: i == index ? context.colors.gold : context.colors.muted,
+            size: 22,
+          ),
+          onChanged: onChanged,
+        ),
+      ),
+    ],
   );
 }
 

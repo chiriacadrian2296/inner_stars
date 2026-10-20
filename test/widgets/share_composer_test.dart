@@ -9,6 +9,7 @@ import 'package:inner_stars/models/share_content.dart';
 import 'package:inner_stars/screens/share_composer_screen.dart';
 import 'package:inner_stars/screens/share_preview_screen.dart';
 import 'package:inner_stars/theme/app_theme.dart';
+import 'package:inner_stars/utils/area_hero_art.dart';
 import 'package:inner_stars/widgets/shareable_reflection_card.dart';
 
 const strings = StringsIt();
@@ -102,21 +103,20 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('firma-logo-menu')), findsOneWidget);
       expect(find.byKey(const ValueKey('firma-colore-nome-0')), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('firma-posizione-prev')));
+      await tester.tap(find.byKey(const ValueKey('firma-posizione-8')));
       await tester.pump();
-      expect(find.textContaining('Alto Centro'), findsOneWidget);
+      expect(find.textContaining('Basso Destra'), findsOneWidget);
       await selectCategory(tester, 2);
       await tester.pump();
       expect(find.byKey(const ValueKey('sfondo-foto-menu')), findsNothing);
       expect(find.byKey(const ValueKey('watermark-misura-menu')), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('watermark-tipo-menu')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Logo App'));
+      await tester.tap(find.byKey(const ValueKey('watermark-tipo-1')));
       await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey('watermark-misura-menu')),
         findsOneWidget,
       );
+      await tester.ensureVisible(find.byKey(const ValueKey('sfondo-colori-3')));
       await tester.tap(find.byKey(const ValueKey('sfondo-colori-3')));
       await tester.pump();
       expect(find.text('Colori · Tramonto'), findsOneWidget);
@@ -169,7 +169,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Nessuna'));
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('firma-posizione-menu')), findsNothing);
+      expect(find.byKey(const ValueKey('firma-posizione-0')), findsNothing);
       await tester.tap(undo);
       await tester.pump();
       expect(find.byKey(const ValueKey('firma-logo-menu')), findsOneWidget);
@@ -181,6 +181,7 @@ void main() {
       expect(find.text('Stile · Classico'), findsOneWidget);
       await selectCategory(tester, 2);
       await tester.pump();
+      await tester.ensureVisible(find.byKey(const ValueKey('sfondo-colori-3')));
       await tester.tap(find.byKey(const ValueKey('sfondo-colori-3')));
       await tester.pump();
       expect(tester.widget<IconButton>(redo).onPressed, isNull);
@@ -190,6 +191,62 @@ void main() {
       await tester.tap(undo);
       await tester.pump();
       expect(find.text('Stile · Classico'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'watermark artwork follows the content area and undo restores it',
+    (tester) async {
+      const first = ShareContent(
+        subject: ShareSubject.goal,
+        title: 'Primo',
+        typeLabel: 'Fisico',
+        area: LifeArea.physical,
+      );
+      const second = ShareContent(
+        subject: ShareSubject.goal,
+        title: 'Secondo',
+        typeLabel: 'Sociale',
+        area: LifeArea.social,
+      );
+      await tester.pumpWidget(
+        app(const ShareComposerScreen(data: first, variants: [first, second])),
+      );
+      await tester.pumpAndSettle();
+      await selectCategory(tester, 2);
+      await tester.pump();
+      final artwork = find.byKey(const ValueKey('watermark-tipo-2'));
+      await tester.ensureVisible(artwork);
+      await tester.tap(artwork);
+      await tester.pumpAndSettle();
+      String asset() =>
+          (tester
+                      .widget<Image>(
+                        find.descendant(
+                          of: artwork,
+                          matching: find.byType(Image),
+                        ),
+                      )
+                      .image
+                  as AssetImage)
+              .assetName;
+      expect(asset(), kAreaHeroArt[LifeArea.physical]!.coverAsset);
+      expect(find.byKey(const ValueKey('watermark-tipo-3')), findsNothing);
+      await selectCategory(tester, 0);
+      await tester.pump();
+      final subject = find.byKey(const ValueKey('scheda-contenuto-menu'));
+      await tester.ensureVisible(subject);
+      await tester.tap(subject);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sociale').last);
+      await tester.pumpAndSettle();
+      await selectCategory(tester, 2);
+      await tester.pumpAndSettle();
+      expect(asset(), kAreaHeroArt[LifeArea.social]!.coverAsset);
+      await tester.tap(find.byKey(const ValueKey('share-undo')));
+      await tester.pumpAndSettle();
+      expect(asset(), kAreaHeroArt[LifeArea.physical]!.coverAsset);
       expect(tester.takeException(), isNull);
     },
   );

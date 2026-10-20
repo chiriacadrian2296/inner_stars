@@ -108,7 +108,7 @@ double _shareAspectRatio(_ShareFormat format) => switch (format) {
 
 enum _PhotoMode { none, background, panel, circle }
 
-enum _Watermark { none, logo, sparkle, constellation, area }
+enum _Watermark { none, logo, area }
 
 enum _BrandLayout { logoAbove, logoLeft }
 
@@ -817,15 +817,6 @@ class _WatermarkArt extends StatelessWidget {
         height: size,
         colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
       ),
-      _Watermark.sparkle => Transform.rotate(
-        angle: -.22,
-        child: Icon(Icons.auto_awesome, size: size * .6, color: color),
-      ),
-      _Watermark.constellation => SizedBox(
-        width: size * .85,
-        height: size * .85,
-        child: CustomPaint(painter: _ConstellationPainter(color)),
-      ),
       // The area's royal-symbol artwork, repainted in a single ink and
       // scaled so every area covers about the same visual mass.
       _Watermark.area => Image.asset(
@@ -1064,58 +1055,6 @@ class _ContentPhotoState extends State<_ContentPhoto> {
           : Image.memory(snapshot.data!, fit: widget.fit),
     );
   }
-}
-
-class _ConstellationPainter extends CustomPainter {
-  const _ConstellationPainter(this.color);
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    Offset at(double x, double y) => Offset(size.width * x, size.height * y);
-    // A branching constellation: a spine with two offshoots, stars of
-    // different weights, and a few faint dust stars around it.
-    final points = [
-      at(.1, .78), // 0
-      at(.28, .5), // 1
-      at(.5, .6), // 2
-      at(.66, .3), // 3
-      at(.9, .22), // 4
-      at(.42, .22), // 5
-      at(.8, .72), // 6
-    ];
-    const edges = [(0, 1), (1, 2), (2, 3), (3, 4), (1, 5), (2, 6)];
-    const radii = [4.0, 5.5, 4.0, 6.5, 4.5, 3.5, 4.0];
-    final line = Paint()
-      ..color = color.withValues(alpha: .38)
-      ..strokeWidth = 1.5;
-    final dust = Paint()..color = color.withValues(alpha: .25);
-    for (final d in [
-      at(.04, .3),
-      at(.2, .1),
-      at(.58, .08),
-      at(.96, .55),
-      at(.64, .92),
-      at(.3, .92),
-    ]) {
-      canvas.drawCircle(d, 1.6, dust);
-    }
-    for (final (a, b) in edges) {
-      canvas.drawLine(points[a], points[b], line);
-    }
-    for (var i = 0; i < points.length; i++) {
-      canvas.drawCircle(
-        points[i],
-        radii[i] * 2.4,
-        Paint()..color = color.withValues(alpha: .1),
-      );
-      canvas.drawCircle(points[i], radii[i], Paint()..color = color);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _ConstellationPainter oldDelegate) =>
-      oldDelegate.color != color;
 }
 
 Alignment _alignmentFor(_TitlePosition position) => switch (position) {
