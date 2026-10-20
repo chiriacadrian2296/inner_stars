@@ -181,7 +181,10 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
       behavior: HitTestBehavior.opaque,
       onTap: _failed ? null : _toggle,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: widget.timeInset == null ? 6 : 5,
+        ),
         // Framed, it's a transparent pill with a thin white outline, like a
         // link — not a solid card.
         decoration: widget.framed
@@ -237,7 +240,15 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
                     ),
             ),
             if (!_failed) ...[
-              SizedBox(width: widget.gap),
+              // With an inset (the compact row) the badge's own margin inside
+              // its slot is mirrored here, so the bars sit centered.
+              SizedBox(
+                width:
+                    widget.gap +
+                    (widget.timeInset == null
+                        ? 0
+                        : (_badgeSize - widget.badgeSize) / 2),
+              ),
               _withInset(
                 Text(
                   formatVoiceDuration(_playing ? _position : total),

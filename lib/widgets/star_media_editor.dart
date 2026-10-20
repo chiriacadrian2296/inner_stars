@@ -210,21 +210,30 @@ class StarMediaEditor extends StatelessWidget {
       .firstOrNull;
 
   /// The least height the half-width column needs: four name rows (the voice
-  /// note and the three links), each with its gap and a 48 px row between two
-  /// small pads, plus the voice note's limit line and a little air between the
-  /// voice note and the links. The form makes the photo at least this tall
-  /// less its own name row, so nothing overflows on a narrow phone.
+  /// note and the three links), each with its gap and a row at its shortest
+  /// between two small pads, plus the extra gap between the links and the
+  /// form's usual space between two fields before the links. The form makes
+  /// the photo at least this tall less its own name row, so nothing overflows
+  /// on a narrow phone; on a normal one the 9:16 photo is taller.
   static const double sideColumnMinHeight =
-      4 *
-          (kFieldNameRowHeight +
-              kFieldLabelGap +
-              _kTileHeight +
-              2 * _kSideRowPad) +
-      25 +
-      12;
+      _kSideFixedHeight + 4 * _kSideTileMin;
+
+  /// Everything in the column but the four rows: name rows, their gaps and
+  /// pads, the extra gap between the links, and the form's space between two
+  /// fields (less the pad already under the voice row) before the links.
+  static const double _kSideFixedHeight =
+      4 * (kFieldNameRowHeight + kFieldLabelGap + 2 * _kSideRowPad) +
+      2 * kFieldLabelGap +
+      (_kFieldSpacing - _kSideRowPad);
 
   Widget _sideColumn(BuildContext context) {
     assert(gridHeight != null, 'the side column needs the height to fill');
+    // The rows shrink, all four together, just enough to leave the form's
+    // usual space between the voice note and the links.
+    final tile = ((gridHeight! - _kSideFixedHeight) / 4).clamp(
+      _kSideTileMin,
+      _kTileHeight,
+    );
     final strings = context.strings;
     final colors = context.colors;
     final voice = media.where((m) => m.kind == StarMediaKind.voice).firstOrNull;
@@ -254,12 +263,14 @@ class StarMediaEditor extends StatelessWidget {
                   kind: StarMediaKind.voice,
                   gap: gap,
                   vPad: _kSideRowPad,
+                  tileHeight: tile,
                   onTap: () => _addVoice(context),
                 )
               else
                 _RemovableRow(
                   key: ValueKey(voice.id),
                   vPad: _kSideRowPad,
+                  tileHeight: tile,
                   child: VoiceNotePlayer(
                     media: voice,
                     framed: false,
@@ -272,15 +283,14 @@ class StarMediaEditor extends StatelessWidget {
                     timeColor: colors.gold,
                   ),
                 ),
-              MemoryCaption(
-                strings.voiceLimitLabel(formatVoiceDuration(kMaxVoiceNote)),
-              ),
             ],
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              for (final kind in kinds)
+              for (final (i, kind) in kinds.indexed) ...[
+                // Same air above a name as between it and its own row.
+                if (i > 0) const SizedBox(height: kFieldLabelGap),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -291,9 +301,10 @@ class StarMediaEditor extends StatelessWidget {
                       canReset: _linkOf(kind) != null,
                     ),
                     const SizedBox(height: kFieldLabelGap),
-                    _linkRow(context, kind),
+                    _linkRow(context, kind, tile),
                   ],
                 ),
+              ],
             ],
           ),
         ],
@@ -317,11 +328,12 @@ class StarMediaEditor extends StatelessWidget {
   ]);
 
   /// One link slot of the side column: the saved link, or its placeholder.
-  Widget _linkRow(BuildContext context, StarLinkKind kind) {
+  Widget _linkRow(BuildContext context, StarLinkKind kind, double tile) {
     if (_linkOf(kind) case final item?) {
       return _RemovableRow(
         key: ValueKey(item.id),
         vPad: _kSideRowPad,
+        tileHeight: tile,
         onTap: () => openExtraLink(context, item),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -338,6 +350,7 @@ class StarMediaEditor extends StatelessWidget {
       linkKind: kind,
       gap: _kSideGap,
       vPad: _kSideRowPad,
+      tileHeight: tile,
       onTap: () => _addLink(context, kind),
     );
   }
@@ -577,12 +590,16 @@ class _RemovableRow extends StatelessWidget {
     this.onRemove,
     this.onTap,
     this.vPad = 4,
+    this.tileHeight = _kTileHeight,
   });
 
   final Widget child;
 
   /// Space above and below the tile.
   final double vPad;
+
+  /// The tile's least height.
+  final double tileHeight;
 
   /// Tapping anywhere on the tile (but its remove badge).
   final VoidCallback? onTap;
@@ -605,7 +622,7 @@ class _RemovableRow extends StatelessWidget {
             child: DecoratedBox(
               decoration: _tileBody(colors),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: _kTileHeight),
+                constraints: BoxConstraints(minHeight: tileHeight),
                 child: Center(child: child),
               ),
             ),
@@ -965,6 +982,7 @@ class _KindPlaceholder extends StatelessWidget {
     this.linkKind,
     this.gap = 50,
     this.vPad = 4,
+    this.tileHeight = _kTileHeight,
   });
 
   final StarMediaKind kind;
@@ -977,6 +995,9 @@ class _KindPlaceholder extends StatelessWidget {
   final double gap;
   final double vPad;
 
+  /// The tile's least height.
+  final double tileHeight;
+
   /// Tapping the stand-in adds one: the placeholder is the add button.
   final VoidCallback onTap;
 
@@ -988,9 +1009,9 @@ class _KindPlaceholder extends StatelessWidget {
     final Widget shape = switch (kind) {
       StarMediaKind.voice => Container(
         decoration: fill,
-        constraints: const BoxConstraints(minHeight: _kTileHeight),
+        constraints: BoxConstraints(minHeight: tileHeight),
         alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         child: Row(
           children: [
             // Same 26 px slot as the play badge of a real voice note, so the
@@ -1027,12 +1048,14 @@ class _KindPlaceholder extends StatelessWidget {
                 ),
               ),
             ),
-            SizedBox(width: gap),
+            // The icon sits 5 px inside its 26 px slot, so the bars get the
+            // same 5 extra px before the length to stay centered between them.
+            SizedBox(width: gap + 5),
             // Same 5 px after the length as a real note (timeInset).
             Padding(
               padding: const EdgeInsets.only(right: 5),
               child: Text(
-                '0:00',
+                formatVoiceDuration(kMaxVoiceNote),
                 maxLines: 1,
                 style: TextStyle(
                   color: ghost,
@@ -1047,9 +1070,9 @@ class _KindPlaceholder extends StatelessWidget {
       ),
       _ => Container(
         decoration: fill,
-        constraints: const BoxConstraints(minHeight: _kTileHeight),
+        constraints: BoxConstraints(minHeight: tileHeight),
         alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         child: Row(
           children: [
             SizedBox(
@@ -1110,6 +1133,14 @@ class _KindPlaceholder extends StatelessWidget {
 /// beside the icons, and a little less air above and below each row.
 const double _kSideRowPad = 2;
 const double _kSideGap = 10;
+
+/// The least height a row of the half-width column shrinks to (its content is
+/// 36 px tall).
+const double _kSideTileMin = 36;
+
+/// The form's space between two fields (area, then project), wanted between
+/// the voice note and the links as well.
+const double _kFieldSpacing = 20;
 
 /// As tall as the single-line fields above (a picker field: 12 of padding
 /// either side of a ~21 px line of text, plus its 1.5 px border each side).

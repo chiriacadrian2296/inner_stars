@@ -72,7 +72,9 @@ void main() {
       expect(find.text('Canzone'), findsOneWidget);
       expect(find.text('Posizione'), findsOneWidget);
       expect(find.text('Sito'), findsOneWidget);
-      expect(find.text('Limite · 1:00'), findsOneWidget);
+      // The limit is the placeholder's length, not a caption below it.
+      expect(find.text('Limite · 1:00'), findsNothing);
+      expect(find.text('1:00'), findsOneWidget);
       // One reset icon per name row, all off while nothing is there.
       expect(find.byType(FieldResetButton), findsNWidgets(4));
       expect(
