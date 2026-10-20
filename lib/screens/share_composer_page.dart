@@ -1219,20 +1219,17 @@ class _VisualChoices extends StatelessWidget {
                                 44.0,
                                 double.infinity,
                               ),
-                              decoration:
-                                  selectableDecoration(
-                                    context.colors,
-                                    selected: i == index,
-                                  ).copyWith(
-                                    color: i == index
-                                        ? Color.alphaBlend(
-                                            context.colors.gold.withValues(
-                                              alpha: .07,
-                                            ),
-                                            context.colors.nightPanel,
-                                          )
-                                        : context.colors.nightPanel,
-                                  ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(
+                                  kRadiusField,
+                                ),
+                                border: Border.all(
+                                  color: i == index
+                                      ? context.colors.gold
+                                      : Colors.transparent,
+                                  width: kBorderWidth,
+                                ),
+                              ),
                               child: Stack(
                                 children: [
                                   Center(
