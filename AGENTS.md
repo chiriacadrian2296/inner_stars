@@ -37,3 +37,17 @@
   goals and habits. See `docs/terminology.md` for the full mapping.
 - Archiving an activity is distinct from permanently deleting a project.
   Keep persisted enum values and legacy identifiers compatible.
+
+# Workflow
+
+- `main` is production: every push to it publishes the web app and the
+  landing. Never work on `main` or push to it directly. Create a branch with
+  a descriptive name for each piece of work (the user may name it), commit and
+  push there, and merge the whole branch into `main` only when the user says
+  it is finished and tested. Do not cherry-pick individual commits.
+- Pushing a branch only runs the `Checks` workflow (analyze and tests); it
+  publishes nothing. The web deploy also runs analyze and tests first.
+- Synced models only get new optional fields; never rename or remove existing
+  ones, because app versions and cloud data coexist.
+- Development tools stay behind `kDevTools`. An unfinished user-facing
+  feature stays on its branch. See `docs/workflow.md`.
