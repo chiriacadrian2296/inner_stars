@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../data/star_media_storage.dart';
+import '../l10n/app_strings.dart';
 import '../l10n/strings_scope.dart';
 import '../models/star_media.dart';
 import '../theme/app_colors.dart';
@@ -213,7 +214,6 @@ class StarMediaEditor extends StatelessWidget {
     final strings = context.strings;
     final colors = context.colors;
     final voice = media.where((m) => m.kind == StarMediaKind.voice).firstOrNull;
-    final hasLink = media.any((m) => m.kind == StarMediaKind.link);
     // The same rows as the full-width form, with the middle (the waveform and
     // the link placeholder) shortened by a smaller gap beside the icons.
     const gap = _kSideGap;
@@ -233,17 +233,20 @@ class StarMediaEditor extends StatelessWidget {
                 onReset: () => _reset(StarMediaKind.voice),
                 canReset: voice != null,
               ),
-              const SizedBox(height: kFieldLabelGap),
+              const SizedBox(height: _kSideLabelGap),
               if (voice == null)
                 _KindPlaceholder(
                   kind: StarMediaKind.voice,
                   gap: gap,
+                  height: _kSideVoiceHeight,
                   vPad: _kSideRowPad,
+                  vertical: _kSideInnerPad,
                   onTap: () => _addVoice(context),
                 )
               else
                 _RemovableRow(
                   key: ValueKey(voice.id),
+                  minHeight: _kSideVoiceHeight,
                   vPad: _kSideRowPad,
                   onRemove: () => _remove(voice),
                   child: VoiceNotePlayer(
@@ -254,55 +257,81 @@ class StarMediaEditor extends StatelessWidget {
                     timeSize: 12,
                     timeInset: 5,
                     gap: gap,
+                    verticalPadding: _kSideInnerPad,
                     contentColor: Colors.white,
                     timeColor: colors.gold,
                   ),
                 ),
               MemoryCaption(
                 strings.voiceLimitLabel(formatVoiceDuration(kMaxVoiceNote)),
+                topPadding: 4,
               ),
             ],
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppFieldLabel(
-                strings.linksLabel,
-                requirement: FieldRequirement.optional,
-                onReset: () => _reset(StarMediaKind.link),
-                canReset: hasLink,
-              ),
-              const SizedBox(height: kFieldLabelGap),
-              for (final kind in kinds)
-                if (_linkOf(kind) case final item?)
-                  _RemovableRow(
-                    key: ValueKey(item.id),
-                    minHeight: _kSideLinkHeight,
-                    vPad: _kSideRowPad,
-                    onRemove: () => _remove(item),
-                    onTap: () => openExtraLink(context, item),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: _LeadingText(
-                        icon: linkKindIcon(kind),
-                        text: linkDisplayText(item),
-                        gap: gap,
-                      ),
-                    ),
-                  )
-                else
-                  _KindPlaceholder(
-                    kind: StarMediaKind.link,
-                    linkKind: kind,
-                    gap: gap,
-                    height: _kSideLinkHeight,
-                    vPad: _kSideRowPad,
-                    onTap: () => _addLink(context, kind),
-                  ),
-            ],
-          ),
+          // Every link has its own name row and reset, the same on every phone.
+          for (final kind in kinds)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppFieldLabel(
+                  _linkKindName(strings, kind),
+                  requirement: FieldRequirement.optional,
+                  onReset: () => _resetLinkKind(kind),
+                  canReset: _linkOf(kind) != null,
+                ),
+                const SizedBox(height: _kSideLabelGap),
+                _linkRow(context, kind),
+              ],
+            ),
         ],
       ),
+    );
+  }
+
+  static String _linkKindName(AppStrings strings, StarLinkKind kind) =>
+      switch (kind) {
+        StarLinkKind.song => strings.linkSongLabel,
+        StarLinkKind.place => strings.linkPlaceLabel,
+        StarLinkKind.site => strings.linkSiteLabel,
+      };
+
+  /// Drops the link of [kind] (a link saved before kinds existed is a site).
+  void _resetLinkKind(StarLinkKind kind) => onChanged([
+    for (final m in media)
+      if (!(m.kind == StarMediaKind.link &&
+          (m.linkKind ?? StarLinkKind.site) == kind))
+        m,
+  ]);
+
+  /// One link slot of the side column: the saved link, or its placeholder.
+  Widget _linkRow(BuildContext context, StarLinkKind kind) {
+    if (_linkOf(kind) case final item?) {
+      return _RemovableRow(
+        key: ValueKey(item.id),
+        minHeight: _kSideLinkHeight,
+        vPad: _kSideRowPad,
+        onRemove: () => _remove(item),
+        onTap: () => openExtraLink(context, item),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: _LeadingText(
+            icon: linkKindIcon(kind),
+            text: linkDisplayText(item),
+            gap: _kSideGap,
+            slot: _kSideSlot,
+          ),
+        ),
+      );
+    }
+    return _KindPlaceholder(
+      kind: StarMediaKind.link,
+      linkKind: kind,
+      gap: _kSideGap,
+      height: _kSideLinkHeight,
+      vPad: _kSideRowPad,
+      vertical: _kSideInnerPad,
+      slot: _kSideSlot,
+      onTap: () => _addLink(context, kind),
     );
   }
 
@@ -592,7 +621,12 @@ class _RemovableRow extends StatelessWidget {
 }
 
 class _LeadingText extends StatelessWidget {
-  const _LeadingText({required this.icon, required this.text, this.gap = 8});
+  const _LeadingText({
+    required this.icon,
+    required this.text,
+    this.gap = 8,
+    this.slot = 26,
+  });
 
   final IconData icon;
   final String text;
@@ -600,14 +634,17 @@ class _LeadingText extends StatelessWidget {
   /// Space between the icons and the text.
   final double gap;
 
+  /// Size of the square each icon is centered in.
+  final double slot;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Row(
       children: [
         SizedBox(
-          width: 26,
-          height: 26,
+          width: slot,
+          height: slot,
           child: Center(child: Icon(icon, color: colors.gold, size: 16)),
         ),
         SizedBox(width: gap),
@@ -624,8 +661,8 @@ class _LeadingText extends StatelessWidget {
         // Same slot as the icon on the left, so the text stays centered on the
         // whole tile.
         SizedBox(
-          width: 26,
-          height: 26,
+          width: slot,
+          height: slot,
           child: Center(
             child: Icon(
               Icons.open_in_new_rounded,
@@ -928,6 +965,8 @@ class _KindPlaceholder extends StatelessWidget {
     this.gap = 50,
     this.height = _kTileHeight,
     this.vPad = 4,
+    this.vertical = 6,
+    this.slot = 26,
   });
 
   final StarMediaKind kind;
@@ -940,6 +979,11 @@ class _KindPlaceholder extends StatelessWidget {
   final double gap;
   final double height;
   final double vPad;
+
+  /// Space above and below the content inside the tile, and the size of the
+  /// icon slots of a link placeholder.
+  final double vertical;
+  final double slot;
 
   /// Tapping the stand-in adds one: the placeholder is the add button.
   final VoidCallback onTap;
@@ -954,7 +998,7 @@ class _KindPlaceholder extends StatelessWidget {
         decoration: fill,
         constraints: BoxConstraints(minHeight: height),
         alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: vertical),
         child: Row(
           children: [
             // Same 26 px slot as the play badge of a real voice note, so the
@@ -1013,12 +1057,12 @@ class _KindPlaceholder extends StatelessWidget {
         decoration: fill,
         constraints: BoxConstraints(minHeight: height),
         alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: vertical),
         child: Row(
           children: [
             SizedBox(
-              width: 26,
-              height: 26,
+              width: slot,
+              height: slot,
               child: Center(
                 child: Icon(
                   linkKind == null
@@ -1042,8 +1086,8 @@ class _KindPlaceholder extends StatelessWidget {
             ),
             SizedBox(width: gap),
             SizedBox(
-              width: 26,
-              height: 26,
+              width: slot,
+              height: slot,
               child: Center(
                 child: Icon(Icons.open_in_new_rounded, color: ghost, size: 16),
               ),
@@ -1072,9 +1116,16 @@ class _KindPlaceholder extends StatelessWidget {
 /// In the half-width column beside the photo: the link rows are a little
 /// shorter, the rows sit closer, and the gap beside each row's icons is small,
 /// which is what shortens the waveform and the link placeholder.
-const double _kSideLinkHeight = 36;
-const double _kSideRowPad = 3;
+const double _kSideVoiceHeight = 36;
+const double _kSideLinkHeight = 32;
+const double _kSideRowPad = 1;
 const double _kSideGap = 10;
+
+/// The icon slots beside a link row (26 in the full-width rows), the space
+/// between a name row and its field, and inside a row above and below it.
+const double _kSideSlot = 22;
+const double _kSideLabelGap = 4;
+const double _kSideInnerPad = 3;
 
 /// As tall as the single-line fields above (a picker field: 12 of padding
 /// either side of a ~21 px line of text, plus its 1.5 px border each side).

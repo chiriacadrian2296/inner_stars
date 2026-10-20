@@ -28,6 +28,7 @@ class VoiceNotePlayer extends StatefulWidget {
     this.timeSize = 14,
     this.timeInset,
     this.gap = 50,
+    this.verticalPadding = 6,
   });
 
   final StarMedia media;
@@ -59,6 +60,9 @@ class VoiceNotePlayer extends StatefulWidget {
   /// Space between the play badge and the waveform, and between the waveform
   /// and the length. A narrow column shortens the waveform by shrinking this.
   final double gap;
+
+  /// Space above and below the row.
+  final double verticalPadding;
 
   @override
   State<VoiceNotePlayer> createState() => _VoiceNotePlayerState();
@@ -181,7 +185,10 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
       behavior: HitTestBehavior.opaque,
       onTap: _failed ? null : _toggle,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: widget.verticalPadding,
+        ),
         // Framed, it's a transparent pill with a thin white outline, like a
         // link — not a solid card.
         decoration: widget.framed

@@ -52,29 +52,30 @@ StarMedia _voice() => StarMedia(
 );
 
 void main() {
-  testWidgets('empty: two name rows with reset, the limit, one icon per link', (
-    tester,
-  ) async {
-    await tester.pumpWidget(_app(const [], 138));
-    expect(find.text('Nota Vocale'), findsOneWidget);
-    expect(find.text('Link'), findsOneWidget);
-    expect(find.text('Limite · 1:00'), findsOneWidget);
-    // One reset icon per name row, both off while nothing is there.
-    expect(find.byType(FieldResetButton), findsNWidgets(2));
-    expect(
-      tester
-          .widgetList<FieldResetButton>(find.byType(FieldResetButton))
-          .every((b) => !b.canReset),
-      isTrue,
-    );
-    expect(find.byIcon(Icons.mic_none_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.music_note_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.place_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.language_rounded), findsOneWidget);
-    // The old kind words are gone from the placeholders.
-    expect(find.text('Canzone'), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
+  testWidgets(
+    'empty: four name rows with reset, the limit, one icon per link',
+    (tester) async {
+      await tester.pumpWidget(_app(const [], 138));
+      expect(find.text('Nota Vocale'), findsOneWidget);
+      expect(find.text('Canzone'), findsOneWidget);
+      expect(find.text('Posizione'), findsOneWidget);
+      expect(find.text('Sito'), findsOneWidget);
+      expect(find.text('Limite · 1:00'), findsOneWidget);
+      // One reset icon per name row, all off while nothing is there.
+      expect(find.byType(FieldResetButton), findsNWidgets(4));
+      expect(
+        tester
+            .widgetList<FieldResetButton>(find.byType(FieldResetButton))
+            .every((b) => !b.canReset),
+        isTrue,
+      );
+      expect(find.byIcon(Icons.mic_none_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.music_note_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.place_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.language_rounded), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   for (final width in [138.0, 154.0, 170.0]) {
     testWidgets('no overflow at $width px, empty and full', (tester) async {
@@ -98,30 +99,30 @@ void main() {
     });
   }
 
-  testWidgets('the voice reset removes the note, the link reset all links', (
-    tester,
-  ) async {
+  testWidgets('each reset removes only its own field', (tester) async {
     List<StarMedia>? result;
     final media = [
       _voice(),
       _link(StarLinkKind.song, 'Canzone'),
       _link(StarLinkKind.place, 'Posto'),
+      // A link saved before kinds existed counts as a site.
+      _link(null, 'Sito'),
     ];
     await tester.pumpWidget(_app(media, 154, onChanged: (m) => result = m));
     final resets = find.byType(FieldResetButton);
-
-    await tester.tap(
-      find.descendant(of: resets.at(0), matching: find.byType(IconButton)),
+    Future<void> tapReset(int index) => tester.tap(
+      find.descendant(of: resets.at(index), matching: find.byType(IconButton)),
     );
-    expect(result!.map((m) => m.kind), [
-      StarMediaKind.link,
-      StarMediaKind.link,
-    ]);
 
-    await tester.tap(
-      find.descendant(of: resets.at(1), matching: find.byType(IconButton)),
-    );
-    expect(result!.map((m) => m.kind), [StarMediaKind.voice]);
+    List<String> left() => result!.map((m) => m.id).toList();
+    await tapReset(0); // the voice note
+    expect(left(), ['Canzone', 'Posto', 'Sito']);
+    await tapReset(1); // the song
+    expect(left(), ['voice', 'Posto', 'Sito']);
+    await tapReset(2); // the place
+    expect(left(), ['voice', 'Canzone', 'Sito']);
+    await tapReset(3); // the site
+    expect(left(), ['voice', 'Canzone', 'Posto']);
   });
 
   testWidgets('a name row fits inside the height the form reserves', (
