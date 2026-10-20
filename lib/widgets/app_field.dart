@@ -24,6 +24,11 @@ enum FieldRequirement {
 /// every form uses, so a name row must not add height of its own.
 const double kFieldLabelGap = 6;
 
+/// A name row held at one height wherever two columns of fields must line up
+/// (it is 19 px at the default text size): tall enough for the name, the dot
+/// and the reset icon.
+const double kFieldNameRowHeight = 20;
+
 /// The label's own color, but smaller and lighter, so a limit ("12/50")
 /// never competes with the title it sits beside. [fieldLengthNoteStyle] is
 /// smaller still, for a per-item length such as "Max 1:00".

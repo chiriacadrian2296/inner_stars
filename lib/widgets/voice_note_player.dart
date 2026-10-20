@@ -27,6 +27,7 @@ class VoiceNotePlayer extends StatefulWidget {
     this.badgeSize = 26,
     this.timeSize = 14,
     this.timeInset,
+    this.gap = 50,
   });
 
   final StarMedia media;
@@ -54,6 +55,10 @@ class VoiceNotePlayer extends StatefulWidget {
 
   /// Extra space after the length, at its natural size.
   final double? timeInset;
+
+  /// Space between the play badge and the waveform, and between the waveform
+  /// and the length. A narrow column shortens the waveform by shrinking this.
+  final double gap;
 
   @override
   State<VoiceNotePlayer> createState() => _VoiceNotePlayerState();
@@ -202,7 +207,7 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
                       ),
                     ),
                   ),
-            const SizedBox(width: 50),
+            SizedBox(width: widget.gap),
             Expanded(
               child: _failed
                   ? Text(
@@ -232,7 +237,7 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
                     ),
             ),
             if (!_failed) ...[
-              const SizedBox(width: 50),
+              SizedBox(width: widget.gap),
               _withInset(
                 Text(
                   formatVoiceDuration(_playing ? _position : total),

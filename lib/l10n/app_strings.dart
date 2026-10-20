@@ -755,6 +755,8 @@ abstract class AppStrings {
   String get removeExtraTooltip;
   String mediaLimitReached(int max);
   String voiceNoteLabel(String duration);
+  String get voiceNoteName;
+  String voiceLimitLabel(String duration);
   String get voiceNotesLabel;
   String get extraPhotosLabel;
   String get videosLabel;

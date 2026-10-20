@@ -1508,6 +1508,10 @@ My contribution meets a real need and is something I can sustain.
   @override
   String voiceNoteLabel(String duration) => 'Voice note · $duration';
   @override
+  String get voiceNoteName => 'Voice Note';
+  @override
+  String voiceLimitLabel(String duration) => 'Limit · $duration';
+  @override
   String get voiceNotesLabel => 'Voice Notes';
   @override
   String get extraPhotosLabel => 'Secondary';

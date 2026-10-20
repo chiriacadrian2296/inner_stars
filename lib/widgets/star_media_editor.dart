@@ -213,74 +213,94 @@ class StarMediaEditor extends StatelessWidget {
     final strings = context.strings;
     final colors = context.colors;
     final voice = media.where((m) => m.kind == StarMediaKind.voice).firstOrNull;
-    final slots = [
-      (StarLinkKind.song, strings.linkSongLabel),
-      (StarLinkKind.place, strings.linkPlaceLabel),
-      (StarLinkKind.site, strings.linkSiteLabel),
-    ];
+    final hasLink = media.any((m) => m.kind == StarMediaKind.link);
+    // The same rows as the full-width form, with the middle (the waveform and
+    // the link placeholder) shortened by a smaller gap beside the icons.
+    const gap = _kSideGap;
+    const kinds = [StarLinkKind.song, StarLinkKind.place, StarLinkKind.site];
     return SizedBox(
       height: gridHeight,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          if (voice == null)
-            _CompactSlot(
-              icon: Icons.mic_none_outlined,
-              text: '0:00',
-              height: _kTileHeight,
-              onTap: () => _addVoice(context),
-            )
-          else
-            _RemovableRow(
-              key: ValueKey(voice.id),
-              onRemove: () => _remove(voice),
-              child: VoiceNotePlayer(
-                media: voice,
-                framed: false,
-                accent: colors.gold,
-                badgeSize: 16,
-                timeSize: 12,
-                timeInset: 5,
-                contentColor: Colors.white,
-                timeColor: colors.gold,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppFieldLabel(
+                strings.voiceNoteName,
+                requirement: FieldRequirement.optional,
+                onReset: () => _reset(StarMediaKind.voice),
+                canReset: voice != null,
               ),
-            ),
-          MemoryCaption(
-            strings.voiceNoteLabel(formatVoiceDuration(kMaxVoiceNote)),
-          ),
-          const Spacer(),
-          for (final (kind, name) in slots)
-            if (_linkOf(kind) case final item?)
-              _RemovableRow(
-                key: ValueKey(item.id),
-                minHeight: _kCompactTileHeight,
-                onRemove: () => _remove(item),
-                onTap: () => openExtraLink(context, item),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Row(
-                    children: [
-                      Icon(linkKindIcon(kind), color: colors.gold, size: 16),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          linkDisplayText(item),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: colors.text, fontSize: 14),
-                        ),
-                      ),
-                    ],
+              const SizedBox(height: kFieldLabelGap),
+              if (voice == null)
+                _KindPlaceholder(
+                  kind: StarMediaKind.voice,
+                  gap: gap,
+                  vPad: _kSideRowPad,
+                  onTap: () => _addVoice(context),
+                )
+              else
+                _RemovableRow(
+                  key: ValueKey(voice.id),
+                  vPad: _kSideRowPad,
+                  onRemove: () => _remove(voice),
+                  child: VoiceNotePlayer(
+                    media: voice,
+                    framed: false,
+                    accent: colors.gold,
+                    badgeSize: 16,
+                    timeSize: 12,
+                    timeInset: 5,
+                    gap: gap,
+                    contentColor: Colors.white,
+                    timeColor: colors.gold,
                   ),
                 ),
-              )
-            else
-              _CompactSlot(
-                icon: linkKindIcon(kind),
-                text: name,
-                height: _kCompactTileHeight,
-                onTap: () => _addLink(context, kind),
+              MemoryCaption(
+                strings.voiceLimitLabel(formatVoiceDuration(kMaxVoiceNote)),
               ),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppFieldLabel(
+                strings.linksLabel,
+                requirement: FieldRequirement.optional,
+                onReset: () => _reset(StarMediaKind.link),
+                canReset: hasLink,
+              ),
+              const SizedBox(height: kFieldLabelGap),
+              for (final kind in kinds)
+                if (_linkOf(kind) case final item?)
+                  _RemovableRow(
+                    key: ValueKey(item.id),
+                    minHeight: _kSideLinkHeight,
+                    vPad: _kSideRowPad,
+                    onRemove: () => _remove(item),
+                    onTap: () => openExtraLink(context, item),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: _LeadingText(
+                        icon: linkKindIcon(kind),
+                        text: linkDisplayText(item),
+                        gap: gap,
+                      ),
+                    ),
+                  )
+                else
+                  _KindPlaceholder(
+                    kind: StarMediaKind.link,
+                    linkKind: kind,
+                    gap: gap,
+                    height: _kSideLinkHeight,
+                    vPad: _kSideRowPad,
+                    onTap: () => _addLink(context, kind),
+                  ),
+            ],
+          ),
         ],
       ),
     );
@@ -521,9 +541,13 @@ class _RemovableRow extends StatelessWidget {
     required this.onRemove,
     this.onTap,
     this.minHeight = _kTileHeight,
+    this.vPad = 4,
   });
 
   final Widget child;
+
+  /// Space above and below the tile.
+  final double vPad;
   final double minHeight;
 
   /// Tapping anywhere on the tile (but its remove badge).
@@ -534,7 +558,7 @@ class _RemovableRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(vertical: vPad),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -568,10 +592,13 @@ class _RemovableRow extends StatelessWidget {
 }
 
 class _LeadingText extends StatelessWidget {
-  const _LeadingText({required this.icon, required this.text});
+  const _LeadingText({required this.icon, required this.text, this.gap = 8});
 
   final IconData icon;
   final String text;
+
+  /// Space between the icons and the text.
+  final double gap;
 
   @override
   Widget build(BuildContext context) {
@@ -583,7 +610,7 @@ class _LeadingText extends StatelessWidget {
           height: 26,
           child: Center(child: Icon(icon, color: colors.gold, size: 16)),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: gap),
         Expanded(
           child: Text(
             text,
@@ -593,7 +620,7 @@ class _LeadingText extends StatelessWidget {
             style: TextStyle(color: colors.text, fontSize: 14),
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: gap),
         // Same slot as the icon on the left, so the text stays centered on the
         // whole tile.
         SizedBox(
@@ -894,9 +921,25 @@ class _LinkDialogState extends State<_LinkDialog> with WidgetsBindingObserver {
 /// play mark, bars and length, or link mark and line of text, and the same
 /// remove button position) but faint and flat, so it reads as a stand-in.
 class _KindPlaceholder extends StatelessWidget {
-  const _KindPlaceholder({required this.kind, required this.onTap});
+  const _KindPlaceholder({
+    required this.kind,
+    required this.onTap,
+    this.linkKind,
+    this.gap = 50,
+    this.height = _kTileHeight,
+    this.vPad = 4,
+  });
 
   final StarMediaKind kind;
+
+  /// For a link: what it points to, which picks the icon on the left.
+  final StarLinkKind? linkKind;
+
+  /// Space either side of the middle (the bars or the line); shorter in the
+  /// half-width column, which makes the middle shorter.
+  final double gap;
+  final double height;
+  final double vPad;
 
   /// Tapping the stand-in adds one: the placeholder is the add button.
   final VoidCallback onTap;
@@ -909,7 +952,7 @@ class _KindPlaceholder extends StatelessWidget {
     final Widget shape = switch (kind) {
       StarMediaKind.voice => Container(
         decoration: fill,
-        constraints: const BoxConstraints(minHeight: _kTileHeight),
+        constraints: BoxConstraints(minHeight: height),
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Row(
@@ -923,7 +966,7 @@ class _KindPlaceholder extends StatelessWidget {
                 child: Icon(Icons.mic_none_outlined, size: 16, color: ghost),
               ),
             ),
-            const SizedBox(width: 50),
+            SizedBox(width: gap),
             Expanded(
               child: SizedBox(
                 height: 18,
@@ -948,7 +991,7 @@ class _KindPlaceholder extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 50),
+            SizedBox(width: gap),
             // Same 5 px after the length as a real note (timeInset).
             Padding(
               padding: const EdgeInsets.only(right: 5),
@@ -968,19 +1011,25 @@ class _KindPlaceholder extends StatelessWidget {
       ),
       _ => Container(
         decoration: fill,
-        constraints: const BoxConstraints(minHeight: _kTileHeight),
+        constraints: BoxConstraints(minHeight: height),
         alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Row(
           children: [
             SizedBox(
               width: 26,
               height: 26,
               child: Center(
-                child: Icon(Icons.link_rounded, color: ghost, size: 16),
+                child: Icon(
+                  linkKind == null
+                      ? Icons.link_rounded
+                      : linkKindIcon(linkKind),
+                  color: ghost,
+                  size: 16,
+                ),
               ),
             ),
-            const SizedBox(width: 50),
+            SizedBox(width: gap),
             // Spans the same stretch as a voice note's bars, centered.
             Expanded(
               child: Container(
@@ -991,7 +1040,7 @@ class _KindPlaceholder extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 50),
+            SizedBox(width: gap),
             SizedBox(
               width: 26,
               height: 26,
@@ -1009,7 +1058,7 @@ class _KindPlaceholder extends StatelessWidget {
       button: true,
       label: context.strings.addExtraAction,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: EdgeInsets.symmetric(vertical: vPad),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(kRadiusField),
@@ -1020,59 +1069,12 @@ class _KindPlaceholder extends StatelessWidget {
   }
 }
 
-/// A free half-width slot: the stand-in is the add button, drawn faint with
-/// the kind's icon and a short word.
-class _CompactSlot extends StatelessWidget {
-  const _CompactSlot({
-    required this.icon,
-    required this.text,
-    required this.height,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String text;
-  final double height;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final ghost = context.colors.muted;
-    return Semantics(
-      button: true,
-      label: context.strings.addExtraAction,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(kRadiusField),
-          child: Container(
-            height: height,
-            decoration: _tileBody(context.colors),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Row(
-              children: [
-                Icon(icon, color: ghost, size: 16),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    text,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: ghost, fontSize: 14),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The half-width link slots are a little shorter than a full-width field.
-const double _kCompactTileHeight = 40;
+/// In the half-width column beside the photo: the link rows are a little
+/// shorter, the rows sit closer, and the gap beside each row's icons is small,
+/// which is what shortens the waveform and the link placeholder.
+const double _kSideLinkHeight = 36;
+const double _kSideRowPad = 3;
+const double _kSideGap = 10;
 
 /// As tall as the single-line fields above (a picker field: 12 of padding
 /// either side of a ~21 px line of text, plus its 1.5 px border each side).

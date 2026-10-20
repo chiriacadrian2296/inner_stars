@@ -8,7 +8,6 @@ import '../theme/app_style.dart';
 import '../utils/date_format.dart';
 import 'app_field.dart';
 import 'intensity_bolts.dart';
-import 'memory_field_actions.dart';
 import 'photo_picker.dart';
 import 'staggered_entrance.dart';
 import 'star_media_editor.dart';
@@ -325,6 +324,20 @@ class VictoryDetailsSection extends StatelessWidget {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
+                                      SizedBox(
+                                        height: kFieldNameRowHeight,
+                                        child: Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: AppFieldLabel(
+                                            strings.photoLabel,
+                                            requirement:
+                                                FieldRequirement.optional,
+                                            onReset: onRemovePhoto,
+                                            canReset: photoPath != null,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: kFieldLabelGap),
                                       PhotoPicker(
                                         photoPath: photoPath,
                                         onPick: onPickPhoto,
@@ -333,7 +346,6 @@ class VictoryDetailsSection extends StatelessWidget {
                                         compactWidth: half,
                                         compactHeight: gridHeight,
                                       ),
-                                      MemoryCaption(strings.mainPhotoLabel),
                                     ],
                                   ),
                                 ),
@@ -343,7 +355,12 @@ class VictoryDetailsSection extends StatelessWidget {
                                     media: media,
                                     onChanged: onMediaChanged,
                                     sideColumn: true,
-                                    gridHeight: gridHeight,
+                                    // As tall as the left column: its name row,
+                                    // the gap, and the photo.
+                                    gridHeight:
+                                        kFieldNameRowHeight +
+                                        kFieldLabelGap +
+                                        gridHeight,
                                   ),
                                 ),
                               ],

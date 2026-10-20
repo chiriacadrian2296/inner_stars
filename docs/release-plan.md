@@ -98,6 +98,14 @@ Firebase, hosting, privacy e store (parte B), infine la rifinitura (parte C).
 - [x] Dettagli di "Crea vittoria": accanto alla foto principale una sola nota vocale (max 1 minuto)
       e tre link con icona (canzone, posizione, sito; `StarMedia.linkKind`). Niente più foto
       secondarie né video da aggiungere; i dati vecchi restano leggibili nel lettore.
+      **Correzioni del 20 ottobre (ramo `correzioni-ui`):** tornano i nomi dei campi con
+      l’icona di reset — **Photo** a sinistra, **Voice Note** e **Links** (i tre link come un
+      gruppo) a destra; tolto “Main” sotto la foto; sotto la nota vocale “Limit · 1:00”. Le
+      righe della nota vocale e dei link sono di nuovo quelle a larghezza piena (icona,
+      onda o riga, durata o icona di apertura, ognuno con la sua icona per canzone, posizione e
+      sito), solo con la parte centrale accorciata (distanziatore 10 invece di 50): era la
+      causa degli overflow. Il reset della nota vocale la toglie, quello dei link toglie tutti
+      i link. Test aggiornati; da provare a mano sul telefono.
 - [x] Statistiche: riga centrata se non c'è luce; scroll fino al pannello fissato al cambio di livello.
 - [x] Application id `app.innerstars`.
 

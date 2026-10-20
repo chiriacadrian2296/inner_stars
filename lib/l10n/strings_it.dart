@@ -1520,6 +1520,10 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String voiceNoteLabel(String duration) => 'Nota vocale · $duration';
   @override
+  String get voiceNoteName => 'Nota Vocale';
+  @override
+  String voiceLimitLabel(String duration) => 'Limite · $duration';
+  @override
   String get voiceNotesLabel => 'Note Vocali';
   @override
   String get extraPhotosLabel => 'Secondarie';
