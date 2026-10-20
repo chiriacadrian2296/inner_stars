@@ -78,6 +78,22 @@ const _palettes = <_Palette>[
   _Palette('Avorio', [Color(0xFFF5F0E6), Color(0xFFECE3D3), Color(0xFFDBCDB4)]),
   _Palette('Perla', [Color(0xFFF0F3F7), Color(0xFFDFE5EE), Color(0xFFC7D1E0)]),
   _Palette('Sabbia', [Color(0xFFE9D7BA), Color(0xFFD7BC91), Color(0xFFB99A6E)]),
+  _Palette('Bordeaux', [
+    Color(0xFF893243),
+    Color(0xFF502736),
+    Color(0xFF251C2B),
+  ]),
+  _Palette('Rosa Antico', [
+    Color(0xFF90556D),
+    Color(0xFF58394C),
+    Color(0xFF2B2233),
+  ]),
+  _Palette('Verde Bosco', [
+    Color(0xFF2D6A4F),
+    Color(0xFF23483E),
+    Color(0xFF142C2C),
+  ]),
+  _Palette('Viola', [Color(0xFF69438F), Color(0xFF40305E), Color(0xFF211D38)]),
 ];
 
 enum _ShareFormat { story, vertical, portrait, square, landscape }

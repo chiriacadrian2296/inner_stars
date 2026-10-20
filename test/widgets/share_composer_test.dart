@@ -874,9 +874,9 @@ void main() {
           find.byKey(ValueKey('scheda-formato-$format')),
         );
         await tester.pump();
-        expect(find.byKey(const ValueKey('sfondo-colori-7')), findsOneWidget);
-        expect(find.byKey(const ValueKey('sfondo-colori-8')), findsNothing);
-        for (var palette = 0; palette < 8; palette++) {
+        expect(find.byKey(const ValueKey('sfondo-colori-11')), findsOneWidget);
+        expect(find.byKey(const ValueKey('sfondo-colori-12')), findsNothing);
+        for (var palette = 0; palette < 12; palette++) {
           await tapVisible(
             tester,
             find.byKey(ValueKey('sfondo-colori-$palette')),
