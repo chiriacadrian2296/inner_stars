@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../models/life_area.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_motion.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
 import '../theme/app_typography.dart';
@@ -31,8 +32,6 @@ enum _GradientShape { halo, radial, vertical, diagonal }
 
 /// Ink colour override: the title, and the brand (signature + watermark).
 enum _Ink { white, gold, navyDark, navyLight, auto }
-
-enum _WatermarkSize { small, medium, large }
 
 /// What the signature shows.
 enum _BrandContent { none, logo, name, both }
@@ -169,7 +168,6 @@ class _ShareSpecimen extends StatelessWidget {
     required this.palette,
     required this.titleInk,
     required this.watermarkInk,
-    required this.watermarkSize,
     required this.watermarkArea,
     required this.brandContent,
     required this.logoStyle,
@@ -199,7 +197,6 @@ class _ShareSpecimen extends StatelessWidget {
   final int palette;
   final _Ink titleInk;
   final _Ink watermarkInk;
-  final _WatermarkSize watermarkSize;
   final int watermarkArea;
   final _BrandContent brandContent;
   final _LogoStyle logoStyle;
@@ -314,13 +311,7 @@ class _ShareSpecimen extends StatelessWidget {
                   tinted: watermarkInk != _Ink.auto,
                   // Large stays inside the card (the logo's shapes cover about two
                   // thirds of its width, an area artwork nearly all of it).
-                  size:
-                      switch (watermarkSize) {
-                        _WatermarkSize.small => 300.0,
-                        _WatermarkSize.medium => 440.0,
-                        _WatermarkSize.large => 520.0,
-                      } *
-                      (compact ? .68 : 1),
+                  size: 520 * (compact ? .68 : 1),
                   area: watermarkArea,
                 ),
               ),

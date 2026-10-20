@@ -133,17 +133,19 @@ void main() {
       );
       await tester.pump();
       expect(choiceSelected(tester, 'firma-disposizione-0'), isTrue);
-      final size = find.byKey(const ValueKey('watermark-misura-menu'));
-      expect((tester.widget(size) as dynamic).onChanged, isNull);
+      expect(find.byKey(const ValueKey('watermark-misura-menu')), findsNothing);
       await tapVisible(tester, find.byKey(const ValueKey('watermark-tipo-1')));
       await tester.pump();
-      expect((tester.widget(size) as dynamic).onChanged, isNotNull);
       expect(
         tester
-            .getRect(find.byKey(const ValueKey('watermark-tipo-tile-1')))
-            .center
-            .dy,
-        closeTo(tester.getRect(size).center.dy, 2),
+            .widgetList<SizedBox>(
+              find.descendant(
+                of: find.byKey(const ValueKey('share-preview')),
+                matching: find.byType(SizedBox),
+              ),
+            )
+            .any((box) => box.width == 520 && box.height == 520),
+        isTrue,
       );
       expect(tester.takeException(), isNull);
     },
@@ -395,6 +397,16 @@ void main() {
         final redo = find.byKey(const ValueKey('share-redo'));
         final originalPreview = tester.getSize(preview);
         final originalControls = tester.getSize(controls);
+        expect(tester.widget<IconButton>(toggle).iconSize, greaterThan(24));
+        final localTheme = Theme.of(tester.element(toggle));
+        expect(localTheme.splashFactory, NoSplash.splashFactory);
+        expect(localTheme.highlightColor, Colors.transparent);
+        expect(
+          localTheme.iconButtonTheme.style!.overlayColor!.resolve({
+            WidgetState.pressed,
+          }),
+          Colors.transparent,
+        );
         expect(
           tester.getCenter(toggle).dx,
           greaterThan(tester.getCenter(undo).dx),
@@ -419,7 +431,12 @@ void main() {
           findsNothing,
         );
         await tester.tap(toggle);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 80));
+        final intermediateHeight = tester.getSize(preview).height;
+        expect(intermediateHeight, lessThan(originalPreview.height));
         await tester.pumpAndSettle();
+        expect(intermediateHeight, greaterThan(tester.getSize(preview).height));
         expect(
           tester.getSize(preview).height,
           lessThan(originalPreview.height),

@@ -80,7 +80,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
 
   // Watermark.
   _Watermark _watermark = _Watermark.none;
-  _WatermarkSize _watermarkSize = _WatermarkSize.medium;
   int get _watermarkArea => _data.area?.index ?? 0;
   _Watermark get _effectiveWatermark =>
       _watermark == _Watermark.area && _data.area == null
@@ -107,7 +106,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       brandContent: _brandContent,
       brandLayout: _brandLayout,
       watermark: _watermark,
-      watermarkSize: _watermarkSize,
       excerpt: _excerpt.text,
     );
     return () {
@@ -122,7 +120,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       _brandContent = draft.brandContent;
       _brandLayout = draft.brandLayout;
       _watermark = draft.watermark;
-      _watermarkSize = draft.watermarkSize;
       _excerpt.text = draft.excerpt;
     };
   }
@@ -319,7 +316,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     titleInk: _Ink.auto,
     watermark: _effectiveWatermark,
     watermarkInk: _elementInkFor(composition ?? _composition),
-    watermarkSize: _watermarkSize,
     watermarkArea: _watermarkArea,
     brandContent: _brandContent,
     logoStyle: _LogoStyle.current,
@@ -636,7 +632,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
   );
 
   Widget _watermarkBlock() {
-    final on = _effectiveWatermark != _Watermark.none;
     final kinds = [
       _Watermark.none,
       _Watermark.logo,
@@ -644,96 +639,38 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     ];
     return _BlockCard(
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _VisualChoices(
-                fieldKey: 'watermark-tipo',
-                label: 'Filigrana',
-                labels: [for (final kind in kinds) _watermarkLabel(kind)],
-                index: kinds.indexOf(_effectiveWatermark),
-                columns: 3,
-                singleRow: true,
-                previewHeight: 32,
-                preview: (i) => switch (kinds[i]) {
-                  _Watermark.none => Icon(
-                    Icons.block_rounded,
-                    color: context.colors.muted,
-                  ),
-                  _Watermark.logo => SvgPicture.asset(
-                    'assets/icon/Logo.svg',
-                    width: 28,
-                    height: 28,
-                    colorFilter: ColorFilter.mode(
-                      context.colors.gold,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                  _Watermark.area => Image.asset(
-                    kAreaHeroArt[_data.area]!.coverAsset,
-                    width: 28,
-                    height: 28,
-                    fit: BoxFit.contain,
-                    color: context.colors.gold,
-                    colorBlendMode: BlendMode.srcIn,
-                  ),
-                },
-                onChanged: (i) => _edit(() => _watermark = kinds[i]),
+        _VisualChoices(
+          fieldKey: 'watermark-tipo',
+          label: 'Filigrana',
+          labels: [for (final kind in kinds) _watermarkLabel(kind)],
+          index: kinds.indexOf(_effectiveWatermark),
+          columns: 3,
+          singleRow: true,
+          previewHeight: 32,
+          preview: (i) => switch (kinds[i]) {
+            _Watermark.none => Icon(
+              Icons.block_rounded,
+              color: context.colors.muted,
+            ),
+            _Watermark.logo => SvgPicture.asset(
+              'assets/icon/Logo.svg',
+              width: 28,
+              height: 28,
+              colorFilter: ColorFilter.mode(
+                context.colors.gold,
+                BlendMode.srcIn,
               ),
             ),
-            const SizedBox(width: 12),
-            SizedBox(
-              width: 108,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: AppFieldLabel(shareComposerLabel(context, 'Misura')),
-                  ),
-                  Container(
-                    height: 44,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    decoration: selectableDecoration(
-                      context.colors,
-                      selected: false,
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<_WatermarkSize>(
-                        key: const ValueKey('watermark-misura-menu'),
-                        value: _watermarkSize,
-                        isExpanded: true,
-                        dropdownColor: context.colors.nightPanel,
-                        style: context.typography.controlLabel.copyWith(
-                          fontSize: 12,
-                        ),
-                        items: [
-                          for (final size in _WatermarkSize.values)
-                            DropdownMenuItem(
-                              value: size,
-                              child: Text(
-                                shareComposerLabel(
-                                  context,
-                                  _watermarkSizeLabel(size),
-                                ),
-                              ),
-                            ),
-                        ],
-                        onChanged: on
-                            ? (value) {
-                                if (value != null && value != _watermarkSize) {
-                                  _edit(() => _watermarkSize = value);
-                                }
-                              }
-                            : null,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            _Watermark.area => Image.asset(
+              kAreaHeroArt[_data.area]!.coverAsset,
+              width: 28,
+              height: 28,
+              fit: BoxFit.contain,
+              color: context.colors.gold,
+              colorBlendMode: BlendMode.srcIn,
             ),
-          ],
+          },
+          onChanged: (i) => _edit(() => _watermark = kinds[i]),
         ),
         if (_data.area == null)
           _note('Artwork non disponibile: questo contenuto non ha un’area.'),
@@ -744,203 +681,285 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      backgroundColor: colors.night,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final wide =
-                constraints.maxWidth >= 1000 ||
-                (constraints.maxWidth >= 650 && constraints.maxHeight < 600);
-            // The same space separates preview, panels and the share button.
-            const gap = 16.0;
-            final gutter = wide ? 20.0 : 12.0;
-            final preview = _PreviewPane(
-              key: const ValueKey('share-preview'),
-              format: _format,
-              captureKey: _captureKey,
-              padding: 0,
-              specimen: _specimen(),
-            );
-            const categories = [
-              ('Scheda', Icons.dashboard_customize_outlined),
-              ('Sfondo', Icons.gradient_rounded),
-              ('Firma', Icons.verified_outlined),
-            ];
-            final sections = [
-              [_cardBlock(), _styleBlock()],
-              [_backgroundBlock(), _watermarkBlock()],
-              [_signatureBlock()],
-            ];
-            final history = SizedBox(
-              height: 48,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    key: const ValueKey('share-undo'),
-                    tooltip: shareComposerLabel(context, 'Annulla Modifica'),
-                    color: colors.gold,
-                    disabledColor: colors.muted,
-                    onPressed: _undo.isEmpty
-                        ? null
-                        : () => _travel(_undo, _redo),
-                    icon: const Icon(Icons.undo_rounded),
-                  ),
-                  IconButton(
-                    key: const ValueKey('share-toggle-preview'),
-                    tooltip: shareComposerLabel(
-                      context,
-                      _compactPreview
-                          ? 'Espandi Anteprima'
-                          : 'Espandi Controlli',
+    final theme = Theme.of(context);
+    const noInk = ButtonStyle(
+      overlayColor: WidgetStatePropertyAll(Colors.transparent),
+      splashFactory: NoSplash.splashFactory,
+    );
+    return Theme(
+      data: theme.copyWith(
+        splashFactory: NoSplash.splashFactory,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        hoverColor: Colors.transparent,
+        iconButtonTheme: IconButtonThemeData(
+          style: theme.iconButtonTheme.style?.merge(noInk) ?? noInk,
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: theme.textButtonTheme.style?.merge(noInk) ?? noInk,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: theme.elevatedButtonTheme.style?.merge(noInk) ?? noInk,
+        ),
+      ),
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        backgroundColor: colors.night,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final wide =
+                  constraints.maxWidth >= 1000 ||
+                  (constraints.maxWidth >= 650 && constraints.maxHeight < 600);
+              // The same space separates preview, panels and the share button.
+              const gap = 16.0;
+              final gutter = wide ? 20.0 : 12.0;
+              final preview = _PreviewPane(
+                key: const ValueKey('share-preview'),
+                format: _format,
+                captureKey: _captureKey,
+                padding: 0,
+                specimen: _specimen(),
+              );
+              const categories = [
+                ('Scheda', Icons.dashboard_customize_outlined),
+                ('Sfondo', Icons.gradient_rounded),
+                ('Firma', Icons.verified_outlined),
+              ];
+              final sections = [
+                [_cardBlock(), _styleBlock()],
+                [_backgroundBlock(), _watermarkBlock()],
+                [_signatureBlock()],
+              ];
+              final history = SizedBox(
+                height: 48,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      key: const ValueKey('share-undo'),
+                      tooltip: shareComposerLabel(context, 'Annulla Modifica'),
+                      color: colors.gold,
+                      disabledColor: colors.muted,
+                      onPressed: _undo.isEmpty
+                          ? null
+                          : () => _travel(_undo, _redo),
+                      icon: const Icon(Icons.undo_rounded),
                     ),
-                    color: _compactPreview ? colors.gold : colors.muted,
-                    onPressed: () =>
-                        setState(() => _compactPreview = !_compactPreview),
-                    icon: Icon(
-                      _compactPreview
-                          ? Icons.expand_more_rounded
-                          : Icons.expand_less_rounded,
+                    IconButton(
+                      key: const ValueKey('share-toggle-preview'),
+                      iconSize: 32,
+                      tooltip: shareComposerLabel(
+                        context,
+                        _compactPreview
+                            ? 'Espandi Anteprima'
+                            : 'Espandi Controlli',
+                      ),
+                      color: _compactPreview ? colors.gold : colors.muted,
+                      onPressed: () =>
+                          setState(() => _compactPreview = !_compactPreview),
+                      icon: Icon(
+                        _compactPreview
+                            ? Icons.expand_more_rounded
+                            : Icons.expand_less_rounded,
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    key: const ValueKey('share-redo'),
-                    tooltip: shareComposerLabel(context, 'Ripristina Modifica'),
-                    color: colors.gold,
-                    disabledColor: colors.muted,
-                    onPressed: _redo.isEmpty
-                        ? null
-                        : () => _travel(_redo, _undo),
-                    icon: const Icon(Icons.redo_rounded),
-                  ),
-                ],
-              ),
-            );
-            final controls = ScrollConfiguration(
-              behavior: ScrollConfiguration.of(context).copyWith(
-                dragDevices: {
-                  PointerDeviceKind.touch,
-                  PointerDeviceKind.mouse,
-                  PointerDeviceKind.trackpad,
-                  PointerDeviceKind.stylus,
-                },
-              ),
-              child: Scrollbar(
-                controller: _controlsScroll,
-                thumbVisibility: true,
-                interactive: true,
-                child: SingleChildScrollView(
-                  key: const ValueKey('share-controls'),
+                    IconButton(
+                      key: const ValueKey('share-redo'),
+                      tooltip: shareComposerLabel(
+                        context,
+                        'Ripristina Modifica',
+                      ),
+                      color: colors.gold,
+                      disabledColor: colors.muted,
+                      onPressed: _redo.isEmpty
+                          ? null
+                          : () => _travel(_redo, _undo),
+                      icon: const Icon(Icons.redo_rounded),
+                    ),
+                  ],
+                ),
+              );
+              final controls = ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context).copyWith(
+                  dragDevices: {
+                    PointerDeviceKind.touch,
+                    PointerDeviceKind.mouse,
+                    PointerDeviceKind.trackpad,
+                    PointerDeviceKind.stylus,
+                  },
+                ),
+                child: Scrollbar(
                   controller: _controlsScroll,
-                  padding: const EdgeInsets.only(right: 8, bottom: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (var i = 0; i < categories.length; i++) ...[
-                        if (i > 0) const SizedBox(height: 28),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Semantics(
-                                header: true,
-                                child: Row(
-                                  key: ValueKey('share-section-$i'),
-                                  children: [
-                                    Icon(
-                                      categories[i].$2,
-                                      size: 20,
-                                      color: colors.gold,
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Text(
-                                      shareComposerLabel(
-                                        context,
-                                        categories[i].$1,
+                  thumbVisibility: true,
+                  interactive: true,
+                  child: SingleChildScrollView(
+                    key: const ValueKey('share-controls'),
+                    controller: _controlsScroll,
+                    padding: const EdgeInsets.only(right: 8, bottom: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (var i = 0; i < categories.length; i++) ...[
+                          if (i > 0) const SizedBox(height: 32),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Semantics(
+                                  header: true,
+                                  child: Row(
+                                    key: ValueKey('share-section-$i'),
+                                    children: [
+                                      Icon(
+                                        categories[i].$2,
+                                        size: 20,
+                                        color: colors.gold,
                                       ),
-                                      style: context.typography.sectionHeading
-                                          .copyWith(fontSize: 18),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        shareComposerLabel(
+                                          context,
+                                          categories[i].$1,
+                                        ),
+                                        style: context.typography.sectionHeading
+                                            .copyWith(fontSize: 18),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 12),
-                            ],
+                                const SizedBox(height: 12),
+                              ],
+                            ),
                           ),
-                        ),
-                        for (var j = 0; j < sections[i].length; j++) ...[
-                          if (j > 0) const SizedBox(height: 10),
-                          sections[i][j],
+                          for (var j = 0; j < sections[i].length; j++) ...[
+                            if (j > 0) const SizedBox(height: 16),
+                            sections[i][j],
+                          ],
                         ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            );
-            final body = wide && !_compactPreview
-                ? Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Expanded(child: preview),
-                            history,
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: gap),
-                      SizedBox(
-                        width: (constraints.maxWidth * .42).clamp(320.0, 480.0),
-                        child: controls,
-                      ),
-                    ],
-                  )
-                : Column(
-                    children: [
-                      Expanded(child: preview),
-                      history,
-                      SizedBox(
-                        height:
-                            (_compactPreview
-                                ? (constraints.maxHeight * .60).clamp(
-                                    180.0,
-                                    600.0,
-                                  )
-                                : (constraints.maxHeight * .38).clamp(
-                                    240.0,
-                                    310.0,
-                                  )) -
-                            48 +
-                            gap,
-                        child: controls,
-                      ),
-                    ],
+              );
+              final body = LayoutBuilder(
+                builder: (context, bounds) {
+                  final maxControlsHeight = (bounds.maxHeight - 96).clamp(
+                    0.0,
+                    double.infinity,
                   );
-            return Padding(
-              padding: EdgeInsets.fromLTRB(gutter, 12, gutter, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(child: body),
-                  const SizedBox(height: gap),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: _sharing ? null : _share,
-                        child: AppButtonLabel(context.strings.shareNowAction),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
+                  double controlHeight(bool compact) =>
+                      ((compact
+                                  ? (constraints.maxHeight * .60).clamp(
+                                      180.0,
+                                      600.0,
+                                    )
+                                  : (constraints.maxHeight * .38).clamp(
+                                      240.0,
+                                      310.0,
+                                    )) -
+                              48 +
+                              gap)
+                          .clamp(0.0, maxControlsHeight);
+                  final normalHeight = controlHeight(false);
+                  final compactHeight = controlHeight(true);
+                  final sideWidth = (constraints.maxWidth * .42).clamp(
+                    320.0,
+                    480.0,
+                  );
+                  final normalPreview = Rect.fromLTWH(
+                    0,
+                    0,
+                    wide ? bounds.maxWidth - sideWidth - gap : bounds.maxWidth,
+                    bounds.maxHeight - 48 - (wide ? 0 : normalHeight),
+                  );
+                  final compactPreview = Rect.fromLTWH(
+                    0,
+                    0,
+                    bounds.maxWidth,
+                    bounds.maxHeight - compactHeight - 48,
+                  );
+                  final normalControls = wide
+                      ? Rect.fromLTWH(
+                          bounds.maxWidth - sideWidth,
+                          0,
+                          sideWidth,
+                          bounds.maxHeight,
+                        )
+                      : Rect.fromLTWH(
+                          0,
+                          bounds.maxHeight - normalHeight,
+                          bounds.maxWidth,
+                          normalHeight,
+                        );
+                  final compactControls = Rect.fromLTWH(
+                    0,
+                    bounds.maxHeight - compactHeight,
+                    bounds.maxWidth,
+                    compactHeight,
+                  );
+                  return TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: _compactPreview ? 1 : 0),
+                    duration: motionDuration(context, kMotionSlow),
+                    curve: kMotionEnter,
+                    builder: (context, progress, _) {
+                      final previewRect = Rect.lerp(
+                        normalPreview,
+                        compactPreview,
+                        progress,
+                      )!;
+                      final controlsRect = Rect.lerp(
+                        normalControls,
+                        compactControls,
+                        progress,
+                      )!;
+                      return Stack(
+                        children: [
+                          Positioned.fromRect(
+                            rect: previewRect,
+                            child: preview,
+                          ),
+                          Positioned.fromRect(
+                            rect: Rect.fromLTWH(
+                              0,
+                              previewRect.bottom,
+                              previewRect.width,
+                              48,
+                            ),
+                            child: history,
+                          ),
+                          Positioned.fromRect(
+                            rect: controlsRect,
+                            child: controls,
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              );
+              return Padding(
+                padding: EdgeInsets.fromLTRB(gutter, 12, gutter, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: body),
+                    const SizedBox(height: gap),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(
+                          onPressed: _sharing ? null : _share,
+                          child: AppButtonLabel(context.strings.shareNowAction),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -963,12 +982,6 @@ String _gradientLabel(_GradientShape value) => switch (value) {
   _GradientShape.radial => 'Radiale',
   _GradientShape.vertical => 'Verticale',
   _GradientShape.diagonal => 'Diagonale',
-};
-
-String _watermarkSizeLabel(_WatermarkSize value) => switch (value) {
-  _WatermarkSize.small => 'Piccolo',
-  _WatermarkSize.medium => 'Medio',
-  _WatermarkSize.large => 'Grande',
 };
 
 String _formatLabel(_ShareFormat value) => switch (value) {
@@ -1007,8 +1020,10 @@ class _BlockCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final child in children)
-            Padding(padding: const EdgeInsets.only(bottom: 8), child: child),
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) const SizedBox(height: 16),
+            children[i],
+          ],
         ],
       ),
     );
@@ -1150,7 +1165,7 @@ class _VisualChoices extends StatelessWidget {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.only(bottom: kFieldLabelGap),
         child: AppFieldLabel(
           shareComposerLabel(context, label),
           key: ValueKey('$fieldKey-label'),
