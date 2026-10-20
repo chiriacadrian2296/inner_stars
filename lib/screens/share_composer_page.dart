@@ -173,15 +173,99 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
   final _captureKey = GlobalKey();
   bool _sharing = false;
 
+  final _undo = <VoidCallback>[];
+  final _redo = <VoidCallback>[];
+
+  // Capture the complete draft together, including preset and subject changes.
+  VoidCallback _snapshot() {
+    final draft = (
+      subject: _subjectIndex,
+      composition: _composition,
+      format: _format,
+      style: _style,
+      brandInk: _brandInk,
+      titleInk: _titleInk,
+      gradient: _gradient,
+      palette: _palette,
+      photoMode: _photoMode,
+      titlePosition: _titlePosition,
+      badgePosition: _badgePosition,
+      showType: _showType,
+      showDate: _showDate,
+      showArea: _showArea,
+      showProject: _showProject,
+      showDescription: _showDescription,
+      showStats: _showStats,
+      brandContent: _brandContent,
+      logoStyle: _logoStyle,
+      logoDisc: _logoDisc,
+      brandLayout: _brandLayout,
+      brandPosition: _brandPosition,
+      nameInk: _nameInk,
+      logoInk: _logoInk,
+      logoSize: _logoSize,
+      watermark: _watermark,
+      watermarkSize: _watermarkSize,
+      watermarkArea: _watermarkArea,
+      watermarkInk: _watermarkInk,
+      excerpt: _excerpt.text,
+    );
+    return () {
+      _subjectIndex = draft.subject;
+      _composition = draft.composition;
+      _format = draft.format;
+      _style = draft.style;
+      _brandInk = draft.brandInk;
+      _titleInk = draft.titleInk;
+      _gradient = draft.gradient;
+      _palette = draft.palette;
+      _photoMode = draft.photoMode;
+      _titlePosition = draft.titlePosition;
+      _badgePosition = draft.badgePosition;
+      _showType = draft.showType;
+      _showDate = draft.showDate;
+      _showArea = draft.showArea;
+      _showProject = draft.showProject;
+      _showDescription = draft.showDescription;
+      _showStats = draft.showStats;
+      _brandContent = draft.brandContent;
+      _logoStyle = draft.logoStyle;
+      _logoDisc = draft.logoDisc;
+      _brandLayout = draft.brandLayout;
+      _brandPosition = draft.brandPosition;
+      _nameInk = draft.nameInk;
+      _logoInk = draft.logoInk;
+      _logoSize = draft.logoSize;
+      _watermark = draft.watermark;
+      _watermarkSize = draft.watermarkSize;
+      _watermarkArea = draft.watermarkArea;
+      _watermarkInk = draft.watermarkInk;
+      _excerpt.text = draft.excerpt;
+    };
+  }
+
+  void _change(VoidCallback change) => setState(() {
+    _undo.add(_snapshot());
+    if (_undo.length > 40) _undo.removeAt(0);
+    _redo.clear();
+    change();
+  });
+
+  void _travel(List<VoidCallback> from, List<VoidCallback> to) => setState(() {
+    to.add(_snapshot());
+    from.removeLast()();
+  });
+
   /// A manual change: whatever preset was applied no longer describes it.
-  void _edit(VoidCallback change) => setState(() {
+  void _edit(VoidCallback change) => _change(() {
     change();
     _style = null;
   });
 
   void _applyPreset(int index) {
     final s = _stylePresets[index];
-    setState(() {
+    if (_style == index) return;
+    _change(() {
       _style = index;
       _gradient = s.gradient;
       _palette = s.palette;
@@ -308,10 +392,12 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     // The dialog route animates out before releasing its controller.
     await Future<void>.delayed(const Duration(milliseconds: 300));
     draft.dispose();
-    if (value != null && mounted) setState(() => _excerpt.text = value);
+    if (value != null && mounted && value != _excerpt.text) {
+      _change(() => _excerpt.text = value);
+    }
   }
 
-  Widget _specimen() => _ShareSpecimen(
+  Widget _specimen({int? composition}) => _ShareSpecimen(
     data: ShareContent(
       subject: _data.subject,
       title: _data.title,
@@ -331,7 +417,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       completed: _data.completed,
       isReflection: _data.isReflection,
     ),
-    composition: _availableCompositions[_composition],
+    composition: composition ?? _availableCompositions[_composition],
     gradient: _gradient,
     palette: _palette,
     format: _format,
@@ -378,7 +464,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                 : _TitlePosition.bottomLeft;
           }),
         ),
-      _OptionStepper(
+      _VisualChoices(
         fieldKey: 'scheda-composizione',
         label: 'Composizione',
         labels: [
@@ -386,6 +472,20 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
             _compositionLabels(_subject)[i],
         ],
         index: _composition,
+        columns: 3,
+        showLabels: true,
+        previewHeight: 90,
+        preview: (i) => FittedBox(
+          child: SizedBox(
+            width: _format == _ShareFormat.landscape ? 640 : 360,
+            height:
+                (_format == _ShareFormat.landscape ? 640 : 360) /
+                _shareAspectRatio(_format),
+            child: MediaQuery.withNoTextScaling(
+              child: _specimen(composition: _availableCompositions[i]),
+            ),
+          ),
+        ),
         onChanged: (i) => _edit(() => _composition = i),
       ),
       _VisualChoices(
@@ -752,6 +852,30 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      key: const ValueKey('share-undo'),
+                      tooltip: shareComposerLabel(context, 'Annulla modifica'),
+                      onPressed: _undo.isEmpty
+                          ? null
+                          : () => _travel(_undo, _redo),
+                      icon: const Icon(Icons.undo_rounded),
+                    ),
+                    IconButton(
+                      key: const ValueKey('share-redo'),
+                      tooltip: shareComposerLabel(
+                        context,
+                        'Ripristina modifica',
+                      ),
+                      onPressed: _redo.isEmpty
+                          ? null
+                          : () => _travel(_redo, _undo),
+                      icon: const Icon(Icons.redo_rounded),
+                    ),
+                  ],
+                ),
                 Expanded(
                   child: Scrollbar(
                     child: SingleChildScrollView(
@@ -998,9 +1122,6 @@ class _OptionStepper extends StatelessWidget {
   final int index;
   final ValueChanged<int> onChanged;
 
-  void _step(int delta) =>
-      onChanged((index + delta + labels.length) % labels.length);
-
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -1020,19 +1141,14 @@ class _OptionStepper extends StatelessWidget {
             flex: 7,
             child: Row(
               children: [
-                if (fieldKey == 'scheda-composizione')
-                  _ArrowButton(
-                    key: ValueKey('$fieldKey-prev'),
-                    icon: Icons.chevron_left_rounded,
-                    tooltip: shareComposerLabel(context, 'Precedente'),
-                    onTap: () => _step(-1),
-                  ),
                 Expanded(
                   child: PopupMenuButton<int>(
                     key: ValueKey('$fieldKey-menu'),
                     tooltip: shareComposerLabel(context, label),
                     initialValue: index,
-                    onSelected: onChanged,
+                    onSelected: (i) {
+                      if (i != index) onChanged(i);
+                    },
                     color: colors.nightPanel,
                     surfaceTintColor: Colors.transparent,
                     elevation: 8,
@@ -1076,13 +1192,6 @@ class _OptionStepper extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (fieldKey == 'scheda-composizione')
-                  _ArrowButton(
-                    key: ValueKey('$fieldKey-next'),
-                    icon: Icons.chevron_right_rounded,
-                    tooltip: shareComposerLabel(context, 'Successivo'),
-                    onTap: () => _step(1),
-                  ),
               ],
             ),
           ),
@@ -1105,6 +1214,7 @@ class _VisualChoices extends StatelessWidget {
     this.showLabels = false,
     this.showHeader = true,
     this.placeholder,
+    this.previewHeight = 26,
   });
   final String fieldKey;
   final String label;
@@ -1116,6 +1226,7 @@ class _VisualChoices extends StatelessWidget {
   final bool showLabels;
   final bool showHeader;
   final String? placeholder;
+  final double previewHeight;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -1149,11 +1260,13 @@ class _VisualChoices extends StatelessWidget {
                     message: shareComposerLabel(context, labels[i]),
                     child: InkWell(
                       key: ValueKey('$fieldKey-$i'),
-                      onTap: () => onChanged(i),
+                      onTap: () {
+                        if (i != index || placeholder != null) onChanged(i);
+                      },
                       borderRadius: BorderRadius.circular(kRadiusField),
                       child: Container(
                         width: width,
-                        height: showLabels ? 72 : 44,
+                        height: showLabels ? previewHeight + 46 : 44,
                         decoration: selectableDecoration(
                           context.colors,
                           selected: i == index && placeholder == null,
@@ -1163,7 +1276,7 @@ class _VisualChoices extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               SizedBox(
-                                height: 26,
+                                height: previewHeight,
                                 child: Center(child: preview(i)),
                               ),
                               if (showLabels) ...[
@@ -1275,33 +1388,6 @@ class _ValueRow extends StatelessWidget {
       ],
     );
   }
-}
-
-class _ArrowButton extends StatelessWidget {
-  const _ArrowButton({
-    super.key,
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-  });
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: tooltip,
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(kRadiusField),
-      child: SizedBox(
-        width: 44,
-        height: 44,
-        child: Icon(icon, size: 22, color: context.colors.muted),
-      ),
-    ),
-  );
 }
 
 /// Explicit switches for the elements included in the shared image.

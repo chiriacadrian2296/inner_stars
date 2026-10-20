@@ -96,6 +96,14 @@ const _palettes = <_Palette>[
 
 enum _ShareFormat { story, vertical, portrait, square, landscape }
 
+double _shareAspectRatio(_ShareFormat format) => switch (format) {
+  _ShareFormat.story => 2 / 3,
+  _ShareFormat.vertical => 9 / 16,
+  _ShareFormat.portrait => 4 / 5,
+  _ShareFormat.square => 1,
+  _ShareFormat.landscape => 16 / 9,
+};
+
 enum _PhotoMode { none, background, panel, circle }
 
 enum _Watermark { none, logo, sparkle, constellation, area }
@@ -133,13 +141,7 @@ class _PreviewPane extends StatelessWidget {
   final GlobalKey captureKey;
   final double padding;
 
-  double get _aspectRatio => switch (format) {
-    _ShareFormat.story => 2 / 3,
-    _ShareFormat.vertical => 9 / 16,
-    _ShareFormat.portrait => 4 / 5,
-    _ShareFormat.square => 1,
-    _ShareFormat.landscape => 16 / 9,
-  };
+  double get _aspectRatio => _shareAspectRatio(format);
 
   @override
   Widget build(BuildContext context) => Padding(

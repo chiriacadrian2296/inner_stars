@@ -57,9 +57,9 @@ void main() {
       expect(find.byType(BackButton), findsNothing);
       expect(find.text(strings.sharePreviewTitle), findsNothing);
       expect(find.byKey(const ValueKey('scheda-contenuto-menu')), findsNothing);
-      expect(find.text(record.title), findsOneWidget);
-      expect(find.text(record.body), findsOneWidget);
-      expect(find.text(LifeArea.social.displayName(strings)), findsOneWidget);
+      expect(find.text(record.title), findsWidgets);
+      expect(find.text(record.body), findsWidgets);
+      expect(find.text(LifeArea.social.displayName(strings)), findsWidgets);
       expect(find.text('Salute'), findsNothing);
       await tester.tap(find.byKey(const ValueKey('share-reflection-excerpt')));
       await tester.pumpAndSettle();
@@ -69,7 +69,14 @@ void main() {
       );
       await tester.tap(find.text(strings.saveChanges.toUpperCase()));
       await tester.pumpAndSettle();
-      expect(find.text('Solo un estratto'), findsOneWidget);
+      expect(find.text('Solo un estratto'), findsWidgets);
+      await tester.tap(find.byKey(const ValueKey('share-undo')));
+      await tester.pump();
+      expect(find.text(record.body), findsWidgets);
+      expect(find.text('Solo un estratto'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('share-redo')));
+      await tester.pump();
+      expect(find.text('Solo un estratto'), findsWidgets);
       expect(record.body, 'Il testo originale');
       await tester.tap(find.byKey(const ValueKey('share-category-1')));
       await tester.pump();
@@ -110,6 +117,76 @@ void main() {
     },
   );
 
+  testWidgets(
+    'history restores an entire preset and clears redo after a new edit',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        app(
+          const ShareComposerScreen(
+            data: ShareContent(
+              subject: ShareSubject.goal,
+              title: 'Il mio obiettivo',
+              typeLabel: 'Obiettivo',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final undo = find.byKey(const ValueKey('share-undo'));
+      final redo = find.byKey(const ValueKey('share-redo'));
+      expect(tester.widget<IconButton>(undo).onPressed, isNull);
+      expect(tester.widget<IconButton>(redo).onPressed, isNull);
+      final ocean = find.byKey(const ValueKey('stile-preset-3'));
+      await tester.ensureVisible(ocean);
+      await tester.tap(ocean);
+      await tester.pump();
+      await tester.tap(
+        ocean,
+      ); // Choosing the same preset must not add a history step.
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('share-category-3')));
+      await tester.pump();
+      expect(find.byKey(const ValueKey('firma-logo-menu')), findsOneWidget);
+      await tester.tap(undo);
+      await tester.pump();
+      expect(find.byKey(const ValueKey('firma-logo-menu')), findsNothing);
+      expect(tester.widget<IconButton>(undo).onPressed, isNull);
+      await tester.tap(redo);
+      await tester.pump();
+      expect(find.byKey(const ValueKey('firma-logo-menu')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('firma-mostra-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Nessuna'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('firma-posizione-0')), findsNothing);
+      await tester.tap(undo);
+      await tester.pump();
+      expect(find.byKey(const ValueKey('firma-logo-menu')), findsOneWidget);
+      await tester.tap(undo);
+      await tester.pump();
+      expect(find.byKey(const ValueKey('firma-logo-menu')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('share-category-0')));
+      await tester.pump();
+      expect(find.text('Stile · Classico'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('share-category-2')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('sfondo-colori-3')));
+      await tester.pump();
+      expect(tester.widget<IconButton>(redo).onPressed, isNull);
+      await tester.tap(find.byKey(const ValueKey('share-category-0')));
+      await tester.pump();
+      expect(find.text('Stile · Personalizzato'), findsOneWidget);
+      await tester.tap(undo);
+      await tester.pump();
+      expect(find.text('Stile · Classico'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   for (final size in [
     const Size(390, 844),
     const Size(844, 390),
@@ -146,8 +223,17 @@ void main() {
           );
           expect(find.text('7 stelle'), findsNothing);
           expect(find.text('Serie di 21 giorni'), findsNothing);
-          for (var i = 0; i < 5; i++) {
-            final next = find.byKey(const ValueKey('scheda-composizione-next'));
+          final compositionCount = find
+              .byWidgetPredicate((widget) {
+                final key = widget.key;
+                return key is ValueKey<String> &&
+                    key.value.startsWith('scheda-composizione-');
+              })
+              .evaluate()
+              .length;
+          expect(compositionCount, greaterThan(0));
+          for (var i = 0; i < compositionCount; i++) {
+            final next = find.byKey(ValueKey('scheda-composizione-$i'));
             await tester.ensureVisible(next);
             await tester.tap(next);
             await tester.pump();
@@ -179,7 +265,7 @@ void main() {
               previewPosition,
             );
             expect(
-              find.byKey(const ValueKey('scheda-composizione-next')),
+              find.byKey(const ValueKey('scheda-composizione-0')),
               category == 0 ? findsOneWidget : findsNothing,
             );
             expect(
