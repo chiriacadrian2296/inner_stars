@@ -15,6 +15,14 @@ String shareComposerLabel(BuildContext context, String label) {
 }
 
 const _labels = <String, (String, String)>{
+  'Blu Profondo': ('Deep Blue', 'Albastru Profund'),
+  'Avorio': ('Ivory', 'Fildeș'),
+  'Perla': ('Pearl', 'Perlă'),
+  'Sabbia': ('Sand', 'Nisip'),
+  'Lunare': ('Lunar', 'Lunar'),
+  'Grafico': ('Graphic', 'Grafic'),
+  'Foto Integrata': ('Integrated Photo', 'Fotografie Integrată'),
+  'Forma dello Sfondo': ('Background Shape', 'Forma Fundalului'),
   'Aspetto': ('Appearance', 'Aspect'),
   'Espandi Anteprima': ('Expand Preview', 'Extinde Previzualizarea'),
   'Espandi Controlli': ('Expand Controls', 'Extinde Controalele'),

@@ -44,6 +44,14 @@ const _stylePresets = [
     palette: 3,
     watermark: _Watermark.logo,
   ),
+  _StylePreset('Editoriale', gradient: _GradientShape.vertical, palette: 5),
+  _StylePreset(
+    'Lunare',
+    gradient: _GradientShape.radial,
+    palette: 6,
+    watermark: _Watermark.logo,
+  ),
+  _StylePreset('Grafico', gradient: _GradientShape.diagonal, palette: 2),
 ];
 
 class _ShareComposerScreenState extends State<ShareComposerScreen> {
@@ -272,7 +280,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     }
   }
 
-  Widget _specimen({int? composition}) => _ShareSpecimen(
+  Widget _specimen({int? composition, _StylePreset? preset}) => _ShareSpecimen(
     data: ShareContent(
       subject: _data.subject,
       title: _data.title,
@@ -293,15 +301,15 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       isReflection: _data.isReflection,
     ),
     composition: composition ?? _composition,
-    gradient: _gradient,
-    palette: _palette,
+    gradient: preset?.gradient ?? _gradient,
+    palette: preset?.palette ?? _palette,
     format: _format,
     photoMode: _photoMode,
     titlePosition: _TitlePosition.bottomLeft,
     brandPosition: _signaturePosition(composition ?? _composition),
     badgePosition: _BadgePosition.top,
     titleInk: _Ink.auto,
-    watermark: _effectiveWatermark,
+    watermark: preset?.watermark ?? _effectiveWatermark,
     watermarkInk: _elementInkFor(composition ?? _composition),
     watermarkArea: _watermarkArea,
     brandContent: _brandContent,
@@ -405,31 +413,19 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         label: 'Stili Pronti',
         labels: [for (final p in _stylePresets) p.label],
         index: _style,
-        columns: 2,
+        columns: 5,
+        singleRow: true,
         previewHeight: 64,
-        preview: (i) => Container(
-          width: 48,
-          height: 64,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(4),
-            gradient: _backgroundGradient(
-              _stylePresets[i].gradient,
-              _palettes[_stylePresets[i].palette],
+        preview: (i) => FittedBox(
+          child: SizedBox(
+            width: _format == _ShareFormat.landscape ? 640 : 360,
+            height:
+                (_format == _ShareFormat.landscape ? 640 : 360) /
+                _shareAspectRatio(_format),
+            child: MediaQuery.withNoTextScaling(
+              child: _specimen(preset: _stylePresets[i]),
             ),
           ),
-          child: _stylePresets[i].watermark == _Watermark.logo
-              ? Center(
-                  child: SvgPicture.asset(
-                    'assets/icon/Logo.svg',
-                    width: 28,
-                    height: 28,
-                    colorFilter: ColorFilter.mode(
-                      context.colors.gold.withValues(alpha: .25),
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                )
-              : null,
         ),
         onChanged: _applyPreset,
       ),
@@ -439,8 +435,17 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
   Widget _backgroundBlock() => _BlockCard(
     children: [
       _VisualChoices(
+        fieldKey: 'sfondo-colori',
+        label: 'Colori',
+        labels: [for (final p in _palettes) p.label],
+        preview: (i) => _PaletteDot(_palettes[i]),
+        columns: 4,
+        index: _palette,
+        onChanged: (i) => _edit(() => _palette = i),
+      ),
+      _VisualChoices(
         fieldKey: 'sfondo-forma',
-        label: 'Forma',
+        label: 'Forma dello Sfondo',
         labels: [for (final g in _GradientShape.values) _gradientLabel(g)],
         index: _gradient.index,
         columns: 4,
@@ -466,26 +471,21 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         ),
         onChanged: (i) => _edit(() => _gradient = _GradientShape.values[i]),
       ),
+    ],
+  );
+
+  Widget _photoBlock() => _BlockCard(
+    children: [
       _VisualChoices(
-        fieldKey: 'sfondo-colori',
-        label: 'Colori',
-        labels: [for (final p in _palettes) p.label],
-        preview: (i) => _PaletteDot(_palettes[i]),
-        columns: 7,
-        index: _palette,
-        onChanged: (i) => _edit(() => _palette = i),
+        fieldKey: 'sfondo-foto',
+        label: 'Foto',
+        labels: [for (final m in _photoModes) _photoLabel(m)],
+        index: _photoModes.indexOf(_photoMode),
+        columns: 4,
+        previewHeight: 64,
+        preview: (i) => _photoChoice(_photoModes[i]),
+        onChanged: (i) => _edit(() => _photoMode = _photoModes[i]),
       ),
-      if (_data.photos.isNotEmpty)
-        _VisualChoices(
-          fieldKey: 'sfondo-foto',
-          label: 'Foto',
-          labels: [for (final m in _photoModes) _photoLabel(m)],
-          index: _photoModes.indexOf(_photoMode),
-          columns: 4,
-          previewHeight: 64,
-          preview: (i) => _photoChoice(_photoModes[i]),
-          onChanged: (i) => _edit(() => _photoMode = _photoModes[i]),
-        ),
     ],
   );
 
@@ -519,17 +519,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                 color: context.colors.muted,
               ),
               _PhotoMode.background => photo,
-              _PhotoMode.circle => Center(
-                child: SizedBox.square(
-                  dimension:
-                      48 /
-                      (_format == _ShareFormat.landscape ? 640 : 360) *
-                      34 *
-                      3.2 *
-                      (_format == _ShareFormat.landscape ? .72 : 1),
-                  child: ClipOval(child: photo),
-                ),
-              ),
+              _PhotoMode.integrated => _integratedPhotoChoice(photo),
             },
             if (mode == _PhotoMode.background) const _PhotoBackdropScrim(),
             if (mode == _PhotoMode.background)
@@ -550,6 +540,87 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         ),
       ),
     );
+  }
+
+  Widget _integratedPhotoChoice(Widget photo) {
+    final layout = _layoutMap[_subject]![_composition].$1;
+    return switch (layout) {
+      _Layout.polaroid => Padding(
+        padding: const EdgeInsets.fromLTRB(6, 6, 6, 12),
+        child: Container(
+          color: const Color(0xFFF4F1E8),
+          padding: const EdgeInsets.fromLTRB(3, 3, 3, 9),
+          child: photo,
+        ),
+      ),
+      _Layout.collage => Padding(
+        padding: const EdgeInsets.all(5),
+        child: Row(
+          children: [
+            Expanded(child: photo),
+            const SizedBox(width: 2),
+            Expanded(
+              child: Column(
+                children: [
+                  Expanded(child: photo),
+                  const SizedBox(height: 2),
+                  Expanded(child: photo),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      _Layout.gallery => Padding(
+        padding: const EdgeInsets.all(5),
+        child: Row(
+          children: [
+            for (var i = 0; i < 3; i++)
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    i == 0 ? 0 : 1,
+                    i == 1 ? 10 : 0,
+                    0,
+                    i == 1 ? 0 : 10,
+                  ),
+                  child: photo,
+                ),
+              ),
+          ],
+        ),
+      ),
+      _Layout.constellation => Stack(
+        children: [
+          Center(
+            child: Icon(
+              Icons.auto_awesome,
+              size: 26,
+              color: context.colors.muted,
+            ),
+          ),
+          Positioned(
+            left: 6,
+            bottom: 6,
+            child: SizedBox.square(
+              dimension: 10,
+              child: ClipOval(child: photo),
+            ),
+          ),
+        ],
+      ),
+      _ => Center(
+        child: SizedBox.square(
+          dimension:
+              48 /
+              (_format == _ShareFormat.landscape ? 640 : 360) *
+              34 *
+              3.2 *
+              (_format == _ShareFormat.landscape ? .72 : 1),
+          child: ClipOval(child: photo),
+        ),
+      ),
+    };
   }
 
   Widget _signatureBlock() => _BlockCard(
@@ -688,8 +759,12 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                 ('Firma', Icons.verified_outlined),
               ];
               final sections = [
-                [_cardBlock(), _styleBlock()],
-                [_backgroundBlock(), _watermarkBlock()],
+                [_styleBlock(), _cardBlock()],
+                [
+                  if (_data.photos.isNotEmpty) _photoBlock(),
+                  _backgroundBlock(),
+                  _watermarkBlock(),
+                ],
                 [_signatureBlock()],
               ];
               final history = SizedBox(
@@ -956,7 +1031,7 @@ String _formatLabel(_ShareFormat value) => switch (value) {
 String _photoLabel(_PhotoMode value) => switch (value) {
   _PhotoMode.none => 'Senza Foto',
   _PhotoMode.background => 'Foto di Sfondo',
-  _PhotoMode.circle => 'Foto Tonda',
+  _PhotoMode.integrated => 'Foto Integrata',
 };
 
 String _watermarkLabel(_Watermark value) => switch (value) {

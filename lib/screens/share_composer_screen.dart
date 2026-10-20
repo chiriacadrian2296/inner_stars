@@ -65,11 +65,19 @@ const _palettes = <_Palette>[
     Color(0xFF202B3E),
   ]),
   _Palette(
-    'Luce Soffusa',
-    [Color(0xFF1C2747), Color(0xFF10162B), Color(0xFF05070D)],
+    'Blu Profondo',
+    [Color(0xFF284D7A), Color(0xFF182F50), Color(0xFF0D192D)],
     stops: [0, .55, 1],
   ),
   _Palette('Oro', [Color(0xFF80603A), Color(0xFF353040), Color(0xFF0D1220)]),
+  _Palette('Grafite', [
+    Color(0xFF45464B),
+    Color(0xFF2B2E35),
+    Color(0xFF151922),
+  ]),
+  _Palette('Avorio', [Color(0xFFF5F0E6), Color(0xFFECE3D3), Color(0xFFDBCDB4)]),
+  _Palette('Perla', [Color(0xFFF0F3F7), Color(0xFFDFE5EE), Color(0xFFC7D1E0)]),
+  _Palette('Sabbia', [Color(0xFFE9D7BA), Color(0xFFD7BC91), Color(0xFFB99A6E)]),
 ];
 
 enum _ShareFormat { story, vertical, portrait, square, landscape }
@@ -82,7 +90,7 @@ double _shareAspectRatio(_ShareFormat format) => switch (format) {
   _ShareFormat.landscape => 16 / 9,
 };
 
-enum _PhotoMode { none, background, circle }
+enum _PhotoMode { none, background, integrated }
 
 _PhotoMode _effectiveSharePhotoMode(
   _PhotoMode mode,
@@ -230,12 +238,16 @@ class _ShareSpecimen extends StatelessWidget {
   String get _title => data.title;
   String get _description => data.description;
   String get _photoUrl => data.photos.isEmpty ? '' : data.photos.first;
-  Widget _photoAt(int index) => data.photos.isEmpty
+  Widget _photoAt(int index) =>
+      data.photos.isEmpty || photoMode != _PhotoMode.integrated
       ? data.artwork ?? const SizedBox.shrink()
-      : _ContentPhoto(
-          url: data.photos[index % data.photos.length],
-          fit: BoxFit.cover,
-          moodboard: subject == ShareSubject.moodboard,
+      : KeyedSubtree(
+          key: ValueKey('share-integrated-photo-$index'),
+          child: _ContentPhoto(
+            url: data.photos[index % data.photos.length],
+            fit: BoxFit.cover,
+            moodboard: subject == ShareSubject.moodboard,
+          ),
         );
 
   bool get _lightBackground => _palettes[palette].light;
@@ -310,7 +322,7 @@ class _ShareSpecimen extends StatelessWidget {
                   heightFactor: compact ? .58 : .36,
                   child: Padding(
                     padding: const EdgeInsets.all(22),
-                    child: effPhoto == _PhotoMode.circle
+                    child: effPhoto == _PhotoMode.integrated
                         ? Center(
                             child: _roundPhoto(
                               _Look(
