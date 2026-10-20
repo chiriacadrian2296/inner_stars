@@ -377,7 +377,11 @@ void main() {
               })
               .evaluate()
               .length;
-          expect(compositionCount, greaterThan(0));
+          expect(
+            compositionCount,
+            3,
+            reason: 'three compositions for ${subject.name}',
+          );
           for (var i = 0; i < compositionCount; i++) {
             final next = find.byKey(ValueKey('scheda-composizione-$i'));
             await tester.ensureVisible(next);

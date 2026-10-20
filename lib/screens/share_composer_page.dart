@@ -110,13 +110,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
   ShareContent get _data => widget.variants?[_subjectIndex] ?? widget.data;
   ShareSubject get _subject => _data.subject;
   late final _excerpt = TextEditingController(text: widget.data.description);
-  List<int> get _availableCompositions => [
-    for (var i = 0; i < _layoutMap[_subject]!.length; i++)
-      if ((_layoutMap[_subject]![i].$1 != _Layout.hero ||
-              _data.heroValue != null) &&
-          (_layoutMap[_subject]![i].$1 != _Layout.tiles || _data.total != null))
-        i,
-  ];
   @override
   void dispose() {
     _categoryScroll.dispose();
@@ -285,8 +278,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
   }
 
   bool get _freeLayout =>
-      _layoutMap[_subject]![_availableCompositions[_composition]].$1 ==
-      _Layout.free;
+      _layoutMap[_subject]![_composition].$1 == _Layout.free;
 
   Future<void> _share() async {
     if (_sharing) return;
@@ -417,7 +409,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       completed: _data.completed,
       isReflection: _data.isReflection,
     ),
-    composition: composition ?? _availableCompositions[_composition],
+    composition: composition ?? _composition,
     gradient: _gradient,
     reverseColors: _reverseColors,
     palette: _palette,
@@ -468,10 +460,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       _VisualChoices(
         fieldKey: 'scheda-composizione',
         label: 'Composizione',
-        labels: [
-          for (final i in _availableCompositions)
-            _compositionLabels(_subject)[i],
-        ],
+        labels: _compositionLabels(_subject),
         index: _composition,
         columns: 3,
         showLabels: true,
@@ -483,7 +472,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                 (_format == _ShareFormat.landscape ? 640 : 360) /
                 _shareAspectRatio(_format),
             child: MediaQuery.withNoTextScaling(
-              child: _specimen(composition: _availableCompositions[i]),
+              child: _specimen(composition: i),
             ),
           ),
         ),
@@ -1037,55 +1026,13 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
 // ----- labels -----
 
 List<String> _compositionLabels(ShareSubject subject) => switch (subject) {
-  ShareSubject.victory => const [
-    'Celebrazione',
-    'Traguardo',
-    'Diario',
-    'Essenziale',
-    'Risultati',
-  ],
-  ShareSubject.goal => const [
-    'Direzione',
-    'Promessa',
-    'Piano',
-    'Essenziale',
-    'Progresso',
-  ],
-  ShareSubject.habit => const [
-    'Ritmo',
-    'Serie',
-    'Rituale',
-    'Essenziale',
-    'Statistiche',
-  ],
-  ShareSubject.project => const [
-    'Costellazione',
-    'Progresso',
-    'Manifesto',
-    'Mappa',
-    'Statistiche',
-  ],
-  ShareSubject.vision => const [
-    'Manifesto',
-    'Estratto',
-    'Capitolo',
-    'Editoriale',
-    'Essenziale',
-  ],
-  ShareSubject.moodboard => const [
-    'Collage',
-    'Copertina',
-    'Galleria',
-    'Polaroid',
-    'Editoriale',
-  ],
-  ShareSubject.quote => const [
-    'Tipografica',
-    'Celestiale',
-    'Minimale',
-    'Editoriale',
-    'Poster',
-  ],
+  ShareSubject.victory => const ['Celebrazione', 'Diario', 'Libero'],
+  ShareSubject.goal => const ['Direzione', 'Promessa', 'Editoriale'],
+  ShareSubject.habit => const ['Rituale', 'Editoriale', 'Libero'],
+  ShareSubject.project => const ['Costellazione', 'Manifesto', 'Libero'],
+  ShareSubject.vision => const ['Manifesto', 'Estratto', 'Editoriale'],
+  ShareSubject.moodboard => const ['Collage', 'Galleria', 'Polaroid'],
+  ShareSubject.quote => const ['Tipografica', 'Estratto', 'Poster'],
 };
 
 String _gradientLabel(_GradientShape value) => switch (value) {

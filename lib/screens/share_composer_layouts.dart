@@ -25,51 +25,37 @@ enum _Layout {
 const _layoutMap = <ShareSubject, List<(_Layout, int)>>{
   ShareSubject.victory: [
     (_Layout.centered, 0),
-    (_Layout.hero, 0),
     (_Layout.polaroid, 0),
-    (_Layout.minimal, 0),
     (_Layout.free, 0),
   ],
   ShareSubject.goal: [
     (_Layout.centered, 0),
     (_Layout.poster, 0),
-    (_Layout.free, 0),
-    (_Layout.minimal, 0),
-    (_Layout.hero, 0),
+    (_Layout.editorial, 1),
   ],
   ShareSubject.habit: [
-    (_Layout.tiles, 0),
-    (_Layout.hero, 0),
     (_Layout.centered, 0),
-    (_Layout.minimal, 0),
+    (_Layout.editorial, 1),
     (_Layout.free, 0),
   ],
   ShareSubject.project: [
     (_Layout.constellation, 0),
-    (_Layout.hero, 0),
     (_Layout.poster, 0),
     (_Layout.free, 0),
-    (_Layout.tiles, 0),
   ],
   ShareSubject.vision: [
     (_Layout.poster, 0),
     (_Layout.editorial, 1),
-    (_Layout.editorial, 2),
     (_Layout.editorial, 3),
-    (_Layout.minimal, 0),
   ],
   ShareSubject.moodboard: [
     (_Layout.collage, 0),
-    (_Layout.free, 0),
     (_Layout.gallery, 0),
     (_Layout.polaroid, 0),
-    (_Layout.editorial, 3),
   ],
   ShareSubject.quote: [
     (_Layout.poster, 0),
-    (_Layout.centered, 0),
-    (_Layout.minimal, 0),
-    (_Layout.editorial, 3),
+    (_Layout.editorial, 1),
     (_Layout.poster, 1),
   ],
 };
@@ -725,7 +711,9 @@ extension _SpecimenLayouts on _ShareSpecimen {
                     children: [
                       AspectRatio(
                         aspectRatio: 1,
-                        child: _ContentPhoto(url: _photoUrl, fit: BoxFit.cover),
+                        child: data.photos.isEmpty
+                            ? Center(child: data.artwork ?? _mark(l, 38))
+                            : _ContentPhoto(url: _photoUrl, fit: BoxFit.cover),
                       ),
                       const SizedBox(height: 14),
                       _titleText(
