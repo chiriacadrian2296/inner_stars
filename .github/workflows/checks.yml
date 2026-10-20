@@ -1,0 +1,55 @@
+name: Checks
+
+# Runs on every branch except main (main's own deploys run the same checks
+# first) and on pull requests: analysis and tests for the app, typecheck,
+# build and tests for the landing. Nothing here publishes anything.
+
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: App (analyze and test)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      # Same Flutter version as the author's machine; bump it here and in
+      # deploy-app-cloudflare.yml together.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.1
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze --no-pub
+      - run: flutter test --no-pub
+
+  landing:
+    name: Landing (typecheck, build, test)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: landing
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: landing/package-lock.json
+      - run: npm ci
+      # The types Astro generates (.astro/) are not in the repository.
+      - run: npx astro sync
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
