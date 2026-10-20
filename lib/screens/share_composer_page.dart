@@ -906,72 +906,69 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                 ],
               ),
             );
-            final controls = DecoratedBox(
-              decoration: panelDecoration(colors),
-              child: ScrollConfiguration(
-                behavior: ScrollConfiguration.of(context).copyWith(
-                  dragDevices: {
-                    PointerDeviceKind.touch,
-                    PointerDeviceKind.mouse,
-                    PointerDeviceKind.trackpad,
-                    PointerDeviceKind.stylus,
-                  },
-                ),
-                child: Scrollbar(
+            final controls = ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(
+                dragDevices: {
+                  PointerDeviceKind.touch,
+                  PointerDeviceKind.mouse,
+                  PointerDeviceKind.trackpad,
+                  PointerDeviceKind.stylus,
+                },
+              ),
+              child: Scrollbar(
+                controller: _controlsScroll,
+                thumbVisibility: true,
+                interactive: true,
+                child: SingleChildScrollView(
+                  key: const ValueKey('share-controls'),
                   controller: _controlsScroll,
-                  thumbVisibility: true,
-                  interactive: true,
-                  child: SingleChildScrollView(
-                    key: const ValueKey('share-controls'),
-                    controller: _controlsScroll,
-                    padding: const EdgeInsets.fromLTRB(12, 16, 16, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        for (var i = 0; i < categories.length; i++) ...[
-                          if (i > 0) const SizedBox(height: 28),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Semantics(
-                                  header: true,
-                                  child: Row(
-                                    key: ValueKey('share-section-$i'),
-                                    children: [
-                                      Icon(
-                                        categories[i].$2,
-                                        size: 20,
-                                        color: colors.gold,
+                  padding: const EdgeInsets.only(right: 8, bottom: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var i = 0; i < categories.length; i++) ...[
+                        if (i > 0) const SizedBox(height: 28),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Semantics(
+                                header: true,
+                                child: Row(
+                                  key: ValueKey('share-section-$i'),
+                                  children: [
+                                    Icon(
+                                      categories[i].$2,
+                                      size: 20,
+                                      color: colors.gold,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      shareComposerLabel(
+                                        context,
+                                        categories[i].$1,
                                       ),
-                                      const SizedBox(width: 10),
-                                      Text(
-                                        shareComposerLabel(
-                                          context,
-                                          categories[i].$1,
-                                        ),
-                                        style: context
-                                            .typography
-                                            .compactSectionLabel
-                                            .copyWith(fontSize: 15),
-                                      ),
-                                    ],
-                                  ),
+                                      style: context
+                                          .typography
+                                          .compactSectionLabel
+                                          .copyWith(fontSize: 15),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 8),
-                                _note(descriptions[i]),
-                                const SizedBox(height: 12),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(height: 8),
+                              _note(descriptions[i]),
+                              const SizedBox(height: 12),
+                            ],
                           ),
-                          for (var j = 0; j < sections[i].length; j++) ...[
-                            if (j > 0) const SizedBox(height: 10),
-                            sections[i][j],
-                          ],
+                        ),
+                        for (var j = 0; j < sections[i].length; j++) ...[
+                          if (j > 0) const SizedBox(height: 10),
+                          sections[i][j],
                         ],
                       ],
-                    ),
+                    ],
                   ),
                 ),
               ),
@@ -999,11 +996,11 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                     children: [
                       Expanded(child: preview),
                       history,
-                      const SizedBox(height: gap),
                       SizedBox(
                         height:
                             (constraints.maxHeight * .38).clamp(240.0, 310.0) -
-                            48,
+                            48 +
+                            gap,
                         child: controls,
                       ),
                     ],
