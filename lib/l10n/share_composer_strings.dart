@@ -16,6 +16,45 @@ String shareComposerLabel(BuildContext context, String label) {
 
 const _labels = <String, (String, String)>{
   'Aspetto': ('Appearance', 'Aspect'),
+  'Stili pronti': ('Ready-made styles', 'Stiluri predefinite'),
+  'Dallo stile': ('From style', 'Din stil'),
+  'Applica insieme sfondo, colori e firma. Composizione e formato restano invariati.':
+      (
+        'Applies background, colors and signature together. Composition and format stay unchanged.',
+        'Aplică împreună fundalul, culorile și semnătura. Compoziția și formatul rămân neschimbate.',
+      ),
+  'Questo contenuto non contiene foto.': (
+    'This content has no photos.',
+    'Acest conținut nu are fotografii.',
+  ),
+  'Posizione definita dalla composizione.': (
+    'Position is set by the composition.',
+    'Poziția este stabilită de compoziție.',
+  ),
+  'Sono elencate solo le informazioni presenti nel contenuto.': (
+    'Only information present in this content is listed.',
+    'Sunt afișate doar informațiile prezente în acest conținut.',
+  ),
+  'Artwork non disponibile: questo contenuto non ha un’area.': (
+    'Artwork unavailable: this content has no area.',
+    'Ilustrație indisponibilă: acest conținut nu are un domeniu.',
+  ),
+  'Scegli la composizione e il formato, oppure applica uno stile pronto.': (
+    'Choose the composition and format, or apply a ready-made style.',
+    'Alege compoziția și formatul sau aplică un stil predefinit.',
+  ),
+  'Scegli le informazioni visibili e personalizza il titolo.': (
+    'Choose the visible information and customize the title.',
+    'Alege informațiile vizibile și personalizează titlul.',
+  ),
+  'Personalizza sfumatura, foto e filigrana.': (
+    'Customize the gradient, photos and watermark.',
+    'Personalizează gradientul, fotografiile și filigranul.',
+  ),
+  'Personalizza il nome e il logo di Inner Stars.': (
+    'Customize the Inner Stars name and logo.',
+    'Personalizează numele și sigla Inner Stars.',
+  ),
   'Ardesia': ('Slate', 'Ardezie'),
   'Luce soffusa': ('Soft light', 'Lumină difuză'),
   'Intimo': ('Intimate', 'Intim'),

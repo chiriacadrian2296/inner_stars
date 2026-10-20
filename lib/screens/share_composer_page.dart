@@ -440,6 +440,15 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
 
   // ----- blocks -----
 
+  Widget _note(String text) => Text(
+    shareComposerLabel(context, text),
+    style: context.typography.supporting.copyWith(
+      color: context.colors.muted,
+      fontSize: 12,
+      height: 1.4,
+    ),
+  );
+
   Widget _cardBlock() => _BlockCard(
     children: [
       if (widget.variants != null)
@@ -514,7 +523,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     children: [
       _VisualChoices(
         fieldKey: 'stile-preset',
-        label: 'Stile',
+        label: 'Stili pronti',
         labels: [for (final p in _stylePresets) p.label],
         index: _style ?? 0,
         placeholder: _style == null ? 'Personalizzato' : null,
@@ -532,21 +541,8 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         ),
         onChanged: _applyPreset,
       ),
-      _VisualChoices(
-        fieldKey: 'stile-marchio',
-        label: 'Marchio',
-        labels: [for (final i in _Ink.values) _inkLabel(i)],
-        preview: (i) => _InkDot(_Ink.values[i]),
-        index: _brandInk.index,
-        onChanged: (i) => _edit(() => _brandInk = _Ink.values[i]),
-      ),
-      _VisualChoices(
-        fieldKey: 'stile-titolo',
-        label: 'Titolo',
-        labels: [for (final i in _Ink.values) _inkLabel(i)],
-        preview: (i) => _InkDot(_Ink.values[i]),
-        index: _titleInk.index,
-        onChanged: (i) => _edit(() => _titleInk = _Ink.values[i]),
+      _note(
+        'Applica insieme sfondo, colori e firma. Composizione e formato restano invariati.',
       ),
     ],
   );
@@ -609,12 +605,22 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
           labels: [for (final m in _PhotoMode.values) _photoLabel(m)],
           index: _photoMode.index,
           onChanged: (i) => _edit(() => _photoMode = _PhotoMode.values[i]),
-        ),
+        )
+      else
+        _note('Questo contenuto non contiene foto.'),
     ],
   );
 
   Widget _textBlock() => _BlockCard(
     children: [
+      _VisualChoices(
+        fieldKey: 'testo-colore',
+        label: 'Colore del titolo',
+        labels: [for (final i in _Ink.values) _inkLabel(i)],
+        preview: (i) => _InkDot(_Ink.values[i]),
+        index: _titleInk.index,
+        onChanged: (i) => _edit(() => _titleInk = _Ink.values[i]),
+      ),
       if (_freeLayout)
         _PositionChoices(
           fieldKey: 'testo-posizione',
@@ -622,7 +628,9 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
           index: _titlePosition.index,
           onChanged: (i) =>
               _edit(() => _titlePosition = _TitlePosition.values[i]),
-        ),
+        )
+      else
+        _note('Posizione definita dalla composizione.'),
       if (_freeLayout)
         _OptionStepper(
           fieldKey: 'testo-badge',
@@ -632,6 +640,17 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
           onChanged: (i) =>
               _edit(() => _badgePosition = _BadgePosition.values[i]),
         ),
+      if (_data.isReflection)
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            key: const ValueKey('share-reflection-excerpt'),
+            onPressed: _editExcerpt,
+            icon: const Icon(Icons.edit_note),
+            label: Text(shareComposerLabel(context, 'Modifica estratto')),
+          ),
+        ),
+      _note('Sono elencate solo le informazioni presenti nel contenuto.'),
       _Toggles(
         label: 'Elementi visibili',
         toggles: [
@@ -676,7 +695,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       _BrandContent.name => 2,
       _BrandContent.both => _brandLayout == _BrandLayout.logoLeft ? 3 : 4,
     };
-    final inks = ['Come Marchio', for (final i in _Ink.values) _inkLabel(i)];
+    final inks = ['Dallo stile', for (final i in _Ink.values) _inkLabel(i)];
     return _BlockCard(
       children: [
         _OptionStepper(
@@ -792,6 +811,8 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
           },
           onChanged: (i) => _edit(() => _watermark = kinds[i]),
         ),
+        if (_data.area == null)
+          _note('Artwork non disponibile: questo contenuto non ha un’area.'),
         if (on)
           _OptionStepper(
             fieldKey: 'watermark-misura',
@@ -807,7 +828,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
           _VisualChoices(
             fieldKey: 'watermark-colore',
             label: 'Colore',
-            labels: ['Come Marchio', for (final i in _Ink.values) _inkLabel(i)],
+            labels: ['Dallo stile', for (final i in _Ink.values) _inkLabel(i)],
             preview: (i) => i == 0
                 ? const Icon(Icons.link, size: 18)
                 : _InkDot(_Ink.values[i - 1]),
@@ -842,10 +863,16 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
               specimen: _specimen(),
             );
             const categories = [
-              ('Aspetto', Icons.palette_outlined),
+              ('Scheda', Icons.dashboard_customize_outlined),
               ('Contenuto', Icons.title_rounded),
               ('Sfondo', Icons.gradient_rounded),
               ('Firma', Icons.verified_outlined),
+            ];
+            const descriptions = [
+              'Scegli la composizione e il formato, oppure applica uno stile pronto.',
+              'Scegli le informazioni visibili e personalizza il titolo.',
+              'Personalizza sfumatura, foto e filigrana.',
+              'Personalizza il nome e il logo di Inner Stars.',
             ];
             final blocks = switch (_category) {
               0 => [_cardBlock(), _styleBlock()],
@@ -946,6 +973,10 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+                            child: _note(descriptions[_category]),
+                          ),
                           for (var i = 0; i < blocks.length; i++) ...[
                             if (i > 0) const SizedBox(height: 10),
                             blocks[i],
@@ -1003,16 +1034,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                         onPressed: _sharing ? null : _share,
                         child: AppButtonLabel(context.strings.shareNowAction),
                       ),
-                      if (_data.isReflection)
-                        IconButton(
-                          key: const ValueKey('share-reflection-excerpt'),
-                          tooltip: shareComposerLabel(
-                            context,
-                            'Modifica estratto',
-                          ),
-                          onPressed: _editExcerpt,
-                          icon: const Icon(Icons.edit_note),
-                        ),
                     ],
                   ),
                 ],

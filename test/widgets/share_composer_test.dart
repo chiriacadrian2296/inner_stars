@@ -84,6 +84,11 @@ void main() {
       expect(find.text(record.body), findsWidgets);
       expect(find.text(LifeArea.social.displayName(strings)), findsWidgets);
       expect(find.text('Salute'), findsNothing);
+      await selectCategory(tester, 1);
+      await tester.pump();
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('share-reflection-excerpt')),
+      );
       await tester.tap(find.byKey(const ValueKey('share-reflection-excerpt')));
       await tester.pumpAndSettle();
       await tester.enterText(
