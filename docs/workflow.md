@@ -33,6 +33,24 @@ Più rami possono vivere in parallelo; ognuno si unisce a `main` quando è pront
 dagli altri. Se un ramo vive a lungo, ogni tanto si riporta dentro `main` (`git merge main`) per
 non allontanarsi.
 
+## Test in locale: solo quelli pertinenti
+
+Dopo una modifica si lancia `flutter analyze --no-pub` e **solo i test dei file toccati**
+(`flutter test test/widgets/nome_del_file_test.dart`). La suite intera (più di 600 test) e le
+build web o Android **non** servono per un ritocco: li esegue già GitHub su ogni push di un ramo e
+prima di ogni deploy. In locale la suite intera si lancia solo se si tocca codice condiviso che
+può rompere cose lontane (modelli, sincronizzazione, tema, testi, repository) o se l’autore lo
+chiede. Chi lavora dice quali test ha eseguito.
+
+## Pochi passaggi per ogni modifica
+
+Meno passaggi, meno attesa. Dopo una modifica si formatta e si analizza **solo i file toccati**
+(`dart format <file>`, `flutter analyze --no-pub <file>`), non tutto `lib`. Meglio modifiche
+piccole e mirate che script lunghi di sostituzione; si cerca dove stanno le cose e si legge solo
+il pezzo che serve, non interi file lunghi. I comandi indipendenti si lanciano insieme e non si
+ripete un controllo già passato. Le risposte restano brevi. Una chat molto lunga rallenta ogni
+risposta: conviene aprirne una nuova (lo stato sta nel piano, in queste regole e nel ramo).
+
 ## Cosa blocca gli errori
 
 - **`Checks`** (`.github/workflows/checks.yml`): su ogni ramo diverso da `main` e su ogni pull
