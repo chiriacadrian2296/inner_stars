@@ -293,6 +293,9 @@ class AppTextField extends StatefulWidget {
     this.enabled = true,
     this.readOnly = false,
     this.errorText,
+    this.fontSize = 15,
+    this.lineHeight,
+    this.expands = false,
   });
 
   final TextEditingController controller;
@@ -317,6 +320,14 @@ class AppTextField extends StatefulWidget {
   final bool enabled;
   final bool readOnly;
   final String? errorText;
+
+  /// Larger and airier for a field that holds long writing.
+  final double fontSize;
+  final double? lineHeight;
+
+  /// Fills the height it is given (a long-writing field that runs to the
+  /// bottom of its page); [minLines] and [maxLines] are then ignored.
+  final bool expands;
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -358,14 +369,20 @@ class _AppTextFieldState extends State<AppTextField> {
           enabled: widget.enabled,
           readOnly: widget.readOnly,
           autofocus: widget.autofocus,
-          minLines: widget.minLines,
-          maxLines: widget.maxLines,
+          minLines: widget.expands ? null : widget.minLines,
+          expands: widget.expands,
+          textAlignVertical: widget.expands ? TextAlignVertical.top : null,
+          maxLines: widget.expands ? null : widget.maxLines,
           maxLength: widget.maxLength,
           textInputAction: widget.textInputAction,
           textCapitalization: widget.textCapitalization,
           onChanged: widget.onChanged,
           onTapOutside: (_) => _focusNode.unfocus(),
-          style: TextStyle(color: colors.text, fontSize: 15),
+          style: TextStyle(
+            color: colors.text,
+            fontSize: widget.fontSize,
+            height: widget.lineHeight,
+          ),
           decoration: InputDecoration(
             hintText: widget.hintText,
             error: widget.errorText == null

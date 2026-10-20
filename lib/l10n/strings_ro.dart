@@ -5,15 +5,20 @@ import 'reflection_groups_ro.dart';
 
 class StringsRo implements AppStrings {
   @override
-  String get reflectionNew => 'Reflecție nouă';
+  String get reflectionNew => 'Reflecție Nouă';
   @override
-  String get reflectionFree => 'Începe de la zero';
+  String get reflectAction => 'Reflectă';
   @override
-  String get reflectionSuggested => 'Alege o sugestie';
+  String get reflectionFree => 'Începe de la Zero';
   @override
-  String get reflectionTitleLabel => 'Titlu sau temă';
+  String get reflectionListDescription =>
+      'Gândurile tale și răspunsurile tale la întrebările despre această zonă a vieții, într-un singur loc.';
   @override
-  String get reflectionBodyLabel => 'Reflecția ta';
+  String get reflectionSuggested => 'Alege o Sugestie';
+  @override
+  String get reflectionTitleLabel => 'Titlu sau Temă';
+  @override
+  String get reflectionBodyLabel => 'Reflecția Ta';
   @override
   String get reflectionEmpty =>
       'O întrebare sau un gând pot fi un început. Scrie prima ta reflecție.';
@@ -30,7 +35,24 @@ class StringsRo implements AppStrings {
   @override
   String get reflectionDiscardTitle => 'Renunți la modificări?';
   @override
-  String reflectionCount(int count) => '$count reflecții';
+  String reflectionCount(int count) =>
+      count == 1 ? '1 Reflecție' : '$count Reflecții';
+  @override
+  String reflectionQuestionCount(int count) => '$count Întrebări';
+  @override
+  String get reflectionExplored => 'Deja Explorată';
+  @override
+  String get reflectionRelated => 'Reflecții Asociate';
+  @override
+  String get reflectionAnotherQuestion => 'Altă Întrebare';
+  @override
+  String get reflectionWrite => 'Scrie';
+  @override
+  String get reflectionSearchHint => 'Caută în Reflecții';
+  @override
+  String get reflectionNoResults => 'Nu s-au găsit reflecții.';
+  @override
+  String get reflectionQuestionLabel => 'Întrebarea Inițială';
 
   @override
   String get splashLoadingLabel => 'Se încarcă Inner Stars';

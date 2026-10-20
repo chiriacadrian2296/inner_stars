@@ -10,7 +10,9 @@ import '../models/star_kind.dart';
 /// grep, and keep in sync than generated code.
 abstract class AppStrings {
   String get reflectionNew;
+  String get reflectAction;
   String get reflectionFree;
+  String get reflectionListDescription;
   String get reflectionSuggested;
   String get reflectionTitleLabel;
   String get reflectionBodyLabel;
@@ -21,6 +23,14 @@ abstract class AppStrings {
   String get reflectionDeleteBody;
   String get reflectionDiscardTitle;
   String reflectionCount(int count);
+  String reflectionQuestionCount(int count);
+  String get reflectionExplored;
+  String get reflectionRelated;
+  String get reflectionAnotherQuestion;
+  String get reflectionWrite;
+  String get reflectionSearchHint;
+  String get reflectionNoResults;
+  String get reflectionQuestionLabel;
 
   String get splashLoadingLabel;
   String get splashTagline;

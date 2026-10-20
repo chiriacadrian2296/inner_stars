@@ -5,15 +5,20 @@ import 'reflection_groups_it.dart';
 
 class StringsIt implements AppStrings {
   @override
-  String get reflectionNew => 'Nuova riflessione';
+  String get reflectionNew => 'Nuova Riflessione';
   @override
-  String get reflectionFree => 'Parti da zero';
+  String get reflectAction => 'Rifletti';
   @override
-  String get reflectionSuggested => 'Scegli un suggerimento';
+  String get reflectionFree => 'Parti da Zero';
   @override
-  String get reflectionTitleLabel => 'Titolo o tema';
+  String get reflectionListDescription =>
+      "I tuoi pensieri e le tue risposte alle domande su quest'area della vita, tutti in un posto.";
   @override
-  String get reflectionBodyLabel => 'La tua riflessione';
+  String get reflectionSuggested => 'Scegli un Suggerimento';
+  @override
+  String get reflectionTitleLabel => 'Titolo o Tema';
+  @override
+  String get reflectionBodyLabel => 'La Tua Riflessione';
   @override
   String get reflectionEmpty =>
       'Una domanda o un pensiero possono essere un inizio. Scrivi la tua prima riflessione.';
@@ -30,7 +35,24 @@ class StringsIt implements AppStrings {
   @override
   String get reflectionDiscardTitle => 'Scartare le modifiche?';
   @override
-  String reflectionCount(int count) => '$count riflessioni';
+  String reflectionCount(int count) =>
+      count == 1 ? '1 Riflessione' : '$count Riflessioni';
+  @override
+  String reflectionQuestionCount(int count) => '$count Domande';
+  @override
+  String get reflectionExplored => 'Già Esplorata';
+  @override
+  String get reflectionRelated => 'Riflessioni Collegate';
+  @override
+  String get reflectionAnotherQuestion => 'Un’Altra Domanda';
+  @override
+  String get reflectionWrite => 'Scrivi';
+  @override
+  String get reflectionSearchHint => 'Cerca nelle Riflessioni';
+  @override
+  String get reflectionNoResults => 'Nessuna riflessione trovata.';
+  @override
+  String get reflectionQuestionLabel => 'Domanda di Partenza';
 
   @override
   String get splashLoadingLabel => 'Caricamento di Inner Stars';
