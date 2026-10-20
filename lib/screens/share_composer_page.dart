@@ -22,7 +22,7 @@ class ShareComposerScreen extends StatefulWidget {
   State<ShareComposerScreen> createState() => _ShareComposerScreenState();
 }
 
-/// A whole look in one tap: background, inks, brand and watermark together.
+/// A background and watermark combination in one tap.
 class _StylePreset {
   const _StylePreset(
     this.label, {
@@ -62,9 +62,17 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
   int _composition = 0;
   _ShareFormat _format = _ShareFormat.story;
 
-  // Style. [_style] is the applied preset, or null once anything was changed
-  // by hand.
-  int? _style = 0;
+  int? get _style {
+    final match = _stylePresets.indexWhere(
+      (style) =>
+          style.gradient == _gradient &&
+          style.palette == _palette &&
+          !_reverseColors &&
+          style.watermark == _effectiveWatermark,
+    );
+    return match < 0 ? null : match;
+  }
+
   _Ink get _brandInk => _elementInkFor(_composition);
   bool _compactPreview = false;
 
@@ -98,7 +106,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       subject: _subjectIndex,
       composition: _composition,
       format: _format,
-      style: _style,
       gradient: _gradient,
       palette: _palette,
       reverseColors: _reverseColors,
@@ -112,7 +119,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       _subjectIndex = draft.subject;
       _composition = draft.composition;
       _format = draft.format;
-      _style = draft.style;
       _gradient = draft.gradient;
       _palette = draft.palette;
       _reverseColors = draft.reverseColors;
@@ -136,17 +142,12 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     from.removeLast()();
   });
 
-  /// A manual change: whatever preset was applied no longer describes it.
-  void _edit(VoidCallback change) => _change(() {
-    change();
-    _style = null;
-  });
+  void _edit(VoidCallback change) => _change(change);
 
   void _applyPreset(int index) {
     final s = _stylePresets[index];
     if (_style == index) return;
     _change(() {
-      _style = index;
       _gradient = s.gradient;
       _palette = s.palette;
       _reverseColors = false;
@@ -334,15 +335,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
 
   // ----- blocks -----
 
-  Widget _note(String text) => Text(
-    shareComposerLabel(context, text),
-    style: context.typography.supporting.copyWith(
-      color: context.colors.muted,
-      fontSize: 12,
-      height: 1.4,
-    ),
-  );
-
   Widget _cardBlock() => _BlockCard(
     children: [
       if (widget.variants != null)
@@ -429,18 +421,32 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         fieldKey: 'stile-preset',
         label: 'Stili Pronti',
         labels: [for (final p in _stylePresets) p.label],
-        index: _style ?? 0,
-        placeholder: _style == null ? 'Personalizzato' : null,
+        index: _style,
         columns: 2,
+        previewHeight: 64,
         preview: (i) => Container(
-          width: 36,
-          height: 22,
+          width: 48,
+          height: 64,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(4),
-            gradient: LinearGradient(
-              colors: _palettes[_stylePresets[i].palette].colors,
+            gradient: _backgroundGradient(
+              _stylePresets[i].gradient,
+              _palettes[_stylePresets[i].palette],
             ),
           ),
+          child: _stylePresets[i].watermark == _Watermark.logo
+              ? Center(
+                  child: SvgPicture.asset(
+                    'assets/icon/Logo.svg',
+                    width: 28,
+                    height: 28,
+                    colorFilter: ColorFilter.mode(
+                      context.colors.gold.withValues(alpha: .25),
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                )
+              : null,
         ),
         onChanged: _applyPreset,
       ),
@@ -457,7 +463,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         columns: 4,
         previewHeight: 64,
         preview: (i) => SizedBox(
-          width: 56,
+          width: 48,
           height: 64,
           child: Center(
             child: AspectRatio(
@@ -508,12 +514,10 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
           labels: [for (final m in _photoModes) _photoLabel(m)],
           index: _photoModes.indexOf(_photoMode),
           columns: 4,
-          previewHeight: 52,
+          previewHeight: 64,
           preview: (i) => _photoChoice(_photoModes[i]),
           onChanged: (i) => _edit(() => _photoMode = _photoModes[i]),
-        )
-      else
-        _note('Questo contenuto non contiene foto.'),
+        ),
     ],
   );
 
@@ -525,8 +529,8 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     );
     return Container(
       key: ValueKey('share-photo-sample-${mode.name}'),
-      width: 40,
-      height: 52,
+      width: 48,
+      height: 64,
       decoration: BoxDecoration(
         color: context.colors.night,
         borderRadius: BorderRadius.circular(5),
@@ -558,7 +562,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
               _PhotoMode.circle => Center(
                 child: SizedBox.square(
                   dimension:
-                      40 /
+                      48 /
                       (_format == _ShareFormat.landscape ? 640 : 360) *
                       34 *
                       3.2 *
@@ -602,8 +606,18 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         columns: 3,
         previewHeight: 44,
         preview: (i) {
-          final color =
-              _inkDotColor(context.colors, _brandInk) ?? context.colors.text;
+          final inks = _ShareInks(
+            context.colors,
+            _palettes[_palette],
+            photoBackground:
+                _effectiveSharePhotoMode(
+                  _photoMode,
+                  _data,
+                  _layoutMap[_subject]![_composition].$1,
+                ) ==
+                _PhotoMode.background,
+          );
+          final color = inks.resolve(_brandInk);
           return FittedBox(
             fit: BoxFit.scaleDown,
             child: _AppBrand(
@@ -614,9 +628,9 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
               logoInk: color,
               logoSize: 16,
               layout: i == 2 ? _BrandLayout.logoAbove : _BrandLayout.logoLeft,
-              foreground: context.colors.text,
-              secondary: context.colors.muted,
-              accent: context.colors.gold,
+              foreground: inks.foreground,
+              secondary: inks.secondary,
+              accent: inks.accent,
               compact: _format == _ShareFormat.landscape,
             ),
           );
@@ -654,8 +668,8 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
             ),
             _Watermark.logo => SvgPicture.asset(
               'assets/icon/Logo.svg',
-              width: 28,
-              height: 28,
+              width: 36,
+              height: 36,
               colorFilter: ColorFilter.mode(
                 context.colors.gold,
                 BlendMode.srcIn,
@@ -663,8 +677,8 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
             ),
             _Watermark.area => Image.asset(
               kAreaHeroArt[_data.area]!.coverAsset,
-              width: 28,
-              height: 28,
+              width: 36,
+              height: 36,
               fit: BoxFit.contain,
               color: context.colors.gold,
               colorBlendMode: BlendMode.srcIn,
@@ -672,8 +686,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
           },
           onChanged: (i) => _edit(() => _watermark = kinds[i]),
         ),
-        if (_data.area == null)
-          _note('Artwork non disponibile: questo contenuto non ha un’area.'),
       ],
     );
   }
@@ -1131,7 +1143,6 @@ class _VisualChoices extends StatelessWidget {
     required this.preview,
     required this.onChanged,
     this.columns = 6,
-    this.placeholder,
     this.previewHeight = 26,
     this.minItemWidth,
     this.singleRow = false,
@@ -1139,11 +1150,10 @@ class _VisualChoices extends StatelessWidget {
   final String fieldKey;
   final String label;
   final List<String> labels;
-  final int index;
+  final int? index;
   final Widget Function(int) preview;
   final ValueChanged<int> onChanged;
   final int columns;
-  final String? placeholder;
   final double previewHeight;
   final double? minItemWidth;
   final bool singleRow;
@@ -1188,14 +1198,14 @@ class _VisualChoices extends StatelessWidget {
             for (var i = 0; i < labels.length; i++)
               Semantics(
                 button: true,
-                selected: i == index && placeholder == null,
+                selected: i == index,
                 label: shareComposerLabel(context, labels[i]),
                 child: Tooltip(
                   message: shareComposerLabel(context, labels[i]),
                   child: InkWell(
                     key: ValueKey('$fieldKey-$i'),
                     onTap: () {
-                      if (i != index || placeholder != null) onChanged(i);
+                      if (i != index) onChanged(i);
                     },
                     borderRadius: BorderRadius.circular(kRadiusField),
                     child: SizedBox(
@@ -1209,15 +1219,48 @@ class _VisualChoices extends StatelessWidget {
                                 44.0,
                                 double.infinity,
                               ),
-                              decoration: selectableDecoration(
-                                context.colors,
-                                selected: i == index && placeholder == null,
-                              ),
-                              child: Center(
-                                child: SizedBox(
-                                  height: previewHeight,
-                                  child: Center(child: preview(i)),
-                                ),
+                              decoration:
+                                  selectableDecoration(
+                                    context.colors,
+                                    selected: i == index,
+                                  ).copyWith(
+                                    color: i == index
+                                        ? Color.alphaBlend(
+                                            context.colors.gold.withValues(
+                                              alpha: .07,
+                                            ),
+                                            context.colors.nightPanel,
+                                          )
+                                        : context.colors.nightPanel,
+                                  ),
+                              child: Stack(
+                                children: [
+                                  Center(
+                                    child: SizedBox(
+                                      height: previewHeight,
+                                      child: Center(child: preview(i)),
+                                    ),
+                                  ),
+                                  if (i == index)
+                                    Positioned(
+                                      key: ValueKey(
+                                        'share-selected-$fieldKey-$i',
+                                      ),
+                                      top: 4,
+                                      right: 4,
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          color: context.colors.nightPanel,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          Icons.check_circle_rounded,
+                                          size: 14,
+                                          color: context.colors.gold,
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                             const SizedBox(height: 5),
@@ -1303,8 +1346,8 @@ class _PaletteDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    width: 16,
-    height: 16,
+    width: 36,
+    height: 26,
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(5),
       border: Border.all(color: context.colors.nightBorder),

@@ -222,7 +222,20 @@ void main() {
         }
       }
 
-      expectLinked(AppColors.dark.gold);
+      final goldenInk = tester
+          .widget<Text>(
+            find.descendant(
+              of: find.byKey(const ValueKey('share-preview')),
+              matching: find.text('Inner Stars'),
+            ),
+          )
+          .style!
+          .color!;
+      expect(
+        goldenInk.computeLuminance(),
+        greaterThan(AppColors.dark.gold.computeLuminance()),
+      );
+      expectLinked(goldenInk);
       expect(find.byKey(const ValueKey('colore-elementi-1')), findsNothing);
       await tapVisible(tester, undo);
       await tester.pump();
@@ -230,7 +243,7 @@ void main() {
       expect(tester.widget<IconButton>(undo).onPressed, isNull);
       await tapVisible(tester, redo);
       await tester.pump();
-      expectLinked(AppColors.dark.gold);
+      expectLinked(goldenInk);
       await tapVisible(
         tester,
         find.byKey(const ValueKey('firma-disposizione-2')),
@@ -252,7 +265,26 @@ void main() {
       await tester.pump();
       expectLinked(AppColors.dark.text);
       expect(tester.widget<IconButton>(redo).onPressed, isNull);
+      expect(choiceSelected(tester, 'stile-preset-1'), isTrue);
+      await tapVisible(tester, find.byKey(const ValueKey('sfondo-forma-1')));
+      await tester.pump();
+      expect(choiceSelected(tester, 'stile-preset-0'), isFalse);
       expect(choiceSelected(tester, 'stile-preset-1'), isFalse);
+      expect(
+        find.byKey(const ValueKey('share-selected-stile-preset-0')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('share-selected-stile-preset-1')),
+        findsNothing,
+      );
+      await tapVisible(tester, undo);
+      await tester.pump();
+      expect(choiceSelected(tester, 'stile-preset-1'), isTrue);
+      expect(
+        find.byKey(const ValueKey('share-selected-stile-preset-1')),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     },
   );
@@ -327,6 +359,11 @@ void main() {
         }
       }
       expect(find.text('Contenuto'), findsNothing);
+      expect(find.text('Questo contenuto non contiene foto.'), findsNothing);
+      expect(
+        find.text('Artwork non disponibile: questo contenuto non ha un’area.'),
+        findsNothing,
+      );
       for (var section = 0; section < 3; section++) {
         expect(
           find.byKey(ValueKey('share-section-description-$section')),
@@ -602,6 +639,117 @@ void main() {
       await tester.pumpAndSettle();
       expect(asset(), kAreaHeroArt[LifeArea.physical]!.coverAsset);
       expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'existing palettes keep title and branding readable and signature samples accurate',
+    (tester) async {
+      tester.view.physicalSize = const Size(1440, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        app(
+          const ShareComposerScreen(
+            data: ShareContent(
+              subject: ShareSubject.goal,
+              title: 'Direzione',
+              typeLabel: 'Obiettivo',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tapVisible(tester, find.byKey(const ValueKey('stile-preset-1')));
+      await tester.pump();
+      final preview = find.byKey(const ValueKey('share-preview'));
+      for (final format in [0, 4]) {
+        await tapVisible(
+          tester,
+          find.byKey(ValueKey('scheda-formato-$format')),
+        );
+        await tester.pump();
+        for (var palette = 0; palette < 4; palette++) {
+          await tapVisible(
+            tester,
+            find.byKey(ValueKey('sfondo-colori-$palette')),
+          );
+          await tester.pump();
+          for (var composition = 0; composition < 3; composition++) {
+            await tapVisible(
+              tester,
+              find.byKey(ValueKey('scheda-composizione-$composition')),
+            );
+            await tester.pump();
+            final decoration = tester
+                .widgetList<DecoratedBox>(
+                  find.descendant(
+                    of: preview,
+                    matching: find.byType(DecoratedBox),
+                  ),
+                )
+                .map((box) => box.decoration)
+                .whereType<BoxDecoration>()
+                .firstWhere((box) => box.gradient != null);
+            final title = tester
+                .widget<Text>(
+                  find.descendant(
+                    of: preview,
+                    matching: find.text('Direzione'),
+                  ),
+                )
+                .style!
+                .color!;
+            final name = tester
+                .widget<Text>(
+                  find.descendant(
+                    of: preview,
+                    matching: find.text('Inner Stars'),
+                  ),
+                )
+                .style!
+                .color!;
+            for (final ink in [title, name]) {
+              for (final background in decoration.gradient!.colors) {
+                final high = ink.computeLuminance();
+                final low = background.computeLuminance();
+                expect(
+                  (high + .05) / (low + .05),
+                  greaterThanOrEqualTo(4.5),
+                  reason:
+                      'palette $palette, composition $composition, format $format',
+                );
+              }
+            }
+            final sample = tester.widget<Text>(
+              find.descendant(
+                of: find.byKey(const ValueKey('firma-disposizione-1')),
+                matching: find.text('Inner Stars'),
+              ),
+            );
+            expect(sample.style!.color, name);
+            final logos = tester
+                .widgetList<SvgPicture>(
+                  find.descendant(
+                    of: preview,
+                    matching: find.byType(SvgPicture),
+                  ),
+                )
+                .where(
+                  (picture) =>
+                      picture.bytesLoader is SvgAssetLoader &&
+                      (picture.bytesLoader as SvgAssetLoader).assetName ==
+                          'assets/icon/Logo.svg',
+                );
+            expect(logos.length, greaterThanOrEqualTo(2));
+            for (final logo in logos) {
+              expect(logo.colorFilter, ColorFilter.mode(name, BlendMode.srcIn));
+            }
+            expect(tester.takeException(), isNull);
+          }
+        }
+      }
     },
   );
 

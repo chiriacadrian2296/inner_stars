@@ -85,6 +85,18 @@ double _shareAspectRatio(_ShareFormat format) => switch (format) {
 
 enum _PhotoMode { none, background, panel, circle }
 
+_PhotoMode _effectiveSharePhotoMode(
+  _PhotoMode mode,
+  ShareContent data,
+  _Layout layout,
+) =>
+    data.photos.isNotEmpty &&
+        mode == _PhotoMode.none &&
+        data.subject == ShareSubject.moodboard &&
+        layout == _Layout.free
+    ? _PhotoMode.background
+    : mode;
+
 enum _Watermark { none, logo, area }
 
 enum _BrandLayout { logoAbove, logoLeft }
@@ -259,21 +271,18 @@ class _ShareSpecimen extends StatelessWidget {
     final colors = context.colors;
     final layout = _layout.$1;
     // A cover-style moodboard is a photo card even without picking a photo.
-    final effPhoto =
-        data.photos.isNotEmpty &&
-            photoMode == _PhotoMode.none &&
-            subject == ShareSubject.moodboard &&
-            layout == _Layout.free
-        ? _PhotoMode.background
-        : photoMode;
-    final usePaperPalette =
-        _lightBackground && effPhoto != _PhotoMode.background;
-    final foreground = usePaperPalette ? const Color(0xFF28231D) : colors.text;
-    final secondary = usePaperPalette ? const Color(0xFF635A4E) : colors.muted;
-    final accent = usePaperPalette ? const Color(0xFF8A5A26) : colors.gold;
+    final effPhoto = _effectiveSharePhotoMode(photoMode, data, layout);
+    final inks = _ShareInks(
+      colors,
+      _palettes[palette],
+      photoBackground: effPhoto == _PhotoMode.background,
+    );
+    final foreground = inks.foreground;
+    final secondary = inks.secondary;
+    final accent = inks.accent;
     final compact = format == _ShareFormat.landscape;
-    Color? inkColor(_Ink ink) => _inkDotColor(colors, ink);
-    final titleColor = inkColor(titleInk) ?? foreground;
+    Color inkColor(_Ink ink) => inks.resolve(ink);
+    final titleColor = inkColor(titleInk);
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
       child: DecoratedBox(
@@ -307,7 +316,7 @@ class _ShareSpecimen extends StatelessWidget {
               Center(
                 child: _WatermarkArt(
                   watermark: watermark,
-                  color: inkColor(watermarkInk) ?? foreground,
+                  color: inkColor(watermarkInk),
                   tinted: watermarkInk != _Ink.auto,
                   // Large stays inside the card (the logo's shapes cover about two
                   // thirds of its width, an area artwork nearly all of it).
@@ -1053,6 +1062,55 @@ Alignment _alignmentFor(_TitlePosition position) => switch (position) {
   _TitlePosition.bottomCenter => Alignment.bottomCenter,
   _TitlePosition.bottomRight => Alignment.bottomRight,
 };
+
+/// Shared by the exported post and signature choices, so their inks match.
+class _ShareInks {
+  _ShareInks(this.colors, this.palette, {this.photoBackground = false});
+  final AppColors colors;
+  final _Palette palette;
+  final bool photoBackground;
+
+  // Photos already have their shared night scrim; gradients are checked
+  // against every stop so reversing their direction stays equally readable.
+  List<Color> get _backgrounds =>
+      photoBackground ? [colors.night] : palette.colors;
+  bool get _light => palette.light && !photoBackground;
+  late final foreground = _readableShareInk(
+    _light ? const Color(0xFF28231D) : colors.text,
+    _backgrounds,
+  );
+  late final secondary = _readableShareInk(
+    _light ? const Color(0xFF635A4E) : colors.muted,
+    _backgrounds,
+  );
+  late final accent = _readableShareInk(
+    _light ? const Color(0xFF8A5A26) : colors.gold,
+    _backgrounds,
+  );
+
+  Color resolve(_Ink ink) => switch (ink) {
+    _Ink.auto => foreground,
+    _Ink.gold => accent,
+    _ => _readableShareInk(_inkDotColor(colors, ink)!, _backgrounds),
+  };
+}
+
+Color _readableShareInk(Color preferred, List<Color> backgrounds) {
+  bool readable(Color ink) => backgrounds.every((background) {
+    final a = ink.computeLuminance();
+    final b = background.computeLuminance();
+    return (a > b ? (a + .05) / (b + .05) : (b + .05) / (a + .05)) >= 4.5;
+  });
+  if (readable(preferred)) return preferred;
+  // Retain the composition's hue, lightening or darkening only as needed.
+  for (var step = 1; step <= 20; step++) {
+    for (final target in [const Color(0xFFF4F1E8), const Color(0xFF28231D)]) {
+      final adjusted = Color.lerp(preferred, target, step / 20)!;
+      if (readable(adjusted)) return adjusted;
+    }
+  }
+  return preferred;
+}
 
 /// Any gradient [shape] applied to any [palette]'s colours.
 Gradient _backgroundGradient(
