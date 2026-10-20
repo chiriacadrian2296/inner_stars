@@ -276,7 +276,8 @@ void main() {
     expect(find.text('Song'), findsOneWidget);
     expect(find.text('Location'), findsOneWidget);
     expect(find.text('Website'), findsOneWidget);
-    expect(find.text('Limit · 1:00'), findsOneWidget);
+    expect(find.text('Limit · 1:00'), findsNothing);
+    expect(find.text('1:00'), findsOneWidget);
     expect(find.text('Main'), findsNothing);
     expect(find.byType(FieldResetButton), findsAtLeastNWidgets(5));
     expect(find.byIcon(Icons.music_note_rounded), findsOneWidget);

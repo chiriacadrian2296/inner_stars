@@ -74,6 +74,13 @@
   the line ranges you need instead of whole large files; run independent
   commands together; do not repeat a check that already passed. Keep replies
   short.
+- **Lean applies to commands, not to understanding.** Before building or
+  restyling a screen, dialog or widget, first read how the app already does the
+  same kind of thing: a comparable existing screen, and the shared widgets in
+  `lib/widgets` (fields, buttons, headers, sheets). Check this file and the
+  remembered rules too (Proper Case, no app bars, no icons on text buttons,
+  keyboard behaviour, and so on). Never skip this to save steps; a redesign
+  that ignores the app's conventions costs more rounds than reading did.
 - Synced models only get new optional fields; never rename or remove existing
   ones, because app versions and cloud data coexist.
 - Development tools stay behind `kDevTools`. An unfinished user-facing
