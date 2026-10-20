@@ -41,6 +41,13 @@ Firebase, hosting, privacy e store (parte B), infine la rifinitura (parte C).
   accettata, con privacy policy e cancellazione account.
 - L'app resta **local-first**: SharedPreferences è il database principale, Firestore è la copia
   remota sincronizzata.
+- **Modo di lavorare (deciso il 20 ottobre):** `main` è la produzione e pubblica da sola; si
+  lavora su rami di funzione nati da `main` (il nome lo sceglie Claude o lo dice l’autore) e li
+  si riunisce a `main` interi quando sono finiti. **Niente ramo `dev` e niente ambiente di
+  collaudo per ora** (nessun utente vero). Controlli automatici (`checks.yml`) su ogni ramo e
+  prima di ogni deploy; Flutter fissato a 3.47.1. Dettagli e regole per i dati in
+  `docs/workflow.md`; l’ambiente di collaudo con un secondo progetto Firebase si riprende
+  quando entra la prima persona che non è l’autore.
 - **Accesso obbligatorio (deciso il 19 ottobre sera):** nessuno entra nella Galaxy senza un
   account Google. Davanti a tutto c’è una pagina di login (A6). La prima volta serve internet;
   dopo, l’app si apre anche offline perché i dati stanno sul dispositivo.
