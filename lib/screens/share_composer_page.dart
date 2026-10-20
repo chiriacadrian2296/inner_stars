@@ -3,9 +3,8 @@ part of 'share_composer_screen.dart';
 /// Composer for the shareable picture of a victory, goal, habit, project,
 /// vision, moodboard or quote.
 ///
-/// The preview sits beside the selected category on wide screens and above
-/// it on narrow screens. Every option is a stepper: arrows to flip through the choices,
-/// or tap the value to see them all. Choices affect only the shared image.
+/// The preview sits beside one scrolling editor on wide screens and above
+/// it on narrow screens. Choices affect only the shared image.
 class ShareComposerScreen extends StatefulWidget {
   const ShareComposerScreen({
     super.key,
@@ -104,15 +103,14 @@ const _stylePresets = [
 ];
 
 class _ShareComposerScreenState extends State<ShareComposerScreen> {
-  final _categoryScroll = ScrollController();
-  int _category = 0;
+  final _controlsScroll = ScrollController();
   int _subjectIndex = 0;
   ShareContent get _data => widget.variants?[_subjectIndex] ?? widget.data;
   ShareSubject get _subject => _data.subject;
   late final _excerpt = TextEditingController(text: widget.data.description);
   @override
   void dispose() {
-    _categoryScroll.dispose();
+    _controlsScroll.dispose();
     _excerpt.dispose();
     super.dispose();
   }
@@ -874,12 +872,12 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
               'Personalizza sfumatura, foto e filigrana.',
               'Personalizza il nome e il logo di Inner Stars.',
             ];
-            final blocks = switch (_category) {
-              0 => [_cardBlock(), _styleBlock()],
-              1 => [_textBlock()],
-              2 => [_backgroundBlock(), _watermarkBlock()],
-              _ => [_signatureBlock()],
-            };
+            final sections = [
+              [_cardBlock(), _styleBlock()],
+              [_textBlock()],
+              [_backgroundBlock(), _watermarkBlock()],
+              [_signatureBlock()],
+            ];
             final history = SizedBox(
               height: 48,
               child: Row(
@@ -908,85 +906,75 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                 ],
               ),
             );
-            final controls = Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ScrollConfiguration(
-                  behavior: ScrollConfiguration.of(context).copyWith(
-                    dragDevices: {
-                      PointerDeviceKind.touch,
-                      PointerDeviceKind.mouse,
-                      PointerDeviceKind.trackpad,
-                      PointerDeviceKind.stylus,
-                    },
-                  ),
-                  child: Scrollbar(
-                    controller: _categoryScroll,
-                    thumbVisibility: true,
-                    interactive: true,
-                    child: SingleChildScrollView(
-                      controller: _categoryScroll,
-                      padding: const EdgeInsets.only(bottom: 10),
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          for (var i = 0; i < categories.length; i++) ...[
-                            if (i > 0) const SizedBox(width: 8),
-                            Semantics(
-                              selected: _category == i,
-                              child: TextButton.icon(
-                                key: ValueKey('share-category-$i'),
-                                onPressed: () => setState(() => _category = i),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: _category == i
-                                      ? colors.gold
-                                      : colors.muted,
-                                  backgroundColor: _category == i
-                                      ? colors.nightPanel
-                                      : Colors.transparent,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 12,
-                                  ),
-                                  textStyle: const TextStyle(
-                                    fontSize: 14,
-                                    letterSpacing: 0,
-                                  ),
-                                ),
-                                icon: Icon(categories[i].$2, size: 20),
-                                label: Text(
-                                  shareComposerLabel(context, categories[i].$1),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
+            final controls = DecoratedBox(
+              decoration: panelDecoration(colors),
+              child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context).copyWith(
+                  dragDevices: {
+                    PointerDeviceKind.touch,
+                    PointerDeviceKind.mouse,
+                    PointerDeviceKind.trackpad,
+                    PointerDeviceKind.stylus,
+                  },
                 ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: Scrollbar(
-                    child: SingleChildScrollView(
-                      key: ValueKey('share-category-panel-$_category'),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
+                child: Scrollbar(
+                  controller: _controlsScroll,
+                  thumbVisibility: true,
+                  interactive: true,
+                  child: SingleChildScrollView(
+                    key: const ValueKey('share-controls'),
+                    controller: _controlsScroll,
+                    padding: const EdgeInsets.fromLTRB(12, 16, 16, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (var i = 0; i < categories.length; i++) ...[
+                          if (i > 0) const SizedBox(height: 28),
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
-                            child: _note(descriptions[_category]),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Semantics(
+                                  header: true,
+                                  child: Row(
+                                    key: ValueKey('share-section-$i'),
+                                    children: [
+                                      Icon(
+                                        categories[i].$2,
+                                        size: 20,
+                                        color: colors.gold,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        shareComposerLabel(
+                                          context,
+                                          categories[i].$1,
+                                        ),
+                                        style: context
+                                            .typography
+                                            .compactSectionLabel
+                                            .copyWith(fontSize: 15),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                _note(descriptions[i]),
+                                const SizedBox(height: 12),
+                              ],
+                            ),
                           ),
-                          for (var i = 0; i < blocks.length; i++) ...[
-                            if (i > 0) const SizedBox(height: 10),
-                            blocks[i],
+                          for (var j = 0; j < sections[i].length; j++) ...[
+                            if (j > 0) const SizedBox(height: 10),
+                            sections[i][j],
                           ],
                         ],
-                      ),
+                      ],
                     ),
                   ),
                 ),
-              ],
+              ),
             );
             final body = wide
                 ? Row(

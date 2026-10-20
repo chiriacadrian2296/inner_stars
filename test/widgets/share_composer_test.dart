@@ -18,10 +18,13 @@ Widget app(Widget home, {bool english = false}) => StringsScope(
   child: MaterialApp(theme: buildAppTheme(), home: home),
 );
 
-Future<void> selectCategory(WidgetTester tester, int category) async {
-  final tab = find.byKey(ValueKey('share-category-$category'));
-  await tester.ensureVisible(tab);
-  await tester.tap(tab);
+Future<void> scrollToSection(WidgetTester tester, int category) async {
+  await tester.ensureVisible(find.byKey(ValueKey('share-section-$category')));
+}
+
+Future<void> tapVisible(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  await tester.tap(finder);
 }
 
 bool choiceSelected(WidgetTester tester, String key) => tester
@@ -74,7 +77,7 @@ void main() {
           ),
         ),
       );
-      await tester.tap(find.text('open'));
+      await tapVisible(tester, find.text('open'));
       await tester.pumpAndSettle();
       expect(find.byType(ShareComposerScreen), findsOneWidget);
       expect(find.byType(BackButton), findsNothing);
@@ -84,61 +87,64 @@ void main() {
       expect(find.text(record.body), findsWidgets);
       expect(find.text(LifeArea.social.displayName(strings)), findsWidgets);
       expect(find.text('Salute'), findsNothing);
-      await selectCategory(tester, 1);
+      await scrollToSection(tester, 1);
       await tester.pump();
       await tester.ensureVisible(
         find.byKey(const ValueKey('share-reflection-excerpt')),
       );
-      await tester.tap(find.byKey(const ValueKey('share-reflection-excerpt')));
+      await tapVisible(
+        tester,
+        find.byKey(const ValueKey('share-reflection-excerpt')),
+      );
       await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const ValueKey('share-excerpt-field')),
         'Solo un estratto',
       );
-      await tester.tap(find.text(strings.saveChanges.toUpperCase()));
+      await tapVisible(tester, find.text(strings.saveChanges.toUpperCase()));
       await tester.pumpAndSettle();
       expect(find.text('Solo un estratto'), findsWidgets);
-      await tester.tap(find.byKey(const ValueKey('share-undo')));
+      await tapVisible(tester, find.byKey(const ValueKey('share-undo')));
       await tester.pump();
       expect(find.text(record.body), findsWidgets);
       expect(find.text('Solo un estratto'), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('share-redo')));
+      await tapVisible(tester, find.byKey(const ValueKey('share-redo')));
       await tester.pump();
       expect(find.text('Solo un estratto'), findsWidgets);
       expect(record.body, 'Il testo originale');
-      await selectCategory(tester, 1);
+      await scrollToSection(tester, 1);
       await tester.pump();
       await tester.ensureVisible(find.text('Testo'));
-      await tester.tap(find.text('Testo'));
+      await tapVisible(tester, find.text('Testo'));
       await tester.pump();
       expect(find.text('Solo un estratto'), findsNothing);
       expect(record.body, 'Il testo originale');
-      await selectCategory(tester, 3);
+      await scrollToSection(tester, 3);
       await tester.pump();
       expect(find.byKey(const ValueKey('firma-logo-menu')), findsNothing);
       expect(find.byKey(const ValueKey('firma-colore-nome-0')), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('firma-mostra-menu')));
+      await tapVisible(tester, find.byKey(const ValueKey('firma-mostra-menu')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Solo Logo'));
+      await tapVisible(tester, find.text('Solo Logo'));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('firma-logo-menu')), findsOneWidget);
       expect(find.byKey(const ValueKey('firma-colore-nome-0')), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('firma-posizione-8')));
+      await tapVisible(tester, find.byKey(const ValueKey('firma-posizione-8')));
       await tester.pump();
       expect(choiceSelected(tester, 'firma-posizione-8'), isTrue);
       expect(find.textContaining('Basso Destra'), findsNothing);
-      await selectCategory(tester, 2);
+      await scrollToSection(tester, 2);
       await tester.pump();
       expect(find.byKey(const ValueKey('sfondo-foto-menu')), findsNothing);
       expect(find.byKey(const ValueKey('watermark-misura-menu')), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('watermark-tipo-1')));
+      await tapVisible(tester, find.byKey(const ValueKey('watermark-tipo-1')));
       await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey('watermark-misura-menu')),
         findsOneWidget,
       );
       await tester.ensureVisible(find.byKey(const ValueKey('sfondo-colori-3')));
-      await tester.tap(find.byKey(const ValueKey('sfondo-colori-3')));
+      await tapVisible(tester, find.byKey(const ValueKey('sfondo-colori-3')));
       await tester.pump();
       expect(choiceSelected(tester, 'sfondo-colori-3'), isTrue);
       expect(find.text('Colori'), findsOneWidget);
@@ -172,54 +178,55 @@ void main() {
       expect(tester.widget<IconButton>(redo).onPressed, isNull);
       final ocean = find.byKey(const ValueKey('stile-preset-3'));
       await tester.ensureVisible(ocean);
-      await tester.tap(ocean);
+      await tapVisible(tester, ocean);
       await tester.pump();
-      await tester.tap(
+      await tapVisible(
+        tester,
         ocean,
       ); // Choosing the same preset must not add a history step.
       await tester.pump();
-      await selectCategory(tester, 3);
+      await scrollToSection(tester, 3);
       await tester.pump();
       expect(find.byKey(const ValueKey('firma-logo-menu')), findsOneWidget);
-      await tester.tap(undo);
+      await tapVisible(tester, undo);
       await tester.pump();
       expect(find.byKey(const ValueKey('firma-logo-menu')), findsNothing);
       expect(tester.widget<IconButton>(undo).onPressed, isNull);
-      await tester.tap(redo);
+      await tapVisible(tester, redo);
       await tester.pump();
       expect(find.byKey(const ValueKey('firma-logo-menu')), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('firma-mostra-menu')));
+      await tapVisible(tester, find.byKey(const ValueKey('firma-mostra-menu')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Nessuna'));
+      await tapVisible(tester, find.text('Nessuna'));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('firma-posizione-0')), findsNothing);
-      await tester.tap(undo);
+      await tapVisible(tester, undo);
       await tester.pump();
       expect(find.byKey(const ValueKey('firma-logo-menu')), findsOneWidget);
-      await tester.tap(undo);
+      await tapVisible(tester, undo);
       await tester.pump();
       expect(find.byKey(const ValueKey('firma-logo-menu')), findsNothing);
-      await selectCategory(tester, 0);
+      await scrollToSection(tester, 0);
       await tester.pump();
       expect(choiceSelected(tester, 'stile-preset-0'), isTrue);
       expect(find.text('Stile · Classico'), findsNothing);
-      await selectCategory(tester, 2);
+      await scrollToSection(tester, 2);
       await tester.pump();
       await tester.ensureVisible(find.byKey(const ValueKey('sfondo-colori-3')));
-      await tester.tap(find.byKey(const ValueKey('sfondo-colori-3')));
+      await tapVisible(tester, find.byKey(const ValueKey('sfondo-colori-3')));
       await tester.pump();
       expect(tester.widget<IconButton>(redo).onPressed, isNull);
-      await selectCategory(tester, 0);
+      await scrollToSection(tester, 0);
       await tester.pump();
       expect(choiceSelected(tester, 'stile-preset-0'), isFalse);
-      await tester.tap(undo);
+      await tapVisible(tester, undo);
       await tester.pump();
       expect(choiceSelected(tester, 'stile-preset-0'), isTrue);
       expect(tester.takeException(), isNull);
       for (var preset = 0; preset < 6; preset++) {
         final choice = find.byKey(ValueKey('stile-preset-$preset'));
         await tester.ensureVisible(choice);
-        await tester.tap(choice);
+        await tapVisible(tester, choice);
         await tester.pump();
         expect(tester.takeException(), isNull, reason: 'preset $preset');
       }
@@ -245,11 +252,11 @@ void main() {
         app(const ShareComposerScreen(data: first, variants: [first, second])),
       );
       await tester.pumpAndSettle();
-      await selectCategory(tester, 2);
+      await scrollToSection(tester, 2);
       await tester.pump();
       final artwork = find.byKey(const ValueKey('watermark-tipo-2'));
       await tester.ensureVisible(artwork);
-      await tester.tap(artwork);
+      await tapVisible(tester, artwork);
       await tester.pumpAndSettle();
       String asset() =>
           (tester
@@ -264,18 +271,18 @@ void main() {
               .assetName;
       expect(asset(), kAreaHeroArt[LifeArea.physical]!.coverAsset);
       expect(find.byKey(const ValueKey('watermark-tipo-3')), findsNothing);
-      await selectCategory(tester, 0);
+      await scrollToSection(tester, 0);
       await tester.pump();
       final subject = find.byKey(const ValueKey('scheda-contenuto-menu'));
       await tester.ensureVisible(subject);
-      await tester.tap(subject);
+      await tapVisible(tester, subject);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Sociale').last);
+      await tapVisible(tester, find.text('Sociale').last);
       await tester.pumpAndSettle();
-      await selectCategory(tester, 2);
+      await scrollToSection(tester, 2);
       await tester.pumpAndSettle();
       expect(asset(), kAreaHeroArt[LifeArea.social]!.coverAsset);
-      await tester.tap(find.byKey(const ValueKey('share-undo')));
+      await tapVisible(tester, find.byKey(const ValueKey('share-undo')));
       await tester.pumpAndSettle();
       expect(asset(), kAreaHeroArt[LifeArea.physical]!.coverAsset);
       expect(tester.takeException(), isNull);
@@ -297,7 +304,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await selectCategory(tester, 2);
+      await scrollToSection(tester, 2);
       await tester.pump();
       Gradient background() {
         final box = tester
@@ -319,12 +326,12 @@ void main() {
       for (var shape = 0; shape < 4; shape++) {
         final choice = find.byKey(ValueKey('sfondo-forma-$shape'));
         await tester.ensureVisible(choice);
-        await tester.tap(choice);
+        await tapVisible(tester, choice);
         await tester.pump();
         final original = background();
         final reverse = find.byKey(const ValueKey('share-reverse-colors'));
         await tester.ensureVisible(reverse);
-        await tester.tap(reverse);
+        await tapVisible(tester, reverse);
         await tester.pump();
         final inverted = background();
         expect(inverted.colors, original.colors.reversed.toList());
@@ -341,13 +348,13 @@ void main() {
           );
           expect(inverted.end, original.end);
         }
-        await tester.tap(find.byKey(const ValueKey('share-undo')));
+        await tapVisible(tester, find.byKey(const ValueKey('share-undo')));
         await tester.pump();
         expect(background(), original);
-        await tester.tap(find.byKey(const ValueKey('share-redo')));
+        await tapVisible(tester, find.byKey(const ValueKey('share-redo')));
         await tester.pump();
         expect(background(), inverted);
-        await tester.tap(reverse);
+        await tapVisible(tester, reverse);
         await tester.pump();
         expect(background(), original);
       }
@@ -408,7 +415,7 @@ void main() {
           for (var i = 0; i < compositionCount; i++) {
             final next = find.byKey(ValueKey('scheda-composizione-$i'));
             await tester.ensureVisible(next);
-            await tester.tap(next);
+            await tapVisible(tester, next);
             await tester.pump();
             expect(
               tester.takeException(),
@@ -423,10 +430,10 @@ void main() {
             find.byKey(const ValueKey('share-preview')),
           );
           for (final category in [1, 2, 3, 0]) {
-            await selectCategory(tester, category);
+            await scrollToSection(tester, category);
             await tester.pump();
             expect(
-              find.byKey(ValueKey('share-category-panel-$category')),
+              find.byKey(ValueKey('share-section-$category')),
               findsOneWidget,
             );
             expect(
@@ -439,7 +446,7 @@ void main() {
             );
             expect(
               find.byKey(const ValueKey('scheda-composizione-0')),
-              category == 0 ? findsOneWidget : findsNothing,
+              findsOneWidget,
             );
             expect(
               tester.takeException(),
@@ -450,7 +457,7 @@ void main() {
           for (var format = 1; format < 5; format++) {
             final choice = find.byKey(ValueKey('scheda-formato-$format'));
             await tester.ensureVisible(choice);
-            await tester.tap(choice);
+            await tapVisible(tester, choice);
             await tester.pump();
             expect(
               tester.takeException(),
