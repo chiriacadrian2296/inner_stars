@@ -2,8 +2,10 @@
 
 ## UI conventions
 
-- Do not add app bars to new pages. Put page titles in the page content,
-  following the existing screens.
+- Never add app bars or equivalent top rows with a small title and back arrow
+  to any page, now or in future work. Put any needed page titles in the page
+  content, following the existing screens. In sharing, give that space to the
+  preview instead.
 
 - In “Vedi”, keep Statistics, Edit and Archive/Delete together. Fly is the
   last action on the right, in its own group, because it returns to Galaxy.

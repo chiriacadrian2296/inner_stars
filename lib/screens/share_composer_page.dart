@@ -3,9 +3,8 @@ part of 'share_composer_screen.dart';
 /// Composer for the shareable picture of a victory, goal, habit, project,
 /// vision, moodboard or quote.
 ///
-/// The preview sits beside a panel of option blocks on wide screens; on
-/// narrow ones the blocks become a bar under the preview that scrolls
-/// sideways. Every option is a stepper: arrows to flip through the choices,
+/// The preview sits beside the selected category on wide screens and above
+/// it on narrow screens. Every option is a stepper: arrows to flip through the choices,
 /// or tap the value to see them all. Choices affect only the shared image.
 class ShareComposerScreen extends StatefulWidget {
   const ShareComposerScreen({
@@ -107,6 +106,7 @@ const _stylePresets = [
 ];
 
 class _ShareComposerScreenState extends State<ShareComposerScreen> {
+  int _category = 0;
   int _subjectIndex = 0;
   ShareContent get _data => widget.variants?[_subjectIndex] ?? widget.data;
   ShareSubject get _subject => _data.subject;
@@ -693,107 +693,124 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
               padding: 0,
               specimen: _specimen(),
             );
-            // Eight column-widths in all: two rows of four when there is room.
-            final blocks = [
-              _cardBlock(),
-              _styleBlock(),
-              _backgroundBlock(),
-              _watermarkBlock(),
-              _textBlock(),
-              _signatureBlock(),
+            const categories = [
+              ('Stile', Icons.palette_outlined),
+              ('Contenuto', Icons.title_rounded),
+              ('Sfondo', Icons.gradient_rounded),
+              ('Firma', Icons.verified_outlined),
             ];
-            final Widget body;
-            if (constraints.maxWidth >= 1280) {
-              // Preview in the middle, a set of panels on each side.
-              Widget side(List<Widget> children) => SizedBox(
-                width: _blockWidth(1) * 2 + 10,
-                child: Center(
-                  child: SingleChildScrollView(
-                    child: Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: children,
+            final blocks = switch (_category) {
+              0 => [_cardBlock(), _styleBlock()],
+              1 => [_textBlock()],
+              2 => [_backgroundBlock(), _watermarkBlock()],
+              _ => [_signatureBlock()],
+            };
+            final controls = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    for (var i = 0; i < categories.length; i++)
+                      Expanded(
+                        child: Semantics(
+                          selected: _category == i,
+                          child: TextButton(
+                            key: ValueKey('share-category-$i'),
+                            onPressed: () => setState(() => _category = i),
+                            style: TextButton.styleFrom(
+                              foregroundColor: _category == i
+                                  ? colors.gold
+                                  : colors.muted,
+                              backgroundColor: _category == i
+                                  ? colors.nightPanel
+                                  : Colors.transparent,
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(categories[i].$2, size: 20),
+                                const SizedBox(height: 4),
+                                Text(
+                                  shareComposerLabel(context, categories[i].$1),
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: Scrollbar(
+                    child: SingleChildScrollView(
+                      key: ValueKey('share-category-panel-$_category'),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (var i = 0; i < blocks.length; i++) ...[
+                            if (i > 0) const SizedBox(height: 10),
+                            blocks[i],
+                          ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              );
-              body = Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  side([blocks[0], blocks[1], blocks[4]]),
-                  const SizedBox(width: gap),
-                  Expanded(child: preview),
-                  const SizedBox(width: gap),
-                  side([blocks[2], blocks[3], blocks[5]]),
-                ],
-              );
-            } else if (wide) {
-              // Panels take the room they need (up to three across), and
-              // whatever is left over goes to the preview.
-              final panelsWidth =
-                  (constraints.maxWidth - 2 * gutter - gap - 420).clamp(
-                    _blockWidth(2),
-                    _blockWidth(1) * 4 + 30,
-                  );
-              body = Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(child: preview),
-                  const SizedBox(width: gap),
-                  SizedBox(
-                    width: panelsWidth,
-                    // Bottom-aligned, so the gap to the share button below is
-                    // the same as the one between preview and panels.
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: SingleChildScrollView(
-                        reverse: true,
-                        child: Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: blocks,
+              ],
+            );
+            final body = wide
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(child: preview),
+                      const SizedBox(width: gap),
+                      SizedBox(
+                        width: (constraints.maxWidth * .42).clamp(320.0, 480.0),
+                        child: controls,
+                      ),
+                    ],
+                  )
+                : Column(
+                    children: [
+                      Expanded(child: preview),
+                      const SizedBox(height: gap),
+                      SizedBox(
+                        height: (constraints.maxHeight * .38).clamp(
+                          240.0,
+                          310.0,
                         ),
+                        child: controls,
                       ),
-                    ),
-                  ),
-                ],
-              );
-            } else {
-              body = Column(
-                children: [
-                  Expanded(child: preview),
-                  const SizedBox(height: gap),
-                  SizedBox(
-                    height: _blockHeight,
-                    child: ScrollConfiguration(
-                      behavior: ScrollConfiguration.of(context).copyWith(
-                        dragDevices: {
-                          PointerDeviceKind.touch,
-                          PointerDeviceKind.mouse,
-                          PointerDeviceKind.trackpad,
-                          PointerDeviceKind.stylus,
-                        },
-                      ),
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: blocks.length,
-                        separatorBuilder: (_, _) => const SizedBox(width: 10),
-                        itemBuilder: (_, i) => blocks[i],
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }
+                    ],
+                  );
             return Padding(
               padding: EdgeInsets.fromLTRB(gutter, 12, gutter, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Expanded(child: body),
+                  const SizedBox(height: gap),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const BackButton(),
-                      Expanded(child: Text(context.strings.sharePreviewTitle)),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                          foregroundColor: colors.muted,
+                        ),
+                        child: AppButtonLabel(
+                          context.strings.cancel,
+                          color: colors.muted,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: _sharing ? null : _share,
+                        child: AppButtonLabel(context.strings.shareNowAction),
+                      ),
                       if (_data.isReflection)
                         IconButton(
                           key: const ValueKey('share-reflection-excerpt'),
@@ -805,14 +822,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                           icon: const Icon(Icons.edit_note),
                         ),
                     ],
-                  ),
-                  Expanded(child: body),
-                  const SizedBox(height: gap),
-                  Center(
-                    child: ElevatedButton(
-                      onPressed: _sharing ? null : _share,
-                      child: AppButtonLabel(context.strings.shareNowAction),
-                    ),
                   ),
                 ],
               ),
@@ -938,24 +947,11 @@ String _positionLabel(_TitlePosition value) => switch (value) {
 
 // ----- control widgets -----
 
-/// Every block has the same height: three options tall. A block with more
-/// options grows sideways in extra columns (see [_BlockCard.split]).
+/// Options share a regular rhythm; extra columns stack on narrow screens.
 const _slotHeight = 54.0;
 const _slotGap = 8.0;
 const _columnWidth = 196.0;
-// Wide enough that a two-column block is exactly as wide as two one-column
-// blocks side by side; a hairline sits in the middle of it.
-const _columnGap = 37.0;
 const _blockPadding = EdgeInsets.fromLTRB(12, 10, 12, 12);
-const _blockHeight =
-    10 + 18 + 8 + 3 * _slotHeight + 2 * _slotGap + 12 + 2 * kBorderWidth;
-
-/// Width of a block with [columns] columns.
-double _blockWidth(int columns) =>
-    columns * _columnWidth +
-    (columns - 1) * _columnGap +
-    _blockPadding.horizontal +
-    2 * kBorderWidth;
 
 /// A titled group of options that belong together. [split] says how many of
 /// the [children] go in each column (default: all in one column of three).
@@ -980,26 +976,23 @@ class _BlockCard extends StatelessWidget {
       final items = children.sublist(next, next + count);
       next += count;
       columns.add(
-        SizedBox(
-          width: _columnWidth,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var i = 0; i < items.length; i++) ...[
-                if (i > 0) const SizedBox(height: _slotGap),
-                items[i],
-              ],
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < items.length; i++) ...[
+              if (i > 0) const SizedBox(height: _slotGap),
+              items[i],
             ],
-          ),
+          ],
         ),
       );
     }
     return Container(
-      width: _blockWidth(split.length),
-      height: _blockHeight,
       padding: _blockPadding,
       decoration: panelDecoration(colors),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
@@ -1016,21 +1009,26 @@ class _BlockCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (var i = 0; i < columns.length; i++) ...[
-                if (i > 0)
-                  SizedBox(
-                    width: _columnGap,
-                    height: 3 * _slotHeight + 2 * _slotGap,
-                    child: Center(
-                      child: Container(width: 1, color: colors.nightBorder),
-                    ),
-                  ),
-                columns[i],
-              ],
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const spacing = 16.0;
+              final sideBySide =
+                  constraints.maxWidth >=
+                  columns.length * _columnWidth +
+                      (columns.length - 1) * spacing;
+              final width = sideBySide
+                  ? (constraints.maxWidth - (columns.length - 1) * spacing) /
+                        columns.length
+                  : constraints.maxWidth;
+              return Wrap(
+                spacing: spacing,
+                runSpacing: _slotGap,
+                children: [
+                  for (final column in columns)
+                    SizedBox(width: width, child: column),
+                ],
+              );
+            },
           ),
         ],
       ),

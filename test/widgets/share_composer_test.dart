@@ -54,6 +54,8 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
       expect(find.byType(ShareComposerScreen), findsOneWidget);
+      expect(find.byType(BackButton), findsNothing);
+      expect(find.text(strings.sharePreviewTitle), findsNothing);
       expect(find.byKey(const ValueKey('scheda-contenuto-menu')), findsNothing);
       expect(find.text(record.title), findsOneWidget);
       expect(find.text(record.body), findsOneWidget);
@@ -69,6 +71,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Solo un estratto'), findsOneWidget);
       expect(record.body, 'Il testo originale');
+      await tester.tap(find.byKey(const ValueKey('share-category-1')));
+      await tester.pump();
       await tester.ensureVisible(find.text('Testo'));
       await tester.tap(find.text('Testo'));
       await tester.pump();
@@ -123,6 +127,23 @@ void main() {
               tester.takeException(),
               isNull,
               reason: '${subject.name}, composition $i, $size',
+            );
+          }
+          for (final category in [1, 2, 3, 0]) {
+            await tester.tap(find.byKey(ValueKey('share-category-$category')));
+            await tester.pump();
+            expect(
+              find.byKey(ValueKey('share-category-panel-$category')),
+              findsOneWidget,
+            );
+            expect(
+              find.byKey(const ValueKey('scheda-composizione-next')),
+              category == 0 ? findsOneWidget : findsNothing,
+            );
+            expect(
+              tester.takeException(),
+              isNull,
+              reason: '${subject.name}, category $category, $size',
             );
           }
         }
