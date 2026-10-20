@@ -26,7 +26,7 @@ part 'share_composer_layouts.dart';
 part 'share_composer_page.dart';
 
 /// Shape of the background gradient; the colours come from a [_Palette].
-enum _GradientShape { halo, radial, vertical, diagonal, conic, mirrored, flat }
+enum _GradientShape { halo, radial, vertical, diagonal }
 
 /// Ink colour override: the title, and the brand (signature + watermark).
 enum _Ink { auto, gold, white, navy, gray }
@@ -187,6 +187,7 @@ class _ShareSpecimen extends StatelessWidget {
     required this.data,
     required this.composition,
     required this.gradient,
+    this.reverseColors = false,
     required this.palette,
     required this.titleInk,
     required this.watermarkInk,
@@ -216,6 +217,7 @@ class _ShareSpecimen extends StatelessWidget {
   ShareSubject get subject => data.subject;
   final int composition;
   final _GradientShape gradient;
+  final bool reverseColors;
   final int palette;
   final _Ink titleInk;
   final _Ink watermarkInk;
@@ -270,7 +272,11 @@ class _ShareSpecimen extends StatelessWidget {
       color: _lightBackground ? const Color(0xFFBEB6A7) : colors.nightBorder,
       width: kBorderWidth,
     ),
-    gradient: _backgroundGradient(gradient, _palettes[palette]),
+    gradient: _backgroundGradient(
+      gradient,
+      _palettes[palette],
+      reversed: reverseColors,
+    ),
   );
 
   @override
@@ -1070,8 +1076,12 @@ Alignment _alignmentFor(_TitlePosition position) => switch (position) {
 };
 
 /// Any gradient [shape] applied to any [palette]'s colours.
-Gradient _backgroundGradient(_GradientShape shape, _Palette palette) {
-  final colors = palette.colors;
+Gradient _backgroundGradient(
+  _GradientShape shape,
+  _Palette palette, {
+  bool reversed = false,
+}) {
+  final colors = reversed ? palette.colors.reversed.toList() : palette.colors;
   final evenStops = [
     for (var i = 0; i < colors.length; i++) i / (colors.length - 1),
   ];
@@ -1106,24 +1116,5 @@ Gradient _backgroundGradient(_GradientShape shape, _Palette palette) {
         colors: colors,
         stops: evenStops,
       );
-    case _GradientShape.conic:
-      final loop = [...colors, colors.first];
-      return SweepGradient(
-        center: Alignment.center,
-        colors: loop,
-        stops: [for (var i = 0; i < loop.length; i++) i / (loop.length - 1)],
-      );
-    case _GradientShape.mirrored:
-      final mirrored = [...colors, ...colors.reversed.skip(1)];
-      return LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: mirrored,
-        stops: [
-          for (var i = 0; i < mirrored.length; i++) i / (mirrored.length - 1),
-        ],
-      );
-    case _GradientShape.flat:
-      return LinearGradient(colors: [colors.first, colors.first]);
   }
 }

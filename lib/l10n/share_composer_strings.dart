@@ -16,6 +16,7 @@ String shareComposerLabel(BuildContext context, String label) {
 
 const _labels = <String, (String, String)>{
   'Aspetto': ('Appearance', 'Aspect'),
+  'Inverti colori': ('Reverse colors', 'Inversează culorile'),
   'Annulla modifica': ('Undo change', 'Anulează modificarea'),
   'Ripristina modifica': ('Redo change', 'Refă modificarea'),
   'Elementi visibili': ('Visible elements', 'Elemente vizibile'),

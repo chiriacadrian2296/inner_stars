@@ -85,7 +85,7 @@ const _stylePresets = [
   ),
   _StylePreset(
     'Aurora',
-    gradient: _GradientShape.conic,
+    gradient: _GradientShape.diagonal,
     palette: 2,
     titleInk: _Ink.white,
     brandInk: _Ink.white,
@@ -97,7 +97,7 @@ const _stylePresets = [
   ),
   _StylePreset(
     'Minimale',
-    gradient: _GradientShape.flat,
+    gradient: _GradientShape.vertical,
     palette: 11,
     titleInk: _Ink.white,
     brandInk: _Ink.gray,
@@ -138,6 +138,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
   // Background.
   _GradientShape _gradient = _GradientShape.halo;
   int _palette = 0;
+  bool _reverseColors = false;
   _PhotoMode _photoMode = _PhotoMode.none;
 
   // Text and data.
@@ -187,6 +188,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       titleInk: _titleInk,
       gradient: _gradient,
       palette: _palette,
+      reverseColors: _reverseColors,
       photoMode: _photoMode,
       titlePosition: _titlePosition,
       badgePosition: _badgePosition,
@@ -218,6 +220,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       _titleInk = draft.titleInk;
       _gradient = draft.gradient;
       _palette = draft.palette;
+      _reverseColors = draft.reverseColors;
       _photoMode = draft.photoMode;
       _titlePosition = draft.titlePosition;
       _badgePosition = draft.badgePosition;
@@ -267,6 +270,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       _style = index;
       _gradient = s.gradient;
       _palette = s.palette;
+      _reverseColors = false;
       _titleInk = s.titleInk;
       _brandInk = s.brandInk;
       _nameInk = null;
@@ -417,6 +421,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     ),
     composition: composition ?? _availableCompositions[_composition],
     gradient: _gradient,
+    reverseColors: _reverseColors,
     palette: _palette,
     format: _format,
     photoMode: _photoMode,
@@ -565,16 +570,25 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         label: 'Forma',
         labels: [for (final g in _GradientShape.values) _gradientLabel(g)],
         index: _gradient.index,
-        columns: 3,
-        preview: (i) => Container(
-          width: 76,
-          height: 30,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: context.colors.nightBorder),
-            gradient: _backgroundGradient(
-              _GradientShape.values[i],
-              _palettes[_palette],
+        columns: 4,
+        previewHeight: 64,
+        preview: (i) => SizedBox(
+          width: 56,
+          height: 64,
+          child: Center(
+            child: AspectRatio(
+              aspectRatio: _shareAspectRatio(_format),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: context.colors.nightBorder),
+                  gradient: _backgroundGradient(
+                    _GradientShape.values[i],
+                    _palettes[_palette],
+                    reversed: _reverseColors,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -584,10 +598,21 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         fieldKey: 'sfondo-colori',
         label: 'Colori',
         labels: [for (final p in _palettes) p.label],
-        preview: (i) => _PaletteDot(_palettes[i]),
+        preview: (i) => _PaletteDot(_palettes[i], reversed: _reverseColors),
         columns: 7,
         index: _palette,
         onChanged: (i) => _edit(() => _palette = i),
+      ),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: AppChoiceChip(
+          key: const ValueKey('share-reverse-colors'),
+          label: shareComposerLabel(context, 'Inverti colori'),
+          icon: Icons.swap_vert_rounded,
+          selected: _reverseColors,
+          dense: true,
+          onPressed: () => _edit(() => _reverseColors = !_reverseColors),
+        ),
       ),
       if (_data.photos.isNotEmpty)
         _OptionStepper(
@@ -1070,9 +1095,6 @@ String _gradientLabel(_GradientShape value) => switch (value) {
   _GradientShape.radial => 'Radiale',
   _GradientShape.vertical => 'Verticale',
   _GradientShape.diagonal => 'Diagonale',
-  _GradientShape.conic => 'Conico',
-  _GradientShape.mirrored => 'Riflesso',
-  _GradientShape.flat => 'Piatto',
 };
 
 String _inkLabel(_Ink value) => switch (value) {
@@ -1312,7 +1334,9 @@ class _VisualChoices extends StatelessWidget {
                       borderRadius: BorderRadius.circular(kRadiusField),
                       child: Container(
                         width: width,
-                        height: showLabels ? previewHeight + 46 : 44,
+                        height: showLabels
+                            ? previewHeight + 46
+                            : (previewHeight + 12).clamp(44.0, double.infinity),
                         decoration: selectableDecoration(
                           context.colors,
                           selected: i == index && placeholder == null,
@@ -1510,8 +1534,9 @@ class _InkDot extends StatelessWidget {
 
 /// A small preview of a background palette.
 class _PaletteDot extends StatelessWidget {
-  const _PaletteDot(this.palette);
+  const _PaletteDot(this.palette, {this.reversed = false});
   final _Palette palette;
+  final bool reversed;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -1523,7 +1548,7 @@ class _PaletteDot extends StatelessWidget {
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: palette.colors,
+        colors: reversed ? palette.colors.reversed.toList() : palette.colors,
       ),
     ),
   );

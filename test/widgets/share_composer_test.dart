@@ -251,6 +251,79 @@ void main() {
     },
   );
 
+  testWidgets(
+    'reversing colors preserves every gradient shape and supports history',
+    (tester) async {
+      await tester.pumpWidget(
+        app(
+          const ShareComposerScreen(
+            data: ShareContent(
+              subject: ShareSubject.goal,
+              title: 'Obiettivo',
+              typeLabel: 'Obiettivo',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await selectCategory(tester, 2);
+      await tester.pump();
+      Gradient background() {
+        final box = tester
+            .widgetList<DecoratedBox>(
+              find.descendant(
+                of: find.byKey(const ValueKey('share-preview')),
+                matching: find.byType(DecoratedBox),
+              ),
+            )
+            .firstWhere(
+              (box) =>
+                  box.decoration is BoxDecoration &&
+                  (box.decoration as BoxDecoration).gradient != null,
+            );
+        return (box.decoration as BoxDecoration).gradient!;
+      }
+
+      expect(find.byKey(const ValueKey('sfondo-forma-4')), findsNothing);
+      for (var shape = 0; shape < 4; shape++) {
+        final choice = find.byKey(ValueKey('sfondo-forma-$shape'));
+        await tester.ensureVisible(choice);
+        await tester.tap(choice);
+        await tester.pump();
+        final original = background();
+        final reverse = find.byKey(const ValueKey('share-reverse-colors'));
+        await tester.ensureVisible(reverse);
+        await tester.tap(reverse);
+        await tester.pump();
+        final inverted = background();
+        expect(inverted.colors, original.colors.reversed.toList());
+        expect(inverted.stops, original.stops);
+        if (original is RadialGradient) {
+          expect(inverted, isA<RadialGradient>());
+          expect((inverted as RadialGradient).center, original.center);
+          expect(inverted.radius, original.radius);
+        } else {
+          expect(inverted, isA<LinearGradient>());
+          expect(
+            (inverted as LinearGradient).begin,
+            (original as LinearGradient).begin,
+          );
+          expect(inverted.end, original.end);
+        }
+        await tester.tap(find.byKey(const ValueKey('share-undo')));
+        await tester.pump();
+        expect(background(), original);
+        await tester.tap(find.byKey(const ValueKey('share-redo')));
+        await tester.pump();
+        expect(background(), inverted);
+        await tester.tap(reverse);
+        await tester.pump();
+        expect(background(), original);
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   for (final size in [
     const Size(390, 844),
     const Size(844, 390),
