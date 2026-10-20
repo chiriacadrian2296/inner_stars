@@ -41,10 +41,20 @@
 # Workflow
 
 - `main` is production: every push to it publishes the web app and the
-  landing. Never work on `main` or push to it directly. Create a branch with
-  a descriptive name for each piece of work (the user may name it), commit and
-  push there, and merge the whole branch into `main` only when the user says
-  it is finished and tested. Do not cherry-pick individual commits.
+  landing. **Never work on `main`** (no edits, no commits, no direct pushes),
+  not even for a one-line fix or a docs change. The only exception is the user
+  explicitly saying to work on `main`.
+- **Before changing any file, every time:** check the current branch
+  (`git branch --show-current`) and tell the user which one you are on. Then
+  ask the user what the work is about so the branch can be named before any
+  edit. Proposing a name is fine; wait for the answer. If branches with
+  ongoing work exist (`git branch`), name them and ask whether to continue on
+  one of those instead of starting a new one.
+- Once the user has answered, create the branch from an up-to-date `main` (or
+  switch to the chosen branch), say so in one line, and only then start
+  editing. Commit and push on that branch, and merge the whole branch into
+  `main` only when the user says it is finished and tested. Do not
+  cherry-pick individual commits.
 - Pushing a branch only runs the `Checks` workflow (analyze and tests); it
   publishes nothing. The web deploy also runs analyze and tests first.
 - Synced models only get new optional fields; never rename or remove existing
