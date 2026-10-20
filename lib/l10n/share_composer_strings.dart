@@ -16,6 +16,9 @@ String shareComposerLabel(BuildContext context, String label) {
 
 const _labels = <String, (String, String)>{
   'Aspetto': ('Appearance', 'Aspect'),
+  'Ardesia': ('Slate', 'Ardezie'),
+  'Luce soffusa': ('Soft light', 'Lumină difuză'),
+  'Intimo': ('Intimate', 'Intim'),
   'Inverti colori': ('Reverse colors', 'Inversează culorile'),
   'Annulla modifica': ('Undo change', 'Anulează modificarea'),
   'Ripristina modifica': ('Redo change', 'Refă modificarea'),

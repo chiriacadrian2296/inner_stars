@@ -119,7 +119,8 @@ void main() {
       await tester.ensureVisible(find.byKey(const ValueKey('sfondo-colori-3')));
       await tester.tap(find.byKey(const ValueKey('sfondo-colori-3')));
       await tester.pump();
-      expect(find.text('Colori · Tramonto'), findsOneWidget);
+      expect(find.text('Colori · Oro'), findsOneWidget);
+      expect(find.byKey(const ValueKey('sfondo-colori-4')), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
@@ -192,6 +193,13 @@ void main() {
       await tester.pump();
       expect(find.text('Stile · Classico'), findsOneWidget);
       expect(tester.takeException(), isNull);
+      for (var preset = 0; preset < 6; preset++) {
+        final choice = find.byKey(ValueKey('stile-preset-$preset'));
+        await tester.ensureVisible(choice);
+        await tester.tap(choice);
+        await tester.pump();
+        expect(tester.takeException(), isNull, reason: 'preset $preset');
+      }
     },
   );
 

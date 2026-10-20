@@ -57,43 +57,20 @@ class _Palette {
 const _palettes = <_Palette>[
   _Palette(
     'Notte',
+    [Color(0xFF232C44), Color(0xFF161D30), Color(0xFF0D1220)],
+    stops: [0, .55, 1],
+  ),
+  _Palette('Ardesia', [
+    Color(0xFF465B79),
+    Color(0xFF2D3D56),
+    Color(0xFF202B3E),
+  ]),
+  _Palette(
+    'Luce soffusa',
     [Color(0xFF1C2747), Color(0xFF10162B), Color(0xFF05070D)],
     stops: [0, .55, 1],
   ),
-  _Palette('Spazio Profondo', [
-    Color(0xFF34425F),
-    Color(0xFF141A2C),
-    Color(0xFF070910),
-  ]),
-  _Palette('Aurora', [Color(0xFF174A4A), Color(0xFF44305D), Color(0xFF0D1220)]),
-  _Palette('Tramonto', [
-    Color(0xFF8B5065),
-    Color(0xFF373050),
-    Color(0xFF111626),
-  ]),
-  _Palette('Alba', [Color(0xFFD88B63), Color(0xFF80596A), Color(0xFF252A49)]),
-  _Palette('Foresta', [
-    Color(0xFF355F54),
-    Color(0xFF19352F),
-    Color(0xFF0D1717),
-  ]),
-  _Palette('Oceano', [Color(0xFF1E5F8A), Color(0xFF12304F), Color(0xFF08121F)]),
-  _Palette('Viola', [Color(0xFF5B3F8F), Color(0xFF2A1B4D), Color(0xFF0E0A1F)]),
-  _Palette('Ciliegia', [
-    Color(0xFFA33A4A),
-    Color(0xFF4A1A2E),
-    Color(0xFF170810),
-  ]),
-  _Palette('Rosa', [Color(0xFFC2688A), Color(0xFF6B3A68), Color(0xFF1E1530)]),
-  _Palette('Grafite', [
-    Color(0xFF4A5160),
-    Color(0xFF2A2F3A),
-    Color(0xFF12151C),
-  ]),
-  _Palette('Inchiostro', [Color(0xFF1A1A1A), Color(0xFF000000)]),
-  _Palette('Carta', [Color(0xFFF3ECDD), Color(0xFFD9CFBC)]),
-  _Palette('Cielo', [Color(0xFFD7E6F7), Color(0xFF8FB0DD)]),
-  _Palette('Menta', [Color(0xFFD5EEE2), Color(0xFF86C1A8)]),
+  _Palette('Oro', [Color(0xFF80603A), Color(0xFF353040), Color(0xFF0D1220)]),
 ];
 
 enum _ShareFormat { story, vertical, portrait, square, landscape }
