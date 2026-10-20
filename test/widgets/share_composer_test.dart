@@ -78,6 +78,34 @@ void main() {
       await tester.pump();
       expect(find.text('Solo un estratto'), findsNothing);
       expect(record.body, 'Il testo originale');
+      await tester.tap(find.byKey(const ValueKey('share-category-3')));
+      await tester.pump();
+      expect(find.byKey(const ValueKey('firma-logo-menu')), findsNothing);
+      expect(find.byKey(const ValueKey('firma-colore-nome-0')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('firma-mostra-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Solo Logo'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('firma-logo-menu')), findsOneWidget);
+      expect(find.byKey(const ValueKey('firma-colore-nome-0')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('firma-posizione-8')));
+      await tester.pump();
+      expect(find.textContaining('Basso Destra'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('share-category-2')));
+      await tester.pump();
+      expect(find.byKey(const ValueKey('sfondo-foto-menu')), findsNothing);
+      expect(find.byKey(const ValueKey('watermark-misura-menu')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('watermark-tipo-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Logo App'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('watermark-misura-menu')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('sfondo-colori-3')));
+      await tester.pump();
+      expect(find.text('Colori · Tramonto'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -129,12 +157,26 @@ void main() {
               reason: '${subject.name}, composition $i, $size',
             );
           }
+          final previewSize = tester.getSize(
+            find.byKey(const ValueKey('share-preview')),
+          );
+          final previewPosition = tester.getTopLeft(
+            find.byKey(const ValueKey('share-preview')),
+          );
           for (final category in [1, 2, 3, 0]) {
             await tester.tap(find.byKey(ValueKey('share-category-$category')));
             await tester.pump();
             expect(
               find.byKey(ValueKey('share-category-panel-$category')),
               findsOneWidget,
+            );
+            expect(
+              tester.getSize(find.byKey(const ValueKey('share-preview'))),
+              previewSize,
+            );
+            expect(
+              tester.getTopLeft(find.byKey(const ValueKey('share-preview'))),
+              previewPosition,
             );
             expect(
               find.byKey(const ValueKey('scheda-composizione-next')),
@@ -144,6 +186,17 @@ void main() {
               tester.takeException(),
               isNull,
               reason: '${subject.name}, category $category, $size',
+            );
+          }
+          for (var format = 1; format < 5; format++) {
+            final choice = find.byKey(ValueKey('scheda-formato-$format'));
+            await tester.ensureVisible(choice);
+            await tester.tap(choice);
+            await tester.pump();
+            expect(
+              tester.takeException(),
+              isNull,
+              reason: '${subject.name}, format $format, $size',
             );
           }
         }

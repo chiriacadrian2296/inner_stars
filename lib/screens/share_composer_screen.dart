@@ -120,6 +120,7 @@ enum _BadgePosition { top, bottom }
 
 class _PreviewPane extends StatelessWidget {
   const _PreviewPane({
+    super.key,
     required this.format,
     required this.specimen,
     required this.captureKey,

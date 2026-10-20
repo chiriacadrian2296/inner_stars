@@ -362,8 +362,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
   // ----- blocks -----
 
   Widget _cardBlock() => _BlockCard(
-    title: 'Scheda',
-    icon: Icons.dashboard_customize_outlined,
     children: [
       if (widget.variants != null)
         _OptionStepper(
@@ -379,18 +377,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                 ? _TitlePosition.center
                 : _TitlePosition.bottomLeft;
           }),
-        )
-      else
-        SizedBox(
-          height: _slotHeight,
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              _data.typeLabel,
-              key: const ValueKey('share-content-type'),
-              style: TextStyle(color: context.colors.gold),
-            ),
-          ),
         ),
       _OptionStepper(
         fieldKey: 'scheda-composizione',
@@ -402,43 +388,71 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         index: _composition,
         onChanged: (i) => _edit(() => _composition = i),
       ),
-      _OptionStepper(
+      _VisualChoices(
         fieldKey: 'scheda-formato',
         label: 'Formato',
         labels: [for (final f in _ShareFormat.values) _formatLabel(f)],
         index: _format.index,
+        columns: 5,
+        showLabels: true,
+        preview: (i) => Center(
+          child: Container(
+            width:
+                24 *
+                switch (_ShareFormat.values[i]) {
+                  _ShareFormat.story => 2 / 3,
+                  _ShareFormat.vertical => 9 / 16,
+                  _ShareFormat.portrait => 4 / 5,
+                  _ShareFormat.square => 1.0,
+                  _ShareFormat.landscape => 16 / 9,
+                },
+            height: 24,
+            decoration: BoxDecoration(
+              border: Border.all(color: context.colors.text),
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+        ),
         onChanged: (i) => _edit(() => _format = _ShareFormat.values[i]),
       ),
     ],
   );
 
   Widget _styleBlock() => _BlockCard(
-    title: 'Stile',
-    icon: Icons.palette_outlined,
     children: [
-      _OptionStepper(
+      _VisualChoices(
         fieldKey: 'stile-preset',
         label: 'Stile',
         labels: [for (final p in _stylePresets) p.label],
         index: _style ?? 0,
         placeholder: _style == null ? 'Personalizzato' : null,
+        columns: 3,
+        showLabels: true,
+        preview: (i) => Container(
+          width: 36,
+          height: 22,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(4),
+            gradient: LinearGradient(
+              colors: _palettes[_stylePresets[i].palette].colors,
+            ),
+          ),
+        ),
         onChanged: _applyPreset,
       ),
-      _OptionStepper(
+      _VisualChoices(
         fieldKey: 'stile-marchio',
         label: 'Marchio',
-        hint: 'Colore di firma e watermark',
         labels: [for (final i in _Ink.values) _inkLabel(i)],
-        leadingOf: (i) => _InkDot(_Ink.values[i]),
+        preview: (i) => _InkDot(_Ink.values[i]),
         index: _brandInk.index,
         onChanged: (i) => _edit(() => _brandInk = _Ink.values[i]),
       ),
-      _OptionStepper(
+      _VisualChoices(
         fieldKey: 'stile-titolo',
         label: 'Titolo',
-        hint: 'Colore del titolo',
         labels: [for (final i in _Ink.values) _inkLabel(i)],
-        leadingOf: (i) => _InkDot(_Ink.values[i]),
+        preview: (i) => _InkDot(_Ink.values[i]),
         index: _titleInk.index,
         onChanged: (i) => _edit(() => _titleInk = _Ink.values[i]),
       ),
@@ -446,8 +460,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
   );
 
   Widget _backgroundBlock() => _BlockCard(
-    title: 'Sfondo',
-    icon: Icons.gradient_rounded,
     children: [
       _OptionStepper(
         fieldKey: 'sfondo-forma',
@@ -456,51 +468,47 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         index: _gradient.index,
         onChanged: (i) => _edit(() => _gradient = _GradientShape.values[i]),
       ),
-      _OptionStepper(
+      _VisualChoices(
         fieldKey: 'sfondo-colori',
         label: 'Colori',
         labels: [for (final p in _palettes) p.label],
-        leadingOf: (i) => _PaletteDot(_palettes[i]),
+        preview: (i) => _PaletteDot(_palettes[i]),
+        columns: 7,
         index: _palette,
         onChanged: (i) => _edit(() => _palette = i),
       ),
-      _OptionStepper(
-        fieldKey: 'sfondo-foto',
-        enabled: _data.photos.isNotEmpty,
-        label: 'Foto',
-        labels: [for (final m in _PhotoMode.values) _photoLabel(m)],
-        index: _photoMode.index,
-        onChanged: (i) => _edit(() => _photoMode = _PhotoMode.values[i]),
-      ),
+      if (_data.photos.isNotEmpty)
+        _OptionStepper(
+          fieldKey: 'sfondo-foto',
+          label: 'Foto',
+          labels: [for (final m in _PhotoMode.values) _photoLabel(m)],
+          index: _photoMode.index,
+          onChanged: (i) => _edit(() => _photoMode = _PhotoMode.values[i]),
+        ),
     ],
   );
 
   Widget _textBlock() => _BlockCard(
-    title: 'Testo e dati',
-    split: const [2, 1],
-    icon: Icons.title_rounded,
     children: [
-      _OptionStepper(
-        fieldKey: 'testo-posizione',
-        label: 'Titolo',
-        hint: _freeLayout ? null : 'Questa composizione ha una posizione fissa',
-        labels: [for (final p in _TitlePosition.values) _positionLabel(p)],
-        index: _titlePosition.index,
-        enabled: _freeLayout,
-        onChanged: (i) =>
-            _edit(() => _titlePosition = _TitlePosition.values[i]),
-      ),
-      _OptionStepper(
-        fieldKey: 'testo-badge',
-        label: 'Badge',
-        labels: const ['In Alto', 'In Basso'],
-        index: _badgePosition.index,
-        enabled: _freeLayout,
-        onChanged: (i) =>
-            _edit(() => _badgePosition = _BadgePosition.values[i]),
-      ),
+      if (_freeLayout)
+        _PositionChoices(
+          fieldKey: 'testo-posizione',
+          label: 'Titolo',
+          index: _titlePosition.index,
+          onChanged: (i) =>
+              _edit(() => _titlePosition = _TitlePosition.values[i]),
+        ),
+      if (_freeLayout)
+        _OptionStepper(
+          fieldKey: 'testo-badge',
+          label: 'Badge',
+          labels: const ['In Alto', 'In Basso'],
+          index: _badgePosition.index,
+          onChanged: (i) =>
+              _edit(() => _badgePosition = _BadgePosition.values[i]),
+        ),
       _Toggles(
-        label: 'Dati',
+        label: 'Elementi visibili',
         toggles: [
           ('Tipo', _showType, (v) => _edit(() => _showType = v)),
           if (_data.dateLabel != null)
@@ -545,9 +553,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     };
     final inks = ['Come Marchio', for (final i in _Ink.values) _inkLabel(i)];
     return _BlockCard(
-      title: 'Firma',
-      icon: Icons.verified_outlined,
-      split: const [3, 3],
       children: [
         _OptionStepper(
           fieldKey: 'firma-mostra',
@@ -566,54 +571,57 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
             if (i == 4) _brandLayout = _BrandLayout.logoAbove;
           }),
         ),
-        _OptionStepper(
-          fieldKey: 'firma-posizione',
-          label: 'Posizione',
-          labels: [for (final p in _TitlePosition.values) _positionLabel(p)],
-          index: _brandPosition.index,
-          enabled: _brandContent != _BrandContent.none,
-          onChanged: (i) =>
-              _edit(() => _brandPosition = _TitlePosition.values[i]),
-        ),
-        _OptionStepper(
-          fieldKey: 'firma-logo',
-          label: 'Logo',
-          labels: const ['Disco Pieno', 'Disco Invertito', 'Senza Disco'],
-          index: !_logoDisc ? 2 : _logoStyle.index,
-          enabled: hasLogo,
-          onChanged: (i) => _edit(() {
-            _logoDisc = i != 2;
-            if (i != 2) _logoStyle = _LogoStyle.values[i];
-          }),
-        ),
-        _OptionStepper(
-          fieldKey: 'firma-misura',
-          label: 'Misura Logo',
-          labels: const ['Piccolo', 'Medio', 'Grande'],
-          index: _logoSize.index,
-          enabled: hasLogo,
-          onChanged: (i) => _edit(() => _logoSize = _LogoSize.values[i]),
-        ),
-        _OptionStepper(
-          fieldKey: 'firma-colore-logo',
-          label: 'Colore Logo',
-          labels: inks,
-          leadingOf: (i) => i == 0 ? null : _InkDot(_Ink.values[i - 1]),
-          index: _logoInk == null ? 0 : _logoInk!.index + 1,
-          enabled: hasLogo,
-          onChanged: (i) =>
-              _edit(() => _logoInk = i == 0 ? null : _Ink.values[i - 1]),
-        ),
-        _OptionStepper(
-          fieldKey: 'firma-colore-nome',
-          label: 'Colore Nome',
-          labels: inks,
-          leadingOf: (i) => i == 0 ? null : _InkDot(_Ink.values[i - 1]),
-          index: _nameInk == null ? 0 : _nameInk!.index + 1,
-          enabled: hasName,
-          onChanged: (i) =>
-              _edit(() => _nameInk = i == 0 ? null : _Ink.values[i - 1]),
-        ),
+        if (_brandContent != _BrandContent.none)
+          _PositionChoices(
+            fieldKey: 'firma-posizione',
+            label: 'Posizione',
+            index: _brandPosition.index,
+            onChanged: (i) =>
+                _edit(() => _brandPosition = _TitlePosition.values[i]),
+          ),
+        if (hasLogo)
+          _OptionStepper(
+            fieldKey: 'firma-logo',
+            label: 'Logo',
+            labels: const ['Disco Pieno', 'Disco Invertito', 'Senza Disco'],
+            index: !_logoDisc ? 2 : _logoStyle.index,
+            onChanged: (i) => _edit(() {
+              _logoDisc = i != 2;
+              if (i != 2) _logoStyle = _LogoStyle.values[i];
+            }),
+          ),
+        if (hasLogo)
+          _OptionStepper(
+            fieldKey: 'firma-misura',
+            label: 'Misura Logo',
+            labels: const ['Piccolo', 'Medio', 'Grande'],
+            index: _logoSize.index,
+            onChanged: (i) => _edit(() => _logoSize = _LogoSize.values[i]),
+          ),
+        if (hasLogo)
+          _VisualChoices(
+            fieldKey: 'firma-colore-logo',
+            label: 'Colore Logo',
+            labels: inks,
+            preview: (i) => i == 0
+                ? const Icon(Icons.link, size: 18)
+                : _InkDot(_Ink.values[i - 1]),
+            index: _logoInk == null ? 0 : _logoInk!.index + 1,
+            onChanged: (i) =>
+                _edit(() => _logoInk = i == 0 ? null : _Ink.values[i - 1]),
+          ),
+        if (hasName)
+          _VisualChoices(
+            fieldKey: 'firma-colore-nome',
+            label: 'Colore Nome',
+            labels: inks,
+            preview: (i) => i == 0
+                ? const Icon(Icons.link, size: 18)
+                : _InkDot(_Ink.values[i - 1]),
+            index: _nameInk == null ? 0 : _nameInk!.index + 1,
+            onChanged: (i) =>
+                _edit(() => _nameInk = i == 0 ? null : _Ink.values[i - 1]),
+          ),
       ],
     );
   }
@@ -628,12 +636,10 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         '${shareComposerLabel(context, 'Arte')} · ${area.displayName(context.strings)}',
     ];
     return _BlockCard(
-      title: 'Watermark',
-      icon: Icons.filter_vintage_outlined,
       children: [
         _OptionStepper(
           fieldKey: 'watermark-tipo',
-          label: 'Tipo',
+          label: 'Filigrana',
           labels: kinds,
           index: _watermark == _Watermark.area
               ? _Watermark.area.index + _watermarkArea
@@ -647,27 +653,29 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
             }
           }),
         ),
-        _OptionStepper(
-          fieldKey: 'watermark-misura',
-          label: 'Misura',
-          labels: [
-            for (final s in _WatermarkSize.values) _watermarkSizeLabel(s),
-          ],
-          index: _watermarkSize.index,
-          enabled: on,
-          onChanged: (i) =>
-              _edit(() => _watermarkSize = _WatermarkSize.values[i]),
-        ),
-        _OptionStepper(
-          fieldKey: 'watermark-colore',
-          label: 'Colore',
-          labels: ['Come Marchio', for (final i in _Ink.values) _inkLabel(i)],
-          leadingOf: (i) => i == 0 ? null : _InkDot(_Ink.values[i - 1]),
-          index: _watermarkInk == null ? 0 : _watermarkInk!.index + 1,
-          enabled: on,
-          onChanged: (i) =>
-              _edit(() => _watermarkInk = i == 0 ? null : _Ink.values[i - 1]),
-        ),
+        if (on)
+          _OptionStepper(
+            fieldKey: 'watermark-misura',
+            label: 'Misura',
+            labels: [
+              for (final s in _WatermarkSize.values) _watermarkSizeLabel(s),
+            ],
+            index: _watermarkSize.index,
+            onChanged: (i) =>
+                _edit(() => _watermarkSize = _WatermarkSize.values[i]),
+          ),
+        if (on)
+          _VisualChoices(
+            fieldKey: 'watermark-colore',
+            label: 'Colore',
+            labels: ['Come Marchio', for (final i in _Ink.values) _inkLabel(i)],
+            preview: (i) => i == 0
+                ? const Icon(Icons.link, size: 18)
+                : _InkDot(_Ink.values[i - 1]),
+            index: _watermarkInk == null ? 0 : _watermarkInk!.index + 1,
+            onChanged: (i) =>
+                _edit(() => _watermarkInk = i == 0 ? null : _Ink.values[i - 1]),
+          ),
       ],
     );
   }
@@ -688,13 +696,14 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
             const gap = 16.0;
             final gutter = wide ? 20.0 : 12.0;
             final preview = _PreviewPane(
+              key: const ValueKey('share-preview'),
               format: _format,
               captureKey: _captureKey,
               padding: 0,
               specimen: _specimen(),
             );
             const categories = [
-              ('Stile', Icons.palette_outlined),
+              ('Aspetto', Icons.palette_outlined),
               ('Contenuto', Icons.title_rounded),
               ('Sfondo', Icons.gradient_rounded),
               ('Firma', Icons.verified_outlined),
@@ -947,98 +956,32 @@ String _positionLabel(_TitlePosition value) => switch (value) {
 
 // ----- control widgets -----
 
-/// Options share a regular rhythm; extra columns stack on narrow screens.
-const _slotHeight = 54.0;
-const _slotGap = 8.0;
-const _columnWidth = 196.0;
-const _blockPadding = EdgeInsets.fromLTRB(12, 10, 12, 12);
-
-/// A titled group of options that belong together. [split] says how many of
-/// the [children] go in each column (default: all in one column of three).
+/// A group of related controls, separated without repeating category titles.
 class _BlockCard extends StatelessWidget {
-  const _BlockCard({
-    required this.title,
-    required this.icon,
-    required this.children,
-    this.split = const [3],
-  });
-  final String title;
-  final IconData icon;
+  const _BlockCard({required this.children});
   final List<Widget> children;
-  final List<int> split;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final columns = <Widget>[];
-    var next = 0;
-    for (final count in split) {
-      final items = children.sublist(next, next + count);
-      next += count;
-      columns.add(
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (var i = 0; i < items.length; i++) ...[
-              if (i > 0) const SizedBox(height: _slotGap),
-              items[i],
-            ],
-          ],
-        ),
-      );
-    }
     return Container(
-      padding: _blockPadding,
-      decoration: panelDecoration(colors),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: colors.nightBorder)),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(
-            height: 18,
-            child: Row(
-              children: [
-                Icon(icon, size: 15, color: colors.gold),
-                const SizedBox(width: 6),
-                Text(
-                  shareComposerLabel(context, title).toUpperCase(),
-                  style: context.typography.compactSectionLabel,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              const spacing = 16.0;
-              final sideBySide =
-                  constraints.maxWidth >=
-                  columns.length * _columnWidth +
-                      (columns.length - 1) * spacing;
-              final width = sideBySide
-                  ? (constraints.maxWidth - (columns.length - 1) * spacing) /
-                        columns.length
-                  : constraints.maxWidth;
-              return Wrap(
-                spacing: spacing,
-                runSpacing: _slotGap,
-                children: [
-                  for (final column in columns)
-                    SizedBox(width: width, child: column),
-                ],
-              );
-            },
-          ),
+          for (final child in children)
+            Padding(padding: const EdgeInsets.only(bottom: 8), child: child),
         ],
       ),
     );
   }
 }
 
-/// One option: its name above, and below it the current value between two
-/// arrows that step through the choices (wrapping around). Tapping the value
-/// opens the full list.
+/// A compact label and value. Composition also supports quick stepping.
 class _OptionStepper extends StatelessWidget {
   const _OptionStepper({
     required this.fieldKey,
@@ -1046,10 +989,6 @@ class _OptionStepper extends StatelessWidget {
     required this.labels,
     required this.index,
     required this.onChanged,
-    this.leadingOf,
-    this.enabled = true,
-    this.hint,
-    this.placeholder,
   });
 
   /// Stable id, used to key the arrows (tests, semantics).
@@ -1058,14 +997,6 @@ class _OptionStepper extends StatelessWidget {
   final List<String> labels;
   final int index;
   final ValueChanged<int> onChanged;
-  final Widget? Function(int index)? leadingOf;
-  final bool enabled;
-
-  /// Explains the option (tooltip on the label), or why it is unavailable.
-  final String? hint;
-
-  /// Shown instead of the value, e.g. "Personalizzato".
-  final String? placeholder;
 
   void _step(int delta) =>
       onChanged((index + delta + labels.length) % labels.length);
@@ -1079,120 +1010,246 @@ class _OptionStepper extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       style: context.typography.supporting.copyWith(fontSize: 12),
     );
-    return Opacity(
-      opacity: enabled ? 1 : .4,
-      child: IgnorePointer(
-        ignoring: !enabled,
-        child: SizedBox(
-          height: _slotHeight,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                height: 16,
-                child: hint == null
-                    ? labelText
-                    : Tooltip(
-                        message: shareComposerLabel(context, hint!),
-                        child: labelText,
-                      ),
-              ),
-              const SizedBox(height: 4),
-              SizedBox(
-                height: 34,
-                child: Row(
-                  children: [
-                    _ArrowButton(
-                      key: ValueKey('$fieldKey-prev'),
-                      icon: Icons.chevron_left_rounded,
-                      tooltip: shareComposerLabel(context, 'Precedente'),
-                      onTap: () => _step(-1),
+    return SizedBox(
+      height: 48,
+      child: Row(
+        children: [
+          Expanded(flex: 4, child: labelText),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 7,
+            child: Row(
+              children: [
+                if (fieldKey == 'scheda-composizione')
+                  _ArrowButton(
+                    key: ValueKey('$fieldKey-prev'),
+                    icon: Icons.chevron_left_rounded,
+                    tooltip: shareComposerLabel(context, 'Precedente'),
+                    onTap: () => _step(-1),
+                  ),
+                Expanded(
+                  child: PopupMenuButton<int>(
+                    key: ValueKey('$fieldKey-menu'),
+                    tooltip: shareComposerLabel(context, label),
+                    initialValue: index,
+                    onSelected: onChanged,
+                    color: colors.nightPanel,
+                    surfaceTintColor: Colors.transparent,
+                    elevation: 8,
+                    position: PopupMenuPosition.under,
+                    constraints: const BoxConstraints(minWidth: 170),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(kRadiusField),
+                      side: BorderSide(color: colors.nightBorder),
                     ),
-                    Expanded(
-                      child: PopupMenuButton<int>(
-                        key: ValueKey('$fieldKey-menu'),
-                        tooltip: shareComposerLabel(context, label),
-                        initialValue: index,
-                        onSelected: onChanged,
-                        color: colors.nightPanel,
-                        surfaceTintColor: Colors.transparent,
-                        elevation: 8,
-                        position: PopupMenuPosition.under,
-                        constraints: const BoxConstraints(minWidth: 170),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(kRadiusField),
-                          side: BorderSide(color: colors.nightBorder),
-                        ),
-                        itemBuilder: (context) => [
-                          for (var i = 0; i < labels.length; i++)
-                            PopupMenuItem<int>(
-                              value: i,
-                              height: 36,
-                              child: _ValueRow(
-                                leading: leadingOf?.call(i),
-                                text: shareComposerLabel(context, labels[i]),
-                                selected: i == index && placeholder == null,
-                                trailingCheck: true,
-                              ),
-                            ),
-                        ],
-                        child: Container(
-                          height: 34,
-                          padding: const EdgeInsets.only(left: 10, right: 4),
-                          decoration: selectableDecoration(
-                            colors,
-                            selected: false,
+                    itemBuilder: (context) => [
+                      for (var i = 0; i < labels.length; i++)
+                        PopupMenuItem<int>(
+                          value: i,
+                          height: 48,
+                          child: _ValueRow(
+                            text: shareComposerLabel(context, labels[i]),
+                            selected: i == index,
+                            trailingCheck: true,
                           ),
-                          child: Row(
+                        ),
+                    ],
+                    child: Container(
+                      height: 44,
+                      padding: const EdgeInsets.only(left: 10, right: 4),
+                      decoration: selectableDecoration(colors, selected: false),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _ValueRow(
+                              text: shareComposerLabel(context, labels[index]),
+                              selected: false,
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_drop_down_rounded,
+                            size: 20,
+                            color: colors.muted,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                if (fieldKey == 'scheda-composizione')
+                  _ArrowButton(
+                    key: ValueKey('$fieldKey-next'),
+                    icon: Icons.chevron_right_rounded,
+                    tooltip: shareComposerLabel(context, 'Successivo'),
+                    onTap: () => _step(1),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Direct visual choices with accessible names and a persistent selected label.
+class _VisualChoices extends StatelessWidget {
+  const _VisualChoices({
+    required this.fieldKey,
+    required this.label,
+    required this.labels,
+    required this.index,
+    required this.preview,
+    required this.onChanged,
+    this.columns = 6,
+    this.showLabels = false,
+    this.showHeader = true,
+    this.placeholder,
+  });
+  final String fieldKey;
+  final String label;
+  final List<String> labels;
+  final int index;
+  final Widget Function(int) preview;
+  final ValueChanged<int> onChanged;
+  final int columns;
+  final bool showLabels;
+  final bool showHeader;
+  final String? placeholder;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      if (showHeader)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Text(
+            '${shareComposerLabel(context, label)} · ${shareComposerLabel(context, placeholder ?? labels[index])}',
+            style: context.typography.supporting.copyWith(fontSize: 12),
+          ),
+        ),
+      LayoutBuilder(
+        builder: (context, constraints) {
+          final count = columns.clamp(
+            1,
+            (constraints.maxWidth / 48).floor().clamp(1, columns),
+          );
+          final width = (constraints.maxWidth - (count - 1) * 6) / count;
+          return Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (var i = 0; i < labels.length; i++)
+                Semantics(
+                  button: true,
+                  selected: i == index && placeholder == null,
+                  label: shareComposerLabel(context, labels[i]),
+                  child: Tooltip(
+                    message: shareComposerLabel(context, labels[i]),
+                    child: InkWell(
+                      key: ValueKey('$fieldKey-$i'),
+                      onTap: () => onChanged(i),
+                      borderRadius: BorderRadius.circular(kRadiusField),
+                      child: Container(
+                        width: width,
+                        height: showLabels ? 72 : 44,
+                        decoration: selectableDecoration(
+                          context.colors,
+                          selected: i == index && placeholder == null,
+                        ),
+                        child: ExcludeSemantics(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Expanded(
-                                child: _ValueRow(
-                                  leading: placeholder != null
-                                      ? null
-                                      : leadingOf?.call(index),
-                                  text: shareComposerLabel(
-                                    context,
-                                    placeholder ?? labels[index],
-                                  ),
-                                  selected: false,
+                              SizedBox(
+                                height: 26,
+                                child: Center(child: preview(i)),
+                              ),
+                              if (showLabels) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  shareComposerLabel(context, labels[i]),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: context.typography.controlLabel
+                                      .copyWith(fontSize: 11),
                                 ),
-                              ),
-                              Icon(
-                                Icons.arrow_drop_down_rounded,
-                                size: 20,
-                                color: colors.muted,
-                              ),
+                              ],
                             ],
                           ),
                         ),
                       ),
                     ),
-                    _ArrowButton(
-                      key: ValueKey('$fieldKey-next'),
-                      icon: Icons.chevron_right_rounded,
-                      tooltip: shareComposerLabel(context, 'Successivo'),
-                      onTap: () => _step(1),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
             ],
+          );
+        },
+      ),
+    ],
+  );
+}
+
+class _PositionChoices extends StatelessWidget {
+  const _PositionChoices({
+    required this.fieldKey,
+    required this.label,
+    required this.index,
+    required this.onChanged,
+  });
+  final String fieldKey;
+  final String label;
+  final int index;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Expanded(
+        child: Text(
+          '${shareComposerLabel(context, label)}\n${shareComposerLabel(context, _positionLabel(_TitlePosition.values[index]))}',
+          style: context.typography.supporting.copyWith(fontSize: 12),
+        ),
+      ),
+      SizedBox(
+        width: 144,
+        child: _VisualChoices(
+          fieldKey: fieldKey,
+          label: label,
+          labels: [for (final p in _TitlePosition.values) _positionLabel(p)],
+          index: index,
+          columns: 3,
+          showHeader: false,
+          onChanged: onChanged,
+          preview: (i) => Padding(
+            padding: const EdgeInsets.all(5),
+            child: Align(
+              alignment: Alignment(
+                (i % 3 - 1).toDouble(),
+                (i ~/ 3 - 1).toDouble(),
+              ),
+              child: Container(
+                width: 10,
+                height: 4,
+                color: context.colors.text,
+              ),
+            ),
           ),
         ),
       ),
-    );
-  }
+    ],
+  );
 }
 
 class _ValueRow extends StatelessWidget {
   const _ValueRow({
     required this.text,
     required this.selected,
-    this.leading,
     this.trailingCheck = false,
   });
   final String text;
-  final Widget? leading;
   final bool selected;
   final bool trailingCheck;
 
@@ -1201,7 +1258,6 @@ class _ValueRow extends StatelessWidget {
     final colors = context.colors;
     return Row(
       children: [
-        if (leading != null) ...[leading!, const SizedBox(width: 7)],
         Expanded(
           child: Text(
             text,
@@ -1240,15 +1296,15 @@ class _ArrowButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(kRadiusField),
       child: SizedBox(
-        width: 28,
-        height: 36,
+        width: 44,
+        height: 44,
         child: Icon(icon, size: 22, color: context.colors.muted),
       ),
     ),
   );
 }
 
-/// On/off chips for the data shown on the card.
+/// Explicit switches for the elements included in the shared image.
 class _Toggles extends StatelessWidget {
   const _Toggles({required this.label, required this.toggles});
   final String label;
@@ -1266,25 +1322,17 @@ class _Toggles extends StatelessWidget {
         ),
       ),
       const SizedBox(height: 4),
-      // Two chips per row, equal width, so the grid is the same size
-      // whatever the labels say.
-      for (var i = 0; i < toggles.length; i += 2) ...[
-        if (i > 0) const SizedBox(height: 6),
-        Row(
-          children: [
-            for (var j = i; j < i + 2 && j < toggles.length; j++) ...[
-              if (j > i) const SizedBox(width: 6),
-              Expanded(
-                child: _ToggleChip(
-                  label: shareComposerLabel(context, toggles[j].$1),
-                  selected: toggles[j].$2,
-                  onTap: () => toggles[j].$3(!toggles[j].$2),
-                ),
-              ),
-            ],
-          ],
+      for (final toggle in toggles)
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+          title: Text(
+            shareComposerLabel(context, toggle.$1),
+            style: context.typography.controlLabel,
+          ),
+          value: toggle.$2,
+          onChanged: toggle.$3,
         ),
-      ],
     ],
   );
 }
@@ -1339,49 +1387,4 @@ class _PaletteDot extends StatelessWidget {
       ),
     ),
   );
-}
-
-/// A small on/off chip; flat when selected (gold ring only), same size in
-/// both states.
-class _ToggleChip extends StatelessWidget {
-  const _ToggleChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: label,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(kRadiusField),
-        child: Container(
-          height: 32,
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          decoration: selectableDecoration(colors, selected: selected),
-          child: ExcludeSemantics(
-            child: Text(
-              shareComposerLabel(context, label),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.typography.controlLabel.copyWith(
-                fontSize: 12,
-                color: selected ? colors.text : colors.muted,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
