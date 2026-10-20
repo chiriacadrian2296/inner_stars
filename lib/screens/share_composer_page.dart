@@ -986,17 +986,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: TextButton.styleFrom(
-                          foregroundColor: colors.muted,
-                        ),
-                        child: AppButtonLabel(
-                          context.strings.cancel,
-                          color: colors.muted,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
                       ElevatedButton(
                         onPressed: _sharing ? null : _share,
                         child: AppButtonLabel(context.strings.shareNowAction),
