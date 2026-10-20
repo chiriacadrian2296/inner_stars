@@ -283,13 +283,13 @@ void main() {
       expect(choiceSelected(tester, 'stile-preset-1'), isTrue);
       expect(
         find.byKey(const ValueKey('share-selected-stile-preset-1')),
-        findsOneWidget,
+        findsNothing,
       );
       expect(tester.takeException(), isNull);
     },
   );
   testWidgets(
-    'signature choices use the same logo and typography as the post',
+    'signature choices keep the post geometry and typography with neutral ink',
     (tester) async {
       await tester.pumpWidget(
         app(
@@ -330,7 +330,10 @@ void main() {
           final sample = logo(choice);
           expect(sample.width, actual.width);
           expect(sample.height, actual.height);
-          expect(sample.colorFilter, actual.colorFilter);
+          expect(
+            sample.colorFilter,
+            ColorFilter.mode(AppColors.dark.muted, BlendMode.srcIn),
+          );
           if (arrangement == 0) {
             expect(
               find.descendant(of: preview, matching: find.text('Inner Stars')),
@@ -353,7 +356,8 @@ void main() {
                       matching: find.text('Inner Stars'),
                     ),
                   )
-                  .style,
+                  .style!
+                  .copyWith(color: AppColors.dark.muted),
             );
           }
         }
@@ -388,7 +392,15 @@ void main() {
         final caption = find.byKey(ValueKey('$field-caption-0'));
         final captionStyle = tester.widget<Text>(caption).style!;
         expect(label.style!.fontSize, greaterThan(captionStyle.fontSize!));
-        expect(captionStyle.color, AppColors.dark.muted);
+        final selected = choiceSelected(tester, '$field-0');
+        expect(
+          captionStyle.color,
+          selected ? AppColors.dark.gold : AppColors.dark.muted,
+        );
+        expect(
+          captionStyle.fontWeight,
+          selected ? FontWeight.w700 : FontWeight.w400,
+        );
         expect(
           tester.getTopLeft(caption).dy,
           greaterThanOrEqualTo(
@@ -623,6 +635,24 @@ void main() {
                   as AssetImage)
               .assetName;
       expect(asset(), kAreaHeroArt[LifeArea.physical]!.coverAsset);
+      expect(
+        tester
+            .widget<Image>(
+              find.descendant(of: artwork, matching: find.byType(Image)),
+            )
+            .color,
+        AppColors.dark.muted,
+      );
+      final logoSample = tester.widget<SvgPicture>(
+        find.descendant(
+          of: find.byKey(const ValueKey('watermark-tipo-1')),
+          matching: find.byType(SvgPicture),
+        ),
+      );
+      expect(
+        logoSample.colorFilter,
+        ColorFilter.mode(AppColors.dark.muted, BlendMode.srcIn),
+      );
       expect(find.byKey(const ValueKey('watermark-tipo-3')), findsNothing);
       await scrollToSection(tester, 0);
       await tester.pump();
@@ -643,7 +673,7 @@ void main() {
   );
 
   testWidgets(
-    'existing palettes keep title and branding readable and signature samples accurate',
+    'existing palettes keep post branding readable and signature samples neutral',
     (tester) async {
       tester.view.physicalSize = const Size(1440, 1000);
       tester.view.devicePixelRatio = 1;
@@ -728,7 +758,7 @@ void main() {
                 matching: find.text('Inner Stars'),
               ),
             );
-            expect(sample.style!.color, name);
+            expect(sample.style!.color, AppColors.dark.muted);
             final logos = tester
                 .widgetList<SvgPicture>(
                   find.descendant(

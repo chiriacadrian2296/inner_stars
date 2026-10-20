@@ -73,7 +73,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     return match < 0 ? null : match;
   }
 
-  _Ink get _brandInk => _elementInkFor(_composition);
   bool _compactPreview = false;
 
   // Background.
@@ -606,18 +605,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         columns: 3,
         previewHeight: 44,
         preview: (i) {
-          final inks = _ShareInks(
-            context.colors,
-            _palettes[_palette],
-            photoBackground:
-                _effectiveSharePhotoMode(
-                  _photoMode,
-                  _data,
-                  _layoutMap[_subject]![_composition].$1,
-                ) ==
-                _PhotoMode.background,
-          );
-          final color = inks.resolve(_brandInk);
+          final color = context.colors.muted;
           return FittedBox(
             fit: BoxFit.scaleDown,
             child: _AppBrand(
@@ -628,9 +616,9 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
               logoInk: color,
               logoSize: 16,
               layout: i == 2 ? _BrandLayout.logoAbove : _BrandLayout.logoLeft,
-              foreground: inks.foreground,
-              secondary: inks.secondary,
-              accent: inks.accent,
+              foreground: color,
+              secondary: color,
+              accent: color,
               compact: _format == _ShareFormat.landscape,
             ),
           );
@@ -671,7 +659,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
               width: 36,
               height: 36,
               colorFilter: ColorFilter.mode(
-                context.colors.gold,
+                context.colors.muted,
                 BlendMode.srcIn,
               ),
             ),
@@ -680,7 +668,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
               width: 36,
               height: 36,
               fit: BoxFit.contain,
-              color: context.colors.gold,
+              color: context.colors.muted,
               colorBlendMode: BlendMode.srcIn,
             ),
           },
@@ -1165,7 +1153,12 @@ class _VisualChoices extends StatelessWidget {
       textAlign: TextAlign.center,
       maxLines: singleRow ? 1 : 2,
       overflow: TextOverflow.ellipsis,
-      style: context.typography.supporting.copyWith(fontSize: 11, height: 1.2),
+      style: context.typography.supporting.copyWith(
+        fontSize: 11,
+        height: 1.2,
+        color: index == this.index ? context.colors.gold : context.colors.muted,
+        fontWeight: index == this.index ? FontWeight.w700 : FontWeight.w400,
+      ),
     );
     return singleRow ? FittedBox(fit: BoxFit.scaleDown, child: text) : text;
   }
@@ -1213,51 +1206,17 @@ class _VisualChoices extends StatelessWidget {
                       child: ExcludeSemantics(
                         child: Column(
                           children: [
-                            Container(
+                            SizedBox(
                               key: ValueKey('$fieldKey-tile-$i'),
                               height: (previewHeight + 12).clamp(
                                 44.0,
                                 double.infinity,
                               ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(
-                                  kRadiusField,
+                              child: Center(
+                                child: SizedBox(
+                                  height: previewHeight,
+                                  child: Center(child: preview(i)),
                                 ),
-                                border: Border.all(
-                                  color: i == index
-                                      ? context.colors.gold
-                                      : Colors.transparent,
-                                  width: kBorderWidth,
-                                ),
-                              ),
-                              child: Stack(
-                                children: [
-                                  Center(
-                                    child: SizedBox(
-                                      height: previewHeight,
-                                      child: Center(child: preview(i)),
-                                    ),
-                                  ),
-                                  if (i == index)
-                                    Positioned(
-                                      key: ValueKey(
-                                        'share-selected-$fieldKey-$i',
-                                      ),
-                                      top: 4,
-                                      right: 4,
-                                      child: DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          color: context.colors.nightPanel,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          Icons.check_circle_rounded,
-                                          size: 14,
-                                          color: context.colors.gold,
-                                        ),
-                                      ),
-                                    ),
-                                ],
                               ),
                             ),
                             const SizedBox(height: 5),

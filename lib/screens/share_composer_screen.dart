@@ -1063,7 +1063,7 @@ Alignment _alignmentFor(_TitlePosition position) => switch (position) {
   _TitlePosition.bottomRight => Alignment.bottomRight,
 };
 
-/// Shared by the exported post and signature choices, so their inks match.
+/// Readable inks for the exported composition.
 class _ShareInks {
   _ShareInks(this.colors, this.palette, {this.photoBackground = false});
   final AppColors colors;
