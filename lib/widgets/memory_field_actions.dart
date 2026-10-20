@@ -53,17 +53,14 @@ class PlusBadgeIcon extends StatelessWidget {
 
 /// A discreet caption centered under a photo zone.
 class MemoryCaption extends StatelessWidget {
-  const MemoryCaption(this.text, {super.key, this.topPadding = 8});
+  const MemoryCaption(this.text, {super.key});
 
   final String text;
-
-  /// Space above the caption.
-  final double topPadding;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(top: topPadding),
+      padding: const EdgeInsets.only(top: 8),
       child: Center(
         child: Text(
           text,

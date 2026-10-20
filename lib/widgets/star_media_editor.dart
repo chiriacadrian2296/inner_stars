@@ -209,15 +209,30 @@ class StarMediaEditor extends StatelessWidget {
       )
       .firstOrNull;
 
+  /// The least height the half-width column needs: four name rows (the voice
+  /// note and the three links), each with its gap and a 48 px row between two
+  /// small pads, plus the voice note's limit line and a little air between the
+  /// voice note and the links. The form makes the photo at least this tall
+  /// less its own name row, so nothing overflows on a narrow phone.
+  static const double sideColumnMinHeight =
+      4 *
+          (kFieldNameRowHeight +
+              kFieldLabelGap +
+              _kTileHeight +
+              2 * _kSideRowPad) +
+      25 +
+      12;
+
   Widget _sideColumn(BuildContext context) {
     assert(gridHeight != null, 'the side column needs the height to fill');
     final strings = context.strings;
     final colors = context.colors;
     final voice = media.where((m) => m.kind == StarMediaKind.voice).firstOrNull;
-    // The same rows as the full-width form, with the middle (the waveform and
-    // the link placeholder) shortened by a smaller gap beside the icons.
     const gap = _kSideGap;
     const kinds = [StarLinkKind.song, StarLinkKind.place, StarLinkKind.site];
+    // The voice note on top and the three links at the bottom, level with the
+    // photo's bottom edge; whatever height is left over sits between the two,
+    // while the three links stay close together.
     return SizedBox(
       height: gridHeight,
       child: Column(
@@ -233,22 +248,18 @@ class StarMediaEditor extends StatelessWidget {
                 onReset: () => _reset(StarMediaKind.voice),
                 canReset: voice != null,
               ),
-              const SizedBox(height: _kSideLabelGap),
+              const SizedBox(height: kFieldLabelGap),
               if (voice == null)
                 _KindPlaceholder(
                   kind: StarMediaKind.voice,
                   gap: gap,
-                  height: _kSideVoiceHeight,
                   vPad: _kSideRowPad,
-                  vertical: _kSideInnerPad,
                   onTap: () => _addVoice(context),
                 )
               else
                 _RemovableRow(
                   key: ValueKey(voice.id),
-                  minHeight: _kSideVoiceHeight,
                   vPad: _kSideRowPad,
-                  onRemove: () => _remove(voice),
                   child: VoiceNotePlayer(
                     media: voice,
                     framed: false,
@@ -257,32 +268,34 @@ class StarMediaEditor extends StatelessWidget {
                     timeSize: 12,
                     timeInset: 5,
                     gap: gap,
-                    verticalPadding: _kSideInnerPad,
                     contentColor: Colors.white,
                     timeColor: colors.gold,
                   ),
                 ),
               MemoryCaption(
                 strings.voiceLimitLabel(formatVoiceDuration(kMaxVoiceNote)),
-                topPadding: 4,
               ),
             ],
           ),
-          // Every link has its own name row and reset, the same on every phone.
-          for (final kind in kinds)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppFieldLabel(
-                  _linkKindName(strings, kind),
-                  requirement: FieldRequirement.optional,
-                  onReset: () => _resetLinkKind(kind),
-                  canReset: _linkOf(kind) != null,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final kind in kinds)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppFieldLabel(
+                      _linkKindName(strings, kind),
+                      requirement: FieldRequirement.optional,
+                      onReset: () => _resetLinkKind(kind),
+                      canReset: _linkOf(kind) != null,
+                    ),
+                    const SizedBox(height: kFieldLabelGap),
+                    _linkRow(context, kind),
+                  ],
                 ),
-                const SizedBox(height: _kSideLabelGap),
-                _linkRow(context, kind),
-              ],
-            ),
+            ],
+          ),
         ],
       ),
     );
@@ -308,9 +321,7 @@ class StarMediaEditor extends StatelessWidget {
     if (_linkOf(kind) case final item?) {
       return _RemovableRow(
         key: ValueKey(item.id),
-        minHeight: _kSideLinkHeight,
         vPad: _kSideRowPad,
-        onRemove: () => _remove(item),
         onTap: () => openExtraLink(context, item),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -318,7 +329,6 @@ class StarMediaEditor extends StatelessWidget {
             icon: linkKindIcon(kind),
             text: linkDisplayText(item),
             gap: _kSideGap,
-            slot: _kSideSlot,
           ),
         ),
       );
@@ -327,10 +337,7 @@ class StarMediaEditor extends StatelessWidget {
       kind: StarMediaKind.link,
       linkKind: kind,
       gap: _kSideGap,
-      height: _kSideLinkHeight,
       vPad: _kSideRowPad,
-      vertical: _kSideInnerPad,
-      slot: _kSideSlot,
       onTap: () => _addLink(context, kind),
     );
   }
@@ -567,9 +574,8 @@ class _RemovableRow extends StatelessWidget {
   const _RemovableRow({
     super.key,
     required this.child,
-    required this.onRemove,
+    this.onRemove,
     this.onTap,
-    this.minHeight = _kTileHeight,
     this.vPad = 4,
   });
 
@@ -577,11 +583,13 @@ class _RemovableRow extends StatelessWidget {
 
   /// Space above and below the tile.
   final double vPad;
-  final double minHeight;
 
   /// Tapping anywhere on the tile (but its remove badge).
   final VoidCallback? onTap;
-  final VoidCallback onRemove;
+
+  /// Without it the tile carries no remove badge (the field's reset icon
+  /// removes it).
+  final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -597,23 +605,24 @@ class _RemovableRow extends StatelessWidget {
             child: DecoratedBox(
               decoration: _tileBody(colors),
               child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: minHeight),
+                constraints: const BoxConstraints(minHeight: _kTileHeight),
                 child: Center(child: child),
               ),
             ),
           ),
-          Positioned(
-            top: -6,
-            right: -6,
-            child: Tooltip(
-              message: context.strings.removeExtraTooltip,
-              child: InkWell(
-                onTap: onRemove,
-                customBorder: const CircleBorder(),
-                child: _MediaTileGrid._closeBadge(colors),
+          if (onRemove case final remove?)
+            Positioned(
+              top: -6,
+              right: -6,
+              child: Tooltip(
+                message: context.strings.removeExtraTooltip,
+                child: InkWell(
+                  onTap: remove,
+                  customBorder: const CircleBorder(),
+                  child: _MediaTileGrid._closeBadge(colors),
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -621,12 +630,7 @@ class _RemovableRow extends StatelessWidget {
 }
 
 class _LeadingText extends StatelessWidget {
-  const _LeadingText({
-    required this.icon,
-    required this.text,
-    this.gap = 8,
-    this.slot = 26,
-  });
+  const _LeadingText({required this.icon, required this.text, this.gap = 8});
 
   final IconData icon;
   final String text;
@@ -634,17 +638,14 @@ class _LeadingText extends StatelessWidget {
   /// Space between the icons and the text.
   final double gap;
 
-  /// Size of the square each icon is centered in.
-  final double slot;
-
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Row(
       children: [
         SizedBox(
-          width: slot,
-          height: slot,
+          width: 26,
+          height: 26,
           child: Center(child: Icon(icon, color: colors.gold, size: 16)),
         ),
         SizedBox(width: gap),
@@ -661,8 +662,8 @@ class _LeadingText extends StatelessWidget {
         // Same slot as the icon on the left, so the text stays centered on the
         // whole tile.
         SizedBox(
-          width: slot,
-          height: slot,
+          width: 26,
+          height: 26,
           child: Center(
             child: Icon(
               Icons.open_in_new_rounded,
@@ -963,10 +964,7 @@ class _KindPlaceholder extends StatelessWidget {
     required this.onTap,
     this.linkKind,
     this.gap = 50,
-    this.height = _kTileHeight,
     this.vPad = 4,
-    this.vertical = 6,
-    this.slot = 26,
   });
 
   final StarMediaKind kind;
@@ -977,13 +975,7 @@ class _KindPlaceholder extends StatelessWidget {
   /// Space either side of the middle (the bars or the line); shorter in the
   /// half-width column, which makes the middle shorter.
   final double gap;
-  final double height;
   final double vPad;
-
-  /// Space above and below the content inside the tile, and the size of the
-  /// icon slots of a link placeholder.
-  final double vertical;
-  final double slot;
 
   /// Tapping the stand-in adds one: the placeholder is the add button.
   final VoidCallback onTap;
@@ -996,9 +988,9 @@ class _KindPlaceholder extends StatelessWidget {
     final Widget shape = switch (kind) {
       StarMediaKind.voice => Container(
         decoration: fill,
-        constraints: BoxConstraints(minHeight: height),
+        constraints: const BoxConstraints(minHeight: _kTileHeight),
         alignment: Alignment.center,
-        padding: EdgeInsets.symmetric(horizontal: 10, vertical: vertical),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Row(
           children: [
             // Same 26 px slot as the play badge of a real voice note, so the
@@ -1055,14 +1047,14 @@ class _KindPlaceholder extends StatelessWidget {
       ),
       _ => Container(
         decoration: fill,
-        constraints: BoxConstraints(minHeight: height),
+        constraints: const BoxConstraints(minHeight: _kTileHeight),
         alignment: Alignment.center,
-        padding: EdgeInsets.symmetric(horizontal: 10, vertical: vertical),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Row(
           children: [
             SizedBox(
-              width: slot,
-              height: slot,
+              width: 26,
+              height: 26,
               child: Center(
                 child: Icon(
                   linkKind == null
@@ -1086,8 +1078,8 @@ class _KindPlaceholder extends StatelessWidget {
             ),
             SizedBox(width: gap),
             SizedBox(
-              width: slot,
-              height: slot,
+              width: 26,
+              height: 26,
               child: Center(
                 child: Icon(Icons.open_in_new_rounded, color: ghost, size: 16),
               ),
@@ -1113,19 +1105,11 @@ class _KindPlaceholder extends StatelessWidget {
   }
 }
 
-/// In the half-width column beside the photo: the link rows are a little
-/// shorter, the rows sit closer, and the gap beside each row's icons is small,
-/// which is what shortens the waveform and the link placeholder.
-const double _kSideVoiceHeight = 36;
-const double _kSideLinkHeight = 32;
-const double _kSideRowPad = 1;
+/// In the half-width column beside the photo the rows keep the full-width
+/// look (all the same height, 48), with the middle shortened by a smaller gap
+/// beside the icons, and a little less air above and below each row.
+const double _kSideRowPad = 2;
 const double _kSideGap = 10;
-
-/// The icon slots beside a link row (26 in the full-width rows), the space
-/// between a name row and its field, and inside a row above and below it.
-const double _kSideSlot = 22;
-const double _kSideLabelGap = 4;
-const double _kSideInnerPad = 3;
 
 /// As tall as the single-line fields above (a picker field: 12 of padding
 /// either side of a ~21 px line of text, plus its 1.5 px border each side).

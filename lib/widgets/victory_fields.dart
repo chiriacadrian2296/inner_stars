@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../l10n/strings_scope.dart';
@@ -315,7 +317,15 @@ class VictoryDetailsSection extends StatelessWidget {
                           builder: (context, constraints) {
                             const gap = 12.0;
                             final half = (constraints.maxWidth - gap) / 2;
-                            final gridHeight = half * 16 / 9;
+                            // The photo at 9:16, or taller when the right
+                            // column needs more room than that (a narrow
+                            // phone).
+                            final gridHeight = math.max(
+                              half * 16 / 9,
+                              StarMediaEditor.sideColumnMinHeight -
+                                  kFieldNameRowHeight -
+                                  kFieldLabelGap,
+                            );
                             return Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -342,6 +352,7 @@ class VictoryDetailsSection extends StatelessWidget {
                                         photoPath: photoPath,
                                         onPick: onPickPhoto,
                                         onRemove: onRemovePhoto,
+                                        showRemove: false,
                                         compact: true,
                                         compactWidth: half,
                                         compactHeight: gridHeight,

@@ -105,9 +105,11 @@ Firebase, hosting, privacy e store (parte B), infine la rifinitura (parte C).
       righe della nota vocale e dei link sono di nuovo quelle a larghezza piena (icona,
       onda o riga, durata o icona di apertura, ognuno con la sua icona per canzone, posizione e
       sito), solo con la parte centrale accorciata (distanziatore 10 invece di 50): era la
-      causa degli overflow. Per far stare tutto nell’altezza della foto sul telefono più stretto
-      le righe sono più basse di prima (link 32, nota vocale 36, icone laterali 22, spazio tra
-      nome e riga 4). Il reset della nota vocale la toglie, quello dei link toglie tutti
+      causa degli overflow. Le righe sono tutte alte uguale (48, come prima), senza le X in alto a destra (bastano
+      i reset accanto ai nomi, anche per la foto); i tre link stanno vicini e l’aria in più sta tra
+      la nota vocale e i link. Se la colonna di destra ha bisogno di più altezza di quella della
+      foto a 9:16 (telefono stretto) la foto diventa un po’ più alta, invece di stringere le
+      righe. Il reset della nota vocale la toglie, quello dei link toglie tutti
       i link. Test aggiornati; da provare a mano sul telefono.
 - [x] Statistiche: riga centrata se non c'è luce; scroll fino al pannello fissato al cambio di livello.
 - [x] Application id `app.innerstars`.

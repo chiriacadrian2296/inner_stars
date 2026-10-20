@@ -60,6 +60,7 @@ class PhotoPicker extends StatelessWidget {
     required this.photoPath,
     required this.onPick,
     required this.onRemove,
+    this.showRemove = true,
     this.compact = false,
     this.compactWidth,
     this.compactHeight,
@@ -68,6 +69,10 @@ class PhotoPicker extends StatelessWidget {
   final String? photoPath;
   final VoidCallback onPick;
   final VoidCallback onRemove;
+
+  /// Whether the compact preview carries its own remove badge. The victory
+  /// details turn it off: the field's reset icon does the same job.
+  final bool showRemove;
 
   /// Draws the chosen photo's preview at half its usual size (the create
   /// form); the reader's quick sheet keeps the full one.
@@ -137,15 +142,16 @@ class PhotoPicker extends StatelessWidget {
                             ),
                           ),
                         ),
-                        Positioned(
-                          top: -6,
-                          right: -6,
-                          child: InkWell(
-                            onTap: onRemove,
-                            customBorder: const CircleBorder(),
-                            child: RemoveBadge(background: colors.nightPanel),
+                        if (showRemove)
+                          Positioned(
+                            top: -6,
+                            right: -6,
+                            child: InkWell(
+                              onTap: onRemove,
+                              customBorder: const CircleBorder(),
+                              child: RemoveBadge(background: colors.nightPanel),
+                            ),
                           ),
-                        ),
                       ],
                     ),
             ),
