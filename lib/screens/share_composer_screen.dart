@@ -395,13 +395,21 @@ class _ShareSpecimen extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   if (layout != _Layout.free)
-                    _layoutContent(
-                      _Look(
-                        foreground: foreground,
-                        secondary: secondary,
-                        accent: accent,
-                        compact: compact,
-                        title: titleColor,
+                    Padding(
+                      padding: EdgeInsets.only(
+                        top: brandPosition == _TitlePosition.topRight ? 40 : 0,
+                        bottom: brandPosition == _TitlePosition.topRight
+                            ? 0
+                            : 42,
+                      ),
+                      child: _layoutContent(
+                        _Look(
+                          foreground: foreground,
+                          secondary: secondary,
+                          accent: accent,
+                          compact: compact,
+                          title: titleColor,
+                        ),
                       ),
                     ),
                   if (layout == _Layout.free)
@@ -428,7 +436,7 @@ class _ShareSpecimen extends StatelessWidget {
                           : Alignment.bottomLeft,
                       child: Padding(
                         padding: EdgeInsets.only(
-                          top: badgePosition == _BadgePosition.top ? 28 : 0,
+                          top: badgePosition == _BadgePosition.top ? 44 : 0,
                           bottom: badgePosition == _BadgePosition.bottom
                               ? 28
                               : 0,
@@ -456,7 +464,7 @@ class _ShareSpecimen extends StatelessWidget {
                         ink: inkColor(nameInk),
                         logoInk: inkColor(logoInk),
                         logoSize: switch (logoSize) {
-                          _LogoSize.small => 22.0,
+                          _LogoSize.small => 16.0,
                           _LogoSize.medium => 30.0,
                           _LogoSize.large => 44.0,
                         },
@@ -871,8 +879,8 @@ class _AppBrand extends StatelessWidget {
   Widget build(BuildContext context) {
     final night = context.colors.night;
     final size = logoSize * (compact ? .8 : 1);
-    final logoColor = logoInk ?? accent;
-    final nameColor = ink ?? foreground.withValues(alpha: .75);
+    final logoColor = logoInk ?? foreground;
+    final nameColor = ink ?? foreground;
     final logo = !disc
         ? _BareLogo(size: size, color: logoColor)
         : switch (logoStyle) {

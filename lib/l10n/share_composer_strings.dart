@@ -16,6 +16,25 @@ String shareComposerLabel(BuildContext context, String label) {
 
 const _labels = <String, (String, String)>{
   'Aspetto': ('Appearance', 'Aspect'),
+  'Disposizione': ('Arrangement', 'Aranjare'),
+  'Scenica': ('Scenic', 'Scenică'),
+  'Colore elementi': ('Element color', 'Culoarea elementelor'),
+  'Gli stili pronti cambiano sfondo, colore condiviso e filigrana.': (
+    'Ready-made styles change the background, shared color and watermark.',
+    'Stilurile predefinite schimbă fundalul, culoarea comună și filigranul.',
+  ),
+  'Titolo, informazioni e posizioni sono definiti dalla composizione.': (
+    'Title, information and positions are defined by the composition.',
+    'Titlul, informațiile și pozițiile sunt definite de compoziție.',
+  ),
+  'Scegli come mostrare il logo e il nome di Inner Stars.': (
+    'Choose how to display the Inner Stars logo and name.',
+    'Alege cum să afișezi sigla și numele Inner Stars.',
+  ),
+  'Un solo colore per titolo, logo, nome e filigrana.': (
+    'One color for title, logo, name and watermark.',
+    'O singură culoare pentru titlu, siglă, nume și filigran.',
+  ),
   'Stili pronti': ('Ready-made styles', 'Stiluri predefinite'),
   'Dallo stile': ('From style', 'Din stil'),
   'Applica insieme sfondo, colori e firma. Composizione e formato restano invariati.':

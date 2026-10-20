@@ -28,26 +28,14 @@ class _StylePreset {
     this.label, {
     required this.gradient,
     required this.palette,
-    this.titleInk = _Ink.auto,
     this.brandInk = _Ink.auto,
     this.watermark = _Watermark.none,
-    this.watermarkSize = _WatermarkSize.medium,
-    this.brandContent = _BrandContent.name,
-    this.brandPosition = _TitlePosition.topRight,
-    this.brandLayout = _BrandLayout.logoLeft,
-    this.logoDisc = true,
   });
   final String label;
   final _GradientShape gradient;
   final int palette;
-  final _Ink titleInk;
   final _Ink brandInk;
   final _Watermark watermark;
-  final _WatermarkSize watermarkSize;
-  final _BrandContent brandContent;
-  final _TitlePosition brandPosition;
-  final _BrandLayout brandLayout;
-  final bool logoDisc;
 }
 
 const _stylePresets = [
@@ -56,49 +44,8 @@ const _stylePresets = [
     'Dorato',
     gradient: _GradientShape.vertical,
     palette: 3,
-    titleInk: _Ink.gold,
     brandInk: _Ink.gold,
     watermark: _Watermark.logo,
-    brandContent: _BrandContent.both,
-    brandPosition: _TitlePosition.bottomCenter,
-  ),
-  _StylePreset(
-    'Ardesia',
-    gradient: _GradientShape.diagonal,
-    palette: 1,
-    brandPosition: _TitlePosition.bottomCenter,
-  ),
-  _StylePreset(
-    'Intimo',
-    gradient: _GradientShape.radial,
-    palette: 2,
-    titleInk: _Ink.white,
-    brandInk: _Ink.white,
-    watermark: _Watermark.area,
-    watermarkSize: _WatermarkSize.large,
-    brandContent: _BrandContent.both,
-    brandLayout: _BrandLayout.logoAbove,
-    brandPosition: _TitlePosition.bottomCenter,
-  ),
-  _StylePreset(
-    'Essenziale',
-    gradient: _GradientShape.diagonal,
-    palette: 1,
-    titleInk: _Ink.white,
-    brandInk: _Ink.white,
-    watermark: _Watermark.logo,
-    watermarkSize: _WatermarkSize.large,
-    brandContent: _BrandContent.logo,
-    brandPosition: _TitlePosition.topCenter,
-    logoDisc: false,
-  ),
-  _StylePreset(
-    'Minimale',
-    gradient: _GradientShape.vertical,
-    palette: 0,
-    titleInk: _Ink.white,
-    brandInk: _Ink.gray,
-    brandPosition: _TitlePosition.bottomCenter,
   ),
 ];
 
@@ -122,7 +69,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
   // by hand.
   int? _style = 0;
   _Ink _brandInk = _Ink.auto;
-  _Ink _titleInk = _Ink.auto;
 
   // Background.
   _GradientShape _gradient = _GradientShape.halo;
@@ -130,25 +76,9 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
   bool _reverseColors = false;
   _PhotoMode _photoMode = _PhotoMode.none;
 
-  // Text and data.
-  _TitlePosition _titlePosition = _TitlePosition.bottomLeft;
-  _BadgePosition _badgePosition = _BadgePosition.top;
-  bool _showType = true;
-  bool _showDate = true;
-  bool _showArea = true;
-  bool _showProject = true;
-  bool _showDescription = true;
-  bool _showStats = true;
-
-  // Signature. A null ink follows the brand colour.
-  _BrandContent _brandContent = _BrandContent.name;
-  _LogoStyle _logoStyle = _LogoStyle.current;
-  bool _logoDisc = true;
+  // Signature colors are linked to the title and watermark.
+  _BrandContent _brandContent = _BrandContent.both;
   _BrandLayout _brandLayout = _BrandLayout.logoLeft;
-  _TitlePosition _brandPosition = _TitlePosition.topRight;
-  _Ink? _nameInk;
-  _Ink? _logoInk;
-  _LogoSize _logoSize = _LogoSize.medium;
 
   // Watermark.
   _Watermark _watermark = _Watermark.none;
@@ -158,7 +88,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       _watermark == _Watermark.area && _data.area == null
       ? _Watermark.none
       : _watermark;
-  _Ink? _watermarkInk;
 
   final _captureKey = GlobalKey();
   bool _sharing = false;
@@ -174,30 +103,14 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       format: _format,
       style: _style,
       brandInk: _brandInk,
-      titleInk: _titleInk,
       gradient: _gradient,
       palette: _palette,
       reverseColors: _reverseColors,
       photoMode: _photoMode,
-      titlePosition: _titlePosition,
-      badgePosition: _badgePosition,
-      showType: _showType,
-      showDate: _showDate,
-      showArea: _showArea,
-      showProject: _showProject,
-      showDescription: _showDescription,
-      showStats: _showStats,
       brandContent: _brandContent,
-      logoStyle: _logoStyle,
-      logoDisc: _logoDisc,
       brandLayout: _brandLayout,
-      brandPosition: _brandPosition,
-      nameInk: _nameInk,
-      logoInk: _logoInk,
-      logoSize: _logoSize,
       watermark: _watermark,
       watermarkSize: _watermarkSize,
-      watermarkInk: _watermarkInk,
       excerpt: _excerpt.text,
     );
     return () {
@@ -206,30 +119,14 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       _format = draft.format;
       _style = draft.style;
       _brandInk = draft.brandInk;
-      _titleInk = draft.titleInk;
       _gradient = draft.gradient;
       _palette = draft.palette;
       _reverseColors = draft.reverseColors;
       _photoMode = draft.photoMode;
-      _titlePosition = draft.titlePosition;
-      _badgePosition = draft.badgePosition;
-      _showType = draft.showType;
-      _showDate = draft.showDate;
-      _showArea = draft.showArea;
-      _showProject = draft.showProject;
-      _showDescription = draft.showDescription;
-      _showStats = draft.showStats;
       _brandContent = draft.brandContent;
-      _logoStyle = draft.logoStyle;
-      _logoDisc = draft.logoDisc;
       _brandLayout = draft.brandLayout;
-      _brandPosition = draft.brandPosition;
-      _nameInk = draft.nameInk;
-      _logoInk = draft.logoInk;
-      _logoSize = draft.logoSize;
       _watermark = draft.watermark;
       _watermarkSize = draft.watermarkSize;
-      _watermarkInk = draft.watermarkInk;
       _excerpt.text = draft.excerpt;
     };
   }
@@ -260,23 +157,16 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       _gradient = s.gradient;
       _palette = s.palette;
       _reverseColors = false;
-      _titleInk = s.titleInk;
       _brandInk = s.brandInk;
-      _nameInk = null;
-      _logoInk = null;
-      _watermarkInk = null;
       _watermark = s.watermark;
-      _watermarkSize = s.watermarkSize;
-      _brandContent = s.brandContent;
-      _brandPosition = s.brandPosition;
-      _brandLayout = s.brandLayout;
-      _logoDisc = s.logoDisc;
-      _logoStyle = _LogoStyle.current;
     });
   }
 
-  bool get _freeLayout =>
-      _layoutMap[_subject]![_composition].$1 == _Layout.free;
+  _TitlePosition _signaturePosition(int composition) =>
+      switch (_layoutMap[_subject]![composition].$1) {
+        _Layout.free || _Layout.poster => _TitlePosition.topRight,
+        _ => _TitlePosition.bottomCenter,
+      };
 
   Future<void> _share() async {
     if (_sharing) return;
@@ -413,27 +303,27 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     palette: _palette,
     format: _format,
     photoMode: _photoMode,
-    titlePosition: _titlePosition,
-    brandPosition: _brandPosition,
-    badgePosition: _badgePosition,
-    titleInk: _titleInk,
+    titlePosition: _TitlePosition.bottomLeft,
+    brandPosition: _signaturePosition(composition ?? _composition),
+    badgePosition: _BadgePosition.top,
+    titleInk: _brandInk,
     watermark: _effectiveWatermark,
-    watermarkInk: _watermarkInk ?? _brandInk,
+    watermarkInk: _brandInk,
     watermarkSize: _watermarkSize,
     watermarkArea: _watermarkArea,
     brandContent: _brandContent,
-    logoStyle: _logoStyle,
-    logoDisc: _logoDisc,
-    nameInk: _nameInk ?? _brandInk,
-    logoInk: _logoInk ?? _brandInk,
-    logoSize: _logoSize,
+    logoStyle: _LogoStyle.current,
+    logoDisc: false,
+    nameInk: _brandInk,
+    logoInk: _brandInk,
+    logoSize: _LogoSize.small,
     brandLayout: _brandLayout,
-    showType: _showType,
-    showDate: _showDate,
-    showArea: _showArea,
-    showProject: _showProject,
-    showDescription: _showDescription,
-    showStats: _showStats,
+    showType: true,
+    showDate: true,
+    showArea: true,
+    showProject: true,
+    showDescription: true,
+    showStats: true,
   );
 
   // ----- blocks -----
@@ -459,9 +349,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
             _subjectIndex = i;
             _composition = 0;
             _excerpt.text = _data.description;
-            _titlePosition = _subject == ShareSubject.quote
-                ? _TitlePosition.center
-                : _TitlePosition.bottomLeft;
           }),
         ),
       _VisualChoices(
@@ -525,7 +412,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         labels: [for (final p in _stylePresets) p.label],
         index: _style ?? 0,
         placeholder: _style == null ? 'Personalizzato' : null,
-        columns: 3,
+        columns: 2,
         showLabels: true,
         preview: (i) => Container(
           width: 36,
@@ -539,9 +426,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         ),
         onChanged: _applyPreset,
       ),
-      _note(
-        'Applica insieme sfondo, colori e firma. Composizione e formato restano invariati.',
-      ),
+      _note('Gli stili pronti cambiano sfondo, colore condiviso e filigrana.'),
     ],
   );
 
@@ -586,14 +471,17 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         onChanged: (i) => _edit(() => _palette = i),
       ),
       Align(
-        alignment: Alignment.centerLeft,
-        child: AppChoiceChip(
-          key: const ValueKey('share-reverse-colors'),
-          label: shareComposerLabel(context, 'Inverti colori'),
-          icon: Icons.swap_vert_rounded,
-          selected: _reverseColors,
-          dense: true,
-          onPressed: () => _edit(() => _reverseColors = !_reverseColors),
+        alignment: Alignment.center,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: AppChoiceChip(
+            key: const ValueKey('share-reverse-colors'),
+            label: shareComposerLabel(context, 'Inverti colori'),
+            icon: Icons.swap_vert_rounded,
+            selected: _reverseColors,
+            dense: true,
+            onPressed: () => _edit(() => _reverseColors = !_reverseColors),
+          ),
         ),
       ),
       if (_data.photos.isNotEmpty)
@@ -611,163 +499,86 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
 
   Widget _textBlock() => _BlockCard(
     children: [
-      _VisualChoices(
-        fieldKey: 'testo-colore',
-        label: 'Colore del titolo',
-        labels: [for (final i in _Ink.values) _inkLabel(i)],
-        preview: (i) => _InkDot(_Ink.values[i]),
-        index: _titleInk.index,
-        onChanged: (i) => _edit(() => _titleInk = _Ink.values[i]),
-      ),
-      if (_freeLayout)
-        _PositionChoices(
-          fieldKey: 'testo-posizione',
-          label: 'Titolo',
-          index: _titlePosition.index,
-          onChanged: (i) =>
-              _edit(() => _titlePosition = _TitlePosition.values[i]),
-        )
-      else
-        _note('Posizione definita dalla composizione.'),
-      if (_freeLayout)
-        _OptionStepper(
-          fieldKey: 'testo-badge',
-          label: 'Badge',
-          labels: const ['In Alto', 'In Basso'],
-          index: _badgePosition.index,
-          onChanged: (i) =>
-              _edit(() => _badgePosition = _BadgePosition.values[i]),
-        ),
       if (_data.isReflection)
         Align(
           alignment: Alignment.centerLeft,
-          child: TextButton.icon(
+          child: TextButton(
             key: const ValueKey('share-reflection-excerpt'),
             onPressed: _editExcerpt,
-            icon: const Icon(Icons.edit_note),
-            label: Text(shareComposerLabel(context, 'Modifica estratto')),
+            child: Text(shareComposerLabel(context, 'Modifica estratto')),
           ),
         ),
-      _note('Sono elencate solo le informazioni presenti nel contenuto.'),
-      _Toggles(
-        label: 'Elementi visibili',
-        toggles: [
-          ('Tipo', _showType, (v) => _edit(() => _showType = v)),
-          if (_data.dateLabel != null)
-            ('Data', _showDate, (v) => _edit(() => _showDate = v)),
-          if (_data.areaLabel != null)
-            ('Area', _showArea, (v) => _edit(() => _showArea = v)),
-          if (_data.projectLabel != null)
-            ('Progetto', _showProject, (v) => _edit(() => _showProject = v)),
-          (
-            _data.isReflection ? 'Testo' : 'Descrizione',
-            _showDescription,
-            (v) => _edit(() => _showDescription = v),
-          ),
-          if (_data.statLabel != null || _data.intensity != null)
-            ('Statistiche', _showStats, (v) => _edit(() => _showStats = v)),
-        ],
+    ],
+  );
+
+  Widget _signatureBlock() => _BlockCard(
+    children: [
+      _VisualChoices(
+        fieldKey: 'firma-disposizione',
+        label: 'Disposizione',
+        labels: const ['Solo Logo', 'Logo e Nome', 'Logo sopra Nome'],
+        index: _brandContent == _BrandContent.logo
+            ? 0
+            : _brandLayout == _BrandLayout.logoLeft
+            ? 1
+            : 2,
+        columns: 3,
+        previewHeight: 44,
+        preview: (i) {
+          final color =
+              _inkDotColor(context.colors, _brandInk) ?? context.colors.text;
+          final logo = SvgPicture.asset(
+            'assets/icon/Logo.svg',
+            width: 20,
+            height: 24,
+            colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+          );
+          final name = Text(
+            'Inner Stars',
+            style: TextStyle(
+              fontFamily: kFontBranding,
+              fontSize: 10,
+              color: color,
+            ),
+          );
+          return FittedBox(
+            fit: BoxFit.scaleDown,
+            child: switch (i) {
+              0 => logo,
+              1 => Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [logo, const SizedBox(width: 4), name],
+              ),
+              _ => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [logo, const SizedBox(height: 4), name],
+              ),
+            },
+          );
+        },
+        onChanged: (i) => _edit(() {
+          _brandContent = i == 0 ? _BrandContent.logo : _BrandContent.both;
+          _brandLayout = i == 2
+              ? _BrandLayout.logoAbove
+              : _BrandLayout.logoLeft;
+        }),
       ),
     ],
   );
 
-  Widget _signatureBlock() {
-    final hasLogo =
-        _brandContent == _BrandContent.logo ||
-        _brandContent == _BrandContent.both;
-    final hasName =
-        _brandContent == _BrandContent.name ||
-        _brandContent == _BrandContent.both;
-    // Signature layouts in one list: what is shown, and for logo and name
-    // together, how they are arranged.
-    const shown = [
-      'Nessuna',
-      'Solo Logo',
-      'Solo Nome',
-      'Logo e Nome',
-      'Logo sopra Nome',
-    ];
-    final shownIndex = switch (_brandContent) {
-      _BrandContent.none => 0,
-      _BrandContent.logo => 1,
-      _BrandContent.name => 2,
-      _BrandContent.both => _brandLayout == _BrandLayout.logoLeft ? 3 : 4,
-    };
-    final inks = ['Dallo stile', for (final i in _Ink.values) _inkLabel(i)];
-    return _BlockCard(
-      children: [
-        _OptionStepper(
-          fieldKey: 'firma-mostra',
-          label: 'Mostra',
-          labels: shown,
-          index: shownIndex,
-          onChanged: (i) => _edit(() {
-            _brandContent = const [
-              _BrandContent.none,
-              _BrandContent.logo,
-              _BrandContent.name,
-              _BrandContent.both,
-              _BrandContent.both,
-            ][i];
-            if (i == 3) _brandLayout = _BrandLayout.logoLeft;
-            if (i == 4) _brandLayout = _BrandLayout.logoAbove;
-          }),
-        ),
-        if (_brandContent != _BrandContent.none)
-          _PositionChoices(
-            fieldKey: 'firma-posizione',
-            label: 'Posizione',
-            index: _brandPosition.index,
-            onChanged: (i) =>
-                _edit(() => _brandPosition = _TitlePosition.values[i]),
-          ),
-        if (hasLogo)
-          _OptionStepper(
-            fieldKey: 'firma-logo',
-            label: 'Logo',
-            labels: const ['Disco Pieno', 'Disco Invertito', 'Senza Disco'],
-            index: !_logoDisc ? 2 : _logoStyle.index,
-            onChanged: (i) => _edit(() {
-              _logoDisc = i != 2;
-              if (i != 2) _logoStyle = _LogoStyle.values[i];
-            }),
-          ),
-        if (hasLogo)
-          _OptionStepper(
-            fieldKey: 'firma-misura',
-            label: 'Misura Logo',
-            labels: const ['Piccolo', 'Medio', 'Grande'],
-            index: _logoSize.index,
-            onChanged: (i) => _edit(() => _logoSize = _LogoSize.values[i]),
-          ),
-        if (hasLogo)
-          _VisualChoices(
-            fieldKey: 'firma-colore-logo',
-            label: 'Colore Logo',
-            labels: inks,
-            preview: (i) => i == 0
-                ? const Icon(Icons.link, size: 18)
-                : _InkDot(_Ink.values[i - 1]),
-            index: _logoInk == null ? 0 : _logoInk!.index + 1,
-            onChanged: (i) =>
-                _edit(() => _logoInk = i == 0 ? null : _Ink.values[i - 1]),
-          ),
-        if (hasName)
-          _VisualChoices(
-            fieldKey: 'firma-colore-nome',
-            label: 'Colore Nome',
-            labels: inks,
-            preview: (i) => i == 0
-                ? const Icon(Icons.link, size: 18)
-                : _InkDot(_Ink.values[i - 1]),
-            index: _nameInk == null ? 0 : _nameInk!.index + 1,
-            onChanged: (i) =>
-                _edit(() => _nameInk = i == 0 ? null : _Ink.values[i - 1]),
-          ),
-      ],
-    );
-  }
-
+  Widget _linkedColorBlock() => _BlockCard(
+    children: [
+      _VisualChoices(
+        fieldKey: 'colore-elementi',
+        label: 'Colore',
+        labels: [for (final ink in _Ink.values) _inkLabel(ink)],
+        index: _brandInk.index,
+        columns: 5,
+        preview: (i) => _InkDot(_Ink.values[i]),
+        onChanged: (i) => _edit(() => _brandInk = _Ink.values[i]),
+      ),
+    ],
+  );
   Widget _watermarkBlock() {
     final on = _effectiveWatermark != _Watermark.none;
     final kinds = [
@@ -777,63 +588,104 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     ];
     return _BlockCard(
       children: [
-        _VisualChoices(
-          fieldKey: 'watermark-tipo',
-          label: 'Filigrana',
-          labels: [for (final kind in kinds) _watermarkLabel(kind)],
-          index: kinds.indexOf(_effectiveWatermark),
-          columns: 3,
-          previewHeight: 32,
-          preview: (i) => switch (kinds[i]) {
-            _Watermark.none => Icon(
-              Icons.block_rounded,
-              color: context.colors.muted,
-            ),
-            _Watermark.logo => SvgPicture.asset(
-              'assets/icon/Logo.svg',
-              width: 32,
-              height: 32,
-              colorFilter: ColorFilter.mode(
-                context.colors.gold,
-                BlendMode.srcIn,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _VisualChoices(
+                fieldKey: 'watermark-tipo',
+                label: 'Filigrana',
+                labels: [for (final kind in kinds) _watermarkLabel(kind)],
+                index: kinds.indexOf(_effectiveWatermark),
+                columns: 3,
+                singleRow: true,
+                previewHeight: 32,
+                preview: (i) => switch (kinds[i]) {
+                  _Watermark.none => Icon(
+                    Icons.block_rounded,
+                    color: context.colors.muted,
+                  ),
+                  _Watermark.logo => SvgPicture.asset(
+                    'assets/icon/Logo.svg',
+                    width: 28,
+                    height: 28,
+                    colorFilter: ColorFilter.mode(
+                      context.colors.gold,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                  _Watermark.area => Image.asset(
+                    kAreaHeroArt[_data.area]!.coverAsset,
+                    width: 28,
+                    height: 28,
+                    fit: BoxFit.contain,
+                    color: context.colors.gold,
+                    colorBlendMode: BlendMode.srcIn,
+                  ),
+                },
+                onChanged: (i) => _edit(() => _watermark = kinds[i]),
               ),
             ),
-            _Watermark.area => Image.asset(
-              kAreaHeroArt[_data.area]!.coverAsset,
-              width: 32,
-              height: 32,
-              fit: BoxFit.contain,
-              color: context.colors.gold,
-              colorBlendMode: BlendMode.srcIn,
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 108,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Text(
+                      shareComposerLabel(context, 'Misura'),
+                      style: context.typography.supporting.copyWith(
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    height: 44,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: selectableDecoration(
+                      context.colors,
+                      selected: false,
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<_WatermarkSize>(
+                        key: const ValueKey('watermark-misura-menu'),
+                        value: _watermarkSize,
+                        isExpanded: true,
+                        dropdownColor: context.colors.nightPanel,
+                        style: context.typography.controlLabel.copyWith(
+                          fontSize: 12,
+                        ),
+                        items: [
+                          for (final size in _WatermarkSize.values)
+                            DropdownMenuItem(
+                              value: size,
+                              child: Text(
+                                shareComposerLabel(
+                                  context,
+                                  _watermarkSizeLabel(size),
+                                ),
+                              ),
+                            ),
+                        ],
+                        onChanged: on
+                            ? (value) {
+                                if (value != null && value != _watermarkSize) {
+                                  _edit(() => _watermarkSize = value);
+                                }
+                              }
+                            : null,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          },
-          onChanged: (i) => _edit(() => _watermark = kinds[i]),
+          ],
         ),
         if (_data.area == null)
           _note('Artwork non disponibile: questo contenuto non ha un’area.'),
-        if (on)
-          _OptionStepper(
-            fieldKey: 'watermark-misura',
-            label: 'Misura',
-            labels: [
-              for (final s in _WatermarkSize.values) _watermarkSizeLabel(s),
-            ],
-            index: _watermarkSize.index,
-            onChanged: (i) =>
-                _edit(() => _watermarkSize = _WatermarkSize.values[i]),
-          ),
-        if (on)
-          _VisualChoices(
-            fieldKey: 'watermark-colore',
-            label: 'Colore',
-            labels: ['Dallo stile', for (final i in _Ink.values) _inkLabel(i)],
-            preview: (i) => i == 0
-                ? const Icon(Icons.link, size: 18)
-                : _InkDot(_Ink.values[i - 1]),
-            index: _watermarkInk == null ? 0 : _watermarkInk!.index + 1,
-            onChanged: (i) =>
-                _edit(() => _watermarkInk = i == 0 ? null : _Ink.values[i - 1]),
-          ),
       ],
     );
   }
@@ -865,18 +717,21 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
               ('Contenuto', Icons.title_rounded),
               ('Sfondo', Icons.gradient_rounded),
               ('Firma', Icons.verified_outlined),
+              ('Colore elementi', Icons.palette_outlined),
             ];
             const descriptions = [
               'Scegli la composizione e il formato, oppure applica uno stile pronto.',
-              'Scegli le informazioni visibili e personalizza il titolo.',
+              'Titolo, informazioni e posizioni sono definiti dalla composizione.',
               'Personalizza sfumatura, foto e filigrana.',
-              'Personalizza il nome e il logo di Inner Stars.',
+              'Scegli come mostrare il logo e il nome di Inner Stars.',
+              'Un solo colore per titolo, logo, nome e filigrana.',
             ];
             final sections = [
               [_cardBlock(), _styleBlock()],
               [_textBlock()],
               [_backgroundBlock(), _watermarkBlock()],
               [_signatureBlock()],
+              [_linkedColorBlock()],
             ];
             final history = SizedBox(
               height: 48,
@@ -1033,10 +888,10 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
 // ----- labels -----
 
 List<String> _compositionLabels(ShareSubject subject) => switch (subject) {
-  ShareSubject.victory => const ['Celebrazione', 'Diario', 'Libero'],
+  ShareSubject.victory => const ['Celebrazione', 'Diario', 'Scenica'],
   ShareSubject.goal => const ['Direzione', 'Promessa', 'Editoriale'],
-  ShareSubject.habit => const ['Rituale', 'Editoriale', 'Libero'],
-  ShareSubject.project => const ['Costellazione', 'Manifesto', 'Libero'],
+  ShareSubject.habit => const ['Rituale', 'Editoriale', 'Scenica'],
+  ShareSubject.project => const ['Costellazione', 'Manifesto', 'Scenica'],
   ShareSubject.vision => const ['Manifesto', 'Estratto', 'Editoriale'],
   ShareSubject.moodboard => const ['Collage', 'Galleria', 'Polaroid'],
   ShareSubject.quote => const ['Tipografica', 'Estratto', 'Poster'],
@@ -1082,18 +937,6 @@ String _watermarkLabel(_Watermark value) => switch (value) {
   _Watermark.none => 'Nessuno',
   _Watermark.logo => 'Logo App',
   _Watermark.area => 'Artwork',
-};
-
-String _positionLabel(_TitlePosition value) => switch (value) {
-  _TitlePosition.topLeft => 'Alto Sinistra',
-  _TitlePosition.topCenter => 'Alto Centro',
-  _TitlePosition.topRight => 'Alto Destra',
-  _TitlePosition.centerLeft => 'Metà Sinistra',
-  _TitlePosition.center => 'Centro',
-  _TitlePosition.centerRight => 'Metà Destra',
-  _TitlePosition.bottomLeft => 'Basso Sinistra',
-  _TitlePosition.bottomCenter => 'Basso Centro',
-  _TitlePosition.bottomRight => 'Basso Destra',
 };
 
 // ----- control widgets -----
@@ -1229,7 +1072,6 @@ class _VisualChoices extends StatelessWidget {
     this.placeholder,
     this.previewHeight = 26,
     this.minItemWidth,
-    this.showHeader = true,
     this.singleRow = false,
   });
   final String fieldKey;
@@ -1243,21 +1085,30 @@ class _VisualChoices extends StatelessWidget {
   final String? placeholder;
   final double previewHeight;
   final double? minItemWidth;
-  final bool showHeader;
   final bool singleRow;
+
+  Widget _label(BuildContext context, int index) {
+    final text = Text(
+      shareComposerLabel(context, labels[index]),
+      textAlign: TextAlign.center,
+      maxLines: singleRow ? 1 : 2,
+      overflow: TextOverflow.ellipsis,
+      style: context.typography.controlLabel.copyWith(fontSize: 12.5),
+    );
+    return singleRow ? FittedBox(fit: BoxFit.scaleDown, child: text) : text;
+  }
 
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      if (showHeader)
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Text(
-            shareComposerLabel(context, label),
-            style: context.typography.supporting.copyWith(fontSize: 12),
-          ),
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Text(
+          shareComposerLabel(context, label),
+          style: context.typography.supporting.copyWith(fontSize: 12),
         ),
+      ),
       LayoutBuilder(
         builder: (context, constraints) {
           final maxColumns = columns.clamp(1, labels.length);
@@ -1271,9 +1122,7 @@ class _VisualChoices extends StatelessWidget {
                       .clamp(1, maxColumns),
                 );
           final width = (constraints.maxWidth - (count - 1) * 6) / count;
-          final tileWidth = singleRow
-              ? width.clamp(minItemWidth ?? 64, double.infinity).toDouble()
-              : width;
+          final tileWidth = width;
           final choices = <Widget>[
             for (var i = 0; i < labels.length; i++)
               Semantics(
@@ -1311,14 +1160,7 @@ class _VisualChoices extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 6,
                                 ),
-                                child: Text(
-                                  shareComposerLabel(context, labels[i]),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: context.typography.controlLabel
-                                      .copyWith(fontSize: 12.5),
-                                ),
+                                child: _label(context, i),
                               ),
                             ],
                           ],
@@ -1330,72 +1172,17 @@ class _VisualChoices extends StatelessWidget {
               ),
           ];
           if (singleRow) {
-            return SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (var i = 0; i < choices.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 6),
-                    choices[i],
-                  ],
+            return Row(
+              children: [
+                for (var i = 0; i < choices.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 6),
+                  choices[i],
                 ],
-              ),
+              ],
             );
           }
           return Wrap(spacing: 6, runSpacing: 6, children: choices);
         },
-      ),
-    ],
-  );
-}
-
-class _PositionChoices extends StatelessWidget {
-  const _PositionChoices({
-    required this.fieldKey,
-    required this.label,
-    required this.index,
-    required this.onChanged,
-  });
-  final String fieldKey;
-  final String label;
-  final int index;
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Expanded(
-        child: Text(
-          shareComposerLabel(context, label),
-          style: context.typography.supporting.copyWith(fontSize: 12),
-        ),
-      ),
-      SizedBox(
-        width: 144,
-        child: _VisualChoices(
-          fieldKey: fieldKey,
-          label: label,
-          labels: [for (final p in _TitlePosition.values) _positionLabel(p)],
-          index: index,
-          columns: 3,
-          showHeader: false,
-          preview: (i) => Icon(
-            const [
-              Icons.north_west_rounded,
-              Icons.north_rounded,
-              Icons.north_east_rounded,
-              Icons.west_rounded,
-              Icons.center_focus_strong_rounded,
-              Icons.east_rounded,
-              Icons.south_west_rounded,
-              Icons.south_rounded,
-              Icons.south_east_rounded,
-            ][i],
-            color: i == index ? context.colors.gold : context.colors.muted,
-            size: 22,
-          ),
-          onChanged: onChanged,
-        ),
       ),
     ],
   );
@@ -1433,41 +1220,6 @@ class _ValueRow extends StatelessWidget {
       ],
     );
   }
-}
-
-/// Compact toggles for the elements included in the shared image.
-class _Toggles extends StatelessWidget {
-  const _Toggles({required this.label, required this.toggles});
-  final String label;
-  final List<(String, bool, ValueChanged<bool>)> toggles;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      SizedBox(
-        height: 16,
-        child: Text(
-          shareComposerLabel(context, label),
-          style: context.typography.supporting.copyWith(fontSize: 12),
-        ),
-      ),
-      const SizedBox(height: 4),
-      Wrap(
-        spacing: 8,
-        runSpacing: 4,
-        children: [
-          for (final toggle in toggles)
-            AppChoiceChip(
-              label: shareComposerLabel(context, toggle.$1),
-              selected: toggle.$2,
-              onPressed: () => toggle.$3(!toggle.$2),
-              dense: true,
-            ),
-        ],
-      ),
-    ],
-  );
 }
 
 Color? _inkDotColor(AppColors colors, _Ink ink) => switch (ink) {

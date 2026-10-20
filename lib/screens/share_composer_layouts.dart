@@ -695,7 +695,11 @@ extension _SpecimenLayouts on _ShareSpecimen {
                 Container(
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF4F1E8),
+                    color:
+                        titleInk == _Ink.auto ||
+                            l.title.computeLuminance() < .25
+                        ? const Color(0xFFF4F1E8)
+                        : const Color(0xFF161D30),
                     borderRadius: BorderRadius.circular(3),
                     boxShadow: const [
                       BoxShadow(
@@ -721,7 +725,9 @@ extension _SpecimenLayouts on _ShareSpecimen {
                         18,
                         align: TextAlign.left,
                         maxLines: 3,
-                        color: const Color(0xFF28231D),
+                        color: titleInk == _Ink.auto
+                            ? const Color(0xFF28231D)
+                            : l.title,
                       ),
                     ],
                   ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:inner_stars/l10n/strings_en.dart';
 import 'package:inner_stars/l10n/strings_it.dart';
 import 'package:inner_stars/l10n/strings_scope.dart';
@@ -9,6 +10,7 @@ import 'package:inner_stars/models/share_content.dart';
 import 'package:inner_stars/screens/share_composer_screen.dart';
 import 'package:inner_stars/screens/share_preview_screen.dart';
 import 'package:inner_stars/theme/app_theme.dart';
+import 'package:inner_stars/theme/app_colors.dart';
 import 'package:inner_stars/utils/area_hero_art.dart';
 import 'package:inner_stars/widgets/shareable_reflection_card.dart';
 
@@ -44,7 +46,7 @@ bool choiceSelected(WidgetTester tester, String key) => tester
 
 void main() {
   testWidgets(
-    'common share entry uses the composer and edits only the shared excerpt',
+    'excerpt editing leaves source intact and composition owns content options',
     (tester) async {
       tester.view.physicalSize = const Size(1440, 1000);
       tester.view.devicePixelRatio = 1;
@@ -82,16 +84,20 @@ void main() {
       expect(find.byType(ShareComposerScreen), findsOneWidget);
       expect(find.byType(BackButton), findsNothing);
       expect(find.text(strings.sharePreviewTitle), findsNothing);
-      expect(find.byKey(const ValueKey('scheda-contenuto-menu')), findsNothing);
-      expect(find.text(record.title), findsWidgets);
-      expect(find.text(record.body), findsWidgets);
-      expect(find.text(LifeArea.social.displayName(strings)), findsWidgets);
-      expect(find.text('Salute'), findsNothing);
-      await scrollToSection(tester, 1);
-      await tester.pump();
-      await tester.ensureVisible(
-        find.byKey(const ValueKey('share-reflection-excerpt')),
-      );
+      for (final key in [
+        'testo-colore-0',
+        'testo-posizione-0',
+        'testo-badge-menu',
+        'firma-logo-menu',
+        'firma-misura-menu',
+        'firma-posizione-0',
+        'firma-colore-nome-0',
+        'watermark-colore-0',
+      ]) {
+        expect(find.byKey(ValueKey(key)), findsNothing);
+      }
+      expect(find.byType(SwitchListTile), findsNothing);
+      expect(find.byType(FilterChip), findsNothing);
       await tapVisible(
         tester,
         find.byKey(const ValueKey('share-reflection-excerpt')),
@@ -104,6 +110,7 @@ void main() {
       await tapVisible(tester, find.text(strings.saveChanges.toUpperCase()));
       await tester.pumpAndSettle();
       expect(find.text('Solo un estratto'), findsWidgets);
+      expect(record.body, 'Il testo originale');
       await tapVisible(tester, find.byKey(const ValueKey('share-undo')));
       await tester.pump();
       expect(find.text(record.body), findsWidgets);
@@ -112,49 +119,35 @@ void main() {
       await tester.pump();
       expect(find.text('Solo un estratto'), findsWidgets);
       expect(record.body, 'Il testo originale');
-      await scrollToSection(tester, 1);
-      await tester.pump();
-      await tester.ensureVisible(find.text('Testo'));
-      await tapVisible(tester, find.text('Testo'));
-      await tester.pump();
-      expect(find.text('Solo un estratto'), findsNothing);
-      expect(record.body, 'Il testo originale');
-      await scrollToSection(tester, 3);
-      await tester.pump();
-      expect(find.byKey(const ValueKey('firma-logo-menu')), findsNothing);
-      expect(find.byKey(const ValueKey('firma-colore-nome-0')), findsOneWidget);
-      await tapVisible(tester, find.byKey(const ValueKey('firma-mostra-menu')));
-      await tester.pumpAndSettle();
-      await tapVisible(tester, find.text('Solo Logo'));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('firma-logo-menu')), findsOneWidget);
-      expect(find.byKey(const ValueKey('firma-colore-nome-0')), findsNothing);
-      await tapVisible(tester, find.byKey(const ValueKey('firma-posizione-8')));
-      await tester.pump();
-      expect(choiceSelected(tester, 'firma-posizione-8'), isTrue);
-      expect(find.textContaining('Basso Destra'), findsNothing);
-      await scrollToSection(tester, 2);
-      await tester.pump();
-      expect(find.byKey(const ValueKey('sfondo-foto-menu')), findsNothing);
-      expect(find.byKey(const ValueKey('watermark-misura-menu')), findsNothing);
-      await tapVisible(tester, find.byKey(const ValueKey('watermark-tipo-1')));
-      await tester.pumpAndSettle();
       expect(
-        find.byKey(const ValueKey('watermark-misura-menu')),
+        find.byKey(const ValueKey('firma-disposizione-2')),
         findsOneWidget,
       );
-      await tester.ensureVisible(find.byKey(const ValueKey('sfondo-colori-3')));
-      await tapVisible(tester, find.byKey(const ValueKey('sfondo-colori-3')));
+      expect(find.byKey(const ValueKey('firma-disposizione-3')), findsNothing);
+      await tapVisible(
+        tester,
+        find.byKey(const ValueKey('firma-disposizione-0')),
+      );
       await tester.pump();
-      expect(choiceSelected(tester, 'sfondo-colori-3'), isTrue);
-      expect(find.text('Colori'), findsOneWidget);
-      expect(find.byKey(const ValueKey('sfondo-colori-4')), findsNothing);
+      expect(choiceSelected(tester, 'firma-disposizione-0'), isTrue);
+      final size = find.byKey(const ValueKey('watermark-misura-menu'));
+      expect((tester.widget(size) as dynamic).onChanged, isNull);
+      await tapVisible(tester, find.byKey(const ValueKey('watermark-tipo-1')));
+      await tester.pump();
+      expect((tester.widget(size) as dynamic).onChanged, isNotNull);
+      expect(
+        tester
+            .getRect(find.byKey(const ValueKey('watermark-tipo-1')))
+            .center
+            .dy,
+        closeTo(tester.getRect(size).center.dy, 2),
+      );
       expect(tester.takeException(), isNull);
     },
   );
 
   testWidgets(
-    'history restores an entire preset and clears redo after a new edit',
+    'two presets and one shared color support complete undo and redo',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
@@ -165,7 +158,7 @@ void main() {
           const ShareComposerScreen(
             data: ShareContent(
               subject: ShareSubject.goal,
-              title: 'Il mio obiettivo',
+              title: 'Una direzione',
               typeLabel: 'Obiettivo',
             ),
           ),
@@ -176,63 +169,85 @@ void main() {
       final redo = find.byKey(const ValueKey('share-redo'));
       expect(tester.widget<IconButton>(undo).onPressed, isNull);
       expect(tester.widget<IconButton>(redo).onPressed, isNull);
-      final ocean = find.byKey(const ValueKey('stile-preset-3'));
-      await tester.ensureVisible(ocean);
-      await tapVisible(tester, ocean);
+      expect(find.byKey(const ValueKey('stile-preset-2')), findsNothing);
+      final golden = find.byKey(const ValueKey('stile-preset-1'));
+      await tapVisible(tester, golden);
       await tester.pump();
-      await tapVisible(
-        tester,
-        ocean,
-      ); // Choosing the same preset must not add a history step.
+      await tapVisible(tester, golden);
       await tester.pump();
-      await scrollToSection(tester, 3);
-      await tester.pump();
-      expect(find.byKey(const ValueKey('firma-logo-menu')), findsOneWidget);
+      void expectLinked(Color color) {
+        final preview = find.byKey(const ValueKey('share-preview'));
+        expect(
+          tester
+              .widget<Text>(
+                find.descendant(
+                  of: preview,
+                  matching: find.text('Una direzione'),
+                ),
+              )
+              .style!
+              .color,
+          color,
+        );
+        expect(
+          tester
+              .widget<Text>(
+                find.descendant(
+                  of: preview,
+                  matching: find.text('Inner Stars'),
+                ),
+              )
+              .style!
+              .color,
+          color,
+        );
+        final logos = tester
+            .widgetList<SvgPicture>(
+              find.descendant(of: preview, matching: find.byType(SvgPicture)),
+            )
+            .where(
+              (picture) =>
+                  picture.bytesLoader is SvgAssetLoader &&
+                  (picture.bytesLoader as SvgAssetLoader).assetName ==
+                      'assets/icon/Logo.svg',
+            );
+        expect(logos.length, greaterThanOrEqualTo(2));
+        for (final logo in logos) {
+          expect(logo.colorFilter, ColorFilter.mode(color, BlendMode.srcIn));
+        }
+      }
+
+      expectLinked(AppColors.dark.gold);
+      expect(choiceSelected(tester, 'colore-elementi-1'), isTrue);
       await tapVisible(tester, undo);
       await tester.pump();
-      expect(find.byKey(const ValueKey('firma-logo-menu')), findsNothing);
+      expect(choiceSelected(tester, 'stile-preset-0'), isTrue);
       expect(tester.widget<IconButton>(undo).onPressed, isNull);
       await tapVisible(tester, redo);
       await tester.pump();
-      expect(find.byKey(const ValueKey('firma-logo-menu')), findsOneWidget);
-      await tapVisible(tester, find.byKey(const ValueKey('firma-mostra-menu')));
-      await tester.pumpAndSettle();
-      await tapVisible(tester, find.text('Nessuna'));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('firma-posizione-0')), findsNothing);
+      expectLinked(AppColors.dark.gold);
+      await tapVisible(
+        tester,
+        find.byKey(const ValueKey('firma-disposizione-2')),
+      );
+      await tester.pump();
       await tapVisible(tester, undo);
       await tester.pump();
-      expect(find.byKey(const ValueKey('firma-logo-menu')), findsOneWidget);
+      expect(choiceSelected(tester, 'firma-disposizione-1'), isTrue);
+      expect(choiceSelected(tester, 'stile-preset-1'), isTrue);
       await tapVisible(tester, undo);
-      await tester.pump();
-      expect(find.byKey(const ValueKey('firma-logo-menu')), findsNothing);
-      await scrollToSection(tester, 0);
       await tester.pump();
       expect(choiceSelected(tester, 'stile-preset-0'), isTrue);
-      expect(find.text('Stile · Classico'), findsNothing);
-      await scrollToSection(tester, 2);
+      await tapVisible(tester, redo);
       await tester.pump();
-      await tester.ensureVisible(find.byKey(const ValueKey('sfondo-colori-3')));
-      await tapVisible(tester, find.byKey(const ValueKey('sfondo-colori-3')));
+      await tapVisible(tester, find.byKey(const ValueKey('colore-elementi-2')));
       await tester.pump();
+      expectLinked(const Color(0xFFF4F1E8));
       expect(tester.widget<IconButton>(redo).onPressed, isNull);
-      await scrollToSection(tester, 0);
-      await tester.pump();
-      expect(choiceSelected(tester, 'stile-preset-0'), isFalse);
-      await tapVisible(tester, undo);
-      await tester.pump();
-      expect(choiceSelected(tester, 'stile-preset-0'), isTrue);
+      expect(choiceSelected(tester, 'stile-preset-1'), isFalse);
       expect(tester.takeException(), isNull);
-      for (var preset = 0; preset < 6; preset++) {
-        final choice = find.byKey(ValueKey('stile-preset-$preset'));
-        await tester.ensureVisible(choice);
-        await tapVisible(tester, choice);
-        await tester.pump();
-        expect(tester.takeException(), isNull, reason: 'preset $preset');
-      }
     },
   );
-
   testWidgets(
     'watermark artwork follows the content area and undo restores it',
     (tester) async {
@@ -363,6 +378,7 @@ void main() {
   );
 
   for (final size in [
+    const Size(320, 740),
     const Size(390, 844),
     const Size(844, 390),
     const Size(1440, 1000),
@@ -463,6 +479,36 @@ void main() {
               tester.takeException(),
               isNull,
               reason: '${subject.name}, format $format, $size',
+            );
+          }
+          expect(
+            tester
+                .widgetList<SingleChildScrollView>(
+                  find.byType(SingleChildScrollView),
+                )
+                .every((scroll) => scroll.scrollDirection == Axis.vertical),
+            isTrue,
+          );
+          final controlsRect = tester.getRect(
+            find.byKey(const ValueKey('share-controls')),
+          );
+          final formats = [
+            for (var i = 0; i < 5; i++)
+              tester.getRect(find.byKey(ValueKey('scheda-formato-$i'))),
+          ];
+          expect(formats.map((rect) => rect.top).toSet(), hasLength(1));
+          expect(formats.first.left, greaterThanOrEqualTo(controlsRect.left));
+          expect(formats.last.right, lessThanOrEqualTo(controlsRect.right));
+          for (var signature = 0; signature < 3; signature++) {
+            await tapVisible(
+              tester,
+              find.byKey(ValueKey('firma-disposizione-$signature')),
+            );
+            await tester.pump();
+            expect(
+              tester.takeException(),
+              isNull,
+              reason: '${subject.name}, signature $signature, $size',
             );
           }
         }
