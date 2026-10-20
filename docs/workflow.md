@@ -42,6 +42,15 @@ prima di ogni deploy. In locale la suite intera si lancia solo se si tocca codic
 può rompere cose lontane (modelli, sincronizzazione, tema, testi, repository) o se l’autore lo
 chiede. Chi lavora dice quali test ha eseguito.
 
+## Pochi passaggi per ogni modifica
+
+Meno passaggi, meno attesa. Dopo una modifica si formatta e si analizza **solo i file toccati**
+(`dart format <file>`, `flutter analyze --no-pub <file>`), non tutto `lib`. Meglio modifiche
+piccole e mirate che script lunghi di sostituzione; si cerca dove stanno le cose e si legge solo
+il pezzo che serve, non interi file lunghi. I comandi indipendenti si lanciano insieme e non si
+ripete un controllo già passato. Le risposte restano brevi. Una chat molto lunga rallenta ogni
+risposta: conviene aprirne una nuova (lo stato sta nel piano, in queste regole e nel ramo).
+
 ## Cosa blocca gli errori
 
 - **`Checks`** (`.github/workflows/checks.yml`): su ogni ramo diverso da `main` e su ogni pull

@@ -65,6 +65,13 @@
   every deploy. Run the full suite locally only when you touch shared code that
   can break things far away (models, sync, theme, localization strings,
   repositories) or when the user asks. Say which tests you ran.
+- **Keep each change lean.** Fewer steps per edit means less waiting: format
+  and analyze only the files you touched (`dart format <files>`,
+  `flutter analyze --no-pub <files>`), not all of `lib`; prefer small targeted
+  edits over long patch or replace scripts; locate with a search and read only
+  the line ranges you need instead of whole large files; run independent
+  commands together; do not repeat a check that already passed. Keep replies
+  short.
 - Synced models only get new optional fields; never rename or remove existing
   ones, because app versions and cloud data coexist.
 - Development tools stay behind `kDevTools`. An unfinished user-facing
