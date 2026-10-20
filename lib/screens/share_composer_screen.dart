@@ -18,6 +18,7 @@ import '../models/share_content.dart';
 import '../l10n/strings_scope.dart';
 import '../widgets/photo_image.dart';
 import '../widgets/app_choice_chip.dart';
+import '../widgets/app_field.dart';
 import '../data/photo_storage.dart';
 import '../data/moodboard_storage.dart';
 import '../l10n/share_composer_strings.dart';

@@ -372,7 +372,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         labels: _compositionLabels(_subject),
         index: _composition,
         columns: 3,
-        showLabels: true,
         previewHeight: 90,
         preview: (i) => FittedBox(
           child: SizedBox(
@@ -398,7 +397,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         columns: 5,
         minItemWidth: 64,
         singleRow: true,
-        showLabels: true,
         preview: (i) => Center(
           child: Container(
             width:
@@ -440,7 +438,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         index: _style ?? 0,
         placeholder: _style == null ? 'Personalizzato' : null,
         columns: 2,
-        showLabels: true,
         preview: (i) => Container(
           width: 36,
           height: 22,
@@ -696,12 +693,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Text(
-                      shareComposerLabel(context, 'Misura'),
-                      style: context.typography.supporting.copyWith(
-                        fontSize: 12,
-                      ),
-                    ),
+                    child: AppFieldLabel(shareComposerLabel(context, 'Misura')),
                   ),
                   Container(
                     height: 44,
@@ -860,19 +852,21 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                                         context,
                                         categories[i].$1,
                                       ),
-                                      style: context
-                                          .typography
-                                          .compactSectionLabel
-                                          .copyWith(fontSize: 15),
+                                      style: context.typography.sectionHeading
+                                          .copyWith(fontSize: 18),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _note(
+                                        descriptions[i],
+                                        singleLine: true,
+                                        key: ValueKey(
+                                          'share-section-description-$i',
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              _note(
-                                descriptions[i],
-                                singleLine: true,
-                                key: ValueKey('share-section-description-$i'),
                               ),
                               const SizedBox(height: 12),
                             ],
@@ -1034,12 +1028,7 @@ class _OptionStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final labelText = Text(
-      shareComposerLabel(context, label),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: context.typography.supporting.copyWith(fontSize: 12),
-    );
+    final labelText = AppFieldLabel(shareComposerLabel(context, label));
     return SizedBox(
       height: 48,
       child: Row(
@@ -1110,7 +1099,7 @@ class _OptionStepper extends StatelessWidget {
   }
 }
 
-/// Direct visual choices with accessible names and a persistent selected label.
+/// Visual choices with muted captions outside their selection borders.
 class _VisualChoices extends StatelessWidget {
   const _VisualChoices({
     required this.fieldKey,
@@ -1120,7 +1109,6 @@ class _VisualChoices extends StatelessWidget {
     required this.preview,
     required this.onChanged,
     this.columns = 6,
-    this.showLabels = false,
     this.placeholder,
     this.previewHeight = 26,
     this.minItemWidth,
@@ -1133,7 +1121,6 @@ class _VisualChoices extends StatelessWidget {
   final Widget Function(int) preview;
   final ValueChanged<int> onChanged;
   final int columns;
-  final bool showLabels;
   final String? placeholder;
   final double previewHeight;
   final double? minItemWidth;
@@ -1141,11 +1128,12 @@ class _VisualChoices extends StatelessWidget {
 
   Widget _label(BuildContext context, int index) {
     final text = Text(
+      key: ValueKey('$fieldKey-caption-$index'),
       shareComposerLabel(context, labels[index]),
       textAlign: TextAlign.center,
       maxLines: singleRow ? 1 : 2,
       overflow: TextOverflow.ellipsis,
-      style: context.typography.controlLabel.copyWith(fontSize: 12.5),
+      style: context.typography.supporting.copyWith(fontSize: 11, height: 1.2),
     );
     return singleRow ? FittedBox(fit: BoxFit.scaleDown, child: text) : text;
   }
@@ -1156,9 +1144,9 @@ class _VisualChoices extends StatelessWidget {
     children: [
       Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Text(
+        child: AppFieldLabel(
           shareComposerLabel(context, label),
-          style: context.typography.supporting.copyWith(fontSize: 12),
+          key: ValueKey('$fieldKey-label'),
         ),
       ),
       LayoutBuilder(
@@ -1168,8 +1156,7 @@ class _VisualChoices extends StatelessWidget {
               ? maxColumns
               : maxColumns.clamp(
                   1,
-                  ((constraints.maxWidth + 6) /
-                          ((minItemWidth ?? (showLabels ? 104 : 44)) + 6))
+                  ((constraints.maxWidth + 6) / ((minItemWidth ?? 44) + 6))
                       .floor()
                       .clamp(1, maxColumns),
                 );
@@ -1189,32 +1176,36 @@ class _VisualChoices extends StatelessWidget {
                       if (i != index || placeholder != null) onChanged(i);
                     },
                     borderRadius: BorderRadius.circular(kRadiusField),
-                    child: Container(
+                    child: SizedBox(
                       width: tileWidth,
-                      height: showLabels
-                          ? previewHeight + 46
-                          : (previewHeight + 12).clamp(44.0, double.infinity),
-                      decoration: selectableDecoration(
-                        context.colors,
-                        selected: i == index && placeholder == null,
-                      ),
                       child: ExcludeSemantics(
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            SizedBox(
-                              height: previewHeight,
-                              child: Center(child: preview(i)),
-                            ),
-                            if (showLabels) ...[
-                              const SizedBox(height: 4),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
+                            Container(
+                              key: ValueKey('$fieldKey-tile-$i'),
+                              height: (previewHeight + 12).clamp(
+                                44.0,
+                                double.infinity,
+                              ),
+                              decoration: selectableDecoration(
+                                context.colors,
+                                selected: i == index && placeholder == null,
+                              ),
+                              child: Center(
+                                child: SizedBox(
+                                  height: previewHeight,
+                                  child: Center(child: preview(i)),
                                 ),
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            SizedBox(
+                              height: singleRow ? 14 : 28,
+                              child: Align(
+                                alignment: Alignment.topCenter,
                                 child: _label(context, i),
                               ),
-                            ],
+                            ),
                           ],
                         ),
                       ),

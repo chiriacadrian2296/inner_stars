@@ -140,7 +140,7 @@ void main() {
       expect((tester.widget(size) as dynamic).onChanged, isNotNull);
       expect(
         tester
-            .getRect(find.byKey(const ValueKey('watermark-tipo-1')))
+            .getRect(find.byKey(const ValueKey('watermark-tipo-tile-1')))
             .center
             .dy,
         closeTo(tester.getRect(size).center.dy, 2),
@@ -326,6 +326,19 @@ void main() {
       }
       expect(find.text('Contenuto'), findsNothing);
       for (var section = 0; section < 3; section++) {
+        final heading = find
+            .descendant(
+              of: find.byKey(ValueKey('share-section-$section')),
+              matching: find.byType(Text),
+            )
+            .first;
+        final description = find.byKey(
+          ValueKey('share-section-description-$section'),
+        );
+        expect(
+          tester.getCenter(description).dy,
+          closeTo(tester.getCenter(heading).dy, 1),
+        );
         expect(
           tester
               .widget<Text>(
@@ -333,6 +346,32 @@ void main() {
               )
               .maxLines,
           1,
+        );
+      }
+      for (final field in [
+        'scheda-composizione',
+        'scheda-formato',
+        'stile-preset',
+        'sfondo-forma',
+        'sfondo-colori',
+        'firma-disposizione',
+        'watermark-tipo',
+      ]) {
+        final label = tester.widget<Text>(
+          find.descendant(
+            of: find.byKey(ValueKey('$field-label')),
+            matching: find.byType(Text),
+          ),
+        );
+        final caption = find.byKey(ValueKey('$field-caption-0'));
+        final captionStyle = tester.widget<Text>(caption).style!;
+        expect(label.style!.fontSize, greaterThan(captionStyle.fontSize!));
+        expect(captionStyle.color, AppColors.dark.muted);
+        expect(
+          tester.getTopLeft(caption).dy,
+          greaterThanOrEqualTo(
+            tester.getBottomLeft(find.byKey(ValueKey('$field-tile-0'))).dy,
+          ),
         );
       }
       expect(tester.takeException(), isNull);
@@ -599,7 +638,8 @@ void main() {
           final compositionCount = find
               .byWidgetPredicate((widget) {
                 final key = widget.key;
-                return key is ValueKey<String> &&
+                return widget is InkWell &&
+                    key is ValueKey<String> &&
                     key.value.startsWith('scheda-composizione-');
               })
               .evaluate()
