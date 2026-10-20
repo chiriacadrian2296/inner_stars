@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inner_stars/l10n/strings_en.dart';
 import 'package:inner_stars/l10n/strings_it.dart';
 import 'package:inner_stars/l10n/strings_scope.dart';
 import 'package:inner_stars/models/life_area.dart';
@@ -11,8 +12,8 @@ import 'package:inner_stars/theme/app_theme.dart';
 import 'package:inner_stars/widgets/shareable_reflection_card.dart';
 
 const strings = StringsIt();
-Widget app(Widget home) => StringsScope(
-  strings: strings,
+Widget app(Widget home, {bool english = false}) => StringsScope(
+  strings: english ? const StringsEn() : strings,
   child: MaterialApp(theme: buildAppTheme(), home: home),
 );
 
@@ -214,6 +215,7 @@ void main() {
                   artwork: const Icon(Icons.star),
                 ),
               ),
+              english: true,
             ),
           );
           await tester.pumpAndSettle();

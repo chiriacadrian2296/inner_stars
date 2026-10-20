@@ -494,6 +494,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         labels: [for (final f in _ShareFormat.values) _formatLabel(f)],
         index: _format.index,
         columns: 5,
+        minItemWidth: 140,
         showLabels: true,
         preview: (i) => Center(
           child: Container(
@@ -845,39 +846,70 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
             final controls = Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    for (var i = 0; i < categories.length; i++)
-                      Expanded(
-                        child: Semantics(
-                          selected: _category == i,
-                          child: TextButton(
-                            key: ValueKey('share-category-$i'),
-                            onPressed: () => setState(() => _category = i),
-                            style: TextButton.styleFrom(
-                              foregroundColor: _category == i
-                                  ? colors.gold
-                                  : colors.muted,
-                              backgroundColor: _category == i
-                                  ? colors.nightPanel
-                                  : Colors.transparent,
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(categories[i].$2, size: 20),
-                                const SizedBox(height: 4),
-                                Text(
-                                  shareComposerLabel(context, categories[i].$1),
-                                  style: const TextStyle(fontSize: 12),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final columns = constraints.maxWidth >= 440 ? 4 : 2;
+                    final width =
+                        (constraints.maxWidth - (columns - 1) * 8) / columns;
+                    return Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (var i = 0; i < categories.length; i++)
+                          SizedBox(
+                            width: width,
+                            child: Semantics(
+                              selected: _category == i,
+                              child: TextButton(
+                                key: ValueKey('share-category-$i'),
+                                onPressed: () => setState(() => _category = i),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: _category == i
+                                      ? colors.gold
+                                      : colors.muted,
+                                  backgroundColor: _category == i
+                                      ? colors.nightPanel
+                                      : Colors.transparent,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 12,
+                                  ),
                                 ),
-                              ],
+                                child: Flex(
+                                  direction: columns == 2
+                                      ? Axis.horizontal
+                                      : Axis.vertical,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(categories[i].$2, size: 20),
+                                    SizedBox(
+                                      width: columns == 2 ? 10 : 0,
+                                      height: columns == 2 ? 0 : 6,
+                                    ),
+                                    Flexible(
+                                      fit: FlexFit.loose,
+                                      child: Text(
+                                        shareComposerLabel(
+                                          context,
+                                          categories[i].$1,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 2,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          letterSpacing: 0,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 8),
                 Expanded(
@@ -1222,6 +1254,7 @@ class _VisualChoices extends StatelessWidget {
     this.showHeader = true,
     this.placeholder,
     this.previewHeight = 26,
+    this.minItemWidth,
   });
   final String fieldKey;
   final String label;
@@ -1234,6 +1267,7 @@ class _VisualChoices extends StatelessWidget {
   final bool showHeader;
   final String? placeholder;
   final double previewHeight;
+  final double? minItemWidth;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -1251,7 +1285,10 @@ class _VisualChoices extends StatelessWidget {
         builder: (context, constraints) {
           final count = columns.clamp(
             1,
-            (constraints.maxWidth / 48).floor().clamp(1, columns),
+            ((constraints.maxWidth + 6) /
+                    ((minItemWidth ?? (showLabels ? 104 : 44)) + 6))
+                .floor()
+                .clamp(1, columns),
           );
           final width = (constraints.maxWidth - (count - 1) * 6) / count;
           return Wrap(
@@ -1288,13 +1325,18 @@ class _VisualChoices extends StatelessWidget {
                               ),
                               if (showLabels) ...[
                                 const SizedBox(height: 4),
-                                Text(
-                                  shareComposerLabel(context, labels[i]),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: context.typography.controlLabel
-                                      .copyWith(fontSize: 11),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                  ),
+                                  child: Text(
+                                    shareComposerLabel(context, labels[i]),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: context.typography.controlLabel
+                                        .copyWith(fontSize: 12.5),
+                                  ),
                                 ),
                               ],
                             ],
