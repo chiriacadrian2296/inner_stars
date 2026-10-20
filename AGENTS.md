@@ -57,6 +57,14 @@
   cherry-pick individual commits.
 - Pushing a branch only runs the `Checks` workflow (analyze and tests); it
   publishes nothing. The web deploy also runs analyze and tests first.
+- **Local checks are targeted, not the whole suite.** After an edit run
+  `flutter analyze --no-pub` and `flutter test <the test files for the code you
+  touched>` (tests named after the file, or the tests that import it). Do not
+  run the full suite (600+ tests) or web/APK builds for small or UI-only
+  changes: the `Checks` workflow runs everything on every branch push and before
+  every deploy. Run the full suite locally only when you touch shared code that
+  can break things far away (models, sync, theme, localization strings,
+  repositories) or when the user asks. Say which tests you ran.
 - Synced models only get new optional fields; never rename or remove existing
   ones, because app versions and cloud data coexist.
 - Development tools stay behind `kDevTools`. An unfinished user-facing
