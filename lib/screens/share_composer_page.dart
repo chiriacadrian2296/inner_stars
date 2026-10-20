@@ -814,6 +814,34 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
               2 => [_backgroundBlock(), _watermarkBlock()],
               _ => [_signatureBlock()],
             };
+            final history = SizedBox(
+              height: 48,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    key: const ValueKey('share-undo'),
+                    tooltip: shareComposerLabel(context, 'Annulla modifica'),
+                    color: colors.gold,
+                    disabledColor: colors.muted,
+                    onPressed: _undo.isEmpty
+                        ? null
+                        : () => _travel(_undo, _redo),
+                    icon: const Icon(Icons.undo_rounded),
+                  ),
+                  IconButton(
+                    key: const ValueKey('share-redo'),
+                    tooltip: shareComposerLabel(context, 'Ripristina modifica'),
+                    color: colors.gold,
+                    disabledColor: colors.muted,
+                    onPressed: _redo.isEmpty
+                        ? null
+                        : () => _travel(_redo, _undo),
+                    icon: const Icon(Icons.redo_rounded),
+                  ),
+                ],
+              ),
+            );
             final controls = Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -852,30 +880,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    IconButton(
-                      key: const ValueKey('share-undo'),
-                      tooltip: shareComposerLabel(context, 'Annulla modifica'),
-                      onPressed: _undo.isEmpty
-                          ? null
-                          : () => _travel(_undo, _redo),
-                      icon: const Icon(Icons.undo_rounded),
-                    ),
-                    IconButton(
-                      key: const ValueKey('share-redo'),
-                      tooltip: shareComposerLabel(
-                        context,
-                        'Ripristina modifica',
-                      ),
-                      onPressed: _redo.isEmpty
-                          ? null
-                          : () => _travel(_redo, _undo),
-                      icon: const Icon(Icons.redo_rounded),
-                    ),
-                  ],
-                ),
                 Expanded(
                   child: Scrollbar(
                     child: SingleChildScrollView(
@@ -898,7 +902,14 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                 ? Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(child: preview),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Expanded(child: preview),
+                            history,
+                          ],
+                        ),
+                      ),
                       const SizedBox(width: gap),
                       SizedBox(
                         width: (constraints.maxWidth * .42).clamp(320.0, 480.0),
@@ -909,12 +920,12 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                 : Column(
                     children: [
                       Expanded(child: preview),
+                      history,
                       const SizedBox(height: gap),
                       SizedBox(
-                        height: (constraints.maxHeight * .38).clamp(
-                          240.0,
-                          310.0,
-                        ),
+                        height:
+                            (constraints.maxHeight * .38).clamp(240.0, 310.0) -
+                            48,
                         child: controls,
                       ),
                     ],
@@ -1087,12 +1098,8 @@ class _BlockCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Container(
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: colors.nightBorder)),
-      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
