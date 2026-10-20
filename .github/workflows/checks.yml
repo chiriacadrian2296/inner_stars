@@ -48,6 +48,8 @@ jobs:
           cache: npm
           cache-dependency-path: landing/package-lock.json
       - run: npm ci
+      # The types Astro generates (.astro/) are not in the repository.
+      - run: npx astro sync
       - run: npm run typecheck
       - run: npm run build
       - run: npm test
