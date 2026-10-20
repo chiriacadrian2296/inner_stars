@@ -15,9 +15,12 @@ Per questo **non si lavora su `main`** e non ci si fa push diretti.
 
 ## Il ciclo di una novità
 
-1. Si parte da `main` aggiornato e si crea un **ramo con un nome parlante**
-   (es. `onboarding`, `sync-foto`, `fix-login`). Lo sceglie Claude, o lo dice l’autore prima
-   di cominciare.
+1. **Prima di toccare qualsiasi file**, Claude o Codex dicono su che ramo sono e chiedono
+   all’autore **su cosa si lavora**, per concordare il nome del ramo (es. `onboarding`,
+   `sync-foto`, `fix-login`). Se esistono rami con lavori in corso, li nominano e chiedono se
+   continuare su uno di quelli. Poi creano il ramo da `main` aggiornato (o passano a quello
+   scelto) e solo allora cominciano. Vale anche per una correzione di una riga o per la
+   documentazione; l’unica eccezione è se l’autore dice esplicitamente di lavorare su `main`.
 2. Si lavora e si fa commit sul ramo quanto si vuole. Un push del ramo **non pubblica nulla**:
    parte solo il workflow `Checks` (analisi e test).
 3. Si prova: web in locale sulla porta 5000 (già autorizzata per il login Google), Android con
