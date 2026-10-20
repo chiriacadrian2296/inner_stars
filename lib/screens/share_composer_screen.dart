@@ -289,50 +289,7 @@ class _ShareSpecimen extends StatelessWidget {
                 fit: BoxFit.cover,
                 moodboard: subject == ShareSubject.moodboard,
               ),
-            if (effPhoto == _PhotoMode.background) ...const [
-              // Soft veil over the whole photo, then the design board's
-              // night scrim rising from the bottom edge under the text.
-              DecoratedBox(decoration: BoxDecoration(color: Color(0x3305070D))),
-              // Top scrim too, so a title placed at the top stays readable
-              // on a bright photo.
-              Align(
-                alignment: Alignment.topCenter,
-                child: FractionallySizedBox(
-                  heightFactor: .4,
-                  widthFactor: 1,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Color(0xB305070D), Color(0x0005070D)],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: FractionallySizedBox(
-                  heightFactor: .62,
-                  widthFactor: 1,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color(0x0005070D),
-                          Color(0x8C05070D),
-                          Color(0xF205070D),
-                        ],
-                        stops: [0, .35, 1],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            if (effPhoto == _PhotoMode.background) const _PhotoBackdropScrim(),
             if (effPhoto == _PhotoMode.panel && layout == _Layout.free)
               Align(
                 alignment: composition.isEven
@@ -989,6 +946,58 @@ class _AppLogoMark extends StatelessWidget {
 
 Future<Uint8List?> _readSharePhoto(String path, bool moodboard) =>
     moodboard ? MoodboardStorage.read(path) : PhotoStorage.readBytes(path);
+
+class _PhotoBackdropScrim extends StatelessWidget {
+  const _PhotoBackdropScrim();
+  @override
+  Widget build(BuildContext context) => Stack(
+    fit: StackFit.expand,
+    children: const [
+      // Soft veil over the whole photo, then the design board's
+      // night scrim rising from the bottom edge under the text.
+      DecoratedBox(decoration: BoxDecoration(color: Color(0x3305070D))),
+      // Top scrim too, so a title placed at the top stays readable
+      // on a bright photo.
+      Align(
+        alignment: Alignment.topCenter,
+        child: FractionallySizedBox(
+          heightFactor: .4,
+          widthFactor: 1,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xB305070D), Color(0x0005070D)],
+              ),
+            ),
+          ),
+        ),
+      ),
+      Align(
+        alignment: Alignment.bottomCenter,
+        child: FractionallySizedBox(
+          heightFactor: .62,
+          widthFactor: 1,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0x0005070D),
+                  Color(0x8C05070D),
+                  Color(0xF205070D),
+                ],
+                stops: [0, .35, 1],
+              ),
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
+}
 
 class _ContentPhoto extends StatefulWidget {
   const _ContentPhoto({

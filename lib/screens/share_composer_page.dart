@@ -28,13 +28,11 @@ class _StylePreset {
     this.label, {
     required this.gradient,
     required this.palette,
-    this.brandInk = _Ink.auto,
     this.watermark = _Watermark.none,
   });
   final String label;
   final _GradientShape gradient;
   final int palette;
-  final _Ink brandInk;
   final _Watermark watermark;
 }
 
@@ -44,7 +42,6 @@ const _stylePresets = [
     'Dorato',
     gradient: _GradientShape.vertical,
     palette: 3,
-    brandInk: _Ink.gold,
     watermark: _Watermark.logo,
   ),
 ];
@@ -68,7 +65,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
   // Style. [_style] is the applied preset, or null once anything was changed
   // by hand.
   int? _style = 0;
-  _Ink _brandInk = _Ink.auto;
+  _Ink get _brandInk => _elementInkFor(_composition);
 
   // Background.
   _GradientShape _gradient = _GradientShape.halo;
@@ -102,7 +99,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       composition: _composition,
       format: _format,
       style: _style,
-      brandInk: _brandInk,
       gradient: _gradient,
       palette: _palette,
       reverseColors: _reverseColors,
@@ -118,7 +114,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       _composition = draft.composition;
       _format = draft.format;
       _style = draft.style;
-      _brandInk = draft.brandInk;
       _gradient = draft.gradient;
       _palette = draft.palette;
       _reverseColors = draft.reverseColors;
@@ -157,7 +152,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       _gradient = s.gradient;
       _palette = s.palette;
       _reverseColors = false;
-      _brandInk = s.brandInk;
       _watermark = s.watermark;
     });
   }
@@ -176,6 +170,12 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     if (_layoutMap[_subject]![_composition].$1 == _Layout.centered)
       _PhotoMode.circle,
   ];
+
+  _Ink _elementInkFor(int composition) =>
+      switch (_layoutMap[_subject]![composition].$1) {
+        _Layout.centered || _Layout.free => _Ink.gold,
+        _ => _Ink.auto,
+      };
 
   Future<void> _share() async {
     if (_sharing) return;
@@ -317,14 +317,14 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     badgePosition: _BadgePosition.top,
     titleInk: _Ink.auto,
     watermark: _effectiveWatermark,
-    watermarkInk: _brandInk,
+    watermarkInk: _elementInkFor(composition ?? _composition),
     watermarkSize: _watermarkSize,
     watermarkArea: _watermarkArea,
     brandContent: _brandContent,
     logoStyle: _LogoStyle.current,
     logoDisc: false,
-    nameInk: _brandInk,
-    logoInk: _brandInk,
+    nameInk: _elementInkFor(composition ?? _composition),
+    logoInk: _elementInkFor(composition ?? _composition),
     logoSize: _LogoSize.small,
     brandLayout: _brandLayout,
     showType: true,
@@ -453,7 +453,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         ),
         onChanged: _applyPreset,
       ),
-      _note('Gli stili pronti cambiano sfondo, colore condiviso e filigrana.'),
+      _note('Gli stili pronti cambiano sfondo e filigrana.'),
     ],
   );
 
@@ -533,61 +533,66 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       fit: BoxFit.cover,
       moodboard: _subject == ShareSubject.moodboard,
     );
-    return SizedBox(
+    return Container(
+      key: ValueKey('share-photo-sample-${mode.name}'),
       width: 40,
       height: 52,
+      decoration: BoxDecoration(
+        color: context.colors.night,
+        borderRadius: BorderRadius.circular(5),
+      ),
+      foregroundDecoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: context.colors.muted),
+      ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(5),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: context.colors.night,
-            border: Border.all(color: context.colors.muted),
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              switch (mode) {
-                _PhotoMode.none => Icon(
-                  Icons.block_rounded,
-                  size: 20,
-                  color: context.colors.muted,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            switch (mode) {
+              _PhotoMode.none => Icon(
+                Icons.block_rounded,
+                size: 20,
+                color: context.colors.muted,
+              ),
+              _PhotoMode.background => photo,
+              _PhotoMode.panel => Align(
+                alignment: Alignment.topCenter,
+                child: FractionallySizedBox(
+                  heightFactor: .55,
+                  widthFactor: 1,
+                  child: photo,
                 ),
-                _PhotoMode.background => photo,
-                _PhotoMode.panel => Align(
-                  alignment: Alignment.topCenter,
-                  child: FractionallySizedBox(
-                    heightFactor: .55,
-                    widthFactor: 1,
-                    child: photo,
-                  ),
+              ),
+              _PhotoMode.circle => Center(
+                child: SizedBox.square(
+                  dimension:
+                      40 /
+                      (_format == _ShareFormat.landscape ? 640 : 360) *
+                      34 *
+                      3.2 *
+                      (_format == _ShareFormat.landscape ? .72 : 1),
+                  child: ClipOval(child: photo),
                 ),
-                _PhotoMode.circle => Center(
-                  child: SizedBox.square(
-                    dimension: 28,
-                    child: ClipOval(child: photo),
-                  ),
+              ),
+            },
+            if (mode == _PhotoMode.background) const _PhotoBackdropScrim(),
+            if (mode == _PhotoMode.background || mode == _PhotoMode.panel)
+              Positioned(
+                left: 6,
+                right: 6,
+                bottom: 6,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(height: 2, color: context.colors.text),
+                    const SizedBox(height: 3),
+                    Container(width: 16, height: 2, color: context.colors.text),
+                  ],
                 ),
-              },
-              if (mode == _PhotoMode.background || mode == _PhotoMode.panel)
-                Positioned(
-                  left: 6,
-                  right: 6,
-                  bottom: 6,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(height: 2, color: context.colors.text),
-                      const SizedBox(height: 3),
-                      Container(
-                        width: 16,
-                        height: 2,
-                        color: context.colors.text,
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
@@ -636,19 +641,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     ],
   );
 
-  Widget _linkedColorBlock() => _BlockCard(
-    children: [
-      _VisualChoices(
-        fieldKey: 'colore-elementi',
-        label: 'Colore',
-        labels: [for (final ink in _Ink.values) _inkLabel(ink)],
-        index: _brandInk.index,
-        columns: 5,
-        preview: (i) => _InkDot(_Ink.values[i]),
-        onChanged: (i) => _edit(() => _brandInk = _Ink.values[i]),
-      ),
-    ],
-  );
   Widget _watermarkBlock() {
     final on = _effectiveWatermark != _Watermark.none;
     final kinds = [
@@ -786,19 +778,16 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
               ('Scheda', Icons.dashboard_customize_outlined),
               ('Sfondo', Icons.gradient_rounded),
               ('Firma', Icons.verified_outlined),
-              ('Colore elementi', Icons.palette_outlined),
             ];
             const descriptions = [
               'Composizione, formato e stile.',
               'Sfumatura, foto e filigrana.',
               'Logo e nome dell’app.',
-              'Colore di firma e filigrana.',
             ];
             final sections = [
               [_cardBlock(), _styleBlock()],
               [_backgroundBlock(), _watermarkBlock()],
               [_signatureBlock()],
-              [_linkedColorBlock()],
             ];
             final history = SizedBox(
               height: 48,
@@ -973,14 +962,6 @@ String _gradientLabel(_GradientShape value) => switch (value) {
   _GradientShape.radial => 'Radiale',
   _GradientShape.vertical => 'Verticale',
   _GradientShape.diagonal => 'Diagonale',
-};
-
-String _inkLabel(_Ink value) => switch (value) {
-  _Ink.auto => 'Auto',
-  _Ink.gold => 'Oro',
-  _Ink.white => 'Bianco',
-  _Ink.navyDark => 'Navy scuro',
-  _Ink.navyLight => 'Navy chiaro',
 };
 
 String _watermarkSizeLabel(_WatermarkSize value) => switch (value) {
@@ -1300,29 +1281,6 @@ Color? _inkDotColor(AppColors colors, _Ink ink) => switch (ink) {
   _Ink.navyDark => colors.night,
   _Ink.navyLight => const Color(0xFF7C8FC4),
 };
-
-/// A colour dot for an ink option (a hollow ring for Auto).
-class _InkDot extends StatelessWidget {
-  const _InkDot(this.ink);
-  final _Ink ink;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final color = _inkDotColor(colors, ink);
-    return Container(
-      width: 22,
-      height: 22,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-        border: color == null
-            ? Border.all(color: colors.muted, width: 1.5)
-            : null,
-      ),
-    );
-  }
-}
 
 /// A small preview of a background palette.
 class _PaletteDot extends StatelessWidget {

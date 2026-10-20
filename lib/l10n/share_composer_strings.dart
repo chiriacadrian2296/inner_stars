@@ -16,6 +16,10 @@ String shareComposerLabel(BuildContext context, String label) {
 
 const _labels = <String, (String, String)>{
   'Aspetto': ('Appearance', 'Aspect'),
+  'Gli stili pronti cambiano sfondo e filigrana.': (
+    'Ready-made styles change the background and watermark.',
+    'Stilurile predefinite schimbă fundalul și filigranul.',
+  ),
   'Navy scuro': ('Dark navy', 'Bleumarin închis'),
   'Navy chiaro': ('Light navy', 'Bleumarin deschis'),
   'Composizione, formato e stile.': (

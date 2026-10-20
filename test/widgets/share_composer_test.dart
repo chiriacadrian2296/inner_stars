@@ -150,7 +150,7 @@ void main() {
   );
 
   testWidgets(
-    'element color links branding and watermark while leaving the title unchanged',
+    'compositions choose linked element colors while leaving the title unchanged',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
@@ -221,7 +221,7 @@ void main() {
       }
 
       expectLinked(AppColors.dark.gold);
-      expect(choiceSelected(tester, 'colore-elementi-1'), isTrue);
+      expect(find.byKey(const ValueKey('colore-elementi-1')), findsNothing);
       await tapVisible(tester, undo);
       await tester.pump();
       expect(choiceSelected(tester, 'stile-preset-0'), isTrue);
@@ -243,21 +243,12 @@ void main() {
       expect(choiceSelected(tester, 'stile-preset-0'), isTrue);
       await tapVisible(tester, redo);
       await tester.pump();
-      await tapVisible(tester, find.byKey(const ValueKey('colore-elementi-0')));
+      await tapVisible(
+        tester,
+        find.byKey(const ValueKey('scheda-composizione-1')),
+      );
       await tester.pump();
-      expectLinked(const Color(0xFFF4F1E8));
-      for (final (index, color) in [
-        (2, AppColors.dark.night),
-        (3, const Color(0xFF7C8FC4)),
-        (4, AppColors.dark.text),
-      ]) {
-        await tapVisible(
-          tester,
-          find.byKey(ValueKey('colore-elementi-$index')),
-        );
-        await tester.pump();
-        expectLinked(color);
-      }
+      expectLinked(AppColors.dark.text);
       expect(tester.widget<IconButton>(redo).onPressed, isNull);
       expect(choiceSelected(tester, 'stile-preset-1'), isFalse);
       expect(tester.takeException(), isNull);
@@ -334,7 +325,7 @@ void main() {
         }
       }
       expect(find.text('Contenuto'), findsNothing);
-      for (var section = 0; section < 4; section++) {
+      for (var section = 0; section < 3; section++) {
         expect(
           tester
               .widget<Text>(
@@ -372,6 +363,48 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('sfondo-foto-menu')), findsNothing);
+      for (final mode in ['none', 'circle']) {
+        final sample = tester.widget<Container>(
+          find.byKey(ValueKey('share-photo-sample-$mode')),
+        );
+        final background = sample.decoration! as BoxDecoration;
+        final foreground = sample.foregroundDecoration! as BoxDecoration;
+        expect(foreground.borderRadius, background.borderRadius);
+        expect(foreground.border, isNotNull);
+      }
+      final circleSample = find.byKey(
+        const ValueKey('share-photo-sample-circle'),
+      );
+      expect(
+        tester
+            .getSize(
+              find.descendant(
+                of: circleSample,
+                matching: find.byType(ClipOval),
+              ),
+            )
+            .width,
+        lessThan(tester.getSize(circleSample).width * .4),
+      );
+      await tapVisible(tester, find.byKey(const ValueKey('sfondo-foto-1')));
+      await tester.pumpAndSettle();
+      List<Gradient> gradients(Finder scope) => tester
+          .widgetList<DecoratedBox>(
+            find.descendant(of: scope, matching: find.byType(DecoratedBox)),
+          )
+          .map((box) => box.decoration)
+          .whereType<BoxDecoration>()
+          .map((decoration) => decoration.gradient)
+          .whereType<Gradient>()
+          .toList();
+      final photoGradients = gradients(
+        find.byKey(const ValueKey('share-photo-sample-background')),
+      );
+      expect(photoGradients, hasLength(2));
+      expect(
+        gradients(find.byKey(const ValueKey('share-preview'))),
+        containsAll(photoGradients),
+      );
       expect(find.byKey(const ValueKey('sfondo-foto-2')), findsOneWidget);
       await tapVisible(tester, find.byKey(const ValueKey('sfondo-foto-2')));
       await tester.pumpAndSettle();
@@ -593,7 +626,7 @@ void main() {
           final previewPosition = tester.getTopLeft(
             find.byKey(const ValueKey('share-preview')),
           );
-          for (final category in [1, 2, 3, 0]) {
+          for (final category in [1, 2, 0]) {
             await scrollToSection(tester, category);
             await tester.pump();
             expect(
