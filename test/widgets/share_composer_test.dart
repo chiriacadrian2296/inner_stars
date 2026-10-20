@@ -17,6 +17,12 @@ Widget app(Widget home, {bool english = false}) => StringsScope(
   child: MaterialApp(theme: buildAppTheme(), home: home),
 );
 
+Future<void> selectCategory(WidgetTester tester, int category) async {
+  final tab = find.byKey(ValueKey('share-category-$category'));
+  await tester.ensureVisible(tab);
+  await tester.tap(tab);
+}
+
 void main() {
   testWidgets(
     'common share entry uses the composer and edits only the shared excerpt',
@@ -79,14 +85,14 @@ void main() {
       await tester.pump();
       expect(find.text('Solo un estratto'), findsWidgets);
       expect(record.body, 'Il testo originale');
-      await tester.tap(find.byKey(const ValueKey('share-category-1')));
+      await selectCategory(tester, 1);
       await tester.pump();
       await tester.ensureVisible(find.text('Testo'));
       await tester.tap(find.text('Testo'));
       await tester.pump();
       expect(find.text('Solo un estratto'), findsNothing);
       expect(record.body, 'Il testo originale');
-      await tester.tap(find.byKey(const ValueKey('share-category-3')));
+      await selectCategory(tester, 3);
       await tester.pump();
       expect(find.byKey(const ValueKey('firma-logo-menu')), findsNothing);
       expect(find.byKey(const ValueKey('firma-colore-nome-0')), findsOneWidget);
@@ -96,10 +102,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('firma-logo-menu')), findsOneWidget);
       expect(find.byKey(const ValueKey('firma-colore-nome-0')), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('firma-posizione-8')));
+      await tester.tap(find.byKey(const ValueKey('firma-posizione-prev')));
       await tester.pump();
-      expect(find.textContaining('Basso Destra'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('share-category-2')));
+      expect(find.textContaining('Alto Centro'), findsOneWidget);
+      await selectCategory(tester, 2);
       await tester.pump();
       expect(find.byKey(const ValueKey('sfondo-foto-menu')), findsNothing);
       expect(find.byKey(const ValueKey('watermark-misura-menu')), findsNothing);
@@ -149,7 +155,7 @@ void main() {
         ocean,
       ); // Choosing the same preset must not add a history step.
       await tester.pump();
-      await tester.tap(find.byKey(const ValueKey('share-category-3')));
+      await selectCategory(tester, 3);
       await tester.pump();
       expect(find.byKey(const ValueKey('firma-logo-menu')), findsOneWidget);
       await tester.tap(undo);
@@ -163,22 +169,22 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Nessuna'));
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('firma-posizione-0')), findsNothing);
+      expect(find.byKey(const ValueKey('firma-posizione-menu')), findsNothing);
       await tester.tap(undo);
       await tester.pump();
       expect(find.byKey(const ValueKey('firma-logo-menu')), findsOneWidget);
       await tester.tap(undo);
       await tester.pump();
       expect(find.byKey(const ValueKey('firma-logo-menu')), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('share-category-0')));
+      await selectCategory(tester, 0);
       await tester.pump();
       expect(find.text('Stile · Classico'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('share-category-2')));
+      await selectCategory(tester, 2);
       await tester.pump();
       await tester.tap(find.byKey(const ValueKey('sfondo-colori-3')));
       await tester.pump();
       expect(tester.widget<IconButton>(redo).onPressed, isNull);
-      await tester.tap(find.byKey(const ValueKey('share-category-0')));
+      await selectCategory(tester, 0);
       await tester.pump();
       expect(find.text('Stile · Personalizzato'), findsOneWidget);
       await tester.tap(undo);
@@ -252,7 +258,7 @@ void main() {
             find.byKey(const ValueKey('share-preview')),
           );
           for (final category in [1, 2, 3, 0]) {
-            await tester.tap(find.byKey(ValueKey('share-category-$category')));
+            await selectCategory(tester, category);
             await tester.pump();
             expect(
               find.byKey(ValueKey('share-category-panel-$category')),

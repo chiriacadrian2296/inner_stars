@@ -846,70 +846,52 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
             final controls = Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final columns = constraints.maxWidth >= 440 ? 4 : 2;
-                    final width =
-                        (constraints.maxWidth - (columns - 1) * 8) / columns;
-                    return Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                ScrollConfiguration(
+                  behavior: ScrollConfiguration.of(context).copyWith(
+                    dragDevices: {
+                      PointerDeviceKind.touch,
+                      PointerDeviceKind.mouse,
+                      PointerDeviceKind.trackpad,
+                      PointerDeviceKind.stylus,
+                    },
+                  ),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
                       children: [
-                        for (var i = 0; i < categories.length; i++)
-                          SizedBox(
-                            width: width,
-                            child: Semantics(
-                              selected: _category == i,
-                              child: TextButton(
-                                key: ValueKey('share-category-$i'),
-                                onPressed: () => setState(() => _category = i),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: _category == i
-                                      ? colors.gold
-                                      : colors.muted,
-                                  backgroundColor: _category == i
-                                      ? colors.nightPanel
-                                      : Colors.transparent,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
+                        for (var i = 0; i < categories.length; i++) ...[
+                          if (i > 0) const SizedBox(width: 8),
+                          Semantics(
+                            selected: _category == i,
+                            child: TextButton.icon(
+                              key: ValueKey('share-category-$i'),
+                              onPressed: () => setState(() => _category = i),
+                              style: TextButton.styleFrom(
+                                foregroundColor: _category == i
+                                    ? colors.gold
+                                    : colors.muted,
+                                backgroundColor: _category == i
+                                    ? colors.nightPanel
+                                    : Colors.transparent,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
                                 ),
-                                child: Flex(
-                                  direction: columns == 2
-                                      ? Axis.horizontal
-                                      : Axis.vertical,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(categories[i].$2, size: 20),
-                                    SizedBox(
-                                      width: columns == 2 ? 10 : 0,
-                                      height: columns == 2 ? 0 : 6,
-                                    ),
-                                    Flexible(
-                                      fit: FlexFit.loose,
-                                      child: Text(
-                                        shareComposerLabel(
-                                          context,
-                                          categories[i].$1,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                        maxLines: 2,
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          letterSpacing: 0,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                textStyle: const TextStyle(
+                                  fontSize: 14,
+                                  letterSpacing: 0,
                                 ),
+                              ),
+                              icon: Icon(categories[i].$2, size: 20),
+                              label: Text(
+                                shareComposerLabel(context, categories[i].$1),
                               ),
                             ),
                           ),
+                        ],
                       ],
-                    );
-                  },
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Expanded(
@@ -1144,7 +1126,7 @@ class _BlockCard extends StatelessWidget {
   }
 }
 
-/// A compact label and value. Composition also supports quick stepping.
+/// A compact label and value, with optional arrows for quick stepping.
 class _OptionStepper extends StatelessWidget {
   const _OptionStepper({
     required this.fieldKey,
@@ -1152,6 +1134,7 @@ class _OptionStepper extends StatelessWidget {
     required this.labels,
     required this.index,
     required this.onChanged,
+    this.arrows = false,
   });
 
   /// Stable id, used to key the arrows (tests, semantics).
@@ -1160,6 +1143,7 @@ class _OptionStepper extends StatelessWidget {
   final List<String> labels;
   final int index;
   final ValueChanged<int> onChanged;
+  final bool arrows;
 
   @override
   Widget build(BuildContext context) {
@@ -1180,6 +1164,18 @@ class _OptionStepper extends StatelessWidget {
             flex: 7,
             child: Row(
               children: [
+                if (arrows)
+                  SizedBox(
+                    width: 44,
+                    child: IconButton(
+                      key: ValueKey('$fieldKey-prev'),
+                      tooltip: shareComposerLabel(context, 'Precedente'),
+                      onPressed: () => onChanged(
+                        (index + labels.length - 1) % labels.length,
+                      ),
+                      icon: const Icon(Icons.chevron_left_rounded),
+                    ),
+                  ),
                 Expanded(
                   child: PopupMenuButton<int>(
                     key: ValueKey('$fieldKey-menu'),
@@ -1231,6 +1227,16 @@ class _OptionStepper extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (arrows)
+                  SizedBox(
+                    width: 44,
+                    child: IconButton(
+                      key: ValueKey('$fieldKey-next'),
+                      tooltip: shareComposerLabel(context, 'Successivo'),
+                      onPressed: () => onChanged((index + 1) % labels.length),
+                      icon: const Icon(Icons.chevron_right_rounded),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -1251,7 +1257,6 @@ class _VisualChoices extends StatelessWidget {
     required this.onChanged,
     this.columns = 6,
     this.showLabels = false,
-    this.showHeader = true,
     this.placeholder,
     this.previewHeight = 26,
     this.minItemWidth,
@@ -1264,7 +1269,6 @@ class _VisualChoices extends StatelessWidget {
   final ValueChanged<int> onChanged;
   final int columns;
   final bool showLabels;
-  final bool showHeader;
   final String? placeholder;
   final double previewHeight;
   final double? minItemWidth;
@@ -1273,22 +1277,22 @@ class _VisualChoices extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      if (showHeader)
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Text(
-            '${shareComposerLabel(context, label)} · ${shareComposerLabel(context, placeholder ?? labels[index])}',
-            style: context.typography.supporting.copyWith(fontSize: 12),
-          ),
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Text(
+          '${shareComposerLabel(context, label)} · ${shareComposerLabel(context, placeholder ?? labels[index])}',
+          style: context.typography.supporting.copyWith(fontSize: 12),
         ),
+      ),
       LayoutBuilder(
         builder: (context, constraints) {
-          final count = columns.clamp(
+          final maxColumns = columns.clamp(1, labels.length);
+          final count = maxColumns.clamp(
             1,
             ((constraints.maxWidth + 6) /
                     ((minItemWidth ?? (showLabels ? 104 : 44)) + 6))
                 .floor()
-                .clamp(1, columns),
+                .clamp(1, maxColumns),
           );
           final width = (constraints.maxWidth - (count - 1) * 6) / count;
           return Wrap(
@@ -1367,41 +1371,13 @@ class _PositionChoices extends StatelessWidget {
   final ValueChanged<int> onChanged;
 
   @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Expanded(
-        child: Text(
-          '${shareComposerLabel(context, label)}\n${shareComposerLabel(context, _positionLabel(_TitlePosition.values[index]))}',
-          style: context.typography.supporting.copyWith(fontSize: 12),
-        ),
-      ),
-      SizedBox(
-        width: 144,
-        child: _VisualChoices(
-          fieldKey: fieldKey,
-          label: label,
-          labels: [for (final p in _TitlePosition.values) _positionLabel(p)],
-          index: index,
-          columns: 3,
-          showHeader: false,
-          onChanged: onChanged,
-          preview: (i) => Padding(
-            padding: const EdgeInsets.all(5),
-            child: Align(
-              alignment: Alignment(
-                (i % 3 - 1).toDouble(),
-                (i ~/ 3 - 1).toDouble(),
-              ),
-              child: Container(
-                width: 10,
-                height: 4,
-                color: context.colors.text,
-              ),
-            ),
-          ),
-        ),
-      ),
-    ],
+  Widget build(BuildContext context) => _OptionStepper(
+    fieldKey: fieldKey,
+    label: label,
+    labels: [for (final p in _TitlePosition.values) _positionLabel(p)],
+    index: index,
+    arrows: true,
+    onChanged: onChanged,
   );
 }
 
@@ -1439,7 +1415,7 @@ class _ValueRow extends StatelessWidget {
   }
 }
 
-/// Explicit switches for the elements included in the shared image.
+/// Compact toggles for the elements included in the shared image.
 class _Toggles extends StatelessWidget {
   const _Toggles({required this.label, required this.toggles});
   final String label;
@@ -1457,17 +1433,23 @@ class _Toggles extends StatelessWidget {
         ),
       ),
       const SizedBox(height: 4),
-      for (final toggle in toggles)
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          dense: true,
-          title: Text(
-            shareComposerLabel(context, toggle.$1),
-            style: context.typography.controlLabel,
-          ),
-          value: toggle.$2,
-          onChanged: toggle.$3,
-        ),
+      Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        children: [
+          for (final toggle in toggles)
+            FilterChip(
+              label: Text(shareComposerLabel(context, toggle.$1)),
+              selected: toggle.$2,
+              onSelected: toggle.$3,
+              showCheckmark: true,
+              labelStyle: context.typography.controlLabel.copyWith(
+                fontSize: 13,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+            ),
+        ],
+      ),
     ],
   );
 }
@@ -1490,8 +1472,8 @@ class _InkDot extends StatelessWidget {
     final colors = context.colors;
     final color = _inkDotColor(colors, ink);
     return Container(
-      width: 12,
-      height: 12,
+      width: 22,
+      height: 22,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: color,
