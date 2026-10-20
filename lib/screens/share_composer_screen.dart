@@ -29,7 +29,7 @@ part 'share_composer_page.dart';
 enum _GradientShape { halo, radial, vertical, diagonal }
 
 /// Ink colour override: the title, and the brand (signature + watermark).
-enum _Ink { auto, gold, white, navy, gray }
+enum _Ink { white, gold, navyDark, navyLight, auto }
 
 enum _WatermarkSize { small, medium, large }
 
@@ -274,14 +274,7 @@ class _ShareSpecimen extends StatelessWidget {
     final secondary = usePaperPalette ? const Color(0xFF635A4E) : colors.muted;
     final accent = usePaperPalette ? const Color(0xFF8A5A26) : colors.gold;
     final compact = format == _ShareFormat.landscape;
-    Color? inkColor(_Ink ink) => switch (ink) {
-      _Ink.auto => null,
-      _Ink.gold => accent,
-      _Ink.white => const Color(0xFFF4F1E8),
-      _Ink.navy =>
-        usePaperPalette ? const Color(0xFF2A3560) : const Color(0xFF7C8FC4),
-      _Ink.gray => secondary,
-    };
+    Color? inkColor(_Ink ink) => _inkDotColor(colors, ink);
     final titleColor = inkColor(titleInk) ?? foreground;
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),

@@ -16,6 +16,24 @@ String shareComposerLabel(BuildContext context, String label) {
 
 const _labels = <String, (String, String)>{
   'Aspetto': ('Appearance', 'Aspect'),
+  'Navy scuro': ('Dark navy', 'Bleumarin închis'),
+  'Navy chiaro': ('Light navy', 'Bleumarin deschis'),
+  'Composizione, formato e stile.': (
+    'Composition, format and style.',
+    'Compoziție, format și stil.',
+  ),
+  'Sfumatura, foto e filigrana.': (
+    'Gradient, photos and watermark.',
+    'Gradient, fotografii și filigran.',
+  ),
+  'Logo e nome dell’app.': (
+    'App logo and name.',
+    'Sigla și numele aplicației.',
+  ),
+  'Colore di firma e filigrana.': (
+    'Signature and watermark color.',
+    'Culoarea semnăturii și filigranului.',
+  ),
   'Disposizione': ('Arrangement', 'Aranjare'),
   'Scenica': ('Scenic', 'Scenică'),
   'Colore elementi': ('Element color', 'Culoarea elementelor'),

@@ -168,6 +168,15 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         _ => _TitlePosition.bottomCenter,
       };
 
+  List<_PhotoMode> get _photoModes => [
+    _PhotoMode.none,
+    _PhotoMode.background,
+    if (_layoutMap[_subject]![_composition].$1 == _Layout.free)
+      _PhotoMode.panel,
+    if (_layoutMap[_subject]![_composition].$1 == _Layout.centered)
+      _PhotoMode.circle,
+  ];
+
   Future<void> _share() async {
     if (_sharing) return;
     setState(() => _sharing = true);
@@ -306,7 +315,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     titlePosition: _TitlePosition.bottomLeft,
     brandPosition: _signaturePosition(composition ?? _composition),
     badgePosition: _BadgePosition.top,
-    titleInk: _brandInk,
+    titleInk: _Ink.auto,
     watermark: _effectiveWatermark,
     watermarkInk: _brandInk,
     watermarkSize: _watermarkSize,
@@ -328,8 +337,11 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
 
   // ----- blocks -----
 
-  Widget _note(String text) => Text(
+  Widget _note(String text, {bool singleLine = false, Key? key}) => Text(
+    key: key,
     shareComposerLabel(context, text),
+    maxLines: singleLine ? 1 : null,
+    overflow: singleLine ? TextOverflow.ellipsis : null,
     style: context.typography.supporting.copyWith(
       color: context.colors.muted,
       fontSize: 12,
@@ -348,6 +360,9 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
           onChanged: (i) => _edit(() {
             _subjectIndex = i;
             _composition = 0;
+            if (_data.photos.isEmpty || !_photoModes.contains(_photoMode)) {
+              _photoMode = _PhotoMode.none;
+            }
             _excerpt.text = _data.description;
           }),
         ),
@@ -370,7 +385,10 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
             ),
           ),
         ),
-        onChanged: (i) => _edit(() => _composition = i),
+        onChanged: (i) => _edit(() {
+          _composition = i;
+          if (!_photoModes.contains(_photoMode)) _photoMode = _PhotoMode.none;
+        }),
       ),
       _VisualChoices(
         fieldKey: 'scheda-formato',
@@ -401,6 +419,15 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         ),
         onChanged: (i) => _edit(() => _format = _ShareFormat.values[i]),
       ),
+      if (_data.isReflection)
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            key: const ValueKey('share-reflection-excerpt'),
+            onPressed: _editExcerpt,
+            child: Text(shareComposerLabel(context, 'Modifica estratto')),
+          ),
+        ),
     ],
   );
 
@@ -485,31 +512,86 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         ),
       ),
       if (_data.photos.isNotEmpty)
-        _OptionStepper(
+        _VisualChoices(
           fieldKey: 'sfondo-foto',
           label: 'Foto',
-          labels: [for (final m in _PhotoMode.values) _photoLabel(m)],
-          index: _photoMode.index,
-          onChanged: (i) => _edit(() => _photoMode = _PhotoMode.values[i]),
+          labels: [for (final m in _photoModes) _photoLabel(m)],
+          index: _photoModes.indexOf(_photoMode),
+          columns: 4,
+          previewHeight: 52,
+          preview: (i) => _photoChoice(_photoModes[i]),
+          onChanged: (i) => _edit(() => _photoMode = _photoModes[i]),
         )
       else
         _note('Questo contenuto non contiene foto.'),
     ],
   );
 
-  Widget _textBlock() => _BlockCard(
-    children: [
-      if (_data.isReflection)
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton(
-            key: const ValueKey('share-reflection-excerpt'),
-            onPressed: _editExcerpt,
-            child: Text(shareComposerLabel(context, 'Modifica estratto')),
+  Widget _photoChoice(_PhotoMode mode) {
+    final photo = _ContentPhoto(
+      url: _data.photos.first,
+      fit: BoxFit.cover,
+      moodboard: _subject == ShareSubject.moodboard,
+    );
+    return SizedBox(
+      width: 40,
+      height: 52,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(5),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: context.colors.night,
+            border: Border.all(color: context.colors.muted),
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              switch (mode) {
+                _PhotoMode.none => Icon(
+                  Icons.block_rounded,
+                  size: 20,
+                  color: context.colors.muted,
+                ),
+                _PhotoMode.background => photo,
+                _PhotoMode.panel => Align(
+                  alignment: Alignment.topCenter,
+                  child: FractionallySizedBox(
+                    heightFactor: .55,
+                    widthFactor: 1,
+                    child: photo,
+                  ),
+                ),
+                _PhotoMode.circle => Center(
+                  child: SizedBox.square(
+                    dimension: 28,
+                    child: ClipOval(child: photo),
+                  ),
+                ),
+              },
+              if (mode == _PhotoMode.background || mode == _PhotoMode.panel)
+                Positioned(
+                  left: 6,
+                  right: 6,
+                  bottom: 6,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(height: 2, color: context.colors.text),
+                      const SizedBox(height: 3),
+                      Container(
+                        width: 16,
+                        height: 2,
+                        color: context.colors.text,
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ),
         ),
-    ],
-  );
+      ),
+    );
+  }
 
   Widget _signatureBlock() => _BlockCard(
     children: [
@@ -527,33 +609,21 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         preview: (i) {
           final color =
               _inkDotColor(context.colors, _brandInk) ?? context.colors.text;
-          final logo = SvgPicture.asset(
-            'assets/icon/Logo.svg',
-            width: 20,
-            height: 24,
-            colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-          );
-          final name = Text(
-            'Inner Stars',
-            style: TextStyle(
-              fontFamily: kFontBranding,
-              fontSize: 10,
-              color: color,
-            ),
-          );
           return FittedBox(
             fit: BoxFit.scaleDown,
-            child: switch (i) {
-              0 => logo,
-              1 => Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [logo, const SizedBox(width: 4), name],
-              ),
-              _ => Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [logo, const SizedBox(height: 4), name],
-              ),
-            },
+            child: _AppBrand(
+              content: i == 0 ? _BrandContent.logo : _BrandContent.both,
+              logoStyle: _LogoStyle.current,
+              disc: false,
+              ink: color,
+              logoInk: color,
+              logoSize: 16,
+              layout: i == 2 ? _BrandLayout.logoAbove : _BrandLayout.logoLeft,
+              foreground: context.colors.text,
+              secondary: context.colors.muted,
+              accent: context.colors.gold,
+              compact: _format == _ShareFormat.landscape,
+            ),
           );
         },
         onChanged: (i) => _edit(() {
@@ -714,21 +784,18 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
             );
             const categories = [
               ('Scheda', Icons.dashboard_customize_outlined),
-              ('Contenuto', Icons.title_rounded),
               ('Sfondo', Icons.gradient_rounded),
               ('Firma', Icons.verified_outlined),
               ('Colore elementi', Icons.palette_outlined),
             ];
             const descriptions = [
-              'Scegli la composizione e il formato, oppure applica uno stile pronto.',
-              'Titolo, informazioni e posizioni sono definiti dalla composizione.',
-              'Personalizza sfumatura, foto e filigrana.',
-              'Scegli come mostrare il logo e il nome di Inner Stars.',
-              'Un solo colore per titolo, logo, nome e filigrana.',
+              'Composizione, formato e stile.',
+              'Sfumatura, foto e filigrana.',
+              'Logo e nome dell’app.',
+              'Colore di firma e filigrana.',
             ];
             final sections = [
               [_cardBlock(), _styleBlock()],
-              [_textBlock()],
               [_backgroundBlock(), _watermarkBlock()],
               [_signatureBlock()],
               [_linkedColorBlock()],
@@ -813,7 +880,11 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              _note(descriptions[i]),
+                              _note(
+                                descriptions[i],
+                                singleLine: true,
+                                key: ValueKey('share-section-description-$i'),
+                              ),
                               const SizedBox(height: 12),
                             ],
                           ),
@@ -908,8 +979,8 @@ String _inkLabel(_Ink value) => switch (value) {
   _Ink.auto => 'Auto',
   _Ink.gold => 'Oro',
   _Ink.white => 'Bianco',
-  _Ink.navy => 'Navy',
-  _Ink.gray => 'Grigio',
+  _Ink.navyDark => 'Navy scuro',
+  _Ink.navyLight => 'Navy chiaro',
 };
 
 String _watermarkSizeLabel(_WatermarkSize value) => switch (value) {
@@ -1226,8 +1297,8 @@ Color? _inkDotColor(AppColors colors, _Ink ink) => switch (ink) {
   _Ink.auto => null,
   _Ink.gold => colors.gold,
   _Ink.white => const Color(0xFFF4F1E8),
-  _Ink.navy => const Color(0xFF7C8FC4),
-  _Ink.gray => colors.muted,
+  _Ink.navyDark => colors.night,
+  _Ink.navyLight => const Color(0xFF7C8FC4),
 };
 
 /// A colour dot for an ink option (a hollow ring for Auto).

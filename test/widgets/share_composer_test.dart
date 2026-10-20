@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -7,6 +9,7 @@ import 'package:inner_stars/l10n/strings_scope.dart';
 import 'package:inner_stars/models/life_area.dart';
 import 'package:inner_stars/models/reflection.dart';
 import 'package:inner_stars/models/share_content.dart';
+import 'package:inner_stars/data/photo_storage.dart';
 import 'package:inner_stars/screens/share_composer_screen.dart';
 import 'package:inner_stars/screens/share_preview_screen.dart';
 import 'package:inner_stars/theme/app_theme.dart';
@@ -147,7 +150,7 @@ void main() {
   );
 
   testWidgets(
-    'two presets and one shared color support complete undo and redo',
+    'element color links branding and watermark while leaving the title unchanged',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
@@ -187,7 +190,7 @@ void main() {
               )
               .style!
               .color,
-          color,
+          AppColors.dark.text,
         );
         expect(
           tester
@@ -240,14 +243,159 @@ void main() {
       expect(choiceSelected(tester, 'stile-preset-0'), isTrue);
       await tapVisible(tester, redo);
       await tester.pump();
-      await tapVisible(tester, find.byKey(const ValueKey('colore-elementi-2')));
+      await tapVisible(tester, find.byKey(const ValueKey('colore-elementi-0')));
       await tester.pump();
       expectLinked(const Color(0xFFF4F1E8));
+      for (final (index, color) in [
+        (2, AppColors.dark.night),
+        (3, const Color(0xFF7C8FC4)),
+        (4, AppColors.dark.text),
+      ]) {
+        await tapVisible(
+          tester,
+          find.byKey(ValueKey('colore-elementi-$index')),
+        );
+        await tester.pump();
+        expectLinked(color);
+      }
       expect(tester.widget<IconButton>(redo).onPressed, isNull);
       expect(choiceSelected(tester, 'stile-preset-1'), isFalse);
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets(
+    'signature choices use the same logo and typography as the post',
+    (tester) async {
+      await tester.pumpWidget(
+        app(
+          const ShareComposerScreen(
+            data: ShareContent(
+              subject: ShareSubject.goal,
+              title: 'Obiettivo',
+              typeLabel: 'Obiettivo',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      for (final format in [0, 4]) {
+        await tapVisible(
+          tester,
+          find.byKey(ValueKey('scheda-formato-$format')),
+        );
+        await tester.pump();
+        for (var arrangement = 0; arrangement < 3; arrangement++) {
+          final choice = find.byKey(
+            ValueKey('firma-disposizione-$arrangement'),
+          );
+          await tapVisible(tester, choice);
+          await tester.pump();
+          final preview = find.byKey(const ValueKey('share-preview'));
+          SvgPicture logo(Finder scope) => tester
+              .widgetList<SvgPicture>(
+                find.descendant(of: scope, matching: find.byType(SvgPicture)),
+              )
+              .lastWhere(
+                (picture) =>
+                    picture.bytesLoader is SvgAssetLoader &&
+                    (picture.bytesLoader as SvgAssetLoader).assetName ==
+                        'assets/icon/Logo.svg',
+              );
+          final actual = logo(preview);
+          final sample = logo(choice);
+          expect(sample.width, actual.width);
+          expect(sample.height, actual.height);
+          expect(sample.colorFilter, actual.colorFilter);
+          if (arrangement == 0) {
+            expect(
+              find.descendant(of: preview, matching: find.text('Inner Stars')),
+              findsNothing,
+            );
+          } else {
+            expect(
+              tester
+                  .widget<Text>(
+                    find.descendant(
+                      of: choice,
+                      matching: find.text('Inner Stars'),
+                    ),
+                  )
+                  .style,
+              tester
+                  .widget<Text>(
+                    find.descendant(
+                      of: preview,
+                      matching: find.text('Inner Stars'),
+                    ),
+                  )
+                  .style,
+            );
+          }
+        }
+      }
+      expect(find.text('Contenuto'), findsNothing);
+      for (var section = 0; section < 4; section++) {
+        expect(
+          tester
+              .widget<Text>(
+                find.byKey(ValueKey('share-section-description-$section')),
+              )
+              .maxLines,
+          1,
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'photo choices show graphical modes compatible with the composition',
+    (tester) async {
+      final photo = File(kAreaHeroArt[LifeArea.social]!.coverAsset)
+          .absolute
+          .path;
+      expect(
+        await tester.runAsync(() => PhotoStorage.readBytes(photo)),
+        isNotNull,
+      );
+      await tester.pumpWidget(
+        app(
+          ShareComposerScreen(
+            data: ShareContent(
+              subject: ShareSubject.victory,
+              title: 'Una vittoria',
+              typeLabel: 'Vittoria',
+              photos: [photo],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('sfondo-foto-menu')), findsNothing);
+      expect(find.byKey(const ValueKey('sfondo-foto-2')), findsOneWidget);
+      await tapVisible(tester, find.byKey(const ValueKey('sfondo-foto-2')));
+      await tester.pumpAndSettle();
+      expect(choiceSelected(tester, 'sfondo-foto-2'), isTrue);
+      await tapVisible(
+        tester,
+        find.byKey(const ValueKey('scheda-composizione-2')),
+      );
+      await tester.pumpAndSettle();
+      expect(choiceSelected(tester, 'sfondo-foto-0'), isTrue);
+      await tapVisible(tester, find.byKey(const ValueKey('sfondo-foto-2')));
+      await tester.pumpAndSettle();
+      expect(choiceSelected(tester, 'sfondo-foto-2'), isTrue);
+      await tapVisible(
+        tester,
+        find.byKey(const ValueKey('scheda-composizione-1')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('sfondo-foto-2')), findsNothing);
+      expect(choiceSelected(tester, 'sfondo-foto-0'), isTrue);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'watermark artwork follows the content area and undo restores it',
     (tester) async {
@@ -267,7 +415,7 @@ void main() {
         app(const ShareComposerScreen(data: first, variants: [first, second])),
       );
       await tester.pumpAndSettle();
-      await scrollToSection(tester, 2);
+      await scrollToSection(tester, 1);
       await tester.pump();
       final artwork = find.byKey(const ValueKey('watermark-tipo-2'));
       await tester.ensureVisible(artwork);
@@ -294,7 +442,7 @@ void main() {
       await tester.pumpAndSettle();
       await tapVisible(tester, find.text('Sociale').last);
       await tester.pumpAndSettle();
-      await scrollToSection(tester, 2);
+      await scrollToSection(tester, 1);
       await tester.pumpAndSettle();
       expect(asset(), kAreaHeroArt[LifeArea.social]!.coverAsset);
       await tapVisible(tester, find.byKey(const ValueKey('share-undo')));
@@ -319,7 +467,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await scrollToSection(tester, 2);
+      await scrollToSection(tester, 1);
       await tester.pump();
       Gradient background() {
         final box = tester
