@@ -1438,15 +1438,11 @@ class _Toggles extends StatelessWidget {
         runSpacing: 4,
         children: [
           for (final toggle in toggles)
-            FilterChip(
-              label: Text(shareComposerLabel(context, toggle.$1)),
+            AppChoiceChip(
+              label: shareComposerLabel(context, toggle.$1),
               selected: toggle.$2,
-              onSelected: toggle.$3,
-              showCheckmark: true,
-              labelStyle: context.typography.controlLabel.copyWith(
-                fontSize: 13,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 6),
+              onPressed: () => toggle.$3(!toggle.$2),
+              dense: true,
             ),
         ],
       ),
