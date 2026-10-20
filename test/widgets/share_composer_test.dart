@@ -24,6 +24,21 @@ Future<void> selectCategory(WidgetTester tester, int category) async {
   await tester.tap(tab);
 }
 
+bool choiceSelected(WidgetTester tester, String key) => tester
+    .widget<Semantics>(
+      find
+          .ancestor(
+            of: find.byKey(ValueKey(key)),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Semantics && widget.properties.selected != null,
+            ),
+          )
+          .first,
+    )
+    .properties
+    .selected!;
+
 void main() {
   testWidgets(
     'common share entry uses the composer and edits only the shared excerpt',
@@ -105,7 +120,8 @@ void main() {
       expect(find.byKey(const ValueKey('firma-colore-nome-0')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('firma-posizione-8')));
       await tester.pump();
-      expect(find.textContaining('Basso Destra'), findsOneWidget);
+      expect(choiceSelected(tester, 'firma-posizione-8'), isTrue);
+      expect(find.textContaining('Basso Destra'), findsNothing);
       await selectCategory(tester, 2);
       await tester.pump();
       expect(find.byKey(const ValueKey('sfondo-foto-menu')), findsNothing);
@@ -119,7 +135,8 @@ void main() {
       await tester.ensureVisible(find.byKey(const ValueKey('sfondo-colori-3')));
       await tester.tap(find.byKey(const ValueKey('sfondo-colori-3')));
       await tester.pump();
-      expect(find.text('Colori · Oro'), findsOneWidget);
+      expect(choiceSelected(tester, 'sfondo-colori-3'), isTrue);
+      expect(find.text('Colori'), findsOneWidget);
       expect(find.byKey(const ValueKey('sfondo-colori-4')), findsNothing);
       expect(tester.takeException(), isNull);
     },
@@ -179,7 +196,8 @@ void main() {
       expect(find.byKey(const ValueKey('firma-logo-menu')), findsNothing);
       await selectCategory(tester, 0);
       await tester.pump();
-      expect(find.text('Stile · Classico'), findsOneWidget);
+      expect(choiceSelected(tester, 'stile-preset-0'), isTrue);
+      expect(find.text('Stile · Classico'), findsNothing);
       await selectCategory(tester, 2);
       await tester.pump();
       await tester.ensureVisible(find.byKey(const ValueKey('sfondo-colori-3')));
@@ -188,10 +206,10 @@ void main() {
       expect(tester.widget<IconButton>(redo).onPressed, isNull);
       await selectCategory(tester, 0);
       await tester.pump();
-      expect(find.text('Stile · Personalizzato'), findsOneWidget);
+      expect(choiceSelected(tester, 'stile-preset-0'), isFalse);
       await tester.tap(undo);
       await tester.pump();
-      expect(find.text('Stile · Classico'), findsOneWidget);
+      expect(choiceSelected(tester, 'stile-preset-0'), isTrue);
       expect(tester.takeException(), isNull);
       for (var preset = 0; preset < 6; preset++) {
         final choice = find.byKey(ValueKey('stile-preset-$preset'));

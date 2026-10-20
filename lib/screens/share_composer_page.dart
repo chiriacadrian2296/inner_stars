@@ -484,7 +484,8 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         labels: [for (final f in _ShareFormat.values) _formatLabel(f)],
         index: _format.index,
         columns: 5,
-        minItemWidth: 140,
+        minItemWidth: 64,
+        singleRow: true,
         showLabels: true,
         preview: (i) => Center(
           child: Container(
@@ -1057,11 +1058,11 @@ String _watermarkSizeLabel(_WatermarkSize value) => switch (value) {
 };
 
 String _formatLabel(_ShareFormat value) => switch (value) {
-  _ShareFormat.story => 'Story · 2:3',
-  _ShareFormat.vertical => 'Story · 9:16',
-  _ShareFormat.portrait => 'Post · 4:5',
-  _ShareFormat.square => 'Quadrato · 1:1',
-  _ShareFormat.landscape => 'Orizzontale · 16:9',
+  _ShareFormat.story => '2:3',
+  _ShareFormat.vertical => '9:16',
+  _ShareFormat.portrait => '4:5',
+  _ShareFormat.square => '1:1',
+  _ShareFormat.landscape => '16:9',
 };
 
 String _photoLabel(_PhotoMode value) => switch (value) {
@@ -1223,6 +1224,7 @@ class _VisualChoices extends StatelessWidget {
     this.previewHeight = 26,
     this.minItemWidth,
     this.showHeader = true,
+    this.singleRow = false,
   });
   final String fieldKey;
   final String label;
@@ -1236,6 +1238,7 @@ class _VisualChoices extends StatelessWidget {
   final double previewHeight;
   final double? minItemWidth;
   final bool showHeader;
+  final bool singleRow;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -1245,80 +1248,95 @@ class _VisualChoices extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Text(
-            '${shareComposerLabel(context, label)} · ${shareComposerLabel(context, placeholder ?? labels[index])}',
+            shareComposerLabel(context, label),
             style: context.typography.supporting.copyWith(fontSize: 12),
           ),
         ),
       LayoutBuilder(
         builder: (context, constraints) {
           final maxColumns = columns.clamp(1, labels.length);
-          final count = maxColumns.clamp(
-            1,
-            ((constraints.maxWidth + 6) /
-                    ((minItemWidth ?? (showLabels ? 104 : 44)) + 6))
-                .floor()
-                .clamp(1, maxColumns),
-          );
+          final count = singleRow
+              ? maxColumns
+              : maxColumns.clamp(
+                  1,
+                  ((constraints.maxWidth + 6) /
+                          ((minItemWidth ?? (showLabels ? 104 : 44)) + 6))
+                      .floor()
+                      .clamp(1, maxColumns),
+                );
           final width = (constraints.maxWidth - (count - 1) * 6) / count;
-          return Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              for (var i = 0; i < labels.length; i++)
-                Semantics(
-                  button: true,
-                  selected: i == index && placeholder == null,
-                  label: shareComposerLabel(context, labels[i]),
-                  child: Tooltip(
-                    message: shareComposerLabel(context, labels[i]),
-                    child: InkWell(
-                      key: ValueKey('$fieldKey-$i'),
-                      onTap: () {
-                        if (i != index || placeholder != null) onChanged(i);
-                      },
-                      borderRadius: BorderRadius.circular(kRadiusField),
-                      child: Container(
-                        width: width,
-                        height: showLabels
-                            ? previewHeight + 46
-                            : (previewHeight + 12).clamp(44.0, double.infinity),
-                        decoration: selectableDecoration(
-                          context.colors,
-                          selected: i == index && placeholder == null,
-                        ),
-                        child: ExcludeSemantics(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                height: previewHeight,
-                                child: Center(child: preview(i)),
-                              ),
-                              if (showLabels) ...[
-                                const SizedBox(height: 4),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                  ),
-                                  child: Text(
-                                    shareComposerLabel(context, labels[i]),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: context.typography.controlLabel
-                                        .copyWith(fontSize: 12.5),
-                                  ),
+          final tileWidth = singleRow
+              ? width.clamp(minItemWidth ?? 64, double.infinity).toDouble()
+              : width;
+          final choices = <Widget>[
+            for (var i = 0; i < labels.length; i++)
+              Semantics(
+                button: true,
+                selected: i == index && placeholder == null,
+                label: shareComposerLabel(context, labels[i]),
+                child: Tooltip(
+                  message: shareComposerLabel(context, labels[i]),
+                  child: InkWell(
+                    key: ValueKey('$fieldKey-$i'),
+                    onTap: () {
+                      if (i != index || placeholder != null) onChanged(i);
+                    },
+                    borderRadius: BorderRadius.circular(kRadiusField),
+                    child: Container(
+                      width: tileWidth,
+                      height: showLabels
+                          ? previewHeight + 46
+                          : (previewHeight + 12).clamp(44.0, double.infinity),
+                      decoration: selectableDecoration(
+                        context.colors,
+                        selected: i == index && placeholder == null,
+                      ),
+                      child: ExcludeSemantics(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              height: previewHeight,
+                              child: Center(child: preview(i)),
+                            ),
+                            if (showLabels) ...[
+                              const SizedBox(height: 4),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
                                 ),
-                              ],
+                                child: Text(
+                                  shareComposerLabel(context, labels[i]),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: context.typography.controlLabel
+                                      .copyWith(fontSize: 12.5),
+                                ),
+                              ),
                             ],
-                          ),
+                          ],
                         ),
                       ),
                     ),
                   ),
                 ),
-            ],
-          );
+              ),
+          ];
+          if (singleRow) {
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (var i = 0; i < choices.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 6),
+                    choices[i],
+                  ],
+                ],
+              ),
+            );
+          }
+          return Wrap(spacing: 6, runSpacing: 6, children: choices);
         },
       ),
     ],
@@ -1342,7 +1360,7 @@ class _PositionChoices extends StatelessWidget {
     children: [
       Expanded(
         child: Text(
-          '${shareComposerLabel(context, label)}\n${shareComposerLabel(context, _positionLabel(_TitlePosition.values[index]))}',
+          shareComposerLabel(context, label),
           style: context.typography.supporting.copyWith(fontSize: 12),
         ),
       ),
