@@ -326,26 +326,9 @@ void main() {
       }
       expect(find.text('Contenuto'), findsNothing);
       for (var section = 0; section < 3; section++) {
-        final heading = find
-            .descendant(
-              of: find.byKey(ValueKey('share-section-$section')),
-              matching: find.byType(Text),
-            )
-            .first;
-        final description = find.byKey(
-          ValueKey('share-section-description-$section'),
-        );
         expect(
-          tester.getCenter(description).dy,
-          closeTo(tester.getCenter(heading).dy, 1),
-        );
-        expect(
-          tester
-              .widget<Text>(
-                find.byKey(ValueKey('share-section-description-$section')),
-              )
-              .maxLines,
-          1,
+          find.byKey(ValueKey('share-section-description-$section')),
+          findsNothing,
         );
       }
       for (final field in [
@@ -375,6 +358,87 @@ void main() {
         );
       }
       expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'compact preview expands controls without changing the post or history',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      for (final size in [
+        const Size(320, 740),
+        const Size(390, 844),
+        const Size(844, 390),
+        const Size(1440, 1000),
+      ]) {
+        tester.view.physicalSize = size;
+        await tester.pumpWidget(
+          app(
+            const ShareComposerScreen(
+              data: ShareContent(
+                subject: ShareSubject.goal,
+                title: 'Obiettivo',
+                typeLabel: 'Obiettivo',
+                area: LifeArea.physical,
+              ),
+            ),
+            english: true,
+          ),
+        );
+        await tester.pumpAndSettle();
+        final preview = find.byKey(const ValueKey('share-preview'));
+        final controls = find.byKey(const ValueKey('share-controls'));
+        final toggle = find.byKey(const ValueKey('share-toggle-preview'));
+        final undo = find.byKey(const ValueKey('share-undo'));
+        final redo = find.byKey(const ValueKey('share-redo'));
+        final originalPreview = tester.getSize(preview);
+        final originalControls = tester.getSize(controls);
+        expect(
+          tester.getCenter(toggle).dx,
+          greaterThan(tester.getCenter(undo).dx),
+        );
+        expect(
+          tester.getCenter(toggle).dx,
+          lessThan(tester.getCenter(redo).dx),
+        );
+        String caption(String field, int index) => tester
+            .widget<Text>(find.byKey(ValueKey('$field-caption-$index')))
+            .data!;
+        expect(
+          [for (var i = 0; i < 3; i++) caption('watermark-tipo', i)],
+          ['None', 'Logo', 'Area'],
+        );
+        expect(
+          [for (var i = 0; i < 3; i++) caption('firma-disposizione', i)],
+          ['Logo Only', 'Left', 'Above'],
+        );
+        expect(
+          find.text('Ready-made styles change the background and watermark.'),
+          findsNothing,
+        );
+        await tester.tap(toggle);
+        await tester.pumpAndSettle();
+        expect(
+          tester.getSize(preview).height,
+          lessThan(originalPreview.height),
+        );
+        if (size.width < 650) {
+          expect(
+            tester.getSize(controls).height,
+            greaterThan(originalControls.height),
+          );
+        }
+        expect(choiceSelected(tester, 'scheda-composizione-0'), isTrue);
+        expect(tester.widget<IconButton>(undo).onPressed, isNull);
+        expect(tester.widget<IconButton>(redo).onPressed, isNull);
+        expect(tester.takeException(), isNull);
+        await tester.tap(toggle);
+        await tester.pumpAndSettle();
+        expect(tester.getSize(preview), originalPreview);
+        expect(tester.getSize(controls), originalControls);
+      }
     },
   );
 
@@ -718,6 +782,9 @@ void main() {
               tester.getRect(find.byKey(ValueKey('scheda-formato-$i'))),
           ];
           expect(formats.map((rect) => rect.top).toSet(), hasLength(1));
+          for (final rect in formats) {
+            expect(rect.width, closeTo(formats.first.width, .01));
+          }
           expect(formats.first.left, greaterThanOrEqualTo(controlsRect.left));
           expect(formats.last.right, lessThanOrEqualTo(controlsRect.right));
           for (var signature = 0; signature < 3; signature++) {

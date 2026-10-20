@@ -66,6 +66,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
   // by hand.
   int? _style = 0;
   _Ink get _brandInk => _elementInkFor(_composition);
+  bool _compactPreview = false;
 
   // Background.
   _GradientShape _gradient = _GradientShape.halo;
@@ -337,11 +338,8 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
 
   // ----- blocks -----
 
-  Widget _note(String text, {bool singleLine = false, Key? key}) => Text(
-    key: key,
+  Widget _note(String text) => Text(
     shareComposerLabel(context, text),
-    maxLines: singleLine ? 1 : null,
-    overflow: singleLine ? TextOverflow.ellipsis : null,
     style: context.typography.supporting.copyWith(
       color: context.colors.muted,
       fontSize: 12,
@@ -423,7 +421,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
           child: TextButton(
             key: const ValueKey('share-reflection-excerpt'),
             onPressed: _editExcerpt,
-            child: Text(shareComposerLabel(context, 'Modifica estratto')),
+            child: Text(shareComposerLabel(context, 'Modifica Estratto')),
           ),
         ),
     ],
@@ -433,7 +431,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     children: [
       _VisualChoices(
         fieldKey: 'stile-preset',
-        label: 'Stili pronti',
+        label: 'Stili Pronti',
         labels: [for (final p in _stylePresets) p.label],
         index: _style ?? 0,
         placeholder: _style == null ? 'Personalizzato' : null,
@@ -450,7 +448,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         ),
         onChanged: _applyPreset,
       ),
-      _note('Gli stili pronti cambiano sfondo e filigrana.'),
     ],
   );
 
@@ -500,7 +497,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
           padding: const EdgeInsets.only(top: 12),
           child: AppChoiceChip(
             key: const ValueKey('share-reverse-colors'),
-            label: shareComposerLabel(context, 'Inverti colori'),
+            label: shareComposerLabel(context, 'Inverti Colori'),
             icon: Icons.swap_vert_rounded,
             selected: _reverseColors,
             dense: true,
@@ -600,7 +597,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       _VisualChoices(
         fieldKey: 'firma-disposizione',
         label: 'Disposizione',
-        labels: const ['Solo Logo', 'Logo e Nome', 'Logo sopra Nome'],
+        labels: const ['Solo Logo', 'Sinistra', 'Sopra'],
         index: _brandContent == _BrandContent.logo
             ? 0
             : _brandLayout == _BrandLayout.logoLeft
@@ -771,11 +768,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
               ('Sfondo', Icons.gradient_rounded),
               ('Firma', Icons.verified_outlined),
             ];
-            const descriptions = [
-              'Composizione, formato e stile.',
-              'Sfumatura, foto e filigrana.',
-              'Logo e nome dell’app.',
-            ];
             final sections = [
               [_cardBlock(), _styleBlock()],
               [_backgroundBlock(), _watermarkBlock()],
@@ -788,7 +780,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                 children: [
                   IconButton(
                     key: const ValueKey('share-undo'),
-                    tooltip: shareComposerLabel(context, 'Annulla modifica'),
+                    tooltip: shareComposerLabel(context, 'Annulla Modifica'),
                     color: colors.gold,
                     disabledColor: colors.muted,
                     onPressed: _undo.isEmpty
@@ -797,8 +789,25 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                     icon: const Icon(Icons.undo_rounded),
                   ),
                   IconButton(
+                    key: const ValueKey('share-toggle-preview'),
+                    tooltip: shareComposerLabel(
+                      context,
+                      _compactPreview
+                          ? 'Espandi Anteprima'
+                          : 'Espandi Controlli',
+                    ),
+                    color: _compactPreview ? colors.gold : colors.muted,
+                    onPressed: () =>
+                        setState(() => _compactPreview = !_compactPreview),
+                    icon: Icon(
+                      _compactPreview
+                          ? Icons.expand_more_rounded
+                          : Icons.expand_less_rounded,
+                    ),
+                  ),
+                  IconButton(
                     key: const ValueKey('share-redo'),
-                    tooltip: shareComposerLabel(context, 'Ripristina modifica'),
+                    tooltip: shareComposerLabel(context, 'Ripristina Modifica'),
                     color: colors.gold,
                     disabledColor: colors.muted,
                     onPressed: _redo.isEmpty
@@ -855,16 +864,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                                       style: context.typography.sectionHeading
                                           .copyWith(fontSize: 18),
                                     ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: _note(
-                                        descriptions[i],
-                                        singleLine: true,
-                                        key: ValueKey(
-                                          'share-section-description-$i',
-                                        ),
-                                      ),
-                                    ),
                                   ],
                                 ),
                               ),
@@ -882,7 +881,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                 ),
               ),
             );
-            final body = wide
+            final body = wide && !_compactPreview
                 ? Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -907,7 +906,15 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                       history,
                       SizedBox(
                         height:
-                            (constraints.maxHeight * .38).clamp(240.0, 310.0) -
+                            (_compactPreview
+                                ? (constraints.maxHeight * .60).clamp(
+                                    180.0,
+                                    600.0,
+                                  )
+                                : (constraints.maxHeight * .38).clamp(
+                                    240.0,
+                                    310.0,
+                                  )) -
                             48 +
                             gap,
                         child: controls,
@@ -981,8 +988,8 @@ String _photoLabel(_PhotoMode value) => switch (value) {
 
 String _watermarkLabel(_Watermark value) => switch (value) {
   _Watermark.none => 'Nessuno',
-  _Watermark.logo => 'Logo App',
-  _Watermark.area => 'Artwork',
+  _Watermark.logo => 'Logo',
+  _Watermark.area => 'Area',
 };
 
 // ----- control widgets -----

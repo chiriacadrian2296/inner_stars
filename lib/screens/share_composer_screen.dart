@@ -67,7 +67,7 @@ const _palettes = <_Palette>[
     Color(0xFF202B3E),
   ]),
   _Palette(
-    'Luce soffusa',
+    'Luce Soffusa',
     [Color(0xFF1C2747), Color(0xFF10162B), Color(0xFF05070D)],
     stops: [0, .55, 1],
   ),
