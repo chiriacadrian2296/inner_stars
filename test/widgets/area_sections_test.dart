@@ -129,8 +129,8 @@ void main() {
     final group = LifeArea.physical.reflectionGroups(const StringsIt()).first;
     await tester.tap(find.text(group.title));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text(question));
-    await tester.tap(find.text(question));
+    await tester.ensureVisible(find.text(question).last);
+    await tester.tap(find.text(question).last);
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('reflection-body')),

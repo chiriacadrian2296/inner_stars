@@ -24,6 +24,11 @@ enum FieldRequirement {
 /// every form uses, so a name row must not add height of its own.
 const double kFieldLabelGap = 6;
 
+/// A name row held at one height wherever two columns of fields must line up
+/// (it is 19 px at the default text size): tall enough for the name, the dot
+/// and the reset icon.
+const double kFieldNameRowHeight = 20;
+
 /// The label's own color, but smaller and lighter, so a limit ("12/50")
 /// never competes with the title it sits beside. [fieldLengthNoteStyle] is
 /// smaller still, for a per-item length such as "Max 1:00".
@@ -288,6 +293,9 @@ class AppTextField extends StatefulWidget {
     this.enabled = true,
     this.readOnly = false,
     this.errorText,
+    this.fontSize = 15,
+    this.lineHeight,
+    this.expands = false,
   });
 
   final TextEditingController controller;
@@ -312,6 +320,14 @@ class AppTextField extends StatefulWidget {
   final bool enabled;
   final bool readOnly;
   final String? errorText;
+
+  /// Larger and airier for a field that holds long writing.
+  final double fontSize;
+  final double? lineHeight;
+
+  /// Fills the height it is given (a long-writing field that runs to the
+  /// bottom of its page); [minLines] and [maxLines] are then ignored.
+  final bool expands;
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -353,14 +369,20 @@ class _AppTextFieldState extends State<AppTextField> {
           enabled: widget.enabled,
           readOnly: widget.readOnly,
           autofocus: widget.autofocus,
-          minLines: widget.minLines,
-          maxLines: widget.maxLines,
+          minLines: widget.expands ? null : widget.minLines,
+          expands: widget.expands,
+          textAlignVertical: widget.expands ? TextAlignVertical.top : null,
+          maxLines: widget.expands ? null : widget.maxLines,
           maxLength: widget.maxLength,
           textInputAction: widget.textInputAction,
           textCapitalization: widget.textCapitalization,
           onChanged: widget.onChanged,
           onTapOutside: (_) => _focusNode.unfocus(),
-          style: TextStyle(color: colors.text, fontSize: 15),
+          style: TextStyle(
+            color: colors.text,
+            fontSize: widget.fontSize,
+            height: widget.lineHeight,
+          ),
           decoration: InputDecoration(
             hintText: widget.hintText,
             error: widget.errorText == null

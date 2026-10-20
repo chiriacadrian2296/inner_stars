@@ -13,6 +13,7 @@ class Reflection {
     required this.createdAt,
     required this.updatedAt,
     this.questionId,
+    this.questionText,
     this.deleted = false,
   });
 
@@ -22,6 +23,9 @@ class Reflection {
   final String body;
   final ReflectionOrigin origin;
   final String? questionId;
+
+  /// Original prompt, independent of the user's editable title and locale.
+  final String? questionText;
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool deleted;
@@ -33,6 +37,7 @@ class Reflection {
     body: body,
     origin: origin,
     questionId: questionId,
+    questionText: questionText,
     createdAt: createdAt,
     updatedAt: updatedAt,
     deleted: deleted,
@@ -45,6 +50,7 @@ class Reflection {
     body: json['body'] as String,
     origin: ReflectionOrigin.values.byName(json['origin'] as String),
     questionId: json['questionId'] as String?,
+    questionText: json['questionText'] as String?,
     createdAt: DateTime.parse(json['createdAt'] as String),
     updatedAt: DateTime.parse(json['updatedAt'] as String),
     deleted: json['deleted'] as bool,
@@ -57,6 +63,7 @@ class Reflection {
     'body': body,
     'origin': origin.name,
     'questionId': questionId,
+    if (questionText != null) 'questionText': questionText,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
     'deleted': deleted,

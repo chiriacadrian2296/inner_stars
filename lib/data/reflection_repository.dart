@@ -54,6 +54,7 @@ class ReflectionRepository extends ChangeNotifier with SyncableRepository {
     required String body,
     ReflectionOrigin origin = ReflectionOrigin.free,
     String? questionId,
+    String? questionText,
   }) async {
     _validate(title, body);
     if (origin == ReflectionOrigin.suggested && questionId == null) {
@@ -67,6 +68,7 @@ class ReflectionRepository extends ChangeNotifier with SyncableRepository {
       body: body.trim(),
       origin: origin,
       questionId: questionId,
+      questionText: questionText,
       createdAt: now,
       updatedAt: now,
     );

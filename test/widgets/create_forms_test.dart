@@ -268,12 +268,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byIcon(Icons.expand_less), findsWidgets);
-    // Beside the main photo: one voice note (a minute at most), then a song,
-    // a place and a site link — and no secondary photos or videos.
-    expect(find.text('Voice note · 1:00'), findsOneWidget);
+    // Five named fields, each with its own reset: the photo on the left; on
+    // the right the voice note (a minute at most) and a song, a place and a
+    // site link — no "Main", no secondary photos or videos.
+    expect(find.text('Photo'), findsOneWidget);
+    expect(find.text('Voice Note'), findsOneWidget);
     expect(find.text('Song'), findsOneWidget);
     expect(find.text('Location'), findsOneWidget);
     expect(find.text('Website'), findsOneWidget);
+    expect(find.text('Limit · 1:00'), findsNothing);
+    expect(find.text('1:00'), findsOneWidget);
+    expect(find.text('Main'), findsNothing);
+    expect(find.byType(FieldResetButton), findsAtLeastNWidgets(5));
     expect(find.byIcon(Icons.music_note_rounded), findsOneWidget);
     expect(find.byIcon(Icons.place_outlined), findsOneWidget);
     expect(find.byIcon(Icons.language_rounded), findsOneWidget);

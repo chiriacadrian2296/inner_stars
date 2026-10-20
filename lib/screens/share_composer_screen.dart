@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../models/life_area.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_motion.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
 import '../theme/app_typography.dart';
@@ -17,6 +18,7 @@ import '../utils/area_hero_art.dart';
 import '../models/share_content.dart';
 import '../l10n/strings_scope.dart';
 import '../widgets/photo_image.dart';
+import '../widgets/app_field.dart';
 import '../data/photo_storage.dart';
 import '../data/moodboard_storage.dart';
 import '../l10n/share_composer_strings.dart';
@@ -25,12 +27,10 @@ part 'share_composer_layouts.dart';
 part 'share_composer_page.dart';
 
 /// Shape of the background gradient; the colours come from a [_Palette].
-enum _GradientShape { halo, radial, vertical, diagonal, conic, mirrored, flat }
+enum _GradientShape { halo, radial, vertical, diagonal }
 
 /// Ink colour override: the title, and the brand (signature + watermark).
-enum _Ink { auto, gold, white, navy, gray }
-
-enum _WatermarkSize { small, medium, large }
+enum _Ink { white, gold, navyDark, navyLight, auto }
 
 /// What the signature shows.
 enum _BrandContent { none, logo, name, both }
@@ -56,50 +56,71 @@ class _Palette {
 const _palettes = <_Palette>[
   _Palette(
     'Notte',
-    [Color(0xFF1C2747), Color(0xFF10162B), Color(0xFF05070D)],
+    [Color(0xFF232C44), Color(0xFF161D30), Color(0xFF0D1220)],
     stops: [0, .55, 1],
   ),
-  _Palette('Spazio Profondo', [
-    Color(0xFF34425F),
-    Color(0xFF141A2C),
-    Color(0xFF070910),
+  _Palette('Ardesia', [
+    Color(0xFF465B79),
+    Color(0xFF2D3D56),
+    Color(0xFF202B3E),
   ]),
-  _Palette('Aurora', [Color(0xFF174A4A), Color(0xFF44305D), Color(0xFF0D1220)]),
-  _Palette('Tramonto', [
-    Color(0xFF8B5065),
-    Color(0xFF373050),
-    Color(0xFF111626),
-  ]),
-  _Palette('Alba', [Color(0xFFD88B63), Color(0xFF80596A), Color(0xFF252A49)]),
-  _Palette('Foresta', [
-    Color(0xFF355F54),
-    Color(0xFF19352F),
-    Color(0xFF0D1717),
-  ]),
-  _Palette('Oceano', [Color(0xFF1E5F8A), Color(0xFF12304F), Color(0xFF08121F)]),
-  _Palette('Viola', [Color(0xFF5B3F8F), Color(0xFF2A1B4D), Color(0xFF0E0A1F)]),
-  _Palette('Ciliegia', [
-    Color(0xFFA33A4A),
-    Color(0xFF4A1A2E),
-    Color(0xFF170810),
-  ]),
-  _Palette('Rosa', [Color(0xFFC2688A), Color(0xFF6B3A68), Color(0xFF1E1530)]),
+  _Palette(
+    'Blu Profondo',
+    [Color(0xFF284D7A), Color(0xFF182F50), Color(0xFF0D192D)],
+    stops: [0, .55, 1],
+  ),
+  _Palette('Oro', [Color(0xFF80603A), Color(0xFF353040), Color(0xFF0D1220)]),
   _Palette('Grafite', [
-    Color(0xFF4A5160),
-    Color(0xFF2A2F3A),
-    Color(0xFF12151C),
+    Color(0xFF45464B),
+    Color(0xFF2B2E35),
+    Color(0xFF151922),
   ]),
-  _Palette('Inchiostro', [Color(0xFF1A1A1A), Color(0xFF000000)]),
-  _Palette('Carta', [Color(0xFFF3ECDD), Color(0xFFD9CFBC)]),
-  _Palette('Cielo', [Color(0xFFD7E6F7), Color(0xFF8FB0DD)]),
-  _Palette('Menta', [Color(0xFFD5EEE2), Color(0xFF86C1A8)]),
+  _Palette('Avorio', [Color(0xFFF5F0E6), Color(0xFFECE3D3), Color(0xFFDBCDB4)]),
+  _Palette('Perla', [Color(0xFFF0F3F7), Color(0xFFDFE5EE), Color(0xFFC7D1E0)]),
+  _Palette('Sabbia', [Color(0xFFE9D7BA), Color(0xFFD7BC91), Color(0xFFB99A6E)]),
+  _Palette('Bordeaux', [
+    Color(0xFF893243),
+    Color(0xFF502736),
+    Color(0xFF251C2B),
+  ]),
+  _Palette('Rosa Antico', [
+    Color(0xFF90556D),
+    Color(0xFF58394C),
+    Color(0xFF2B2233),
+  ]),
+  _Palette('Verde Bosco', [
+    Color(0xFF2D6A4F),
+    Color(0xFF23483E),
+    Color(0xFF142C2C),
+  ]),
+  _Palette('Viola', [Color(0xFF69438F), Color(0xFF40305E), Color(0xFF211D38)]),
 ];
 
 enum _ShareFormat { story, vertical, portrait, square, landscape }
 
-enum _PhotoMode { none, background, panel, circle }
+double _shareAspectRatio(_ShareFormat format) => switch (format) {
+  _ShareFormat.story => 2 / 3,
+  _ShareFormat.vertical => 9 / 16,
+  _ShareFormat.portrait => 4 / 5,
+  _ShareFormat.square => 1,
+  _ShareFormat.landscape => 16 / 9,
+};
 
-enum _Watermark { none, logo, sparkle, constellation, area }
+enum _PhotoMode { none, background, integrated }
+
+_PhotoMode _effectiveSharePhotoMode(
+  _PhotoMode mode,
+  ShareContent data,
+  _Layout layout,
+) =>
+    data.photos.isNotEmpty &&
+        mode == _PhotoMode.none &&
+        data.subject == ShareSubject.moodboard &&
+        layout == _Layout.free
+    ? _PhotoMode.background
+    : mode;
+
+enum _Watermark { none, logo, area }
 
 enum _BrandLayout { logoAbove, logoLeft }
 
@@ -121,6 +142,7 @@ enum _BadgePosition { top, bottom }
 
 class _PreviewPane extends StatelessWidget {
   const _PreviewPane({
+    super.key,
     required this.format,
     required this.specimen,
     required this.captureKey,
@@ -133,13 +155,7 @@ class _PreviewPane extends StatelessWidget {
   final GlobalKey captureKey;
   final double padding;
 
-  double get _aspectRatio => switch (format) {
-    _ShareFormat.story => 2 / 3,
-    _ShareFormat.vertical => 9 / 16,
-    _ShareFormat.portrait => 4 / 5,
-    _ShareFormat.square => 1,
-    _ShareFormat.landscape => 16 / 9,
-  };
+  double get _aspectRatio => _shareAspectRatio(format);
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -186,7 +202,6 @@ class _ShareSpecimen extends StatelessWidget {
     required this.palette,
     required this.titleInk,
     required this.watermarkInk,
-    required this.watermarkSize,
     required this.watermarkArea,
     required this.brandContent,
     required this.logoStyle,
@@ -215,7 +230,6 @@ class _ShareSpecimen extends StatelessWidget {
   final int palette;
   final _Ink titleInk;
   final _Ink watermarkInk;
-  final _WatermarkSize watermarkSize;
   final int watermarkArea;
   final _BrandContent brandContent;
   final _LogoStyle logoStyle;
@@ -240,12 +254,16 @@ class _ShareSpecimen extends StatelessWidget {
   String get _title => data.title;
   String get _description => data.description;
   String get _photoUrl => data.photos.isEmpty ? '' : data.photos.first;
-  Widget _photoAt(int index) => data.photos.isEmpty
+  Widget _photoAt(int index) =>
+      data.photos.isEmpty || photoMode != _PhotoMode.integrated
       ? data.artwork ?? const SizedBox.shrink()
-      : _ContentPhoto(
-          url: data.photos[index % data.photos.length],
-          fit: BoxFit.cover,
-          moodboard: subject == ShareSubject.moodboard,
+      : KeyedSubtree(
+          key: ValueKey('share-integrated-photo-$index'),
+          child: _ContentPhoto(
+            url: data.photos[index % data.photos.length],
+            fit: BoxFit.cover,
+            moodboard: subject == ShareSubject.moodboard,
+          ),
         );
 
   bool get _lightBackground => _palettes[palette].light;
@@ -274,28 +292,18 @@ class _ShareSpecimen extends StatelessWidget {
     final colors = context.colors;
     final layout = _layout.$1;
     // A cover-style moodboard is a photo card even without picking a photo.
-    final effPhoto =
-        data.photos.isNotEmpty &&
-            photoMode == _PhotoMode.none &&
-            subject == ShareSubject.moodboard &&
-            layout == _Layout.free
-        ? _PhotoMode.background
-        : photoMode;
-    final usePaperPalette =
-        _lightBackground && effPhoto != _PhotoMode.background;
-    final foreground = usePaperPalette ? const Color(0xFF28231D) : colors.text;
-    final secondary = usePaperPalette ? const Color(0xFF635A4E) : colors.muted;
-    final accent = usePaperPalette ? const Color(0xFF8A5A26) : colors.gold;
+    final effPhoto = _effectiveSharePhotoMode(photoMode, data, layout);
+    final inks = _ShareInks(
+      colors,
+      _palettes[palette],
+      photoBackground: effPhoto == _PhotoMode.background,
+    );
+    final foreground = inks.foreground;
+    final secondary = inks.secondary;
+    final accent = inks.accent;
     final compact = format == _ShareFormat.landscape;
-    Color? inkColor(_Ink ink) => switch (ink) {
-      _Ink.auto => null,
-      _Ink.gold => accent,
-      _Ink.white => const Color(0xFFF4F1E8),
-      _Ink.navy =>
-        usePaperPalette ? const Color(0xFF2A3560) : const Color(0xFF7C8FC4),
-      _Ink.gray => secondary,
-    };
-    final titleColor = inkColor(titleInk) ?? foreground;
+    Color inkColor(_Ink ink) => inks.resolve(ink);
+    final titleColor = inkColor(titleInk);
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
       child: DecoratedBox(
@@ -309,86 +317,20 @@ class _ShareSpecimen extends StatelessWidget {
                 fit: BoxFit.cover,
                 moodboard: subject == ShareSubject.moodboard,
               ),
-            if (effPhoto == _PhotoMode.background) ...const [
-              // Soft veil over the whole photo, then the design board's
-              // night scrim rising from the bottom edge under the text.
-              DecoratedBox(decoration: BoxDecoration(color: Color(0x3305070D))),
-              // Top scrim too, so a title placed at the top stays readable
-              // on a bright photo.
-              Align(
-                alignment: Alignment.topCenter,
-                child: FractionallySizedBox(
-                  heightFactor: .4,
-                  widthFactor: 1,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Color(0xB305070D), Color(0x0005070D)],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: FractionallySizedBox(
-                  heightFactor: .62,
-                  widthFactor: 1,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color(0x0005070D),
-                          Color(0x8C05070D),
-                          Color(0xF205070D),
-                        ],
-                        stops: [0, .35, 1],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-            if (effPhoto == _PhotoMode.panel && layout == _Layout.free)
-              Align(
-                alignment: composition.isEven
-                    ? Alignment.topCenter
-                    : Alignment.centerLeft,
-                child: FractionallySizedBox(
-                  widthFactor: composition.isEven ? 1 : .46,
-                  heightFactor: composition.isEven ? .4 : 1,
-                  child: _ContentPhoto(
-                    url: _photoUrl,
-                    fit: BoxFit.cover,
-                    moodboard: subject == ShareSubject.moodboard,
-                  ),
-                ),
-              ),
+            if (effPhoto == _PhotoMode.background) const _PhotoBackdropScrim(),
             if (watermark != _Watermark.none)
               Center(
                 child: _WatermarkArt(
                   watermark: watermark,
-                  color: inkColor(watermarkInk) ?? foreground,
+                  color: inkColor(watermarkInk),
                   tinted: watermarkInk != _Ink.auto,
                   // Large stays inside the card (the logo's shapes cover about two
                   // thirds of its width, an area artwork nearly all of it).
-                  size:
-                      switch (watermarkSize) {
-                        _WatermarkSize.small => 300.0,
-                        _WatermarkSize.medium => 440.0,
-                        _WatermarkSize.large => 520.0,
-                      } *
-                      (compact ? .68 : 1),
+                  size: 520 * (compact ? .68 : 1),
                   area: watermarkArea,
                 ),
               ),
-            if (layout == _Layout.free &&
-                effPhoto != _PhotoMode.panel &&
-                effPhoto != _PhotoMode.background)
+            if (layout == _Layout.free && effPhoto != _PhotoMode.background)
               Align(
                 alignment: Alignment.center,
                 child: FractionallySizedBox(
@@ -396,9 +338,21 @@ class _ShareSpecimen extends StatelessWidget {
                   heightFactor: compact ? .58 : .36,
                   child: Padding(
                     padding: const EdgeInsets.all(22),
-                    child:
-                        data.artwork ??
-                        Icon(Icons.auto_awesome, color: accent, size: 64),
+                    child: effPhoto == _PhotoMode.integrated
+                        ? Center(
+                            child: _roundPhoto(
+                              _Look(
+                                foreground: foreground,
+                                secondary: secondary,
+                                accent: accent,
+                                compact: compact,
+                                title: titleColor,
+                              ),
+                              34,
+                            ),
+                          )
+                        : data.artwork ??
+                              Icon(Icons.auto_awesome, color: accent, size: 64),
                   ),
                 ),
               ),
@@ -408,13 +362,21 @@ class _ShareSpecimen extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   if (layout != _Layout.free)
-                    _layoutContent(
-                      _Look(
-                        foreground: foreground,
-                        secondary: secondary,
-                        accent: accent,
-                        compact: compact,
-                        title: titleColor,
+                    Padding(
+                      padding: EdgeInsets.only(
+                        top: brandPosition == _TitlePosition.topRight ? 40 : 0,
+                        bottom: brandPosition == _TitlePosition.topRight
+                            ? 0
+                            : 42,
+                      ),
+                      child: _layoutContent(
+                        _Look(
+                          foreground: foreground,
+                          secondary: secondary,
+                          accent: accent,
+                          compact: compact,
+                          title: titleColor,
+                        ),
                       ),
                     ),
                   if (layout == _Layout.free)
@@ -441,7 +403,7 @@ class _ShareSpecimen extends StatelessWidget {
                           : Alignment.bottomLeft,
                       child: Padding(
                         padding: EdgeInsets.only(
-                          top: badgePosition == _BadgePosition.top ? 28 : 0,
+                          top: badgePosition == _BadgePosition.top ? 44 : 0,
                           bottom: badgePosition == _BadgePosition.bottom
                               ? 28
                               : 0,
@@ -469,7 +431,7 @@ class _ShareSpecimen extends StatelessWidget {
                         ink: inkColor(nameInk),
                         logoInk: inkColor(logoInk),
                         logoSize: switch (logoSize) {
-                          _LogoSize.small => 22.0,
+                          _LogoSize.small => 16.0,
                           _LogoSize.medium => 30.0,
                           _LogoSize.large => 44.0,
                         },
@@ -813,15 +775,6 @@ class _WatermarkArt extends StatelessWidget {
         height: size,
         colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
       ),
-      _Watermark.sparkle => Transform.rotate(
-        angle: -.22,
-        child: Icon(Icons.auto_awesome, size: size * .6, color: color),
-      ),
-      _Watermark.constellation => SizedBox(
-        width: size * .85,
-        height: size * .85,
-        child: CustomPaint(painter: _ConstellationPainter(color)),
-      ),
       // The area's royal-symbol artwork, repainted in a single ink and
       // scaled so every area covers about the same visual mass.
       _Watermark.area => Image.asset(
@@ -893,8 +846,8 @@ class _AppBrand extends StatelessWidget {
   Widget build(BuildContext context) {
     final night = context.colors.night;
     final size = logoSize * (compact ? .8 : 1);
-    final logoColor = logoInk ?? accent;
-    final nameColor = ink ?? foreground.withValues(alpha: .75);
+    final logoColor = logoInk ?? foreground;
+    final nameColor = ink ?? foreground;
     final logo = !disc
         ? _BareLogo(size: size, color: logoColor)
         : switch (logoStyle) {
@@ -1011,6 +964,58 @@ class _AppLogoMark extends StatelessWidget {
 Future<Uint8List?> _readSharePhoto(String path, bool moodboard) =>
     moodboard ? MoodboardStorage.read(path) : PhotoStorage.readBytes(path);
 
+class _PhotoBackdropScrim extends StatelessWidget {
+  const _PhotoBackdropScrim();
+  @override
+  Widget build(BuildContext context) => Stack(
+    fit: StackFit.expand,
+    children: const [
+      // Soft veil over the whole photo, then the design board's
+      // night scrim rising from the bottom edge under the text.
+      DecoratedBox(decoration: BoxDecoration(color: Color(0x3305070D))),
+      // Top scrim too, so a title placed at the top stays readable
+      // on a bright photo.
+      Align(
+        alignment: Alignment.topCenter,
+        child: FractionallySizedBox(
+          heightFactor: .4,
+          widthFactor: 1,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xB305070D), Color(0x0005070D)],
+              ),
+            ),
+          ),
+        ),
+      ),
+      Align(
+        alignment: Alignment.bottomCenter,
+        child: FractionallySizedBox(
+          heightFactor: .62,
+          widthFactor: 1,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0x0005070D),
+                  Color(0x8C05070D),
+                  Color(0xF205070D),
+                ],
+                stops: [0, .35, 1],
+              ),
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
 class _ContentPhoto extends StatefulWidget {
   const _ContentPhoto({
     required this.url,
@@ -1062,58 +1067,6 @@ class _ContentPhotoState extends State<_ContentPhoto> {
   }
 }
 
-class _ConstellationPainter extends CustomPainter {
-  const _ConstellationPainter(this.color);
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    Offset at(double x, double y) => Offset(size.width * x, size.height * y);
-    // A branching constellation: a spine with two offshoots, stars of
-    // different weights, and a few faint dust stars around it.
-    final points = [
-      at(.1, .78), // 0
-      at(.28, .5), // 1
-      at(.5, .6), // 2
-      at(.66, .3), // 3
-      at(.9, .22), // 4
-      at(.42, .22), // 5
-      at(.8, .72), // 6
-    ];
-    const edges = [(0, 1), (1, 2), (2, 3), (3, 4), (1, 5), (2, 6)];
-    const radii = [4.0, 5.5, 4.0, 6.5, 4.5, 3.5, 4.0];
-    final line = Paint()
-      ..color = color.withValues(alpha: .38)
-      ..strokeWidth = 1.5;
-    final dust = Paint()..color = color.withValues(alpha: .25);
-    for (final d in [
-      at(.04, .3),
-      at(.2, .1),
-      at(.58, .08),
-      at(.96, .55),
-      at(.64, .92),
-      at(.3, .92),
-    ]) {
-      canvas.drawCircle(d, 1.6, dust);
-    }
-    for (final (a, b) in edges) {
-      canvas.drawLine(points[a], points[b], line);
-    }
-    for (var i = 0; i < points.length; i++) {
-      canvas.drawCircle(
-        points[i],
-        radii[i] * 2.4,
-        Paint()..color = color.withValues(alpha: .1),
-      );
-      canvas.drawCircle(points[i], radii[i], Paint()..color = color);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _ConstellationPainter oldDelegate) =>
-      oldDelegate.color != color;
-}
-
 Alignment _alignmentFor(_TitlePosition position) => switch (position) {
   _TitlePosition.topLeft => Alignment.topLeft,
   _TitlePosition.topCenter => Alignment.topCenter,
@@ -1125,6 +1078,55 @@ Alignment _alignmentFor(_TitlePosition position) => switch (position) {
   _TitlePosition.bottomCenter => Alignment.bottomCenter,
   _TitlePosition.bottomRight => Alignment.bottomRight,
 };
+
+/// Readable inks for the exported composition.
+class _ShareInks {
+  _ShareInks(this.colors, this.palette, {this.photoBackground = false});
+  final AppColors colors;
+  final _Palette palette;
+  final bool photoBackground;
+
+  // Photos already have their shared night scrim; gradients are checked
+  // against every stop, including the brightest area.
+  List<Color> get _backgrounds =>
+      photoBackground ? [colors.night] : palette.colors;
+  bool get _light => palette.light && !photoBackground;
+  late final foreground = _readableShareInk(
+    _light ? const Color(0xFF28231D) : colors.text,
+    _backgrounds,
+  );
+  late final secondary = _readableShareInk(
+    _light ? const Color(0xFF635A4E) : colors.muted,
+    _backgrounds,
+  );
+  late final accent = _readableShareInk(
+    _light ? const Color(0xFF8A5A26) : colors.gold,
+    _backgrounds,
+  );
+
+  Color resolve(_Ink ink) => switch (ink) {
+    _Ink.auto => foreground,
+    _Ink.gold => accent,
+    _ => _readableShareInk(_inkDotColor(colors, ink)!, _backgrounds),
+  };
+}
+
+Color _readableShareInk(Color preferred, List<Color> backgrounds) {
+  bool readable(Color ink) => backgrounds.every((background) {
+    final a = ink.computeLuminance();
+    final b = background.computeLuminance();
+    return (a > b ? (a + .05) / (b + .05) : (b + .05) / (a + .05)) >= 4.5;
+  });
+  if (readable(preferred)) return preferred;
+  // Retain the composition's hue, lightening or darkening only as needed.
+  for (var step = 1; step <= 20; step++) {
+    for (final target in [const Color(0xFFF4F1E8), const Color(0xFF28231D)]) {
+      final adjusted = Color.lerp(preferred, target, step / 20)!;
+      if (readable(adjusted)) return adjusted;
+    }
+  }
+  return preferred;
+}
 
 /// Any gradient [shape] applied to any [palette]'s colours.
 Gradient _backgroundGradient(_GradientShape shape, _Palette palette) {
@@ -1163,24 +1165,5 @@ Gradient _backgroundGradient(_GradientShape shape, _Palette palette) {
         colors: colors,
         stops: evenStops,
       );
-    case _GradientShape.conic:
-      final loop = [...colors, colors.first];
-      return SweepGradient(
-        center: Alignment.center,
-        colors: loop,
-        stops: [for (var i = 0; i < loop.length; i++) i / (loop.length - 1)],
-      );
-    case _GradientShape.mirrored:
-      final mirrored = [...colors, ...colors.reversed.skip(1)];
-      return LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: mirrored,
-        stops: [
-          for (var i = 0; i < mirrored.length; i++) i / (mirrored.length - 1),
-        ],
-      );
-    case _GradientShape.flat:
-      return LinearGradient(colors: [colors.first, colors.first]);
   }
 }

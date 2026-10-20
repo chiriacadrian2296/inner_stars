@@ -11,124 +11,119 @@ Future<void> _pump(WidgetTester tester, Size size) async {
   await tester.pumpWidget(
     MaterialApp(theme: buildAppTheme(), home: const ShareLabScreen()),
   );
+  await tester.pumpAndSettle();
 }
 
-/// Taps a stepper's right arrow [times] times.
-Future<void> _next(WidgetTester tester, String field, [int times = 1]) async {
-  final finder = find.byKey(ValueKey('$field-next'));
-  for (var i = 0; i < times; i++) {
-    await tester.ensureVisible(finder);
-    await tester.tap(finder);
-    await tester.pump();
-  }
+Future<void> _tap(WidgetTester tester, String key) async {
+  final choice = find.byKey(ValueKey(key));
+  await tester.ensureVisible(choice);
+  await tester.tap(choice);
+  await tester.pumpAndSettle();
+}
+
+bool _selected(WidgetTester tester, String key) => tester
+    .widget<Semantics>(
+      find
+          .ancestor(
+            of: find.byKey(ValueKey(key)),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Semantics && widget.properties.selected != null,
+            ),
+          )
+          .first,
+    )
+    .properties
+    .selected!;
+
+Future<void> _subject(WidgetTester tester, String label) async {
+  await _tap(tester, 'scheda-contenuto-menu');
+  await tester.tap(find.text(label).last);
+  await tester.pumpAndSettle();
 }
 
 void main() {
-  testWidgets('composer groups options in blocks with steppers', (
+  testWidgets('lab exposes sample subjects through the current composer', (
     tester,
   ) async {
     await _pump(tester, const Size(1440, 1000));
-
-    expect(find.text('CONDIVIDI'), findsOneWidget);
-    for (final block in [
-      'SCHEDA',
-      'STILE',
-      'SFONDO',
-      'TESTO E DATI',
-      'FIRMA',
-      'WATERMARK',
-    ]) {
-      expect(find.text(block), findsOneWidget);
+    for (final title in ['Scheda', 'Sfondo', 'Firma']) {
+      expect(find.text(title), findsOneWidget);
     }
-    expect(find.text('Celebrazione'), findsOneWidget);
-
-    // Arrows flip to the next subject and its own compositions.
-    await _next(tester, 'scheda-contenuto', 5); // moodboard
-    expect(find.text('Moodboard'), findsOneWidget);
+    expect(find.byKey(const ValueKey('share-preview')), findsOneWidget);
+    expect(find.byType(AppBar), findsNothing);
+    await _subject(tester, 'Moodboard');
     expect(find.text('Collage'), findsOneWidget);
     expect(find.text('Celebrazione'), findsNothing);
-
-    // The dropdown lists every choice.
-    await tester.tap(find.byKey(const ValueKey('scheda-formato-menu')));
-    await tester.pumpAndSettle();
-    expect(find.text('Orizzontale · 16:9'), findsOneWidget);
-    await tester.tap(find.text('Orizzontale · 16:9'));
-    await tester.pumpAndSettle();
-
-    // A manual change turns the style into "Personalizzato".
-    expect(find.text('Personalizzato'), findsOneWidget);
-    await _next(tester, 'stile-preset');
-    expect(find.text('Dorato'), findsOneWidget);
-
+    await _tap(tester, 'scheda-formato-4');
+    expect(_selected(tester, 'scheda-formato-4'), isTrue);
+    await _tap(tester, 'stile-preset-1');
+    expect(_selected(tester, 'stile-preset-1'), isTrue);
+    expect(_selected(tester, 'scheda-formato-4'), isTrue);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('style, background, signature and watermark options all work', (
+  testWidgets('lab styles and individual visual choices support undo', (
     tester,
   ) async {
     await _pump(tester, const Size(1440, 1000));
-
-    await _next(tester, 'stile-preset', 6);
-    await _next(tester, 'stile-marchio', 5);
-    await _next(tester, 'stile-titolo', 5);
-    await _next(tester, 'sfondo-forma', 7);
-    await _next(tester, 'sfondo-colori', 15);
-    await _next(tester, 'sfondo-foto', 4);
-
-    await _next(tester, 'firma-mostra', 5);
-    await _next(tester, 'firma-mostra', 1); // solo logo
-    await _next(tester, 'firma-logo', 3);
-    await _next(tester, 'firma-misura', 3);
-    await _next(tester, 'firma-colore-logo', 6);
-    await _next(tester, 'firma-mostra', 2); // logo e nome
-    await _next(tester, 'firma-mostra', 1); // logo sopra nome
-    await _next(tester, 'firma-posizione', 9);
-    await _next(tester, 'firma-colore-nome', 6);
-    await _next(tester, 'watermark-tipo', 12); // every type and area
-    await _next(tester, 'watermark-tipo', 8); // an area artwork
-    await _next(tester, 'watermark-misura', 3);
-    await _next(tester, 'watermark-colore', 6);
-
-    await tester.ensureVisible(find.text('Descrizione'));
-    await tester.tap(find.text('Descrizione'));
-    await tester.pump();
-
+    await _tap(tester, 'stile-preset-4');
+    await _tap(tester, 'sfondo-forma-1');
+    await _tap(tester, 'sfondo-colori-11');
+    await _tap(tester, 'firma-disposizione-2');
+    await _tap(tester, 'watermark-tipo-1');
+    expect(_selected(tester, 'watermark-tipo-1'), isTrue);
+    expect(_selected(tester, 'firma-disposizione-2'), isTrue);
+    expect(_selected(tester, 'sfondo-colori-11'), isTrue);
+    expect(_selected(tester, 'stile-preset-4'), isFalse);
+    expect(find.byKey(const ValueKey('sfondo-foto-label')), findsNothing);
+    expect(find.byKey(const ValueKey('watermark-misura-menu')), findsNothing);
+    await _tap(tester, 'share-undo');
+    expect(_selected(tester, 'watermark-tipo-0'), isTrue);
+    await _tap(tester, 'share-redo');
+    expect(_selected(tester, 'watermark-tipo-1'), isTrue);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('every subject and composition lays out in every format', (
-    tester,
-  ) async {
+  testWidgets('every sample exposes three usable compositions', (tester) async {
     await _pump(tester, const Size(1440, 1000));
-
-    for (var subject = 0; subject < 7; subject++) {
-      for (var format = 0; format < 5; format++) {
-        for (var composition = 0; composition < 5; composition++) {
-          expect(
-            tester.takeException(),
-            isNull,
-            reason:
-                'subject $subject · format $format · composition $composition',
-          );
-          await _next(tester, 'scheda-composizione');
-        }
-        await _next(tester, 'scheda-formato');
+    for (final label in [
+      'Vittoria',
+      'Obiettivo',
+      'Abitudine',
+      'Progetto',
+      'Visione',
+      'Moodboard',
+      'Citazione',
+    ]) {
+      await _subject(tester, label);
+      expect(find.byKey(const ValueKey('scheda-composizione-3')), findsNothing);
+      for (var composition = 0; composition < 3; composition++) {
+        await _tap(tester, 'scheda-composizione-$composition');
+        expect(_selected(tester, 'scheda-composizione-$composition'), isTrue);
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: '$label, composition $composition',
+        );
       }
-      await _next(tester, 'scheda-contenuto');
     }
   });
 
-  testWidgets('narrow screens get a sideways bar of blocks', (tester) async {
-    await _pump(tester, const Size(390, 844));
-
-    expect(find.text('SCHEDA'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('FIRMA'),
-      300,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('FIRMA'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+  testWidgets(
+    'narrow lab uses one vertical panel and a compact preview toggle',
+    (tester) async {
+      await _pump(tester, const Size(390, 844));
+      final preview = find.byKey(const ValueKey('share-preview'));
+      final original = tester.getSize(preview);
+      await _tap(tester, 'share-toggle-preview');
+      expect(tester.getSize(preview).height, lessThan(original.height));
+      await tester.ensureVisible(find.byKey(const ValueKey('share-section-2')));
+      await tester.pumpAndSettle();
+      expect(find.text('Firma'), findsOneWidget);
+      await _tap(tester, 'firma-disposizione-0');
+      expect(_selected(tester, 'firma-disposizione-0'), isTrue);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

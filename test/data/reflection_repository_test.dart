@@ -75,6 +75,7 @@ void main() {
       body: 'Answer',
       origin: ReflectionOrigin.suggested,
       questionId: '0',
+      questionText: 'Original question, independent of the title',
     );
     final third = await repo.add(
       area: LifeArea.social,
@@ -96,6 +97,10 @@ void main() {
     expect(changed.area, second.area);
     expect(changed.origin, ReflectionOrigin.suggested);
     expect(changed.questionId, '0');
+    expect(changed.questionText, second.questionText);
+    expect(repo.find(second.id)!.questionText, second.questionText);
+    final oldJson = second.toJson()..remove('questionText');
+    expect(Reflection.fromJson(oldJson).questionText, isNull);
     expect(changed.updatedAt.isAfter(second.updatedAt), isTrue);
     final unchanged = await repo.update(
       changed.id,

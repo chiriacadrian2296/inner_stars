@@ -25,51 +25,37 @@ enum _Layout {
 const _layoutMap = <ShareSubject, List<(_Layout, int)>>{
   ShareSubject.victory: [
     (_Layout.centered, 0),
-    (_Layout.hero, 0),
     (_Layout.polaroid, 0),
-    (_Layout.minimal, 0),
     (_Layout.free, 0),
   ],
   ShareSubject.goal: [
     (_Layout.centered, 0),
     (_Layout.poster, 0),
-    (_Layout.free, 0),
-    (_Layout.minimal, 0),
-    (_Layout.hero, 0),
+    (_Layout.editorial, 1),
   ],
   ShareSubject.habit: [
-    (_Layout.tiles, 0),
-    (_Layout.hero, 0),
     (_Layout.centered, 0),
-    (_Layout.minimal, 0),
+    (_Layout.editorial, 1),
     (_Layout.free, 0),
   ],
   ShareSubject.project: [
     (_Layout.constellation, 0),
-    (_Layout.hero, 0),
     (_Layout.poster, 0),
     (_Layout.free, 0),
-    (_Layout.tiles, 0),
   ],
   ShareSubject.vision: [
     (_Layout.poster, 0),
     (_Layout.editorial, 1),
-    (_Layout.editorial, 2),
     (_Layout.editorial, 3),
-    (_Layout.minimal, 0),
   ],
   ShareSubject.moodboard: [
     (_Layout.collage, 0),
-    (_Layout.free, 0),
     (_Layout.gallery, 0),
     (_Layout.polaroid, 0),
-    (_Layout.editorial, 3),
   ],
   ShareSubject.quote: [
     (_Layout.poster, 0),
-    (_Layout.centered, 0),
-    (_Layout.minimal, 0),
-    (_Layout.editorial, 3),
+    (_Layout.editorial, 1),
     (_Layout.poster, 1),
   ],
 };
@@ -214,20 +200,8 @@ extension _SpecimenLayouts on _ShareSpecimen {
   /// The card's emblem: a burning star (a plain one when it isn't a victory),
   /// an opening quote mark for quotes, or the round photo.
   Widget _mark(_Look l, double size, {bool? burning}) {
-    if (photoMode == _PhotoMode.circle) {
-      final d = size * 3.2 * l.k;
-      return Container(
-        width: d,
-        height: d,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: l.accent, width: kBorderWidthActive),
-        ),
-        padding: const EdgeInsets.all(4),
-        child: ClipOval(
-          child: _ContentPhoto(url: _photoUrl, fit: BoxFit.cover),
-        ),
-      );
+    if (photoMode == _PhotoMode.integrated) {
+      return _roundPhoto(l, size);
     }
     final lit = burning ?? subject == ShareSubject.victory;
     if (subject == ShareSubject.quote) {
@@ -260,6 +234,24 @@ extension _SpecimenLayouts on _ShareSpecimen {
       ),
     );
   }
+
+  Widget _roundPhoto(_Look l, double size) => Container(
+    key: const ValueKey('share-round-photo'),
+    width: size * 3.2 * l.k,
+    height: size * 3.2 * l.k,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      border: Border.all(color: l.accent, width: kBorderWidthActive),
+    ),
+    padding: const EdgeInsets.all(4),
+    child: ClipOval(
+      child: _ContentPhoto(
+        url: _photoUrl,
+        fit: BoxFit.cover,
+        moodboard: subject == ShareSubject.moodboard,
+      ),
+    ),
+  );
 
   Widget _gap(_Look l, double h) => SizedBox(height: h * l.k);
 
@@ -479,6 +471,10 @@ extension _SpecimenLayouts on _ShareSpecimen {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (photoMode == _PhotoMode.integrated) ...[
+                _roundPhoto(l, 34),
+                _gap(l, 20),
+              ],
               _rule(l),
               _gap(l, 26),
               _titleText(l, 40, maxLines: 6),
@@ -521,7 +517,10 @@ extension _SpecimenLayouts on _ShareSpecimen {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (quote)
+                  if (photoMode == _PhotoMode.integrated) ...[
+                    _roundPhoto(l, 34),
+                    _gap(l, 20),
+                  ] else if (quote)
                     Text(
                       '“',
                       style: TextStyle(
@@ -576,6 +575,10 @@ extension _SpecimenLayouts on _ShareSpecimen {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (photoMode == _PhotoMode.integrated) ...[
+                  _roundPhoto(l, 34),
+                  _gap(l, 20),
+                ],
                 _meta(l, align: CrossAxisAlignment.start),
                 _gap(l, 14),
                 _titleText(l, 29, align: TextAlign.left, maxLines: 6),
@@ -672,6 +675,10 @@ extension _SpecimenLayouts on _ShareSpecimen {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (photoMode == _PhotoMode.integrated) ...[
+                      _roundPhoto(l, 34),
+                      _gap(l, 20),
+                    ],
                     _titleText(l, 33, maxLines: 6),
                     _gap(l, 20),
                     _rule(l, width: 34),
@@ -725,7 +732,11 @@ extension _SpecimenLayouts on _ShareSpecimen {
                     children: [
                       AspectRatio(
                         aspectRatio: 1,
-                        child: _ContentPhoto(url: _photoUrl, fit: BoxFit.cover),
+                        child:
+                            photoMode == _PhotoMode.integrated &&
+                                data.photos.isNotEmpty
+                            ? _photoAt(0)
+                            : Center(child: data.artwork ?? _mark(l, 38)),
                       ),
                       const SizedBox(height: 14),
                       _titleText(
@@ -869,7 +880,15 @@ extension _SpecimenLayouts on _ShareSpecimen {
           child: data.artwork ?? const SizedBox.shrink(),
         ),
       ),
-      _titleText(l, 28, maxLines: 3),
+      Row(
+        children: [
+          if (photoMode == _PhotoMode.integrated) ...[
+            _roundPhoto(l, 20),
+            SizedBox(width: 12 * l.k),
+          ],
+          Expanded(child: _titleText(l, 28, maxLines: 3)),
+        ],
+      ),
       if (showDescription) ...[
         _gap(l, 10),
         _descText(l, size: 12, maxLines: 2),

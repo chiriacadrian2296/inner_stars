@@ -27,6 +27,7 @@ class VoiceNotePlayer extends StatefulWidget {
     this.badgeSize = 26,
     this.timeSize = 14,
     this.timeInset,
+    this.gap = 50,
   });
 
   final StarMedia media;
@@ -54,6 +55,10 @@ class VoiceNotePlayer extends StatefulWidget {
 
   /// Extra space after the length, at its natural size.
   final double? timeInset;
+
+  /// Space between the play badge and the waveform, and between the waveform
+  /// and the length. A narrow column shortens the waveform by shrinking this.
+  final double gap;
 
   @override
   State<VoiceNotePlayer> createState() => _VoiceNotePlayerState();
@@ -176,7 +181,10 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
       behavior: HitTestBehavior.opaque,
       onTap: _failed ? null : _toggle,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: widget.timeInset == null ? 6 : 5,
+        ),
         // Framed, it's a transparent pill with a thin white outline, like a
         // link — not a solid card.
         decoration: widget.framed
@@ -202,7 +210,7 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
                       ),
                     ),
                   ),
-            const SizedBox(width: 50),
+            SizedBox(width: widget.gap),
             Expanded(
               child: _failed
                   ? Text(
@@ -232,7 +240,15 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
                     ),
             ),
             if (!_failed) ...[
-              const SizedBox(width: 50),
+              // With an inset (the compact row) the badge's own margin inside
+              // its slot is mirrored here, so the bars sit centered.
+              SizedBox(
+                width:
+                    widget.gap +
+                    (widget.timeInset == null
+                        ? 0
+                        : (_badgeSize - widget.badgeSize) / 2),
+              ),
               _withInset(
                 Text(
                   formatVoiceDuration(_playing ? _position : total),

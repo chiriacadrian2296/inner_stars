@@ -162,7 +162,14 @@ class _VoiceNoteRecorderSheetState extends State<_VoiceNoteRecorderSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 4),
+            Center(
+              child: Text(
+                strings.voiceLimitLabel(formatVoiceDuration(kMaxVoiceNote)),
+                style: TextStyle(color: colors.muted, fontSize: 12),
+              ),
+            ),
+            const SizedBox(height: 16),
             Center(
               child: IconButton.outlined(
                 iconSize: 32,

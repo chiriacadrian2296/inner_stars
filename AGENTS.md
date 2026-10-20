@@ -2,8 +2,10 @@
 
 ## UI conventions
 
-- Do not add app bars to new pages. Put page titles in the page content,
-  following the existing screens.
+- Never add app bars or equivalent top rows with a small title and back arrow
+  to any page, now or in future work. Put any needed page titles in the page
+  content, following the existing screens. In sharing, give that space to the
+  preview instead.
 
 - In “Vedi”, keep Statistics, Edit and Archive/Delete together. Fly is the
   last action on the right, in its own group, because it returns to Galaxy.
@@ -72,6 +74,13 @@
   the line ranges you need instead of whole large files; run independent
   commands together; do not repeat a check that already passed. Keep replies
   short.
+- **Lean applies to commands, not to understanding.** Before building or
+  restyling a screen, dialog or widget, first read how the app already does the
+  same kind of thing: a comparable existing screen, and the shared widgets in
+  `lib/widgets` (fields, buttons, headers, sheets). Check this file and the
+  remembered rules too (Proper Case, no app bars, no icons on text buttons,
+  keyboard behaviour, and so on). Never skip this to save steps; a redesign
+  that ignores the app's conventions costs more rounds than reading did.
 - Synced models only get new optional fields; never rename or remove existing
   ones, because app versions and cloud data coexist.
 - Development tools stay behind `kDevTools`. An unfinished user-facing

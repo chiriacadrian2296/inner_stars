@@ -5,15 +5,20 @@ import 'reflection_groups_en.dart';
 
 class StringsEn implements AppStrings {
   @override
-  String get reflectionNew => 'New reflection';
+  String get reflectionNew => 'New Reflection';
   @override
-  String get reflectionFree => 'Start from scratch';
+  String get reflectAction => 'Reflect';
   @override
-  String get reflectionSuggested => 'Choose a suggestion';
+  String get reflectionFree => 'Start From Scratch';
   @override
-  String get reflectionTitleLabel => 'Title or theme';
+  String get reflectionListDescription =>
+      'Your own thoughts and your answers to questions about this area of your life, kept in one place.';
   @override
-  String get reflectionBodyLabel => 'Your reflection';
+  String get reflectionSuggested => 'Choose a Suggestion';
+  @override
+  String get reflectionTitleLabel => 'Title or Theme';
+  @override
+  String get reflectionBodyLabel => 'Your Reflection';
   @override
   String get reflectionEmpty =>
       'A question or a thought can be the beginning. Write your first reflection.';
@@ -30,7 +35,24 @@ class StringsEn implements AppStrings {
   @override
   String get reflectionDiscardTitle => 'Discard changes?';
   @override
-  String reflectionCount(int count) => '$count reflections';
+  String reflectionCount(int count) =>
+      count == 1 ? '1 Reflection' : '$count Reflections';
+  @override
+  String reflectionQuestionCount(int count) => '$count Questions';
+  @override
+  String get reflectionExplored => 'Already Explored';
+  @override
+  String get reflectionRelated => 'Related Reflections';
+  @override
+  String get reflectionAnotherQuestion => 'Another Question';
+  @override
+  String get reflectionWrite => 'Write';
+  @override
+  String get reflectionSearchHint => 'Search Reflections';
+  @override
+  String get reflectionNoResults => 'No reflections found.';
+  @override
+  String get reflectionQuestionLabel => 'Starting Question';
 
   @override
   String get splashLoadingLabel => 'Loading Inner Stars';
@@ -1507,6 +1529,10 @@ My contribution meets a real need and is something I can sustain.
   String mediaLimitReached(int max) => 'You can add up to $max extras.';
   @override
   String voiceNoteLabel(String duration) => 'Voice note · $duration';
+  @override
+  String get voiceNoteName => 'Voice Note';
+  @override
+  String voiceLimitLabel(String duration) => 'Limit · $duration';
   @override
   String get voiceNotesLabel => 'Voice Notes';
   @override

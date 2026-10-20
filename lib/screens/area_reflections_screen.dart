@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../data/reflection_repository.dart';
@@ -9,12 +11,17 @@ import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import '../utils/area_section_icons.dart';
+import '../widgets/app_field.dart';
 import '../widgets/area_section_header.dart';
+import '../widgets/pill_action_button.dart';
+import '../widgets/reader_action_bar.dart';
+import '../widgets/reader_entry_content.dart' show ReaderEntrance;
 import '../widgets/responsive_content.dart';
 import '../widgets/shareable_reflection_card.dart';
+import '../widgets/staggered_entrance.dart';
 import 'share_preview_screen.dart';
 
-class AreaReflectionsScreen extends StatelessWidget {
+class AreaReflectionsScreen extends StatefulWidget {
   const AreaReflectionsScreen({
     super.key,
     required this.area,
@@ -23,11 +30,29 @@ class AreaReflectionsScreen extends StatelessWidget {
   final LifeArea area;
   final ReflectionRepository repository;
 
+  @override
+  State<AreaReflectionsScreen> createState() => _AreaReflectionsScreenState();
+}
+
+class _AreaReflectionsScreenState extends State<AreaReflectionsScreen> {
+  final _search = TextEditingController();
+  LifeArea get area => widget.area;
+  ReflectionRepository get repository => widget.repository;
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
   Future<void> _create(BuildContext context, {required bool suggested}) async {
     (String, String)? question;
     if (suggested) {
       question = await Navigator.of(context).push<(String, String)>(
-        MaterialPageRoute(builder: (_) => _ReflectionSuggestions(area: area)),
+        MaterialPageRoute(
+          builder: (_) =>
+              _ReflectionSuggestions(area: area, repository: repository),
+        ),
       );
       if (question == null || !context.mounted) return;
     }
@@ -58,43 +83,59 @@ class AreaReflectionsScreen extends StatelessWidget {
     builder: (context, _) {
       final strings = context.strings;
       final records = repository.getForArea(area);
+      final query = _search.text.trim().toLowerCase();
+      final visible = records
+          .where(
+            (r) =>
+                r.title.toLowerCase().contains(query) ||
+                r.body.toLowerCase().contains(query),
+          )
+          .toList();
       return _ReflectionPage(
         actions: [
-          ElevatedButton.icon(
+          ElevatedButton(
             key: const ValueKey('reflection-new'),
-            icon: const Icon(Icons.add),
-            label: AppButtonLabel(strings.reflectionNew),
+            child: AppButtonLabel(strings.reflectAction),
             onPressed: () async {
               final suggested = await showAppSheet<bool>(
                 context: context,
-                builder: (sheetContext) => Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AppSheetTitle(strings.reflectionNew),
-                      const SizedBox(height: 20),
-                      AppSheetAction(
-                        icon: Icons.edit_outlined,
-                        label: strings.reflectionFree,
-                        onPressed: () => Navigator.pop(sheetContext, false),
-                      ),
-                      AppSheetAction(
-                        icon: Icons.lightbulb_outline,
-                        label: strings.reflectionSuggested,
-                        onPressed: () => Navigator.pop(sheetContext, true),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(sheetContext),
-                        style: TextButton.styleFrom(
-                          foregroundColor: context.colors.muted,
+                // Laid out like the add-photo sheet: two options, then Cancel.
+                builder: (sheetContext) => SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppSheetTitle(strings.reflectionNew),
+                        const SizedBox(height: 20),
+                        AppSheetAction(
+                          icon: Icons.edit_outlined,
+                          label: strings.reflectionFree,
+                          onPressed: () => Navigator.pop(sheetContext, false),
                         ),
-                        child: AppButtonLabel(
-                          strings.cancel,
-                          color: context.colors.muted,
+                        const SizedBox(height: 10),
+                        AppSheetAction(
+                          icon: Icons.lightbulb_outline,
+                          label: strings.reflectionSuggested,
+                          onPressed: () => Navigator.pop(sheetContext, true),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 24),
+                        Align(
+                          alignment: Alignment.center,
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(sheetContext),
+                            style: TextButton.styleFrom(
+                              foregroundColor: context.colors.muted,
+                            ),
+                            child: AppButtonLabel(
+                              strings.cancel,
+                              color: context.colors.muted,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -106,105 +147,445 @@ class AreaReflectionsScreen extends StatelessWidget {
         ],
         children: [
           AreaSectionHeader(
-            title: area.displayName(strings),
+            title: strings.areaReflectionsTitle,
             icon: kAreaReflectionsIcon,
-            description: strings.areaReflectionsTitle,
+            description: area.displayName(strings),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            strings.reflectionListDescription,
+            style: TextStyle(color: context.colors.muted, height: 1.5),
           ),
           const SizedBox(height: 24),
-          Text(
-            strings.reflectionCount(records.length),
-            style: TextStyle(color: context.colors.muted),
-          ),
-          const SizedBox(height: 16),
           if (records.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Text(
-                strings.reflectionEmpty,
-                style: TextStyle(color: context.colors.muted, height: 1.6),
+            _EmptyReflections(text: strings.reflectionEmpty)
+          else ...[
+            if (records.length >= 6 || _search.text.isNotEmpty) ...[
+              AppSearchField(
+                key: const ValueKey('reflection-search'),
+                controller: _search,
+                hintText: strings.reflectionSearchHint,
+                onChanged: (_) => setState(() {}),
               ),
+              const SizedBox(height: 16),
+            ],
+            Text(
+              strings.reflectionCount(visible.length),
+              style: TextStyle(color: context.colors.muted),
             ),
-          for (final record in records)
-            Card(
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(16),
-                title: Text(
-                  record.title,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        record.body,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        MaterialLocalizations.of(context)
-                            .formatMediumDate(record.createdAt.toLocal()),
-                      ),
-                    ],
+            const SizedBox(height: 16),
+            if (visible.isEmpty)
+              _EmptyReflections(text: strings.reflectionNoResults),
+            for (var i = 0; i < visible.length; i++) ...[
+              if (records.length >= 6 &&
+                  (i == 0 ||
+                      !_sameMonth(
+                        visible[i - 1].createdAt,
+                        visible[i].createdAt,
+                      )))
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 12),
+                  child: Text(
+                    MaterialLocalizations.of(context)
+                        .formatMonthYear(visible[i].createdAt.toLocal()),
+                    style: TextStyle(color: context.colors.muted),
                   ),
                 ),
+              _ReflectionCard(
+                record: visible[i],
                 onTap: () => Navigator.of(context).push<void>(
                   MaterialPageRoute(
                     builder: (_) => ReflectionDetailScreen(
-                      id: record.id,
+                      id: visible[i].id,
                       repository: repository,
                     ),
                   ),
                 ),
               ),
-            ),
+            ],
+          ],
         ],
       );
     },
   );
 }
 
-class _ReflectionSuggestions extends StatelessWidget {
-  const _ReflectionSuggestions({required this.area});
-  final LifeArea area;
+bool _sameMonth(DateTime a, DateTime b) {
+  final localA = a.toLocal();
+  final localB = b.toLocal();
+  return localA.year == localB.year && localA.month == localB.month;
+}
+
+/// Nothing written yet: the area's reflection glyph above a short line,
+/// centred, like the app's other empty states.
+class _EmptyReflections extends StatelessWidget {
+  const _EmptyReflections({required this.text});
+  final String text;
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      child: Column(
+        children: [
+          Icon(kAreaReflectionsIcon, size: 40, color: colors.muted),
+          const SizedBox(height: 16),
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: colors.muted, height: 1.6),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One saved reflection: title in the star-title face, date underneath,
+/// the first lines of the text below, on the app's panel surface.
+class _ReflectionCard extends StatelessWidget {
+  const _ReflectionCard({required this.record, required this.onTap});
+  final Reflection record;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final date = MaterialLocalizations.of(context)
+        .formatShortDate(record.createdAt.toLocal());
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(kRadiusCard),
+          child: Ink(
+            padding: const EdgeInsets.all(16),
+            decoration: panelDecoration(colors),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  record.title,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: kFontStarTitle,
+                    fontSize: 19,
+                    height: 1.25,
+                    color: colors.text,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(date, style: TextStyle(color: colors.muted, fontSize: 12)),
+                const SizedBox(height: 8),
+                Text(
+                  record.body,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colors.muted,
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReflectionSuggestions extends StatefulWidget {
+  const _ReflectionSuggestions({required this.area, required this.repository});
+  final LifeArea area;
+  final ReflectionRepository repository;
+  @override
+  State<_ReflectionSuggestions> createState() => _ReflectionSuggestionsState();
+}
+
+class _ReflectionSuggestionsState extends State<_ReflectionSuggestions> {
+  LifeArea get area => widget.area;
+  ReflectionRepository get repository => widget.repository;
+  int? _sample;
+
+  void _choose(int index, String question) =>
+      Navigator.pop(context, ('$index', question));
+
+  Future<void> _related(int index, String question) async {
+    final write = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => _RelatedReflections(
+          area: area,
+          repository: repository,
+          questionId: '$index',
+          question: question,
+        ),
+      ),
+    );
+    if (write == true && mounted) _choose(index, question);
+  }
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: repository,
+    builder: (context, _) => _build(context),
+  );
+
+  Widget _build(BuildContext context) {
+    final colors = context.colors;
+    final strings = context.strings;
+    final questions = area.reflectionQuestions(strings);
+    // Start with an unexplored question when possible.
+    final answered = {
+      for (final r in repository.getForArea(area))
+        if (r.questionId != null) r.questionId,
+    };
+    final unexplored = [
+      for (var i = 0; i < questions.length; i++)
+        if (!answered.contains('$i')) i,
+    ];
+    _sample ??= unexplored.isEmpty
+        ? math.Random().nextInt(questions.length)
+        : unexplored[math.Random().nextInt(unexplored.length)];
+    final sample = _sample!;
     var offset = 0;
     final groups = <Widget>[];
-    for (final group in area.reflectionGroups(context.strings)) {
+    for (final group in area.reflectionGroups(strings)) {
       final start = offset;
       offset += group.questions.length;
       groups.add(
-        ExpansionTile(
-          title: Text(group.title),
-          children: [
-            for (var i = 0; i < group.questions.length; i++)
-              ListTile(
-                title: Text(group.questions[i]),
-                onTap: () => Navigator.pop(context, (
-                  '${start + i}',
-                  group.questions[i],
-                )),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          // A Material, not a decorated box, so the tiles' ink shows.
+          child: Material(
+            color: colors.nightPanel,
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(kRadiusCard),
+              side: BorderSide(color: colors.nightBorder, width: kBorderWidth),
+            ),
+            child: Theme(
+              data: Theme.of(context)
+                  .copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                iconColor: colors.gold,
+                collapsedIconColor: colors.muted,
+                title: Text(
+                  group.title,
+                  style: TextStyle(
+                    fontFamily: kFontStarTitle,
+                    fontSize: 18,
+                    color: colors.text,
+                  ),
+                ),
+                subtitle: Text(
+                  strings.reflectionQuestionCount(group.questions.length),
+                  style: TextStyle(color: colors.muted, fontSize: 12),
+                ),
+                children: [
+                  for (var i = 0; i < group.questions.length; i++)
+                    _QuestionChoice(
+                      question: group.questions[i],
+                      explored: answered.contains('${start + i}'),
+                      onWrite: () => _choose(start + i, group.questions[i]),
+                      onRelated: () => _related(start + i, group.questions[i]),
+                    ),
+                ],
               ),
-          ],
+            ),
+          ),
         ),
       );
     }
     return _ReflectionPage(
       children: [
         AreaSectionHeader(
-          title: context.strings.reflectionSuggested,
+          title: strings.reflectionSuggested,
           icon: kAreaReflectionsIcon,
-          description: area.displayName(context.strings),
+          description: area.displayName(strings),
+        ),
+        const SizedBox(height: 24),
+        Container(
+          key: const ValueKey('reflection-immediate-question'),
+          padding: const EdgeInsets.all(16),
+          decoration: panelDecoration(colors),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _QuestionChoice(
+                question: questions[sample],
+                explored: answered.contains('$sample'),
+                onWrite: () => _choose(sample, questions[sample]),
+                onRelated: () => _related(sample, questions[sample]),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: [
+                  TextButton(
+                    key: const ValueKey('reflection-another-question'),
+                    onPressed: () => setState(
+                      () => _sample =
+                          (sample +
+                              1 +
+                              math.Random().nextInt(questions.length - 1)) %
+                          questions.length,
+                    ),
+                    child: AppButtonLabel(strings.reflectionAnotherQuestion),
+                  ),
+                  ElevatedButton(
+                    key: const ValueKey('reflection-write-question'),
+                    onPressed: () => _choose(sample, questions[sample]),
+                    child: AppButtonLabel(strings.reflectionWrite),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 24),
         ...groups,
       ],
     );
   }
+}
+
+class _QuestionChoice extends StatelessWidget {
+  const _QuestionChoice({
+    required this.question,
+    required this.explored,
+    required this.onWrite,
+    required this.onRelated,
+  });
+  final String question;
+  final bool explored;
+  final VoidCallback onWrite;
+  final VoidCallback onRelated;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      InkWell(
+        borderRadius: BorderRadius.circular(kRadiusField),
+        onTap: onWrite,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+          child: Text(
+            question,
+            style: TextStyle(
+              color: context.colors.text,
+              fontSize: 16,
+              height: 1.5,
+            ),
+          ),
+        ),
+      ),
+      if (explored)
+        TextButton(
+          onPressed: onRelated,
+          child: AppButtonLabel(context.strings.reflectionExplored),
+        ),
+    ],
+  );
+}
+
+class _RelatedReflections extends StatelessWidget {
+  const _RelatedReflections({
+    required this.area,
+    required this.repository,
+    required this.questionId,
+    required this.question,
+  });
+  final LifeArea area;
+  final ReflectionRepository repository;
+  final String questionId;
+  final String question;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: repository,
+    builder: (context, _) => _ReflectionPage(
+      actions: [
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: AppButtonLabel(context.strings.reflectionWrite),
+        ),
+      ],
+      children: [
+        AreaSectionHeader(
+          title: context.strings.reflectionRelated,
+          icon: kAreaReflectionsIcon,
+          description: area.displayName(context.strings),
+        ),
+        const SizedBox(height: 20),
+        _QuestionContext(question: question),
+        const SizedBox(height: 20),
+        for (final record
+            in repository
+                .getForArea(area)
+                .where((r) => r.questionId == questionId))
+          _ReflectionCard(
+            record: record,
+            onTap: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(
+                builder: (_) => ReflectionDetailScreen(
+                  id: record.id,
+                  repository: repository,
+                ),
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
+String? _originalQuestion(
+  BuildContext context,
+  LifeArea area,
+  String? id,
+  String? snapshot,
+) {
+  if (snapshot != null && snapshot.isNotEmpty) return snapshot;
+  final index = int.tryParse(id ?? '');
+  final questions = area.reflectionQuestions(context.strings);
+  return index != null && index >= 0 && index < questions.length
+      ? questions[index]
+      : null;
+}
+
+class _QuestionContext extends StatelessWidget {
+  const _QuestionContext({required this.question});
+  final String question;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    decoration: panelDecoration(context.colors),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppFieldLabel(context.strings.reflectionQuestionLabel),
+        const SizedBox(height: 8),
+        SelectableText(
+          question,
+          style: TextStyle(
+            color: context.colors.text,
+            fontSize: 16,
+            height: 1.5,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class ReflectionEditorScreen extends StatefulWidget {
@@ -225,11 +606,28 @@ class ReflectionEditorScreen extends StatefulWidget {
   State<ReflectionEditorScreen> createState() => _ReflectionEditorScreenState();
 }
 
-class _ReflectionEditorScreenState extends State<ReflectionEditorScreen> {
-  final _form = GlobalKey<FormState>();
-  late final _title = TextEditingController(
-    text: widget.existing?.title ?? widget.suggestedTitle ?? '',
-  );
+class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
+    with WidgetsBindingObserver {
+  double _keyboardInset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  // Closing the keyboard (back gesture) leaves the field focused; let go of
+  // the focus then, as the star form's fields do.
+  @override
+  void didChangeMetrics() {
+    final inset = View.of(context).viewInsets.bottom;
+    if (_keyboardInset > 0 && inset == 0) {
+      FocusManager.instance.primaryFocus?.unfocus();
+    }
+    _keyboardInset = inset;
+  }
+
+  late final _title = TextEditingController(text: widget.existing?.title ?? '');
   late final _body = TextEditingController(text: widget.existing?.body ?? '');
   bool _busy = false;
   bool _canLeave = false;
@@ -237,6 +635,7 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _title.dispose();
     _body.dispose();
     super.dispose();
@@ -252,8 +651,7 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen> {
   Future<void> _leave() async {
     if (_busy || _asking) return;
     final changed =
-        _title.text !=
-            (widget.existing?.title ?? widget.suggestedTitle ?? '') ||
+        _title.text != (widget.existing?.title ?? '') ||
         _body.text != (widget.existing?.body ?? '');
     if (changed) {
       _asking = true;
@@ -273,23 +671,32 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen> {
   }
 
   Future<void> _save() async {
-    if (_busy || !_form.currentState!.validate()) return;
+    if (_busy || !_canSave) return;
     setState(() => _busy = true);
     try {
       final existing = widget.existing;
+      final title = _title.text.trim().isNotEmpty
+          ? _title.text.trim()
+          : _body.text.trim().split('\n').first.characters.take(80).toString();
       final record = existing == null
           ? await widget.repository.add(
               area: widget.area,
-              title: _title.text,
+              title: title,
               body: _body.text,
               origin: widget.questionId == null
                   ? ReflectionOrigin.free
                   : ReflectionOrigin.suggested,
               questionId: widget.questionId,
+              questionText: _originalQuestion(
+                context,
+                widget.area,
+                widget.questionId,
+                widget.suggestedTitle,
+              ),
             )
           : await widget.repository.update(
               existing.id,
-              title: _title.text,
+              title: title,
               body: _body.text,
             );
       if (mounted) _close(record);
@@ -302,79 +709,101 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen> {
     }
   }
 
+  bool get _canSave => _body.text.trim().isNotEmpty;
+
   @override
   Widget build(BuildContext context) {
     final strings = context.strings;
+    final writing = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final question = _originalQuestion(
+      context,
+      widget.area,
+      widget.existing?.questionId ?? widget.questionId,
+      widget.existing?.questionText ?? widget.suggestedTitle,
+    );
     return PopScope(
       canPop: _canLeave,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) _leave();
       },
       child: _ReflectionPage(
-        onBack: _leave,
+        compact: writing,
         actions: [
-          TextButton(
-            onPressed: _busy ? null : _leave,
-            style: TextButton.styleFrom(foregroundColor: context.colors.muted),
-            child: AppButtonLabel(strings.cancel, color: context.colors.muted),
-          ),
-          ElevatedButton(
-            key: const ValueKey('reflection-save'),
-            onPressed: _busy ? null : _save,
-            child: AppButtonLabel(strings.saveChanges),
-          ),
-        ],
-        children: [
-          AreaSectionHeader(
-            title: widget.existing == null
-                ? strings.reflectionNew
-                : strings.starQuickLookEditAction,
-            icon: kAreaReflectionsIcon,
-            description: widget.area.displayName(strings),
-          ),
-          const SizedBox(height: 24),
-          Form(
-            key: _form,
-            child: Column(
-              children: [
-                TextFormField(
-                  key: const ValueKey('reflection-title'),
-                  controller: _title,
-                  enabled: !_busy,
-                  minLines: 1,
-                  maxLines: 4,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: InputDecoration(
-                    labelText: strings.reflectionTitleLabel,
-                  ),
-                  validator: (text) => text == null || text.trim().isEmpty
-                      ? strings.reflectionRequired
-                      : null,
-                ),
-                const SizedBox(height: 24),
-                TextFormField(
-                  key: const ValueKey('reflection-body'),
-                  controller: _body,
-                  enabled: !_busy,
-                  minLines: 10,
-                  maxLines: null,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: InputDecoration(
-                    labelText: strings.reflectionBodyLabel,
-                    alignLabelWithHint: true,
-                  ),
-                  validator: (text) => text == null || text.trim().isEmpty
-                      ? strings.reflectionRequired
-                      : null,
-                ),
-              ],
+          // A title is optional; only the reflection itself is required.
+          ListenableBuilder(
+            listenable: Listenable.merge([_title, _body]),
+            builder: (context, _) => SaveActionButton(
+              key: const ValueKey('reflection-save'),
+              label: strings.saveChanges,
+              lit: _canSave && !_busy,
+              onPressed: _save,
             ),
           ),
+        ],
+        // The text runs down to the bottom of the page.
+        fillLast: AppTextField(
+          key: const ValueKey('reflection-body'),
+          controller: _body,
+          enabled: !_busy,
+          expands: true,
+          maxLength: kReflectionBodyMax,
+          showCounter: false,
+          fontSize: 17,
+          lineHeight: 1.6,
+        ),
+        children: [
+          if (!writing) ...[
+            AreaSectionHeader(
+              title: widget.existing == null
+                  ? strings.reflectionNew
+                  : strings.starQuickLookEditAction,
+              icon: kAreaReflectionsIcon,
+              description: widget.area.displayName(strings),
+            ),
+            const SizedBox(height: 16),
+            if (question != null) ...[
+              _QuestionContext(question: question),
+              const SizedBox(height: 16),
+            ],
+          ],
+          AppFieldLabel(
+            strings.reflectionTitleLabel,
+            requirement: FieldRequirement.optional,
+            onReset: () => _title.clear(),
+            counterController: _title,
+            counterMax: kReflectionTitleMax,
+          ),
+          const SizedBox(height: kFieldLabelGap),
+          AppTextField(
+            key: const ValueKey('reflection-title'),
+            controller: _title,
+            hintText: strings.optionalFieldLegend,
+            enabled: !_busy,
+            minLines: 1,
+            maxLines: 2,
+            maxLength: kReflectionTitleMax,
+            showCounter: false,
+            fontSize: 18,
+            lineHeight: 1.3,
+          ),
+          const SizedBox(height: 12),
+          AppFieldLabel(
+            strings.reflectionBodyLabel,
+            requirement: FieldRequirement.required,
+            onReset: () => _body.clear(),
+            counterController: _body,
+            counterMax: kReflectionBodyMax,
+          ),
+          const SizedBox(height: kFieldLabelGap),
         ],
       ),
     );
   }
 }
+
+/// Keep room for titles saved by earlier versions, which used the prompt itself.
+const int kReflectionTitleMax = 200;
+const int kReflectionBodyMax = 5000;
 
 class ReflectionDetailScreen extends StatefulWidget {
   const ReflectionDetailScreen({
@@ -421,49 +850,64 @@ class _ReflectionDetailScreenState extends State<ReflectionDetailScreen> {
       final record = widget.repository.find(widget.id);
       final strings = context.strings;
       if (record == null) return const _ReflectionPage(children: []);
+      final question = _originalQuestion(
+        context,
+        record.area,
+        record.questionId,
+        record.questionText,
+      );
       return _ReflectionPage(
         actions: [
-          IconButton(
-            tooltip: strings.shareNowAction,
-            icon: const Icon(Icons.share_outlined),
-            onPressed: _deleting
-                ? null
-                : () => showSharePreview(
-                    context: context,
-                    content: ShareableReflectionCard(reflection: record),
-                    shareText:
-                        '${record.title} — ${record.area.displayName(strings)}',
-                    fileName: 'reflection_${record.id}.png',
-                  ),
-          ),
-          IconButton(
-            tooltip: strings.starQuickLookEditAction,
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: _deleting
-                ? null
-                : () => Navigator.of(context).push<Reflection>(
-                    MaterialPageRoute(
-                      builder: (_) => ReflectionEditorScreen(
-                        area: record.area,
-                        repository: widget.repository,
-                        existing: record,
+          // Icon-only, grouped as in "Vedi": share, then edit and delete
+          // together.
+          ReaderActionBar(
+            entrance: const ReaderEntrance(
+              animate: false,
+              axis: Axis.vertical,
+              reverse: false,
+              lead: 0,
+            ),
+            actions: [
+              ReaderAction(
+                icon: Icons.share_outlined,
+                label: strings.shareNowAction,
+                group: 1,
+                onTap: _deleting
+                    ? null
+                    : () => showSharePreview(
+                        context: context,
+                        content: ShareableReflectionCard(reflection: record),
+                        shareText:
+                            '${record.title} — ${record.area.displayName(strings)}',
+                        fileName: 'reflection_${record.id}.png',
                       ),
-                    ),
-                  ),
-          ),
-          IconButton(
-            tooltip: strings.deleteStarAction,
-            icon: const Icon(Icons.delete_outline),
-            onPressed: _deleting ? null : _delete,
+              ),
+              ReaderAction(
+                icon: Icons.edit_outlined,
+                label: strings.starQuickLookEditAction,
+                group: 2,
+                onTap: _deleting
+                    ? null
+                    : () => Navigator.of(context).push<Reflection>(
+                        MaterialPageRoute(
+                          builder: (_) => ReflectionEditorScreen(
+                            area: record.area,
+                            repository: widget.repository,
+                            existing: record,
+                          ),
+                        ),
+                      ),
+              ),
+              ReaderAction(
+                icon: Icons.delete_outline,
+                label: strings.deleteStarAction,
+                group: 2,
+                onTap: _deleting ? null : _delete,
+              ),
+            ],
           ),
         ],
         children: [
-          AreaSectionHeader(
-            title: record.area.displayName(strings),
-            icon: kAreaReflectionsIcon,
-            description: strings.areaReflectionsTitle,
-          ),
-          const SizedBox(height: 24),
           SelectableText(
             record.title,
             style: TextStyle(
@@ -475,11 +919,14 @@ class _ReflectionDetailScreenState extends State<ReflectionDetailScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            MaterialLocalizations.of(context)
-                .formatMediumDate(record.createdAt.toLocal()),
+            '${record.area.displayName(strings)} · ${MaterialLocalizations.of(context).formatMediumDate(record.createdAt.toLocal())}',
             style: TextStyle(color: context.colors.muted),
           ),
           const SizedBox(height: 28),
+          if (question != null && question != record.title) ...[
+            _QuestionContext(question: question),
+            const SizedBox(height: 24),
+          ],
           SelectableText(
             record.body,
             style: TextStyle(
@@ -499,11 +946,18 @@ class _ReflectionPage extends StatelessWidget {
   const _ReflectionPage({
     required this.children,
     this.actions = const [],
-    this.onBack,
+    this.fillLast,
+    this.compact = false,
   });
   final List<Widget> children;
   final List<Widget> actions;
-  final VoidCallback? onBack;
+  final bool compact;
+
+  /// A last block that takes whatever height the page has left below
+  /// [children] (never less than [_kFillMinHeight] for the whole page, so it
+  /// scrolls instead of squeezing when the keyboard is open).
+  final Widget? fillLast;
+  static const double _kFillMinHeight = 560;
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: context.colors.night,
@@ -511,20 +965,38 @@ class _ReflectionPage extends StatelessWidget {
       child: Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: ResponsiveContent(
-                child: Column(
+            child: LayoutBuilder(
+              builder: (context, viewport) {
+                final column = Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: BackButton(onPressed: onBack),
-                    ),
-                    ...children,
+                    for (var i = 0; i < children.length; i++)
+                      if (fillLast == null)
+                        StaggeredEntrance(
+                          index: math.min(i, 5),
+                          child: children[i],
+                        )
+                      else
+                        children[i],
+                    if (fillLast case final last?) Expanded(child: last),
                   ],
-                ),
-              ),
+                );
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: ResponsiveContent(
+                    child: fillLast == null
+                        ? column
+                        : SizedBox(
+                            height: math.max(
+                              viewport.maxHeight - 40,
+                              (compact ? 300 : _kFillMinHeight) *
+                                  MediaQuery.textScalerOf(context).scale(1),
+                            ),
+                            child: column,
+                          ),
+                  ),
+                );
+              },
             ),
           ),
           if (actions.isNotEmpty)
