@@ -160,14 +160,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
         _ => _TitlePosition.bottomCenter,
       };
 
-  List<_PhotoMode> get _photoModes => [
-    _PhotoMode.none,
-    _PhotoMode.background,
-    if (_layoutMap[_subject]![_composition].$1 == _Layout.free)
-      _PhotoMode.panel,
-    if (_layoutMap[_subject]![_composition].$1 == _Layout.centered)
-      _PhotoMode.circle,
-  ];
+  List<_PhotoMode> get _photoModes => _PhotoMode.values;
 
   _Ink _elementInkFor(int composition) =>
       switch (_layoutMap[_subject]![composition].$1) {
@@ -345,7 +338,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
           onChanged: (i) => _edit(() {
             _subjectIndex = i;
             _composition = 0;
-            if (_data.photos.isEmpty || !_photoModes.contains(_photoMode)) {
+            if (_data.photos.isEmpty) {
               _photoMode = _PhotoMode.none;
             }
             _excerpt.text = _data.description;
@@ -369,10 +362,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
             ),
           ),
         ),
-        onChanged: (i) => _edit(() {
-          _composition = i;
-          if (!_photoModes.contains(_photoMode)) _photoMode = _PhotoMode.none;
-        }),
+        onChanged: (i) => _edit(() => _composition = i),
       ),
       _VisualChoices(
         fieldKey: 'scheda-formato',
@@ -550,14 +540,6 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
                 color: context.colors.muted,
               ),
               _PhotoMode.background => photo,
-              _PhotoMode.panel => Align(
-                alignment: Alignment.topCenter,
-                child: FractionallySizedBox(
-                  heightFactor: .55,
-                  widthFactor: 1,
-                  child: photo,
-                ),
-              ),
               _PhotoMode.circle => Center(
                 child: SizedBox.square(
                   dimension:
@@ -571,7 +553,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
               ),
             },
             if (mode == _PhotoMode.background) const _PhotoBackdropScrim(),
-            if (mode == _PhotoMode.background || mode == _PhotoMode.panel)
+            if (mode == _PhotoMode.background)
               Positioned(
                 left: 6,
                 right: 6,
@@ -995,7 +977,6 @@ String _formatLabel(_ShareFormat value) => switch (value) {
 String _photoLabel(_PhotoMode value) => switch (value) {
   _PhotoMode.none => 'Senza Foto',
   _PhotoMode.background => 'Foto di Sfondo',
-  _PhotoMode.panel => 'Pannello Foto',
   _PhotoMode.circle => 'Foto Tonda',
 };
 

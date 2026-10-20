@@ -509,7 +509,7 @@ void main() {
   );
 
   testWidgets(
-    'photo choices show graphical modes compatible with the composition',
+    'round photo remains selected and visible across every composition',
     (tester) async {
       final photo = File(kAreaHeroArt[LifeArea.social]!.coverAsset)
           .absolute
@@ -583,17 +583,84 @@ void main() {
         find.byKey(const ValueKey('scheda-composizione-2')),
       );
       await tester.pumpAndSettle();
-      expect(choiceSelected(tester, 'sfondo-foto-0'), isTrue);
-      await tapVisible(tester, find.byKey(const ValueKey('sfondo-foto-2')));
-      await tester.pumpAndSettle();
       expect(choiceSelected(tester, 'sfondo-foto-2'), isTrue);
       await tapVisible(
         tester,
         find.byKey(const ValueKey('scheda-composizione-1')),
       );
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('sfondo-foto-2')), findsNothing);
-      expect(choiceSelected(tester, 'sfondo-foto-0'), isTrue);
+      expect(choiceSelected(tester, 'sfondo-foto-2'), isTrue);
+      await tapVisible(tester, find.byKey(const ValueKey('share-undo')));
+      await tester.pumpAndSettle();
+      expect(choiceSelected(tester, 'sfondo-foto-2'), isTrue);
+      await tapVisible(tester, find.byKey(const ValueKey('share-redo')));
+      await tester.pumpAndSettle();
+      expect(choiceSelected(tester, 'sfondo-foto-2'), isTrue);
+      for (final subject in ShareSubject.values) {
+        await tester.pumpWidget(
+          app(
+            ShareComposerScreen(
+              key: ValueKey(subject),
+              data: ShareContent(
+                subject: subject,
+                title:
+                    'Un passo importante verso una direzione che conta davvero',
+                description: 'Un momento da ricordare e da condividere con le persone importanti.',
+                typeLabel: 'Attività',
+                photos: [photo],
+              ),
+            ),
+            english: true,
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tapVisible(tester, find.byKey(const ValueKey('sfondo-foto-2')));
+        await tester.pumpAndSettle();
+        for (var format = 0; format < 5; format++) {
+          await tapVisible(
+            tester,
+            find.byKey(ValueKey('scheda-formato-$format')),
+          );
+          await tester.pumpAndSettle();
+          for (var composition = 0; composition < 3; composition++) {
+            await tapVisible(
+              tester,
+              find.byKey(ValueKey('scheda-composizione-$composition')),
+            );
+            await tester.pumpAndSettle();
+            expect(choiceSelected(tester, 'sfondo-foto-2'), isTrue);
+            expect(
+              tester
+                  .widget<Text>(
+                    find.byKey(const ValueKey('sfondo-foto-caption-2')),
+                  )
+                  .data,
+              'Round Photo',
+            );
+            final round = find.descendant(
+              of: find.byKey(const ValueKey('share-preview')),
+              matching: find.byKey(const ValueKey('share-round-photo')),
+            );
+            expect(
+              round,
+              findsOneWidget,
+              reason:
+                  '${subject.name}, composition $composition, format $format',
+            );
+            expect(
+              find.descendant(of: round, matching: find.byType(ClipOval)),
+              findsOneWidget,
+            );
+            expect(find.text('Photo Panel'), findsNothing);
+            expect(
+              tester.takeException(),
+              isNull,
+              reason:
+                  '${subject.name}, composition $composition, format $format',
+            );
+          }
+        }
+      }
       expect(tester.takeException(), isNull);
     },
   );

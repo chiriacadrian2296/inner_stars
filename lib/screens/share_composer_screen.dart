@@ -83,7 +83,7 @@ double _shareAspectRatio(_ShareFormat format) => switch (format) {
   _ShareFormat.landscape => 16 / 9,
 };
 
-enum _PhotoMode { none, background, panel, circle }
+enum _PhotoMode { none, background, circle }
 
 _PhotoMode _effectiveSharePhotoMode(
   _PhotoMode mode,
@@ -297,21 +297,6 @@ class _ShareSpecimen extends StatelessWidget {
                 moodboard: subject == ShareSubject.moodboard,
               ),
             if (effPhoto == _PhotoMode.background) const _PhotoBackdropScrim(),
-            if (effPhoto == _PhotoMode.panel && layout == _Layout.free)
-              Align(
-                alignment: composition.isEven
-                    ? Alignment.topCenter
-                    : Alignment.centerLeft,
-                child: FractionallySizedBox(
-                  widthFactor: composition.isEven ? 1 : .46,
-                  heightFactor: composition.isEven ? .4 : 1,
-                  child: _ContentPhoto(
-                    url: _photoUrl,
-                    fit: BoxFit.cover,
-                    moodboard: subject == ShareSubject.moodboard,
-                  ),
-                ),
-              ),
             if (watermark != _Watermark.none)
               Center(
                 child: _WatermarkArt(
@@ -324,9 +309,7 @@ class _ShareSpecimen extends StatelessWidget {
                   area: watermarkArea,
                 ),
               ),
-            if (layout == _Layout.free &&
-                effPhoto != _PhotoMode.panel &&
-                effPhoto != _PhotoMode.background)
+            if (layout == _Layout.free && effPhoto != _PhotoMode.background)
               Align(
                 alignment: Alignment.center,
                 child: FractionallySizedBox(
@@ -334,9 +317,21 @@ class _ShareSpecimen extends StatelessWidget {
                   heightFactor: compact ? .58 : .36,
                   child: Padding(
                     padding: const EdgeInsets.all(22),
-                    child:
-                        data.artwork ??
-                        Icon(Icons.auto_awesome, color: accent, size: 64),
+                    child: effPhoto == _PhotoMode.circle
+                        ? Center(
+                            child: _roundPhoto(
+                              _Look(
+                                foreground: foreground,
+                                secondary: secondary,
+                                accent: accent,
+                                compact: compact,
+                                title: titleColor,
+                              ),
+                              34,
+                            ),
+                          )
+                        : data.artwork ??
+                              Icon(Icons.auto_awesome, color: accent, size: 64),
                   ),
                 ),
               ),

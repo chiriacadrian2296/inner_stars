@@ -201,19 +201,7 @@ extension _SpecimenLayouts on _ShareSpecimen {
   /// an opening quote mark for quotes, or the round photo.
   Widget _mark(_Look l, double size, {bool? burning}) {
     if (photoMode == _PhotoMode.circle) {
-      final d = size * 3.2 * l.k;
-      return Container(
-        width: d,
-        height: d,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: l.accent, width: kBorderWidthActive),
-        ),
-        padding: const EdgeInsets.all(4),
-        child: ClipOval(
-          child: _ContentPhoto(url: _photoUrl, fit: BoxFit.cover),
-        ),
-      );
+      return _roundPhoto(l, size);
     }
     final lit = burning ?? subject == ShareSubject.victory;
     if (subject == ShareSubject.quote) {
@@ -246,6 +234,24 @@ extension _SpecimenLayouts on _ShareSpecimen {
       ),
     );
   }
+
+  Widget _roundPhoto(_Look l, double size) => Container(
+    key: const ValueKey('share-round-photo'),
+    width: size * 3.2 * l.k,
+    height: size * 3.2 * l.k,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      border: Border.all(color: l.accent, width: kBorderWidthActive),
+    ),
+    padding: const EdgeInsets.all(4),
+    child: ClipOval(
+      child: _ContentPhoto(
+        url: _photoUrl,
+        fit: BoxFit.cover,
+        moodboard: subject == ShareSubject.moodboard,
+      ),
+    ),
+  );
 
   Widget _gap(_Look l, double h) => SizedBox(height: h * l.k);
 
@@ -465,6 +471,10 @@ extension _SpecimenLayouts on _ShareSpecimen {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (photoMode == _PhotoMode.circle) ...[
+                _roundPhoto(l, 34),
+                _gap(l, 20),
+              ],
               _rule(l),
               _gap(l, 26),
               _titleText(l, 40, maxLines: 6),
@@ -507,7 +517,10 @@ extension _SpecimenLayouts on _ShareSpecimen {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (quote)
+                  if (photoMode == _PhotoMode.circle) ...[
+                    _roundPhoto(l, 34),
+                    _gap(l, 20),
+                  ] else if (quote)
                     Text(
                       '“',
                       style: TextStyle(
@@ -562,6 +575,10 @@ extension _SpecimenLayouts on _ShareSpecimen {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (photoMode == _PhotoMode.circle) ...[
+                  _roundPhoto(l, 34),
+                  _gap(l, 20),
+                ],
                 _meta(l, align: CrossAxisAlignment.start),
                 _gap(l, 14),
                 _titleText(l, 29, align: TextAlign.left, maxLines: 6),
@@ -658,6 +675,10 @@ extension _SpecimenLayouts on _ShareSpecimen {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (photoMode == _PhotoMode.circle) ...[
+                      _roundPhoto(l, 34),
+                      _gap(l, 20),
+                    ],
                     _titleText(l, 33, maxLines: 6),
                     _gap(l, 20),
                     _rule(l, width: 34),
@@ -711,7 +732,9 @@ extension _SpecimenLayouts on _ShareSpecimen {
                     children: [
                       AspectRatio(
                         aspectRatio: 1,
-                        child: data.photos.isEmpty
+                        child: photoMode == _PhotoMode.circle
+                            ? Center(child: _roundPhoto(l, 34))
+                            : data.photos.isEmpty
                             ? Center(child: data.artwork ?? _mark(l, 38))
                             : _ContentPhoto(url: _photoUrl, fit: BoxFit.cover),
                       ),
@@ -749,10 +772,12 @@ extension _SpecimenLayouts on _ShareSpecimen {
 
   /// Mosaic of photos above the words.
   Widget _collage(_Look l) {
-    final mosaic = ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: data.artwork ?? _photoAt(0),
-    );
+    final mosaic = photoMode == _PhotoMode.circle
+        ? Center(child: _roundPhoto(l, 34))
+        : ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: data.artwork ?? _photoAt(0),
+          );
     final words = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -796,26 +821,28 @@ extension _SpecimenLayouts on _ShareSpecimen {
 
   /// Three staggered frames, words centred underneath.
   Widget _gallery(_Look l) {
-    final frames = Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var i = 0; i < 3; i++) ...[
-          if (i > 0) const SizedBox(width: 8),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(
-                top: i == 1 ? 34 * l.k : 0,
-                bottom: i == 1 ? 0 : 34 * l.k,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: _photoAt(i),
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
+    final frames = photoMode == _PhotoMode.circle
+        ? Center(child: _roundPhoto(l, 34))
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < 3; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      top: i == 1 ? 34 * l.k : 0,
+                      bottom: i == 1 ? 0 : 34 * l.k,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: _photoAt(i),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          );
     final words = Column(
       mainAxisSize: MainAxisSize.min,
       children: [_titleText(l, 25, maxLines: 3), _gap(l, 10), _meta(l)],
@@ -854,7 +881,9 @@ extension _SpecimenLayouts on _ShareSpecimen {
       Expanded(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 22),
-          child: data.artwork ?? const SizedBox.shrink(),
+          child: photoMode == _PhotoMode.circle
+              ? Center(child: _roundPhoto(l, 34))
+              : data.artwork ?? const SizedBox.shrink(),
         ),
       ),
       _titleText(l, 28, maxLines: 3),
