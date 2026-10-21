@@ -270,10 +270,11 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
       come richiesto; si verificano analisi, compilazione e installazione.
 
 - [x] Frame rate: scelto **Free**. Limitatore, sonde e riga "FPS Limit" eliminati dal codice.
-- [ ] Ripulire il worktree di scratch `baseline` del vecchio profiling: ricontrollato il
-      19 ottobre, è su un commit vecchio (`41c8a4b`) con circa 520 righe di esperimenti su
-      shader della Galaxy, stella cadente e sonda dei frame, più un test. Conservato intatto:
-      **decisione dell’autore** se salvarlo come patch o scartarlo.
+- [x] Worktree di scratch `baseline` del vecchio profiling: il 21 ottobre, su decisione
+      dell’autore, salvato come patch (`archivio-inner-stars/baseline-profiling-20261015.patch`
+      e `frame_timing_probe.dart`, fuori dal repository) e rimosso. Conteneva circa 520
+      righe di esperimenti su shader della Galaxy, stella cadente e sonda dei frame; la parte
+      delle lune delle supernove è già in `main`.
 - [x] Sound Lab: verificati in Settings i controlli pubblici della musica di sottofondo:
       riproduzione/pausa e volume, persistiti tramite `AudioService`. La scelta dei singoli
       suoni e i controlli per categoria restano nel Sound Lab di sviluppo.
