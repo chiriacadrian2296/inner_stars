@@ -17,7 +17,9 @@ Future<void> backfillMedia({
   required Iterable<Star> stars,
   required Iterable<MoodboardItem> moodboard,
 }) async {
-  final key = 'sync.$uid.media-backfilled';
+  // v2: web recordings (WebM) were never queued before, so every device queues
+  // its media once more.
+  final key = 'sync.$uid.media-backfilled-v2';
   if (prefs.getBool(key) ?? false) return;
   for (final star in stars) {
     if (star.deleted) continue;

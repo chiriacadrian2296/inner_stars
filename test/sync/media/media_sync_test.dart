@@ -113,6 +113,24 @@ void main() {
       );
     });
 
+    test('names and types a voice note by the format it was recorded in', () {
+      expect(mediaFileName('star-media:77.webm'), '77.webm');
+      expect(
+        mediaName(MediaFolder.voices, 'star-media:77.webm'),
+        'voices/77.webm',
+      );
+      expect(
+        mediaContentType(MediaFolder.voices, 'star-media:77.webm'),
+        'audio/webm',
+      );
+      expect(
+        mediaContentType(MediaFolder.voices, '/data/x/9.m4a'),
+        'audio/mp4',
+      );
+      expect(mediaContentType(MediaFolder.voices, '9.ogg'), 'audio/ogg');
+      expect(mediaContentType(MediaFolder.photos, '9.png'), 'image/jpeg');
+    });
+
     test('ignores a damaged queue instead of crashing', () async {
       await prefs.setString(MediaQueue.storageKey, '{not json');
       expect(queue.jobs, isEmpty);
@@ -136,6 +154,20 @@ void main() {
         expect(remote.types['photos/p.jpg'], 'image/jpeg');
         expect(remote.files['voices/v.m4a'], voice);
         expect(queue.isEmpty, isTrue);
+      },
+    );
+
+    test(
+      'a voice note recorded in the browser is uploaded as audio/webm',
+      () async {
+        final bytes = Uint8List.fromList([1, 2, 3]);
+        await local.write(MediaFolder.voices, 'star-media:5.webm', bytes);
+        await sync.fileSaved(MediaFolder.voices, 'star-media:5.webm');
+
+        expect(await sync.process(), 1);
+
+        expect(remote.files['voices/5.webm'], bytes);
+        expect(remote.types['voices/5.webm'], 'audio/webm');
       },
     );
 

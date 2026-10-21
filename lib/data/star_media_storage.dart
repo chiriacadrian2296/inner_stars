@@ -84,7 +84,19 @@ class StarMediaStorage {
   }
 
   /// Only voice notes go to the cloud; photos and videos stay on the device.
-  static bool _isVoice(String path) => path.toLowerCase().endsWith('.m4a');
+  /// An extension that only audio uses says so by itself; `.webm` and `.mp4`
+  /// could be a video too, so for those the caller says it is a voice note
+  /// (`voice: true`, known from [StarMedia.kind]).
+  static bool _isVoice(String path, [bool? voice]) =>
+      voice ??
+      const {
+        'm4a',
+        'aac',
+        'opus',
+        'ogg',
+        'wav',
+        'mp3',
+      }.contains(path.split('.').last.toLowerCase());
 
   /// Stores [bytes] under a path that already exists, as when the voice note
   /// comes from another device. Does not queue an upload.
@@ -94,7 +106,7 @@ class StarMediaStorage {
       return;
     }
     final dir = await _dir();
-    await File('${dir.path}/${path.split('/').last}').writeAsBytes(bytes);
+    await File('${dir.path}/${mediaFileName(path)}').writeAsBytes(bytes);
   }
 
   /// The stored bytes for [path], or null if this device does not have them.
@@ -108,6 +120,14 @@ class StarMediaStorage {
     }
   }
 
+  /// Keeps a voice note the browser recorded (WebM or Ogg, not the phone's
+  /// AAC) and queues it for the cloud like a phone recording. Returns its key.
+  static Future<String> saveWebRecording(XFile file) async {
+    final key = await save(file, fallbackExtension: 'webm');
+    MediaHooks.saved(MediaFolder.voices, key);
+    return key;
+  }
+
   /// A path inside the recordings scratch area for the recorder to write to.
   static Future<String> newRecordingPath() async {
     final dir = await getTemporaryDirectory();
@@ -119,9 +139,9 @@ class StarMediaStorage {
   ///
   /// A voice note another device made is fetched from the cloud the first
   /// time it is asked for.
-  static Future<File?> file(String path) async {
+  static Future<File?> file(String path, {bool? voice}) async {
     final local = await _localFile(path);
-    if (local != null || kIsWeb || !_isVoice(path) || isRemote(path)) {
+    if (local != null || kIsWeb || !_isVoice(path, voice) || isRemote(path)) {
       return local;
     }
     return await MediaHooks.fetch(MediaFolder.voices, path)
@@ -133,13 +153,13 @@ class StarMediaStorage {
   static Future<File?> _localFile(String path) async {
     if (kIsWeb) return null;
     final dir = await _dir();
-    final stored = File('${dir.path}/${path.split('/').last}');
+    final stored = File('${dir.path}/${mediaFileName(path)}');
     return await stored.exists() ? stored : null;
   }
 
-  static Future<Uint8List?> readBytes(String path) async {
+  static Future<Uint8List?> readBytes(String path, {bool? voice}) async {
     final local = await readLocal(path);
-    if (local != null || !_isVoice(path) || isRemote(path)) return local;
+    if (local != null || !_isVoice(path, voice) || isRemote(path)) return local;
     return await MediaHooks.fetch(MediaFolder.voices, path)
         ? readLocal(path)
         : null;
@@ -186,9 +206,9 @@ class StarMediaStorage {
   }
 
   /// Best-effort delete of one stored file (and a video's thumbnail).
-  static Future<void> delete(String path) async {
+  static Future<void> delete(String path, {bool? voice}) async {
     if (isRemote(path)) return;
-    if (_isVoice(path)) MediaHooks.deleted(MediaFolder.voices, path);
+    if (_isVoice(path, voice)) MediaHooks.deleted(MediaFolder.voices, path);
     try {
       if (kIsWeb) {
         await web.deleteMedia(path);
@@ -197,7 +217,7 @@ class StarMediaStorage {
       final f = await _localFile(path);
       if (f != null) await f.delete();
       final dir = await _dir();
-      final thumb = File('${dir.path}/${path.split('/').last}.thumb.jpg');
+      final thumb = File('${dir.path}/${mediaFileName(path)}.thumb.jpg');
       if (await thumb.exists()) await thumb.delete();
     } catch (_) {}
   }
@@ -207,7 +227,9 @@ class StarMediaStorage {
   static Future<void> deleteAll(Iterable<StarMedia> media) async {
     for (final item in media) {
       final path = item.path;
-      if (item.isFile && path != null) await delete(path);
+      if (item.isFile && path != null) {
+        await delete(path, voice: item.kind == StarMediaKind.voice);
+      }
     }
   }
 

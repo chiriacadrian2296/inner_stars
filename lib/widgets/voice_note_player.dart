@@ -94,10 +94,16 @@ class _VoiceNotePlayerState extends State<VoiceNotePlayer> {
       if (player == null) {
         final Source? source;
         if (kIsWeb) {
-          final bytes = await StarMediaStorage.readBytes(widget.media.path!);
+          final bytes = await StarMediaStorage.readBytes(
+            widget.media.path!,
+            voice: true,
+          );
           source = bytes == null ? null : BytesSource(bytes);
         } else {
-          final file = await StarMediaStorage.file(widget.media.path!);
+          final file = await StarMediaStorage.file(
+            widget.media.path!,
+            voice: true,
+          );
           _filePath = file?.path;
           source = file == null ? null : DeviceFileSource(file.path);
         }

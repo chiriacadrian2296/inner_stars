@@ -133,7 +133,7 @@ class _VoiceNoteRecorderSheetState extends State<_VoiceNoteRecorderSheet> {
     if (temp == null) return;
     try {
       final stored = kIsWeb
-          ? await StarMediaStorage.save(XFile(temp), fallbackExtension: 'webm')
+          ? await StarMediaStorage.saveWebRecording(XFile(temp))
           : await StarMediaStorage.saveRecording(temp);
       _tempPath = null;
       if (!mounted) return;

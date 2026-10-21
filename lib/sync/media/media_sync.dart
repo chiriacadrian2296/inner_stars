@@ -112,7 +112,7 @@ class MediaSync {
         ? bytes
         : compressPhoto(bytes);
     if (ready.length > kMaxMediaBytes) return;
-    await remote.upload(job.name, ready, job.folder.contentType);
+    await remote.upload(job.name, ready, mediaContentType(job.folder, job.id));
   }
 
   /// Makes sure this device has [id], downloading it when it does not.

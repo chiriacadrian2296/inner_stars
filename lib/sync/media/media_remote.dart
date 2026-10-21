@@ -19,7 +19,24 @@ enum MediaFolder {
 /// as `moodboard-media:123.jpg`, so only the part after the last `/`, `\` or
 /// `:` counts: every device then names the same file the same way.
 String mediaName(MediaFolder folder, String id) =>
-    '${folder.path}/${id.split(RegExp(r'[\\/:]')).last}';
+    '${folder.path}/${mediaFileName(id)}';
+
+/// The bare file name of [id] (see [mediaName]): what every device uses to
+/// name the file on disk, so a web storage key and a phone path meet.
+String mediaFileName(String id) => id.split(RegExp(r'[\\/:]')).last;
+
+/// The content type to store [id] under. Photos are always re-encoded as JPEG;
+/// a voice note keeps the format it was recorded in (the phone records AAC in
+/// an MP4 container, the browser WebM or Ogg), so the type follows its name.
+String mediaContentType(MediaFolder folder, String id) {
+  if (folder != MediaFolder.voices) return folder.contentType;
+  final name = mediaFileName(id).toLowerCase();
+  if (name.endsWith('.webm')) return 'audio/webm';
+  if (name.endsWith('.ogg') || name.endsWith('.opus')) return 'audio/ogg';
+  if (name.endsWith('.wav')) return 'audio/wav';
+  if (name.endsWith('.mp3')) return 'audio/mpeg';
+  return folder.contentType;
+}
 
 /// Largest file the cloud accepts, kept equal to `storage.rules`.
 const int kMaxMediaBytes = 5 * 1024 * 1024;
