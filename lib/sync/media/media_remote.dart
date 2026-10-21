@@ -14,10 +14,12 @@ enum MediaFolder {
   final String contentType;
 }
 
-/// The cloud file name for [id] in [folder]. Older photos were saved as a full
-/// device path, so only the last part counts.
+/// The cloud file name for [id] in [folder]. A record may hold a full device
+/// path (older photos, moodboard files on a phone) or a web storage key such
+/// as `moodboard-media:123.jpg`, so only the part after the last `/`, `\` or
+/// `:` counts: every device then names the same file the same way.
 String mediaName(MediaFolder folder, String id) =>
-    '${folder.path}/${id.split(RegExp(r'[\\/]')).last}';
+    '${folder.path}/${id.split(RegExp(r'[\\/:]')).last}';
 
 /// Largest file the cloud accepts, kept equal to `storage.rules`.
 const int kMaxMediaBytes = 5 * 1024 * 1024;

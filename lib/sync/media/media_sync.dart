@@ -42,7 +42,16 @@ class MediaSync {
   final int maxAttempts;
 
   bool _processing = false;
+  Timer? _timer;
   final Map<String, Future<bool>> _downloads = {};
+
+  /// Runs [process] soon; several calls inside [after] become one run.
+  void kick([Duration after = const Duration(seconds: 2)]) {
+    _timer?.cancel();
+    _timer = Timer(after, () => unawaited(process()));
+  }
+
+  void dispose() => _timer?.cancel();
 
   /// A file was added or replaced locally: queue its upload.
   Future<void> fileSaved(MediaFolder folder, String id) =>

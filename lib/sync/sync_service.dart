@@ -86,6 +86,8 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
     required List<SyncTarget> targets,
     required RemoteStore Function(String uid) remote,
     this.clearLocalData,
+    this.afterSync,
+    this.deleteMedia,
     this.ownerKey = 'data.owner',
     this.debounce = const Duration(seconds: 5),
     this.watchDelay = const Duration(seconds: 2),
@@ -107,6 +109,14 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
   /// different account signs in, so data of two accounts never mixes. Without
   /// it, a sync that finds another account's data refuses to run.
   final Future<void> Function()? clearLocalData;
+
+  /// Called after every successful sync, for work that follows the records
+  /// (sending media files). Its errors never fail the sync.
+  final Future<void> Function()? afterSync;
+
+  /// Removes the account's media files from the cloud, as part of
+  /// [deleteCloudData].
+  final Future<void> Function()? deleteMedia;
   final Duration debounce;
 
   /// How long after another device's write this one waits before pulling.
@@ -333,6 +343,11 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
         );
       }
       _failures = 0;
+      try {
+        await afterSync?.call();
+      } catch (_) {
+        // Media is retried by its own queue; the records are already synced.
+      }
       if (_watchRetries.isEmpty) {
         _lastError = null;
         _setStatus(SyncStatus.idle);
@@ -402,6 +417,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
     final uid = _account.uid;
     if (uid == null) throw StateError('Not signed in');
     final remote = _remoteFactory(uid);
+    await deleteMedia?.call();
     for (final target in _targets) {
       await remote.deleteCollection(target.name);
     }

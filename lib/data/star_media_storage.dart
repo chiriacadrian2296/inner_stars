@@ -7,6 +7,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 
 import '../models/star_media.dart';
+import '../sync/media/media_hooks.dart';
+import '../sync/media/media_remote.dart';
 import 'star_media_web_stub.dart'
     if (dart.library.js_interop) 'star_media_web.dart'
     as web;
@@ -77,7 +79,33 @@ class StarMediaStorage {
       await source.copy(target);
       await source.delete();
     }
+    MediaHooks.saved(MediaFolder.voices, id);
     return id;
+  }
+
+  /// Only voice notes go to the cloud; photos and videos stay on the device.
+  static bool _isVoice(String path) => path.toLowerCase().endsWith('.m4a');
+
+  /// Stores [bytes] under a path that already exists, as when the voice note
+  /// comes from another device. Does not queue an upload.
+  static Future<void> writeAs(String path, Uint8List bytes) async {
+    if (kIsWeb) {
+      await web.writeMedia(path, bytes);
+      return;
+    }
+    final dir = await _dir();
+    await File('${dir.path}/${path.split('/').last}').writeAsBytes(bytes);
+  }
+
+  /// The stored bytes for [path], or null if this device does not have them.
+  /// Never asks the cloud.
+  static Future<Uint8List?> readLocal(String path) async {
+    try {
+      if (kIsWeb) return await web.readMedia(path);
+      return await (await _localFile(path))?.readAsBytes();
+    } catch (_) {
+      return null;
+    }
   }
 
   /// A path inside the recordings scratch area for the recorder to write to.
@@ -88,15 +116,34 @@ class StarMediaStorage {
 
   /// The stored file for [path], or null if it is gone. Native only; web
   /// callers use [readBytes] instead.
+  ///
+  /// A voice note another device made is fetched from the cloud the first
+  /// time it is asked for.
   static Future<File?> file(String path) async {
+    final local = await _localFile(path);
+    if (local != null || kIsWeb || !_isVoice(path) || isRemote(path)) {
+      return local;
+    }
+    return await MediaHooks.fetch(MediaFolder.voices, path)
+        ? _localFile(path)
+        : null;
+  }
+
+  /// The file on this device only, never asking the cloud.
+  static Future<File?> _localFile(String path) async {
     if (kIsWeb) return null;
     final dir = await _dir();
     final stored = File('${dir.path}/${path.split('/').last}');
     return await stored.exists() ? stored : null;
   }
 
-  static Future<Uint8List?> readBytes(String path) async =>
-      kIsWeb ? web.readMedia(path) : (await file(path))?.readAsBytes();
+  static Future<Uint8List?> readBytes(String path) async {
+    final local = await readLocal(path);
+    if (local != null || !_isVoice(path) || isRemote(path)) return local;
+    return await MediaHooks.fetch(MediaFolder.voices, path)
+        ? readLocal(path)
+        : null;
+  }
 
   static Future<VideoPlayerController?> video(String path) async {
     if (kIsWeb) {
@@ -141,12 +188,13 @@ class StarMediaStorage {
   /// Best-effort delete of one stored file (and a video's thumbnail).
   static Future<void> delete(String path) async {
     if (isRemote(path)) return;
+    if (_isVoice(path)) MediaHooks.deleted(MediaFolder.voices, path);
     try {
       if (kIsWeb) {
         await web.deleteMedia(path);
         return;
       }
-      final f = await file(path);
+      final f = await _localFile(path);
       if (f != null) await f.delete();
       final dir = await _dir();
       final thumb = File('${dir.path}/${path.split('/').last}.thumb.jpg');

@@ -586,10 +586,15 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
       push debounced, ripresa al `resumed`, stato e nessun crash offline.
       Regole di sicurezza: ognuno accede solo a `users/{uid}/**`, con test sull'emulatore.
       Attenzione ai limiti gratuiti: query con `updatedAt > ultimo visto`.
-- [ ] Media: foto principale + audio (60 s) + foto di moodboard su Cloud Storage, con
-      compressione prima dell'upload, cache locale (scarica solo quando serve), coda con
-      ritenti, rimozione dei file orfani. Richiede il piano Blaze con avviso di budget; verificare
-      prima le quote gratuite per la regione scelta.
+- [~] Media: foto principale + audio (60 s) + foto di moodboard su Cloud Storage.
+      **21 ottobre (ramo `parte-b`): codice fatto, non provato su Firebase vero.** Coda
+      persistente con ritenti, compressione, scaricamento solo quando serve, caricamento iniziale
+      dei file già presenti, cancellazione con l’account, regole in `storage.rules`; analisi
+      pulita, suite completa 693 test superati, build web e APK compilano. Disegno e limiti in
+      `docs/media-sync.md`. **Restano:** passare a Blaze con avviso di budget, attivare Storage
+      scegliendo la regione del bucket (verificare la quota gratuita), pubblicare le regole
+      (`firebase deploy --only storage`) e provare con due dispositivi (a carico dell’autore);
+      collegare la pulizia dei file orfani (`removeOrphans`, già testata).
 - [x] Hosting: la web app è su Cloudflare Pages alla radice di `my.innerstars.app` (workflow
       `deploy-app-cloudflare.yml`). Il 21 ottobre ritirato il vecchio `deploy-web.yml` (GitHub
       Pages): non pubblica più nulla; il sito `chiriacadrian2296.github.io/inner_stars` resta con

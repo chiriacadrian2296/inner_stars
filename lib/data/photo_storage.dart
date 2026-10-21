@@ -6,6 +6,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../sync/media/media_hooks.dart';
+import '../sync/media/media_remote.dart';
+
 /// Copies a win's photo into persistent storage and cleans it up again.
 ///
 /// [ImagePicker] only hands back a path into the OS's own temp/cache area
@@ -87,12 +90,35 @@ class PhotoStorage {
       await File('${dir.path}/$id').writeAsBytes(bytes);
     }
     _cache[id] = bytes;
+    MediaHooks.saved(MediaFolder.photos, id);
     return id;
   }
 
+  /// Stores [bytes] under an id that already exists, as when the photo comes
+  /// from another device. Unlike [saveBytes] this does not queue an upload.
+  static Future<void> writeAs(String id, Uint8List bytes) async {
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('$_webKeyPrefix$id', base64Encode(bytes));
+    } else {
+      final dir = await _photosDir();
+      await File('${dir.path}/${id.split('/').last}').writeAsBytes(bytes);
+    }
+    _cache[id] = bytes;
+  }
+
   /// Reads back the bytes [id] (a file path on native, a storage key on web)
-  /// points to — null if missing.
+  /// points to. A photo another device made is fetched from the cloud the
+  /// first time it is asked for; null if it is not there either.
   static Future<Uint8List?> readBytes(String id) async {
+    final local = await readLocalBytes(id);
+    if (local != null || isRemote(id)) return local;
+    if (!await MediaHooks.fetch(MediaFolder.photos, id)) return null;
+    return readLocalBytes(id);
+  }
+
+  /// Like [readBytes] but only looks at this device, never at the cloud.
+  static Future<Uint8List?> readLocalBytes(String id) async {
     final cached = _cache[id];
     if (cached != null) return cached;
 
@@ -112,9 +138,14 @@ class PhotoStorage {
   /// Deletes the photo at [id], if it still exists. Failures are swallowed
   /// — a leftover file/key here is a wasted few KB, not worth surfacing an
   /// error for on what's already a best-effort cleanup step.
-  static Future<void> delete(String id) async {
+  ///
+  /// [syncDeletion] is false when the file is only being cleared from this
+  /// device (wiping local data, switching account), which must leave the
+  /// account's cloud copy alone.
+  static Future<void> delete(String id, {bool syncDeletion = true}) async {
     _cache.remove(id);
     if (isRemote(id)) return;
+    if (syncDeletion) MediaHooks.deleted(MediaFolder.photos, id);
     try {
       if (kIsWeb) {
         final prefs = await SharedPreferences.getInstance();

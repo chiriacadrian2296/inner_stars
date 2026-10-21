@@ -1,0 +1,70 @@
+# Sincronizzazione dei media (B2)
+
+Foto, note vocali e immagini della moodboard viaggiano su Cloud Storage per Firebase. I record
+restano su Firestore e portano solo l'identificativo del file; il file viaggia a parte.
+
+## Cosa si sincronizza
+
+Come deciso nel piano di rilascio:
+
+| Cosa | Cartella nel cloud | Note |
+|---|---|---|
+| Foto principale di una vittoria (`Star.photoPath`) | `photos/` | ridotta a max 1600 px, JPEG qualità 82 |
+| Una nota vocale per vittoria (`StarMedia` di tipo `voice`, max 60 s) | `voices/` | inviata com'è |
+| Immagini della moodboard (solo `MoodboardKind.photo`) | `moodboard/` | come le foto; massimo 12 elementi per area |
+
+Restano **solo sul dispositivo** le foto secondarie, i video e tutto ciò che non è in tabella
+(dopo la v1). Un altro dispositivo vede il record ma non ha quel file.
+
+Percorso nel cloud: `users/{uid}/media/<cartella>/<nome file>`. Il nome è l'ultima parte dopo
+`/`, `\` o `:` dell'identificativo del record (`mediaName`), così il telefono (percorso o nome
+file) e il web (chiave come `moodboard-media:123.jpg`) danno lo stesso nome.
+
+## Come funziona
+
+- **Invio.** Quando un archivio salva o cancella un file (`PhotoStorage`, `StarMediaStorage`,
+  `MoodboardStorage`) chiama `MediaHooks`; il lavoro finisce in una **coda persistente**
+  (`MediaQueue`, nelle preferenze), con un solo lavoro per file: l'ultimo vince, e una
+  cancellazione annulla un invio non ancora fatto. `MediaSync.process` svuota la coda dopo ogni
+  sincronizzazione riuscita e poco dopo ogni modifica; si ferma al primo errore (di solito
+  offline) e riprova più tardi, rinunciando a un lavoro dopo 8 tentativi falliti.
+- **Scaricamento solo quando serve.** Un file fatto da un altro dispositivo non si scarica in
+  anticipo: quando una schermata lo chiede e manca (`PhotoStorage.readBytes`,
+  `StarMediaStorage.file/readBytes`, `MoodboardStorage.read`), `MediaHooks.fetch` lo prende dal
+  cloud e lo salva con lo stesso identificativo. Richieste simultanee condividono un solo
+  scaricamento.
+- **Caricamento iniziale.** I file già presenti sul dispositivo prima di questa funzione non
+  sono mai passati dalla coda: una volta per account, dopo la prima sincronizzazione,
+  `backfillMedia` li mette in coda.
+- **Compressione prima dell'invio** (`compressPhoto`); oltre 5 MB dopo la compressione il file
+  non viene inviato (stesso limite delle regole).
+- **Pulizie locali non toccano il cloud.** "Elimina dati su questo dispositivo" e il cambio di
+  account cancellano i file locali con `syncDeletion: false`; il cambio di account svuota anche
+  la coda, per non mandare i lavori di un account all'altro.
+- **Cancellazione account.** `SyncService.deleteCloudData` chiama prima `deleteMedia`
+  (`MediaSync.deleteAllRemote`: elenca e cancella tutto sotto `users/{uid}/media`).
+- **Offline di sviluppo.** Senza account (modalità "Lavora offline") il cloud non c'è: i lavori
+  restano in coda finché non ci si collega.
+
+## Regole di sicurezza
+
+`storage.rules`: solo il proprietario legge, scrive e cancella sotto `users/{uid}/media/`;
+scritture limitate a 5 MB, a `image/*` e `audio/*` e alle tre cartelle. Tutto il resto è negato.
+
+## Cosa non c'è ancora
+
+- **Pulizia dei file orfani.** `MediaSync.removeOrphans` esiste ed è testata, ma non è collegata:
+  va chiamata solo dopo una sincronizzazione completa, con l'elenco di ciò a cui puntano i
+  record vivi. Da collegare con una politica prudente (per esempio al massimo una volta al giorno).
+- **Prove su Firebase vero.** L'adattatore `FirebaseMediaRemote` è compilato (Android e web)
+  ma non provato: serve il piano Blaze e il bucket attivo.
+- **Test delle regole** di Firestore e Storage sull'emulatore: servono Java e `firebase-tools`.
+
+## Da fare nella console Firebase (a carico dell'autore)
+
+1. Passare il progetto al piano **Blaze** e impostare un **avviso di budget** (Cloud Storage
+   non è disponibile sul piano Spark).
+2. Attivare **Storage** e scegliere la posizione del bucket: controllare quali regioni hanno la
+   quota gratuita (le regioni europee possono non averla, e si paga dal primo gigabyte).
+3. Pubblicare le regole: `firebase deploy --only storage` (serve `firebase login`).
+4. Provare con due dispositivi: foto su uno, vederla sull'altro.

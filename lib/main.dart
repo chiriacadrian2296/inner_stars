@@ -45,7 +45,13 @@ import 'screens/sky_screen.dart';
 import 'screens/star_form_screen.dart';
 import 'settings/settings_controller.dart';
 import 'debug/dev_offline.dart';
+import 'data/app_media_local.dart';
 import 'sync/firestore_remote_store.dart';
+import 'sync/media/firebase_media_remote.dart';
+import 'sync/media/media_backfill.dart';
+import 'sync/media/media_hooks.dart';
+import 'sync/media/media_queue.dart';
+import 'sync/media/media_sync.dart';
 import 'sync/settings_collection.dart';
 import 'sync/sync_scope.dart';
 import 'sync/sync_service.dart';
@@ -142,6 +148,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
   );
   SyncService? _syncService;
   DevOffline? _devOffline;
+  MediaSync? _mediaSync;
   bool _wasSignedIn = false;
 
   /// Puts the sync (and, in development builds, the offline switch) above
@@ -178,6 +185,8 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
   @override
   void dispose() {
     _syncService?.dispose();
+    _mediaSync?.dispose();
+    MediaHooks.instance = null;
     _authService.dispose();
     _startupComplete.dispose();
     super.dispose();
@@ -278,12 +287,39 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
       _wasSignedIn = prefs.getBool(_kWasSignedInKey) ?? false;
       final moodboardRepository = await MoodboardRepository.create();
       final settingsCollection = SettingsCollection(prefs);
+      final syncAccount = OfflineGatedAccount(
+        account: _authService,
+        offline: devOffline,
+      );
+      // Photos, voice notes and moodboard pictures go to Cloud Storage for the
+      // signed-in account (never while a development build works offline).
+      final mediaQueue = MediaQueue(prefs);
+      final mediaSync = MediaSync(
+        queue: mediaQueue,
+        local: AppMediaLocal(),
+        remoteFor: () {
+          final uid = syncAccount.uid;
+          return uid == null ? null : FirebaseMediaRemote(uid);
+        },
+      );
+      MediaHooks.instance = mediaSync;
       final syncService = SyncService(
-        account: OfflineGatedAccount(
-          account: _authService,
-          offline: devOffline,
-        ),
+        account: syncAccount,
         prefs: prefs,
+        afterSync: () async {
+          final uid = syncAccount.uid;
+          if (uid != null) {
+            await backfillMedia(
+              prefs: prefs,
+              uid: uid,
+              sync: mediaSync,
+              stars: starRepository.getAll(),
+              moodboard: moodboardRepository.getAll(),
+            );
+          }
+          await mediaSync.process();
+        },
+        deleteMedia: mediaSync.deleteAllRemote,
         // A different account signing in replaces this device's data instead
         // of merging into it; each account keeps only its own.
         clearLocalData: () async {
@@ -305,6 +341,8 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
             ],
           );
           await appLockRepository.forgetLocally();
+          // The previous account's queued uploads must not reach this one.
+          await mediaQueue.clear();
           await settingsCollection.clearSynced();
           settings.reloadFromStorage();
         },
@@ -351,6 +389,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
         _reminderService = reminderService;
         _tourStorage = tourStorage;
         _syncService = syncService;
+        _mediaSync = mediaSync;
       });
       syncService.start();
 

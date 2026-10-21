@@ -29,12 +29,12 @@ Future<void> wipeLocalData({
   // Files first, while the records that name them can still be read.
   for (final star in stars.getAll(includeDeleted: true)) {
     final photo = star.photoPath;
-    if (photo != null) await PhotoStorage.delete(photo);
+    if (photo != null) await PhotoStorage.delete(photo, syncDeletion: false);
   }
   await StarMediaStorage.clear();
   for (final item in moodboard.getAll(includeDeleted: true)) {
     if (item.kind != MoodboardKind.quote) {
-      await MoodboardStorage.delete(item.content);
+      await MoodboardStorage.delete(item.content, syncDeletion: false);
     }
   }
 

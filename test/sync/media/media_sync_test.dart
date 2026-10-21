@@ -100,6 +100,10 @@ void main() {
         'photos/9.jpg',
       );
       expect(mediaName(MediaFolder.photos, '/data/x/9.jpg'), 'photos/9.jpg');
+      expect(
+        mediaName(MediaFolder.moodboard, 'moodboard-media:9.jpg'),
+        'moodboard/9.jpg',
+      );
     });
 
     test('ignores a damaged queue instead of crashing', () async {

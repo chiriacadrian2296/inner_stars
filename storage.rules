@@ -1,0 +1,18 @@
+rules_version = '2';
+
+// Each signed-in user can read, write and delete only their own media, under
+// users/{uid}/media/<folder>/<file>. Uploads are limited to 5 MB, to pictures
+// and audio, and to the three folders the app uses. Everything else is denied.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /users/{uid}/media/{folder}/{file} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && folder in ['photos', 'voices', 'moodboard']
+        && request.resource.size <= 5 * 1024 * 1024
+        && (request.resource.contentType.matches('image/.*')
+            || request.resource.contentType.matches('audio/.*'));
+    }
+  }
+}
