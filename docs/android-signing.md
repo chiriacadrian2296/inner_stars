@@ -52,8 +52,14 @@ ma Play **non** la accetta.
 ## 3. Costruire il bundle
 
 ```powershell
-flutter build appbundle --release
+flutter build appbundle --release --obfuscate --split-debug-info=build/symbols
 ```
+
+`--obfuscate` rende il codice compilato molto più difficile da leggere e da copiare;
+`--split-debug-info` ne toglie i nomi leggibili e li mette in `build/symbols`. **Conserva quella
+cartella per ogni versione che pubblichi** (con il numero di versione nel nome): serve per
+leggere gli errori, per esempio quelli di Crashlytics, che altrimenti mostrano nomi illeggibili.
+Non va nel repository.
 
 Il file è `build/app/outputs/bundle/release/app-release.aab`.
 

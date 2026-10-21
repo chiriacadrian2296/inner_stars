@@ -630,6 +630,13 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
       login Google non funziona nell’app installata da Play. Ricordare anche che l’account
       personale di Play richiede 12 tester per 14 giorni di fila prima della produzione: il
       conteggio parte da quando esiste un bundle firmato e una privacy policy online.
+- [ ] **Protezione del codice (decisione del 21 ottobre):** il repository resta pubblico per ora, con
+      un file `LICENSE` “tutti i diritti riservati” (nessuna licenza d’uso). La build Android di
+      rilascio va costruita con `--obfuscate --split-debug-info` (vedi `docs/android-signing.md`).
+      **Dopo la v1, quando l’app avrà utenti, rendere il repository privato:** prima sistemare
+      in landing e app web il link “GitHub” del piè di pagina e il pulsante dell’APK (puntano a
+      GitHub e darebbero 404), controllare le app GitHub autorizzate (Cloudflare Pages, Codex,
+      ChatGPT) e i minuti di Actions; chi ha già clonato o fatto fork prima tiene la sua copia.
 - [ ] **Requisiti degli store**: privacy policy online, scheda dei dati raccolti, classificazione per
       età, screenshot, icona e splash definitivi.
 - [ ] **Segnalazione degli errori** con Firebase Crashlytics (deciso): Android coperto. Il plugin
