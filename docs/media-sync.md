@@ -65,6 +65,31 @@ scritture limitate a 5 MB, a `image/*` e `audio/*` e alle tre cartelle. Tutto il
   ma non provato: serve il piano Blaze e il bucket attivo.
 - **Test delle regole** di Firestore e Storage sull'emulatore: servono Java e `firebase-tools`.
 
+## CORS del bucket (necessario per il web)
+
+Il web scarica i file con il web SDK di Firebase (`getData`), che dal browser funziona solo se
+il bucket autorizza il dominio dell'app. Senza, il telefono carica i file ma il web non li vede
+(`Failed to fetch`, foto e note vocali assenti). Configurato il 21 ottobre 2026 dalla Cloud Shell
+della console, con questo file (`cors.json`):
+
+```json
+[{"origin":["https://my.innerstars.app"],"method":["GET","HEAD"],"maxAgeSeconds":3600,"responseHeader":["Content-Type","Authorization","X-Firebase-Storage-Version","X-Firebase-GMPID","X-Firebase-AppCheck"]}]
+```
+
+```
+gcloud storage buckets update gs://inner-stars-5e6d6.firebasestorage.app --cors-file=cors.json
+gcloud storage buckets describe gs://inner-stars-5e6d6.firebasestorage.app --format="default(cors_config)"
+```
+
+**Da rifare se** cambia il dominio della web app, si ricrea il bucket o si aggiunge un'altra
+origine (per esempio un dominio di prova). Il debug non serve: non usa Firebase.
+
+## Altro difetto trovato provando con due dispositivi
+
+Il record di una stella arriva sull'altro dispositivo prima del suo file, perché i file partono
+dopo la sincronizzazione dei record. `PhotoImage` per questo riprova a cercare una foto mancante
+(4, 10, 30 e 90 secondi) invece di restare vuota.
+
 ## Console Firebase
 
 Fatto il 21 ottobre 2026: Blaze attivo, Storage attivato con bucket nella multi-regione **EU**
