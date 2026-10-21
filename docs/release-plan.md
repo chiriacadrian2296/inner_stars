@@ -609,7 +609,8 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
       `main` pubblica) e **cartelle osservate = `landing/*`** (un push che tocca solo l’app non rifà
       la landing). La web app (`innerstars-app`) non è collegata a Git: la carica GitHub Actions
       con `wrangler`; non so se i caricamenti diretti contano nelle 500 build, da guardare nel
-      contatore. Se serve provare una pagina della landing su un ramo, riattivare le anteprime
+      contatore. Il workflow `deploy-app-cloudflare.yml` ora salta i push che toccano solo `docs/`,
+      `landing/`, `tools/`, `*.md`, `LICENSE` o `.claude/` (resta l’avvio manuale). Se serve provare una pagina della landing su un ramo, riattivare le anteprime
       per quel ramo. In GitHub Actions, con il repository pubblico, i minuti sono gratis; da
       privato sono circa 2.000 al mese (vedi la voce sul repository privato).
 - [x] Hosting: la web app è su Cloudflare Pages alla radice di `my.innerstars.app` (workflow

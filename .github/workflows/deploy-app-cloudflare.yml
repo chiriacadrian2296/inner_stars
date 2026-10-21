@@ -9,6 +9,16 @@ name: Deploy web app (Cloudflare Pages)
 on:
   push:
     branches: [main]
+    # A push that only touches documents, the landing or the dev tools does not
+    # change the app, so it does not need a new build and upload. "Run
+    # workflow" (below) still publishes on demand.
+    paths-ignore:
+      - 'docs/**'
+      - 'landing/**'
+      - 'tools/**'
+      - '*.md'
+      - 'LICENSE'
+      - '.claude/**'
   workflow_dispatch:
 
 permissions:
