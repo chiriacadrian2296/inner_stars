@@ -486,8 +486,15 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
       “Sincronizza ora”**; il pannello Account mostra soltanto “ultimo aggiornamento”
       (o “in corso”, o l’errore con nuovo tentativo).
       Come funziona (`lib/sync/sync_service.dart`, `firestore_remote_store.dart`): parte
-      da sola dopo l’accesso, 5 s dopo una modifica locale, al ritorno in primo piano, alla
-      messa in secondo piano e ogni 2 minuti. Un errore (offline, timeout di 30 s) non blocca
+      da sola dopo l’accesso. **Ottimizzazione sul ramo `ottimizza-sync` (21 ottobre):**
+      le modifiche locali vengono inviate dopo 5 s; primo/secondo piano tentano solo l’invio.
+      Nessun controllo periodico: lo scaricamento della singola collezione parte soltanto
+      dal suo listener incrementale, incluso il primo snapshot del server: i documenti
+      vengono applicati direttamente, senza una seconda query. Le conferme dei record
+      restano sul dispositivo anche dopo il riavvio, evitando reinvii di dati invariati.
+      Prima di quel primo recupero non si inviano dati locali potenzialmente vecchi. I segnali ricevuti durante un giro
+      restano in coda; un listener interrotto viene riaperto con attesa crescente.
+      Un errore (offline, timeout di 30 s) non blocca
       l’app né tocca i dati locali: riprova con attesa crescente (30 s … 10 min). Documenti
       `users/{uid}/{collezione}/{id}` con il record intero come testo JSON nel campo `data`
       (Firestore rifiuta le liste annidate), più `id`, `updatedAt`, `deleted` e `_syncedAt`.
@@ -515,9 +522,11 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
         (o annullato) invece che al prossimo avvio.
       - **Impostazioni:** ogni cambio avvisa il servizio, che aggiorna dopo ~5 s; la data è
         quindi quella della modifica con scarto di pochi secondi.
-      - **Aggiornamenti quasi in tempo reale:** oltre al giro ogni 2 minuti, l’app ascolta
-        Firestore (un solo documento per collezione, quindi una lettura per modifica): quando
-        un altro dispositivo scrive, questo scarica in ~2 s.
+      - **Aggiornamenti quasi in tempo reale:** l’app ascolta Firestore con una query
+        incrementale per collezione, a partire dall’ultimo orario server ricevuto.
+        Niente giro ogni 2 minuti, né query aggiuntiva per rileggere l’evento del listener.
+        Le pagine “Vedi” già aperte seguono i repository locali senza riaprire la pagina
+        e senza spostare la camera o cambiare l’attività selezionata.
       **Note e rischi da tenere presenti:**
       - Media (foto, audio) non ancora sincronizzati: serve il blocco “Media” sotto.
       - Costo: con i limiti gratuiti Spark conta ogni documento letto; i punti di ripresa

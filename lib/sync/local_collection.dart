@@ -152,21 +152,47 @@ class SyncOutcome {
 /// the server's clock, pushes follow this device's own clock (its records
 /// are stamped with it), so a wrong clock on either side cannot hide changes.
 /// First sync (both null) sends and receives everything, merged by record.
+/// Set [pull] only for a listener signal. [knownRemote] remembers received and
+/// acknowledged records for this session, avoiding uploads of unchanged data
+/// in the push cursor's overlap window, including remote changes just applied.
 Future<SyncOutcome> syncCollection({
   required String name,
   required SyncCollection local,
   required RemoteStore remote,
   DateTime? pullCursor,
   DateTime? pushSince,
+  bool pull = true,
+  Map<String, SyncRecord>? knownRemote,
+  Map<String, String>? acknowledgedVersions,
+  RemoteChanges? changes,
 }) async {
-  final pulled = await remote.fetchChangesSince(name, pullCursor);
+  final pulled =
+      changes ??
+      (pull
+          ? await remote.fetchChangesSince(name, pullCursor)
+          : RemoteChanges(const [], pullCursor));
+  for (final record in pulled.records) {
+    knownRemote?[record['id'] as String] = Map.of(record);
+    acknowledgedVersions?[record['id'] as String] = syncRecordVersion(record);
+  }
   await local.applyRemote(pulled.records);
+  final candidates = await local.exportChangesSince(
+    acknowledgedVersions == null ? pushSince : null,
+  );
   final merge = mergeCollections(
-    await local.exportChangesSince(pushSince),
-    pulled.records,
+    candidates.where(
+      (record) =>
+          acknowledgedVersions == null ||
+          acknowledgedVersions[record['id']] != syncRecordVersion(record),
+    ),
+    knownRemote?.values ?? pulled.records,
   );
   if (merge.pushRemotely.isNotEmpty) {
     await remote.push(name, merge.pushRemotely);
+    for (final record in merge.pushRemotely) {
+      knownRemote?[record['id'] as String] = Map.of(record);
+      acknowledgedVersions?[record['id'] as String] = syncRecordVersion(record);
+    }
   }
   return SyncOutcome(
     pulled.cursor,

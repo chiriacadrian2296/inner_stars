@@ -156,6 +156,9 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
     super.initState();
     _project = widget.project;
     _loadData();
+    for (final source in _dataSources(widget)) {
+      source.addListener(_onDataChanged);
+    }
     widget.settings?.addListener(_onSettingsChanged);
     // "Vedi" always turns with the phone: sideways it shows the cards at the
     // sides, every one at once. The rest of the app stays upright.
@@ -186,6 +189,9 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
 
   @override
   void dispose() {
+    for (final source in _dataSources(widget)) {
+      source.removeListener(_onDataChanged);
+    }
     widget.settings?.removeListener(_onSettingsChanged);
     SystemBars.release(this);
     _restorePortraitOrientations();
@@ -196,9 +202,43 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
   @override
   void didUpdateWidget(covariant ConstellationScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    for (final source in _dataSources(oldWidget)) {
+      source.removeListener(_onDataChanged);
+    }
+    for (final source in _dataSources(widget)) {
+      source.addListener(_onDataChanged);
+    }
     if (oldWidget.settings == widget.settings) return;
     oldWidget.settings?.removeListener(_onSettingsChanged);
     widget.settings?.addListener(_onSettingsChanged);
+  }
+
+  List<Listenable> _dataSources(ConstellationScreen screen) => [
+    screen.starRepository,
+    screen.projectRepository,
+    screen.habitRepository,
+    screen.habitCompletionRepository,
+    screen.starsShapeRepository,
+  ];
+
+  bool _dataRefreshQueued = false;
+  void _onDataChanged() {
+    if (_dataRefreshQueued) return;
+    _dataRefreshQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _dataRefreshQueued = false;
+      if (!mounted) return;
+      setState(() {
+        _project =
+            widget.projectRepository
+                .getAll()
+                .where((project) => project.id == _project.id)
+                .firstOrNull ??
+            _project;
+        _loadData();
+      });
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 
   void _onSettingsChanged() {

@@ -13,6 +13,17 @@ class RemoteChanges {
   /// The newest server time seen, or the cursor that was asked for when
   /// nothing came back.
   final DateTime? cursor;
+
+  /// Coalesces notifications received while a sync is running.
+  RemoteChanges followedBy(RemoteChanges next) => RemoteChanges(
+    {
+      for (final record in [...records, ...next.records])
+        record['id'] as String: record,
+    }.values.toList(),
+    cursor == null || (next.cursor != null && next.cursor!.isAfter(cursor!))
+        ? next.cursor
+        : cursor,
+  );
 }
 
 /// The remote copy of the data. Firestore implements this; tests use
@@ -32,13 +43,24 @@ abstract class RemoteStore {
   Future<void> deleteCollection(String collection);
 
   /// Emits whenever something in [collection] was written, by any device, so
-  /// the app can pull within seconds instead of waiting for its next round.
-  /// May also emit once on subscribing and after the app's own writes; pulling
-  /// is idempotent. Stores that cannot watch return an empty stream.
+  /// the app can pull that collection without polling. Emits the initial
+  /// server state on subscribing too, and may emit after the app's own writes;
+  /// pulling is idempotent. Errors let the service reconnect with backoff.
   Stream<void> watch(String collection) => const Stream<void>.empty();
+
+  /// Firestore delivers changes directly through an incremental query listener.
+  /// The signal/fetch fallback keeps simple stores usable without polling.
+  Stream<RemoteChanges> watchChanges(String collection, DateTime? cursor) {
+    var position = cursor;
+    return watch(collection).asyncMap((_) async {
+      final changes = await fetchChangesSince(collection, position);
+      position = changes.cursor;
+      return changes;
+    });
+  }
 }
 
-class InMemoryRemoteStore implements RemoteStore {
+class InMemoryRemoteStore extends RemoteStore {
   final Map<String, Map<String, ({SyncRecord record, DateTime at})>> data = {};
 
   /// The server clock: moves forward by a second on every push.
@@ -47,9 +69,15 @@ class InMemoryRemoteStore implements RemoteStore {
   final _watchers = <String, StreamController<void>>{};
 
   @override
-  Stream<void> watch(String collection) => _watchers
-      .putIfAbsent(collection, () => StreamController<void>.broadcast())
-      .stream;
+  Stream<void> watch(String collection) => Stream<void>.multi((controller) {
+    final subscription = _watchers
+        .putIfAbsent(collection, () => StreamController<void>.broadcast())
+        .stream
+        .listen(controller.addSync, onError: controller.addErrorSync);
+    // Like Firestore, subscribing reports the initial server state too.
+    controller.addSync(null);
+    controller.onCancel = subscription.cancel;
+  });
 
   /// When set, the next call throws it, to simulate being offline.
   Object? failNext;

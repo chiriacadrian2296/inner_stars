@@ -152,6 +152,9 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
   @override
   void initState() {
     super.initState();
+    for (final source in _dataSources(widget)) {
+      source.addListener(_onDataChanged);
+    }
     // The "star-reader" tour — see its steps in [build]. Only for the real
     // browsing flow, not the Nightlight's read-only one.
     if (widget.allowEdit) {
@@ -162,6 +165,75 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
         });
       });
     }
+  }
+
+  List<Listenable> _dataSources(StarReaderScreen screen) => [
+    screen.repository,
+    ?screen.projectRepository,
+    ?screen.habitRepository,
+    ?screen.habitCompletionRepository,
+    ?screen.starsShapeRepository,
+  ];
+
+  @override
+  void dispose() {
+    for (final source in _dataSources(widget)) {
+      source.removeListener(_onDataChanged);
+    }
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant StarReaderScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    for (final source in _dataSources(oldWidget)) {
+      source.removeListener(_onDataChanged);
+    }
+    for (final source in _dataSources(widget)) {
+      source.addListener(_onDataChanged);
+    }
+  }
+
+  bool _dataRefreshQueued = false;
+  void _onDataChanged() {
+    if (_dataRefreshQueued) return;
+    _dataRefreshQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _dataRefreshQueued = false;
+      if (mounted && _entries.isNotEmpty) _refreshFrom(_entries[_index]);
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  Project? _projectFor(String id) =>
+      widget.projectRepository
+          ?.getAll()
+          .where((project) => project.id == id)
+          .firstOrNull ??
+      widget.projectsById[id];
+
+  List<ReaderEntry> _refreshReadOnlyEntries() {
+    final stars = {
+      for (final star in widget.repository.getAll()) star.id: star,
+    };
+    final habits = {
+      for (final habit in widget.habitRepository?.getAll() ?? <Habit>[])
+        habit.id: habit,
+    };
+    return [
+      for (final entry in _entries)
+        switch (entry) {
+          StarEntry(:final star) =>
+            stars[star.id] == null ? null : StarEntry(stars[star.id]!),
+          PulsarEntry(:final habit) =>
+            widget.habitRepository == null
+                ? entry
+                : habits[habit.id] == null
+                ? null
+                : PulsarEntry(habits[habit.id]!),
+          NascentEntry() => entry,
+        },
+    ].nonNulls.toList();
   }
 
   late List<ReaderEntry> _entries =
@@ -316,11 +388,11 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
           star.isLit
               ? ShareableLitStarCard(
                   star: star,
-                  project: widget.projectsById[star.projectId],
+                  project: _projectFor(star.projectId),
                 )
               : ShareableGoalCard(
                   star: star,
-                  project: widget.projectsById[star.projectId],
+                  project: _projectFor(star.projectId),
                 ),
           star.displayTitle,
           'star_${star.id}.png',
@@ -328,7 +400,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
         PulsarEntry(:final habit) => (
           ShareablePulsarCard(
             habit: habit,
-            project: widget.projectsById[habit.projectId],
+            project: _projectFor(habit.projectId),
           ),
           habit.displayTitle,
           'pulsar_${habit.id}.png',
@@ -352,9 +424,13 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
   void _refreshFrom(ReaderEntry anchor) {
     final refreshed = widget.refreshEntries != null
         ? widget.refreshEntries!()
-        : starEntries(widget.refreshStars!());
+        : widget.refreshStars != null
+        ? starEntries(widget.refreshStars!())
+        : _refreshReadOnlyEntries();
     if (refreshed.isEmpty) {
-      if (mounted) Navigator.of(context).pop();
+      if (mounted && ModalRoute.of(context)?.isCurrent != false) {
+        Navigator.of(context).pop();
+      }
       return;
     }
     var refreshedIndex = refreshed.indexWhere((e) => e.key == anchor.key);
@@ -387,7 +463,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
   /// for a nascent star, locked to this constellation and slot, with the
   /// pulsar option off (a pulsar never sits on the shape).
   Future<void> _configureNascent(NascentEntry entry) async {
-    final project = widget.projectsById[entry.projectId];
+    final project = _projectFor(entry.projectId);
     if (project == null) return;
     final result = await Navigator.of(context).push<Object>(
       MaterialPageRoute(
@@ -427,7 +503,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
         MaterialPageRoute(
           builder: (_) => StarFormScreen(
             existingHabit: habit,
-            contextProject: widget.projectsById[habit.projectId],
+            contextProject: _projectFor(habit.projectId),
             projectRepository: widget.projectRepository,
             starsShapeRepository: widget.starsShapeRepository,
             hideDelete: true,
@@ -457,7 +533,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
       MaterialPageRoute(
         builder: (_) => StarFormScreen(
           existingHabit: habit,
-          contextProject: widget.projectsById[habit.projectId],
+          contextProject: _projectFor(habit.projectId),
           projectRepository: widget.projectRepository,
           starsShapeRepository: widget.starsShapeRepository,
         ),
@@ -536,7 +612,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
         MaterialPageRoute(
           builder: (_) => StarFormScreen(
             existingStar: current,
-            contextProject: widget.projectsById[current.projectId],
+            contextProject: _projectFor(current.projectId),
             projectRepository: widget.projectRepository,
             starsShapeRepository: widget.starsShapeRepository,
             hideDelete: true,
@@ -564,7 +640,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
       MaterialPageRoute(
         builder: (_) => StarFormScreen(
           existingStar: current,
-          contextProject: widget.projectsById[current.projectId],
+          contextProject: _projectFor(current.projectId),
           projectRepository: widget.projectRepository,
           starsShapeRepository: widget.starsShapeRepository,
         ),
@@ -914,7 +990,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
   Widget build(BuildContext context) {
     final entry = _entries[_index];
     final star = entry is StarEntry ? entry.star : null;
-    final project = widget.projectsById[entry.projectId];
+    final project = _projectFor(entry.projectId);
     final colors = context.colors;
     final strings = context.strings;
     final headerTitle = switch (entry) {
