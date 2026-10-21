@@ -2020,6 +2020,11 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get shareContentError => 'Nu am putut distribui. Încerci din nou?';
   @override
+  String get appLockDeviceUnlockToggleLabel => "Deblochează cu dispozitivul";
+  @override
+  String get appLockBiometricSetupFailed =>
+      "Nu am putut activa deblocarea pe acest dispozitiv.";
+  @override
   String get sharePreviewTitle => 'Previzualizare Distribuire';
   @override
   String get shareChooseLayout => 'Alege un aranjament';

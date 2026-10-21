@@ -312,11 +312,19 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
 
 - [ ] Impostazioni: si sincronizzano tutte **tranne la qualità della Galaxy e il volume audio**
       (restano per dispositivo).
-- [ ] ⭐ **Blocco app e promemoria sul web**: vuoi portarli anche sul web. Da parlarne prima di
-      costruire: il PIN è semplice; l'impronta sul web richiederebbe un metodo diverso (passkey o
-      WebAuthn); il promemoria giornaliero nel browser richiede il permesso per le notifiche e un
-      servizio di notifiche push (Firebase Cloud Messaging), che funziona solo se il browser lo
-      permette. Da decidere anche se PIN e orario del promemoria si sincronizzano tra i dispositivi.
+- [~] **Blocco app sul web (decisioni del 21 ottobre, ramo `blocco-web`).** Il **PIN** si
+      **sincronizza fra i dispositivi** come record `app-lock` (hash e salt; spegnere il blocco
+      è un record di cancellazione senza hash; la vecchia chiave locale viene migrata; cambiando
+      account il PIN dell’altro si dimentica senza avvisare il cloud). L’**impronta** resta
+      **per dispositivo** e sul web usa **WebAuthn** (`lib/utils/web_passkey_web.dart`): il
+      browser chiede la verifica del dispositivo (impronta, volto, Windows Hello o PIN del
+      sistema) per una passkey creata una volta per browser; ripiego sempre sul PIN. È una
+      comodità davanti al PIN, non una sicurezza forte; l’impronta non viene mai condivisa,
+      sincronizza al massimo la passkey il gestore del browser. Il **promemoria sul web è
+      rimandato a dopo la v1** (servono Firebase Cloud Messaging e un service worker, e su
+      iPhone solo con l’app installata). Test mirati superati e build web release riuscita;
+      **da provare a mano** la passkey su un browser vero (Chrome con Windows Hello o
+      telefono) e il PIN sincronizzato fra due dispositivi.
 - [x] **Pagina di login obbligatoria (19 ottobre sera, su richiesta dell’autore):** su
       browser e su Android, prima di tutto (`lib/screens/login_screen.dart`,
       `lib/auth/auth_gate.dart`). Stile della landing (stesso sfondo con velo blu e stelle

@@ -196,6 +196,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _setBiometricEnabled(bool value) async {
+    if (value && !await widget.biometricAuthService.enroll()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.strings.appLockBiometricSetupFailed)),
+        );
+      }
+      return;
+    }
     await widget.appLockRepository.setBiometricEnabled(value);
     if (mounted) setState(() {});
   }
@@ -817,7 +825,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     widget.appLockRepository.biometricEnabled,
                                 onChanged: _setBiometricEnabled,
                                 title: Text(
-                                  strings.appLockBiometricToggleLabel,
+                                  kIsWeb
+                                      ? strings.appLockDeviceUnlockToggleLabel
+                                      : strings.appLockBiometricToggleLabel,
                                   style: TextStyle(
                                     color: colors.text,
                                     fontSize: 14,
