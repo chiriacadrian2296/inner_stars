@@ -285,6 +285,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
               moodboardRepository,
             ],
           );
+          await appLockRepository.forgetLocally();
           await settingsCollection.clearSynced();
           settings.reloadFromStorage();
         },
@@ -302,6 +303,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
             shootingStarWishRepository,
           ),
           SyncTarget.repository('moodboard', moodboardRepository),
+          SyncTarget.repository('app-lock', appLockRepository),
           SyncTarget.settings(settingsCollection, () {
             settings.reloadFromStorage();
             // A reminder changed on another device must ring here too.
