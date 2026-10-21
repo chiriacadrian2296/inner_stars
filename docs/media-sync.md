@@ -65,7 +65,11 @@ scritture limitate a 5 MB, a `image/*` e `audio/*` e alle tre cartelle. Tutto il
   ma non provato: serve il piano Blaze e il bucket attivo.
 - **Test delle regole** di Firestore e Storage sull'emulatore: servono Java e `firebase-tools`.
 
-## Da fare nella console Firebase (a carico dell'autore)
+## Console Firebase
+
+Fatto il 21 ottobre 2026: Blaze attivo, Storage attivato con bucket nella multi-regione **EU**
+(Standard) e regole pubblicate. Restano le prove con due dispositivi e, se non c'è già,
+l'avviso di budget. I passi originali, per memoria:
 
 1. Passare il progetto al piano **Blaze** e impostare un **avviso di budget** (Cloud Storage
    non è disponibile sul piano Spark).

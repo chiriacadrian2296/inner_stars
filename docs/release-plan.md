@@ -593,10 +593,16 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
       persistente con ritenti, compressione, scaricamento solo quando serve, caricamento iniziale
       dei file già presenti, cancellazione con l’account, regole in `storage.rules`; analisi
       pulita, suite completa 693 test superati, build web e APK compilano. Disegno e limiti in
-      `docs/media-sync.md`. **Restano:** passare a Blaze con avviso di budget, attivare Storage
-      scegliendo la regione del bucket (verificare la quota gratuita), pubblicare le regole
-      (`firebase deploy --only storage`) e provare con due dispositivi (a carico dell’autore);
-      collegare la pulizia dei file orfani (`removeOrphans`, già testata).
+      `docs/media-sync.md`. **Console (21 ottobre, fatto con l’autore):** piano **Blaze** attivo (carta
+      collegata); Storage attivato con il bucket `inner-stars-5e6d6.firebasestorage.app` nella
+      **multi-regione EU** (classe Standard; non si cambia dopo; in Europa non c’è il livello
+      Always Free, si paga dal primo GB, ma sono centesimi) e **regole pubblicate** con
+      `firebase deploy --only storage` (verificate nella scheda Rules). **Restano:** impostare
+      l’avviso di budget se non fatto, provare con due dispositivi (foto su uno, vederla
+      sull’altro) con la build che contiene questo codice; collegare la pulizia dei file orfani
+      (`removeOrphans`, già testata); valutare App Check (la console lo propone).
+      **Privacy policy:** dire che foto, note vocali e immagini della moodboard sono archiviate
+      nell’Unione Europea.
 - [x] Hosting: la web app è su Cloudflare Pages alla radice di `my.innerstars.app` (workflow
       `deploy-app-cloudflare.yml`). Il 21 ottobre ritirato il vecchio `deploy-web.yml` (GitHub
       Pages): non pubblica più nulla; il sito `chiriacadrian2296.github.io/inner_stars` resta con
