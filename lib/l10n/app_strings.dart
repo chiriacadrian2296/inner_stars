@@ -1111,8 +1111,6 @@ abstract class AppStrings {
   String get appLockDeviceUnlockToggleLabel;
   String get appLockBiometricSetupFailed;
   String get appLockDeviceUnlockUnavailable;
-  String get devOfflineMode;
-  String get devOfflineModeHint;
   String get shareInvite;
   String get sharePreviewTitle;
   String get shareChooseLayout;

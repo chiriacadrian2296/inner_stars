@@ -149,6 +149,61 @@ void main() {
     expect(find.byKey(const Key('sky-primary-action')), findsOneWidget);
   });
 
+  testWidgets('Sky keeps its FAB and footer mark static across tabs', (
+    tester,
+  ) async {
+    final repos = await repositories();
+    await repos.projects.add(
+      name: 'Costellazione test',
+      area: LifeArea.personal,
+      iconSlug: 'star',
+    );
+    await pumpExplorer(tester, repos);
+
+    void expectStaticChrome() {
+      final primaryAction = find.byKey(const Key('sky-primary-action'));
+      final footerMark = find.byKey(const Key('app-footer-mark-unit'));
+      expect(primaryAction, findsOneWidget);
+      expect(tester.getSize(primaryAction), const Size.square(48));
+      expect(
+        find.descendant(of: primaryAction, matching: find.text('Aggiungi')),
+        findsNothing,
+      );
+      expect(
+        find.ancestor(
+          of: primaryAction,
+          matching: find.byType(AnimatedSwitcher),
+        ),
+        findsNothing,
+      );
+      expect(footerMark, findsOneWidget);
+      final modeFade = tester.widget<FadeTransition>(
+        find.byKey(const Key('sky-mode-fade-transition')),
+      );
+      final modeSlide = tester.widget<SlideTransition>(
+        find.byKey(const Key('sky-mode-slide-transition')),
+      );
+      expect(modeFade.opacity.value, 1);
+      expect(modeSlide.position.value, Offset.zero);
+      expect(
+        find.ancestor(
+          of: footerMark,
+          matching: find.byKey(const Key('sky-mode-slide-transition')),
+        ),
+        findsOneWidget,
+      );
+    }
+
+    expectStaticChrome();
+
+    final modeSwitch = find.byKey(const Key('sky-mode-switch'));
+    await tester.tap(modeSwitch);
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expectStaticChrome();
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('real Search closes an open quick menu when results scroll', (
     tester,
   ) async {

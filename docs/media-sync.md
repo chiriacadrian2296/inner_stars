@@ -48,8 +48,8 @@ file) e il web (chiave come `moodboard-media:123.jpg`) danno lo stesso nome.
   la coda, per non mandare i lavori di un account all'altro.
 - **Cancellazione account.** `SyncService.deleteCloudData` chiama prima `deleteMedia`
   (`MediaSync.deleteAllRemote`: elenca e cancella tutto sotto `users/{uid}/media`).
-- **Offline di sviluppo.** Senza account (modalità "Lavora offline") il cloud non c'è: i lavori
-  restano in coda finché non ci si collega.
+- **Build di sviluppo.** Il debug è un'app locale separata (`kOfflineDevMode`): non crea la coda né
+  i ganci dei media, e non parla mai con Firebase.
 
 ## Regole di sicurezza
 

@@ -19,9 +19,7 @@ Widget app(Widget home) => StringsScope(
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
-  testWidgets('body alone saves with an automatic editable title', (
-    tester,
-  ) async {
+  testWidgets('title and body are both required', (tester) async {
     final repo = await ReflectionRepository.create();
     await tester.pumpWidget(
       app(AreaReflectionsScreen(area: LifeArea.physical, repository: repo)),
@@ -33,6 +31,14 @@ void main() {
     await tester.enterText(
       find.byKey(const ValueKey('reflection-body')),
       'Un pensiero da ritrovare\nIl resto della riflessione',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('reflection-save')));
+    await tester.pump();
+    expect(repo.getAll(), isEmpty);
+    await tester.enterText(
+      find.byKey(const ValueKey('reflection-title')),
+      'Un pensiero da ritrovare',
     );
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey('reflection-save')));
@@ -91,7 +97,7 @@ void main() {
     expect(record.questionText, question);
     expect(record.questionId, '${questions.indexOf(question)}');
     expect(find.text(question), findsOneWidget);
-    await tester.tap(find.byTooltip(strings.starQuickLookEditAction));
+    await tester.tap(find.byKey(const ValueKey('reflection-edit')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('reflection-title')),
@@ -175,6 +181,10 @@ void main() {
       expect(find.text('Riflessione precedente'), findsOneWidget);
       await tester.tap(find.text(strings.reflectionWrite.toUpperCase()));
       await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('reflection-title')),
+        'Una nuova riflessione',
+      );
       await tester.enterText(
         find.byKey(const ValueKey('reflection-body')),
         'Una nuova risposta',
@@ -270,7 +280,18 @@ void main() {
       expect(find.byType(ReflectionDetailScreen), findsOneWidget);
       expect(repo.getAll().single.origin, ReflectionOrigin.free);
       final id = repo.getAll().single.id;
-      await tester.tap(find.byTooltip(strings.starQuickLookEditAction));
+      expect(find.byType(ElevatedButton), findsNWidgets(3));
+      expect(
+        tester
+            .widgetList<ElevatedButton>(find.byType(ElevatedButton))
+            .map((button) => button.key),
+        const [
+          ValueKey('reflection-delete'),
+          ValueKey('reflection-edit'),
+          ValueKey('reflection-share'),
+        ],
+      );
+      await tester.tap(find.byKey(const ValueKey('reflection-edit')));
       await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const ValueKey('reflection-body')),
@@ -280,14 +301,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(repo.find(id)!.body, 'Testo rivisto');
       expect(find.text('Testo rivisto'), findsOneWidget);
-      await tester.tap(find.byTooltip(strings.deleteStarAction));
+      await tester.tap(find.byKey(const ValueKey('reflection-delete')));
       await tester.pumpAndSettle();
       await tester.tap(find.text(strings.cancel.toUpperCase()).last);
       await tester.pumpAndSettle();
       expect(repo.find(id), isNotNull);
-      await tester.tap(find.byTooltip(strings.deleteStarAction));
+      await tester.tap(find.byKey(const ValueKey('reflection-delete')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text(strings.deleteStarAction.toUpperCase()));
+      await tester.tap(find.text(strings.deleteStarAction.toUpperCase()).last);
       await tester.pumpAndSettle();
       expect(repo.getAll(), isEmpty);
       expect(repo.getAll(includeDeleted: true).single.deleted, isTrue);

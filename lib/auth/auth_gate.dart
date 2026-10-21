@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'auth_service.dart';
@@ -22,7 +21,6 @@ class AuthGate extends StatefulWidget {
     required this.childBuilder,
     this.onLoginShown,
     this.onOpened,
-    this.offline,
   });
 
   final AuthService auth;
@@ -42,9 +40,6 @@ class AuthGate extends StatefulWidget {
   /// The app opened, with the same `startLocked` as [childBuilder] got.
   final ValueChanged<bool>? onOpened;
 
-  /// Development builds only: while true the app opens without any account.
-  final ValueListenable<bool>? offline;
-
   @override
   State<AuthGate> createState() => _AuthGateState();
 }
@@ -60,7 +55,6 @@ class _AuthGateState extends State<AuthGate> {
   void initState() {
     super.initState();
     widget.auth.addListener(_refresh);
-    widget.offline?.addListener(_refresh);
     _door = _decide();
     _entered(null, _door);
   }
@@ -68,13 +62,11 @@ class _AuthGateState extends State<AuthGate> {
   @override
   void dispose() {
     widget.auth.removeListener(_refresh);
-    widget.offline?.removeListener(_refresh);
     super.dispose();
   }
 
   _Door _decide() {
     final auth = widget.auth;
-    if (widget.offline?.value ?? false) return _Door.app;
     if (auth.isSignedIn || (auth.initFailed && widget.wasSignedIn)) {
       return _Door.app;
     }

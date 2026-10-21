@@ -54,12 +54,13 @@ promemoria sul web dopo la v1. Decisi il 19 ottobre: pannello Account e cancella
 - **Accesso obbligatorio (deciso il 19 ottobre sera):** nessuno entra nella Galaxy senza un
   account Google. Davanti a tutto c’è una pagina di login (A6). La prima volta serve internet;
   dopo, l’app si apre anche offline perché i dati stanno sul dispositivo.
-- **Modalità offline di sviluppo (21 ottobre):** nelle build con `kDevTools` un interruttore
-  “Lavora offline” in Settings (acceso di default, per dispositivo, mai sincronizzato) salta
-  login e Firebase e ferma la sync, così dati di esempio e reset non consumano quota Firestore.
-  Le release pubbliche non lo hanno. Attenzione: i dati creati offline vengono adottati dal
-  primo account che si connette; prima di riconnettersi usare “Elimina dati su questo
-  dispositivo”. Codice: `lib/debug/dev_offline.dart`.
+- **App di sviluppo separata (21 ottobre, ramo `correzioni-ui`, sostituisce l’interruttore "Lavora
+  offline"):** le build di **debug** sono un’app a parte (`app.innerstars.debug`, “Inner Stars Dev”),
+  sempre locali: niente login, Firebase, sincronizzazione né media in cloud, e non mostrano la
+  sezione Account (`kOfflineDevMode`, `lib/debug/dev_environment.dart`). La **release**
+  (`app.innerstars`) tiene login e sync. Le due app si installano insieme con dati separati. Per
+  provare login, sync, media su Storage o blocco app serve una build **release** o la web app. Non
+  reintrodurre servizi online nel flusso debug.
 - ID **UUID v4** (primo blocco di A2 completato); migrazione automatica dei dati locali
   all'avvio. Nessun utente reale, quindi nessuna cautela particolare di migrazione.
 - Media sincronizzati nella v1: foto principale di ogni vittoria, **un audio per vittoria (max 60 s)**,

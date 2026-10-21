@@ -42,6 +42,7 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["appLabel"] = "Inner Stars"
     }
 
     signingConfigs {
@@ -56,6 +57,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            // A debug install lives beside the public app and gets its own
+            // Android storage (SharedPreferences, files and databases).
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-dev"
+            manifestPlaceholders["appLabel"] = "Inner Stars Dev"
+        }
         release {
             signingConfig = if (hasReleaseKey) {
                 signingConfigs.getByName("release")
@@ -65,6 +73,12 @@ android {
             }
         }
     }
+}
+
+// Debug is deliberately offline and never initializes Firebase. The release
+// variant still receives the generated Google Services resources as before.
+tasks.matching { it.name == "processDebugGoogleServices" }.configureEach {
+    enabled = false
 }
 
 kotlin {

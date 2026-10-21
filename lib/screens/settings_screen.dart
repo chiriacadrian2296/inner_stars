@@ -7,8 +7,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
-import '../debug/dev_offline.dart';
 import '../debug/dev_tools.dart';
+import '../debug/dev_environment.dart';
 
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -546,8 +546,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: _AvatarPicker(settings: widget.settings),
                   ),
                   const SizedBox(height: 14),
-                  const StaggeredEntrance(index: 1, child: AccountPanel()),
-                  const SizedBox(height: 28),
+                  if (!kOfflineDevMode) ...[
+                    const StaggeredEntrance(index: 1, child: AccountPanel()),
+                    const SizedBox(height: 28),
+                  ] else
+                    const SizedBox(height: 14),
 
                   StaggeredEntrance(
                     index: 2,
@@ -1120,19 +1123,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ],
                     ),
-                    if (DevOfflineScope.maybeOf(context) case final offline?)
-                      SwitchListTile(
-                        value: offline.enabled,
-                        onChanged: offline.setEnabled,
-                        title: Text(
-                          strings.devOfflineMode,
-                          style: TextStyle(color: colors.text, fontSize: 14),
-                        ),
-                        subtitle: Text(
-                          strings.devOfflineModeHint,
-                          style: TextStyle(color: colors.muted, fontSize: 12),
-                        ),
-                      ),
                     if (_kShowOnboarding) ...[
                       const SizedBox(height: 8),
                       // Onboarding replay lived in the menu's own Info
