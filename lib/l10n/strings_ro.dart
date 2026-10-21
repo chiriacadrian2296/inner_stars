@@ -2024,6 +2024,7 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get appLockBiometricSetupFailed =>
       "Nu am putut activa deblocarea pe acest dispozitiv.";
+  @override
   String get devOfflineMode => 'Lucrează offline';
   @override
   String get devOfflineModeHint =>
