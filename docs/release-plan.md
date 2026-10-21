@@ -263,11 +263,10 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
 
 ## A5. Pulizia residua
 
-- [ ] **Prima della release ufficiale:** impostare `_kShowSampleDataForTesting = false` in
-      `lib/screens/settings_screen.dart`. Il pulsante dei dati di esempio è stato ripristinato
-      temporaneamente in Settings su richiesta dell'autore per provare la release sul telefono;
-      non abilita reset né lab. Per questa piccola modifica non si ripete l'intera suite di test,
-      come richiesto; si verificano analisi, compilazione e installazione.
+- [x] Dati di esempio: il 21 ottobre tolto l’interruttore temporaneo
+      `_kShowSampleDataForTesting` da `lib/screens/settings_screen.dart`. Il pulsante resta
+      solo dietro `kDevTools`, come lab e reset (nelle build di sviluppo; in release solo con
+      `DEV_TOOLS`). Analisi pulita, suite completa 650 test superati.
 
 - [x] Frame rate: scelto **Free**. Limitatore, sonde e riga "FPS Limit" eliminati dal codice.
 - [x] Worktree di scratch `baseline` del vecchio profiling: il 21 ottobre, su decisione

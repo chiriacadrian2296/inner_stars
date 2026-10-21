@@ -62,10 +62,6 @@ const _kShowOnboarding = false;
 /// build shouldn't show "coming soon" panels; flip on to restore.
 const _kShowPlaceholderSections = false;
 
-// Temporary testing aid for the author's release builds. Disable before the
-// official release; tracked in docs/release-plan.md (A5).
-const _kShowSampleDataForTesting = true;
-
 /// Settings, opened from the Sky's own side menu — the drawer carries only
 /// one entry for it, everything else here is a section of this one page.
 /// Profile & Account, Customization, Passkey and Social are all sketched
@@ -1050,7 +1046,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
                   ),
-                  if (kDevTools || _kShowSampleDataForTesting) ...[
+                  if (kDevTools) ...[
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -1073,30 +1069,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                         ),
-                        if (kDevTools) const SizedBox(width: 8),
-                        if (kDevTools)
-                          Expanded(
-                            child: StaggeredEntrance(
-                              index: 11,
-                              axis: Axis.horizontal,
-                              child: TextButton.icon(
-                                onPressed: _resetAllData,
-                                style: _debugButtonStyle(colors, colors.danger),
-                                icon: Icon(
-                                  Icons.delete_outline,
-                                  size: 16,
-                                  color: colors.danger,
-                                ),
-                                label: AppButtonLabel(
-                                  strings.resetAllData,
-                                  color: colors.danger,
-                                ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: StaggeredEntrance(
+                            index: 11,
+                            axis: Axis.horizontal,
+                            child: TextButton.icon(
+                              onPressed: _resetAllData,
+                              style: _debugButtonStyle(colors, colors.danger),
+                              icon: Icon(
+                                Icons.delete_outline,
+                                size: 16,
+                                color: colors.danger,
+                              ),
+                              label: AppButtonLabel(
+                                strings.resetAllData,
+                                color: colors.danger,
                               ),
                             ),
                           ),
+                        ),
                       ],
                     ),
-                    if (kDevTools && _kShowOnboarding) ...[
+                    if (_kShowOnboarding) ...[
                       const SizedBox(height: 8),
                       // Onboarding replay lived in the menu's own Info
                       // section briefly; moved back here — a dev/QA aid for
