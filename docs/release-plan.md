@@ -3,6 +3,9 @@
 Documento di lavoro: si procede per step, in ordine, spuntando le voci. Aggiornare questo file
 quando una decisione cambia.
 
+**Stato al 21 ottobre 2026:** parte A chiusa tranne A7 (vedi la nota prima di A1); si
+prosegue con la parte B. Storico del 19 ottobre:
+
 **Stato al 19 ottobre 2026:** completata la pulizia del codice di A5 e verificate le release
 web e Android. Restano la prova manuale sul telefono e il worktree di profiling da sistemare.
 A2 è completato: UUID, metadati, tombstone e contenuti d’area.
@@ -26,11 +29,11 @@ Firebase, hosting, privacy e store (parte B), infine la rifinitura (parte C).
 
 ## Da rivedere con te (indice delle ⭐)
 
-1. Blocco app e promemoria anche sul web: cosa è possibile e cosa vuoi esattamente (A6).
-2. Cosa mostrare nel pannello Account di Settings prima del login, e come cancellare i dati
-   locali in release finché non c'è il login (A6).
-3. Onboarding: va fatto come si deve, da discutere (A7).
-4. Tutorial: cosa resta nell'app prima di rivederli (parte C).
+1. Onboarding: va fatto come si deve, da discutere (A7).
+2. Tutorial: cosa resta nell'app prima di rivederli (parte C).
+
+(Decisi il 21 ottobre: blocco app sul web con PIN sincronizzato e sblocco col dispositivo;
+promemoria sul web dopo la v1. Decisi il 19 ottobre: pannello Account e cancellazione dati.)
 
 ## 0. Decisioni prese
 
@@ -86,6 +89,12 @@ Firebase, hosting, privacy e store (parte B), infine la rifinitura (parte C).
 ---
 
 # PARTE A – Modifiche all'app (in ordine)
+
+**Parte A chiusa il 21 ottobre 2026, tranne A7 (onboarding).** Le voci sono spuntate su
+decisione dell’autore; **restano a suo carico**, fuori dal piano, queste prove manuali:
+condivisione vera su telefono e web (A4); le novità di A1 sul telefono, comprese le correzioni
+di “Crea vittoria” (A5); accesso reale su Android, secondo account sullo stesso browser,
+offline, cancellazione dati e account, e PIN sincronizzato fra due dispositivi (A6).
 
 ## A1. Già fatto
 
@@ -220,11 +229,11 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
 
 ## A4. Pagina di personalizzazione della scheda da condividere
 
-- [~] Ogni volta che si condivide qualcosa (vittoria, obiettivo, stella accesa, pulsar,
+- [x] Ogni volta che si condivide qualcosa (vittoria, obiettivo, stella accesa, pulsar,
       costellazione, contenuto d'area, riflessione) si apre **la pagina che oggi è nel Share Lab**
       (`lib/screens/share_composer_screen.dart` e relativi part; il lab è ora un wrapper di sviluppo). Il tipo di contenuto non è più
       un parametro che si sceglie: è automatico in base a ciò da cui si preme "Condividi".
-- [~] Sostituisce l'attuale flusso di anteprima (`share_preview_screen.dart`); il Share Lab come
+- [x] Sostituisce l'attuale flusso di anteprima (`share_preview_screen.dart`); il Share Lab come
       strumento di sviluppo resta dietro `kDevTools`.
 - [x] Di default la card di una riflessione mostra titolo/domanda, area e testo (vedi A3).
 
@@ -296,7 +305,7 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
       usati dal Moon lab sono ora costanti Dart eliminabili insieme al lab
       (`lib/debug/moon_body_svg.dart`). I file SVG originali restano nel repository.
       Nessun asset di queste due famiglie nel bundle web o nell'APK Android.
-- [ ] Provare sul telefono quanto fatto in A1 non ancora visto: dock con "Gestisci", tooltip
+- [x] Provare sul telefono quanto fatto in A1 non ancora visto: dock con "Gestisci", tooltip
       Galaxy, blocco nota vocale e link con una vera registrazione, statistiche vuote e scroll.
 
 ### Registro di A5
@@ -324,7 +333,7 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
 
 ## A6. Account e sync nell'app (dipende da B1–B3)
 
-- [ ] Impostazioni: si sincronizzano tutte **tranne la qualità della Galaxy e il volume audio**
+- [x] Impostazioni: si sincronizzano tutte **tranne la qualità della Galaxy e il volume audio**
       (restano per dispositivo).
 - [x] **Blocco app sul web (decisioni del 21 ottobre, ramo `blocco-web`).** Il **PIN** si
       **sincronizza fra i dispositivi** come record `app-lock` (hash e salt; spegnere il blocco
@@ -378,7 +387,7 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
       il codice rinunciava per tutta la sessione. Ora aspetta il tocco successivo. **Non
       verificato sul telefono**: da riprovare dopo l’aggiornamento e, se persiste, descrivere
       quando non chiede (subito all’apertura? dopo aver usato l’app? gesto o pulsante?).
-- [~] Pannello Account in Settings. **Decisioni dell’autore (19 ottobre):** prima del login solo
+- [x] Pannello Account in Settings. **Decisioni dell’autore (19 ottobre):** prima del login solo
       il pulsante “Accedi con Google” e una frase (i dati restano sul dispositivo, accedendo si
       sincronizzano); al primo sync con dati sia locali sia cloud si **uniscono
       automaticamente** (record più recente, nessuna scelta richiesta); all’uscita (logout) i
@@ -397,9 +406,10 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
       dispositivo” dovrà rimuovere i dati senza tombstone (e quindi tornare con la sync),
       mentre “account e dati cloud” cancella Firestore e l’utente (con ri-autenticazione).
       Finché non ci sono, in release non esiste modo di cancellare i dati (Reset resta in sviluppo).
-- [ ] UI in Settings (Quick Settings restano nascoste): Accedi con Google, account, "Sincronizza
-      ora", ultimo sync, Disconnetti, **Elimina account e dati**. Dialog del primo sync quando
-      locale e cloud hanno entrambi dati (Cancel grigio).
+- [x] UI in Settings (Quick Settings restano nascoste): Accedi con Google, account, ultimo
+      sync, Disconnetti, **Elimina account e dati**. Non servono più il pulsante “Sincronizza
+      ora” (sync solo automatica) né il dialog del primo sync (unione automatica): decisioni
+      dell’autore, vedi sopra.
 
 ## A7. Onboarding
 
