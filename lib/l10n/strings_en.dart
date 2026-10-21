@@ -2003,6 +2003,8 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get shareContentError => "Couldn't share that. Try again?";
   @override
+  String get shareInvite => 'Try Inner Stars for free too at';
+  @override
   String get sharePreviewTitle => 'Share Preview';
   @override
   String get shareChooseLayout => 'Choose a layout';

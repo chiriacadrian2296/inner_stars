@@ -1108,6 +1108,7 @@ abstract class AppStrings {
   String get shareStarLabel;
   String get shareStarError;
   String get shareContentError;
+  String get shareInvite;
   String get sharePreviewTitle;
   String get shareChooseLayout;
   String get sharePreviousLayout;

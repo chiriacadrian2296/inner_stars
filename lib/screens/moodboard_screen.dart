@@ -40,8 +40,6 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
   Future<void> _share() => showSharePreview(
     context: context,
     content: ShareableMoodboardCard(area: widget.area, items: _items),
-    shareText:
-        '${context.strings.moodboardTitle} - ${widget.area.displayName(context.strings)}',
     fileName: 'moodboard_${widget.area.name}.png',
   );
   void _error() {

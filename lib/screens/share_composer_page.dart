@@ -4,11 +4,9 @@ part of 'share_composer_screen.dart';
 /// with its own preview.
 const kShareAppLink = 'https://innerstars.app';
 
-/// The message sent with the picture: [text] (if any) followed by the app link.
-String shareMessageWithLink(String text) {
-  final trimmed = text.trim();
-  return trimmed.isEmpty ? kShareAppLink : '$trimmed\n$kShareAppLink';
-}
+/// The message sent with the picture: a short invitation, then the app link.
+/// It is the same whatever is shared; the picture carries the content.
+String shareMessageWithLink(String invite) => '$invite $kShareAppLink';
 
 /// Composer for the shareable picture of a victory, goal, habit, project,
 /// vision, moodboard or quote.
@@ -20,12 +18,10 @@ class ShareComposerScreen extends StatefulWidget {
     super.key,
     required this.data,
     this.variants,
-    this.shareText = '',
     this.fileName = 'inner-stars.png',
   });
   final ShareContent data;
   final List<ShareContent>? variants;
-  final String shareText;
   final String fileName;
 
   @override
@@ -224,7 +220,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
           sharePositionOrigin: origin == null
               ? null
               : origin.localToGlobal(Offset.zero) & origin.size,
-          text: shareMessageWithLink(widget.shareText),
+          text: shareMessageWithLink(context.strings.shareInvite),
           files: [
             XFile.fromData(
               bytes.buffer.asUint8List(),

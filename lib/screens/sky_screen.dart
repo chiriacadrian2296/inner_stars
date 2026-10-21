@@ -4,7 +4,6 @@ import 'badge_lab_screen.dart';
 import '../widgets/sky_search_tooltip_card.dart'
     show GalaxyTooltipStartsClosed, galaxyTooltipWidth;
 import '../widgets/entity_insights_scope.dart';
-import '../models/display_text.dart';
 
 import 'dart:async';
 import 'dart:math' as math;
@@ -1947,7 +1946,6 @@ class _SkyScreenState extends State<SkyScreen>
         content: star.isLit
             ? ShareableLitStarCard(star: star, project: project)
             : ShareableGoalCard(star: star, project: project),
-        shareText: star.displayTitle,
         fileName: 'star_${star.id}.png',
       );
     } finally {
@@ -1961,11 +1959,6 @@ class _SkyScreenState extends State<SkyScreen>
     setState(() => _sharingCreation = true);
     try {
       if (!mounted) return;
-      final text = switch (subject) {
-        _StarShare(:final star) => star.displayTitle,
-        _PulsarShare(:final habit) => habit.displayTitle,
-        _ConstellationShare(:final project) => project.displayName,
-      };
       final content = switch (subject) {
         _StarShare(:final star, :final project) =>
           star.isLit
@@ -1981,7 +1974,6 @@ class _SkyScreenState extends State<SkyScreen>
       await showSharePreview(
         context: context,
         content: content,
-        shareText: text,
         fileName: 'creation_${DateTime.now().microsecondsSinceEpoch}.png',
       );
     } finally {
@@ -6060,7 +6052,6 @@ class _SkyScreenState extends State<SkyScreen>
         habit: habit,
         project: constellation.project,
       ),
-      shareText: habit.displayTitle,
       fileName: 'pulsar_${habit.id}.png',
     );
   }
@@ -6280,7 +6271,6 @@ class _SkyScreenState extends State<SkyScreen>
         project: constellation.project,
         shape: shape,
       ),
-      shareText: constellation.project.displayName,
       fileName: 'constellation_${constellation.project.id}.png',
     );
   }

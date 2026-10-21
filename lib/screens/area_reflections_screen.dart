@@ -877,8 +877,6 @@ class _ReflectionDetailScreenState extends State<ReflectionDetailScreen> {
                     : () => showSharePreview(
                         context: context,
                         content: ShareableReflectionCard(reflection: record),
-                        shareText:
-                            '${record.title} — ${record.area.displayName(strings)}',
                         fileName: 'reflection_${record.id}.png',
                       ),
               ),

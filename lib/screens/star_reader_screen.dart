@@ -311,7 +311,7 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
     if (entry is NascentEntry) return;
     setState(() => _sharing = true);
     try {
-      final (content, text, fileName) = switch (entry) {
+      final (content, fileName) = switch (entry) {
         StarEntry(:final star) => (
           star.isLit
               ? ShareableLitStarCard(
@@ -322,7 +322,6 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
                   star: star,
                   project: widget.projectsById[star.projectId],
                 ),
-          star.displayTitle,
           'star_${star.id}.png',
         ),
         PulsarEntry(:final habit) => (
@@ -330,7 +329,6 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
             habit: habit,
             project: widget.projectsById[habit.projectId],
           ),
-          habit.displayTitle,
           'pulsar_${habit.id}.png',
         ),
         NascentEntry() => throw StateError('A nascent star is not shareable'),
@@ -338,7 +336,6 @@ class _StarReaderScreenState extends State<StarReaderScreen> {
       await showSharePreview(
         context: context,
         content: content,
-        shareText: text,
         fileName: fileName,
       );
     } finally {

@@ -48,10 +48,15 @@ bool choiceSelected(WidgetTester tester, String key) => tester
     .selected!;
 
 void main() {
-  test('share message always ends with the app link', () {
-    expect(shareMessageWithLink(''), kShareAppLink);
-    expect(shareMessageWithLink('  '), kShareAppLink);
-    expect(shareMessageWithLink('My star'), 'My star\n$kShareAppLink');
+  test('share message is the invitation followed by the app link', () {
+    expect(
+      shareMessageWithLink(strings.shareInvite),
+      'Prova anche tu gratuitamente Inner Stars su https://innerstars.app',
+    );
+    expect(
+      shareMessageWithLink(const StringsEn().shareInvite),
+      endsWith(' https://innerstars.app'),
+    );
   });
 
   testWidgets(
@@ -79,7 +84,6 @@ void main() {
                 onPressed: () => showSharePreview(
                   context: context,
                   content: ShareableReflectionCard(reflection: record),
-                  shareText: record.title,
                   fileName: 'reflection.png',
                 ),
                 child: const Text('open'),
