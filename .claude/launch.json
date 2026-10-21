@@ -16,6 +16,12 @@
       "port": 8791
     },
     {
+      "name": "app-web",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": ["run", "-d", "web-server", "--web-port", "5000"],
+      "port": 5000
+    },
+    {
       "name": "landing",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--prefix", "landing", "--", "--host", "127.0.0.1", "--port", "4321"],
