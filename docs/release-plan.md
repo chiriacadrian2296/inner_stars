@@ -512,7 +512,9 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
       e `firebase_core` applicano ancora il vecchio plugin Kotlin, come `flutter_timezone`.
       **Restano:** schermata Account (⭐ A6) che usi `AuthService` con il pulsante Google sul web;
       `SyncService` con listener Firestore e push debounced; test delle regole sull’emulatore
-      (serve Java e `firebase-tools`); SHA-1 di release in Firebase quando esisterà il keystore;
+      (**fatti il 21 ottobre**: `tools/rules-tests`, 13 prove su `firestore.rules` e `storage.rules` con gli
+      emulatori, anche nel workflow `Checks`; installati Java 21 e `firebase-tools` come strumento del
+      progetto); SHA-1 di release in Firebase quando esisterà il keystore;
       prova reale del login sul web e su Android; eventuale `google-services.json` scaricato dalla
       console al posto di quello ricostruito.
 - [~] **`SyncService` — fatto il 19 ottobre sera, da provare con un accesso reale.**
