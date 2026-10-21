@@ -1,5 +1,15 @@
 part of 'share_composer_screen.dart';
 
+/// Address of the app, appended to every share so the receiver gets a link
+/// with its own preview.
+const kShareAppLink = 'https://innerstars.app';
+
+/// The message sent with the picture: [text] (if any) followed by the app link.
+String shareMessageWithLink(String text) {
+  final trimmed = text.trim();
+  return trimmed.isEmpty ? kShareAppLink : '$trimmed\n$kShareAppLink';
+}
+
 /// Composer for the shareable picture of a victory, goal, habit, project,
 /// vision, moodboard or quote.
 ///
@@ -214,7 +224,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
           sharePositionOrigin: origin == null
               ? null
               : origin.localToGlobal(Offset.zero) & origin.size,
-          text: widget.shareText,
+          text: shareMessageWithLink(widget.shareText),
           files: [
             XFile.fromData(
               bytes.buffer.asUint8List(),

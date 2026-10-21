@@ -48,6 +48,12 @@ bool choiceSelected(WidgetTester tester, String key) => tester
     .selected!;
 
 void main() {
+  test('share message always ends with the app link', () {
+    expect(shareMessageWithLink(''), kShareAppLink);
+    expect(shareMessageWithLink('  '), kShareAppLink);
+    expect(shareMessageWithLink('My star'), 'My star\n$kShareAppLink');
+  });
+
   testWidgets(
     'excerpt editing leaves source intact and composition owns content options',
     (tester) async {

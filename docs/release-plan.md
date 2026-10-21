@@ -253,6 +253,14 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
   condivisione, foto locale, riflessione con testo lungo) e, sul web, la stessa prova.
   Poi spuntare le due voci `[~]` sopra.
 
+- 21 ottobre 2026 (ramo `anteprime-link`): ogni condivisione allega al testo il link
+  `https://innerstars.app` (`shareMessageWithLink`). La landing ha tre immagini social
+  1200×630 (IT, EN, RO; `landing/scripts/make-og-images.mjs`), con `og:image:width/height/alt`,
+  `og:site_name` e i tag Twitter; l’URL dell’immagine ha `?v=2` per superare la cache di
+  WhatsApp. Anteprima diversa per ogni contenuto: rimandata a dopo la v1 (vedi “Idee per
+  dopo la v1”). **Da fare a mano:** una regola di Cloudflare che porti `www.innerstars.app`
+  su `innerstars.app`, perché oggi rispondono entrambi.
+
 ## A5. Pulizia residua
 
 - [ ] **Prima della release ufficiale:** impostare `_kShowSampleDataForTesting = false` in
@@ -613,6 +621,13 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
   nebulose), dal quale potranno nascere le stelle di oggi. Allora le riflessioni avranno anche il
   loro Fly. Da fare **dopo l'uscita della prima versione**.
 
+- **Anteprima del link diversa per ogni contenuto condiviso** (stile Rave): il link punta a
+  `innerstars.app/s/<id>` e il robot di WhatsApp/Telegram legge l’immagine di quella card.
+  Richiede una copia pubblica della card in cloud (Firestore `shares/{id}` + Storage, quindi
+  Blaze), un id lungo e casuale, una Pages Function che scrive i tag `og:*`, regole di accesso,
+  scadenza/revoca del link, avviso di privacy e aggiornamento della privacy policy. Si fa
+  insieme ai media. Per la v1 vale la via di mezzo: immagine della card + link del sito
+  (vedi A4).
 - Pacchetti di suoni a pagamento come contenuti extra (Sound Lab nascosto per ora).
 - Stella cadente con desideri a tempo e storico.
 - Amici come galassie lontane.
