@@ -602,8 +602,9 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
       (telefono → web):** foto e nota vocale di una stella creata sul telefono si vedono e si
       sentono sul web, dopo aver impostato il **CORS del bucket** (vedi `docs/media-sync.md`:
       senza, il web non scarica nulla) e aggiunto la ricerca ripetuta in `PhotoImage`.
-      **Restano:** impostare l’avviso di budget se non fatto, provare il verso opposto (web →
-      telefono) e la moodboard; collegare la pulizia dei file orfani
+      **Anche il verso web → telefono funziona** per foto e note vocali (le note registrate dal
+      browser sono WebM e prima non venivano caricate: corretto con `saveWebRecording`).
+      **Restano:** impostare l’avviso di budget se non fatto e provare la moodboard; collegare la pulizia dei file orfani
       (`removeOrphans`, già testata); valutare App Check (la console lo propone).
       **Privacy policy:** dire che foto, note vocali e immagini della moodboard sono archiviate
       nell’Unione Europea.

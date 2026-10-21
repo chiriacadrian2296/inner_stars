@@ -90,6 +90,16 @@ Il record di una stella arriva sull'altro dispositivo prima del suo file, perch�
 dopo la sincronizzazione dei record. `PhotoImage` per questo riprova a cercare una foto mancante
 (4, 10, 30 e 90 secondi) invece di restare vuota.
 
+## Note vocali registrate dal browser
+
+Il telefono registra in `.m4a` (AAC); il browser in WebM (Opus). Il web le salvava con un percorso
+che non passava dall'invio, quindi non arrivavano mai al telefono. Ora `saveWebRecording` le mette
+in coda come le altre; il file nel cloud ha il tipo del suo formato (`audio/webm`, `audio/mp4`…,
+`mediaContentType`) e il lettore dice di essere una nota vocale (`voice: true`), perché `.webm` da
+solo potrebbe essere anche un video. Il caricamento iniziale è passato a `media-backfilled-v2`
+per rimettere in coda i file già presenti. **Provato il 21 ottobre:** una nota registrata dal PC
+si riproduce sul telefono (Android riproduce il WebM).
+
 ## Console Firebase
 
 Fatto il 21 ottobre 2026: Blaze attivo, Storage attivato con bucket nella multi-regione **EU**
