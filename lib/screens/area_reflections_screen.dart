@@ -854,17 +854,16 @@ class _ReflectionDetailScreenState extends State<ReflectionDetailScreen> {
       return _ReflectionPage(
         actions: [
           ElevatedButton(
-            key: const ValueKey('reflection-share'),
-            onPressed: _deleting
-                ? null
-                : () => showSharePreview(
-                    context: context,
-                    content: ShareableReflectionCard(reflection: record),
-                    shareText:
-                        '${record.title} — ${record.area.displayName(strings)}',
-                    fileName: 'reflection_${record.id}.png',
-                  ),
-            child: AppButtonLabel(strings.shareNowAction),
+            key: const ValueKey('reflection-delete'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.colors.dangerBackground,
+              foregroundColor: context.colors.danger,
+            ),
+            onPressed: _deleting ? null : _delete,
+            child: AppButtonLabel(
+              strings.deleteStarAction,
+              color: context.colors.danger,
+            ),
           ),
           ElevatedButton(
             key: const ValueKey('reflection-edit'),
@@ -882,16 +881,17 @@ class _ReflectionDetailScreenState extends State<ReflectionDetailScreen> {
             child: AppButtonLabel(strings.starQuickLookEditAction),
           ),
           ElevatedButton(
-            key: const ValueKey('reflection-delete'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.colors.dangerBackground,
-              foregroundColor: context.colors.danger,
-            ),
-            onPressed: _deleting ? null : _delete,
-            child: AppButtonLabel(
-              strings.deleteStarAction,
-              color: context.colors.danger,
-            ),
+            key: const ValueKey('reflection-share'),
+            onPressed: _deleting
+                ? null
+                : () => showSharePreview(
+                    context: context,
+                    content: ShareableReflectionCard(reflection: record),
+                    shareText:
+                        '${record.title} — ${record.area.displayName(strings)}',
+                    fileName: 'reflection_${record.id}.png',
+                  ),
+            child: AppButtonLabel(strings.shareNowAction),
           ),
         ],
         children: [

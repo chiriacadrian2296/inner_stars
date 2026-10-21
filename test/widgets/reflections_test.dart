@@ -281,6 +281,16 @@ void main() {
       expect(repo.getAll().single.origin, ReflectionOrigin.free);
       final id = repo.getAll().single.id;
       expect(find.byType(ElevatedButton), findsNWidgets(3));
+      expect(
+        tester
+            .widgetList<ElevatedButton>(find.byType(ElevatedButton))
+            .map((button) => button.key),
+        const [
+          ValueKey('reflection-delete'),
+          ValueKey('reflection-edit'),
+          ValueKey('reflection-share'),
+        ],
+      );
       await tester.tap(find.byKey(const ValueKey('reflection-edit')));
       await tester.pumpAndSettle();
       await tester.enterText(
