@@ -17,8 +17,8 @@ surfaces plugin/resource bugs debug mode hides (see the `tools:keep` fix in
 `android/app/src/main/res/raw/keep.xml`, a real bug that only ever showed up in release builds), so
 don't skip a release check entirely before something like a store submission.
 
-Package name: `app.innerstars`. Main activity exported name for a manual relaunch:
-`.MainActivity`.
+Package name: debug uses `app.innerstars.debug`; release uses `app.innerstars`.
+Main activity exported name for a manual relaunch: `.MainActivity`.
 
 ## 1. Checks first
 
@@ -69,7 +69,8 @@ Run `adb devices -l`.
 - `adb -s <device-serial> install -r build/app/outputs/flutter-apk/app-<mode>.apk`
 - **Always launch it afterward, no matter which path (USB, wireless, or emulator) got you the
   device connected — this isn't optional, do it every time:**
-  `adb -s <device-serial> shell monkey -p app.innerstars -c android.intent.category.LAUNCHER 1`
+  - Debug: `adb -s <device-serial> shell monkey -p app.innerstars.debug -c android.intent.category.LAUNCHER 1`
+  - Release: `adb -s <device-serial> shell monkey -p app.innerstars -c android.intent.category.LAUNCHER 1`
 
 ## 5. Report
 

@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../debug/dev_tools.dart';
+import '../debug/dev_environment.dart';
 
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -541,8 +542,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: _AvatarPicker(settings: widget.settings),
                   ),
                   const SizedBox(height: 14),
-                  const StaggeredEntrance(index: 1, child: AccountPanel()),
-                  const SizedBox(height: 28),
+                  if (!kOfflineDevMode) ...[
+                    const StaggeredEntrance(index: 1, child: AccountPanel()),
+                    const SizedBox(height: 28),
+                  ] else
+                    const SizedBox(height: 14),
 
                   StaggeredEntrance(
                     index: 2,

@@ -36,6 +36,7 @@ import 'data/project_repository.dart';
 import 'data/reflection_repository.dart';
 import 'data/star_repository.dart';
 import 'data/shooting_star_wish_repository.dart';
+import 'debug/dev_environment.dart';
 import 'l10n/strings_scope.dart';
 import 'notifications/reminder_service.dart';
 import 'models/star_kind.dart';
@@ -203,8 +204,9 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
   }
 
   Future<void> _load() async {
-    // The app opens only for a signed-in account, so ask Firebase right away.
-    unawaited(_authService.start());
+    // Public builds require an account. Ordinary debug runs are intentionally
+    // local-only and must never initialize Firebase or Google Sign-In.
+    if (!kOfflineDevMode) unawaited(_authService.start());
     try {
       await migrateLocalData(await SharedPreferences.getInstance());
       final settings = await SettingsController.create();
@@ -259,57 +261,63 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
       }
 
       final prefs = await SharedPreferences.getInstance();
-      _wasSignedIn = prefs.getBool(_kWasSignedInKey) ?? false;
       final moodboardRepository = await MoodboardRepository.create();
-      final settingsCollection = SettingsCollection(prefs);
-      final syncService = SyncService(
-        account: _authService,
-        prefs: prefs,
-        // A different account signing in replaces this device's data instead
-        // of merging into it; each account keeps only its own.
-        clearLocalData: () async {
-          await wipeLocalData(
-            prefs: prefs,
-            stars: starRepository,
-            moodboard: moodboardRepository,
-            repositories: [
-              starRepository,
-              projectRepository,
-              habitRepository,
-              habitCompletionRepository,
-              habitCycleRepository,
-              starsShapeRepository,
-              reflectionAnswerRepository,
-              areaVisionRepository,
-              shootingStarWishRepository,
-              moodboardRepository,
-            ],
-          );
-          await settingsCollection.clearSynced();
-          settings.reloadFromStorage();
-        },
-        targets: [
-          SyncTarget.repository('stars', starRepository),
-          SyncTarget.repository('projects', projectRepository),
-          SyncTarget.repository('habits', habitRepository),
-          SyncTarget.repository('habit-completions', habitCompletionRepository),
-          SyncTarget.repository('habit-cycles', habitCycleRepository),
-          SyncTarget.repository('shapes', starsShapeRepository),
-          SyncTarget.repository('reflections', reflectionAnswerRepository),
-          SyncTarget.repository('area-visions', areaVisionRepository),
-          SyncTarget.repository(
-            'shooting-star-wish',
-            shootingStarWishRepository,
-          ),
-          SyncTarget.repository('moodboard', moodboardRepository),
-          SyncTarget.settings(settingsCollection, () {
+      SyncService? syncService;
+      if (!kOfflineDevMode) {
+        _wasSignedIn = prefs.getBool(_kWasSignedInKey) ?? false;
+        final settingsCollection = SettingsCollection(prefs);
+        syncService = SyncService(
+          account: _authService,
+          prefs: prefs,
+          // A different account signing in replaces this device's data instead
+          // of merging into it; each account keeps only its own.
+          clearLocalData: () async {
+            await wipeLocalData(
+              prefs: prefs,
+              stars: starRepository,
+              moodboard: moodboardRepository,
+              repositories: [
+                starRepository,
+                projectRepository,
+                habitRepository,
+                habitCompletionRepository,
+                habitCycleRepository,
+                starsShapeRepository,
+                reflectionAnswerRepository,
+                areaVisionRepository,
+                shootingStarWishRepository,
+                moodboardRepository,
+              ],
+            );
+            await settingsCollection.clearSynced();
             settings.reloadFromStorage();
-            // A reminder changed on another device must ring here too.
-            unawaited(_rearmReminder(settings, reminderService));
-          }, changes: settings),
-        ],
-        remote: (uid) => FirestoreRemoteStore(FirebaseFirestorePort(uid)),
-      );
+          },
+          targets: [
+            SyncTarget.repository('stars', starRepository),
+            SyncTarget.repository('projects', projectRepository),
+            SyncTarget.repository('habits', habitRepository),
+            SyncTarget.repository(
+              'habit-completions',
+              habitCompletionRepository,
+            ),
+            SyncTarget.repository('habit-cycles', habitCycleRepository),
+            SyncTarget.repository('shapes', starsShapeRepository),
+            SyncTarget.repository('reflections', reflectionAnswerRepository),
+            SyncTarget.repository('area-visions', areaVisionRepository),
+            SyncTarget.repository(
+              'shooting-star-wish',
+              shootingStarWishRepository,
+            ),
+            SyncTarget.repository('moodboard', moodboardRepository),
+            SyncTarget.settings(settingsCollection, () {
+              settings.reloadFromStorage();
+              // A reminder changed on another device must ring here too.
+              unawaited(_rearmReminder(settings, reminderService));
+            }, changes: settings),
+          ],
+          remote: (uid) => FirestoreRemoteStore(FirebaseFirestorePort(uid)),
+        );
+      }
 
       if (!mounted) return;
       setState(() {
@@ -331,7 +339,15 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
         _tourStorage = tourStorage;
         _syncService = syncService;
       });
-      syncService.start();
+      syncService?.start();
+
+      if (kOfflineDevMode) {
+        if (appLockRepository.isEnabled) {
+          _markStartupReady();
+        } else {
+          _markLaunchUnlocked();
+        }
+      }
 
       final launchedFromNotification = await reminderService
           .launchedFromNotification();
@@ -502,6 +518,33 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
     }
 
     final strings = stringsForLocale(settings.locale);
+    Widget buildGalaxy(bool startLocked) => AppLockGate(
+      appLockRepository: appLockRepository,
+      biometricAuthService: biometricAuthService,
+      onLaunchUnlocked: _markLaunchUnlocked,
+      startLocked: startLocked,
+      child: SkyScreen(
+        onStartupReady: _markStartupReady,
+        onStartupError: (error) {
+          if (mounted) setState(() => _loadError = error);
+        },
+        startupComplete: _startupComplete,
+        settings: settings,
+        appLockRepository: appLockRepository,
+        biometricAuthService: biometricAuthService,
+        starRepository: starRepository,
+        projectRepository: projectRepository,
+        habitRepository: habitRepository,
+        habitCompletionRepository: habitCompletionRepository,
+        starsShapeRepository: starsShapeRepository,
+        areaVisionRepository: areaVisionRepository,
+        reflectionAnswerRepository: reflectionAnswerRepository,
+        shootingStarWishRepository: shootingStarWishRepository,
+        audioSettingsRepository: audioSettingsRepository,
+        audioService: audioService,
+        reminderService: reminderService,
+      ),
+    );
 
     // Above the MaterialApp, not inside its builder — a `hint_kit` tour is
     // meant to be able to cross routes (see `TourScope`'s own doc comment),
@@ -623,53 +666,29 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
           // above SkyScreen so a locked launch never reveals a frame of
           // real content first, and re-checked on every background/resume
           // (see AppLockGate's own doc comment for the lifecycle rule).
-          child: AuthGate(
-            auth: _authService,
-            wasSignedIn: _wasSignedIn,
-            // The splash lifts over the login page's first frame.
-            onLoginShown: _markStartupReady,
-            onOpened: (startLocked) {
-              if (startLocked && appLockRepository.isEnabled) {
-                // A locked launch reveals the lock's first frame, never
-                // personal data; the PIN screen marks the launch unlocked.
-                _markStartupReady();
-              } else {
-                _markLaunchUnlocked();
-              }
-            },
-            login: LoginScreen(
-              auth: _authService,
-              locale: settings.locale,
-              onLocaleChanged: settings.setLocale,
-            ),
-            childBuilder: (startLocked) => AppLockGate(
-              appLockRepository: appLockRepository,
-              biometricAuthService: biometricAuthService,
-              onLaunchUnlocked: _markLaunchUnlocked,
-              startLocked: startLocked,
-              child: SkyScreen(
-                onStartupReady: _markStartupReady,
-                onStartupError: (error) {
-                  if (mounted) setState(() => _loadError = error);
-                },
-                startupComplete: _startupComplete,
-                settings: settings,
-                appLockRepository: appLockRepository,
-                biometricAuthService: biometricAuthService,
-                starRepository: starRepository,
-                projectRepository: projectRepository,
-                habitRepository: habitRepository,
-                habitCompletionRepository: habitCompletionRepository,
-                starsShapeRepository: starsShapeRepository,
-                areaVisionRepository: areaVisionRepository,
-                reflectionAnswerRepository: reflectionAnswerRepository,
-                shootingStarWishRepository: shootingStarWishRepository,
-                audioSettingsRepository: audioSettingsRepository,
-                audioService: audioService,
-                reminderService: reminderService,
-              ),
-            ),
-          ),
+          child: kOfflineDevMode
+              ? buildGalaxy(appLockRepository.isEnabled)
+              : AuthGate(
+                  auth: _authService,
+                  wasSignedIn: _wasSignedIn,
+                  // The splash lifts over the login page's first frame.
+                  onLoginShown: _markStartupReady,
+                  onOpened: (startLocked) {
+                    if (startLocked && appLockRepository.isEnabled) {
+                      // A locked launch reveals the lock's first frame, never
+                      // personal data; the PIN screen marks the launch unlocked.
+                      _markStartupReady();
+                    } else {
+                      _markLaunchUnlocked();
+                    }
+                  },
+                  login: LoginScreen(
+                    auth: _authService,
+                    locale: settings.locale,
+                    onLocaleChanged: settings.setLocale,
+                  ),
+                  childBuilder: buildGalaxy,
+                ),
         ),
       ),
     );
