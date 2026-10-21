@@ -136,13 +136,24 @@ class FirebaseFirestorePort implements FirestorePort {
   /// One document is enough: any write by any device makes it the newest, so
   /// each change costs a single read rather than a read per changed document.
   @override
-  Stream<void> watchNewest(String collection) =>
-      _collection(collection)
-          .orderBy('_syncedAt', descending: true)
-          .limit(1)
-          .snapshots()
-          .map<void>((_) {})
-          .handleError((Object _) {});
+  Stream<void> watchNewest(String collection) => _collection(collection)
+      .orderBy('_syncedAt', descending: true)
+      .limit(1)
+      .snapshots(includeMetadataChanges: true)
+      .where(
+        (snapshot) =>
+            !snapshot.metadata.isFromCache &&
+            !snapshot.metadata.hasPendingWrites,
+      )
+      .distinct(
+        (previous, next) =>
+            previous.docs.length == next.docs.length &&
+            (next.docs.isEmpty ||
+                (previous.docs.single.id == next.docs.single.id &&
+                    previous.docs.single.data()['_syncedAt'] ==
+                        next.docs.single.data()['_syncedAt'])),
+      )
+      .map<void>((_) {});
 
   @override
   Future<int> deleteSome(String collection, int limit) async {

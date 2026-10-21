@@ -32,9 +32,9 @@ abstract class RemoteStore {
   Future<void> deleteCollection(String collection);
 
   /// Emits whenever something in [collection] was written, by any device, so
-  /// the app can pull within seconds instead of waiting for its next round.
-  /// May also emit once on subscribing and after the app's own writes; pulling
-  /// is idempotent. Stores that cannot watch return an empty stream.
+  /// the app can pull that collection without polling. Emits the initial
+  /// server state on subscribing too, and may emit after the app's own writes;
+  /// pulling is idempotent. Errors let the service reconnect with backoff.
   Stream<void> watch(String collection) => const Stream<void>.empty();
 }
 
@@ -47,9 +47,15 @@ class InMemoryRemoteStore implements RemoteStore {
   final _watchers = <String, StreamController<void>>{};
 
   @override
-  Stream<void> watch(String collection) => _watchers
-      .putIfAbsent(collection, () => StreamController<void>.broadcast())
-      .stream;
+  Stream<void> watch(String collection) => Stream<void>.multi((controller) {
+    final subscription = _watchers
+        .putIfAbsent(collection, () => StreamController<void>.broadcast())
+        .stream
+        .listen(controller.addSync, onError: controller.addErrorSync);
+    // Like Firestore, subscribing reports the initial server state too.
+    controller.addSync(null);
+    controller.onCancel = subscription.cancel;
+  });
 
   /// When set, the next call throws it, to simulate being offline.
   Object? failNext;

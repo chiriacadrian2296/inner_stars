@@ -486,8 +486,13 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
       “Sincronizza ora”**; il pannello Account mostra soltanto “ultimo aggiornamento”
       (o “in corso”, o l’errore con nuovo tentativo).
       Come funziona (`lib/sync/sync_service.dart`, `firestore_remote_store.dart`): parte
-      da sola dopo l’accesso, 5 s dopo una modifica locale, al ritorno in primo piano, alla
-      messa in secondo piano e ogni 2 minuti. Un errore (offline, timeout di 30 s) non blocca
+      da sola dopo l’accesso. **Ottimizzazione sul ramo `ottimizza-sync` (21 ottobre):**
+      le modifiche locali vengono inviate dopo 5 s; primo/secondo piano tentano solo l’invio.
+      Nessun controllo periodico: lo scaricamento della singola collezione parte soltanto
+      dal suo listener, incluso il primo snapshot del server. Prima di quel primo recupero
+      non si inviano dati locali potenzialmente vecchi. I segnali ricevuti durante un giro
+      restano in coda; un listener interrotto viene riaperto con attesa crescente.
+      Un errore (offline, timeout di 30 s) non blocca
       l’app né tocca i dati locali: riprova con attesa crescente (30 s … 10 min). Documenti
       `users/{uid}/{collezione}/{id}` con il record intero come testo JSON nel campo `data`
       (Firestore rifiuta le liste annidate), più `id`, `updatedAt`, `deleted` e `_syncedAt`.
@@ -515,9 +520,10 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
         (o annullato) invece che al prossimo avvio.
       - **Impostazioni:** ogni cambio avvisa il servizio, che aggiorna dopo ~5 s; la data è
         quindi quella della modifica con scarto di pochi secondi.
-      - **Aggiornamenti quasi in tempo reale:** oltre al giro ogni 2 minuti, l’app ascolta
-        Firestore (un solo documento per collezione, quindi una lettura per modifica): quando
-        un altro dispositivo scrive, questo scarica in ~2 s.
+      - **Aggiornamenti quasi in tempo reale:** l’app ascolta Firestore (un solo documento
+        per collezione). Sul ramo `ottimizza-sync` non c’è più il giro ogni 2 minuti:
+        quando un altro dispositivo scrive, viene scaricata solo la collezione segnalata,
+        in ~2 s. Gli eventi di sola cache o di scritture ancora in attesa non avviano query.
       **Note e rischi da tenere presenti:**
       - Media (foto, audio) non ancora sincronizzati: serve il blocco “Media” sotto.
       - Costo: con i limiti gratuiti Spark conta ogni documento letto; i punti di ripresa
