@@ -318,7 +318,7 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
 
 - [ ] Impostazioni: si sincronizzano tutte **tranne la qualità della Galaxy e il volume audio**
       (restano per dispositivo).
-- [~] **Blocco app sul web (decisioni del 21 ottobre, ramo `blocco-web`).** Il **PIN** si
+- [x] **Blocco app sul web (decisioni del 21 ottobre, ramo `blocco-web`).** Il **PIN** si
       **sincronizza fra i dispositivi** come record `app-lock` (hash e salt; spegnere il blocco
       è un record di cancellazione senza hash; la vecchia chiave locale viene migrata; cambiando
       account il PIN dell’altro si dimentica senza avvisare il cloud). L’**impronta** resta
@@ -328,9 +328,11 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
       comodità davanti al PIN, non una sicurezza forte; l’impronta non viene mai condivisa,
       sincronizza al massimo la passkey il gestore del browser. Il **promemoria sul web è
       rimandato a dopo la v1** (servono Firebase Cloud Messaging e un service worker, e su
-      iPhone solo con l’app installata). Test mirati superati e build web release riuscita;
-      **da provare a mano** la passkey su un browser vero (Chrome con Windows Hello o
-      telefono) e il PIN sincronizzato fra due dispositivi.
+      iPhone solo con l’app installata). Test mirati superati e build web release riuscita.
+      **Provato dall’autore il 21 ottobre** su Chrome con Windows Hello: PIN e sblocco col
+      dispositivo funzionano. Nel profilo Ospite (come in incognito) Chrome non offre le
+      passkey: l’interruttore resta grigio con la spiegazione e nulla viene ricordato alla
+      chiusura. **Resta da provare** il PIN sincronizzato fra due dispositivi.
 - [x] **Pagina di login obbligatoria (19 ottobre sera, su richiesta dell’autore):** su
       browser e su Android, prima di tutto (`lib/screens/login_screen.dart`,
       `lib/auth/auth_gate.dart`). Stile della landing (stesso sfondo con velo blu e stelle
