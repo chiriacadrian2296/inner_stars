@@ -65,8 +65,10 @@
   run the full suite (600+ tests) or web/APK builds for small or UI-only
   changes: the `Checks` workflow runs everything on every branch push and before
   every deploy. Run the full suite locally only when you touch shared code that
-  can break things far away (models, sync, theme, localization strings,
-  repositories) or when the user asks. Say which tests you ran.
+  can break things far away (models, sync, theme, repositories) or when the
+  user asks. Say which tests you ran. Localization strings do not need the full
+  suite: `flutter analyze` catches a missing translation, and when you change
+  the text of an existing string, search `test` for it and run those tests.
 - **Keep each change lean.** Fewer steps per edit means less waiting: format
   and analyze only the files you touched (`dart format <files>`,
   `flutter analyze --no-pub <files>`), not all of `lib`; prefer small targeted
