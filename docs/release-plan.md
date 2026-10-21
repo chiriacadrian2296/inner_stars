@@ -590,8 +590,12 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
       compressione prima dell'upload, cache locale (scarica solo quando serve), coda con
       ritenti, rimozione dei file orfani. Richiede il piano Blaze con avviso di budget; verificare
       prima le quote gratuite per la regione scelta.
-- [ ] Hosting: nuovo workflow per Cloudflare Pages; la web app alla radice di `my.innerstars.app`
-      (senza `--base-href /inner_stars/app/`). Il workflow attuale è `.github/workflows/deploy-web.yml`.
+- [x] Hosting: la web app è su Cloudflare Pages alla radice di `my.innerstars.app` (workflow
+      `deploy-app-cloudflare.yml`). Il 21 ottobre ritirato il vecchio `deploy-web.yml` (GitHub
+      Pages): non pubblica più nulla; il sito `chiriacadrian2296.github.io/inner_stars` resta con
+      l’ultima copia vecchia finché non si disattiva Pages dalle impostazioni del repository
+      (Settings → Pages → Unpublish), passo dell’autore. La build della landing per GitHub
+      Pages resta nella configurazione perché i test la usano.
 
 ## B3. Legale
 
@@ -614,10 +618,18 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
       fuori da questo PC non funzionerebbe con il login Google finché la firma di release non
       è registrata in Firebase (l’SHA-1 di release manca, vedi sotto), e le build di release
       contengono ancora il pulsante temporaneo dei dati di esempio (A5).
-- [ ] **Firma Android per la release**: verificare che la chiave di firma (keystore) esista, sia
+- [~] **Firma Android per la release**: verificare che la chiave di firma (keystore) esista, sia
       salvata al sicuro e che l'impronta SHA-1 di release sia registrata in Firebase.
-      Controllo del 19 ottobre: `android/app/build.gradle.kts` firma ancora la release
-      con la configurazione debug; le build locali di A5 non sono pronte per lo store.
+      **21 ottobre:** `build.gradle.kts` ora legge `android/key.properties` (ignorato da git) e,
+      se c’è, firma la release con la chiave di caricamento; senza, ripiega sulla chiave di debug
+      con un avviso. Verificato con una chiave usa-e-getta (poi cancellata): la build di release
+      passa in entrambi i casi. Procedura in `docs/android-signing.md`. **Restano a carico
+      dell’autore:** creare il keystore (le password non passano da qui) e custodirlo con una
+      copia; poi aggiungere in Firebase l’SHA-1 della chiave di caricamento e, dopo il primo
+      caricamento, quello della firma dell’app di Google (Play Console). Senza il secondo, il
+      login Google non funziona nell’app installata da Play. Ricordare anche che l’account
+      personale di Play richiede 12 tester per 14 giorni di fila prima della produzione: il
+      conteggio parte da quando esiste un bundle firmato e una privacy policy online.
 - [ ] **Requisiti degli store**: privacy policy online, scheda dei dati raccolti, classificazione per
       età, screenshot, icona e splash definitivi.
 - [ ] **Segnalazione degli errori** con Firebase Crashlytics (deciso): Android coperto. Il plugin
