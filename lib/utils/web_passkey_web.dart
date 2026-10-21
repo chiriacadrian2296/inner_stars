@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 import 'dart:math';
-import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart';
 
 /// Browser side of the app lock's fingerprint shortcut: WebAuthn, asking the
 /// device to verify the person (fingerprint, face, Windows Hello or the
@@ -42,7 +43,8 @@ Future<bool> webPasskeySupported() async {
         )
         .toDart;
     return available.toDart;
-  } catch (_) {
+  } catch (error) {
+    if (kDebugMode) debugPrint('webPasskeySupported failed: $error');
     return false;
   }
 }
