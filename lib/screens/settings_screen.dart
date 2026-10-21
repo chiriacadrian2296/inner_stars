@@ -820,6 +820,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                           if (widget.appLockRepository.isEnabled) ...[
+                            if (kIsWeb && !_biometricAvailable)
+                              ListTile(
+                                enabled: false,
+                                title: Text(
+                                  strings.appLockDeviceUnlockToggleLabel,
+                                  style: TextStyle(
+                                    color: colors.muted,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  strings.appLockDeviceUnlockUnavailable,
+                                  style: TextStyle(
+                                    color: colors.muted,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
                             if (_biometricAvailable)
                               SwitchListTile(
                                 value:

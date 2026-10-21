@@ -2022,6 +2022,9 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get appLockDeviceUnlockToggleLabel => "Deblochează cu dispozitivul";
   @override
+  String get appLockDeviceUnlockUnavailable =>
+      "Indisponibil: acest browser sau dispozitiv nu are o deblocare (amprentă, față sau PIN de sistem) configurată.";
+  @override
   String get appLockBiometricSetupFailed =>
       "Nu am putut activa deblocarea pe acest dispozitiv.";
   @override

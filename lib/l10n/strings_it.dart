@@ -2026,6 +2026,9 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   @override
   String get appLockDeviceUnlockToggleLabel => "Sblocca con il dispositivo";
   @override
+  String get appLockDeviceUnlockUnavailable =>
+      "Non disponibile: questo browser o dispositivo non ha uno sblocco (impronta, volto o PIN di sistema) configurato.";
+  @override
   String get appLockBiometricSetupFailed =>
       "Non è stato possibile attivare lo sblocco su questo dispositivo.";
   @override
