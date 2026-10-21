@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
+
 /// A persisted record: a JSON map with at least `id`, `updatedAt` (ISO 8601)
 /// and `deleted`.
 typedef SyncRecord = Map<String, dynamic>;
@@ -31,6 +33,10 @@ SyncWinner pickWinner(SyncRecord local, SyncRecord remote) {
       ? SyncWinner.local
       : SyncWinner.remote;
 }
+
+/// Compact acknowledgement of an exact record, stable across app restarts.
+String syncRecordVersion(SyncRecord record) =>
+    sha256.convert(utf8.encode(_canonical(record))).toString();
 
 class MergeResult {
   const MergeResult({required this.applyLocally, required this.pushRemotely});

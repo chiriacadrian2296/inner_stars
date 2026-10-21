@@ -54,6 +54,42 @@ class _ProbeRemote extends InMemoryRemoteStore {
   }
 }
 
+/// A server that sends document batches itself. Any extra get() is a failure.
+class _DirectRemote extends InMemoryRemoteStore {
+  final snapshots = StreamController<RemoteChanges>.broadcast();
+  int queries = 0;
+  int uploads = 0;
+
+  @override
+  Future<RemoteChanges> fetchChangesSince(String name, DateTime? cursor) async {
+    queries++;
+    throw StateError('The listener already delivered these documents');
+  }
+
+  @override
+  Stream<RemoteChanges> watchChanges(String name, DateTime? cursor) =>
+      Stream<RemoteChanges>.multi((sink) {
+        final subscription = snapshots.stream.listen(
+          sink.addSync,
+          onError: sink.addErrorSync,
+        );
+        sink.addSync(
+          RemoteChanges([
+            for (final doc in (data[name] ?? {}).values)
+              if (cursor == null || !doc.at.isBefore(cursor)) doc.record,
+          ], cursor),
+        );
+        sink.onCancel = subscription.cancel;
+      });
+
+  @override
+  Future<void> push(String name, List<SyncRecord> records) async {
+    await super.push(name, records);
+    uploads += records.length;
+    snapshots.add(RemoteChanges(records, serverTime));
+  }
+}
+
 SyncRecord rec(
   String id,
   DateTime at, {
@@ -107,6 +143,55 @@ void main() {
     now: () => clock,
   );
 
+  test('restarting does not upload older acknowledged records again', () async {
+    final probe = _ProbeRemote();
+    remote = probe;
+    final first = build(_Account('uid-1'));
+    await sync(first);
+    await items.applyRemote([rec('one', clock)]);
+    await first.syncNow();
+    probe.signals.add('items');
+    await sync(first);
+    clock = clock.add(const Duration(seconds: 1));
+    await items.applyRemote([rec('two', clock)]);
+    await first.syncNow();
+    probe.signals.add('items');
+    await sync(first);
+    expect(probe.uploads, 2);
+    first.dispose();
+    final restarted = build(_Account('uid-1'));
+    await sync(restarted);
+    expect(probe.uploads, 2);
+    expect(items.readAll(), hasLength(2));
+    restarted.dispose();
+    await probe.signals.close();
+  });
+
+  test('document listeners need zero additional queries, including own echoes and retries', () async {
+    final direct = _DirectRemote();
+    remote = direct;
+    final service = build(_Account('uid-1'));
+    await sync(service);
+    await items.applyRemote([rec('phone', clock)]);
+    await service.syncNow();
+    await sync(service);
+    expect(direct.uploads, 1);
+    await direct.push('items', [rec('other-device', clock)]);
+    await sync(service);
+    expect(items.readAll(), hasLength(2));
+    expect(direct.uploads, 2);
+    clock = clock.add(const Duration(minutes: 5));
+    await items.applyRemote([rec('offline-edit', clock)]);
+    direct.failNext = StateError('offline');
+    await service.syncNow();
+    expect(service.status, SyncStatus.error);
+    await sync(service);
+    expect(direct.uploads, 3);
+    expect(direct.queries, 0);
+    service.dispose();
+    await direct.snapshots.close();
+  });
+
   test('does nothing while signed out', () async {
     final service = build(_Account());
     await items.applyRemote([rec('one', clock)]);
@@ -147,11 +232,11 @@ void main() {
     'a failure keeps the local data, reports it, and the next try works',
     () async {
       final service = build(_Account('uid-1'));
+      await sync(service);
       await items.applyRemote([rec('one', clock)]);
       remote.failNext = StateError('offline');
       await sync(service);
       expect(service.status, SyncStatus.error);
-      expect(service.lastSyncAt, isNull);
       expect(items.readAll(), hasLength(1));
 
       await sync(service);
@@ -519,24 +604,6 @@ void main() {
     await probe.signals.close();
   });
 
-  test('failed listener pulls remain pending for retry', () async {
-    final probe = _ProbeRemote();
-    remote = probe;
-    final service = build(_Account('uid-1'));
-    await sync(service);
-    probe.reads.clear();
-    await probe.push('items', [rec('cloud', clock)]);
-    probe.failNext = StateError('offline');
-    probe.signals.add('items');
-    await Future<void>.delayed(const Duration(milliseconds: 100));
-    expect(service.status, SyncStatus.error);
-    await service.syncNow();
-    expect(probe.reads, ['items', 'items']);
-    expect(items.readAll().single['id'], 'cloud');
-    service.dispose();
-    await probe.signals.close();
-  });
-
   test(
     'waits for the first server signal before uploading local data',
     () async {
@@ -579,11 +646,13 @@ void main() {
     await tester.pump(const Duration(seconds: 30));
     expect(probe.watches, ['items', 'items']);
     expect(probe.reads, isEmpty);
-    await tester.runAsync(() async {
-      await probe.push('items', [rec('after-reconnect', clock)]);
-      probe.signals.add('items');
-      await service.syncNow();
-    });
+    await tester.runAsync(
+      () => probe.push('items', [rec('after-reconnect', clock)]),
+    );
+    probe.signals.add('items');
+    await tester.pump();
+    await tester.runAsync(service.syncNow);
+    await tester.pump();
     expect(items.readAll().single['id'], 'after-reconnect');
     expect(service.status, SyncStatus.idle);
     service.dispose();

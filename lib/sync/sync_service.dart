@@ -2,6 +2,7 @@
 // ignore_for_file: prefer_initializing_formals
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -123,10 +124,11 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
   String? _lastUid;
   Timer? _debounceTimer;
   Timer? _retryTimer;
-  final _pendingPulls = <String>{};
+  final _pendingChanges = <String, RemoteChanges>{};
+  final _acknowledgedVersions = <String, Map<String, String>>{};
   final _readyToPush = <String>{};
   final _knownRemote = <String, Map<String, SyncRecord>>{};
-  final _watchers = <String, StreamSubscription<void>>{};
+  final _watchers = <String, StreamSubscription<RemoteChanges>>{};
   final _watchRetries = <String, Timer>{};
   final _watchFailures = <String, int>{};
 
@@ -159,7 +161,8 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
     _lastUid = uid;
     _failures = 0;
     _retryTimer?.cancel();
-    _pendingPulls.clear();
+    _pendingChanges.clear();
+    _acknowledgedVersions.clear();
     _readyToPush.clear();
     _knownRemote.clear();
     _stopWatching();
@@ -183,13 +186,14 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
 
   void _watchCollection(String uid, RemoteStore remote, String name) {
     _watchers[name] = remote
-        .watch(name)
+        .watchChanges(name, _readTime('sync.$uid.$name.pull'))
         .listen(
-          (_) {
+          (changes) {
             if (_disposed || _account.uid != uid) return;
             _watchFailures.remove(name);
             _watchRetries.remove(name)?.cancel();
-            _pendingPulls.add(name);
+            _pendingChanges[name] =
+                _pendingChanges[name]?.followedBy(changes) ?? changes;
             if (_running) {
               _again = true;
             } else if (!_paused) {
@@ -277,10 +281,10 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
         if (_disposed || _account.uid != uid) return;
         final pullKey = 'sync.$uid.${target.name}.pull';
         final pushKey = 'sync.$uid.${target.name}.push';
-        final pull = _pendingPulls.remove(target.name);
+        final changes = _pendingChanges.remove(target.name);
         // Wait for the initial server snapshot before uploading: another
         // device may have edited the same records while this one was closed.
-        if (!pull && !_readyToPush.contains(target.name)) continue;
+        if (changes == null && !_readyToPush.contains(target.name)) continue;
         late final SyncOutcome outcome;
         try {
           outcome = await syncCollection(
@@ -289,15 +293,26 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
             remote: remote,
             pullCursor: _readTime(pullKey),
             pushSince: _readTime(pushKey),
-            pull: pull,
+            pull: false,
+            changes: changes,
             knownRemote: _knownRemote.putIfAbsent(target.name, () => {}),
+            acknowledgedVersions: _versionsFor(uid, target),
           );
         } catch (_) {
-          if (pull && _account.uid == uid) _pendingPulls.add(target.name);
+          if (changes != null && _account.uid == uid) {
+            final next = _pendingChanges[target.name];
+            _pendingChanges[target.name] = next == null
+                ? changes
+                : changes.followedBy(next);
+          }
           rethrow;
         }
         if (_disposed || _account.uid != uid) return;
         _readyToPush.add(target.name);
+        await _prefs.setString(
+          'sync.$uid.${target.name}.acked',
+          jsonEncode(_acknowledgedVersions[target.name]),
+        );
         if (outcome.pullCursor != null) {
           await _prefs.setString(
             pullKey,
@@ -366,6 +381,8 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> resetPositions() async {
     _knownRemote.clear();
     _readyToPush.clear();
+    _acknowledgedVersions.clear();
+    _pendingChanges.clear();
     for (final key in _prefs.getKeys().toList()) {
       if (key.startsWith('sync.') && key != SettingsCollection.metaKey) {
         await _prefs.remove(key);
@@ -408,8 +425,17 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
       if (clear == null) {
         throw StateError('This device holds the data of another account');
       }
+      final incoming = Map.of(_pendingChanges);
       await clear();
       await resetPositions();
+      // Keep snapshots for the new account that arrived before clearing
+      // the previous account's local data.
+      for (final entry in incoming.entries) {
+        final next = _pendingChanges[entry.key];
+        _pendingChanges[entry.key] = next == null
+            ? entry.value
+            : entry.value.followedBy(next);
+      }
     }
     await _prefs.setString(ownerKey, uid);
   }
@@ -417,6 +443,23 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
   /// Lets the next account adopt what is on the device (after the account that
   /// owned it was deleted).
   Future<void> releaseOwnership() => _prefs.remove(ownerKey);
+
+  Map<String, String> _versionsFor(String uid, SyncTarget target) =>
+      _acknowledgedVersions.putIfAbsent(target.name, () {
+        final raw = _prefs.getString('sync.$uid.${target.name}.acked');
+        if (raw != null) {
+          return Map<String, String>.from(jsonDecode(raw) as Map);
+        }
+        // Upgrade: records before the old push position were acknowledged;
+        // edits made after it still need to be sent.
+        final pushed = _readTime('sync.$uid.${target.name}.push');
+        return {
+          for (final record in target.collection.readAll())
+            if (pushed != null &&
+                !DateTime.parse(record['updatedAt'] as String).isAfter(pushed))
+              record['id'] as String: syncRecordVersion(record),
+        };
+      });
 
   DateTime? _readTime(String key) {
     final raw = _prefs.getString(key);

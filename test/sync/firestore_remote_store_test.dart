@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inner_stars/sync/firestore_remote_store.dart';
@@ -10,7 +11,11 @@ class _FakePort implements FirestorePort {
   final deleted = <int>[];
 
   @override
-  Stream<void> watchNewest(String collection) => const Stream<void>.empty();
+  Stream<List<RemoteDoc>> watchSince(String collection, DateTime? cursor) =>
+      snapshots.stream;
+
+  final snapshots = StreamController<List<RemoteDoc>>.broadcast();
+  int queries = 0;
 
   @override
   Future<int> deleteSome(String collection, int limit) async {
@@ -22,13 +27,13 @@ class _FakePort implements FirestorePort {
   }
 
   @override
-  Future<List<RemoteDoc>> readSince(
-    String collection,
-    DateTime? cursor,
-  ) async => [
-    for (final d in (docs[collection] ?? const <String, RemoteDoc>{}).values)
-      if (cursor == null || !d.at.isBefore(cursor)) d,
-  ];
+  Future<List<RemoteDoc>> readSince(String collection, DateTime? cursor) async {
+    queries++;
+    return [
+      for (final d in (docs[collection] ?? const <String, RemoteDoc>{}).values)
+        if (cursor == null || !d.at.isBefore(cursor)) d,
+    ];
+  }
 
   @override
   Future<void> writeBatch(
@@ -57,6 +62,25 @@ Map<String, dynamic> rec(String id, {Object? extra}) => {
 };
 
 void main() {
+  test(
+    'listener delivers batches directly, without a follow-up query',
+    () async {
+      final port = _FakePort();
+      final store = FirestoreRemoteStore(port);
+      final received = <String>[];
+      final subscription = store.watchChanges('items', null).listen((changes) {
+        received.addAll(changes.records.map((r) => r['id'] as String));
+      });
+      await store.push('items', [rec('one'), rec('two')]);
+      port.snapshots.add(port.docs['items']!.values.toList());
+      await Future<void>.delayed(Duration.zero);
+      expect(received, ['one', 'two']);
+      expect(port.queries, 0);
+      await subscription.cancel();
+      await port.snapshots.close();
+    },
+  );
+
   test(
     'records survive the round trip, nested lists and odd ids included',
     () async {

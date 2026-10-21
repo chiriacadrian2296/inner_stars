@@ -25,7 +25,7 @@ abstract class FirestorePort {
   Future<int> deleteSome(String collection, int limit);
 
   /// Emits when the newest document of [collection] changes.
-  Stream<void> watchNewest(String collection);
+  Stream<List<RemoteDoc>> watchSince(String collection, DateTime? cursor);
 }
 
 class RemoteDocWrite {
@@ -46,7 +46,7 @@ class RemoteDocWrite {
 /// some records contain), next to `id`, `updatedAt` and `deleted` for
 /// readability in the console, and a server-side `_syncedAt` that pulls order
 /// by.
-class FirestoreRemoteStore implements RemoteStore {
+class FirestoreRemoteStore extends RemoteStore {
   FirestoreRemoteStore(this._port);
 
   final FirestorePort _port;
@@ -72,7 +72,17 @@ class FirestoreRemoteStore implements RemoteStore {
   }
 
   @override
-  Stream<void> watch(String collection) => _port.watchNewest(collection);
+  Stream<RemoteChanges> watchChanges(String collection, DateTime? cursor) {
+    var position = cursor;
+    return _port.watchSince(collection, cursor).map((docs) {
+      final records = <SyncRecord>[];
+      for (final doc in docs) {
+        records.add(Map<String, dynamic>.from(jsonDecode(doc.data) as Map));
+        if (position == null || doc.at.isAfter(position!)) position = doc.at;
+      }
+      return RemoteChanges(records, position);
+    });
+  }
 
   @override
   Future<void> deleteCollection(String collection) async {
@@ -133,27 +143,42 @@ class FirebaseFirestorePort implements FirestorePort {
     ];
   }
 
-  /// One document is enough: any write by any device makes it the newest, so
-  /// each change costs a single read rather than a read per changed document.
+  /// The listener carries the documents: no second get() on startup or edits.
   @override
-  Stream<void> watchNewest(String collection) => _collection(collection)
-      .orderBy('_syncedAt', descending: true)
-      .limit(1)
-      .snapshots(includeMetadataChanges: true)
-      .where(
-        (snapshot) =>
-            !snapshot.metadata.isFromCache &&
-            !snapshot.metadata.hasPendingWrites,
-      )
-      .distinct(
-        (previous, next) =>
-            previous.docs.length == next.docs.length &&
-            (next.docs.isEmpty ||
-                (previous.docs.single.id == next.docs.single.id &&
-                    previous.docs.single.data()['_syncedAt'] ==
-                        next.docs.single.data()['_syncedAt'])),
-      )
-      .map<void>((_) {});
+  Stream<List<RemoteDoc>> watchSince(
+    String collection,
+    DateTime? cursor,
+  ) async* {
+    Query<Map<String, dynamic>> query = _collection(collection);
+    if (cursor != null) {
+      query = query.where(
+        '_syncedAt',
+        isGreaterThanOrEqualTo: Timestamp.fromDate(cursor),
+      );
+    }
+    final seen = <String, (Timestamp, String)>{};
+    var initial = true;
+    await for (final snapshot in query.snapshots(
+      includeMetadataChanges: true,
+    )) {
+      if (snapshot.metadata.isFromCache || snapshot.metadata.hasPendingWrites) {
+        continue;
+      }
+      final changes = <RemoteDoc>[];
+      // Compare confirmed snapshots rather than docChanges: intervening local
+      // snapshots must not hide an update arriving from another device.
+      for (final doc in snapshot.docs) {
+        final data = doc.data()['data'] as String;
+        final at = doc.data()['_syncedAt'] as Timestamp;
+        final version = (at, data);
+        if (seen[doc.id] == version) continue;
+        seen[doc.id] = version;
+        changes.add(RemoteDoc(id: doc.id, data: data, at: at.toDate()));
+      }
+      if (initial || changes.isNotEmpty) yield changes;
+      initial = false;
+    }
+  }
 
   @override
   Future<int> deleteSome(String collection, int limit) async {
