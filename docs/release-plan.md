@@ -598,9 +598,12 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
       collegata); Storage attivato con il bucket `inner-stars-5e6d6.firebasestorage.app` nella
       **multi-regione EU** (classe Standard; non si cambia dopo; in Europa non c’è il livello
       Always Free, si paga dal primo GB, ma sono centesimi) e **regole pubblicate** con
-      `firebase deploy --only storage` (verificate nella scheda Rules). **Restano:** impostare
-      l’avviso di budget se non fatto, provare con due dispositivi (foto su uno, vederla
-      sull’altro) con la build che contiene questo codice; collegare la pulizia dei file orfani
+      `firebase deploy --only storage` (verificate nella scheda Rules). **Provato il 21 ottobre
+      (telefono → web):** foto e nota vocale di una stella creata sul telefono si vedono e si
+      sentono sul web, dopo aver impostato il **CORS del bucket** (vedi `docs/media-sync.md`:
+      senza, il web non scarica nulla) e aggiunto la ricerca ripetuta in `PhotoImage`.
+      **Restano:** impostare l’avviso di budget se non fatto, provare il verso opposto (web →
+      telefono) e la moodboard; collegare la pulizia dei file orfani
       (`removeOrphans`, già testata); valutare App Check (la console lo propone).
       **Privacy policy:** dire che foto, note vocali e immagini della moodboard sono archiviate
       nell’Unione Europea.
