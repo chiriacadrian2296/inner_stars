@@ -2020,6 +2020,11 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   @override
   String get shareContentError => 'Nu am putut distribui. Încerci din nou?';
   @override
+  String get devOfflineMode => 'Lucrează offline';
+  @override
+  String get devOfflineModeHint =>
+      'Fără autentificare și fără sincronizare: datele rămân pe acest dispozitiv.';
+  @override
   String get sharePreviewTitle => 'Previzualizare Distribuire';
   @override
   String get shareChooseLayout => 'Alege un aranjament';
