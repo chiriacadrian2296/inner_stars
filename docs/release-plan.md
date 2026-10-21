@@ -259,19 +259,27 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
   condivisione, foto locale, riflessione con testo lungo) e, sul web, la stessa prova.
   Poi spuntare le due voci `[~]` sopra.
 
+- 21 ottobre 2026 (ramo `anteprime-link`): ogni condivisione allega al testo il link
+  `https://innerstars.app` (`shareMessageWithLink`). La landing ha tre immagini social
+  1200×630 (IT, EN, RO; `landing/scripts/make-og-images.mjs`), con `og:image:width/height/alt`,
+  `og:site_name` e i tag Twitter; l’URL dell’immagine ha `?v=2` per superare la cache di
+  WhatsApp. Anteprima diversa per ogni contenuto: rimandata a dopo la v1 (vedi “Idee per
+  dopo la v1”). **Da fare a mano:** una regola di Cloudflare che porti `www.innerstars.app`
+  su `innerstars.app`, perché oggi rispondono entrambi.
+
 ## A5. Pulizia residua
 
-- [ ] **Prima della release ufficiale:** impostare `_kShowSampleDataForTesting = false` in
-      `lib/screens/settings_screen.dart`. Il pulsante dei dati di esempio è stato ripristinato
-      temporaneamente in Settings su richiesta dell'autore per provare la release sul telefono;
-      non abilita reset né lab. Per questa piccola modifica non si ripete l'intera suite di test,
-      come richiesto; si verificano analisi, compilazione e installazione.
+- [x] Dati di esempio: il 21 ottobre tolto l’interruttore temporaneo
+      `_kShowSampleDataForTesting` da `lib/screens/settings_screen.dart`. Il pulsante resta
+      solo dietro `kDevTools`, come lab e reset (nelle build di sviluppo; in release solo con
+      `DEV_TOOLS`). Analisi pulita, suite completa 650 test superati.
 
 - [x] Frame rate: scelto **Free**. Limitatore, sonde e riga "FPS Limit" eliminati dal codice.
-- [ ] Ripulire il worktree di scratch `baseline` del vecchio profiling: ricontrollato il
-      19 ottobre, è su un commit vecchio (`41c8a4b`) con circa 520 righe di esperimenti su
-      shader della Galaxy, stella cadente e sonda dei frame, più un test. Conservato intatto:
-      **decisione dell’autore** se salvarlo come patch o scartarlo.
+- [x] Worktree di scratch `baseline` del vecchio profiling: il 21 ottobre, su decisione
+      dell’autore, salvato come patch (`archivio-inner-stars/baseline-profiling-20261015.patch`
+      e `frame_timing_probe.dart`, fuori dal repository) e rimosso. Conteneva circa 520
+      righe di esperimenti su shader della Galaxy, stella cadente e sonda dei frame; la parte
+      delle lune delle supernove è già in `main`.
 - [x] Sound Lab: verificati in Settings i controlli pubblici della musica di sottofondo:
       riproduzione/pausa e volume, persistiti tramite `AudioService`. La scelta dei singoli
       suoni e i controlli per categoria restano nel Sound Lab di sviluppo.
@@ -638,6 +646,13 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
   nebulose), dal quale potranno nascere le stelle di oggi. Allora le riflessioni avranno anche il
   loro Fly. Da fare **dopo l'uscita della prima versione**.
 
+- **Anteprima del link diversa per ogni contenuto condiviso** (stile Rave): il link punta a
+  `innerstars.app/s/<id>` e il robot di WhatsApp/Telegram legge l’immagine di quella card.
+  Richiede una copia pubblica della card in cloud (Firestore `shares/{id}` + Storage, quindi
+  Blaze), un id lungo e casuale, una Pages Function che scrive i tag `og:*`, regole di accesso,
+  scadenza/revoca del link, avviso di privacy e aggiornamento della privacy policy. Si fa
+  insieme ai media. Per la v1 vale la via di mezzo: immagine della card + link del sito
+  (vedi A4).
 - Pacchetti di suoni a pagamento come contenuti extra (Sound Lab nascosto per ora).
 - Stella cadente con desideri a tempo e storico.
 - Amici come galassie lontane.

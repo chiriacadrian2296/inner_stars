@@ -693,7 +693,6 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
           : star!.isLit
           ? ShareableLitStarCard(star: star, project: _project)
           : ShareableGoalCard(star: star, project: _project),
-      shareText: habit?.displayTitle ?? star!.displayTitle,
       fileName: habit != null
           ? 'pulsar_${habit.id}.png'
           : 'star_${star!.id}.png',
@@ -947,7 +946,6 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
     await showSharePreview(
       context: context,
       content: ShareableConstellationCard(project: _project, shape: shape),
-      shareText: _project.displayName,
       fileName: 'constellation_${_project.id}.png',
     );
   }

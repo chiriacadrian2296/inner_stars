@@ -2033,6 +2033,8 @@ Contribuția mea răspunde unei nevoi reale și o pot menține în timp.
   String get devOfflineModeHint =>
       'Fără autentificare și fără sincronizare: datele rămân pe acest dispozitiv.';
   @override
+  String get shareInvite => 'Încearcă și tu Inner Stars gratuit pe';
+  @override
   String get sharePreviewTitle => 'Previzualizare Distribuire';
   @override
   String get shareChooseLayout => 'Alege un aranjament';

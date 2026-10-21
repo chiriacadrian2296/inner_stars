@@ -1341,7 +1341,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
         content: star.isLit
             ? ShareableLitStarCard(star: star, project: project)
             : ShareableGoalCard(star: star, project: project),
-        shareText: star.displayTitle,
         fileName: 'star_${star.id}.png',
       ),
     );
@@ -1361,7 +1360,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       onShare: () => showSharePreview(
         context: context,
         content: ShareablePulsarCard(habit: habit, project: project),
-        shareText: habit.displayTitle,
         fileName: 'pulsar_${habit.id}.png',
       ),
     );
@@ -1386,7 +1384,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                 project: project,
                 shape: shape,
               ),
-              shareText: project.displayName,
               fileName: 'constellation_${project.id}.png',
             ),
     );
@@ -1495,7 +1492,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     await showSharePreview(
       context: context,
       content: ShareableConstellationCard(project: project, shape: shape),
-      shareText: project.displayName,
       fileName: 'constellation_${project.id}.png',
     );
   }
@@ -1832,7 +1828,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
     _sharingStar = true;
     try {
       if (!mounted) return;
-      final (content, text, fileName) = entry.star != null
+      final (content, fileName) = entry.star != null
           ? (
               entry.star!.isLit
                   ? ShareableLitStarCard(
@@ -1843,7 +1839,6 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                       star: entry.star!,
                       project: _projectsById[entry.star!.projectId],
                     ),
-              entry.star!.title,
               'star_${entry.star!.id}.png',
             )
           : (
@@ -1851,13 +1846,11 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                 habit: entry.habit!,
                 project: _projectsById[entry.habit!.projectId],
               ),
-              entry.habit!.title,
               'pulsar_${entry.habit!.id}.png',
             );
       await showSharePreview(
         context: context,
         content: content,
-        shareText: text,
         fileName: fileName,
       );
     } finally {

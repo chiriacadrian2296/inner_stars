@@ -2037,6 +2037,8 @@ Il mio contributo risponde a un bisogno reale e riesco a mantenerlo nel tempo.
   String get devOfflineModeHint =>
       'Nessun accesso e nessuna sincronizzazione: i dati restano su questo dispositivo.';
   @override
+  String get shareInvite => 'Prova anche tu gratuitamente Inner Stars su';
+  @override
   String get sharePreviewTitle => 'Anteprima Condivisione';
   @override
   String get shareChooseLayout => 'Scegli una composizione';

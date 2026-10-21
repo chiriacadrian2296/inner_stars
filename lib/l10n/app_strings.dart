@@ -1113,6 +1113,7 @@ abstract class AppStrings {
   String get appLockDeviceUnlockUnavailable;
   String get devOfflineMode;
   String get devOfflineModeHint;
+  String get shareInvite;
   String get sharePreviewTitle;
   String get shareChooseLayout;
   String get sharePreviousLayout;

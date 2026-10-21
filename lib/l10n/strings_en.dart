@@ -2016,6 +2016,8 @@ My contribution meets a real need and is something I can sustain.
   String get devOfflineModeHint =>
       'No sign-in and no sync: data stays on this device.';
   @override
+  String get shareInvite => 'Try Inner Stars for free too at';
+  @override
   String get sharePreviewTitle => 'Share Preview';
   @override
   String get shareChooseLayout => 'Choose a layout';

@@ -14,7 +14,6 @@ import 'share_composer_screen.dart';
 Future<void> showSharePreview({
   required BuildContext context,
   required Widget content,
-  required String shareText,
   required String fileName,
 }) async {
   await Navigator.of(context).push<void>(
@@ -22,7 +21,6 @@ Future<void> showSharePreview({
       fullscreenDialog: true,
       builder: (_) => ShareComposerScreen(
         data: shareContentFromCard(context, content),
-        shareText: shareText,
         fileName: fileName,
       ),
     ),

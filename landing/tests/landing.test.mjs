@@ -102,3 +102,15 @@ test('the paused Galaxy / Sky experiment is not mounted on any public page',()=>
     assert.ok(!page.includes('component-export="GalaxyExplorer"'),path);
   }
 });
+
+test('every home has a full social preview in its own language', () => {
+  const images = { '': 'og-image.png', en: 'og-image-en.png', ro: 'og-image-ro.png' };
+  for (const [path] of homes) {
+    const page = html(path);
+    const image = `${origin}${images[path]}?v=2`;
+    assert.ok(page.includes(`<meta property="og:image" content="${image}">`), path);
+    assert.ok(page.includes(`<meta name="twitter:image" content="${image}">`), path);
+    assert.ok(page.includes('<meta property="og:image:width" content="1200">'), path);
+    assert.ok(page.includes('<meta property="og:site_name" content="Inner Stars">'), path);
+  }
+});

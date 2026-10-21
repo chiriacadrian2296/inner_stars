@@ -48,6 +48,17 @@ bool choiceSelected(WidgetTester tester, String key) => tester
     .selected!;
 
 void main() {
+  test('share message is the invitation followed by the app link', () {
+    expect(
+      shareMessageWithLink(strings.shareInvite),
+      'Prova anche tu gratuitamente Inner Stars su https://innerstars.app',
+    );
+    expect(
+      shareMessageWithLink(const StringsEn().shareInvite),
+      endsWith(' https://innerstars.app'),
+    );
+  });
+
   testWidgets(
     'excerpt editing leaves source intact and composition owns content options',
     (tester) async {
@@ -73,7 +84,6 @@ void main() {
                 onPressed: () => showSharePreview(
                   context: context,
                   content: ShareableReflectionCard(reflection: record),
-                  shareText: record.title,
                   fileName: 'reflection.png',
                 ),
                 child: const Text('open'),

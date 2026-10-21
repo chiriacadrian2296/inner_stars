@@ -107,8 +107,6 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
           ? widget.area.visionPlaceholder(context.strings)
           : _controller.text,
     ),
-    shareText:
-        '${context.strings.visionSection} - ${widget.area.displayName(context.strings)}',
     fileName: 'vision_${widget.area.name}.png',
   );
 
