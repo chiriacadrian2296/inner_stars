@@ -47,6 +47,17 @@ class _VoiceNoteRecorderSheet extends StatefulWidget {
 
 class _VoiceNoteRecorderSheetState extends State<_VoiceNoteRecorderSheet> {
   final AudioRecorder _recorder = AudioRecorder();
+
+  /// Speech needs far less than the default (128 kbps stereo at 44.1 kHz):
+  /// mono AAC at 48 kbps and 22 kHz sounds clear for a voice and makes a
+  /// one-minute note about 360 KB instead of about 960 KB, on the device and
+  /// in the cloud.
+  static const _voiceConfig = RecordConfig(
+    encoder: AudioEncoder.aacLc,
+    bitRate: 48000,
+    sampleRate: 22050,
+    numChannels: 1,
+  );
   _Phase _phase = _Phase.idle;
   Duration _elapsed = Duration.zero;
   Timer? _ticker;
@@ -82,7 +93,7 @@ class _VoiceNoteRecorderSheetState extends State<_VoiceNoteRecorderSheet> {
       }
       _discardTemp();
       final path = kIsWeb ? '' : await StarMediaStorage.newRecordingPath();
-      await _recorder.start(const RecordConfig(), path: path);
+      await _recorder.start(_voiceConfig, path: path);
       if (!kIsWeb) _tempPath = path;
       if (!mounted) return;
       setState(() {

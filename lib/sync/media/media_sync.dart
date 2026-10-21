@@ -27,19 +27,16 @@ class MediaSync {
     required this.queue,
     required this.local,
     required this.remoteFor,
-    this.maxAttempts = 8,
-  });
+    DateTime Function()? now,
+  }) : _now = now ?? DateTime.now;
 
   final MediaQueue queue;
   final MediaLocal local;
+  final DateTime Function() _now;
 
   /// The cloud for the signed-in account, or null when there is none (signed
   /// out, or working offline in a development build).
   final MediaRemote? Function() remoteFor;
-
-  /// A job that failed this many times is dropped: the file is probably gone
-  /// or refused, and retrying forever would block the rest of the queue.
-  final int maxAttempts;
 
   bool _processing = false;
   Timer? _timer;
@@ -61,9 +58,11 @@ class MediaSync {
   Future<void> fileDeleted(MediaFolder folder, String id) =>
       queue.enqueue(folder, id, MediaOp.delete);
 
-  /// Sends the queued changes, oldest first. Stops at the first failure (most
-  /// likely offline) and leaves the rest for the next run. Returns how many
-  /// jobs finished.
+  /// Sends the queued changes that are due, oldest first. Stops at the first
+  /// failure (most likely offline): that job waits longer each time it fails
+  /// (see [mediaRetryDelay]) but is never dropped, so a cause that is only
+  /// temporary, such as a service not yet switched on, loses nothing. Returns
+  /// how many jobs finished.
   Future<int> process() async {
     final remote = remoteFor();
     if (remote == null || _processing) return 0;
@@ -71,23 +70,34 @@ class MediaSync {
     var done = 0;
     try {
       for (final job in queue.jobs) {
+        if (!job.isDue(_now())) continue;
         try {
           await _run(remote, job);
           await queue.complete(job);
           done++;
         } catch (_) {
-          if (job.attempts + 1 >= maxAttempts) {
-            await queue.complete(job);
-          } else {
-            await queue.fail(job);
-          }
+          await queue.fail(job, _now());
           break;
         }
       }
     } finally {
       _processing = false;
     }
+    _scheduleNextRetry();
     return done;
+  }
+
+  /// Wakes [process] up again when the earliest held-back job is due.
+  void _scheduleNextRetry() {
+    final waiting = [
+      for (final job in queue.jobs)
+        if (job.retryAt != null) job.retryAt!,
+    ]..sort();
+    if (waiting.isEmpty) return;
+    final wait = waiting.first.difference(_now());
+    kick(
+      wait < const Duration(seconds: 30) ? const Duration(seconds: 30) : wait,
+    );
   }
 
   Future<void> _run(MediaRemote remote, MediaJob job) async {

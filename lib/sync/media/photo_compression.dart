@@ -4,8 +4,8 @@ import 'package:image/image.dart' as img;
 
 /// Longest side, in pixels, of a photo sent to the cloud. Photos are shown on
 /// a phone screen, so more than this only costs storage and data.
-const int kUploadPhotoMaxSide = 1600;
-const int kUploadPhotoQuality = 82;
+const int kUploadPhotoMaxSide = 1280;
+const int kUploadPhotoQuality = 78;
 
 /// Shrinks [bytes] to at most [maxSide] pixels on the long side and re-encodes
 /// it as JPEG. Returns the original bytes when they cannot be decoded (not an

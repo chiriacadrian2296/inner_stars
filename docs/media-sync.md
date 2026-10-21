@@ -9,12 +9,14 @@ Come deciso nel piano di rilascio:
 
 | Cosa | Cartella nel cloud | Note |
 |---|---|---|
-| Foto principale di una vittoria (`Star.photoPath`) | `photos/` | ridotta a max 1600 px, JPEG qualità 82 |
-| Una nota vocale per vittoria (`StarMedia` di tipo `voice`, max 60 s) | `voices/` | inviata com'è |
+| Foto principale di una vittoria (`Star.photoPath`) | `photos/` | ridotta a max 1280 px sul lato lungo, JPEG qualità 78 |
+| Una nota vocale per vittoria (`StarMedia` di tipo `voice`, max 60 s) | `voices/` | già compressa alla registrazione: AAC mono 48 kbps a 22 kHz (circa 360 KB al minuto) |
 | Immagini della moodboard (solo `MoodboardKind.photo`) | `moodboard/` | come le foto; massimo 12 elementi per area |
 
 Restano **solo sul dispositivo** le foto secondarie, i video e tutto ciò che non è in tabella
-(dopo la v1). Un altro dispositivo vede il record ma non ha quel file.
+(dopo la v1). Oggi l’app non permette più di aggiungere foto secondarie né video: si tratta solo
+dei dati vecchi già presenti sul dispositivo che li ha creati. Un altro dispositivo vede il
+record ma non ha quel file.
 
 Percorso nel cloud: `users/{uid}/media/<cartella>/<nome file>`. Il nome è l'ultima parte dopo
 `/`, `\` o `:` dell'identificativo del record (`mediaName`), così il telefono (percorso o nome
@@ -27,7 +29,10 @@ file) e il web (chiave come `moodboard-media:123.jpg`) danno lo stesso nome.
   (`MediaQueue`, nelle preferenze), con un solo lavoro per file: l'ultimo vince, e una
   cancellazione annulla un invio non ancora fatto. `MediaSync.process` svuota la coda dopo ogni
   sincronizzazione riuscita e poco dopo ogni modifica; si ferma al primo errore (di solito
-  offline) e riprova più tardi, rinunciando a un lavoro dopo 8 tentativi falliti.
+  offline). Un lavoro che fallisce aspetta sempre di più prima di riprovare (2 minuti, 4, 8… al
+  massimo 6 ore) e **non viene mai scartato**: la causa può essere temporanea (offline, Storage non
+  ancora attivato) e scartarlo farebbe perdere il file per sempre. Si scarta solo un lavoro il cui
+  file locale non esiste più.
 - **Scaricamento solo quando serve.** Un file fatto da un altro dispositivo non si scarica in
   anticipo: quando una schermata lo chiede e manca (`PhotoStorage.readBytes`,
   `StarMediaStorage.file/readBytes`, `MoodboardStorage.read`), `MediaHooks.fetch` lo prende dal

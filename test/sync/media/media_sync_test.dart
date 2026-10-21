@@ -47,6 +47,7 @@ void main() {
   late MediaQueue queue;
   late MediaSync sync;
   MediaRemote? signedIn;
+  late DateTime clock;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -55,7 +56,13 @@ void main() {
     signedIn = remote;
     local = _Local();
     queue = MediaQueue(prefs);
-    sync = MediaSync(queue: queue, local: local, remoteFor: () => signedIn);
+    clock = DateTime.utc(2026, 10, 21, 12);
+    sync = MediaSync(
+      queue: queue,
+      local: local,
+      remoteFor: () => signedIn,
+      now: () => clock,
+    );
   });
 
   group('compressPhoto', () {
@@ -161,26 +168,53 @@ void main() {
       expect(queue.jobs, hasLength(2));
       expect(queue.jobs.first.attempts, 1);
 
+      // Back online, but the failed job is still held back for a while.
       remote.offline = false;
-      expect(await sync.process(), 2);
+      expect(await sync.process(), 1);
+      expect(queue.jobs.single.name, 'voices/a.m4a');
+
+      clock = clock.add(const Duration(minutes: 3));
+      expect(await sync.process(), 1);
       expect(remote.files.keys, containsAll(['voices/a.m4a', 'voices/b.m4a']));
+      expect(queue.isEmpty, isTrue);
     });
 
-    test('a job that keeps failing is given up on', () async {
-      final stubborn = MediaSync(
-        queue: queue,
-        local: local,
-        remoteFor: () => signedIn,
-        maxAttempts: 2,
-      );
+    test('a failing job waits longer each time and is never dropped', () async {
       await local.write(MediaFolder.voices, 'a.m4a', Uint8List.fromList([1]));
-      await stubborn.fileSaved(MediaFolder.voices, 'a.m4a');
+      await sync.fileSaved(MediaFolder.voices, 'a.m4a');
       remote.offline = true;
 
-      await stubborn.process();
-      expect(queue.jobs, hasLength(1));
-      await stubborn.process();
+      late DateTime lastTry;
+      for (var i = 1; i <= 12; i++) {
+        lastTry = clock;
+        await sync.process();
+        final job = queue.jobs.single;
+        expect(job.attempts, i);
+        expect(job.retryAt, isNotNull);
+        clock = job.retryAt!.add(const Duration(seconds: 1));
+      }
+      // The wait stops growing at 6 hours.
+      expect(
+        queue.jobs.single.retryAt!.difference(lastTry),
+        const Duration(hours: 6),
+      );
+
+      remote.offline = false;
+      expect(await sync.process(), 1);
       expect(queue.isEmpty, isTrue);
+    });
+
+    test('a held-back job is not tried before its time', () async {
+      await local.write(MediaFolder.voices, 'a.m4a', Uint8List.fromList([1]));
+      await sync.fileSaved(MediaFolder.voices, 'a.m4a');
+      remote.offline = true;
+      await sync.process();
+      remote.offline = false;
+
+      clock = clock.add(const Duration(minutes: 1));
+      expect(await sync.process(), 0);
+      expect(remote.uploads, 0);
+      expect(queue.jobs.single.attempts, 1);
     });
 
     test('nothing is sent while signed out, and nothing is lost', () async {
