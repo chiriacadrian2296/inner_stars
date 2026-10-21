@@ -1110,6 +1110,8 @@ abstract class AppStrings {
   String get shareContentError;
   String get appLockDeviceUnlockToggleLabel;
   String get appLockBiometricSetupFailed;
+  String get devOfflineMode;
+  String get devOfflineModeHint;
   String get sharePreviewTitle;
   String get shareChooseLayout;
   String get sharePreviousLayout;

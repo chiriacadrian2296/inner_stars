@@ -2007,6 +2007,10 @@ My contribution meets a real need and is something I can sustain.
   @override
   String get appLockBiometricSetupFailed =>
       "Couldn't turn on device unlock here.";
+  String get devOfflineMode => 'Work offline';
+  @override
+  String get devOfflineModeHint =>
+      'No sign-in and no sync: data stays on this device.';
   @override
   String get sharePreviewTitle => 'Share Preview';
   @override

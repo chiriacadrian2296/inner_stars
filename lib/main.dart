@@ -44,6 +44,7 @@ import 'screens/onboarding_screen.dart';
 import 'screens/sky_screen.dart';
 import 'screens/star_form_screen.dart';
 import 'settings/settings_controller.dart';
+import 'debug/dev_offline.dart';
 import 'sync/firestore_remote_store.dart';
 import 'sync/settings_collection.dart';
 import 'sync/sync_scope.dart';
@@ -140,11 +141,20 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
     ),
   );
   SyncService? _syncService;
+  DevOffline? _devOffline;
   bool _wasSignedIn = false;
 
+  /// Puts the sync (and, in development builds, the offline switch) above
+  /// the app, for Settings to read.
   Widget _withSync(Widget child) {
     final sync = _syncService;
-    return sync == null ? child : SyncScope(service: sync, child: child);
+    final synced = sync == null
+        ? child
+        : SyncScope(service: sync, child: child);
+    final offline = _devOffline;
+    return offline == null
+        ? synced
+        : DevOfflineScope(offline: offline, child: synced);
   }
 
   void _markStartupReady() {
@@ -203,9 +213,16 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
   }
 
   Future<void> _load() async {
-    // The app opens only for a signed-in account, so ask Firebase right away.
-    unawaited(_authService.start());
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final devOffline = DevOffline.load(prefs);
+      // The app opens only for a signed-in account, so ask Firebase right
+      // away, unless a development build is working offline.
+      if (!devOffline.enabled) unawaited(_authService.start());
+      devOffline.addListener(() {
+        if (!devOffline.enabled) unawaited(_authService.start());
+      });
+      _devOffline = devOffline;
       await migrateLocalData(await SharedPreferences.getInstance());
       final settings = await SettingsController.create();
       settings.addListener(() => setState(() {}));
@@ -258,12 +275,14 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
         );
       }
 
-      final prefs = await SharedPreferences.getInstance();
       _wasSignedIn = prefs.getBool(_kWasSignedInKey) ?? false;
       final moodboardRepository = await MoodboardRepository.create();
       final settingsCollection = SettingsCollection(prefs);
       final syncService = SyncService(
-        account: _authService,
+        account: OfflineGatedAccount(
+          account: _authService,
+          offline: devOffline,
+        ),
         prefs: prefs,
         // A different account signing in replaces this device's data instead
         // of merging into it; each account keeps only its own.
@@ -627,6 +646,7 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
           // (see AppLockGate's own doc comment for the lifecycle rule).
           child: AuthGate(
             auth: _authService,
+            offline: _devOffline,
             wasSignedIn: _wasSignedIn,
             // The splash lifts over the login page's first frame.
             onLoginShown: _markStartupReady,
