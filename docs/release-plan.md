@@ -603,6 +603,15 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
       (`removeOrphans`, già testata); valutare App Check (la console lo propone).
       **Privacy policy:** dire che foto, note vocali e immagini della moodboard sono archiviate
       nell’Unione Europea.
+- [x] **Limiti di Cloudflare Pages (21 ottobre):** il piano gratuito ha 500 build al mese. La landing
+      (`innerstars-landing`, collegata a Git) ne faceva una per ogni push su ogni ramo: dopo due
+      giorni di lavoro erano già 94. Impostato su Cloudflare: **anteprime dei rami = None** (solo
+      `main` pubblica) e **cartelle osservate = `landing/*`** (un push che tocca solo l’app non rifà
+      la landing). La web app (`innerstars-app`) non è collegata a Git: la carica GitHub Actions
+      con `wrangler`; non so se i caricamenti diretti contano nelle 500 build, da guardare nel
+      contatore. Se serve provare una pagina della landing su un ramo, riattivare le anteprime
+      per quel ramo. In GitHub Actions, con il repository pubblico, i minuti sono gratis; da
+      privato sono circa 2.000 al mese (vedi la voce sul repository privato).
 - [x] Hosting: la web app è su Cloudflare Pages alla radice di `my.innerstars.app` (workflow
       `deploy-app-cloudflare.yml`). Il 21 ottobre ritirato il vecchio `deploy-web.yml` (GitHub
       Pages): non pubblica più nulla; il sito `chiriacadrian2296.github.io/inner_stars` resta con
