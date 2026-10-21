@@ -5,11 +5,13 @@ import 'package:inner_stars/data/custom_constellation_repository.dart';
 import 'package:inner_stars/data/project_repository.dart';
 import 'package:inner_stars/l10n/strings_en.dart';
 import 'package:inner_stars/l10n/strings_scope.dart';
+import 'package:inner_stars/models/life_area.dart';
 import 'package:inner_stars/screens/new_project_screen.dart';
 import 'package:inner_stars/screens/star_form_screen.dart';
 import 'package:inner_stars/theme/app_style.dart';
 import 'package:inner_stars/theme/app_theme.dart';
 import 'package:inner_stars/widgets/form_kind_tiles.dart';
+import 'package:inner_stars/widgets/pill_action_button.dart';
 import 'package:inner_stars/widgets/staggered_entrance.dart';
 import 'package:inner_stars/widgets/app_field.dart';
 import 'package:inner_stars/widgets/filters_trigger_button.dart';
@@ -57,6 +59,53 @@ void main() {
     );
     expect(tester.takeException(), isNull);
     expect(find.text('Project'), findsWidgets);
+  });
+
+  testWidgets('editing a constellation shows permanent delete beside save', (
+    tester,
+  ) async {
+    final project = await projects.add(
+      name: 'Existing project',
+      area: LifeArea.personal,
+      iconSlug: 'star',
+    );
+    var deleted = false;
+    await _pump(
+      tester,
+      () => NewProjectScreen(
+        projectRepository: projects,
+        starsShapeRepository: shapes,
+        existingProject: project,
+        onDelete: () async {
+          deleted = true;
+          await projects.delete(project.id);
+        },
+      ),
+    );
+
+    final delete = find.byKey(const ValueKey('project-delete'));
+    final save = find.byType(SaveActionButton);
+    expect(delete, findsOneWidget);
+    expect(find.byType(PillActionButton), findsOneWidget);
+    await tester.ensureVisible(delete);
+    expect(
+      tester.getCenter(delete).dy,
+      closeTo(tester.getCenter(save).dy, 0.1),
+    );
+    expect(tester.getCenter(delete).dx, lessThan(tester.getCenter(save).dx));
+    await tester.tap(delete);
+    await tester.pumpAndSettle();
+    expect(
+      find.text(const StringsEn().deleteProjectConfirmTitle),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.text(const StringsEn().deleteStarAction.toUpperCase()).last,
+    );
+    await tester.pumpAndSettle();
+
+    expect(deleted, isTrue);
+    expect(projects.getAll(), isEmpty);
   });
 
   testWidgets('star form switches to the constellation tile and back', (

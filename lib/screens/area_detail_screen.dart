@@ -462,20 +462,7 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                               InsightEntity.area(area),
                             ),
                       animate: !_hasNavigatedAreas,
-                      onVision: () => _open(
-                        VisionEditorScreen(
-                          area: area,
-                          repository: widget.areaVisionRepository,
-                        ),
-                      ),
-                      onMoodboard: _openMoodboard,
                       onFly: () => Navigator.of(context).pop(area),
-                      onReflections: () => _open(
-                        AreaReflectionsScreen(
-                          area: area,
-                          repository: widget.reflectionAnswerRepository,
-                        ),
-                      ),
                       onNewConstellation: _openNewConstellation,
                     ),
                   ),
@@ -586,20 +573,14 @@ class _AreaNavigationBar extends StatelessWidget {
 class _AreaDock extends StatelessWidget {
   const _AreaDock({
     required this.animate,
-    required this.onVision,
-    required this.onMoodboard,
     required this.onNewConstellation,
-    required this.onReflections,
     required this.onFly,
     this.onStatistics,
     this.onManage,
   });
   final bool animate;
   final VoidCallback? onManage;
-  final VoidCallback onVision;
-  final VoidCallback onMoodboard;
   final VoidCallback onNewConstellation;
-  final VoidCallback onReflections;
   final VoidCallback onFly;
   final VoidCallback? onStatistics;
   @override
@@ -617,21 +598,6 @@ class _AreaDock extends StatelessWidget {
           label: context.strings.manageActivities,
           onTap: onManage!,
         ),
-      _AreaDockAction(
-        icon: kAreaVisionIcon,
-        label: context.strings.visionPageTitle,
-        onTap: onVision,
-      ),
-      _AreaDockAction(
-        icon: kAreaMoodboardIcon,
-        label: context.strings.moodboardTitle,
-        onTap: onMoodboard,
-      ),
-      _AreaDockAction(
-        icon: kAreaReflectionsIcon,
-        label: context.strings.areaQuickLookReflectionsAction,
-        onTap: onReflections,
-      ),
       if (onStatistics != null)
         _AreaDockAction(
           icon: Icons.bar_chart,

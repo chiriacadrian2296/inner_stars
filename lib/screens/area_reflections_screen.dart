@@ -13,9 +13,7 @@ import '../utils/app_modals.dart';
 import '../utils/area_section_icons.dart';
 import '../widgets/app_field.dart';
 import '../widgets/area_section_header.dart';
-import '../widgets/pill_action_button.dart';
-import '../widgets/reader_action_bar.dart';
-import '../widgets/reader_entry_content.dart' show ReaderEntrance;
+import '../widgets/pill_action_button.dart' show SaveActionButton;
 import '../widgets/responsive_content.dart';
 import '../widgets/shareable_reflection_card.dart';
 import '../widgets/staggered_entrance.dart';
@@ -675,9 +673,7 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
     setState(() => _busy = true);
     try {
       final existing = widget.existing;
-      final title = _title.text.trim().isNotEmpty
-          ? _title.text.trim()
-          : _body.text.trim().split('\n').first.characters.take(80).toString();
+      final title = _title.text.trim();
       final record = existing == null
           ? await widget.repository.add(
               area: widget.area,
@@ -709,7 +705,8 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
     }
   }
 
-  bool get _canSave => _body.text.trim().isNotEmpty;
+  bool get _canSave =>
+      _title.text.trim().isNotEmpty && _body.text.trim().isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -729,7 +726,6 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
       child: _ReflectionPage(
         compact: writing,
         actions: [
-          // A title is optional; only the reflection itself is required.
           ListenableBuilder(
             listenable: Listenable.merge([_title, _body]),
             builder: (context, _) => SaveActionButton(
@@ -768,7 +764,7 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
           ],
           AppFieldLabel(
             strings.reflectionTitleLabel,
-            requirement: FieldRequirement.optional,
+            requirement: FieldRequirement.required,
             onReset: () => _title.clear(),
             counterController: _title,
             counterMax: kReflectionTitleMax,
@@ -777,7 +773,6 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
           AppTextField(
             key: const ValueKey('reflection-title'),
             controller: _title,
-            hintText: strings.optionalFieldLegend,
             enabled: !_busy,
             minLines: 1,
             maxLines: 2,
@@ -858,53 +853,45 @@ class _ReflectionDetailScreenState extends State<ReflectionDetailScreen> {
       );
       return _ReflectionPage(
         actions: [
-          // Icon-only, grouped as in "Vedi": share, then edit and delete
-          // together.
-          ReaderActionBar(
-            entrance: const ReaderEntrance(
-              animate: false,
-              axis: Axis.vertical,
-              reverse: false,
-              lead: 0,
+          ElevatedButton(
+            key: const ValueKey('reflection-share'),
+            onPressed: _deleting
+                ? null
+                : () => showSharePreview(
+                    context: context,
+                    content: ShareableReflectionCard(reflection: record),
+                    shareText:
+                        '${record.title} — ${record.area.displayName(strings)}',
+                    fileName: 'reflection_${record.id}.png',
+                  ),
+            child: AppButtonLabel(strings.shareNowAction),
+          ),
+          ElevatedButton(
+            key: const ValueKey('reflection-edit'),
+            onPressed: _deleting
+                ? null
+                : () => Navigator.of(context).push<Reflection>(
+                    MaterialPageRoute(
+                      builder: (_) => ReflectionEditorScreen(
+                        area: record.area,
+                        repository: widget.repository,
+                        existing: record,
+                      ),
+                    ),
+                  ),
+            child: AppButtonLabel(strings.starQuickLookEditAction),
+          ),
+          ElevatedButton(
+            key: const ValueKey('reflection-delete'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.colors.dangerBackground,
+              foregroundColor: context.colors.danger,
             ),
-            actions: [
-              ReaderAction(
-                icon: Icons.share_outlined,
-                label: strings.shareNowAction,
-                group: 1,
-                onTap: _deleting
-                    ? null
-                    : () => showSharePreview(
-                        context: context,
-                        content: ShareableReflectionCard(reflection: record),
-                        shareText:
-                            '${record.title} — ${record.area.displayName(strings)}',
-                        fileName: 'reflection_${record.id}.png',
-                      ),
-              ),
-              ReaderAction(
-                icon: Icons.edit_outlined,
-                label: strings.starQuickLookEditAction,
-                group: 2,
-                onTap: _deleting
-                    ? null
-                    : () => Navigator.of(context).push<Reflection>(
-                        MaterialPageRoute(
-                          builder: (_) => ReflectionEditorScreen(
-                            area: record.area,
-                            repository: widget.repository,
-                            existing: record,
-                          ),
-                        ),
-                      ),
-              ),
-              ReaderAction(
-                icon: Icons.delete_outline,
-                label: strings.deleteStarAction,
-                group: 2,
-                onTap: _deleting ? null : _delete,
-              ),
-            ],
+            onPressed: _deleting ? null : _delete,
+            child: AppButtonLabel(
+              strings.deleteStarAction,
+              color: context.colors.danger,
+            ),
           ),
         ],
         children: [

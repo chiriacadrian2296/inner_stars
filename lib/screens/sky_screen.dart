@@ -6294,6 +6294,7 @@ class _SkyScreenState extends State<SkyScreen>
           projectRepository: widget.projectRepository,
           starsShapeRepository: widget.starsShapeRepository,
           existingProject: constellation.project,
+          onDelete: () => _removeQuickLookConstellation(constellation.project),
         ),
       ),
     );
@@ -6315,6 +6316,10 @@ class _SkyScreenState extends State<SkyScreen>
     );
     if (!confirmed) return;
     _closeSkyTooltip();
+    await _removeQuickLookConstellation(project);
+  }
+
+  Future<void> _removeQuickLookConstellation(Project project) async {
     if (!mounted) return;
     final cycleRepository = HabitCycleScope.read(context);
     final habitIds = await widget.habitRepository.deleteAllForProject(

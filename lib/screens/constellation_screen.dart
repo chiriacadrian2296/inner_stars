@@ -841,18 +841,23 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
   }
 
   Future<void> _editProject() async {
-    final updated = await Navigator.of(context).push<Project>(
+    final editingProject = _project;
+    final result = await Navigator.of(context).push<Object?>(
       MaterialPageRoute(
         builder: (_) => NewProjectScreen(
           projectRepository: widget.projectRepository,
           starsShapeRepository: widget.starsShapeRepository,
-          existingProject: _project,
+          existingProject: editingProject,
+          onDelete: () => _removeProject(editingProject),
         ),
       ),
     );
-    if (updated != null && mounted) {
+    if (!mounted) return;
+    if (result is ProjectDeleteRequested) {
+      _showNextProjectAfterDeletion();
+    } else if (result is Project) {
       setState(() {
-        _project = updated;
+        _project = result;
         _loadData();
       });
     }
@@ -869,24 +874,32 @@ class _ConstellationScreenState extends State<ConstellationScreen> {
       tone: AppConfirmationTone.destructive,
     );
     if (!confirmed) return;
-    final id = _project.id;
-    final shapeId = _project.starsShapeId;
+    await _removeProject(_project);
+    if (mounted) _showNextProjectAfterDeletion();
+  }
+
+  Future<void> _removeProject(Project project) async {
     if (!mounted) return;
     final cycleRepository = HabitCycleScope.read(context);
-    final habitIds = await widget.habitRepository.deleteAllForProject(id);
+    final habitIds = await widget.habitRepository.deleteAllForProject(
+      project.id,
+    );
     for (final habitId in habitIds) {
       await widget.habitCompletionRepository.deleteAllForHabit(habitId);
     }
     await cycleRepository?.deleteAllForHabits(habitIds);
-    await widget.starRepository.deleteAllForProject(id);
-    await widget.projectRepository.delete(id);
+    await widget.starRepository.deleteAllForProject(project.id);
+    await widget.projectRepository.delete(project.id);
+    final shapeId = project.starsShapeId;
     if (shapeId != null &&
         !widget.projectRepository.getAll().any(
           (p) => p.starsShapeId == shapeId,
         )) {
       await widget.starsShapeRepository.delete(shapeId);
     }
-    if (!mounted) return;
+  }
+
+  void _showNextProjectAfterDeletion() {
     final remaining = widget.projectRepository.getAll();
     if (remaining.isEmpty) {
       Navigator.of(context).pop();

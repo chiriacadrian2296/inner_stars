@@ -29,6 +29,12 @@ import '../widgets/responsive_content.dart';
 import '../widgets/staggered_entrance.dart';
 import 'constellation_editor_screen.dart';
 
+/// Returned by [NewProjectScreen] when an existing constellation is deleted
+/// instead of saved.
+class ProjectDeleteRequested {
+  const ProjectDeleteRequested();
+}
+
 /// Creates a project: a name, a [LifeArea], a constellation shape, and an
 /// icon slug for the small badge glyph shown in project lists.
 ///
@@ -52,6 +58,7 @@ class NewProjectScreen extends StatefulWidget {
     required this.starsShapeRepository,
     this.presetArea,
     this.existingProject,
+    this.onDelete,
     this.embedded = false,
     this.onDirtyChanged,
   });
@@ -60,6 +67,7 @@ class NewProjectScreen extends StatefulWidget {
   final StarsShapeRepository starsShapeRepository;
   final LifeArea? presetArea;
   final Project? existingProject;
+  final Future<void> Function()? onDelete;
 
   /// Just the form's own column — no scaffold, scroll view or back handling —
   /// for placing it under the star form's kind switch, which supplies those.
@@ -82,6 +90,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   final _descriptionController = TextEditingController();
   late LifeArea? _selectedArea = widget.presetArea;
   String? _selectedIconSlug;
+  bool _deleting = false;
 
   /// The two shape selections are mutually exclusive — whichever was picked
   /// last wins, and setting one clears the other (see [_selectPreset] /
@@ -581,6 +590,26 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     if (mounted) Navigator.of(context).pop(project);
   }
 
+  Future<void> _confirmAndDelete() async {
+    final onDelete = widget.onDelete;
+    if (_deleting || onDelete == null) return;
+    final strings = context.strings;
+    final confirmed = await showAppConfirmation(
+      context: context,
+      title: strings.deleteProjectConfirmTitle,
+      body: strings.deleteProjectConfirmBody,
+      cancelLabel: strings.cancel,
+      confirmLabel: strings.deleteStarAction,
+      tone: AppConfirmationTone.destructive,
+    );
+    if (!confirmed || !mounted) return;
+    setState(() => _deleting = true);
+    await onDelete();
+    if (mounted) {
+      Navigator.of(context).pop(const ProjectDeleteRequested());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final dirty = _hasUnsavedChanges;
@@ -722,20 +751,37 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
         StaggeredEntrance(
           index: 8,
           child: Center(
-            child: ValueListenableBuilder<TextEditingValue>(
-              valueListenable: _nameController,
-              builder: (context, value, child) {
-                final canSave =
-                    value.text.trim().isNotEmpty &&
-                    _selectedArea != null &&
-                    _selectedIconSlug != null &&
-                    _hasShape;
-                return SaveActionButton(
-                  label: strings.saveChanges,
-                  lit: canSave,
-                  onPressed: _save,
-                );
-              },
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 16,
+              runSpacing: 12,
+              children: [
+                if (widget.existingProject != null && widget.onDelete != null)
+                  PillActionButton(
+                    key: const ValueKey('project-delete'),
+                    icon: Icons.delete_outline,
+                    label: strings.deleteStarAction,
+                    onTap: _deleting ? null : _confirmAndDelete,
+                    danger: true,
+                  ),
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _nameController,
+                  builder: (context, value, child) {
+                    final canSave =
+                        !_deleting &&
+                        value.text.trim().isNotEmpty &&
+                        _selectedArea != null &&
+                        _selectedIconSlug != null &&
+                        _hasShape;
+                    return SaveActionButton(
+                      label: strings.saveChanges,
+                      lit: canSave,
+                      onPressed: _save,
+                    );
+                  },
+                ),
+              ],
             ),
           ),
         ),

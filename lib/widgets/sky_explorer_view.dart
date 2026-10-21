@@ -1481,6 +1481,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
           projectRepository: widget.projectRepository,
           starsShapeRepository: widget.starsShapeRepository,
           existingProject: project,
+          onDelete: () => _removeConstellation(project),
         ),
       ),
     );
@@ -1511,6 +1512,10 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
       tone: AppConfirmationTone.destructive,
     );
     if (!confirmed) return;
+    await _removeConstellation(project);
+  }
+
+  Future<void> _removeConstellation(Project project) async {
     if (!mounted) return;
     final cycleRepository = HabitCycleScope.read(context);
     final habitIds = await widget.habitRepository.deleteAllForProject(
@@ -2360,6 +2365,7 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                                           AnimatedToggleSwitch<
                                             _SkyMode
                                           >.rolling(
+                                            key: const Key('sky-mode-switch'),
                                             height: 40,
                                             current: _mode,
                                             values: _SkyMode.values,
@@ -2487,21 +2493,26 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                 ),
                 Expanded(
                   child: FadeTransition(
-                    opacity: CurvedAnimation(
-                      parent: _modeAnimation,
-                      curve: Curves.easeOut,
-                    ),
-                    child: SlideTransition(
-                      position:
-                          Tween<Offset>(
-                            begin: Offset(_modeReverse ? -0.12 : 0.12, 0),
-                            end: Offset.zero,
-                          ).animate(
-                            CurvedAnimation(
-                              parent: _modeAnimation,
-                              curve: Curves.easeOutCubic,
-                            ),
+                    key: const Key('sky-mode-fade-transition'),
+                    opacity: _gridView
+                        ? const AlwaysStoppedAnimation(1)
+                        : CurvedAnimation(
+                            parent: _modeAnimation,
+                            curve: Curves.easeOut,
                           ),
+                    child: SlideTransition(
+                      key: const Key('sky-mode-slide-transition'),
+                      position: _gridView
+                          ? const AlwaysStoppedAnimation(Offset.zero)
+                          : Tween<Offset>(
+                              begin: Offset(_modeReverse ? -0.12 : 0.12, 0),
+                              end: Offset.zero,
+                            ).animate(
+                              CurvedAnimation(
+                                parent: _modeAnimation,
+                                curve: Curves.easeOutCubic,
+                              ),
+                            ),
                       child: NotificationListener<ScrollNotification>(
                         onNotification: (notification) {
                           if (notification is ScrollStartNotification) {
@@ -2672,36 +2683,18 @@ class _SkyExplorerViewState extends State<SkyExplorerView>
                   horizontal: isWideLayout(context) ? 36 : 20,
                 ),
                 child: SafeArea(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 240),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    transitionBuilder: (child, animation) => FadeTransition(
-                      opacity: animation,
-                      child: ScaleTransition(
-                        scale: Tween<double>(
-                          begin: 0.96,
-                          end: 1,
-                        ).animate(animation),
-                        child: child,
-                      ),
-                    ),
-                    child: action == null
-                        ? SizedBox.shrink(
-                            key: ValueKey('sky-actions-${_mode.name}'),
-                          )
-                        : _SkyFloatingActions(
-                            key: ValueKey('sky-actions-${_mode.name}'),
-                            style: _SkyActionStyle.pill,
-                            showBackToTop: _showBackToTop,
-                            backToTopAvoidsFooter: _backToTopAvoidsFooter,
-                            backTooltip: strings.backToTopAction,
-                            onBackToTop: _scrollToTop,
-                            primaryIcon: action.icon,
-                            primaryLabel: action.tooltip,
-                            onPrimary: action.onPressed,
-                          ),
-                  ),
+                  child: action == null
+                      ? const SizedBox.shrink()
+                      : _SkyFloatingActions(
+                          style: _SkyActionStyle.pill,
+                          showBackToTop: _showBackToTop,
+                          backToTopAvoidsFooter: _backToTopAvoidsFooter,
+                          backTooltip: strings.backToTopAction,
+                          onBackToTop: _scrollToTop,
+                          primaryIcon: action.icon,
+                          primaryLabel: action.tooltip,
+                          onPrimary: action.onPressed,
+                        ),
                 ),
               ),
             ),
@@ -2991,7 +2984,6 @@ class _ConstellationsList extends StatelessWidget {
 
 class _SkyFloatingActions extends StatelessWidget {
   const _SkyFloatingActions({
-    super.key,
     required this.style,
     required this.showBackToTop,
     required this.backToTopAvoidsFooter,
@@ -3186,8 +3178,8 @@ class _SkyPrimaryAction extends StatelessWidget {
       _SkyActionStyle.pill => (
         colors.gold,
         colors.onGold,
-        const StadiumBorder(),
-        const EdgeInsets.symmetric(horizontal: 18),
+        const CircleBorder(),
+        EdgeInsets.zero,
       ),
       _SkyActionStyle.edge => (
         colors.nightPanel,
@@ -3221,20 +3213,25 @@ class _SkyPrimaryAction extends StatelessWidget {
           child: InkWell(
             key: const Key('sky-primary-action'),
             onTap: onTap,
-            child: Padding(
-              padding: padding,
-              child: SizedBox(
-                height: style == _SkyActionStyle.minimal ? 42 : 48,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, color: foreground, size: 18),
-                    const SizedBox(width: 8),
-                    AppButtonLabel(label, color: foreground),
-                  ],
-                ),
-              ),
-            ),
+            child: style == _SkyActionStyle.pill
+                ? SizedBox.square(
+                    dimension: 48,
+                    child: Icon(icon, color: foreground, size: 20),
+                  )
+                : Padding(
+                    padding: padding,
+                    child: SizedBox(
+                      height: style == _SkyActionStyle.minimal ? 42 : 48,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(icon, color: foreground, size: 18),
+                          const SizedBox(width: 8),
+                          AppButtonLabel(label, color: foreground),
+                        ],
+                      ),
+                    ),
+                  ),
           ),
         ),
       ),

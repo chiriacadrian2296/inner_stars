@@ -95,7 +95,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull, reason: 'area detail');
     expect(find.text('Gestisci Questa Area'), findsNothing);
-    await tester.tap(find.byTooltip('Vision'));
+    expect(find.byTooltip('Vision'), findsNothing);
+    expect(find.byTooltip('Moodboard'), findsNothing);
+    expect(find.byTooltip('Riflessioni'), findsNothing);
+    final sectionActions = find.byType(ElevatedButton);
+    tester.widget<ElevatedButton>(sectionActions.at(0)).onPressed!();
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull, reason: 'vision editor');
     expect(find.byType(VisionEditorScreen), findsOneWidget);
@@ -106,14 +110,14 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull, reason: 'return from vision');
-    await tester.tap(find.byTooltip('Moodboard'));
+    tester.widget<ElevatedButton>(sectionActions.at(1)).onPressed!();
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull, reason: 'moodboard');
     expect(find.byType(MoodboardScreen), findsOneWidget);
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull, reason: 'return from moodboard');
-    await tester.tap(find.byTooltip('Riflessioni'));
+    tester.widget<ElevatedButton>(sectionActions.at(2)).onPressed!();
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull, reason: 'reflections');
     expect(find.byType(AreaReflectionsScreen), findsOneWidget);
@@ -132,6 +136,10 @@ void main() {
     await tester.ensureVisible(find.text(question).last);
     await tester.tap(find.text(question).last);
     await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('reflection-title')),
+      'Titolo della riflessione',
+    );
     await tester.enterText(
       find.byKey(const ValueKey('reflection-body')),
       'Una risposta da conservare',
