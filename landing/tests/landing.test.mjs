@@ -114,3 +114,20 @@ test('every home has a full social preview in its own language', () => {
     assert.ok(page.includes('<meta property="og:site_name" content="Inner Stars">'), path);
   }
 });
+
+test('privacy and terms exist in every language, linked from the home footer', () => {
+  for (const [prefix, lang] of [['', 'it'], ['en/', 'en'], ['ro/', 'ro']]) {
+    for (const kind of ['privacy', 'terms']) {
+      const page = html(`${prefix}${kind}`);
+      const url = `${origin}${prefix}${kind}/`;
+      assert.ok(page.includes(`<html lang="${lang}">`), url);
+      assert.ok(page.includes(`<link rel="canonical" href="${url}">`), url);
+      assert.ok(page.includes('privacy@innerstars.app'), url);
+      assert.ok(page.includes('Mihai Adrian Chiriac'), url);
+      for (const [alt] of homes) assert.ok(page.includes(`href="${origin}${alt ? `${alt}/` : ''}${kind}/"`), url);
+    }
+    const home = html(prefix.replace(/\/$/, ''));
+    assert.ok(home.includes(`/inner_stars/${prefix}privacy/`), prefix);
+    assert.ok(home.includes(`/inner_stars/${prefix}terms/`), prefix);
+  }
+});

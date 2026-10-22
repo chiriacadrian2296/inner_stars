@@ -1,0 +1,39 @@
+---
+import Base from '../layouts/Base.astro';
+import { pagePath } from '../i18n/routes';
+import { legal, legalPath, LEGAL_UPDATED } from '../i18n/legal';
+import type { SiteLang } from '../i18n/types';
+import '../styles/journey.css';
+
+interface Props { lang: SiteLang; kind: 'privacy' | 'terms' }
+const { lang, kind } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const c = legal[lang];
+const doc = c[kind];
+// Base only needs these fields from the page copy; legal pages have no FAQ.
+const copy = { lang, title: `${doc.title} · Inner Stars`, description: doc.description, faq: { items: [] } };
+---
+<Base copy={copy} legal={kind} faqSchema={false}>
+  <header class="journey-nav">
+    <a class="brand" href={pagePath(base, lang)} aria-label="Inner Stars"><img src={`${base}logo-mark.svg`} width="26" height="36" alt=""/><span>Inner <em>Stars</em></span></a>
+    <nav>
+      <span class="locale" role="group">{(['it', 'en', 'ro'] as const).map((l, i) => <>{i > 0 && <span aria-hidden="true">/</span>}<a href={legalPath(base, l, kind)} lang={l} hreflang={l} aria-current={l === lang ? 'page' : undefined}>{l.toUpperCase()}</a></>)}</span>
+    </nav>
+  </header>
+  <main class="legal-page">
+    <h1>{doc.title}</h1>
+    <p class="legal-updated">{c.updatedLabel}: <time datetime={LEGAL_UPDATED}>{c.dateText}</time></p>
+    <p class="legal-intro">{doc.intro}</p>
+    {doc.sections.map(s => (
+      <section>
+        <h2>{s.h}</h2>
+        {s.p?.map(t => <p>{t}</p>)}
+        {s.ul && <ul>{s.ul.map(t => <li>{t}</li>)}</ul>}
+      </section>
+    ))}
+  </main>
+  <footer class="journey-footer">
+    <a class="brand" href={pagePath(base, lang)}><img src={`${base}logo-mark.svg`} width="24" height="30" alt=""/><span>Inner <em>Stars</em></span></a>
+    <span class="legal-links"><a href={legalPath(base, lang, 'privacy')} aria-current={kind === 'privacy' ? 'page' : undefined}>{c.privacyLink}</a> · <a href={legalPath(base, lang, 'terms')} aria-current={kind === 'terms' ? 'page' : undefined}>{c.termsLink}</a></span>
+  </footer>
+</Base>
