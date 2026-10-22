@@ -16,7 +16,6 @@ export interface LegalCopy {
   htmlLocale: string;
   updatedLabel: string;
   dateText: string;
-  back: string;
   privacyLink: string;
   termsLink: string;
   privacy: Doc;
@@ -28,7 +27,6 @@ const it: LegalCopy = {
   htmlLocale: 'it',
   updatedLabel: 'Ultimo aggiornamento',
   dateText: '22 ottobre 2026',
-  back: 'Torna alla home',
   privacyLink: 'Privacy',
   termsLink: 'Termini',
   privacy: {
@@ -162,7 +160,6 @@ const en: LegalCopy = {
   htmlLocale: 'en',
   updatedLabel: 'Last updated',
   dateText: 'October 22, 2026',
-  back: 'Back to home',
   privacyLink: 'Privacy',
   termsLink: 'Terms',
   privacy: {
@@ -296,7 +293,6 @@ const ro: LegalCopy = {
   htmlLocale: 'ro',
   updatedLabel: 'Ultima actualizare',
   dateText: '22 octombrie 2026',
-  back: 'Înapoi la pagina principală',
   privacyLink: 'Confidențialitate',
   termsLink: 'Termeni',
   privacy: {

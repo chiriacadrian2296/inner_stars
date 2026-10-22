@@ -325,8 +325,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
 
 /* Privacy policy and terms: a single readable column. */
 .legal-page { max-width: 760px; margin: 0 auto; padding: 150px 7% 70px; }
-.legal-page .overline a { color: var(--muted); }
-.legal-page h1 { font-size: clamp(34px, 5vw, 54px); margin: 18px 0 10px; }
+
+.legal-page h1 { font-size: clamp(34px, 5vw, 54px); margin: 0 0 10px; }
 .legal-updated { color: var(--muted); font-size: 13px; margin-bottom: 26px; }
 .legal-intro { font-size: 16px; margin-bottom: 10px; }
 .legal-page section { margin-top: 38px; }
@@ -336,3 +336,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
 .legal-page li { margin-top: 8px; }
 .legal-links a:hover, .legal-links a[aria-current] { color: var(--text); }
 @media (max-width: 720px) { .legal-page { padding-top: 120px; } }
+
+/* Same fade as the home: legal text dissolves as it reaches the menu instead of passing behind the logo and links. */
+@supports (animation-timeline: view()) {
+  .legal-page :is(h1,h2,p,li) { animation: leave-at-top linear both; animation-timeline: view(block 124px 0px); animation-range: exit 0px exit 46px; }
+}
