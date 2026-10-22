@@ -54,6 +54,20 @@ class StringsIt implements AppStrings {
   @override
   String get reflectionQuestionLabel => 'Domanda di Partenza';
   @override
+  String get reflectionLatestLabel => 'Ultima Riflessione';
+  @override
+  String get reflectionEarlierLabel => 'Precedenti';
+  @override
+  String get reflectionQuestionOfMomentLabel => 'Domanda del Momento';
+  @override
+  String get reflectionTopicLabel => 'Tema';
+  @override
+  String get reflectionSuggestedBadge => 'Suggerita';
+  @override
+  String get reflectionFreeBadge => 'Riflessione Libera';
+  @override
+  String get reflectionContinueLabel => 'Dalle una Direzione';
+  @override
   String get reflectionNextStepTitle => 'Dove porta questa riflessione?';
   @override
   String get reflectionNextStepBody =>

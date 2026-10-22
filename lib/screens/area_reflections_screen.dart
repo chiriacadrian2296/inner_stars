@@ -15,6 +15,7 @@ import '../models/reflection.dart';
 import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
+import '../theme/app_motion.dart';
 import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
 import '../utils/area_section_icons.dart';
@@ -92,121 +93,69 @@ class _AreaReflectionsScreenState extends State<AreaReflectionsScreen> {
   }
 
   Future<_ReflectionNextStep?> _chooseNextStep(BuildContext context) {
-    final strings = context.strings;
-    return showAppSheet<_ReflectionNextStep>(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetContext) => SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppSheetTitle(strings.reflectionNextStepTitle),
-                const SizedBox(height: 10),
-                Text(
-                  strings.reflectionNextStepBody,
-                  style: TextStyle(
-                    color: sheetContext.colors.muted,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                AppSheetAction(
-                  key: const ValueKey('reflection-next-star'),
-                  icon: Icons.auto_awesome_outlined,
-                  label: strings.reflectionCreateStarAction,
-                  onPressed: () =>
-                      Navigator.pop(sheetContext, _ReflectionNextStep.star),
-                ),
-                const SizedBox(height: 10),
-                AppSheetAction(
-                  key: const ValueKey('reflection-next-vision'),
-                  icon: kAreaVisionIcon,
-                  label: strings.reflectionUpdateVisionAction,
-                  onPressed: () =>
-                      Navigator.pop(sheetContext, _ReflectionNextStep.vision),
-                ),
-                const SizedBox(height: 10),
-                AppSheetAction(
-                  key: const ValueKey('reflection-next-moodboard'),
-                  icon: kAreaMoodboardIcon,
-                  label: strings.reflectionAddMoodboardAction,
-                  onPressed: () => Navigator.pop(
-                    sheetContext,
-                    _ReflectionNextStep.moodboard,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Align(
-                  alignment: Alignment.center,
-                  child: TextButton(
-                    key: const ValueKey('reflection-next-not-now'),
-                    onPressed: () => Navigator.pop(sheetContext),
-                    style: TextButton.styleFrom(
-                      foregroundColor: sheetContext.colors.muted,
-                    ),
-                    child: AppButtonLabel(
-                      strings.reflectionNotNowAction,
-                      color: sheetContext.colors.muted,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+    return _chooseReflectionNextStep(context);
   }
 
   Future<void> _openNextStep(
     BuildContext context,
     _ReflectionNextStep? nextStep,
-  ) async {
-    switch (nextStep) {
-      case _ReflectionNextStep.star:
-        final projectRepository = await ProjectRepository.create();
-        final starsShapeRepository = await StarsShapeRepository.create();
-        final starRepository = await StarRepository.create();
-        final habitRepository = await HabitRepository.create();
-        if (!context.mounted) return;
-        await showCreatePage(
-          context,
-          projectRepository: projectRepository,
-          starsShapeRepository: starsShapeRepository,
-          starRepository: starRepository,
-          habitRepository: habitRepository,
-          startWithoutSelection: true,
-          area: area,
-        );
-        return;
-      case _ReflectionNextStep.vision:
-        final visionRepository = await AreaVisionRepository.create();
-        if (!context.mounted) return;
-        await Navigator.of(context).push<void>(
-          MaterialPageRoute(
-            builder: (_) =>
-                VisionEditorScreen(area: area, repository: visionRepository),
+  ) => _openReflectionNextStep(context, area, nextStep);
+
+  Future<void> _showNewReflectionChoices(BuildContext context) async {
+    final strings = context.strings;
+    final suggested = await showAppSheet<bool>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppSheetTitle(strings.reflectionNew),
+              const SizedBox(height: 20),
+              AppSheetAction(
+                icon: Icons.edit_outlined,
+                label: strings.reflectionFree,
+                onPressed: () => Navigator.pop(sheetContext, false),
+              ),
+              const SizedBox(height: 10),
+              AppSheetAction(
+                icon: Icons.lightbulb_outline,
+                label: strings.reflectionSuggested,
+                onPressed: () => Navigator.pop(sheetContext, true),
+              ),
+              const SizedBox(height: 24),
+              Align(
+                alignment: Alignment.center,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(sheetContext),
+                  style: TextButton.styleFrom(
+                    foregroundColor: context.colors.muted,
+                  ),
+                  child: AppButtonLabel(
+                    strings.cancel,
+                    color: context.colors.muted,
+                  ),
+                ),
+              ),
+            ],
           ),
-        );
-        return;
-      case _ReflectionNextStep.moodboard:
-        final moodboardRepository = await MoodboardRepository.create();
-        if (!context.mounted) return;
-        await Navigator.of(context).push<void>(
-          MaterialPageRoute(
-            builder: (_) =>
-                MoodboardScreen(area: area, repository: moodboardRepository),
-          ),
-        );
-        return;
-      case null:
-        return;
+        ),
+      ),
+    );
+    if (suggested != null && context.mounted) {
+      await _create(context, suggested: suggested);
     }
   }
+
+  Future<void> _openReflection(Reflection reflection) =>
+      Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) =>
+              ReflectionDetailScreen(id: reflection.id, repository: repository),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -223,59 +172,15 @@ class _AreaReflectionsScreenState extends State<AreaReflectionsScreen> {
           )
           .toList();
       return _ReflectionPage(
-        actions: [
-          ElevatedButton(
-            key: const ValueKey('reflection-new'),
-            child: AppButtonLabel(strings.reflectAction),
-            onPressed: () async {
-              final suggested = await showAppSheet<bool>(
-                context: context,
-                // Laid out like the add-photo sheet: two options, then Cancel.
-                builder: (sheetContext) => SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppSheetTitle(strings.reflectionNew),
-                        const SizedBox(height: 20),
-                        AppSheetAction(
-                          icon: Icons.edit_outlined,
-                          label: strings.reflectionFree,
-                          onPressed: () => Navigator.pop(sheetContext, false),
-                        ),
-                        const SizedBox(height: 10),
-                        AppSheetAction(
-                          icon: Icons.lightbulb_outline,
-                          label: strings.reflectionSuggested,
-                          onPressed: () => Navigator.pop(sheetContext, true),
-                        ),
-                        const SizedBox(height: 24),
-                        Align(
-                          alignment: Alignment.center,
-                          child: TextButton(
-                            onPressed: () => Navigator.pop(sheetContext),
-                            style: TextButton.styleFrom(
-                              foregroundColor: context.colors.muted,
-                            ),
-                            child: AppButtonLabel(
-                              strings.cancel,
-                              color: context.colors.muted,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+        actions: records.isEmpty
+            ? const []
+            : [
+                ElevatedButton(
+                  key: const ValueKey('reflection-new'),
+                  child: AppButtonLabel(strings.reflectAction),
+                  onPressed: () => _showNewReflectionChoices(context),
                 ),
-              );
-              if (suggested != null && context.mounted) {
-                await _create(context, suggested: suggested);
-              }
-            },
-          ),
-        ],
+              ],
         children: [
           AreaSectionHeader(
             title: strings.areaReflectionsTitle,
@@ -289,7 +194,11 @@ class _AreaReflectionsScreenState extends State<AreaReflectionsScreen> {
           ),
           const SizedBox(height: 24),
           if (records.isEmpty)
-            _EmptyReflections(text: strings.reflectionEmpty)
+            _EmptyReflections(
+              text: strings.reflectionEmpty,
+              onFree: () => _create(context, suggested: false),
+              onSuggested: () => _create(context, suggested: true),
+            )
           else ...[
             if (records.length >= 6 || _search.text.isNotEmpty) ...[
               AppSearchField(
@@ -300,15 +209,35 @@ class _AreaReflectionsScreenState extends State<AreaReflectionsScreen> {
               ),
               const SizedBox(height: 16),
             ],
-            Text(
-              strings.reflectionCount(visible.length),
-              style: TextStyle(color: context.colors.muted),
-            ),
-            const SizedBox(height: 16),
+            if (_search.text.isNotEmpty) ...[
+              Text(
+                strings.reflectionCount(visible.length),
+                style: TextStyle(color: context.colors.muted),
+              ),
+              const SizedBox(height: 16),
+            ],
             if (visible.isEmpty)
               _EmptyReflections(text: strings.reflectionNoResults),
-            for (var i = 0; i < visible.length; i++) ...[
-              if (i == 0 ||
+            if (visible.isNotEmpty && _search.text.isEmpty) ...[
+              AppFieldLabel(strings.reflectionLatestLabel),
+              const SizedBox(height: 10),
+              _ReflectionCard(
+                record: visible.first,
+                featured: true,
+                onTap: () => _openReflection(visible.first),
+              ),
+              if (visible.length > 1) ...[
+                const SizedBox(height: 16),
+                AppFieldLabel(strings.reflectionEarlierLabel),
+                const SizedBox(height: 12),
+              ],
+            ],
+            for (
+              var i = _search.text.isEmpty ? 1 : 0;
+              i < visible.length;
+              i++
+            ) ...[
+              if (i == (_search.text.isEmpty ? 1 : 0) ||
                   !_sameMonth(visible[i - 1].createdAt, visible[i].createdAt))
                 Padding(
                   padding: const EdgeInsets.only(top: 8, bottom: 12),
@@ -318,16 +247,9 @@ class _AreaReflectionsScreenState extends State<AreaReflectionsScreen> {
                     style: TextStyle(color: context.colors.muted),
                   ),
                 ),
-              _ReflectionCard(
+              _ReflectionTimelineCard(
                 record: visible[i],
-                onTap: () => Navigator.of(context).push<void>(
-                  MaterialPageRoute(
-                    builder: (_) => ReflectionDetailScreen(
-                      id: visible[i].id,
-                      repository: repository,
-                    ),
-                  ),
-                ),
+                onTap: () => _openReflection(visible[i]),
               ),
             ],
           ],
@@ -339,6 +261,119 @@ class _AreaReflectionsScreenState extends State<AreaReflectionsScreen> {
 
 enum _ReflectionNextStep { star, vision, moodboard }
 
+Future<_ReflectionNextStep?> _chooseReflectionNextStep(BuildContext context) {
+  final strings = context.strings;
+  return showAppSheet<_ReflectionNextStep>(
+    context: context,
+    isScrollControlled: true,
+    builder: (sheetContext) => SafeArea(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppSheetTitle(strings.reflectionNextStepTitle),
+              const SizedBox(height: 10),
+              Text(
+                strings.reflectionNextStepBody,
+                style: TextStyle(color: sheetContext.colors.muted, height: 1.5),
+              ),
+              const SizedBox(height: 20),
+              AppSheetAction(
+                key: const ValueKey('reflection-next-star'),
+                icon: Icons.auto_awesome_outlined,
+                label: strings.reflectionCreateStarAction,
+                onPressed: () =>
+                    Navigator.pop(sheetContext, _ReflectionNextStep.star),
+              ),
+              const SizedBox(height: 10),
+              AppSheetAction(
+                key: const ValueKey('reflection-next-vision'),
+                icon: kAreaVisionIcon,
+                label: strings.reflectionUpdateVisionAction,
+                onPressed: () =>
+                    Navigator.pop(sheetContext, _ReflectionNextStep.vision),
+              ),
+              const SizedBox(height: 10),
+              AppSheetAction(
+                key: const ValueKey('reflection-next-moodboard'),
+                icon: kAreaMoodboardIcon,
+                label: strings.reflectionAddMoodboardAction,
+                onPressed: () =>
+                    Navigator.pop(sheetContext, _ReflectionNextStep.moodboard),
+              ),
+              const SizedBox(height: 24),
+              Align(
+                alignment: Alignment.center,
+                child: TextButton(
+                  key: const ValueKey('reflection-next-not-now'),
+                  onPressed: () => Navigator.pop(sheetContext),
+                  style: TextButton.styleFrom(
+                    foregroundColor: sheetContext.colors.muted,
+                  ),
+                  child: AppButtonLabel(
+                    strings.reflectionNotNowAction,
+                    color: sheetContext.colors.muted,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+Future<void> _openReflectionNextStep(
+  BuildContext context,
+  LifeArea area,
+  _ReflectionNextStep? nextStep,
+) async {
+  switch (nextStep) {
+    case _ReflectionNextStep.star:
+      final projectRepository = await ProjectRepository.create();
+      final starsShapeRepository = await StarsShapeRepository.create();
+      final starRepository = await StarRepository.create();
+      final habitRepository = await HabitRepository.create();
+      if (!context.mounted) return;
+      await showCreatePage(
+        context,
+        projectRepository: projectRepository,
+        starsShapeRepository: starsShapeRepository,
+        starRepository: starRepository,
+        habitRepository: habitRepository,
+        startWithoutSelection: true,
+        area: area,
+      );
+      return;
+    case _ReflectionNextStep.vision:
+      final visionRepository = await AreaVisionRepository.create();
+      if (!context.mounted) return;
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) =>
+              VisionEditorScreen(area: area, repository: visionRepository),
+        ),
+      );
+      return;
+    case _ReflectionNextStep.moodboard:
+      final moodboardRepository = await MoodboardRepository.create();
+      if (!context.mounted) return;
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) =>
+              MoodboardScreen(area: area, repository: moodboardRepository),
+        ),
+      );
+      return;
+    case null:
+      return;
+  }
+}
+
 bool _sameMonth(DateTime a, DateTime b) {
   final localA = a.toLocal();
   final localB = b.toLocal();
@@ -348,8 +383,10 @@ bool _sameMonth(DateTime a, DateTime b) {
 /// Nothing written yet: the area's reflection glyph above a short line,
 /// centred, like the app's other empty states.
 class _EmptyReflections extends StatelessWidget {
-  const _EmptyReflections({required this.text});
+  const _EmptyReflections({required this.text, this.onFree, this.onSuggested});
   final String text;
+  final VoidCallback? onFree;
+  final VoidCallback? onSuggested;
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -364,6 +401,26 @@ class _EmptyReflections extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(color: colors.muted, height: 1.6),
           ),
+          if (onFree != null && onSuggested != null) ...[
+            const SizedBox(height: 28),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 12,
+              runSpacing: 8,
+              children: [
+                TextButton(
+                  key: const ValueKey('reflection-new-free'),
+                  onPressed: onFree,
+                  child: AppButtonLabel(context.strings.reflectionFree),
+                ),
+                ElevatedButton(
+                  key: const ValueKey('reflection-new-suggested'),
+                  onPressed: onSuggested,
+                  child: AppButtonLabel(context.strings.reflectionSuggested),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -375,9 +432,14 @@ class _EmptyReflections extends StatelessWidget {
 /// also keep their starting-question context visible without repeating the
 /// whole prompt and overwhelming the user's own words.
 class _ReflectionCard extends StatelessWidget {
-  const _ReflectionCard({required this.record, required this.onTap});
+  const _ReflectionCard({
+    required this.record,
+    required this.onTap,
+    this.featured = false,
+  });
   final Reflection record;
   final VoidCallback onTap;
+  final bool featured;
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -392,7 +454,12 @@ class _ReflectionCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(kRadiusCard),
           child: Ink(
-            padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
+            padding: EdgeInsets.fromLTRB(
+              featured ? 20 : 16,
+              featured ? 20 : 16,
+              featured ? 16 : 12,
+              featured ? 20 : 16,
+            ),
             decoration: panelDecoration(colors).copyWith(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -473,7 +540,7 @@ class _ReflectionCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontFamily: kFontStarTitle,
-                          fontSize: 20,
+                          fontSize: featured ? 24 : 20,
                           height: 1.25,
                           color: colors.text,
                         ),
@@ -510,6 +577,89 @@ class _ReflectionCard extends StatelessWidget {
   }
 }
 
+class _ReflectionTimelineCard extends StatelessWidget {
+  const _ReflectionTimelineCard({required this.record, required this.onTap});
+
+  final Reflection record;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => IntrinsicHeight(
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          width: 24,
+          child: Stack(
+            alignment: Alignment.topCenter,
+            children: [
+              Positioned(
+                top: 0,
+                bottom: 0,
+                child: Container(
+                  width: kBorderWidth,
+                  color: context.colors.nightBorder,
+                ),
+              ),
+              Positioned(
+                top: 24,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: context.colors.gold,
+                    boxShadow: [
+                      BoxShadow(
+                        color: context.colors.gold.withValues(alpha: 0.28),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _ReflectionCard(record: record, onTap: onTap),
+        ),
+      ],
+    ),
+  );
+}
+
+class _ReflectionOriginBadge extends StatelessWidget {
+  const _ReflectionOriginBadge({required this.suggested});
+
+  final bool suggested;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(
+      color: context.colors.gold.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(999),
+      border: Border.all(
+        color: context.colors.gold.withValues(alpha: 0.32),
+        width: kBorderWidth,
+      ),
+    ),
+    child: Text(
+      suggested
+          ? context.strings.reflectionSuggestedBadge
+          : context.strings.reflectionFreeBadge,
+      style: TextStyle(
+        color: context.colors.gold,
+        fontSize: 10,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.45,
+      ),
+    ),
+  );
+}
+
 class _ReflectionSuggestions extends StatefulWidget {
   const _ReflectionSuggestions({required this.area, required this.repository});
   final LifeArea area;
@@ -522,6 +672,8 @@ class _ReflectionSuggestionsState extends State<_ReflectionSuggestions> {
   LifeArea get area => widget.area;
   ReflectionRepository get repository => widget.repository;
   int? _sample;
+  int? _selected;
+  int? _expandedGroup = 0;
 
   void _choose(int index, String question) =>
       Navigator.pop(context, ('$index', question));
@@ -563,28 +715,40 @@ class _ReflectionSuggestionsState extends State<_ReflectionSuggestions> {
         ? math.Random().nextInt(questions.length)
         : unexplored[math.Random().nextInt(unexplored.length)];
     final sample = _sample!;
+    final active = _selected ?? sample;
     var offset = 0;
     final groups = <Widget>[];
-    for (final group in area.reflectionGroups(strings)) {
+    final reflectionGroups = area.reflectionGroups(strings);
+    for (
+      var groupIndex = 0;
+      groupIndex < reflectionGroups.length;
+      groupIndex++
+    ) {
+      final group = reflectionGroups[groupIndex];
       final start = offset;
       offset += group.questions.length;
       groups.add(
         Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          // A Material, not a decorated box, so the tiles' ink shows.
+          padding: const EdgeInsets.only(bottom: 2),
           child: Material(
-            color: colors.nightPanel,
+            color: Colors.transparent,
             clipBehavior: Clip.antiAlias,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(kRadiusCard),
-              side: BorderSide(color: colors.nightBorder, width: kBorderWidth),
+              borderRadius: BorderRadius.circular(kRadiusField),
             ),
             child: Theme(
               data: Theme.of(context)
-                  .copyWith(dividerColor: Colors.transparent),
+                  .copyWith(dividerColor: colors.nightBorder),
               child: ExpansionTile(
-                tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                key: ValueKey(
+                  'reflection-group-$groupIndex-${_expandedGroup == groupIndex}',
+                ),
+                initiallyExpanded: _expandedGroup == groupIndex,
+                onExpansionChanged: (expanded) => setState(
+                  () => _expandedGroup = expanded ? groupIndex : null,
+                ),
+                tilePadding: const EdgeInsets.symmetric(horizontal: 4),
+                childrenPadding: const EdgeInsets.only(bottom: 12),
                 iconColor: colors.gold,
                 collapsedIconColor: colors.muted,
                 title: Text(
@@ -603,8 +767,12 @@ class _ReflectionSuggestionsState extends State<_ReflectionSuggestions> {
                   for (var i = 0; i < group.questions.length; i++)
                     _QuestionChoice(
                       question: group.questions[i],
-                      explored: answered.contains('${start + i}'),
-                      onWrite: () => _choose(start + i, group.questions[i]),
+                      selected: active == start + i,
+                      answerCount: repository
+                          .getForArea(area)
+                          .where((r) => r.questionId == '${start + i}')
+                          .length,
+                      onSelect: () => setState(() => _selected = start + i),
                       onRelated: () => _related(start + i, group.questions[i]),
                     ),
                 ],
@@ -624,36 +792,56 @@ class _ReflectionSuggestionsState extends State<_ReflectionSuggestions> {
         const SizedBox(height: 24),
         Container(
           key: const ValueKey('reflection-immediate-question'),
-          padding: const EdgeInsets.all(16),
-          decoration: panelDecoration(colors),
+          width: double.infinity,
+          padding: const EdgeInsets.all(22),
+          decoration: panelDecoration(colors).copyWith(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [colors.gold.withValues(alpha: 0.11), colors.nightPanel],
+            ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _QuestionChoice(
-                question: questions[sample],
-                explored: answered.contains('$sample'),
-                onWrite: () => _choose(sample, questions[sample]),
-                onRelated: () => _related(sample, questions[sample]),
+              AppFieldLabel(strings.reflectionQuestionOfMomentLabel),
+              const SizedBox(height: 12),
+              Text(
+                questions[active],
+                style: TextStyle(
+                  fontFamily: kFontStarTitle,
+                  color: colors.text,
+                  fontSize: 24,
+                  height: 1.35,
+                ),
               ),
-              const SizedBox(height: 8),
+              if (answered.contains('$active')) ...[
+                const SizedBox(height: 10),
+                TextButton(
+                  onPressed: () => _related(active, questions[active]),
+                  child: AppButtonLabel(strings.reflectionExplored),
+                ),
+              ],
+              const SizedBox(height: 18),
               Wrap(
                 spacing: 12,
                 runSpacing: 8,
                 children: [
                   TextButton(
                     key: const ValueKey('reflection-another-question'),
-                    onPressed: () => setState(
-                      () => _sample =
-                          (sample +
+                    onPressed: () => setState(() {
+                      _sample =
+                          (active +
                               1 +
                               math.Random().nextInt(questions.length - 1)) %
-                          questions.length,
-                    ),
+                          questions.length;
+                      _selected = null;
+                    }),
                     child: AppButtonLabel(strings.reflectionAnotherQuestion),
                   ),
                   ElevatedButton(
                     key: const ValueKey('reflection-write-question'),
-                    onPressed: () => _choose(sample, questions[sample]),
+                    onPressed: () => _choose(active, questions[active]),
                     child: AppButtonLabel(strings.reflectionWrite),
                   ),
                 ],
@@ -661,7 +849,7 @@ class _ReflectionSuggestionsState extends State<_ReflectionSuggestions> {
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
         ...groups,
       ],
     );
@@ -671,41 +859,95 @@ class _ReflectionSuggestionsState extends State<_ReflectionSuggestions> {
 class _QuestionChoice extends StatelessWidget {
   const _QuestionChoice({
     required this.question,
-    required this.explored,
-    required this.onWrite,
+    required this.selected,
+    required this.answerCount,
+    required this.onSelect,
     required this.onRelated,
   });
   final String question;
-  final bool explored;
-  final VoidCallback onWrite;
+  final bool selected;
+  final int answerCount;
+  final VoidCallback onSelect;
   final VoidCallback onRelated;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      InkWell(
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: InkWell(
         borderRadius: BorderRadius.circular(kRadiusField),
-        onTap: onWrite,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-          child: Text(
-            question,
-            style: TextStyle(
-              color: context.colors.text,
-              fontSize: 16,
-              height: 1.5,
+        onTap: onSelect,
+        child: Ink(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+          decoration: BoxDecoration(
+            color: selected
+                ? colors.gold.withValues(alpha: 0.09)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(kRadiusField),
+            border: Border.all(
+              color: selected ? colors.gold : colors.nightBorder,
+              width: kBorderWidth,
             ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      question,
+                      style: TextStyle(
+                        color: colors.text,
+                        fontSize: 16,
+                        height: 1.45,
+                      ),
+                    ),
+                    if (answerCount > 0) ...[
+                      const SizedBox(height: 6),
+                      GestureDetector(
+                        onTap: onRelated,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              context.strings.reflectionExplored,
+                              style: TextStyle(
+                                color: colors.gold,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                            Text(
+                              ' · $answerCount',
+                              style: TextStyle(
+                                color: colors.muted,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Icon(
+                selected
+                    ? Icons.check_circle_outline_rounded
+                    : Icons.chevron_right_rounded,
+                size: 20,
+                color: selected ? colors.gold : colors.muted,
+              ),
+            ],
           ),
         ),
       ),
-      if (explored)
-        TextButton(
-          onPressed: onRelated,
-          child: AppButtonLabel(context.strings.reflectionExplored),
-        ),
-    ],
-  );
+    );
+  }
 }
 
 class _RelatedReflections extends StatelessWidget {
@@ -780,8 +1022,15 @@ class _QuestionContext extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     width: double.infinity,
-    padding: const EdgeInsets.all(16),
-    decoration: panelDecoration(context.colors),
+    padding: const EdgeInsets.fromLTRB(18, 4, 8, 4),
+    decoration: BoxDecoration(
+      border: Border(
+        left: BorderSide(
+          color: context.colors.gold.withValues(alpha: 0.7),
+          width: 2,
+        ),
+      ),
+    ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -791,8 +1040,10 @@ class _QuestionContext extends StatelessWidget {
           question,
           style: TextStyle(
             color: context.colors.text,
-            fontSize: 16,
-            height: 1.5,
+            fontFamily: kFontStarTitle,
+            fontSize: 18,
+            fontStyle: FontStyle.italic,
+            height: 1.45,
           ),
         ),
       ],
@@ -861,7 +1112,10 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
     super.dispose();
   }
 
-  void _syncFocus() => _body.focused = _focus.hasFocus;
+  void _syncFocus() {
+    _body.focused = _focus.hasFocus;
+    if (mounted) setState(() {});
+  }
 
   void _close([Reflection? record]) {
     setState(() => _canLeave = true);
@@ -1127,6 +1381,9 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
   Widget build(BuildContext context) {
     final strings = context.strings;
     final colors = context.colors;
+    final suggested =
+        widget.questionId != null ||
+        widget.existing?.origin == ReflectionOrigin.suggested;
     Widget tool(IconData icon, String label, VoidCallback action) => IconButton(
       tooltip: label,
       style: IconButton.styleFrom(
@@ -1150,45 +1407,68 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                StaggeredEntrance(
-                  index: 0,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                    child: AreaSectionHeader(
-                      title: widget.area.displayName(strings),
-                      icon: kAreaReflectionsIcon,
-                      descriptionChild: TextField(
-                        key: const ValueKey('reflection-title'),
-                        controller: _title,
-                        enabled: !_busy,
-                        minLines: 1,
-                        maxLines: 3,
-                        maxLength: kReflectionTitleMax,
-                        textCapitalization: TextCapitalization.sentences,
-                        textInputAction: TextInputAction.next,
-                        onSubmitted: (_) => _focus.requestFocus(),
-                        style: TextStyle(
-                          color: colors.text,
-                          fontFamily: kFontStarTitle,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          height: 1.3,
-                        ),
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          filled: false,
-                          counterText: '',
-                          hintText: strings.reflectionTitleLabel,
-                          hintStyle: TextStyle(
-                            color: colors.muted,
-                            fontFamily: kFontStarTitle,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w600,
-                            height: 1.3,
-                          ),
-                          contentPadding: EdgeInsets.zero,
+                AnimatedOpacity(
+                  duration: kMotionFast,
+                  opacity: _focus.hasFocus ? 0.68 : 1,
+                  child: StaggeredEntrance(
+                    index: 0,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                      child: AreaSectionHeader(
+                        title: widget.area.displayName(strings),
+                        icon: kAreaReflectionsIcon,
+                        descriptionChild: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Wrap(
+                              spacing: 10,
+                              runSpacing: 6,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                AppFieldLabel(
+                                  suggested
+                                      ? strings.reflectionQuestionLabel
+                                      : strings.reflectionTopicLabel,
+                                ),
+                                _ReflectionOriginBadge(suggested: suggested),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            TextField(
+                              key: const ValueKey('reflection-title'),
+                              controller: _title,
+                              enabled: !_busy,
+                              minLines: 1,
+                              maxLines: 3,
+                              maxLength: kReflectionTitleMax,
+                              textCapitalization: TextCapitalization.sentences,
+                              textInputAction: TextInputAction.next,
+                              onSubmitted: (_) => _focus.requestFocus(),
+                              style: TextStyle(
+                                color: colors.text,
+                                fontFamily: kFontStarTitle,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                                height: 1.3,
+                              ),
+                              decoration: InputDecoration(
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                filled: false,
+                                counterText: '',
+                                hintText: strings.reflectionTitleLabel,
+                                hintStyle: TextStyle(
+                                  color: colors.muted,
+                                  fontFamily: kFontStarTitle,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.3,
+                                ),
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -1330,9 +1610,13 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
                     fit: StackFit.expand,
                     children: [
                       Positioned.fill(
-                        child: LogoWatermark(
-                          scale: logoWatermarkScale(StarKind.unlit),
-                          color: logoWatermarkColor(colors, StarKind.unlit),
+                        child: AnimatedOpacity(
+                          duration: kMotionFast,
+                          opacity: _focus.hasFocus ? 0.28 : 1,
+                          child: LogoWatermark(
+                            scale: logoWatermarkScale(StarKind.unlit),
+                            color: logoWatermarkColor(colors, StarKind.unlit),
+                          ),
                         ),
                       ),
                       Padding(
@@ -1451,6 +1735,10 @@ class ReflectionDetailScreen extends StatefulWidget {
 
 class _ReflectionDetailScreenState extends State<ReflectionDetailScreen> {
   bool _deleting = false;
+
+  Future<void> _follow(LifeArea area, _ReflectionNextStep step) =>
+      _openReflectionNextStep(context, area, step);
+
   Future<void> _delete() async {
     if (_deleting) return;
     final strings = context.strings;
@@ -1530,6 +1818,28 @@ class _ReflectionDetailScreenState extends State<ReflectionDetailScreen> {
           ),
         ],
         children: [
+          AreaSectionHeader(
+            title: strings.areaReflectionsTitle,
+            icon: kAreaReflectionsIcon,
+            description: record.area.displayName(strings),
+          ),
+          const SizedBox(height: 28),
+          Wrap(
+            spacing: 10,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _ReflectionOriginBadge(
+                suggested: record.origin == ReflectionOrigin.suggested,
+              ),
+              Text(
+                MaterialLocalizations.of(context)
+                    .formatMediumDate(record.createdAt.toLocal()),
+                style: TextStyle(color: context.colors.muted, fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
           SelectableText(
             record.title,
             style: TextStyle(
@@ -1539,17 +1849,48 @@ class _ReflectionDetailScreenState extends State<ReflectionDetailScreen> {
               color: context.colors.text,
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            '${record.area.displayName(strings)} · ${MaterialLocalizations.of(context).formatMediumDate(record.createdAt.toLocal())}',
-            style: TextStyle(color: context.colors.muted),
-          ),
           const SizedBox(height: 28),
           if (question != null && question != record.title) ...[
             _QuestionContext(question: question),
             const SizedBox(height: 24),
           ],
           VisionMarkdown(data: record.body, color: context.colors.text),
+          const SizedBox(height: 36),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: panelDecoration(context.colors),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppFieldLabel(strings.reflectionContinueLabel),
+                const SizedBox(height: 14),
+                AppSheetAction(
+                  key: const ValueKey('reflection-follow-star'),
+                  icon: Icons.auto_awesome_outlined,
+                  label: strings.reflectionCreateStarAction,
+                  onPressed: () =>
+                      _follow(record.area, _ReflectionNextStep.star),
+                ),
+                const SizedBox(height: 8),
+                AppSheetAction(
+                  key: const ValueKey('reflection-follow-vision'),
+                  icon: kAreaVisionIcon,
+                  label: strings.reflectionUpdateVisionAction,
+                  onPressed: () =>
+                      _follow(record.area, _ReflectionNextStep.vision),
+                ),
+                const SizedBox(height: 8),
+                AppSheetAction(
+                  key: const ValueKey('reflection-follow-moodboard'),
+                  icon: kAreaMoodboardIcon,
+                  label: strings.reflectionAddMoodboardAction,
+                  onPressed: () =>
+                      _follow(record.area, _ReflectionNextStep.moodboard),
+                ),
+              ],
+            ),
+          ),
         ],
       );
     },

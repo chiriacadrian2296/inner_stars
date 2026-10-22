@@ -25,9 +25,7 @@ void main() {
     await tester.pumpWidget(
       app(AreaReflectionsScreen(area: LifeArea.physical, repository: repo)),
     );
-    await tester.tap(find.byKey(const ValueKey('reflection-new')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(strings.reflectionFree.toUpperCase()));
+    await tester.tap(find.byKey(const ValueKey('reflection-new-free')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('reflection-body')),
@@ -56,9 +54,7 @@ void main() {
     await tester.pumpWidget(
       app(AreaReflectionsScreen(area: LifeArea.physical, repository: repo)),
     );
-    await tester.tap(find.byKey(const ValueKey('reflection-new')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(strings.reflectionSuggested.toUpperCase()));
+    await tester.tap(find.byKey(const ValueKey('reflection-new-suggested')));
     await tester.pumpAndSettle();
     final immediate = find.byKey(
       const ValueKey('reflection-immediate-question'),
@@ -125,6 +121,8 @@ void main() {
       app(AreaReflectionsScreen(area: LifeArea.physical, repository: repo)),
     );
     await tester.pumpAndSettle();
+    expect(find.text(strings.reflectionLatestLabel), findsOneWidget);
+    expect(find.text(strings.reflectionEarlierLabel), findsOneWidget);
     final month = MaterialLocalizations.of(
       tester.element(find.byType(AreaReflectionsScreen)),
     ).formatMonthYear(DateTime.now());
@@ -159,9 +157,7 @@ void main() {
     await tester.pumpWidget(
       app(AreaReflectionsScreen(area: LifeArea.physical, repository: repo)),
     );
-    await tester.tap(find.byKey(const ValueKey('reflection-new')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(strings.reflectionFree.toUpperCase()));
+    await tester.tap(find.byKey(const ValueKey('reflection-new-free')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('reflection-title')),
@@ -202,9 +198,7 @@ void main() {
       await tester.pumpAndSettle();
       final group = LifeArea.physical.reflectionGroups(strings).first;
       await tester.ensureVisible(find.text(group.title));
-      await tester.tap(find.text(group.title));
-      await tester.pumpAndSettle();
-      final explored = find.text(strings.reflectionExplored.toUpperCase());
+      final explored = find.text(strings.reflectionExplored);
       await tester.ensureVisible(explored);
       await tester.tap(explored);
       await tester.pumpAndSettle();
@@ -288,9 +282,7 @@ void main() {
       );
       expect(find.text(strings.reflectionEmpty), findsOneWidget);
       expect(find.byType(AppBar), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('reflection-new')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(strings.reflectionFree.toUpperCase()));
+      await tester.tap(find.byKey(const ValueKey('reflection-new-free')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('reflection-save')));
       await tester.pumpAndSettle();
@@ -324,6 +316,18 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(ReflectionDetailScreen), findsOneWidget);
       expect(repo.getAll().single.origin, ReflectionOrigin.free);
+      expect(
+        find.byKey(const ValueKey('reflection-follow-star')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('reflection-follow-vision')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('reflection-follow-moodboard')),
+        findsOneWidget,
+      );
       final id = repo.getAll().single.id;
       expect(find.byType(ElevatedButton), findsNWidgets(3));
       expect(
@@ -369,9 +373,7 @@ void main() {
     await tester.pumpWidget(
       app(AreaReflectionsScreen(area: LifeArea.physical, repository: repo)),
     );
-    await tester.tap(find.byKey(const ValueKey('reflection-new')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(strings.reflectionFree.toUpperCase()));
+    await tester.tap(find.byKey(const ValueKey('reflection-new-free')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('reflection-title')),

@@ -54,6 +54,20 @@ class StringsEn implements AppStrings {
   @override
   String get reflectionQuestionLabel => 'Starting Question';
   @override
+  String get reflectionLatestLabel => 'Latest Reflection';
+  @override
+  String get reflectionEarlierLabel => 'Earlier';
+  @override
+  String get reflectionQuestionOfMomentLabel => 'Question of the Moment';
+  @override
+  String get reflectionTopicLabel => 'Topic';
+  @override
+  String get reflectionSuggestedBadge => 'Suggested';
+  @override
+  String get reflectionFreeBadge => 'Free Reflection';
+  @override
+  String get reflectionContinueLabel => 'Let It Lead Somewhere';
+  @override
   String get reflectionNextStepTitle => 'Where should this reflection lead?';
   @override
   String get reflectionNextStepBody =>

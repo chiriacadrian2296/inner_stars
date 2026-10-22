@@ -54,6 +54,20 @@ class StringsRo implements AppStrings {
   @override
   String get reflectionQuestionLabel => 'Întrebarea Inițială';
   @override
+  String get reflectionLatestLabel => 'Cea Mai Recentă Reflecție';
+  @override
+  String get reflectionEarlierLabel => 'Anterioare';
+  @override
+  String get reflectionQuestionOfMomentLabel => 'Întrebarea Momentului';
+  @override
+  String get reflectionTopicLabel => 'Temă';
+  @override
+  String get reflectionSuggestedBadge => 'Sugestie';
+  @override
+  String get reflectionFreeBadge => 'Reflecție Liberă';
+  @override
+  String get reflectionContinueLabel => 'Dă-i o Direcție';
+  @override
   String get reflectionNextStepTitle => 'Unde duce această reflecție?';
   @override
   String get reflectionNextStepBody =>

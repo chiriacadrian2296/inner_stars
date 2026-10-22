@@ -31,6 +31,13 @@ abstract class AppStrings {
   String get reflectionSearchHint;
   String get reflectionNoResults;
   String get reflectionQuestionLabel;
+  String get reflectionLatestLabel;
+  String get reflectionEarlierLabel;
+  String get reflectionQuestionOfMomentLabel;
+  String get reflectionTopicLabel;
+  String get reflectionSuggestedBadge;
+  String get reflectionFreeBadge;
+  String get reflectionContinueLabel;
   String get reflectionNextStepTitle;
   String get reflectionNextStepBody;
   String get reflectionCreateStarAction;
