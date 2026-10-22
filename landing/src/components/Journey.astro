@@ -4,6 +4,7 @@ import Galaxy from './JourneyGalaxy';
 import SiteHeader from './SiteHeader.astro';
 import { pagePath } from '../i18n/routes';
 import type { JourneyCopy } from '../i18n/journey';
+import { legal, legalPath } from '../i18n/legal';
 import '../styles/journey.css';
 
 interface Props { copy: JourneyCopy }
@@ -63,7 +64,7 @@ const gold = (text: string) => esc(text).replace(/\[\[(.+?)\]\]/g, '<em>$1</em>'
       <div class="closing-copy"><p class="overline">{c.closing.eyebrow}</p><h2 id="closing-title" set:html={gold(c.closing.title)} /><p>{c.closing.text}</p><div class="download-actions"><a class="button-gold" href={apk}>{c.closing.apk} <span aria-hidden="true">↓</span></a><a class="button-outline" href={web}>{c.closing.web} <span aria-hidden="true">↗</span></a></div><p class="platform-note">{c.closing.platforms}</p></div>
     </section>
   </main>
-  <footer class="journey-footer"><a class="brand" href={pagePath(base,c.lang)}><img src={`${base}logo-mark.svg`} width="24" height="30" alt=""/><span>Inner <em>Stars</em></span></a><span>{c.footer}</span><a href="https://github.com/chiriacadrian2296/inner_stars">GitHub <span aria-hidden="true">↗</span></a></footer>
+  <footer class="journey-footer"><a class="brand" href={pagePath(base,c.lang)}><img src={`${base}logo-mark.svg`} width="24" height="30" alt=""/><span>Inner <em>Stars</em></span></a><span>{c.footer}</span><span class="legal-links"><a href={legalPath(base,c.lang,"privacy")}>{legal[c.lang].privacyLink}</a> · <a href={legalPath(base,c.lang,"terms")}>{legal[c.lang].termsLink}</a></span><a href="https://github.com/chiriacadrian2296/inner_stars">GitHub <span aria-hidden="true">↗</span></a></footer>
 </Base>
 <script>
   // Chapter-by-chapter scrolling through the whole home: journey, closing and footer.

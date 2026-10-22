@@ -627,7 +627,13 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
 
 ## B3. Legale
 
-- [ ] Pagine `/privacy` e `/terms` nella landing, in IT/EN/RO, scritte insieme.
+- [~] Pagine `/privacy` e `/terms` nella landing, in IT/EN/RO (**bozza scritta il 22 ottobre,
+      ramo `legale-privacy`**): testi in `landing/src/i18n/legal.ts`, pagina `Legal.astro`,
+      link nel piè di pagina della home, test aggiornati. Titolare Mihai Adrian Chiriac,
+      contatto `privacy@innerstars.app`. **Restano:** creare l’inoltro `privacy@innerstars.app`
+      su Cloudflare Email Routing (a carico dell’autore); far rileggere i testi a una persona
+      competente (età minima 14 anni e legge italiana applicabile sono scelte da confermare);
+      **aggiornare l’informativa quando entra Crashlytics** (B4) o qualunque nuovo dato.
 - [ ] Cancellazione account che elimina anche i dati cloud (Firestore e Storage).
 - [ ] **Cancellare i propri dati è un requisito, non un extra** (gli store lo richiedono): vedi A6.
 - [ ] Consent screen Google: homepage `https://innerstars.app`, privacy `https://innerstars.app/privacy`,
