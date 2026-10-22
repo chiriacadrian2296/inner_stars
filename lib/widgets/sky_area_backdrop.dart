@@ -391,7 +391,7 @@ class _SkyAreaBackdropPainter extends CustomPainter {
 
     for (var row = 0; row <= _meshDivisions; row++) {
       final v = row / _meshDivisions;
-      final localY = (0.5 - v) * radius * 2;
+      final localY = (v - 0.5) * radius * 2;
       for (var column = 0; column <= _meshDivisions; column++) {
         final u = column / _meshDivisions;
         final localX = (u - 0.5) * radius * 2;
