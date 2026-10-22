@@ -5,7 +5,7 @@ import {
   assertSucceeds,
   initializeTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { deleteObject, getBytes, ref, uploadBytes } from 'firebase/storage';
+import { deleteObject, getBytes, listAll, ref, uploadBytes } from 'firebase/storage';
 
 const rules = readFileSync(new URL('../../../storage.rules', import.meta.url), 'utf8');
 const MAX = 5 * 1024 * 1024;
@@ -62,6 +62,20 @@ describe('storage.rules', () => {
     await assertFails(deleteObject(ref(bob(), target)));
     await assertFails(uploadBytes(ref(bob(), target), bytes(), jpeg));
     await assertFails(uploadBytes(ref(bob(), path('alice', 'photos', 'b.jpg')), bytes(), jpeg));
+  });
+
+  it("lets a user list their own media (deleting the account needs it) and nobody else's", async () => {
+    await seed('alice', 'photos', 'a.jpg');
+    await seed('alice', 'voices', 'v.m4a', audio);
+    const root = (storage) => ref(storage, 'users/alice/media');
+    const folder = (storage) => ref(storage, 'users/alice/media/photos');
+    await assertSucceeds(listAll(root(alice())));
+    await assertSucceeds(listAll(folder(alice())));
+    await assertFails(listAll(root(bob())));
+    await assertFails(listAll(folder(bob())));
+    await assertFails(listAll(root(nobody())));
+    await assertFails(listAll(ref(alice(), 'users/bob/media')));
+    await assertFails(listAll(ref(alice(), 'users/alice')));
   });
 
   it('turns away anyone who is not signed in', async () => {
