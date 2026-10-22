@@ -1160,6 +1160,17 @@ class _InteractiveSpecimens extends StatelessWidget {
               icon: const Icon(Icons.warning_amber_rounded),
               label: const Text('DESTRUCTIVE'),
             ),
+            // The real waiting dialog of the delete flows, with a fake 5 s job.
+            OutlinedButton.icon(
+              onPressed: () => runWithProgressDialog<void>(
+                context: context,
+                title: strings.deletingTitle,
+                message: strings.deletingBody,
+                task: () => Future<void>.delayed(const Duration(seconds: 5)),
+              ),
+              icon: const Icon(Icons.hourglass_empty),
+              label: const Text('WAITING'),
+            ),
           ],
         ),
       ],
