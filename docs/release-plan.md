@@ -424,6 +424,15 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
       un dubbio. **Da verificare dal vivo:** se sul web un account cancellato arrivasse come
       `user-token-expired`, lì la pulizia automatica non scatterebbe (resterebbe la protezione
       per account: un account diverso sostituisce i dati). 5 test in `test/sync/sync_service_test.dart`.
+      **Prova dal vivo (22 ottobre, telefono release + web release su `localhost:5000`):** ha
+      funzionato in entrambi i versi: il telefono ha cancellato e il web si è svuotato ed è
+      tornato al login (quindi `user-not-found` arriva anche sul web). Su Firebase non resta
+      nulla dell’account (Authentication, Firestore, Storage). **Bug trovato dalla prova:** le
+      regole di Storage negavano l’elenco di `users/{uid}/media`, quindi la cancellazione
+      falliva subito (“Could not delete the account”); corrette in `storage.rules`, con un test
+      sull’emulatore, e **pubblicate in produzione** (solo Storage). **Dialogo di attesa:**
+      `runWithProgressDialog` (`lib/utils/app_modals.dart`), non chiudibile, durante “Elimina
+      account e tutti i dati” e “Elimina dati su questo dispositivo”; 3 test.
 
 ## A7. Onboarding
 

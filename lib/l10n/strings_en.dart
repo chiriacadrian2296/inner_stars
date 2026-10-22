@@ -475,6 +475,11 @@ class StringsEn implements AppStrings {
   String get deleteLocalDataFailed =>
       'Could not delete the data. Please try again.';
   @override
+  String get deletingTitle => 'Deleting Your Data';
+  @override
+  String get deletingBody =>
+      'This can take a little while. Please keep the app open.';
+  @override
   String get deleteAccount => 'Delete Account And All Data';
   @override
   String get deleteAccountConfirmTitle => 'Delete your account?';

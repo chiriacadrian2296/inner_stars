@@ -430,34 +430,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!confirmed || !mounted) return;
     setState(() => _deleting = true);
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final moodboard = await MoodboardRepository.create();
-      final wish = await ShootingStarWishRepository.create();
-      Future<void> wipe() => wipeLocalData(
-        prefs: prefs,
-        stars: widget.starRepository,
-        moodboard: moodboard,
-        repositories: [
-          widget.starRepository,
-          widget.projectRepository,
-          widget.habitRepository,
-          widget.habitCompletionRepository,
-          ?cycles,
-          widget.starsShapeRepository,
-          widget.reflectionAnswerRepository,
-          widget.areaVisionRepository,
-          wish,
-          moodboard,
-        ],
+      await runWithProgressDialog<void>(
+        context: context,
+        title: strings.deletingTitle,
+        message: strings.deletingBody,
+        task: () async {
+          final prefs = await SharedPreferences.getInstance();
+          final moodboard = await MoodboardRepository.create();
+          final wish = await ShootingStarWishRepository.create();
+          Future<void> wipe() => wipeLocalData(
+            prefs: prefs,
+            stars: widget.starRepository,
+            moodboard: moodboard,
+            repositories: [
+              widget.starRepository,
+              widget.projectRepository,
+              widget.habitRepository,
+              widget.habitCompletionRepository,
+              ?cycles,
+              widget.starsShapeRepository,
+              widget.reflectionAnswerRepository,
+              widget.areaVisionRepository,
+              wish,
+              moodboard,
+            ],
+          );
+          if (sync == null) {
+            await wipe();
+          } else {
+            await sync.pausedWhile(() async {
+              await wipe();
+              await sync.resetPositions();
+            });
+          }
+        },
       );
-      if (sync == null) {
-        await wipe();
-      } else {
-        await sync.pausedWhile(() async {
-          await wipe();
-          await sync.resetPositions();
-        });
-      }
       _say(strings.localDataDeleted);
     } catch (_) {
       _say(strings.deleteLocalDataFailed);
@@ -491,16 +498,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _say(strings.deleteAccountSignInAgain);
         return;
       }
-      await sync.pausedWhile(() async {
-        await sync.deleteCloudData();
-        await auth.deleteAccount();
-        // The account is gone for good: this device is emptied too, so
-        // nothing of it can follow a new account. Other devices do the same
-        // the next time they are online (see SyncService).
-        try {
-          await sync.forgetLocalData();
-        } catch (_) {}
-      });
+      if (!mounted) return;
+      await runWithProgressDialog<void>(
+        context: context,
+        title: strings.deletingTitle,
+        message: strings.deletingBody,
+        task: () => sync.pausedWhile(() async {
+          await sync.deleteCloudData();
+          await auth.deleteAccount();
+          // The account is gone for good: this device is emptied too, so
+          // nothing of it can follow a new account. Other devices do the same
+          // the next time they are online (see SyncService).
+          try {
+            await sync.forgetLocalData();
+          } catch (_) {}
+        }),
+      );
       _say(strings.accountDeleted);
     } catch (_) {
       _say(strings.deleteAccountFailed);

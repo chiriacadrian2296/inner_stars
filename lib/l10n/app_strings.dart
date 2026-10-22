@@ -207,6 +207,8 @@ abstract class AppStrings {
   String get deleteLocalDataConfirm;
   String get localDataDeleted;
   String get deleteLocalDataFailed;
+  String get deletingTitle;
+  String get deletingBody;
   String get deleteAccount;
   String get deleteAccountConfirmTitle;
   String get deleteAccountConfirmBody;

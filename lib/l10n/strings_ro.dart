@@ -481,6 +481,10 @@ class StringsRo implements AppStrings {
   String get deleteLocalDataFailed =>
       'Datele nu au putut fi șterse. Încearcă din nou.';
   @override
+  String get deletingTitle => 'Ștergere în curs';
+  @override
+  String get deletingBody => 'Poate dura puțin. Ține aplicația deschisă.';
+  @override
   String get deleteAccount => 'Șterge Contul Și Toate Datele';
   @override
   String get deleteAccountConfirmTitle => 'Ștergi contul?';

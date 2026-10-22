@@ -478,6 +478,11 @@ class StringsIt implements AppStrings {
   @override
   String get deleteLocalDataFailed => 'Impossibile eliminare i dati. Riprova.';
   @override
+  String get deletingTitle => 'Eliminazione in corso';
+  @override
+  String get deletingBody =>
+      "Stiamo cancellando i tuoi dati. Può volerci un po', non chiudere l'app.";
+  @override
   String get deleteAccount => 'Elimina Account e Tutti i Dati';
   @override
   String get deleteAccountConfirmTitle => 'Eliminare il tuo account?';

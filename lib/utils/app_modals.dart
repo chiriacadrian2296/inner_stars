@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:animations/animations.dart';
@@ -177,6 +178,67 @@ Future<bool> showAppConfirmation({
     ),
   );
   return result ?? false;
+}
+
+/// Runs a long [task] behind a dialog nobody can dismiss (no tap outside, no
+/// back button) that says the app is working, so the person neither wonders
+/// nor wanders off. The dialog goes when the task ends, whether it succeeds
+/// or throws (the error still reaches the caller). Closing is safe if the
+/// route is already gone: deleting the account sends the app back to the login
+/// page, which may have closed it.
+Future<T> runWithProgressDialog<T>({
+  required BuildContext context,
+  required String title,
+  required String message,
+  required Future<T> Function() task,
+}) async {
+  final navigator = Navigator.of(context, rootNavigator: true);
+  final colors = context.colors;
+  Route<void>? route;
+  unawaited(
+    showAppDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        route = ModalRoute.of(dialogContext) as Route<void>?;
+        return PopScope(
+          canPop: false,
+          child: AppDialog(
+            title: Text(title),
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: colors.gold,
+                  ),
+                ),
+                const SizedBox(width: 20),
+                Expanded(child: Text(message)),
+              ],
+            ),
+            actionsPadding: const EdgeInsets.only(bottom: 12),
+          ),
+        );
+      },
+    ),
+  );
+  // Let the dialog be built before the work starts, so it can always be closed.
+  await WidgetsBinding.instance.endOfFrame;
+  try {
+    return await task();
+  } finally {
+    final shown = route;
+    if (shown != null && shown.isActive) {
+      if (shown.isCurrent) {
+        navigator.pop();
+      } else {
+        navigator.removeRoute(shown);
+      }
+    }
+  }
 }
 
 /// Shared dialog shell. Purpose-specific dialogs keep their own content and
