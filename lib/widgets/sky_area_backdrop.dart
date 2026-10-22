@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -48,6 +49,7 @@ class SkyAreaBackdrop extends StatefulWidget {
 
 class _SkyAreaBackdropState extends State<SkyAreaBackdrop> {
   Map<LifeArea, ui.Image>? _images;
+  Map<LifeArea, ui.ImageShader>? _imageShaders;
 
   @override
   void initState() {
@@ -67,11 +69,47 @@ class _SkyAreaBackdropState extends State<SkyAreaBackdrop> {
       }),
     );
     if (!mounted) return;
-    setState(() => _images = Map.fromEntries(entries));
+    final images = Map.fromEntries(entries);
+    final identityMatrix = Float64List.fromList(const [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+    ]);
+    setState(() {
+      _images = images;
+      _imageShaders = images.map(
+        (area, image) => MapEntry(
+          area,
+          ui.ImageShader(
+            image,
+            TileMode.clamp,
+            TileMode.clamp,
+            identityMatrix,
+            filterQuality: FilterQuality.medium,
+          ),
+        ),
+      );
+    });
   }
 
   @override
   void dispose() {
+    for (final shader in _imageShaders?.values ?? const <ui.ImageShader>[]) {
+      shader.dispose();
+    }
     for (final image in _images?.values ?? const <ui.Image>[]) {
       image.dispose();
     }
@@ -81,11 +119,15 @@ class _SkyAreaBackdropState extends State<SkyAreaBackdrop> {
   @override
   Widget build(BuildContext context) {
     final images = _images;
-    if (images == null) return const SizedBox.shrink();
+    final imageShaders = _imageShaders;
+    if (images == null || imageShaders == null) {
+      return const SizedBox.shrink();
+    }
     return CustomPaint(
       size: Size.infinite,
       painter: _SkyAreaBackdropPainter(
         images: images,
+        imageShaders: imageShaders,
         camera: widget.camera,
         zoom: widget.zoom,
         opacity: widget.opacity,
@@ -199,6 +241,7 @@ double areaBackdropRollReading(LifeArea area, SkyCamera camera) {
 class _SkyAreaBackdropPainter extends CustomPainter {
   const _SkyAreaBackdropPainter({
     required this.images,
+    required this.imageShaders,
     required this.camera,
     required this.zoom,
     required this.opacity,
@@ -208,6 +251,7 @@ class _SkyAreaBackdropPainter extends CustomPainter {
   });
 
   final Map<LifeArea, ui.Image> images;
+  final Map<LifeArea, ui.ImageShader> imageShaders;
   final SkyCamera camera;
   final double zoom;
   final double opacity;
@@ -219,6 +263,10 @@ class _SkyAreaBackdropPainter extends CustomPainter {
   // sky_area_sigils.dart) but nowhere near the 0.42 first tried — that read
   // as far too large on screen. 0.1, then 0.2, both read a little small.
   static const _worldRadius = 0.15;
+
+  // Enough subdivisions for the 0.3-radian-wide artwork patch to follow
+  // the sky sphere smoothly, while keeping the eight moving images cheap.
+  static const _meshDivisions = 8;
 
   // Where the circular vignette (see [_paintOne]) starts fading from fully
   // visible toward transparent, as a fraction of the image's own radius —
@@ -233,11 +281,22 @@ class _SkyAreaBackdropPainter extends CustomPainter {
         entry.key.index,
         LifeArea.values.length,
       );
-      _paintOne(canvas, size, direction, entry.value);
+      _paintOne(canvas, size, direction, entry.value, imageShaders[entry.key]!);
     }
   }
 
-  void _paintOne(Canvas canvas, Size size, _Vec3 direction, ui.Image image) {
+  void _paintOne(
+    Canvas canvas,
+    Size size,
+    _Vec3 direction,
+    ui.Image image,
+    ui.ImageShader imageShader,
+  ) {
+    if (kUseRoyalArtworkPreview) {
+      _paintSphericalArtwork(canvas, size, direction, image, imageShader);
+      return;
+    }
+
     final projected = _projectDirection(direction, camera, zoom, size);
     if (projected == null) return;
     final (center, scale) = projected;
@@ -279,24 +338,6 @@ class _SkyAreaBackdropPainter extends CustomPainter {
       ..filterQuality = FilterQuality.medium
       ..colorFilter = areaHeroArtTint(color);
 
-    if (kUseRoyalArtworkPreview) {
-      // These assets already have transparent backgrounds, so they need no
-      // per-frame masking layer. Drawing them directly also avoids a web
-      // renderer artifact where a transformed saveLayer is re-bounded as it
-      // crosses the viewport edge, making the artwork jump, resize or vanish
-      // independently of the supernova above it.
-      canvas.drawImageRect(
-        image,
-        sourceRect,
-        localRect,
-        imagePaint
-          ..blendMode = blendMode
-          ..color = Color.fromRGBO(255, 255, 255, opacity),
-      );
-      canvas.restore();
-      return;
-    }
-
     // Drawn into its own layer first — rather than straight onto the sky —
     // so the vignette below can mask *this image's own* alpha (via
     // BlendMode.dstIn) before the whole thing is composited onto the sky
@@ -327,9 +368,111 @@ class _SkyAreaBackdropPainter extends CustomPainter {
     canvas.restore();
   }
 
+  /// Maps the transparent Royal artwork onto the same spherical surface the
+  /// supernova shader samples per pixel. The old center/scale/rotation-only
+  /// draw was a good local approximation near the middle of the view, but a
+  /// wide viewport exposes much more of the sphere: near its sides that flat
+  /// square visibly spun, ballooned and crossed its `z < -0.5` cutoff while
+  /// the shader-rendered supernova remained present. Projecting this small
+  /// texture mesh vertex by vertex keeps both layers in the same geometry.
+  void _paintSphericalArtwork(
+    Canvas canvas,
+    Size size,
+    _Vec3 center,
+    ui.Image image,
+    ui.ImageShader imageShader,
+  ) {
+    final axisA = _axisAFor(center);
+    final axisB = _cross3(center, axisA);
+    final radius = _worldRadius * scale;
+    final positions = <Offset>[];
+    final textureCoordinates = <Offset>[];
+    final usable = <bool>[];
+
+    for (var row = 0; row <= _meshDivisions; row++) {
+      final v = row / _meshDivisions;
+      final localY = (0.5 - v) * radius * 2;
+      for (var column = 0; column <= _meshDivisions; column++) {
+        final u = column / _meshDivisions;
+        final localX = (u - 0.5) * radius * 2;
+        final point = _normalized3(
+          _add3(
+            center,
+            _add3(_scaled3(axisA, localX), _scaled3(axisB, localY)),
+          ),
+        );
+        final z = _dot3(point, camera.forward);
+
+        // Only the projection's antipode is undefined. Omitting cells close
+        // to it prevents a triangle from stretching across infinity; unlike
+        // the old -0.5 cutoff this is far beyond any ordinary visible edge.
+        final isUsable = 1 + z > 0.02;
+        usable.add(isUsable);
+        if (isUsable) {
+          final projectionScale = 2 / (1 + z);
+          positions.add(
+            Offset(
+              size.width / 2 +
+                  _dot3(point, camera.right) *
+                      projectionScale *
+                      zoom *
+                      size.height,
+              size.height / 2 -
+                  _dot3(point, camera.up) *
+                      projectionScale *
+                      zoom *
+                      size.height,
+            ),
+          );
+        } else {
+          positions.add(Offset.zero);
+        }
+        textureCoordinates.add(Offset(u * image.width, v * image.height));
+      }
+    }
+
+    final indices = <int>[];
+    final stride = _meshDivisions + 1;
+    for (var row = 0; row < _meshDivisions; row++) {
+      for (var column = 0; column < _meshDivisions; column++) {
+        final topLeft = row * stride + column;
+        final topRight = topLeft + 1;
+        final bottomLeft = topLeft + stride;
+        final bottomRight = bottomLeft + 1;
+        if (usable[topLeft] && usable[topRight] && usable[bottomLeft]) {
+          indices.addAll([topLeft, topRight, bottomLeft]);
+        }
+        if (usable[topRight] && usable[bottomRight] && usable[bottomLeft]) {
+          indices.addAll([topRight, bottomRight, bottomLeft]);
+        }
+      }
+    }
+    if (indices.isEmpty) return;
+
+    final vertices = ui.Vertices(
+      ui.VertexMode.triangles,
+      positions,
+      textureCoordinates: textureCoordinates,
+      indices: indices,
+    );
+    final tintWithOpacity = color.withValues(alpha: opacity);
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+    canvas.drawVertices(
+      vertices,
+      BlendMode.srcOver,
+      Paint()
+        ..shader = imageShader
+        ..blendMode = blendMode
+        ..colorFilter = ColorFilter.mode(tintWithOpacity, BlendMode.srcIn),
+    );
+    canvas.restore();
+  }
+
   @override
   bool shouldRepaint(covariant _SkyAreaBackdropPainter oldDelegate) =>
       !identical(oldDelegate.images, images) ||
+      !identical(oldDelegate.imageShaders, imageShaders) ||
       oldDelegate.camera != camera ||
       oldDelegate.zoom != zoom ||
       oldDelegate.opacity != opacity ||
