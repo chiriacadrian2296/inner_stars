@@ -637,8 +637,12 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
       **aggiornare l’informativa quando entra Crashlytics** (B4) o qualunque nuovo dato.
 - [ ] Cancellazione account che elimina anche i dati cloud (Firestore e Storage).
 - [ ] **Cancellare i propri dati è un requisito, non un extra** (gli store lo richiedono): vedi A6.
-- [ ] Consent screen Google: homepage `https://innerstars.app`, privacy `https://innerstars.app/privacy`,
-      dominio autorizzato `innerstars.app`.
+- [x] Consent screen Google (22 ottobre): homepage `https://innerstars.app`, privacy `.../privacy`,
+      termini `.../terms`, dominio autorizzato `innerstars.app`, email di contatto dell’autore;
+      app già “In production”, tipo External, senza logo (il logo imporrebbe la verifica).
+      **Email di supporto = la Gmail personale dell’autore**: il campo accetta solo quella o un
+      Google Group gestito, non un indirizzo del dominio. Si potrà passare a `support@innerstars.app`
+      quando ci sarà Workspace (voce “Idee per dopo la v1”: casella vera).
 
 ## B4. Store e pubblicazione
 
@@ -717,6 +721,7 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
   scadenza/revoca del link, avviso di privacy e aggiornamento della privacy policy. Si fa
   insieme ai media. Per la v1 vale la via di mezzo: immagine della card + link del sito
   (vedi A4).
+- **Casella vera con Google Workspace** (circa 6 € al mese): `privacy@` e `support@innerstars.app` con login e invio; l’inoltro di Cloudflare si sostituisce cambiando i record MX, gli indirizzi restano. Allora l’email di supporto del consent screen può passare a `support@`.
 - Pacchetti di suoni a pagamento come contenuti extra (Sound Lab nascosto per ora).
 - Stella cadente con desideri a tempo e storico.
 - Amici come galassie lontane.
