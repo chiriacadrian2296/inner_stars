@@ -200,9 +200,10 @@ class AuthService extends ChangeNotifier implements SyncAccount {
   }
 
   /// Whether the signed-in account still exists, asking Firebase. False only
-  /// when Firebase says the account is gone or its sign-in can never be
-  /// renewed (deleted from another device). Offline, or any other error, is
-  /// true: doubt must never empty a device.
+  /// when Firebase says outright that the account does not exist (deleted
+  /// from another device). Offline, or any other error (an expired token
+  /// included, which can have other causes), is true: doubt must never empty
+  /// a device.
   Future<bool> accountStillExists() async {
     final user = _auth?.currentUser;
     if (user == null) return true;
@@ -216,7 +217,7 @@ class AuthService extends ChangeNotifier implements SyncAccount {
     }
   }
 
-  static const _accountGoneCodes = {'user-not-found', 'user-token-expired'};
+  static const _accountGoneCodes = {'user-not-found'};
 
   Future<void> signOut() async {
     if (_auth == null) return;

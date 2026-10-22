@@ -418,12 +418,12 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
       (contenuti, impostazioni sincronizzate, blocco app, coda dei media; `SyncService.forgetLocalData`)
       e torna al login. Gli **altri dispositivi** controllano l’account all’arrivo di un accesso e
       a ogni ritorno in primo piano (`AuthService.accountStillExists`, `user.reload()`): se Firebase
-      risponde `user-not-found` o `user-token-expired` si svuotano ed escono; offline o qualunque
-      altro errore non cancella mai nulla. Non è istantaneo (serve che il dispositivo sia online
-      e torni in primo piano). Rischio noto e limitato: se `user-token-expired` arrivasse per un
-      altro motivo, il dispositivo si svuota ma la copia nel cloud resta e torna al prossimo
-      accesso (si perdono solo modifiche non ancora sincronizzate). 4 test nuovi in
-      `test/sync/sync_service_test.dart`; **da provare dal vivo** con due dispositivi.
+      risponde `user-not-found` si svuotano ed escono; offline o qualunque
+      altro errore (anche `user-token-expired`, che può avere altre cause) non cancella mai nulla. Non è istantaneo (serve che il dispositivo sia online
+      e torni in primo piano). Si usa solo `user-not-found`, per non svuotare mai un dispositivo per
+      un dubbio. **Da verificare dal vivo:** se sul web un account cancellato arrivasse come
+      `user-token-expired`, lì la pulizia automatica non scatterebbe (resterebbe la protezione
+      per account: un account diverso sostituisce i dati). 5 test in `test/sync/sync_service_test.dart`.
 
 ## A7. Onboarding
 
