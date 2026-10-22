@@ -604,7 +604,7 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
       senza, il web non scarica nulla) e aggiunto la ricerca ripetuta in `PhotoImage`.
       **Anche il verso web → telefono funziona** per foto e note vocali (le note registrate dal
       browser sono WebM e prima non venivano caricate: corretto con `saveWebRecording`).
-      **Restano:** impostare l’avviso di budget se non fatto e provare la moodboard; collegare la pulizia dei file orfani
+      **Restano:** provare la moodboard (l’avviso di budget è impostato a 5 € dall’autore, 22 ottobre); collegare la pulizia dei file orfani
       (`removeOrphans`, già testata); valutare App Check (la console lo propone).
       **Privacy policy:** dire che foto, note vocali e immagini della moodboard sono archiviate
       nell’Unione Europea.
@@ -630,8 +630,9 @@ Da fare dopo la parte A (tranne i passi tuoi di B1, che puoi anticipare quando v
 - [~] Pagine `/privacy` e `/terms` nella landing, in IT/EN/RO (**bozza scritta il 22 ottobre,
       ramo `legale-privacy`**): testi in `landing/src/i18n/legal.ts`, pagina `Legal.astro`,
       link nel piè di pagina della home, test aggiornati. Titolare Mihai Adrian Chiriac,
-      contatto `privacy@innerstars.app`. **Restano:** creare l’inoltro `privacy@innerstars.app`
-      su Cloudflare Email Routing (a carico dell’autore); far rileggere i testi a una persona
+      contatto `privacy@innerstars.app`, che dal 22 ottobre **inoltra alla Gmail dell’autore**
+      (Cloudflare Email Routing con MX, SPF, DKIM e DMARC `p=none`; si risponde dalla Gmail,
+      passando a Workspace l’indirizzo resta lo stesso). **Restano:** far rileggere i testi a una persona
       competente (età minima 14 anni e legge italiana applicabile sono scelte da confermare);
       **aggiornare l’informativa quando entra Crashlytics** (B4) o qualunque nuovo dato.
 - [ ] Cancellazione account che elimina anche i dati cloud (Firestore e Storage).
