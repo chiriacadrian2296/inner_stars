@@ -269,6 +269,33 @@ class _SkyAreaBackdropPainter extends CustomPainter {
       width: diameter,
       height: diameter,
     );
+    final sourceRect = Rect.fromLTWH(
+      0,
+      0,
+      image.width.toDouble(),
+      image.height.toDouble(),
+    );
+    final imagePaint = Paint()
+      ..filterQuality = FilterQuality.medium
+      ..colorFilter = areaHeroArtTint(color);
+
+    if (kUseRoyalArtworkPreview) {
+      // These assets already have transparent backgrounds, so they need no
+      // per-frame masking layer. Drawing them directly also avoids a web
+      // renderer artifact where a transformed saveLayer is re-bounded as it
+      // crosses the viewport edge, making the artwork jump, resize or vanish
+      // independently of the supernova above it.
+      canvas.drawImageRect(
+        image,
+        sourceRect,
+        localRect,
+        imagePaint
+          ..blendMode = blendMode
+          ..color = Color.fromRGBO(255, 255, 255, opacity),
+      );
+      canvas.restore();
+      return;
+    }
 
     // Drawn into its own layer first — rather than straight onto the sky —
     // so the vignette below can mask *this image's own* alpha (via
@@ -281,29 +308,20 @@ class _SkyAreaBackdropPainter extends CustomPainter {
         ..blendMode = blendMode
         ..color = Color.fromRGBO(255, 255, 255, opacity),
     );
-    canvas.drawImageRect(
-      image,
-      Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+    canvas.drawImageRect(image, sourceRect, localRect, imagePaint);
+
+    // Original art needs a circular fade to erase its square corners.
+    canvas.drawRect(
       localRect,
       Paint()
-        ..filterQuality = FilterQuality.medium
-        ..colorFilter = areaHeroArtTint(color),
+        ..blendMode = BlendMode.dstIn
+        ..shader = ui.Gradient.radial(
+          Offset.zero,
+          diameter / 2,
+          const [Colors.white, Colors.white, Colors.transparent],
+          const [0.0, _vignetteStart, 1.0],
+        ),
     );
-
-    if (!kUseRoyalArtworkPreview) {
-      // Original art needs a circular fade to erase its square corners.
-      canvas.drawRect(
-        localRect,
-        Paint()
-          ..blendMode = BlendMode.dstIn
-          ..shader = ui.Gradient.radial(
-            Offset.zero,
-            diameter / 2,
-            const [Colors.white, Colors.white, Colors.transparent],
-            const [0.0, _vignetteStart, 1.0],
-          ),
-      );
-    }
     canvas.restore();
 
     canvas.restore();
