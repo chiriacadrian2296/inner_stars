@@ -17,26 +17,34 @@ class ShareQuoteArtwork extends StatelessWidget {
   /// Cover the parent instead of keeping [aspectRatio] (grid tiles).
   final bool fill;
 
-  @override
-  Widget build(BuildContext context) {
+  /// Composes the card on the composer canvas for [ratio] (width / height).
+  Widget _card(double ratio) {
+    final format = _ShareFormat.values.reduce(
+      (a, b) =>
+          (_shareAspectRatio(a) - ratio).abs() <=
+              (_shareAspectRatio(b) - ratio).abs()
+          ? a
+          : b,
+    );
+    final canvas = format == _ShareFormat.landscape ? 640.0 : 360.0;
     final preset = _stylePresets[design.preset];
     final layout = _layoutMap[ShareSubject.quote]![design.composition].$1;
     final ink = switch (layout) {
       _Layout.centered || _Layout.free => _Ink.gold,
       _ => _Ink.auto,
     };
-    final card = FittedBox(
-      fit: BoxFit.cover,
+    return FittedBox(
+      fit: BoxFit.contain,
       child: SizedBox(
-        width: 360,
-        height: 360 / aspectRatio,
+        width: canvas,
+        height: canvas / ratio,
         child: MediaQuery.withNoTextScaling(
           child: _ShareSpecimen(
             data: data,
             composition: design.composition,
             gradient: preset.gradient,
             palette: preset.palette,
-            format: _ShareFormat.story,
+            format: format,
             photoMode: _PhotoMode.none,
             titlePosition: _TitlePosition.bottomLeft,
             brandPosition: switch (layout) {
@@ -67,10 +75,16 @@ class ShareQuoteArtwork extends StatelessWidget {
         ),
       ),
     );
-    return fill
-        ? SizedBox.expand(child: card)
-        : AspectRatio(aspectRatio: aspectRatio, child: card);
   }
+
+  @override
+  Widget build(BuildContext context) => fill
+      ? LayoutBuilder(
+          builder: (context, constraints) => SizedBox.expand(
+            child: _card(constraints.maxWidth / constraints.maxHeight),
+          ),
+        )
+      : AspectRatio(aspectRatio: aspectRatio, child: _card(aspectRatio));
 }
 
 /// Style and composition pickers for a quote, the same choices the share
