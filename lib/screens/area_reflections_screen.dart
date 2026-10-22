@@ -2,10 +2,17 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../data/area_vision_repository.dart';
+import '../data/custom_constellation_repository.dart';
+import '../data/habit_repository.dart';
+import '../data/moodboard_repository.dart';
+import '../data/project_repository.dart';
 import '../data/reflection_repository.dart';
+import '../data/star_repository.dart';
 import '../l10n/strings_scope.dart';
 import '../models/life_area.dart';
 import '../models/reflection.dart';
+import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
@@ -13,11 +20,16 @@ import '../utils/app_modals.dart';
 import '../utils/area_section_icons.dart';
 import '../widgets/app_field.dart';
 import '../widgets/area_section_header.dart';
-import '../widgets/pill_action_button.dart' show SaveActionButton;
+import '../widgets/live_markdown_controller.dart';
+import '../widgets/logo_watermark.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/shareable_reflection_card.dart';
 import '../widgets/staggered_entrance.dart';
+import '../widgets/vision_markdown.dart';
+import 'create_flow.dart';
+import 'moodboard_screen.dart';
 import 'share_preview_screen.dart';
+import 'vision_editor_screen.dart';
 
 class AreaReflectionsScreen extends StatefulWidget {
   const AreaReflectionsScreen({
@@ -66,12 +78,133 @@ class _AreaReflectionsScreenState extends State<AreaReflectionsScreen> {
       ),
     );
     if (record != null && context.mounted) {
+      final nextStep = await _chooseNextStep(context);
+      if (!context.mounted) return;
+      await _openNextStep(context, nextStep);
+      if (!context.mounted) return;
       await Navigator.of(context).push<void>(
         MaterialPageRoute(
           builder: (_) =>
               ReflectionDetailScreen(id: record.id, repository: repository),
         ),
       );
+    }
+  }
+
+  Future<_ReflectionNextStep?> _chooseNextStep(BuildContext context) {
+    final strings = context.strings;
+    return showAppSheet<_ReflectionNextStep>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppSheetTitle(strings.reflectionNextStepTitle),
+                const SizedBox(height: 10),
+                Text(
+                  strings.reflectionNextStepBody,
+                  style: TextStyle(
+                    color: sheetContext.colors.muted,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                AppSheetAction(
+                  key: const ValueKey('reflection-next-star'),
+                  icon: Icons.auto_awesome_outlined,
+                  label: strings.reflectionCreateStarAction,
+                  onPressed: () =>
+                      Navigator.pop(sheetContext, _ReflectionNextStep.star),
+                ),
+                const SizedBox(height: 10),
+                AppSheetAction(
+                  key: const ValueKey('reflection-next-vision'),
+                  icon: kAreaVisionIcon,
+                  label: strings.reflectionUpdateVisionAction,
+                  onPressed: () =>
+                      Navigator.pop(sheetContext, _ReflectionNextStep.vision),
+                ),
+                const SizedBox(height: 10),
+                AppSheetAction(
+                  key: const ValueKey('reflection-next-moodboard'),
+                  icon: kAreaMoodboardIcon,
+                  label: strings.reflectionAddMoodboardAction,
+                  onPressed: () => Navigator.pop(
+                    sheetContext,
+                    _ReflectionNextStep.moodboard,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Align(
+                  alignment: Alignment.center,
+                  child: TextButton(
+                    key: const ValueKey('reflection-next-not-now'),
+                    onPressed: () => Navigator.pop(sheetContext),
+                    style: TextButton.styleFrom(
+                      foregroundColor: sheetContext.colors.muted,
+                    ),
+                    child: AppButtonLabel(
+                      strings.reflectionNotNowAction,
+                      color: sheetContext.colors.muted,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openNextStep(
+    BuildContext context,
+    _ReflectionNextStep? nextStep,
+  ) async {
+    switch (nextStep) {
+      case _ReflectionNextStep.star:
+        final projectRepository = await ProjectRepository.create();
+        final starsShapeRepository = await StarsShapeRepository.create();
+        final starRepository = await StarRepository.create();
+        final habitRepository = await HabitRepository.create();
+        if (!context.mounted) return;
+        await showCreatePage(
+          context,
+          projectRepository: projectRepository,
+          starsShapeRepository: starsShapeRepository,
+          starRepository: starRepository,
+          habitRepository: habitRepository,
+          startWithoutSelection: true,
+          area: area,
+        );
+        return;
+      case _ReflectionNextStep.vision:
+        final visionRepository = await AreaVisionRepository.create();
+        if (!context.mounted) return;
+        await Navigator.of(context).push<void>(
+          MaterialPageRoute(
+            builder: (_) =>
+                VisionEditorScreen(area: area, repository: visionRepository),
+          ),
+        );
+        return;
+      case _ReflectionNextStep.moodboard:
+        final moodboardRepository = await MoodboardRepository.create();
+        if (!context.mounted) return;
+        await Navigator.of(context).push<void>(
+          MaterialPageRoute(
+            builder: (_) =>
+                MoodboardScreen(area: area, repository: moodboardRepository),
+          ),
+        );
+        return;
+      case null:
+        return;
     }
   }
 
@@ -175,12 +308,8 @@ class _AreaReflectionsScreenState extends State<AreaReflectionsScreen> {
             if (visible.isEmpty)
               _EmptyReflections(text: strings.reflectionNoResults),
             for (var i = 0; i < visible.length; i++) ...[
-              if (records.length >= 6 &&
-                  (i == 0 ||
-                      !_sameMonth(
-                        visible[i - 1].createdAt,
-                        visible[i].createdAt,
-                      )))
+              if (i == 0 ||
+                  !_sameMonth(visible[i - 1].createdAt, visible[i].createdAt))
                 Padding(
                   padding: const EdgeInsets.only(top: 8, bottom: 12),
                   child: Text(
@@ -207,6 +336,8 @@ class _AreaReflectionsScreenState extends State<AreaReflectionsScreen> {
     },
   );
 }
+
+enum _ReflectionNextStep { star, vision, moodboard }
 
 bool _sameMonth(DateTime a, DateTime b) {
   final localA = a.toLocal();
@@ -239,8 +370,10 @@ class _EmptyReflections extends StatelessWidget {
   }
 }
 
-/// One saved reflection: title in the star-title face, date underneath,
-/// the first lines of the text below, on the app's panel surface.
+/// One saved reflection: a quiet gold marker and date establish the rhythm,
+/// while the title and first lines carry the content. Suggested reflections
+/// also keep their starting-question context visible without repeating the
+/// whole prompt and overwhelming the user's own words.
 class _ReflectionCard extends StatelessWidget {
   const _ReflectionCard({required this.record, required this.onTap});
   final Reflection record;
@@ -250,6 +383,7 @@ class _ReflectionCard extends StatelessWidget {
     final colors = context.colors;
     final date = MaterialLocalizations.of(context)
         .formatShortDate(record.createdAt.toLocal());
+    final suggested = record.origin == ReflectionOrigin.suggested;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
@@ -258,33 +392,113 @@ class _ReflectionCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(kRadiusCard),
           child: Ink(
-            padding: const EdgeInsets.all(16),
-            decoration: panelDecoration(colors),
-            child: Column(
+            padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
+            decoration: panelDecoration(colors).copyWith(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  colors.gold.withValues(alpha: 0.075),
+                  colors.nightPanel,
+                  colors.nightPanel,
+                ],
+                stops: const [0, 0.45, 1],
+              ),
+            ),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  record.title,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: kFontStarTitle,
-                    fontSize: 19,
-                    height: 1.25,
-                    color: colors.text,
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: colors.gold.withValues(alpha: 0.1),
+                    border: Border.all(
+                      color: colors.gold.withValues(alpha: 0.45),
+                      width: kBorderWidth,
+                    ),
+                  ),
+                  child: Icon(
+                    kAreaReflectionsIcon,
+                    size: 20,
+                    color: colors.gold,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(date, style: TextStyle(color: colors.muted, fontSize: 12)),
-                const SizedBox(height: 8),
-                Text(
-                  record.body,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            date,
+                            style: TextStyle(
+                              color: colors.gold,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.7,
+                            ),
+                          ),
+                          if (suggested) ...[
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              child: Text(
+                                '·',
+                                style: TextStyle(color: colors.muted),
+                              ),
+                            ),
+                            Flexible(
+                              child: Text(
+                                context.strings.reflectionQuestionLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: colors.muted,
+                                  fontSize: 11,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        record.title,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: kFontStarTitle,
+                          fontSize: 20,
+                          height: 1.25,
+                          color: colors.text,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        record.body,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: colors.muted,
+                          fontSize: 14,
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
                     color: colors.muted,
-                    fontSize: 14,
-                    height: 1.5,
+                    size: 20,
                   ),
                 ),
               ],
@@ -612,6 +826,7 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _focus.addListener(_syncFocus);
   }
 
   // Closing the keyboard (back gesture) leaves the field focused; let go of
@@ -625,8 +840,12 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
     _keyboardInset = inset;
   }
 
-  late final _title = TextEditingController(text: widget.existing?.title ?? '');
-  late final _body = TextEditingController(text: widget.existing?.body ?? '');
+  late final _title = TextEditingController(
+    text: widget.existing?.title ?? widget.suggestedTitle ?? '',
+  );
+  late final _body = LiveMarkdownController(text: widget.existing?.body ?? '');
+  final _focus = FocusNode();
+  final _undo = UndoHistoryController();
   bool _busy = false;
   bool _canLeave = false;
   bool _asking = false;
@@ -634,10 +853,15 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _focus.removeListener(_syncFocus);
     _title.dispose();
     _body.dispose();
+    _focus.dispose();
+    _undo.dispose();
     super.dispose();
   }
+
+  void _syncFocus() => _body.focused = _focus.hasFocus;
 
   void _close([Reflection? record]) {
     setState(() => _canLeave = true);
@@ -670,6 +894,7 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
 
   Future<void> _save() async {
     if (_busy || !_canSave) return;
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() => _busy = true);
     try {
       final existing = widget.existing;
@@ -705,95 +930,507 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
     }
   }
 
+  Future<void> _share() {
+    final now = DateTime.now();
+    final reflection =
+        widget.existing ??
+        Reflection(
+          id: 'preview',
+          area: widget.area,
+          title: _title.text.trim(),
+          body: _body.text,
+          origin: widget.questionId == null
+              ? ReflectionOrigin.free
+              : ReflectionOrigin.suggested,
+          questionId: widget.questionId,
+          questionText: _originalQuestion(
+            context,
+            widget.area,
+            widget.questionId,
+            widget.suggestedTitle,
+          ),
+          createdAt: now,
+          updatedAt: now,
+        );
+    return showSharePreview(
+      context: context,
+      content: ShareableReflectionCard(
+        reflection: reflection.edit(
+          title: _title.text.trim(),
+          body: _body.text,
+        ),
+      ),
+      fileName: 'reflection_${reflection.id}.png',
+    );
+  }
+
+  void _format(
+    String marker, {
+    bool block = false,
+    bool numbered = false,
+    bool toggle = false,
+    String? closing,
+  }) {
+    final value = _body.value;
+    final selection = value.selection.isValid
+        ? value.selection
+        : TextSelection.collapsed(offset: value.text.length);
+    if (!block && selection.isCollapsed) return;
+    var start = selection.start;
+    var end = selection.end;
+    final closingMarker = closing ?? marker;
+    String replacement;
+    int selectionStart;
+    int selectionEnd;
+    if (block) {
+      start = start == 0 ? 0 : value.text.lastIndexOf('\n', start - 1) + 1;
+      if (end > start && value.text[end - 1] == '\n') end--;
+      final lineEnd = value.text.indexOf('\n', end);
+      end = lineEnd < 0 ? value.text.length : lineEnd;
+      final lines = value.text.substring(start, end).split('\n');
+      final blockPrefix = RegExp(r'^\s{0,3}(#{1,6}\s|[-*+]\s|•\s|\d+\.\s)');
+      bool isDivider(String line) => RegExp(r'^\s*---+\s*$').hasMatch(line);
+      final applicableLines = lines.where((line) => !isDivider(line));
+      final alreadyApplied =
+          toggle &&
+          applicableLines.isNotEmpty &&
+          applicableLines.every(
+            numbered
+                ? (line) => RegExp(r'^\s{0,3}\d+\.\s').hasMatch(line)
+                : (line) => line.startsWith(marker),
+          );
+      replacement = lines.indexed
+          .map((entry) {
+            if (isDivider(entry.$2)) return entry.$2;
+            final content = entry.$2.replaceFirst(blockPrefix, '');
+            if (alreadyApplied) return content;
+            return '${numbered ? '${entry.$1 + 1}. ' : marker}$content';
+          })
+          .join('\n');
+      selectionStart = start + replacement.length;
+      selectionEnd = selectionStart;
+    } else {
+      if (toggle && !selection.isCollapsed) {
+        final selectedStart = start;
+        final selectedEnd = end;
+        for (final match in _inlinePattern(marker).allMatches(value.text)) {
+          if (match.start < selectedEnd && match.end > selectedStart) {
+            start = math.min(start, match.start);
+            end = math.max(end, match.end);
+          }
+        }
+      }
+      final selected = value.text.substring(start, end);
+      final lines = selected.split('\n');
+      final blockPrefix = RegExp(r'^\s{0,3}(#{1,6}\s|[-*+]\s|•\s|\d+\.\s)');
+      bool isDivider(String line) => RegExp(r'^\s*---+\s*$').hasMatch(line);
+      String contentOf(String line) => line.replaceFirst(blockPrefix, '');
+      bool wrapped(String line) {
+        final content = contentOf(line);
+        return content.startsWith(marker) &&
+            content.endsWith(closingMarker) &&
+            content.length >= marker.length + closingMarker.length;
+      }
+
+      final formattableLines = lines.where(
+        (line) => line.isNotEmpty && !isDivider(line),
+      );
+      final alreadyApplied =
+          toggle &&
+          formattableLines.isNotEmpty &&
+          formattableLines.every(wrapped);
+      replacement = lines
+          .map((line) {
+            if (line.isEmpty || isDivider(line)) return line;
+            final prefixMatch = blockPrefix.firstMatch(line);
+            final prefix = prefixMatch?[0] ?? '';
+            final lineContent = line.substring(prefix.length);
+            if (alreadyApplied) {
+              return '$prefix${lineContent.substring(marker.length, lineContent.length - closingMarker.length)}';
+            }
+            final content = toggle
+                ? _withoutInlineMarkers(lineContent, marker, closingMarker)
+                : lineContent;
+            return '$prefix$marker$content$closingMarker';
+          })
+          .join('\n');
+      selectionStart = start;
+      selectionEnd = start + replacement.length;
+    }
+    _body.value = TextEditingValue(
+      text: value.text.replaceRange(start, end, replacement),
+      selection: TextSelection(
+        baseOffset: selectionStart,
+        extentOffset: selectionEnd,
+      ),
+    );
+    _focus.requestFocus();
+  }
+
+  String _withoutInlineMarkers(
+    String text,
+    String marker,
+    String closingMarker,
+  ) {
+    if (marker == '*') {
+      return text.replaceAll(RegExp(r'(?<!\*)\*(?!\*)'), '');
+    }
+    return text.replaceAll(marker, '').replaceAll(closingMarker, '');
+  }
+
+  RegExp _inlinePattern(String marker) => switch (marker) {
+    '**' => RegExp(r'\*\*(.+?)\*\*'),
+    '*' => RegExp(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)'),
+    '<u>' => RegExp(r'<u>(.+?)</u>'),
+    _ => RegExp('${RegExp.escape(marker)}(.+?)${RegExp.escape(marker)}'),
+  };
+
+  void _insertDivider() {
+    final text = _body.text;
+    final selection = _body.selection;
+    final cursor = selection.isValid ? selection.end : text.length;
+    final lineStart = cursor == 0 ? 0 : text.lastIndexOf('\n', cursor - 1) + 1;
+    final lineEnd = text.indexOf('\n', cursor);
+    final at = lineEnd < 0 ? text.length : lineEnd;
+    final line = text.substring(lineStart, at);
+    final blockPrefix = RegExp(r'^\s{0,3}(#{1,6}\s|[-*+]\s|•\s|\d+\.\s)');
+    final content = line.replaceFirst(blockPrefix, '').trim();
+    if (RegExp(r'^\s*---+\s*$').hasMatch(line)) {
+      _body.value = TextEditingValue(
+        text: text.replaceRange(lineStart, at, ''),
+        selection: TextSelection.collapsed(offset: lineStart),
+      );
+      _focus.requestFocus();
+      return;
+    }
+    if (content.isEmpty) {
+      _body.value = TextEditingValue(
+        text: text.replaceRange(lineStart, at, '---'),
+        selection: TextSelection.collapsed(offset: lineStart + 3),
+      );
+      _focus.requestFocus();
+      return;
+    }
+    final replaceEnd = at < text.length && text[at] == '\n' ? at + 1 : at;
+    const rule = '\n\n---\n\n';
+    _body.value = TextEditingValue(
+      text: text.replaceRange(at, replaceEnd, rule),
+      selection: TextSelection.collapsed(offset: at + rule.length),
+    );
+    _focus.requestFocus();
+  }
+
   bool get _canSave =>
       _title.text.trim().isNotEmpty && _body.text.trim().isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
     final strings = context.strings;
-    final writing = MediaQuery.viewInsetsOf(context).bottom > 0;
-    final question = _originalQuestion(
-      context,
-      widget.area,
-      widget.existing?.questionId ?? widget.questionId,
-      widget.existing?.questionText ?? widget.suggestedTitle,
+    final colors = context.colors;
+    Widget tool(IconData icon, String label, VoidCallback action) => IconButton(
+      tooltip: label,
+      style: IconButton.styleFrom(
+        foregroundColor: colors.text,
+        disabledForegroundColor: colors.muted,
+      ),
+      icon: Icon(icon),
+      onPressed: _busy ? null : action,
     );
     return PopScope(
       canPop: _canLeave,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) _leave();
       },
-      child: _ReflectionPage(
-        compact: writing,
-        actions: [
-          ListenableBuilder(
-            listenable: Listenable.merge([_title, _body]),
-            builder: (context, _) => SaveActionButton(
-              key: const ValueKey('reflection-save'),
-              label: strings.saveChanges,
-              lit: _canSave && !_busy,
-              onPressed: _save,
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        backgroundColor: colors.night,
+        body: SafeArea(
+          maintainBottomViewPadding: true,
+          child: ResponsiveContent(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                StaggeredEntrance(
+                  index: 0,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                    child: AreaSectionHeader(
+                      title: widget.area.displayName(strings),
+                      icon: kAreaReflectionsIcon,
+                      descriptionChild: TextField(
+                        key: const ValueKey('reflection-title'),
+                        controller: _title,
+                        enabled: !_busy,
+                        minLines: 1,
+                        maxLines: 3,
+                        maxLength: kReflectionTitleMax,
+                        textCapitalization: TextCapitalization.sentences,
+                        textInputAction: TextInputAction.next,
+                        onSubmitted: (_) => _focus.requestFocus(),
+                        style: TextStyle(
+                          color: colors.text,
+                          fontFamily: kFontStarTitle,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          height: 1.3,
+                        ),
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: false,
+                          counterText: '',
+                          hintText: strings.reflectionTitleLabel,
+                          hintStyle: TextStyle(
+                            color: colors.muted,
+                            fontFamily: kFontStarTitle,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w600,
+                            height: 1.3,
+                          ),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Center(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          StaggeredEntrance(
+                            index: 1,
+                            axis: Axis.horizontal,
+                            child: PopupMenuButton<int>(
+                              tooltip: strings.visionHeading,
+                              enabled: !_busy,
+                              color: colors.nightPanel,
+                              surfaceTintColor: Colors.transparent,
+                              onSelected: (level) => _format(
+                                '${'#' * level} ',
+                                block: true,
+                                toggle: true,
+                              ),
+                              itemBuilder: (context) => [
+                                for (var level = 1; level <= 3; level++)
+                                  PopupMenuItem(
+                                    value: level,
+                                    child: Center(
+                                      child: Text(
+                                        '${strings.visionHeading} $level',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(color: colors.text),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                              child: SizedBox(
+                                width: 48,
+                                height: 48,
+                                child: Center(
+                                  child: Text(
+                                    'H',
+                                    style: TextStyle(
+                                      color: colors.text,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          _toolbarDivider(colors),
+                          tool(
+                            Icons.format_bold,
+                            strings.visionBold,
+                            () => _format('**', toggle: true),
+                          ),
+                          tool(
+                            Icons.format_italic,
+                            strings.visionItalic,
+                            () => _format('*', toggle: true),
+                          ),
+                          tool(
+                            Icons.format_underlined,
+                            strings.visionUnderline,
+                            () => _format('<u>', closing: '</u>', toggle: true),
+                          ),
+                          _toolbarDivider(colors),
+                          tool(
+                            Icons.format_list_bulleted,
+                            strings.visionBulletList,
+                            () => _format('• ', block: true, toggle: true),
+                          ),
+                          tool(
+                            Icons.format_list_numbered,
+                            strings.visionNumberedList,
+                            () => _format(
+                              '1. ',
+                              block: true,
+                              numbered: true,
+                              toggle: true,
+                            ),
+                          ),
+                          _toolbarDivider(colors),
+                          tool(
+                            Icons.horizontal_rule,
+                            strings.visionDivider,
+                            _insertDivider,
+                          ),
+                          _toolbarDivider(colors),
+                          ValueListenableBuilder<UndoHistoryValue>(
+                            valueListenable: _undo,
+                            builder: (context, value, _) => Row(
+                              children: [
+                                IconButton(
+                                  tooltip: strings.visionUndo,
+                                  style: IconButton.styleFrom(
+                                    foregroundColor: colors.text,
+                                    disabledForegroundColor: colors.muted,
+                                  ),
+                                  icon: const Icon(Icons.undo),
+                                  onPressed: value.canUndo && !_busy
+                                      ? _undo.undo
+                                      : null,
+                                ),
+                                IconButton(
+                                  tooltip: strings.visionRedo,
+                                  style: IconButton.styleFrom(
+                                    foregroundColor: colors.text,
+                                    disabledForegroundColor: colors.muted,
+                                  ),
+                                  icon: const Icon(Icons.redo),
+                                  onPressed: value.canRedo && !_busy
+                                      ? _undo.redo
+                                      : null,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Divider(
+                    height: 1,
+                    thickness: 0.75,
+                    color: colors.nightBorder,
+                  ),
+                ),
+                Expanded(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Positioned.fill(
+                        child: LogoWatermark(
+                          scale: logoWatermarkScale(StarKind.unlit),
+                          color: logoWatermarkColor(colors, StarKind.unlit),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        child: StaggeredEntrance(
+                          index: 2,
+                          child: TextField(
+                            key: const ValueKey('reflection-body'),
+                            controller: _body,
+                            focusNode: _focus,
+                            undoController: _undo,
+                            readOnly: _busy,
+                            expands: true,
+                            minLines: null,
+                            maxLines: null,
+                            maxLength: kReflectionBodyMax,
+                            textAlignVertical: TextAlignVertical.top,
+                            keyboardType: TextInputType.multiline,
+                            textCapitalization: TextCapitalization.sentences,
+                            style: TextStyle(
+                              fontFamily: kFontStarTitle,
+                              color: colors.text,
+                              fontSize: 21,
+                              height: 1.6,
+                            ),
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              filled: false,
+                              counterText: '',
+                              hintText: strings.reflectionAnswerHint,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 20,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                StaggeredEntrance(
+                  index: 3,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 12,
+                      runSpacing: 8,
+                      children: [
+                        ListenableBuilder(
+                          listenable: Listenable.merge([_title, _body]),
+                          builder: (context, _) => TextButton.icon(
+                            onPressed: _busy || !_canSave ? null : _share,
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 22,
+                                vertical: 14,
+                              ),
+                            ),
+                            icon: const Icon(Icons.share_outlined),
+                            label: AppButtonLabel(
+                              strings.starQuickLookShareAction,
+                            ),
+                          ),
+                        ),
+                        ListenableBuilder(
+                          listenable: Listenable.merge([_title, _body]),
+                          builder: (context, _) => ElevatedButton(
+                            key: const ValueKey('reflection-save'),
+                            onPressed: _busy || !_canSave ? null : _save,
+                            child: AppButtonLabel(strings.saveChanges),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-        // The text runs down to the bottom of the page.
-        fillLast: AppTextField(
-          key: const ValueKey('reflection-body'),
-          controller: _body,
-          enabled: !_busy,
-          expands: true,
-          maxLength: kReflectionBodyMax,
-          showCounter: false,
-          fontSize: 17,
-          lineHeight: 1.6,
         ),
-        children: [
-          if (!writing) ...[
-            AreaSectionHeader(
-              title: widget.existing == null
-                  ? strings.reflectionNew
-                  : strings.starQuickLookEditAction,
-              icon: kAreaReflectionsIcon,
-              description: widget.area.displayName(strings),
-            ),
-            const SizedBox(height: 16),
-            if (question != null) ...[
-              _QuestionContext(question: question),
-              const SizedBox(height: 16),
-            ],
-          ],
-          AppFieldLabel(
-            strings.reflectionTitleLabel,
-            requirement: FieldRequirement.required,
-            onReset: () => _title.clear(),
-            counterController: _title,
-            counterMax: kReflectionTitleMax,
-          ),
-          const SizedBox(height: kFieldLabelGap),
-          AppTextField(
-            key: const ValueKey('reflection-title'),
-            controller: _title,
-            enabled: !_busy,
-            minLines: 1,
-            maxLines: 2,
-            maxLength: kReflectionTitleMax,
-            showCounter: false,
-            fontSize: 18,
-            lineHeight: 1.3,
-          ),
-          const SizedBox(height: 12),
-          AppFieldLabel(
-            strings.reflectionBodyLabel,
-            requirement: FieldRequirement.required,
-            onReset: () => _body.clear(),
-            counterController: _body,
-            counterMax: kReflectionBodyMax,
-          ),
-          const SizedBox(height: kFieldLabelGap),
-        ],
       ),
     );
   }
+
+  Widget _toolbarDivider(AppColors colors) => SizedBox(
+    height: 24,
+    child: VerticalDivider(
+      width: 24,
+      thickness: 0.75,
+      color: colors.nightBorder,
+    ),
+  );
 }
 
 /// Keep room for titles saved by earlier versions, which used the prompt itself.
@@ -912,14 +1549,7 @@ class _ReflectionDetailScreenState extends State<ReflectionDetailScreen> {
             _QuestionContext(question: question),
             const SizedBox(height: 24),
           ],
-          SelectableText(
-            record.body,
-            style: TextStyle(
-              fontSize: 17,
-              height: 1.65,
-              color: context.colors.text,
-            ),
-          ),
+          VisionMarkdown(data: record.body, color: context.colors.text),
         ],
       );
     },
@@ -928,21 +1558,9 @@ class _ReflectionDetailScreenState extends State<ReflectionDetailScreen> {
 
 /// Shared full-page framing; titles belong to the content and actions stay below.
 class _ReflectionPage extends StatelessWidget {
-  const _ReflectionPage({
-    required this.children,
-    this.actions = const [],
-    this.fillLast,
-    this.compact = false,
-  });
+  const _ReflectionPage({required this.children, this.actions = const []});
   final List<Widget> children;
   final List<Widget> actions;
-  final bool compact;
-
-  /// A last block that takes whatever height the page has left below
-  /// [children] (never less than [_kFillMinHeight] for the whole page, so it
-  /// scrolls instead of squeezing when the keyboard is open).
-  final Widget? fillLast;
-  static const double _kFillMinHeight = 560;
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: context.colors.night,
@@ -950,38 +1568,20 @@ class _ReflectionPage extends StatelessWidget {
       child: Column(
         children: [
           Expanded(
-            child: LayoutBuilder(
-              builder: (context, viewport) {
-                final column = Column(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: ResponsiveContent(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     for (var i = 0; i < children.length; i++)
-                      if (fillLast == null)
-                        StaggeredEntrance(
-                          index: math.min(i, 5),
-                          child: children[i],
-                        )
-                      else
-                        children[i],
-                    if (fillLast case final last?) Expanded(child: last),
+                      StaggeredEntrance(
+                        index: math.min(i, 5),
+                        child: children[i],
+                      ),
                   ],
-                );
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: ResponsiveContent(
-                    child: fillLast == null
-                        ? column
-                        : SizedBox(
-                            height: math.max(
-                              viewport.maxHeight - 40,
-                              (compact ? 300 : _kFillMinHeight) *
-                                  MediaQuery.textScalerOf(context).scale(1),
-                            ),
-                            child: column,
-                          ),
-                  ),
-                );
-              },
+                ),
+              ),
             ),
           ),
           if (actions.isNotEmpty)

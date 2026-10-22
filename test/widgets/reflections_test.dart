@@ -7,6 +7,7 @@ import 'package:inner_stars/l10n/strings_scope.dart';
 import 'package:inner_stars/models/life_area.dart';
 import 'package:inner_stars/models/reflection.dart';
 import 'package:inner_stars/screens/area_reflections_screen.dart';
+import 'package:inner_stars/screens/star_form_screen.dart';
 import 'package:inner_stars/theme/app_theme.dart';
 import 'package:inner_stars/widgets/share_arrangement.dart';
 import 'package:inner_stars/widgets/shareable_reflection_card.dart';
@@ -48,7 +49,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('suggested question stays separate through saving and editing', (
+  testWidgets('suggested question becomes the topic and stays linked', (
     tester,
   ) async {
     final repo = await ReflectionRepository.create();
@@ -76,12 +77,8 @@ void main() {
     expect(question, isNot(first));
     await tester.tap(find.byKey(const ValueKey('reflection-write-question')));
     await tester.pumpAndSettle();
-    final title = find.descendant(
-      of: find.byKey(const ValueKey('reflection-title')),
-      matching: find.byType(TextField),
-    );
-    expect(tester.widget<TextField>(title).controller!.text, isEmpty);
-    expect(find.text(question), findsOneWidget);
+    final title = find.byKey(const ValueKey('reflection-title'));
+    expect(tester.widget<TextField>(title).controller!.text, question);
     await tester.enterText(
       find.byKey(const ValueKey('reflection-title')),
       'Il mio titolo',
@@ -92,6 +89,9 @@ void main() {
     );
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey('reflection-save')));
+    await tester.pumpAndSettle();
+    expect(find.text(strings.reflectionNextStepTitle), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('reflection-next-not-now')));
     await tester.pumpAndSettle();
     final record = repo.getAll().single;
     expect(record.questionText, question);
@@ -149,6 +149,36 @@ void main() {
     await tester.tap(find.byTooltip(strings.clearSearchTooltip));
     await tester.pumpAndSettle();
     expect(find.text('Pensiero 0'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('post-save star action opens the shared all-kind creator', (
+    tester,
+  ) async {
+    final repo = await ReflectionRepository.create();
+    await tester.pumpWidget(
+      app(AreaReflectionsScreen(area: LifeArea.physical, repository: repo)),
+    );
+    await tester.tap(find.byKey(const ValueKey('reflection-new')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(strings.reflectionFree.toUpperCase()));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('reflection-title')),
+      'Un passo concreto',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('reflection-body')),
+      'Trasformo la riflessione in azione.',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('reflection-save')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('reflection-next-star')));
+    await tester.pumpAndSettle();
+    final creator = tester.widget<StarFormScreen>(find.byType(StarFormScreen));
+    expect(creator.startWithoutSelection, isTrue);
+    expect(creator.presetArea, LifeArea.physical);
     expect(tester.takeException(), isNull);
   });
 
@@ -227,8 +257,8 @@ void main() {
     tester.view.viewInsets = const FakeViewPadding(bottom: 280);
     await tester.pumpAndSettle();
     expect(find.text(strings.reflectionNew), findsNothing);
-    expect(find.text(question), findsNothing);
-    final field = find.descendant(of: body, matching: find.byType(TextField));
+    expect(find.text(question), findsOneWidget);
+    final field = body;
     expect(
       tester.widget<TextField>(field).controller!.text,
       'Il mio testo resta qui',
@@ -276,6 +306,21 @@ void main() {
       );
       await tester.pump(); // the save button lights up
       await tester.tap(find.byKey(const ValueKey('reflection-save')));
+      await tester.pumpAndSettle();
+      expect(find.text(strings.reflectionNextStepTitle), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('reflection-next-star')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('reflection-next-vision')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('reflection-next-moodboard')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('reflection-next-not-now')));
       await tester.pumpAndSettle();
       expect(find.byType(ReflectionDetailScreen), findsOneWidget);
       expect(repo.getAll().single.origin, ReflectionOrigin.free);

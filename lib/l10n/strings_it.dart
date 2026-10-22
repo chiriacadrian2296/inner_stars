@@ -53,6 +53,19 @@ class StringsIt implements AppStrings {
   String get reflectionNoResults => 'Nessuna riflessione trovata.';
   @override
   String get reflectionQuestionLabel => 'Domanda di Partenza';
+  @override
+  String get reflectionNextStepTitle => 'Dove porta questa riflessione?';
+  @override
+  String get reflectionNextStepBody =>
+      'Trasforma ciò che è emerso in un prossimo passo concreto per quest’area.';
+  @override
+  String get reflectionCreateStarAction => 'Crea una Stella';
+  @override
+  String get reflectionUpdateVisionAction => 'Aggiorna la Visione';
+  @override
+  String get reflectionAddMoodboardAction => 'Aggiungi alla Moodboard';
+  @override
+  String get reflectionNotNowAction => 'Non Ora';
 
   @override
   String get splashLoadingLabel => 'Caricamento di Inner Stars';

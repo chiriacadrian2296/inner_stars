@@ -31,6 +31,12 @@ abstract class AppStrings {
   String get reflectionSearchHint;
   String get reflectionNoResults;
   String get reflectionQuestionLabel;
+  String get reflectionNextStepTitle;
+  String get reflectionNextStepBody;
+  String get reflectionCreateStarAction;
+  String get reflectionUpdateVisionAction;
+  String get reflectionAddMoodboardAction;
+  String get reflectionNotNowAction;
 
   String get splashLoadingLabel;
   String get splashTagline;

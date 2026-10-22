@@ -53,6 +53,19 @@ class StringsRo implements AppStrings {
   String get reflectionNoResults => 'Nu s-au găsit reflecții.';
   @override
   String get reflectionQuestionLabel => 'Întrebarea Inițială';
+  @override
+  String get reflectionNextStepTitle => 'Unde duce această reflecție?';
+  @override
+  String get reflectionNextStepBody =>
+      'Transformă ceea ce a apărut într-un pas concret pentru această arie.';
+  @override
+  String get reflectionCreateStarAction => 'Creează o Stea';
+  @override
+  String get reflectionUpdateVisionAction => 'Actualizează Viziunea';
+  @override
+  String get reflectionAddMoodboardAction => 'Adaugă în Moodboard';
+  @override
+  String get reflectionNotNowAction => 'Nu Acum';
 
   @override
   String get splashLoadingLabel => 'Se încarcă Inner Stars';

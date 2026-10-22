@@ -53,6 +53,19 @@ class StringsEn implements AppStrings {
   String get reflectionNoResults => 'No reflections found.';
   @override
   String get reflectionQuestionLabel => 'Starting Question';
+  @override
+  String get reflectionNextStepTitle => 'Where should this reflection lead?';
+  @override
+  String get reflectionNextStepBody =>
+      'Turn what emerged into a concrete next step for this area.';
+  @override
+  String get reflectionCreateStarAction => 'Create a Star';
+  @override
+  String get reflectionUpdateVisionAction => 'Update the Vision';
+  @override
+  String get reflectionAddMoodboardAction => 'Add to the Moodboard';
+  @override
+  String get reflectionNotNowAction => 'Not Now';
 
   @override
   String get splashLoadingLabel => 'Loading Inner Stars';

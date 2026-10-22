@@ -9,14 +9,16 @@ class AreaSectionHeader extends StatelessWidget {
     super.key,
     required this.title,
     this.icon,
-    required this.description,
-  });
+    this.description,
+    this.descriptionChild,
+  }) : assert(description != null || descriptionChild != null);
 
   final String title;
 
   /// Shown after the title ("Social - icon"), sized to the title text.
   final IconData? icon;
-  final String description;
+  final String? description;
+  final Widget? descriptionChild;
 
   @override
   Widget build(BuildContext context) {
@@ -53,10 +55,11 @@ class AreaSectionHeader extends StatelessWidget {
           },
         ),
         const SizedBox(height: 10),
-        Text(
-          description,
-          style: TextStyle(color: colors.muted, fontSize: 15, height: 1.5),
-        ),
+        descriptionChild ??
+            Text(
+              description!,
+              style: TextStyle(color: colors.muted, fontSize: 15, height: 1.5),
+            ),
       ],
     );
   }
