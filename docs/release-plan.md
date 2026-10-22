@@ -97,6 +97,30 @@ condivisione vera su telefono e web (A4); le novità di A1 sul telefono, compres
 di “Crea vittoria” (A5); accesso reale su Android, secondo account sullo stesso browser,
 offline, cancellazione dati e account, e PIN sincronizzato fra due dispositivi (A6).
 
+## Prove manuali del 22 ottobre 2026 (ramo `correzioni-prove`)
+
+Esito delle prove fatte dall’autore su telefono release e web:
+
+- **Provate e a posto:** PIN sincronizzato fra due dispositivi (l’impronta resta per dispositivo,
+  voluto); condivisione da telefono; login reale su Android; secondo account sullo stesso
+  browser (dati separati, tornando al primo si ritrova tutto); cancellazione di dati e account
+  (vedi A6).
+- **Corretto:** dopo aver annullato il consenso di Google sul web il messaggio d’errore restava
+  sulla pagina di login anche dopo un accesso riuscito. Ora annullare non è un errore
+  (`AuthService.isCancellation`) e l’errore si azzera a ogni accesso e a ogni uscita.
+- **Corretto:** moodboard sul web, “Media unavailable or format unsupported” per una foto
+  arrivata dal telefono (il file raggiunge il cloud dopo il record, e la moodboard cercava una
+  volta sola). Ora ritenta come le stelle (4, 10, 30, 90 s) e mostra l’errore solo dopo
+  l’ultimo tentativo; la foto compare da sola, senza cambiare pagina, nei due versi.
+- **Limite noto, rimandato:** dal web la condivisione manda solo l’immagine, senza il testo
+  con il link, perché molte destinazioni del foglio di condivisione del browser scartano il
+  testo quando c’è un file. La frase del testo non convince l’autore: da rivedere dopo la v1.
+- **Ancora da provare:** modalità offline sul telefono (aereo → app aperta e usata → rete
+  tornata → i dati arrivano sul web).
+- **Fatto da Claude:** GitHub Pages disattivato (il vecchio sito risponde 404) e regola
+  Cloudflare `www.innerstars.app` → `innerstars.app` (301, percorso e parametri conservati,
+  verificata con `curl`).
+
 ## A1. Già fatto
 
 - [x] `kDevTools` (`lib/debug/dev_tools.dart`): dietro di esso la sezione Lab del menu, il pulsante

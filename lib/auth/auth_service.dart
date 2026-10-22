@@ -100,6 +100,8 @@ class AuthService extends ChangeNotifier implements SyncAccount {
       _user = auth.currentUser;
       _userSub = auth.authStateChanges().listen((user) {
         _user = user;
+        // A failure shown on the login page ends with the next sign-in.
+        if (user != null) _lastError = null;
         _resolved = true;
         _initFailed = false;
         onSignInChanged?.call(user != null);
@@ -118,6 +120,9 @@ class AuthService extends ChangeNotifier implements SyncAccount {
           }
         },
         onError: (Object error) {
+          // Closing Google's window (or not accepting its terms) is a choice,
+          // not a failure worth a message.
+          if (isCancellation(error)) return;
           _lastError = error;
           notifyListeners();
         },
@@ -199,7 +204,15 @@ class AuthService extends ChangeNotifier implements SyncAccount {
     }
   }
 
+  /// Whether [error] is the person backing out of Google's sign-in, which
+  /// needs no message.
+  static bool isCancellation(Object error) =>
+      error is GoogleSignInException &&
+      (error.code == GoogleSignInExceptionCode.canceled ||
+          error.code == GoogleSignInExceptionCode.interrupted);
+
   Future<void> signOut() async {
+    _lastError = null;
     if (_auth == null) return;
     await _google.signOut();
     await _auth!.signOut();

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -6,9 +7,11 @@ import 'package:video_player/video_player.dart';
 import '../data/moodboard_repository.dart';
 import '../data/moodboard_storage.dart';
 import '../l10n/strings_scope.dart';
+import '../sync/media/media_hooks.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import 'logo_watermark.dart';
+import 'photo_image.dart';
 import 'staggered_entrance.dart';
 
 class MoodboardGrid extends StatelessWidget {
@@ -202,16 +205,41 @@ class MoodboardMedia extends StatefulWidget {
 }
 
 class _MoodboardMediaState extends State<MoodboardMedia> {
-  Future<Uint8List>? _image;
+  Uint8List? _photo;
+  Timer? _retry;
+  int _attempt = 0;
   VideoPlayerController? _video;
   bool _failed = false;
   @override
   void initState() {
     super.initState();
-    if (widget.item.kind == MoodboardKind.photo) {
-      _image = MoodboardStorage.read(widget.item.content);
-    }
+    if (widget.item.kind == MoodboardKind.photo) _loadPhoto();
     if (widget.item.kind == MoodboardKind.video) _loadVideo();
+  }
+
+  /// A picture another device just added can be missing at first: its record
+  /// reaches this device a moment before the file reaches the cloud. While the
+  /// cloud sync is on, look again a few times (like [PhotoImage]) instead of
+  /// showing an error until the page is reopened.
+  Future<void> _loadPhoto() async {
+    Uint8List? bytes;
+    try {
+      bytes = await MoodboardStorage.read(widget.item.content);
+    } catch (_) {}
+    if (!mounted) return;
+    if (bytes != null) {
+      setState(() {
+        _photo = bytes;
+        _failed = false;
+      });
+      return;
+    }
+    final delays = PhotoImage.photoRetryDelays;
+    if (MediaHooks.instance != null && _attempt < delays.length) {
+      _retry = Timer(delays[_attempt++], _loadPhoto);
+    } else {
+      setState(() => _failed = true);
+    }
   }
 
   Future<void> _loadVideo() async {
@@ -231,6 +259,7 @@ class _MoodboardMediaState extends State<MoodboardMedia> {
 
   @override
   void dispose() {
+    _retry?.cancel();
     _video?.dispose();
     super.dispose();
   }
@@ -246,20 +275,18 @@ class _MoodboardMediaState extends State<MoodboardMedia> {
     if (widget.item.kind == MoodboardKind.quote) {
       return MoodboardQuoteCard(item: widget.item, expanded: widget.expanded);
     }
-    if (_image != null) {
-      return FutureBuilder<Uint8List>(
-        future: _image,
-        builder: (context, snapshot) => snapshot.hasError
-            ? error
-            : snapshot.hasData
-            ? Image.memory(
-                snapshot.data!,
-                fit: widget.expanded ? BoxFit.contain : BoxFit.cover,
-                errorBuilder: (_, _, _) => error,
-              )
-            : Center(
-                child: CircularProgressIndicator(color: context.colors.gold),
-              ),
+    if (widget.item.kind == MoodboardKind.photo) {
+      final photo = _photo;
+      if (photo != null) {
+        return Image.memory(
+          photo,
+          fit: widget.expanded ? BoxFit.contain : BoxFit.cover,
+          errorBuilder: (_, _, _) => error,
+        );
+      }
+      if (_failed) return error;
+      return Center(
+        child: CircularProgressIndicator(color: context.colors.gold),
       );
     }
     if (_failed) return error;
