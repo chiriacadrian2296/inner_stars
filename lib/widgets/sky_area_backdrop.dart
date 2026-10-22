@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -100,6 +101,21 @@ typedef _Vec3 = (double x, double y, double z);
 
 double _dot3(_Vec3 a, _Vec3 b) => a.$1 * b.$1 + a.$2 * b.$2 + a.$3 * b.$3;
 
+_Vec3 _cross3(_Vec3 a, _Vec3 b) => (
+  a.$2 * b.$3 - a.$3 * b.$2,
+  a.$3 * b.$1 - a.$1 * b.$3,
+  a.$1 * b.$2 - a.$2 * b.$1,
+);
+
+_Vec3 _add3(_Vec3 a, _Vec3 b) => (a.$1 + b.$1, a.$2 + b.$2, a.$3 + b.$3);
+
+_Vec3 _scaled3(_Vec3 a, double s) => (a.$1 * s, a.$2 * s, a.$3 * s);
+
+_Vec3 _normalized3(_Vec3 v) {
+  final length = math.sqrt(_dot3(v, v));
+  return (v.$1 / length, v.$2 / length, v.$3 / length);
+}
+
 /// Same forward projection as `sky_supernova.dart`'s own private
 /// `_projectDirection`/`sky_area_sigils.dart`'s own copy of it — see either
 /// file's doc comment for why this is duplicated rather than shared.
@@ -120,6 +136,63 @@ double _dot3(_Vec3 a, _Vec3 b) => a.$1 * b.$1 + a.$2 * b.$2 + a.$3 * b.$3;
       size.height / 2 - y * zoom * size.height,
     ),
     scale,
+  );
+}
+
+/// Same local frame `sky_area_sigils.dart`'s own `_axisAFor` builds — see
+/// that file's doc comment for the full derivation. Used here for the same
+/// reason: without it, a backdrop would sit screen-aligned no matter how
+/// the camera moves, rather than reading as pinned to the sky at its own
+/// area's spot the way a real patch of nebula would be.
+_Vec3 _axisAFor(_Vec3 center) {
+  final reference = center.$2.abs() < 0.99 ? (0.0, 1.0, 0.0) : (1.0, 0.0, 0.0);
+  return _normalized3(_cross3(reference, center));
+}
+
+/// Same small-offset technique as `sky_area_sigils.dart`'s own
+/// `_rotationAngleFor` — the on-screen angle [axisA] itself projects to,
+/// relative to [screenCenter].
+double _rotationAngleFor(
+  _Vec3 center,
+  _Vec3 axisA,
+  Offset screenCenter,
+  SkyCamera camera,
+  double zoom,
+  Size size,
+) {
+  const epsilon = 0.01;
+  final offsetDir = _normalized3(_add3(center, _scaled3(axisA, epsilon)));
+  final offsetProjected = _projectDirection(offsetDir, camera, zoom, size);
+  if (offsetProjected == null) return 0.0;
+  final delta = offsetProjected.$1 - screenCenter;
+  return math.atan2(delta.dy, delta.dx);
+}
+
+/// What [area]'s own backdrop's `rotation` (see
+/// [_SkyAreaBackdropPainter._paintOne]) would read as under [camera] —
+/// reusing [_rotationAngleFor] itself rather than a separately hand-derived
+/// formula, at an arbitrary unit probe size (the angle it returns doesn't
+/// depend on zoom/screen size, only on direction). `sky_screen.dart`'s own
+/// hold-to-straighten flight (see `_holdArea`) calls this — once with the
+/// camera as it will be *before* any roll correction, once as the target 0
+/// — to work out how much roll would land the image reading straight, the
+/// same way it already straightens a constellation's own shape via
+/// `cameraRollAngle` (constellation_field.dart) targeting a different
+/// canonical reading. Meaningless for any camera not already looking
+/// dead-center at [area]'s own supernova — every caller only ever uses
+/// this after a pan-only [SkyCamera.rotatedToAlign] onto that exact
+/// direction.
+double areaBackdropRollReading(LifeArea area, SkyCamera camera) {
+  final direction = supernovaDirection(area.index, LifeArea.values.length);
+  final axisA = _axisAFor(direction);
+  const probeSize = Size(1, 1);
+  return _rotationAngleFor(
+    direction,
+    axisA,
+    const Offset(0.5, 0.5),
+    camera,
+    1.0,
+    probeSize,
   );
 }
 
@@ -167,17 +240,29 @@ class _SkyAreaBackdropPainter extends CustomPainter {
   void _paintOne(Canvas canvas, Size size, _Vec3 direction, ui.Image image) {
     final projected = _projectDirection(direction, camera, zoom, size);
     if (projected == null) return;
-    final (center, _) = projected;
-    // The centre follows the spherical projection, but the large artwork is
-    // a screen-facing backdrop rather than geometry on that sphere. Keeping
-    // its visual size and orientation stable prevents the web viewport's
-    // wider corners from stretching and spinning it independently of the
-    // supernova it belongs to.
-    final diameter = _worldRadius * scale * 2 * zoom * size.height;
+    final (center, scale) = projected;
+    final diameter = _worldRadius * this.scale * 2 * zoom * size.height * scale;
+
+    // The same axis a real patch of sky would keep facing as the camera
+    // moves around it — see [_axisAFor]'s own doc comment. Rotating the
+    // whole image by this angle (rather than just drawing it screen-up) is
+    // what makes it read as pinned to the sky at this area's own spot
+    // instead of a flat billboard that stays upright no matter where the
+    // camera looks.
+    final axisA = _axisAFor(direction);
+    final rotation = _rotationAngleFor(
+      direction,
+      axisA,
+      center,
+      camera,
+      zoom,
+      size,
+    );
 
     canvas.save();
     canvas.clipRect(Offset.zero & size);
     canvas.translate(center.dx, center.dy);
+    canvas.rotate(rotation);
 
     final localRect = Rect.fromCenter(
       center: Offset.zero,

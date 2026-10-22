@@ -60,6 +60,7 @@ import '../utils/project_card_info.dart';
 import '../utils/system_bars.dart';
 import '../utils/star_card_info.dart';
 import '../utils/app_modals.dart';
+import '../utils/area_hero_art.dart';
 import '../utils/habit_stats.dart';
 import '../utils/haptics.dart';
 import '../utils/icon_for_slug.dart';
@@ -2960,6 +2961,7 @@ class _SkyScreenState extends State<SkyScreen>
     SkyNavigationTarget target, {
     Offset anchorFraction = const Offset(0.5, 0.5),
     bool straightenRoll = false,
+    LifeArea? straightenBackdropArea,
   }) {
     final size = context.size;
     if (size == null) return TickerFuture.complete();
@@ -2970,6 +2972,7 @@ class _SkyScreenState extends State<SkyScreen>
       _zoomFor(target, size),
       anchorFraction: anchorFraction,
       straightenRoll: straightenRoll,
+      straightenBackdropArea: straightenBackdropArea,
     );
   }
 
@@ -2986,6 +2989,15 @@ class _SkyScreenState extends State<SkyScreen>
     // constellation hold, so its shape lands upright rather than however
     // the camera happened to be twisted from an earlier manual rotation.
     bool straightenRoll = false,
+    // Same idea as [straightenRoll], targeting a different canonical
+    // reading — set only for a hold on a supernova whose own area has a
+    // sky backdrop (see kAreaHeroArt/sky_area_backdrop.dart), so that
+    // image lands reading straight rather than however it currently
+    // happens to be rotated relative to the camera. Mutually exclusive
+    // with [straightenRoll] in practice — nothing holds both a
+    // constellation and a supernova at once — but both are read the same
+    // way below regardless.
+    LifeArea? straightenBackdropArea,
   }) {
     final size = context.size;
     final hop = _hopNextFlight;
@@ -3031,6 +3043,8 @@ class _SkyScreenState extends State<SkyScreen>
     // own "canonical" reference frame and the painter's don't agree on
     // which way is up; landing on the *opposite* pole of that reading is
     // what actually matches the shape editor's own orientation.
+    final backdropArea = straightenBackdropArea;
+    //
     // Wrapped to (-pi, pi] — both readings are plain angles, so the raw
     // difference can land anywhere in a full turn (`math.pi - reading`
     // alone spans 0..2pi), and ramping the camera through e.g. +350° when
@@ -3043,6 +3057,11 @@ class _SkyScreenState extends State<SkyScreen>
                 cameraRollAngle(
                   _camera.rotatedToAlign(_camera.forward, targetForward),
                 )
+          : backdropArea != null
+          ? -areaBackdropRollReading(
+              backdropArea,
+              _camera.rotatedToAlign(_camera.forward, targetForward),
+            )
           : 0.0,
     );
 
@@ -4542,8 +4561,20 @@ class _SkyScreenState extends State<SkyScreen>
   /// [_openTooltipDuringFlight]) — a tap on a supernova used to push
   /// [AreaDetailScreen] straight away, replaced first by just the camera
   /// movement and now by this tooltip's own [_viewArea] instead.
+  ///
+  /// For an area with a sky backdrop of its own (see kAreaHeroArt), also
+  /// straightens the camera's roll as it flies there — the same idea as
+  /// [_holdConstellation]'s own straighten, just targeting that backdrop
+  /// image (see sky_area_backdrop.dart) landing upright instead of a
+  /// constellation's shape.
   void _holdArea(LifeArea area) {
-    _openTooltipDuringFlight(_flyTo(SkyAreaTarget(area)), _AreaTooltip(area));
+    _openTooltipDuringFlight(
+      _flyTo(
+        SkyAreaTarget(area),
+        straightenBackdropArea: kAreaHeroArt.containsKey(area) ? area : null,
+      ),
+      _AreaTooltip(area),
+    );
   }
 
   /// See [_flyToArea]'s own note — same plain-tap/camera-only split, for
