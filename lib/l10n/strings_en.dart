@@ -475,16 +475,16 @@ class StringsEn implements AppStrings {
   String get deleteLocalDataFailed =>
       'Could not delete the data. Please try again.';
   @override
-  String get deleteAccount => 'Delete Account And Cloud Data';
+  String get deleteAccount => 'Delete Account And All Data';
   @override
   String get deleteAccountConfirmTitle => 'Delete your account?';
   @override
   String get deleteAccountConfirmBody =>
-      'Your account and everything stored in the cloud are permanently deleted. The data on this device stays. This cannot be undone.';
+      'Your account, everything stored in the cloud and the data on this device are permanently deleted. Your other devices empty themselves and sign out the next time they are online. This cannot be undone.';
   @override
   String get deleteAccountConfirm => 'Delete Account';
   @override
-  String get accountDeleted => 'Account and cloud data deleted.';
+  String get accountDeleted => 'Account and data deleted.';
   @override
   String get deleteAccountFailed =>
       'Could not delete the account. Please try again.';

@@ -403,6 +403,135 @@ void main() {
     );
   });
 
+  group('an account deleted on another device', () {
+    SyncService buildChecked(
+      _Account account, {
+      required Future<bool> Function() exists,
+      required Future<void> Function() gone,
+      Future<void> Function()? clear,
+    }) => SyncService(
+      account: account,
+      prefs: prefs,
+      targets: [SyncTarget('items', items)],
+      remote: (_) => remote,
+      watchDelay: const Duration(milliseconds: 40),
+      clearLocalData: clear,
+      accountStillExists: exists,
+      onAccountGone: gone,
+      now: () => clock,
+    );
+
+    test('empties this device, forgets the owner and signs out', () async {
+      var cleared = 0;
+      var signedOut = 0;
+      final service = buildChecked(
+        _Account('uid-a'),
+        exists: () async => false,
+        gone: () async => signedOut++,
+        clear: () async {
+          cleared++;
+          await prefs.remove('items');
+        },
+      );
+      await items.applyRemote([rec('mine', clock)]);
+      await prefs.setString('data.owner', 'uid-a');
+
+      service.start();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(cleared, 1);
+      expect(signedOut, 1);
+      expect(items.readAll(), isEmpty);
+      expect(prefs.getString('data.owner'), isNull);
+      service.dispose();
+    });
+
+    test('an account that still exists leaves everything alone', () async {
+      var cleared = 0;
+      var signedOut = 0;
+      final service = buildChecked(
+        _Account('uid-a'),
+        exists: () async => true,
+        gone: () async => signedOut++,
+        clear: () async => cleared++,
+      );
+      await items.applyRemote([rec('mine', clock)]);
+
+      service.start();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(cleared, 0);
+      expect(signedOut, 0);
+      expect(items.readAll(), hasLength(1));
+      service.dispose();
+    });
+
+    test('a failing check never empties the device', () async {
+      var cleared = 0;
+      var signedOut = 0;
+      final service = buildChecked(
+        _Account('uid-a'),
+        exists: () async => throw StateError('offline'),
+        gone: () async => signedOut++,
+        clear: () async => cleared++,
+      );
+      await items.applyRemote([rec('mine', clock)]);
+
+      service.start();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(cleared, 0);
+      expect(signedOut, 0);
+      expect(items.readAll(), hasLength(1));
+      service.dispose();
+    });
+
+    test('nothing is checked while nobody is signed in', () async {
+      var asked = 0;
+      final service = buildChecked(
+        _Account(),
+        exists: () async {
+          asked++;
+          return false;
+        },
+        gone: () async {},
+      );
+      service.start();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(asked, 0);
+      service.dispose();
+    });
+  });
+
+  test(
+    'forgetLocalData empties the device so a new account starts clean',
+    () async {
+      var cleared = 0;
+      final a = build(
+        _Account('uid-a'),
+        clear: () async {
+          cleared++;
+          await prefs.remove('items');
+        },
+      );
+      await items.applyRemote([rec('mine', clock)]);
+      await sync(a);
+      await a.deleteCloudData();
+      await a.forgetLocalData();
+      a.dispose();
+
+      expect(cleared, 1);
+      expect(items.readAll(), isEmpty);
+
+      // A new account (same person, new identity) finds nothing to adopt.
+      final again = build(_Account('uid-new'), clear: () async => cleared++);
+      await sync(again);
+      expect(cleared, 1);
+      expect(remote.records('items'), isEmpty);
+      again.dispose();
+    },
+  );
+
   test(
     'a write by another device is pulled within seconds, with no timer wait',
     () async {

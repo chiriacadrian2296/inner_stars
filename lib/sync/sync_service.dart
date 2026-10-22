@@ -88,6 +88,8 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
     this.clearLocalData,
     this.afterSync,
     this.deleteMedia,
+    this.accountStillExists,
+    this.onAccountGone,
     this.ownerKey = 'data.owner',
     this.debounce = const Duration(seconds: 5),
     this.watchDelay = const Duration(seconds: 2),
@@ -117,6 +119,15 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
   /// Removes the account's media files from the cloud, as part of
   /// [deleteCloudData].
   final Future<void> Function()? deleteMedia;
+
+  /// Asks whether the signed-in account still exists. It answers false only
+  /// when the account is definitely gone (deleted on another device); being
+  /// offline or any doubtful error must answer true.
+  final Future<bool> Function()? accountStillExists;
+
+  /// Called after this device has been emptied because its account is gone;
+  /// signs out so the app returns to the login page.
+  final Future<void> Function()? onAccountGone;
   final Duration debounce;
 
   /// How long after another device's write this one waits before pulling.
@@ -182,6 +193,31 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
     } else {
       _startWatching(uid);
       schedule(const Duration(milliseconds: 300));
+      unawaited(_verifyAccount());
+    }
+  }
+
+  bool _verifying = false;
+
+  /// If the account was deleted from another device, this one empties itself
+  /// and signs out: "delete everything" then reaches every device, the next
+  /// time each one is online.
+  Future<void> _verifyAccount() async {
+    final check = accountStillExists;
+    final uid = _account.uid;
+    if (check == null || uid == null || _verifying || _disposed) return;
+    _verifying = true;
+    try {
+      if (await check()) return;
+      if (_disposed || _account.uid != uid) return;
+      await pausedWhile(() async {
+        await forgetLocalData();
+        await onAccountGone?.call();
+      });
+    } catch (_) {
+      // Doubt never empties the device; the next check tries again.
+    } finally {
+      _verifying = false;
     }
   }
 
@@ -265,6 +301,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       schedule(const Duration(seconds: 1));
+      unawaited(_verifyAccount());
     } else if (state == AppLifecycleState.paused) {
       // Push what is pending before the system may stop the app.
       unawaited(syncNow());
@@ -421,6 +458,16 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
     for (final target in _targets) {
       await remote.deleteCollection(target.name);
     }
+    await resetPositions();
+    await releaseOwnership();
+  }
+
+  /// Empties this device after its account was deleted: the content, the
+  /// synced settings and the app lock go (no tombstones), the sync positions
+  /// are forgotten and nobody owns the device any more. Call inside
+  /// [pausedWhile].
+  Future<void> forgetLocalData() async {
+    await clearLocalData?.call();
     await resetPositions();
     await releaseOwnership();
   }

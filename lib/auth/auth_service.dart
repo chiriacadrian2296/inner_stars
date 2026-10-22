@@ -199,6 +199,25 @@ class AuthService extends ChangeNotifier implements SyncAccount {
     }
   }
 
+  /// Whether the signed-in account still exists, asking Firebase. False only
+  /// when Firebase says the account is gone or its sign-in can never be
+  /// renewed (deleted from another device). Offline, or any other error, is
+  /// true: doubt must never empty a device.
+  Future<bool> accountStillExists() async {
+    final user = _auth?.currentUser;
+    if (user == null) return true;
+    try {
+      await user.reload();
+      return true;
+    } on FirebaseAuthException catch (error) {
+      return !_accountGoneCodes.contains(error.code);
+    } catch (_) {
+      return true;
+    }
+  }
+
+  static const _accountGoneCodes = {'user-not-found', 'user-token-expired'};
+
   Future<void> signOut() async {
     if (_auth == null) return;
     await _google.signOut();

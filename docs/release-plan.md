@@ -411,6 +411,19 @@ Ordine: dopo A2, così la nuova entità nasce già pronta alla sync.
       sync, Disconnetti, **Elimina account e dati**. Non servono più il pulsante “Sincronizza
       ora” (sync solo automatica) né il dialog del primo sync (unione automatica): decisioni
       dell’autore, vedi sopra.
+- [x] **“Elimina account e tutti i dati” raggiunge ogni dispositivo (22 ottobre, ramo
+      `cancellazione-account`, su richiesta dell’autore).** Prima l’eliminazione dell’account
+      lasciava i dati sul dispositivo, che un account nuovo avrebbe ricaricato. Ora: sul
+      dispositivo che elimina, dopo cloud e account, l’app svuota anche i dati locali
+      (contenuti, impostazioni sincronizzate, blocco app, coda dei media; `SyncService.forgetLocalData`)
+      e torna al login. Gli **altri dispositivi** controllano l’account all’arrivo di un accesso e
+      a ogni ritorno in primo piano (`AuthService.accountStillExists`, `user.reload()`): se Firebase
+      risponde `user-not-found` o `user-token-expired` si svuotano ed escono; offline o qualunque
+      altro errore non cancella mai nulla. Non è istantaneo (serve che il dispositivo sia online
+      e torni in primo piano). Rischio noto e limitato: se `user-token-expired` arrivasse per un
+      altro motivo, il dispositivo si svuota ma la copia nel cloud resta e torna al prossimo
+      accesso (si perdono solo modifiche non ancora sincronizzate). 4 test nuovi in
+      `test/sync/sync_service_test.dart`; **da provare dal vivo** con due dispositivi.
 
 ## A7. Onboarding
 

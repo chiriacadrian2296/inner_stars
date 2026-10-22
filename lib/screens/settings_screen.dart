@@ -466,8 +466,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  /// Deletes the cloud copy and the account itself (the stores require it).
-  /// The data on this device stays.
+  /// Deletes the cloud copy, the account itself (the stores require it) and
+  /// the data on this device. Other devices empty themselves when they next
+  /// find the account gone.
   Future<void> _deleteAccount() async {
     final strings = context.strings;
     final auth = AuthScope.maybeOf(context);
@@ -493,6 +494,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await sync.pausedWhile(() async {
         await sync.deleteCloudData();
         await auth.deleteAccount();
+        // The account is gone for good: this device is emptied too, so
+        // nothing of it can follow a new account. Other devices do the same
+        // the next time they are online (see SyncService).
+        try {
+          await sync.forgetLocalData();
+        } catch (_) {}
       });
       _say(strings.accountDeleted);
     } catch (_) {

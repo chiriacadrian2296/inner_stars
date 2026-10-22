@@ -311,6 +311,10 @@ class _InnerStarsAppState extends State<InnerStarsApp> {
             await media.process();
           },
           deleteMedia: media.deleteAllRemote,
+          // An account deleted from another device empties this one too and
+          // returns to the login page.
+          accountStillExists: syncAccount.accountStillExists,
+          onAccountGone: syncAccount.signOut,
           // A different account signing in replaces this device's data instead
           // of merging into it; each account keeps only its own.
           clearLocalData: () async {

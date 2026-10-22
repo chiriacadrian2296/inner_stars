@@ -481,16 +481,16 @@ class StringsRo implements AppStrings {
   String get deleteLocalDataFailed =>
       'Datele nu au putut fi șterse. Încearcă din nou.';
   @override
-  String get deleteAccount => 'Șterge Contul Și Datele Din Cloud';
+  String get deleteAccount => 'Șterge Contul Și Toate Datele';
   @override
   String get deleteAccountConfirmTitle => 'Ștergi contul?';
   @override
   String get deleteAccountConfirmBody =>
-      'Contul și tot ce este salvat în cloud sunt șterse definitiv. Datele de pe acest dispozitiv rămân. Acțiunea nu poate fi anulată.';
+      'Contul, tot ce este salvat în cloud și datele de pe acest dispozitiv sunt șterse definitiv. Celelalte dispozitive se golesc și ies din cont data viitoare când sunt online. Acțiunea nu poate fi anulată.';
   @override
   String get deleteAccountConfirm => 'Șterge Contul';
   @override
-  String get accountDeleted => 'Contul și datele din cloud au fost șterse.';
+  String get accountDeleted => 'Contul și datele au fost șterse.';
   @override
   String get deleteAccountFailed =>
       'Contul nu a putut fi șters. Încearcă din nou.';

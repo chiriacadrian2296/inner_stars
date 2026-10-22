@@ -478,16 +478,16 @@ class StringsIt implements AppStrings {
   @override
   String get deleteLocalDataFailed => 'Impossibile eliminare i dati. Riprova.';
   @override
-  String get deleteAccount => 'Elimina Account e Dati Cloud';
+  String get deleteAccount => 'Elimina Account e Tutti i Dati';
   @override
   String get deleteAccountConfirmTitle => 'Eliminare il tuo account?';
   @override
   String get deleteAccountConfirmBody =>
-      "Il tuo account e tutto ciò che è salvato nel cloud vengono eliminati definitivamente. I dati su questo dispositivo restano. L'azione non si può annullare.";
+      "Il tuo account, tutto ciò che è salvato nel cloud e i dati su questo dispositivo vengono eliminati definitivamente. Gli altri dispositivi si svuotano ed escono dall'account la prossima volta che sono online. L'azione non si può annullare.";
   @override
   String get deleteAccountConfirm => 'Elimina Account';
   @override
-  String get accountDeleted => 'Account e dati cloud eliminati.';
+  String get accountDeleted => 'Account e dati eliminati.';
   @override
   String get deleteAccountFailed => "Impossibile eliminare l'account. Riprova.";
   @override
