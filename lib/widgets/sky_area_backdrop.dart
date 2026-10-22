@@ -226,6 +226,23 @@ class _SkyAreaBackdropPainter extends CustomPainter {
   // circle, see that gradient's own comment).
   static const _vignetteStart = 0.35;
 
+  // Stereographic projection increasingly stretches and twists a tangent
+  // plane as it approaches the viewport edge. That reads naturally for
+  // points and constellations, but makes these large square artworks swell,
+  // spin and get clipped long before the supernova at their centre. Ease the
+  // artwork back to its nominal size and upright orientation through the
+  // outer half of the viewport; its centre still follows the sky projection.
+  static double _edgeStabilization(Offset center, Size size) {
+    final halfWidth = size.width / 2;
+    final halfHeight = size.height / 2;
+    final edgeFraction = math.max(
+      (center.dx - halfWidth).abs() / halfWidth,
+      (center.dy - halfHeight).abs() / halfHeight,
+    );
+    final t = ((edgeFraction - 0.5) / 0.5).clamp(0.0, 1.0);
+    return t * t * (3 - 2 * t);
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     for (final entry in images.entries) {
@@ -240,24 +257,22 @@ class _SkyAreaBackdropPainter extends CustomPainter {
   void _paintOne(Canvas canvas, Size size, _Vec3 direction, ui.Image image) {
     final projected = _projectDirection(direction, camera, zoom, size);
     if (projected == null) return;
-    final (center, scale) = projected;
-    final diameter = _worldRadius * this.scale * 2 * zoom * size.height * scale;
+    final (center, projectedScale) = projected;
+    final edgeStabilization = _edgeStabilization(center, size);
+    final visualScale = ui.lerpDouble(projectedScale, 1, edgeStabilization)!;
+    final diameter =
+        _worldRadius * scale * 2 * zoom * size.height * visualScale;
 
     // The same axis a real patch of sky would keep facing as the camera
     // moves around it — see [_axisAFor]'s own doc comment. Rotating the
-    // whole image by this angle (rather than just drawing it screen-up) is
-    // what makes it read as pinned to the sky at this area's own spot
-    // instead of a flat billboard that stays upright no matter where the
-    // camera looks.
+    // whole image by this angle near the centre makes it read as pinned to
+    // the sky at its area's own spot. The rotation eases back to upright at
+    // the viewport edge alongside the projection scale above, where the
+    // tangent-plane distortion otherwise overwhelms the artwork.
     final axisA = _axisAFor(direction);
-    final rotation = _rotationAngleFor(
-      direction,
-      axisA,
-      center,
-      camera,
-      zoom,
-      size,
-    );
+    final rotation =
+        _rotationAngleFor(direction, axisA, center, camera, zoom, size) *
+        (1 - edgeStabilization);
 
     canvas.save();
     canvas.clipRect(Offset.zero & size);
