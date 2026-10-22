@@ -19,10 +19,14 @@ class ShareComposerScreen extends StatefulWidget {
     required this.data,
     this.variants,
     this.fileName = 'inner-stars.png',
+    this.initialQuoteDesign,
   });
   final ShareContent data;
   final List<ShareContent>? variants;
   final String fileName;
+
+  /// Starting look when sharing a moodboard quote.
+  final ShareQuoteDesign? initialQuoteDesign;
 
   @override
   State<ShareComposerScreen> createState() => _ShareComposerScreenState();
@@ -66,6 +70,20 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
   ShareContent get _data => widget.variants?[_subjectIndex] ?? widget.data;
   ShareSubject get _subject => _data.subject;
   late final _excerpt = TextEditingController(text: widget.data.description);
+
+  @override
+  void initState() {
+    super.initState();
+    final design = widget.initialQuoteDesign;
+    if (design != null) {
+      final preset = _stylePresets[design.preset];
+      _composition = design.composition;
+      _gradient = preset.gradient;
+      _palette = preset.palette;
+      _watermark = preset.watermark;
+    }
+  }
+
   @override
   void dispose() {
     _controlsScroll.dispose();
@@ -329,7 +347,8 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
     showDate: true,
     showArea: true,
     showProject: true,
-    showDescription: true,
+    showDescription:
+        _data.subject != ShareSubject.quote || _data.description.isNotEmpty,
     showStats: true,
   );
 

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:inner_stars/data/moodboard_repository.dart';
 import 'package:inner_stars/data/moodboard_storage.dart';
 import 'package:inner_stars/models/life_area.dart';
+import 'package:inner_stars/models/share_quote_design.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -79,5 +80,22 @@ void main() {
     ]);
     await repo.clear();
     expect(await File(path).exists(), isFalse);
+  });
+
+  test('quote design round-trips and legacy quotes have none', () {
+    const design = ShareQuoteDesign(preset: 3, composition: 2);
+    final item = MoodboardItem(
+      id: 'a',
+      kind: MoodboardKind.quote,
+      content: 'Hi',
+      quoteDesign: design,
+    );
+    expect(MoodboardItem.fromJson(item.toJson()).quoteDesign, design);
+    final legacy = item.toJson()..remove('quoteDesign');
+    expect(MoodboardItem.fromJson(legacy).quoteDesign, isNull);
+    expect(
+      ShareQuoteDesign.fromJson({'preset': 99, 'composition': -1}),
+      const ShareQuoteDesign(preset: 4, composition: 0),
+    );
   });
 }

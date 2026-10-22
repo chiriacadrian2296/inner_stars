@@ -16,6 +16,7 @@ import '../theme/app_typography.dart';
 import '../utils/area_hero_art.dart';
 
 import '../models/share_content.dart';
+import '../models/share_quote_design.dart';
 import '../l10n/strings_scope.dart';
 import '../widgets/photo_image.dart';
 import '../widgets/app_field.dart';
@@ -25,6 +26,7 @@ import '../l10n/share_composer_strings.dart';
 
 part 'share_composer_layouts.dart';
 part 'share_composer_page.dart';
+part 'share_quote_artwork.dart';
 
 /// Shape of the background gradient; the colours come from a [_Palette].
 enum _GradientShape { halo, radial, vertical, diagonal }

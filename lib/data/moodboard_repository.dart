@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/life_area.dart';
+import '../models/share_quote_design.dart';
 import 'moodboard_storage.dart';
 import 'repository_write.dart';
 import '../sync/local_collection.dart';
@@ -35,6 +36,7 @@ class MoodboardItem {
     required this.content,
     this.author = '',
     this.quoteStyle = MoodboardQuoteStyle.celestial,
+    this.quoteDesign,
     this.area,
     this.position = 0,
     // Public named argument; the getter supplies the legacy fallback.
@@ -47,6 +49,9 @@ class MoodboardItem {
   final String content;
   final String author;
   final MoodboardQuoteStyle quoteStyle;
+
+  /// Share-composer look; null for quotes saved with a legacy [quoteStyle].
+  final ShareQuoteDesign? quoteDesign;
   final LifeArea? area;
   final int position;
   final DateTime? _updatedAt;
@@ -66,6 +71,7 @@ class MoodboardItem {
     content: content,
     author: author,
     quoteStyle: quoteStyle,
+    quoteDesign: quoteDesign,
     area: area ?? this.area,
     position: position ?? this.position,
     updatedAt: updatedAt ?? this.updatedAt,
@@ -81,6 +87,7 @@ class MoodboardItem {
     'deleted': deleted,
     if (author.isNotEmpty) 'author': author,
     if (kind == MoodboardKind.quote) 'quoteStyle': quoteStyle.name,
+    if (quoteDesign != null) 'quoteDesign': quoteDesign!.toJson(),
   };
   factory MoodboardItem.fromJson(Map<String, dynamic> json) {
     final rawStyle = json['quoteStyle'] as String?;
@@ -102,6 +109,11 @@ class MoodboardItem {
               .where((style) => style.name == rawStyle)
               .firstOrNull ??
           MoodboardQuoteStyle.celestial,
+      quoteDesign: json['quoteDesign'] is Map
+          ? ShareQuoteDesign.fromJson(
+              Map<String, dynamic>.from(json['quoteDesign'] as Map),
+            )
+          : null,
     );
   }
 }

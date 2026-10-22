@@ -6,6 +6,8 @@ import 'package:video_player/video_player.dart';
 import '../data/moodboard_repository.dart';
 import '../data/moodboard_storage.dart';
 import '../l10n/strings_scope.dart';
+import '../models/share_content.dart';
+import '../screens/share_composer_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import 'logo_watermark.dart';
@@ -244,6 +246,20 @@ class _MoodboardMediaState extends State<MoodboardMedia> {
       ),
     );
     if (widget.item.kind == MoodboardKind.quote) {
+      final design = widget.item.quoteDesign;
+      if (design != null) {
+        final art = ShareQuoteArtwork(
+          data: ShareContent(
+            subject: ShareSubject.quote,
+            title: widget.item.content,
+            description: widget.item.author,
+            typeLabel: context.strings.moodboardQuote,
+          ),
+          design: design,
+          fill: !widget.expanded,
+        );
+        return widget.expanded ? Center(child: art) : art;
+      }
       return MoodboardQuoteCard(item: widget.item, expanded: widget.expanded);
     }
     if (_image != null) {

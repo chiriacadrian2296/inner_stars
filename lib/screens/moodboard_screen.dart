@@ -20,6 +20,9 @@ import '../widgets/responsive_content.dart';
 import '../widgets/shareable_area_content_card.dart';
 import '../widgets/staggered_entrance.dart';
 import 'share_preview_screen.dart';
+import 'share_composer_screen.dart';
+import '../models/share_content.dart';
+import '../models/share_quote_design.dart';
 
 class MoodboardScreen extends StatefulWidget {
   const MoodboardScreen({
@@ -190,7 +193,7 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
         kind: MoodboardKind.quote,
         content: result.text,
         author: result.author,
-        quoteStyle: result.style,
+        quoteDesign: result.design,
       );
       await widget.repository.save(
         widget.area,
@@ -226,6 +229,12 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
                     children: [
                       if (item.kind == MoodboardKind.quote)
                         IconButton(
+                          tooltip: context.strings.starQuickLookShareAction,
+                          onPressed: () => Navigator.pop(context, 'share'),
+                          icon: const Icon(Icons.ios_share_outlined),
+                        ),
+                      if (item.kind == MoodboardKind.quote)
+                        IconButton(
                           tooltip: context.strings.moodboardEdit,
                           onPressed: () => Navigator.pop(context, 'edit'),
                           icon: const Icon(Icons.edit_outlined),
@@ -259,6 +268,26 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
     if (!mounted) return;
     if (action == 'edit') {
       await _quote(item);
+    }
+    if (action == 'share' && mounted) {
+      final design = item.quoteDesign ?? const ShareQuoteDesign();
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          fullscreenDialog: true,
+          builder: (_) => ShareComposerScreen(
+            data: ShareContent(
+              subject: ShareSubject.quote,
+              title: item.content,
+              description: item.author,
+              typeLabel: context.strings.moodboardQuote,
+              area: widget.area,
+              areaLabel: widget.area.displayName(context.strings),
+            ),
+            initialQuoteDesign: design,
+            fileName: 'quote.png',
+          ),
+        ),
+      );
     }
     if (action == 'delete') {
       setState(() => _busy = true);
@@ -403,12 +432,12 @@ class _QuoteDraft {
   const _QuoteDraft({
     required this.text,
     required this.author,
-    required this.style,
+    required this.design,
   });
 
   final String text;
   final String author;
-  final MoodboardQuoteStyle style;
+  final ShareQuoteDesign design;
 }
 
 class _QuoteEditorSheet extends StatefulWidget {
@@ -460,8 +489,7 @@ class _QuoteEditorSheetState extends State<_QuoteEditorSheet>
   late final TextEditingController _author = TextEditingController(
     text: widget.existing?.author ?? '',
   );
-  late MoodboardQuoteStyle _style =
-      widget.existing?.quoteStyle ?? MoodboardQuoteStyle.celestial;
+  late ShareQuoteDesign? _design = widget.existing?.quoteDesign;
 
   @override
   void dispose() {
@@ -471,16 +499,18 @@ class _QuoteEditorSheetState extends State<_QuoteEditorSheet>
     super.dispose();
   }
 
-  String _styleLabel(MoodboardQuoteStyle style) {
+  /// What the pickers draw: the text being typed, or a sample while empty.
+  ShareContent _previewData() {
     final strings = context.strings;
-    return switch (style) {
-      MoodboardQuoteStyle.celestial => strings.moodboardQuoteStyleCelestial,
-      MoodboardQuoteStyle.aurora => strings.moodboardQuoteStyleAurora,
-      MoodboardQuoteStyle.editorial => strings.moodboardQuoteStyleEditorial,
-      MoodboardQuoteStyle.constellation =>
-        strings.moodboardQuoteStyleConstellation,
-      MoodboardQuoteStyle.minimal => strings.moodboardQuoteStyleMinimal,
-    };
+    final text = _text.text.trim();
+    return ShareContent(
+      subject: ShareSubject.quote,
+      title: text.isEmpty ? strings.moodboardQuoteSampleText : text,
+      description: text.isEmpty
+          ? strings.moodboardQuoteSampleAuthor
+          : _author.text.trim(),
+      typeLabel: strings.moodboardQuote,
+    );
   }
 
   /// Needs some text, and for an existing quote, an actual change.
@@ -491,15 +521,19 @@ class _QuoteEditorSheetState extends State<_QuoteEditorSheet>
     if (existing == null) return true;
     return text != existing.content ||
         _author.text.trim() != existing.author ||
-        _style != existing.quoteStyle;
+        _design != existing.quoteDesign;
   }
 
   void _save() {
     final text = _text.text.trim();
     if (text.isEmpty) return;
-    Navigator.of(
-      context,
-    ).pop(_QuoteDraft(text: text, author: _author.text.trim(), style: _style));
+    Navigator.of(context).pop(
+      _QuoteDraft(
+        text: text,
+        author: _author.text.trim(),
+        design: _design ?? const ShareQuoteDesign(),
+      ),
+    );
   }
 
   @override
@@ -576,99 +610,12 @@ class _QuoteEditorSheetState extends State<_QuoteEditorSheet>
                   textInputAction: TextInputAction.done,
                 ),
                 const SizedBox(height: 16),
-                AppFieldLabel(
-                  strings.moodboardQuoteStyleLabel,
-                  // One style is always already selected.
-                  requirement: FieldRequirement.optional,
-                ),
-                const SizedBox(height: kFieldLabelGap + 4),
-                SizedBox(
-                  height: 172,
-                  // The previews are fixed samples, not the text being typed.
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: MoodboardQuoteStyle.values.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 10),
-                    itemBuilder: (context, index) {
-                      final style = MoodboardQuoteStyle.values[index];
-                      final selected = style == _style;
-                      return Semantics(
-                        button: true,
-                        selected: selected,
-                        label: _styleLabel(style),
-                        child: InkWell(
-                          key: ValueKey('quote-style-${style.name}'),
-                          onTap: () => setState(() => _style = style),
-                          borderRadius: BorderRadius.circular(14),
-                          splashFactory: NoSplash.splashFactory,
-                          highlightColor: Colors.transparent,
-                          child: SizedBox(
-                            width: 116,
-                            child: Column(
-                              children: [
-                                Expanded(
-                                  // The card never changes size or radius; the
-                                  // border is painted over it, so selecting a
-                                  // style cannot shift anything inside.
-                                  child: Stack(
-                                    fit: StackFit.expand,
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(14),
-                                        child: MoodboardQuoteCard(
-                                          item: MoodboardItem(
-                                            id: 'preview',
-                                            kind: MoodboardKind.quote,
-                                            content: strings
-                                                .moodboardQuoteSampleText,
-                                            author: strings
-                                                .moodboardQuoteSampleAuthor,
-                                            quoteStyle: style,
-                                          ),
-                                        ),
-                                      ),
-                                      IgnorePointer(
-                                        child: AnimatedContainer(
-                                          duration: const Duration(
-                                            milliseconds: 160,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(
-                                              14,
-                                            ),
-                                            border: Border.all(
-                                              color: selected
-                                                  ? colors.gold
-                                                  : colors.nightBorder,
-                                              width: selected ? 2 : 1,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  _styleLabel(style),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: selected
-                                        ? colors.gold
-                                        : colors.muted,
-                                    fontSize: 12,
-                                    fontWeight: selected
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
+                ListenableBuilder(
+                  listenable: Listenable.merge([_text, _author]),
+                  builder: (context, _) => ShareQuoteDesignPicker(
+                    data: _previewData(),
+                    design: _design ?? const ShareQuoteDesign(),
+                    onChanged: (design) => setState(() => _design = design),
                   ),
                 ),
               ],
