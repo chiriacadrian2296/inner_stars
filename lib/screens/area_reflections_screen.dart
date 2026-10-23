@@ -1935,11 +1935,14 @@ class _ReflectionPage extends StatelessWidget {
         ],
       );
     }
+    final wideActions = separateLastActionOnCompact && actions.length > 1
+        ? [actions.last, ...actions.take(actions.length - 1)]
+        : actions;
     return Wrap(
       alignment: WrapAlignment.center,
       spacing: 12,
       runSpacing: 8,
-      children: actions,
+      children: wideActions,
     );
   }
 

@@ -360,6 +360,28 @@ void main() {
         tester.getCenter(find.byKey(const ValueKey('reflection-delete'))).dx,
         closeTo(195, 0.1),
       );
+      tester.view.physicalSize = const Size(1000, 844);
+      await tester.pumpAndSettle();
+      final wideDelete = tester.getTopLeft(
+        find.byKey(const ValueKey('reflection-delete')),
+      );
+      final wideEdit = tester.getTopLeft(
+        find.byKey(const ValueKey('reflection-edit')),
+      );
+      final wideShare = tester.getTopLeft(
+        find.byKey(const ValueKey('reflection-share')),
+      );
+      final wideDevelop = tester.getTopLeft(
+        find.byKey(const ValueKey('reflection-continue')),
+      );
+      expect(wideEdit.dy, wideDelete.dy);
+      expect(wideShare.dy, wideDelete.dy);
+      expect(wideDevelop.dy, wideDelete.dy);
+      expect(wideDelete.dx, lessThan(wideEdit.dx));
+      expect(wideEdit.dx, lessThan(wideShare.dx));
+      expect(wideShare.dx, lessThan(wideDevelop.dx));
+      tester.view.physicalSize = const Size(390, 844);
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('reflection-continue')));
       await tester.pumpAndSettle();
       expect(find.text(strings.reflectionNextStepTitle), findsOneWidget);
