@@ -19,6 +19,7 @@ import '../models/share_content.dart';
 import '../models/share_quote_design.dart';
 import '../l10n/strings_scope.dart';
 import '../widgets/photo_image.dart';
+import '../widgets/moodboard_mosaic.dart';
 import '../widgets/app_field.dart';
 import '../data/photo_storage.dart';
 import '../data/moodboard_storage.dart';

@@ -9,6 +9,7 @@ import '../models/star_kind.dart';
 import '../theme/app_colors.dart';
 import '../widgets/constellation_editor_painter.dart';
 import '../widgets/moodboard_grid.dart';
+import '../screens/share_composer_screen.dart';
 import '../widgets/shareable_area_content_card.dart';
 import '../widgets/shareable_constellation_card.dart';
 import '../widgets/shareable_goal_card.dart';
@@ -115,6 +116,27 @@ ShareContent shareContentFromCard(BuildContext context, Widget card) {
       artwork: SingleChildScrollView(
         child: MoodboardGrid(items: card.items.take(12).toList()),
       ),
+      tiles: [
+        for (final item in card.items.take(12))
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: item.kind == MoodboardKind.quote && item.quoteDesign != null
+                ? ShareQuoteArtwork(
+                    data: ShareContent(
+                      subject: ShareSubject.quote,
+                      title: item.content,
+                      description: item.author,
+                      typeLabel: strings.moodboardQuote,
+                    ),
+                    design: item.quoteDesign!,
+                    fill: true,
+                  )
+                : MoodboardMedia(
+                    key: ValueKey('${item.id}:${item.content}'),
+                    item: item,
+                  ),
+          ),
+      ],
       photos: [
         for (final item in card.items)
           if (item.kind == MoodboardKind.photo) item.content,

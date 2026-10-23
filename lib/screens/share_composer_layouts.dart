@@ -736,6 +736,8 @@ extension _SpecimenLayouts on _ShareSpecimen {
                             photoMode == _PhotoMode.integrated &&
                                 data.photos.isNotEmpty
                             ? _photoAt(0)
+                            : data.tiles.isNotEmpty
+                            ? MoodboardMosaic(tiles: data.tiles, gap: 4)
                             : Center(child: data.artwork ?? _mark(l, 38)),
                       ),
                       const SizedBox(height: 14),
@@ -774,7 +776,9 @@ extension _SpecimenLayouts on _ShareSpecimen {
   Widget _collage(_Look l) {
     final mosaic = ClipRRect(
       borderRadius: BorderRadius.circular(14),
-      child: data.artwork ?? _photoAt(0),
+      child: data.tiles.isNotEmpty
+          ? MoodboardMosaic(tiles: data.tiles)
+          : data.artwork ?? _photoAt(0),
     );
     final words = Column(
       mainAxisSize: MainAxisSize.min,
@@ -819,26 +823,28 @@ extension _SpecimenLayouts on _ShareSpecimen {
 
   /// Three staggered frames, words centred underneath.
   Widget _gallery(_Look l) {
-    final frames = Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var i = 0; i < 3; i++) ...[
-          if (i > 0) const SizedBox(width: 8),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(
-                top: i == 1 ? 34 * l.k : 0,
-                bottom: i == 1 ? 0 : 34 * l.k,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: _photoAt(i),
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
+    final frames = data.tiles.isNotEmpty
+        ? MoodboardColumns(tiles: data.tiles)
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < 3; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      top: i == 1 ? 34 * l.k : 0,
+                      bottom: i == 1 ? 0 : 34 * l.k,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: _photoAt(i),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          );
     final words = Column(
       mainAxisSize: MainAxisSize.min,
       children: [_titleText(l, 25, maxLines: 3), _gap(l, 10), _meta(l)],

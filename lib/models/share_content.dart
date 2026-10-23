@@ -20,6 +20,7 @@ class ShareContent {
     this.intensity,
     this.artwork,
     this.photos = const [],
+    this.tiles = const [],
     this.heroValue,
     this.heroCaption,
     this.completed,
@@ -38,6 +39,10 @@ class ShareContent {
   final int? intensity;
   final Widget? artwork;
   final List<String> photos;
+
+  /// One ready-made widget per moodboard item, in order; the moodboard
+  /// compositions arrange all of them instead of one scrolling [artwork].
+  final List<Widget> tiles;
   final String? heroValue;
   final String? heroCaption;
   final int? completed;
