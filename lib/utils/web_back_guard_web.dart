@@ -4,6 +4,7 @@ import 'dart:js_interop_unsafe';
 /// History entries [installWebBackGuard] added on top of the engine's own.
 int _extraEntries = 0;
 bool _installed = false;
+JSFunction? _beforeUnloadListener;
 
 JSObject get _history => globalContext['history']! as JSObject;
 
@@ -24,6 +25,22 @@ void installWebBackGuard() {
   if (_installed) return;
   _installed = true;
   late final JSFunction listener;
+
+  // Some embedded browser controls can jump past same-document pushState
+  // entries instead of dispatching the one-step popstate Flutter expects.
+  // Keep a document-level fallback so that jump cannot silently leave the
+  // app. Browsers intentionally provide their own localized message here.
+  void onBeforeUnload(JSObject event) {
+    event.callMethod('preventDefault'.toJS);
+    event['returnValue'] = ''.toJS;
+  }
+
+  _beforeUnloadListener = onBeforeUnload.toJS;
+  globalContext.callMethod(
+    'addEventListener'.toJS,
+    'beforeunload'.toJS,
+    _beforeUnloadListener!,
+  );
 
   void onInput(JSObject event) {
     final type = (event['type'] as JSString?)?.toDart;
@@ -80,6 +97,15 @@ void leaveWebApp() {
   final steps = _extraEntries + 2;
   final length = (_history['length'] as JSNumber?)?.toDartInt ?? 0;
   if (length > steps) {
+    final beforeUnloadListener = _beforeUnloadListener;
+    if (beforeUnloadListener != null) {
+      globalContext.callMethod(
+        'removeEventListener'.toJS,
+        'beforeunload'.toJS,
+        beforeUnloadListener,
+      );
+      _beforeUnloadListener = null;
+    }
     _history.callMethod('go'.toJS, (-steps).toJS);
   }
 }
