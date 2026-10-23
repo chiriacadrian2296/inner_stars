@@ -744,7 +744,7 @@ extension _SpecimenLayouts on _ShareSpecimen {
                                 data.photos.isNotEmpty
                             ? _photoAt(0)
                             : data.tiles.isNotEmpty
-                            ? MoodboardMosaic(tiles: data.tiles, gap: 4)
+                            ? MoodboardContactSheet(tiles: data.tiles)
                             : Center(child: data.artwork ?? _mark(l, 38)),
                       ),
                       const SizedBox(height: 14),
