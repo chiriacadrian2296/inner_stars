@@ -66,7 +66,7 @@ class StringsEn implements AppStrings {
   @override
   String get reflectionFreeBadge => 'Free Reflection';
   @override
-  String get reflectionContinueLabel => 'Let It Lead Somewhere';
+  String get reflectionContinueLabel => 'Continue';
   @override
   String get reflectionNextStepTitle => 'Where should this reflection lead?';
   @override

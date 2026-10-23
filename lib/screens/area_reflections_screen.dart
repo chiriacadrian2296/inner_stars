@@ -157,6 +157,40 @@ class _AreaReflectionsScreenState extends State<AreaReflectionsScreen> {
         ),
       );
 
+  List<Widget> _timeline(BuildContext context, List<Reflection> records) {
+    final firstIndex = _search.text.isEmpty ? 1 : 0;
+    final children = <Widget>[];
+    for (var i = firstIndex; i < records.length; i++) {
+      final startsGroup =
+          i == firstIndex ||
+          !_sameMonth(records[i - 1].createdAt, records[i].createdAt);
+      final endsGroup =
+          i == records.length - 1 ||
+          !_sameMonth(records[i].createdAt, records[i + 1].createdAt);
+      if (startsGroup) {
+        children.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 12),
+            child: Text(
+              MaterialLocalizations.of(context)
+                  .formatMonthYear(records[i].createdAt.toLocal()),
+              style: TextStyle(color: context.colors.muted),
+            ),
+          ),
+        );
+      }
+      children.add(
+        _ReflectionTimelineCard(
+          record: records[i],
+          isFirstInGroup: startsGroup,
+          isLastInGroup: endsGroup,
+          onTap: () => _openReflection(records[i]),
+        ),
+      );
+    }
+    return children;
+  }
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: repository,
@@ -232,26 +266,7 @@ class _AreaReflectionsScreenState extends State<AreaReflectionsScreen> {
                 const SizedBox(height: 12),
               ],
             ],
-            for (
-              var i = _search.text.isEmpty ? 1 : 0;
-              i < visible.length;
-              i++
-            ) ...[
-              if (i == (_search.text.isEmpty ? 1 : 0) ||
-                  !_sameMonth(visible[i - 1].createdAt, visible[i].createdAt))
-                Padding(
-                  padding: const EdgeInsets.only(top: 8, bottom: 12),
-                  child: Text(
-                    MaterialLocalizations.of(context)
-                        .formatMonthYear(visible[i].createdAt.toLocal()),
-                    style: TextStyle(color: context.colors.muted),
-                  ),
-                ),
-              _ReflectionTimelineCard(
-                record: visible[i],
-                onTap: () => _openReflection(visible[i]),
-              ),
-            ],
+            ..._timeline(context, visible),
           ],
         ],
       );
@@ -460,20 +475,9 @@ class _ReflectionCard extends StatelessWidget {
               featured ? 16 : 12,
               featured ? 20 : 16,
             ),
-            decoration: panelDecoration(colors).copyWith(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  colors.gold.withValues(alpha: 0.075),
-                  colors.nightPanel,
-                  colors.nightPanel,
-                ],
-                stops: const [0, 0.45, 1],
-              ),
-            ),
+            decoration: panelDecoration(colors),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
                   width: 44,
@@ -560,13 +564,10 @@ class _ReflectionCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 6),
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Icon(
-                    Icons.chevron_right_rounded,
-                    color: colors.muted,
-                    size: 20,
-                  ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: colors.muted,
+                  size: 20,
                 ),
               ],
             ),
@@ -578,56 +579,87 @@ class _ReflectionCard extends StatelessWidget {
 }
 
 class _ReflectionTimelineCard extends StatelessWidget {
-  const _ReflectionTimelineCard({required this.record, required this.onTap});
+  const _ReflectionTimelineCard({
+    required this.record,
+    required this.isFirstInGroup,
+    required this.isLastInGroup,
+    required this.onTap,
+  });
 
   final Reflection record;
+  final bool isFirstInGroup;
+  final bool isLastInGroup;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => IntrinsicHeight(
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SizedBox(
-          width: 24,
-          child: Stack(
-            alignment: Alignment.topCenter,
-            children: [
-              Positioned(
-                top: 0,
-                bottom: 0,
-                child: Container(
-                  width: kBorderWidth,
-                  color: context.colors.nightBorder,
-                ),
-              ),
-              Positioned(
-                top: 24,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: context.colors.gold,
-                    boxShadow: [
-                      BoxShadow(
-                        color: context.colors.gold.withValues(alpha: 0.28),
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+  Widget build(BuildContext context) => Stack(
+    children: [
+      Padding(
+        padding: const EdgeInsets.only(left: 32),
+        child: _ReflectionCard(record: record, onTap: onTap),
+      ),
+      Positioned(
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: 24,
+        child: CustomPaint(
+          painter: _ReflectionTimelinePainter(
+            lineColor: context.colors.nightBorder,
+            markerColor: context.colors.gold,
+            isFirstInGroup: isFirstInGroup,
+            isLastInGroup: isLastInGroup,
           ),
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _ReflectionCard(record: record, onTap: onTap),
-        ),
-      ],
-    ),
+      ),
+    ],
   );
+}
+
+class _ReflectionTimelinePainter extends CustomPainter {
+  const _ReflectionTimelinePainter({
+    required this.lineColor,
+    required this.markerColor,
+    required this.isFirstInGroup,
+    required this.isLastInGroup,
+  });
+
+  final Color lineColor;
+  final Color markerColor;
+  final bool isFirstInGroup;
+  final bool isLastInGroup;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const markerRadius = 4.0;
+    const cardBottomSpacing = 12.0;
+    final markerCenter = ((size.height - cardBottomSpacing) / 2)
+        .clamp(markerRadius, size.height - markerRadius)
+        .toDouble();
+    final center = Offset(size.width / 2, markerCenter);
+    if (!(isFirstInGroup && isLastInGroup)) {
+      canvas.drawLine(
+        Offset(center.dx, isFirstInGroup ? markerCenter : 0),
+        Offset(center.dx, isLastInGroup ? markerCenter : size.height),
+        Paint()
+          ..color = lineColor
+          ..strokeWidth = kBorderWidth,
+      );
+    }
+    canvas.drawCircle(
+      center,
+      markerRadius * 2,
+      Paint()..color = markerColor.withValues(alpha: 0.18),
+    );
+    canvas.drawCircle(center, markerRadius, Paint()..color = markerColor);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ReflectionTimelinePainter oldDelegate) =>
+      oldDelegate.lineColor != lineColor ||
+      oldDelegate.markerColor != markerColor ||
+      oldDelegate.isFirstInGroup != isFirstInGroup ||
+      oldDelegate.isLastInGroup != isLastInGroup;
 }
 
 class _ReflectionOriginBadge extends StatelessWidget {
@@ -1736,8 +1768,11 @@ class ReflectionDetailScreen extends StatefulWidget {
 class _ReflectionDetailScreenState extends State<ReflectionDetailScreen> {
   bool _deleting = false;
 
-  Future<void> _follow(LifeArea area, _ReflectionNextStep step) =>
-      _openReflectionNextStep(context, area, step);
+  Future<void> _continue(LifeArea area) async {
+    final nextStep = await _chooseReflectionNextStep(context);
+    if (!mounted) return;
+    await _openReflectionNextStep(context, area, nextStep);
+  }
 
   Future<void> _delete() async {
     if (_deleting) return;
@@ -1816,6 +1851,11 @@ class _ReflectionDetailScreenState extends State<ReflectionDetailScreen> {
                   ),
             child: AppButtonLabel(strings.shareNowAction),
           ),
+          ElevatedButton(
+            key: const ValueKey('reflection-continue'),
+            onPressed: _deleting ? null : () => _continue(record.area),
+            child: AppButtonLabel(strings.reflectionContinueLabel),
+          ),
         ],
         children: [
           AreaSectionHeader(
@@ -1855,42 +1895,7 @@ class _ReflectionDetailScreenState extends State<ReflectionDetailScreen> {
             const SizedBox(height: 24),
           ],
           VisionMarkdown(data: record.body, color: context.colors.text),
-          const SizedBox(height: 36),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: panelDecoration(context.colors),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppFieldLabel(strings.reflectionContinueLabel),
-                const SizedBox(height: 14),
-                AppSheetAction(
-                  key: const ValueKey('reflection-follow-star'),
-                  icon: Icons.auto_awesome_outlined,
-                  label: strings.reflectionCreateStarAction,
-                  onPressed: () =>
-                      _follow(record.area, _ReflectionNextStep.star),
-                ),
-                const SizedBox(height: 8),
-                AppSheetAction(
-                  key: const ValueKey('reflection-follow-vision'),
-                  icon: kAreaVisionIcon,
-                  label: strings.reflectionUpdateVisionAction,
-                  onPressed: () =>
-                      _follow(record.area, _ReflectionNextStep.vision),
-                ),
-                const SizedBox(height: 8),
-                AppSheetAction(
-                  key: const ValueKey('reflection-follow-moodboard'),
-                  icon: kAreaMoodboardIcon,
-                  label: strings.reflectionAddMoodboardAction,
-                  onPressed: () =>
-                      _follow(record.area, _ReflectionNextStep.moodboard),
-                ),
-              ],
-            ),
-          ),
+          const SizedBox(height: 12),
         ],
       );
     },

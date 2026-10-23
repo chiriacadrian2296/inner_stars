@@ -318,18 +318,18 @@ void main() {
       expect(repo.getAll().single.origin, ReflectionOrigin.free);
       expect(
         find.byKey(const ValueKey('reflection-follow-star')),
-        findsOneWidget,
+        findsNothing,
       );
       expect(
         find.byKey(const ValueKey('reflection-follow-vision')),
-        findsOneWidget,
+        findsNothing,
       );
       expect(
         find.byKey(const ValueKey('reflection-follow-moodboard')),
-        findsOneWidget,
+        findsNothing,
       );
       final id = repo.getAll().single.id;
-      expect(find.byType(ElevatedButton), findsNWidgets(3));
+      expect(find.byType(ElevatedButton), findsNWidgets(4));
       expect(
         tester
             .widgetList<ElevatedButton>(find.byType(ElevatedButton))
@@ -338,8 +338,26 @@ void main() {
           ValueKey('reflection-delete'),
           ValueKey('reflection-edit'),
           ValueKey('reflection-share'),
+          ValueKey('reflection-continue'),
         ],
       );
+      await tester.tap(find.byKey(const ValueKey('reflection-continue')));
+      await tester.pumpAndSettle();
+      expect(find.text(strings.reflectionNextStepTitle), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('reflection-next-star')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('reflection-next-vision')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('reflection-next-moodboard')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('reflection-next-not-now')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('reflection-edit')));
       await tester.pumpAndSettle();
       await tester.enterText(
