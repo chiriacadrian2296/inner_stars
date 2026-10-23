@@ -318,6 +318,7 @@ class _ShareComposerScreenState extends State<ShareComposerScreen> {
       intensity: _data.intensity,
       artwork: _data.artwork,
       photos: _data.photos,
+      tiles: _data.tiles,
       heroValue: _data.heroValue,
       heroCaption: _data.heroCaption,
       total: _data.total,
