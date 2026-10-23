@@ -2,13 +2,11 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-/// Relative widths cycled over a row's tiles (by global position), so the
-/// rows read as an uneven mosaic rather than a grid of equal cells.
-const _kMosaicWeights = [3, 2, 2, 3, 2, 3, 3, 2, 2];
-
-/// Every tile of a moodboard at once, packed to fill the available box: rows
-/// of unequal widths, no scrolling, so a full board shows all of its items
-/// (smaller) instead of the first few.
+/// Every tile of a moodboard at once, in the same pattern as the board itself
+/// (a large tile beside two stacked ones, the sides alternating row by row),
+/// but squeezed to fill the available box: no scrolling, so a full board shows
+/// all of its items, smaller. Tiles are expected to crop their content to the
+/// cell they are given.
 class MoodboardMosaic extends StatelessWidget {
   const MoodboardMosaic({super.key, required this.tiles, this.gap = 6});
   final List<Widget> tiles;
@@ -17,50 +15,44 @@ class MoodboardMosaic extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (tiles.isEmpty) return const SizedBox.shrink();
-    return LayoutBuilder(
-      builder: (context, box) {
-        final n = tiles.length;
-        final width = box.maxWidth.isFinite ? box.maxWidth : 300.0;
-        final height = box.maxHeight.isFinite ? box.maxHeight : width;
-        final rows = math.sqrt(n * height / width).round().clamp(1, n);
-        var index = 0;
-        return Column(
-          children: [
-            for (var r = 0; r < rows; r++) ...[
-              if (r > 0) SizedBox(height: gap),
-              Expanded(
-                // Alternate row heights a little for the same reason.
-                flex: r.isEven ? 5 : 4,
-                child: Row(
-                  children: [
-                    // Spread the remainder over the first rows.
-                    for (
-                      var c = 0;
-                      c < n ~/ rows + (r < n % rows ? 1 : 0);
-                      c++, index++
-                    ) ...[
-                      if (c > 0) SizedBox(width: gap),
-                      Expanded(
-                        flex:
-                            _kMosaicWeights[(index + r) %
-                                _kMosaicWeights.length],
-                        child: tiles[index],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ],
-        );
-      },
+    return Column(
+      children: [
+        for (var i = 0; i < tiles.length; i += 3) ...[
+          if (i > 0) SizedBox(height: gap),
+          Expanded(
+            child: Row(
+              textDirection: (i ~/ 3).isEven
+                  ? TextDirection.ltr
+                  : TextDirection.rtl,
+              children: [
+                Expanded(flex: 3, child: tiles[i]),
+                if (i + 1 < tiles.length) ...[
+                  SizedBox(width: gap),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      children: [
+                        Expanded(child: tiles[i + 1]),
+                        if (i + 2 < tiles.length) ...[
+                          SizedBox(height: gap),
+                          Expanded(child: tiles[i + 2]),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
 
 /// Tiles dealt across [columns] columns (tile `i` goes to column
-/// `i % columns`), each column stacking its own with a different rhythm of
-/// heights, so no two columns repeat and nothing is tall and thin.
+/// `i % columns`), every tile of a column the same height, with the middle
+/// column dropped half a tile so the three don't repeat each other.
 class MoodboardColumns extends StatelessWidget {
   const MoodboardColumns({
     super.key,
@@ -72,37 +64,47 @@ class MoodboardColumns extends StatelessWidget {
   final int columns;
   final double gap;
 
-  static const _heights = [
-    [3, 2, 3, 2],
-    [2, 3, 2, 3],
-    [3, 3, 2, 2],
-  ];
-
   @override
   Widget build(BuildContext context) {
     if (tiles.isEmpty) return const SizedBox.shrink();
     final count = math.min(columns, tiles.length);
-    return Row(
-      children: [
-        for (var c = 0; c < count; c++) ...[
-          if (c > 0) SizedBox(width: gap),
-          Expanded(
-            child: Column(
-              children: [
-                for (var i = c, k = 0; i < tiles.length; i += count, k++) ...[
-                  if (k > 0) SizedBox(height: gap),
-                  Expanded(
-                    flex:
-                        _heights[c % _heights.length][k %
-                            _heights[c % _heights.length].length],
-                    child: tiles[i],
+    // Rows in the tallest column, so every tile has the same height.
+    final rows = (tiles.length / count).ceil();
+    return LayoutBuilder(
+      builder: (context, box) {
+        final height = box.maxHeight.isFinite ? box.maxHeight : 300.0;
+        // The middle column is shifted by half a tile; the grid is sized so
+        // that shift still fits.
+        final tile = (height - (rows - 1) * gap) / (rows + .5);
+        return Row(
+          children: [
+            for (var c = 0; c < count; c++) ...[
+              if (c > 0) SizedBox(width: gap),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(top: c.isOdd ? tile / 2 : 0),
+                  child: Column(
+                    children: [
+                      for (
+                        var i = c, k = 0;
+                        i < tiles.length;
+                        i += count, k++
+                      ) ...[
+                        if (k > 0) SizedBox(height: gap),
+                        SizedBox(
+                          height: tile,
+                          width: double.infinity,
+                          child: tiles[i],
+                        ),
+                      ],
+                    ],
                   ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ],
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 }

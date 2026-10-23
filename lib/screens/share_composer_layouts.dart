@@ -160,6 +160,9 @@ extension _SpecimenLayouts on _ShareSpecimen {
 
   /// Type label, area/project and date, honouring the data switches.
   /// [stats] adds the stat chip / bolts like the free layout does.
+  /// A moodboard card already carries its name as the title.
+  bool get _moodboardCard => data.tiles.isNotEmpty;
+
   Widget _meta(
     _Look l, {
     CrossAxisAlignment align = CrossAxisAlignment.center,
@@ -168,11 +171,15 @@ extension _SpecimenLayouts on _ShareSpecimen {
   }) {
     final anyStat = stats && showStats && _hasStat;
     final any =
-        (type && showType) || showDate || showArea || showProject || anyStat;
+        (type && showType && !_moodboardCard) ||
+        showDate ||
+        showArea ||
+        showProject ||
+        anyStat;
     if (!any) return const SizedBox.shrink();
     return _BadgeWrap(
       data: data,
-      showType: type && showType,
+      showType: type && showType && !_moodboardCard,
       showDate: showDate,
       showArea: showArea,
       showProject: showProject,
@@ -706,7 +713,7 @@ extension _SpecimenLayouts on _ShareSpecimen {
       mainAxisSize: MainAxisSize.min,
       children: [
         FractionallySizedBox(
-          widthFactor: .78,
+          widthFactor: _moodboardCard ? .92 : .78,
           child: Transform.rotate(
             angle: -.04,
             child: Stack(
@@ -796,7 +803,7 @@ extension _SpecimenLayouts on _ShareSpecimen {
     if (l.compact) {
       return Row(
         children: [
-          Expanded(flex: 5, child: mosaic),
+          Expanded(flex: _moodboardCard ? 7 : 5, child: mosaic),
           const SizedBox(width: 22),
           Expanded(
             flex: 4,
@@ -809,14 +816,17 @@ extension _SpecimenLayouts on _ShareSpecimen {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
-          flex: 6,
+          flex: _moodboardCard ? 8 : 6,
           child: Padding(
             padding: const EdgeInsets.only(top: 44),
             child: mosaic,
           ),
         ),
-        const SizedBox(height: 20),
-        Expanded(flex: 4, child: _fit(words, alignment: Alignment.topLeft)),
+        SizedBox(height: _moodboardCard ? 12 : 20),
+        Expanded(
+          flex: _moodboardCard ? 2 : 4,
+          child: _fit(words, alignment: Alignment.topLeft),
+        ),
       ],
     );
   }
@@ -852,7 +862,7 @@ extension _SpecimenLayouts on _ShareSpecimen {
     if (l.compact) {
       return Row(
         children: [
-          Expanded(flex: 6, child: frames),
+          Expanded(flex: _moodboardCard ? 7 : 6, child: frames),
           const SizedBox(width: 22),
           Expanded(flex: 4, child: _fit(words)),
         ],
@@ -862,14 +872,17 @@ extension _SpecimenLayouts on _ShareSpecimen {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
-          flex: 6,
+          flex: _moodboardCard ? 8 : 6,
           child: Padding(
             padding: const EdgeInsets.only(top: 44),
             child: frames,
           ),
         ),
-        const SizedBox(height: 18),
-        Expanded(flex: 3, child: _fit(words, alignment: Alignment.topCenter)),
+        SizedBox(height: _moodboardCard ? 12 : 18),
+        Expanded(
+          flex: _moodboardCard ? 2 : 3,
+          child: _fit(words, alignment: Alignment.topCenter),
+        ),
       ],
     );
   }
