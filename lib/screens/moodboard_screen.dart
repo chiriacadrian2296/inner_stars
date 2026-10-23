@@ -270,7 +270,7 @@ class _MoodboardScreenState extends State<MoodboardScreen> {
       await _quote(item);
     }
     if (action == 'share' && mounted) {
-      final design = item.quoteDesign ?? const ShareQuoteDesign();
+      final design = item.effectiveQuoteDesign;
       await Navigator.of(context).push<void>(
         MaterialPageRoute(
           fullscreenDialog: true,
@@ -490,6 +490,10 @@ class _QuoteEditorSheetState extends State<_QuoteEditorSheet>
     text: widget.existing?.author ?? '',
   );
   late ShareQuoteDesign? _design = widget.existing?.quoteDesign;
+  ShareQuoteDesign get _shown =>
+      _design ??
+      widget.existing?.effectiveQuoteDesign ??
+      const ShareQuoteDesign();
 
   @override
   void dispose() {
@@ -527,13 +531,9 @@ class _QuoteEditorSheetState extends State<_QuoteEditorSheet>
   void _save() {
     final text = _text.text.trim();
     if (text.isEmpty) return;
-    Navigator.of(context).pop(
-      _QuoteDraft(
-        text: text,
-        author: _author.text.trim(),
-        design: _design ?? const ShareQuoteDesign(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).pop(_QuoteDraft(text: text, author: _author.text.trim(), design: _shown));
   }
 
   @override
@@ -614,7 +614,7 @@ class _QuoteEditorSheetState extends State<_QuoteEditorSheet>
                   listenable: Listenable.merge([_text, _author]),
                   builder: (context, _) => ShareQuoteDesignPicker(
                     data: _previewData(),
-                    design: _design ?? const ShareQuoteDesign(),
+                    design: _shown,
                     onChanged: (design) => setState(() => _design = design),
                   ),
                 ),

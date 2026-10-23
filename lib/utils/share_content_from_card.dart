@@ -120,7 +120,7 @@ ShareContent shareContentFromCard(BuildContext context, Widget card) {
         for (final item in card.items.take(12))
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: item.kind == MoodboardKind.quote && item.quoteDesign != null
+            child: item.kind == MoodboardKind.quote
                 ? ShareQuoteArtwork(
                     data: ShareContent(
                       subject: ShareSubject.quote,
@@ -128,7 +128,7 @@ ShareContent shareContentFromCard(BuildContext context, Widget card) {
                       description: item.author,
                       typeLabel: strings.moodboardQuote,
                     ),
-                    design: item.quoteDesign!,
+                    design: item.effectiveQuoteDesign,
                     fill: true,
                   )
                 : MoodboardMedia(

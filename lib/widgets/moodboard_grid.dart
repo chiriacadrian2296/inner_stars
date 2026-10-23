@@ -246,21 +246,18 @@ class _MoodboardMediaState extends State<MoodboardMedia> {
       ),
     );
     if (widget.item.kind == MoodboardKind.quote) {
-      final design = widget.item.quoteDesign;
-      if (design != null) {
-        final art = ShareQuoteArtwork(
-          data: ShareContent(
-            subject: ShareSubject.quote,
-            title: widget.item.content,
-            description: widget.item.author,
-            typeLabel: context.strings.moodboardQuote,
-          ),
-          design: design,
-          fill: !widget.expanded,
-        );
-        return widget.expanded ? Center(child: art) : art;
-      }
-      return MoodboardQuoteCard(item: widget.item, expanded: widget.expanded);
+      final design = widget.item.effectiveQuoteDesign;
+      final art = ShareQuoteArtwork(
+        data: ShareContent(
+          subject: ShareSubject.quote,
+          title: widget.item.content,
+          description: widget.item.author,
+          typeLabel: context.strings.moodboardQuote,
+        ),
+        design: design,
+        fill: !widget.expanded,
+      );
+      return widget.expanded ? Center(child: art) : art;
     }
     if (_image != null) {
       return FutureBuilder<Uint8List>(

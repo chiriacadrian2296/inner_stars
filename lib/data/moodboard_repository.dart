@@ -52,6 +52,20 @@ class MoodboardItem {
 
   /// Share-composer look; null for quotes saved with a legacy [quoteStyle].
   final ShareQuoteDesign? quoteDesign;
+
+  /// The composer look to draw: the saved one, or the closest to a legacy
+  /// [quoteStyle] so older quotes match the new ones.
+  ShareQuoteDesign get effectiveQuoteDesign =>
+      quoteDesign ??
+      ShareQuoteDesign(
+        preset: switch (quoteStyle) {
+          MoodboardQuoteStyle.celestial => 0,
+          MoodboardQuoteStyle.aurora => 4,
+          MoodboardQuoteStyle.editorial => 2,
+          MoodboardQuoteStyle.constellation => 1,
+          MoodboardQuoteStyle.minimal => 3,
+        },
+      );
   final LifeArea? area;
   final int position;
   final DateTime? _updatedAt;
