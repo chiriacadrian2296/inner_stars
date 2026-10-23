@@ -59,6 +59,22 @@ void main() {
     final immediate = find.byKey(
       const ValueKey('reflection-immediate-question'),
     );
+    final immediateContainer = tester.widget<Container>(immediate);
+    expect((immediateContainer.decoration! as BoxDecoration).gradient, isNull);
+    expect(
+      find.text(strings.reflectionAnotherQuestion.toUpperCase()),
+      findsOneWidget,
+    );
+    final nextRect = tester.getRect(
+      find.byKey(const ValueKey('reflection-another-question')),
+    );
+    final writeRect = tester.getRect(
+      find.byKey(const ValueKey('reflection-write-question')),
+    );
+    expect(
+      (nextRect.left + writeRect.right) / 2,
+      closeTo(tester.getCenter(immediate).dx, 0.1),
+    );
     final questions = LifeArea.physical.reflectionQuestions(strings);
     String selected() => questions.singleWhere(
       (q) => find

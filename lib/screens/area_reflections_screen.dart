@@ -826,13 +826,7 @@ class _ReflectionSuggestionsState extends State<_ReflectionSuggestions> {
           key: const ValueKey('reflection-immediate-question'),
           width: double.infinity,
           padding: const EdgeInsets.all(22),
-          decoration: panelDecoration(colors).copyWith(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [colors.gold.withValues(alpha: 0.11), colors.nightPanel],
-            ),
-          ),
+          decoration: panelDecoration(colors),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -855,28 +849,31 @@ class _ReflectionSuggestionsState extends State<_ReflectionSuggestions> {
                 ),
               ],
               const SizedBox(height: 18),
-              Wrap(
-                spacing: 12,
-                runSpacing: 8,
-                children: [
-                  TextButton(
-                    key: const ValueKey('reflection-another-question'),
-                    onPressed: () => setState(() {
-                      _sample =
-                          (active +
-                              1 +
-                              math.Random().nextInt(questions.length - 1)) %
-                          questions.length;
-                      _selected = null;
-                    }),
-                    child: AppButtonLabel(strings.reflectionAnotherQuestion),
-                  ),
-                  ElevatedButton(
-                    key: const ValueKey('reflection-write-question'),
-                    onPressed: () => _choose(active, questions[active]),
-                    child: AppButtonLabel(strings.reflectionWrite),
-                  ),
-                ],
+              Center(
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    TextButton(
+                      key: const ValueKey('reflection-another-question'),
+                      onPressed: () => setState(() {
+                        _sample =
+                            (active +
+                                1 +
+                                math.Random().nextInt(questions.length - 1)) %
+                            questions.length;
+                        _selected = null;
+                      }),
+                      child: AppButtonLabel(strings.reflectionAnotherQuestion),
+                    ),
+                    ElevatedButton(
+                      key: const ValueKey('reflection-write-question'),
+                      onPressed: () => _choose(active, questions[active]),
+                      child: AppButtonLabel(strings.reflectionWrite),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

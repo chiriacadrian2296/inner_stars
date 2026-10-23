@@ -44,7 +44,7 @@ class StringsRo implements AppStrings {
   @override
   String get reflectionRelated => 'Reflecții Asociate';
   @override
-  String get reflectionAnotherQuestion => 'Altă Întrebare';
+  String get reflectionAnotherQuestion => 'Următoarea';
   @override
   String get reflectionWrite => 'Scrie';
   @override

@@ -44,7 +44,7 @@ class StringsIt implements AppStrings {
   @override
   String get reflectionRelated => 'Riflessioni Collegate';
   @override
-  String get reflectionAnotherQuestion => 'Un’Altra Domanda';
+  String get reflectionAnotherQuestion => 'Prossima';
   @override
   String get reflectionWrite => 'Scrivi';
   @override

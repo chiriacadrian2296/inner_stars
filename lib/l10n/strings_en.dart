@@ -44,7 +44,7 @@ class StringsEn implements AppStrings {
   @override
   String get reflectionRelated => 'Related Reflections';
   @override
-  String get reflectionAnotherQuestion => 'Another Question';
+  String get reflectionAnotherQuestion => 'Next';
   @override
   String get reflectionWrite => 'Write';
   @override
