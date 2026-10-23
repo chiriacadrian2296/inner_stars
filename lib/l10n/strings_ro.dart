@@ -66,7 +66,7 @@ class StringsRo implements AppStrings {
   @override
   String get reflectionFreeBadge => 'Reflecție Liberă';
   @override
-  String get reflectionContinueLabel => 'Continuă';
+  String get reflectionContinueLabel => 'Dezvoltă';
   @override
   String get reflectionNextStepTitle => 'Unde duce această reflecție?';
   @override

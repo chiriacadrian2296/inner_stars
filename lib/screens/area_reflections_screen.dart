@@ -1812,19 +1812,8 @@ class _ReflectionDetailScreenState extends State<ReflectionDetailScreen> {
         record.questionText,
       );
       return _ReflectionPage(
+        separateLastActionOnCompact: true,
         actions: [
-          ElevatedButton(
-            key: const ValueKey('reflection-delete'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.colors.dangerBackground,
-              foregroundColor: context.colors.danger,
-            ),
-            onPressed: _deleting ? null : _delete,
-            child: AppButtonLabel(
-              strings.deleteStarAction,
-              color: context.colors.danger,
-            ),
-          ),
           ElevatedButton(
             key: const ValueKey('reflection-edit'),
             onPressed: _deleting
@@ -1855,6 +1844,18 @@ class _ReflectionDetailScreenState extends State<ReflectionDetailScreen> {
             key: const ValueKey('reflection-continue'),
             onPressed: _deleting ? null : () => _continue(record.area),
             child: AppButtonLabel(strings.reflectionContinueLabel),
+          ),
+          ElevatedButton(
+            key: const ValueKey('reflection-delete'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.colors.dangerBackground,
+              foregroundColor: context.colors.danger,
+            ),
+            onPressed: _deleting ? null : _delete,
+            child: AppButtonLabel(
+              strings.deleteStarAction,
+              color: context.colors.danger,
+            ),
           ),
         ],
         children: [
@@ -1904,9 +1905,44 @@ class _ReflectionDetailScreenState extends State<ReflectionDetailScreen> {
 
 /// Shared full-page framing; titles belong to the content and actions stay below.
 class _ReflectionPage extends StatelessWidget {
-  const _ReflectionPage({required this.children, this.actions = const []});
+  const _ReflectionPage({
+    required this.children,
+    this.actions = const [],
+    this.separateLastActionOnCompact = false,
+  });
   final List<Widget> children;
   final List<Widget> actions;
+  final bool separateLastActionOnCompact;
+
+  Widget _buildActions(BoxConstraints constraints) {
+    if (separateLastActionOnCompact &&
+        constraints.maxWidth < 520 &&
+        actions.length > 1) {
+      final primaryActions = actions.take(actions.length - 1).toList();
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              for (var i = 0; i < primaryActions.length; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                Expanded(child: primaryActions[i]),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Center(child: actions.last),
+        ],
+      );
+    }
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 12,
+      runSpacing: 8,
+      children: actions,
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: context.colors.night,
@@ -1934,11 +1970,8 @@ class _ReflectionPage extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
               child: ResponsiveContent(
-                child: Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 12,
-                  runSpacing: 8,
-                  children: actions,
+                child: LayoutBuilder(
+                  builder: (context, constraints) => _buildActions(constraints),
                 ),
               ),
             ),

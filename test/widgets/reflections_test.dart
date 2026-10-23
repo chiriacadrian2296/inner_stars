@@ -335,11 +335,30 @@ void main() {
             .widgetList<ElevatedButton>(find.byType(ElevatedButton))
             .map((button) => button.key),
         const [
-          ValueKey('reflection-delete'),
           ValueKey('reflection-edit'),
           ValueKey('reflection-share'),
           ValueKey('reflection-continue'),
+          ValueKey('reflection-delete'),
         ],
+      );
+      final editTop = tester
+          .getTopLeft(find.byKey(const ValueKey('reflection-edit')))
+          .dy;
+      final shareTop = tester
+          .getTopLeft(find.byKey(const ValueKey('reflection-share')))
+          .dy;
+      final developTop = tester
+          .getTopLeft(find.byKey(const ValueKey('reflection-continue')))
+          .dy;
+      final deleteTop = tester
+          .getTopLeft(find.byKey(const ValueKey('reflection-delete')))
+          .dy;
+      expect(shareTop, editTop);
+      expect(developTop, editTop);
+      expect(deleteTop, greaterThan(editTop));
+      expect(
+        tester.getCenter(find.byKey(const ValueKey('reflection-delete'))).dx,
+        closeTo(195, 0.1),
       );
       await tester.tap(find.byKey(const ValueKey('reflection-continue')));
       await tester.pumpAndSettle();

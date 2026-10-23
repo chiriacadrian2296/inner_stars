@@ -66,7 +66,7 @@ class StringsIt implements AppStrings {
   @override
   String get reflectionFreeBadge => 'Riflessione Libera';
   @override
-  String get reflectionContinueLabel => 'Continua';
+  String get reflectionContinueLabel => 'Sviluppa';
   @override
   String get reflectionNextStepTitle => 'Dove porta questa riflessione?';
   @override
