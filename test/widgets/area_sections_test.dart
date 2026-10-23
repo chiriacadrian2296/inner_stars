@@ -187,10 +187,8 @@ void main() {
       'Ursula K. Le Guin',
     );
     await tester.pumpAndSettle();
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('quote-style-aurora')),
-    );
-    await tester.tap(find.byKey(const ValueKey('quote-style-aurora')));
+    await tester.ensureVisible(find.byKey(const ValueKey('quote-preset-1')));
+    await tester.tap(find.byKey(const ValueKey('quote-preset-1')));
     await tester.pumpAndSettle();
     final quoteTheme = Theme.of(
       tester.element(find.byKey(const ValueKey('quote-text-field'))),
@@ -202,10 +200,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(repo.getItems(LifeArea.physical).single.content, 'A new direction');
     expect(repo.getItems(LifeArea.physical).single.author, 'Ursula K. Le Guin');
-    expect(
-      repo.getItems(LifeArea.physical).single.quoteStyle,
-      MoodboardQuoteStyle.aurora,
-    );
+    expect(repo.getItems(LifeArea.physical).single.quoteDesign?.preset, 1);
     await tester.tap(find.text('A new direction'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Modifica'));

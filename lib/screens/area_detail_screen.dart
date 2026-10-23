@@ -787,11 +787,9 @@ class _AreaSection extends StatelessWidget {
       height: 300,
       child: ClipRect(
         child: ScrollbarTheme(
-          // The app theme's dark-blue thumb was made for the web; on a phone
-          // these previews keep the stock scrollbar they had before.
-          data: isTouchOnlyMobile
-              ? const ScrollbarThemeData(minThumbLength: 10)
-              : ScrollbarTheme.of(context).copyWith(minThumbLength: 10),
+          // The same stock thumb on every platform: the app theme's dark-blue
+          // one is too faint on the web, where it is hard to see.
+          data: const ScrollbarThemeData(minThumbLength: 10),
           // The thumb is painted after the Stack, while the fades still
           // stay above the preview content. Its track can therefore run
           // to the real bottom edge of the preview.
@@ -820,13 +818,19 @@ class _AreaSection extends StatelessWidget {
                   // sits beside the content instead of over it.
                   Padding(
                     padding: const EdgeInsets.only(right: _scrollbarGutter),
-                    child: _ChainedPreviewScroll(
-                      outer: pageScroll,
-                      initialOffset: previewOffsets?[index] ?? 0,
-                      onOffsetChanged: previewOffsets == null
-                          ? null
-                          : (offset) => previewOffsets![index] = offset,
-                      child: preview,
+                    // The box's own [Scrollbar] is the only one: on the web the
+                    // preview's scroll view would add a second, over the content.
+                    child: ScrollConfiguration(
+                      behavior: ScrollConfiguration.of(context)
+                          .copyWith(scrollbars: false),
+                      child: _ChainedPreviewScroll(
+                        outer: pageScroll,
+                        initialOffset: previewOffsets?[index] ?? 0,
+                        onOffsetChanged: previewOffsets == null
+                            ? null
+                            : (offset) => previewOffsets![index] = offset,
+                        child: preview,
+                      ),
                     ),
                   ),
                   // The fades are only as tall as the fade itself. As
