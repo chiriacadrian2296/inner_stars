@@ -118,23 +118,25 @@ ShareContent shareContentFromCard(BuildContext context, Widget card) {
       ),
       tiles: [
         for (final item in card.items.take(12))
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: item.kind == MoodboardKind.quote
-                ? ShareQuoteArtwork(
-                    data: ShareContent(
-                      subject: ShareSubject.quote,
-                      title: item.content,
-                      description: item.author,
-                      typeLabel: strings.moodboardQuote,
+          SizedBox.expand(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: item.kind == MoodboardKind.quote
+                  ? ShareQuoteArtwork(
+                      data: ShareContent(
+                        subject: ShareSubject.quote,
+                        title: item.content,
+                        description: item.author,
+                        typeLabel: strings.moodboardQuote,
+                      ),
+                      design: item.effectiveQuoteDesign,
+                      fill: true,
+                    )
+                  : MoodboardMedia(
+                      key: ValueKey('${item.id}:${item.content}'),
+                      item: item,
                     ),
-                    design: item.effectiveQuoteDesign,
-                    fill: true,
-                  )
-                : MoodboardMedia(
-                    key: ValueKey('${item.id}:${item.content}'),
-                    item: item,
-                  ),
+            ),
           ),
       ],
       photos: [
