@@ -49,7 +49,7 @@ void main() {
       expect(
         flatten(render())
             .where((s) => s.text == '**')
-            .every((s) => s.style!.fontSize == 0),
+            .every((s) => s.style!.fontSize == kHiddenMarkdownFontSize),
         isTrue,
       );
       expect(
@@ -68,16 +68,16 @@ void main() {
       expect(
         flatten(render())
             .where((s) => s.text == '**')
-            .every((s) => s.style!.fontSize == 0),
+            .every((s) => s.style!.fontSize == kHiddenMarkdownFontSize),
         isTrue,
       );
       expect(
         flatten(render()).firstWhere((s) => s.text == '<u>').style!.fontSize,
-        0,
+        kHiddenMarkdownFontSize,
       );
       expect(
         flatten(render()).firstWhere((s) => s.text == '# ').style!.fontSize,
-        0,
+        kHiddenMarkdownFontSize,
       );
       controller.selection = TextSelection.collapsed(
         offset: controller.text.length,
@@ -85,7 +85,7 @@ void main() {
       expect(
         flatten(render())
             .where((s) => s.text == '**')
-            .every((s) => s.style!.fontSize == 0),
+            .every((s) => s.style!.fontSize == kHiddenMarkdownFontSize),
         isTrue,
       );
       controller.value = controller.value.copyWith(
@@ -125,7 +125,7 @@ void main() {
     bool markersAreVisible(String marker) =>
         flatten(render())
             .where((span) => span.text == marker)
-            .every((span) => span.style!.fontSize != 0);
+            .every((span) => span.style!.fontSize != kHiddenMarkdownFontSize);
 
     controller.focused = true;
     controller.selection = const TextSelection.collapsed(offset: 2);

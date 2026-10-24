@@ -1,3 +1,5 @@
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -65,6 +67,179 @@ void main() {
       await tester.tap(find.byTooltip(label));
       await tester.pump(const Duration(milliseconds: 600));
     }
+
+    testWidgets(
+      '$name can enable bold before typing and disable it afterwards',
+      (tester) async {
+        final controller = await open(tester, '');
+        await tester.tap(
+          find.byTooltip(strings.visionBold),
+          kind: PointerDeviceKind.mouse,
+        );
+        await tester.pumpAndSettle();
+        expect(
+          tester
+              .widget<IconButton>(
+                find
+                    .ancestor(
+                      of: find.byTooltip(strings.visionBold),
+                      matching: find.byType(IconButton),
+                    )
+                    .first,
+              )
+              .isSelected,
+          isTrue,
+        );
+        tester.testTextInput.updateEditingValue(
+          const TextEditingValue(
+            text: 'Ciao',
+            selection: TextSelection.collapsed(offset: 4),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(controller.text, '**Ciao**');
+        await tester.tap(
+          find.byTooltip(strings.visionBold),
+          kind: PointerDeviceKind.mouse,
+        );
+        await tester.pumpAndSettle();
+        final caret = controller.selection.extentOffset;
+        tester.testTextInput.updateEditingValue(
+          TextEditingValue(
+            text: controller.text.replaceRange(caret, caret, ' normale'),
+            selection: TextSelection.collapsed(offset: caret + 8),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(controller.text, '**Ciao** normale');
+        expect(
+          tester
+              .widget<IconButton>(
+                find
+                    .ancestor(
+                      of: find.byTooltip(strings.visionBold),
+                      matching: find.byType(IconButton),
+                    )
+                    .first,
+              )
+              .isSelected,
+          isFalse,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      '$name headings on an empty line keep a visible caret and all text',
+      (tester) async {
+        final controller = await open(tester, '');
+        for (final level in [1, 2, 1, 3]) {
+          await tester.tap(
+            find.byTooltip(strings.visionHeading),
+            kind: PointerDeviceKind.mouse,
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(
+            find.text('${strings.visionHeading} $level'),
+            kind: PointerDeviceKind.mouse,
+          );
+          await tester.pumpAndSettle();
+          expect(controller.text, '${'#' * level} ');
+          final editable = tester.state<EditableTextState>(
+            find.descendant(of: field, matching: find.byType(EditableText)),
+          );
+          expect(
+            editable.renderEditable
+                .getLocalRectForCaret(controller.selection.extent)
+                .height,
+            greaterThan(0),
+          );
+          expect(tester.widget<TextField>(field).focusNode!.hasFocus, isTrue);
+        }
+        final caret = controller.selection.extentOffset;
+        tester.testTextInput.updateEditingValue(
+          TextEditingValue(
+            text: '${controller.text}Testo',
+            selection: TextSelection.collapsed(offset: caret + 5),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(controller.text, '### Testo');
+        await tester.tap(
+          find.byTooltip(strings.visionHeading),
+          kind: PointerDeviceKind.mouse,
+        );
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(controller.text, '### Testo');
+        expect(tester.widget<TextField>(field).focusNode!.hasFocus, isTrue);
+      },
+    );
+
+    testWidgets('$name clicking the side margin still leaves editing focus', (
+      tester,
+    ) async {
+      await open(tester, 'Testo');
+      final focus = tester.widget<TextField>(field).focusNode!;
+      await tester.tapAt(
+        Offset(4, tester.getCenter(field).dy),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pumpAndSettle();
+      expect(focus.hasFocus, isFalse);
+    });
+
+    testWidgets('$name mouse toolbar and heading menu retain editing focus', (
+      tester,
+    ) async {
+      final controller = await open(tester, 'Testo da conservare');
+      final focus = tester.widget<TextField>(field).focusNode!;
+      final transitions = <bool>[];
+      focus.addListener(() => transitions.add(focus.hasFocus));
+      controller.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: controller.text.length,
+      );
+      await tester.tap(
+        find.byTooltip(strings.visionBold),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pumpAndSettle();
+      expect(transitions, isNot(contains(false)));
+      transitions.clear();
+      final heading = find.byTooltip(strings.visionHeading);
+      await tester.tap(heading, kind: PointerDeviceKind.mouse);
+      await tester.pumpAndSettle();
+      expect(focus.hasFocus, isTrue);
+      await tester.tap(
+        find.text('${strings.visionHeading} 1'),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pumpAndSettle();
+      expect(controller.text, '# **Testo da conservare**');
+      expect(transitions, isNot(contains(false)));
+      await tester.tap(heading, kind: PointerDeviceKind.mouse);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.text('${strings.visionHeading} 2'),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pumpAndSettle();
+      expect(controller.text, '## **Testo da conservare**');
+      final editable = tester.state<EditableTextState>(
+        find.descendant(of: field, matching: find.byType(EditableText)),
+      );
+      expect(editable.renderEditable.text!.toPlainText(), controller.text);
+      expect(
+        editable.renderEditable
+            .getLocalRectForCaret(controller.selection.extent)
+            .height,
+        greaterThan(0),
+      );
+      expect(focus.hasFocus, isTrue);
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets(
       '$name pastes over a selection and copies the full Markdown source',

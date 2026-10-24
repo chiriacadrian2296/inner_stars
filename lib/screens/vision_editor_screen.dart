@@ -10,7 +10,6 @@ import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
-import '../utils/markdown_editing.dart';
 import '../widgets/area_section_header.dart';
 import '../widgets/live_markdown_controller.dart';
 import '../widgets/logo_watermark.dart';
@@ -116,8 +115,7 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
     bool toggle = false,
     String? closing,
   }) {
-    _controller.value = formatMarkdown(
-      _controller.value,
+    _controller.format(
       marker,
       block: block,
       numbered: numbered,
@@ -128,7 +126,7 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
   }
 
   void _insertDivider() {
-    _controller.value = insertMarkdownDivider(_controller.value);
+    _controller.insertDivider();
     _focus.requestFocus();
   }
 
@@ -137,14 +135,24 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
     final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
     final strings = context.strings;
     final colors = context.colors;
-    Widget tool(IconData icon, String label, VoidCallback action) => IconButton(
-      tooltip: label,
-      style: IconButton.styleFrom(
-        foregroundColor: colors.text,
-        disabledForegroundColor: colors.muted,
+    Widget tool(
+      IconData icon,
+      String label,
+      VoidCallback action, {
+      String? marker,
+    }) => ValueListenableBuilder<TextEditingValue>(
+      valueListenable: _controller,
+      builder: (context, value, child) => IconButton(
+        tooltip: label,
+        isSelected: marker == null ? null : _controller.isFormatActive(marker),
+        style: IconButton.styleFrom(
+          foregroundColor: colors.text,
+          disabledForegroundColor: colors.muted,
+        ),
+        icon: Icon(icon),
+        selectedIcon: Icon(icon, color: colors.gold),
+        onPressed: _saving ? null : action,
       ),
-      icon: Icon(icon),
-      onPressed: _saving ? null : action,
     );
     return PopScope(
       canPop: _canLeave,
@@ -181,195 +189,213 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Center(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          StaggeredEntrance(
-                            index: 1,
-                            axis: Axis.horizontal,
-                            child: PopupMenuButton<int>(
-                              tooltip: strings.visionHeading,
-                              enabled: !_saving,
-                              color: colors.nightPanel,
-                              surfaceTintColor: Colors.transparent,
-                              onSelected: (level) => _format(
-                                '${'#' * level} ',
-                                block: true,
-                                toggle: true,
-                              ),
-                              itemBuilder: (context) => [
-                                for (var level = 1; level <= 3; level++)
-                                  PopupMenuItem(
-                                    value: level,
-                                    child: Center(
-                                      child: Text(
-                                        '${strings.visionHeading} $level',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(color: colors.text),
+                    child: TextFieldTapRegion(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            StaggeredEntrance(
+                              index: 1,
+                              axis: Axis.horizontal,
+                              child: PopupMenuButton<int>(
+                                requestFocus: false,
+                                tooltip: strings.visionHeading,
+                                enabled: !_saving,
+                                color: colors.nightPanel,
+                                surfaceTintColor: Colors.transparent,
+                                onSelected: (level) => _format(
+                                  '${'#' * level} ',
+                                  block: true,
+                                  toggle: true,
+                                ),
+                                itemBuilder: (context) => [
+                                  for (var level = 1; level <= 3; level++)
+                                    PopupMenuItem(
+                                      value: level,
+                                      padding: EdgeInsets.zero,
+                                      child: TextFieldTapRegion(
+                                        child: SizedBox(
+                                          width: double.infinity,
+                                          height: 48,
+                                          child: Center(
+                                            child: Text(
+                                              '${strings.visionHeading} $level',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                color: colors.text,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                              ],
-                              child: SizedBox(
-                                width: 48,
-                                height: 48,
-                                child: Center(
-                                  child: Text(
-                                    'H',
-                                    style: TextStyle(
-                                      color: colors.text,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w700,
+                                ],
+                                child: SizedBox(
+                                  width: 48,
+                                  height: 48,
+                                  child: Center(
+                                    child: Text(
+                                      'H',
+                                      style: TextStyle(
+                                        color: colors.text,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                          StaggeredEntrance(
-                            index: 1,
-                            axis: Axis.horizontal,
-                            child: SizedBox(
-                              height: 24,
-                              child: VerticalDivider(
-                                width: 24,
-                                thickness: 0.75,
-                                color: colors.nightBorder,
+                            StaggeredEntrance(
+                              index: 1,
+                              axis: Axis.horizontal,
+                              child: SizedBox(
+                                height: 24,
+                                child: VerticalDivider(
+                                  width: 24,
+                                  thickness: 0.75,
+                                  color: colors.nightBorder,
+                                ),
                               ),
                             ),
-                          ),
-                          StaggeredEntrance(
-                            index: 2,
-                            axis: Axis.horizontal,
-                            child: tool(
-                              Icons.format_bold,
-                              strings.visionBold,
-                              () => _format('**', toggle: true),
-                            ),
-                          ),
-                          StaggeredEntrance(
-                            index: 3,
-                            axis: Axis.horizontal,
-                            child: tool(
-                              Icons.format_italic,
-                              strings.visionItalic,
-                              () => _format('*', toggle: true),
-                            ),
-                          ),
-                          StaggeredEntrance(
-                            index: 4,
-                            axis: Axis.horizontal,
-                            child: tool(
-                              Icons.format_underlined,
-                              strings.visionUnderline,
-                              () =>
-                                  _format('<u>', closing: '</u>', toggle: true),
-                            ),
-                          ),
-                          StaggeredEntrance(
-                            index: 4,
-                            axis: Axis.horizontal,
-                            child: SizedBox(
-                              height: 24,
-                              child: VerticalDivider(
-                                width: 24,
-                                thickness: 0.75,
-                                color: colors.nightBorder,
+                            StaggeredEntrance(
+                              index: 2,
+                              axis: Axis.horizontal,
+                              child: tool(
+                                Icons.format_bold,
+                                strings.visionBold,
+                                () => _format('**', toggle: true),
+                                marker: '**',
                               ),
                             ),
-                          ),
-                          StaggeredEntrance(
-                            index: 5,
-                            axis: Axis.horizontal,
-                            child: tool(
-                              Icons.format_list_bulleted,
-                              strings.visionBulletList,
-                              () => _format('• ', block: true, toggle: true),
-                            ),
-                          ),
-                          StaggeredEntrance(
-                            index: 6,
-                            axis: Axis.horizontal,
-                            child: tool(
-                              Icons.format_list_numbered,
-                              strings.visionNumberedList,
-                              () => _format(
-                                '1. ',
-                                block: true,
-                                numbered: true,
-                                toggle: true,
+                            StaggeredEntrance(
+                              index: 3,
+                              axis: Axis.horizontal,
+                              child: tool(
+                                Icons.format_italic,
+                                strings.visionItalic,
+                                () => _format('*', toggle: true),
+                                marker: '*',
                               ),
                             ),
-                          ),
-                          StaggeredEntrance(
-                            index: 6,
-                            axis: Axis.horizontal,
-                            child: SizedBox(
-                              height: 24,
-                              child: VerticalDivider(
-                                width: 24,
-                                thickness: 0.75,
-                                color: colors.nightBorder,
+                            StaggeredEntrance(
+                              index: 4,
+                              axis: Axis.horizontal,
+                              child: tool(
+                                Icons.format_underlined,
+                                strings.visionUnderline,
+                                () => _format(
+                                  '<u>',
+                                  closing: '</u>',
+                                  toggle: true,
+                                ),
+                                marker: '<u>',
                               ),
                             ),
-                          ),
-                          StaggeredEntrance(
-                            index: 7,
-                            axis: Axis.horizontal,
-                            child: tool(
-                              Icons.horizontal_rule,
-                              strings.visionDivider,
-                              _insertDivider,
-                            ),
-                          ),
-                          StaggeredEntrance(
-                            index: 7,
-                            axis: Axis.horizontal,
-                            child: SizedBox(
-                              height: 24,
-                              child: VerticalDivider(
-                                width: 24,
-                                thickness: 0.75,
-                                color: colors.nightBorder,
+                            StaggeredEntrance(
+                              index: 4,
+                              axis: Axis.horizontal,
+                              child: SizedBox(
+                                height: 24,
+                                child: VerticalDivider(
+                                  width: 24,
+                                  thickness: 0.75,
+                                  color: colors.nightBorder,
+                                ),
                               ),
                             ),
-                          ),
-                          StaggeredEntrance(
-                            index: 8,
-                            axis: Axis.horizontal,
-                            child: ValueListenableBuilder<UndoHistoryValue>(
-                              valueListenable: _undo,
-                              builder: (context, value, _) => Row(
-                                children: [
-                                  IconButton(
-                                    tooltip: strings.visionUndo,
-                                    style: IconButton.styleFrom(
-                                      foregroundColor: colors.text,
-                                      disabledForegroundColor: colors.muted,
+                            StaggeredEntrance(
+                              index: 5,
+                              axis: Axis.horizontal,
+                              child: tool(
+                                Icons.format_list_bulleted,
+                                strings.visionBulletList,
+                                () => _format('• ', block: true, toggle: true),
+                              ),
+                            ),
+                            StaggeredEntrance(
+                              index: 6,
+                              axis: Axis.horizontal,
+                              child: tool(
+                                Icons.format_list_numbered,
+                                strings.visionNumberedList,
+                                () => _format(
+                                  '1. ',
+                                  block: true,
+                                  numbered: true,
+                                  toggle: true,
+                                ),
+                              ),
+                            ),
+                            StaggeredEntrance(
+                              index: 6,
+                              axis: Axis.horizontal,
+                              child: SizedBox(
+                                height: 24,
+                                child: VerticalDivider(
+                                  width: 24,
+                                  thickness: 0.75,
+                                  color: colors.nightBorder,
+                                ),
+                              ),
+                            ),
+                            StaggeredEntrance(
+                              index: 7,
+                              axis: Axis.horizontal,
+                              child: tool(
+                                Icons.horizontal_rule,
+                                strings.visionDivider,
+                                _insertDivider,
+                              ),
+                            ),
+                            StaggeredEntrance(
+                              index: 7,
+                              axis: Axis.horizontal,
+                              child: SizedBox(
+                                height: 24,
+                                child: VerticalDivider(
+                                  width: 24,
+                                  thickness: 0.75,
+                                  color: colors.nightBorder,
+                                ),
+                              ),
+                            ),
+                            StaggeredEntrance(
+                              index: 8,
+                              axis: Axis.horizontal,
+                              child: ValueListenableBuilder<UndoHistoryValue>(
+                                valueListenable: _undo,
+                                builder: (context, value, _) => Row(
+                                  children: [
+                                    IconButton(
+                                      tooltip: strings.visionUndo,
+                                      style: IconButton.styleFrom(
+                                        foregroundColor: colors.text,
+                                        disabledForegroundColor: colors.muted,
+                                      ),
+                                      icon: const Icon(Icons.undo),
+                                      onPressed: value.canUndo && !_saving
+                                          ? _undo.undo
+                                          : null,
                                     ),
-                                    icon: const Icon(Icons.undo),
-                                    onPressed: value.canUndo && !_saving
-                                        ? _undo.undo
-                                        : null,
-                                  ),
-                                  IconButton(
-                                    tooltip: strings.visionRedo,
-                                    style: IconButton.styleFrom(
-                                      foregroundColor: colors.text,
-                                      disabledForegroundColor: colors.muted,
+                                    IconButton(
+                                      tooltip: strings.visionRedo,
+                                      style: IconButton.styleFrom(
+                                        foregroundColor: colors.text,
+                                        disabledForegroundColor: colors.muted,
+                                      ),
+                                      icon: const Icon(Icons.redo),
+                                      onPressed: value.canRedo && !_saving
+                                          ? _undo.redo
+                                          : null,
                                     ),
-                                    icon: const Icon(Icons.redo),
-                                    onPressed: value.canRedo && !_saving
-                                        ? _undo.redo
-                                        : null,
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -406,6 +432,12 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                             controller: _controller,
                             focusNode: _focus,
                             undoController: _undo,
+                            inputFormatters: [_controller.typingFormatter],
+                            strutStyle: const StrutStyle(
+                              fontFamily: kFontStarTitle,
+                              fontSize: 21,
+                              height: 1.6,
+                            ),
                             readOnly: _saving,
                             expands: true,
                             minLines: null,

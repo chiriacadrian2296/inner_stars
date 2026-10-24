@@ -1,13 +1,96 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show setEquals;
+import 'package:flutter/services.dart';
+
+import '../utils/markdown_editing.dart';
 
 import 'responsive_content.dart';
 
-/// Keeps source offsets intact: hidden delimiters remain zero-width text spans.
+// Zero-sized trailing spaces trigger Flutter's end-of-text caret assertion.
+// Keep invisible delimiters measurable without visibly indenting the content.
+const double kHiddenMarkdownFontSize = 0.1;
+
+/// Keeps source offsets intact: hidden delimiters retain negligible text metrics.
 /// Selection, undo, clipboard and persistence continue to use the Markdown.
 class LiveMarkdownController extends TextEditingController {
-  LiveMarkdownController({super.text});
+  LiveMarkdownController({super.text, this.maxSourceLength});
+
+  final int? maxSourceLength;
+
+  bool _fitsSourceLimit(TextEditingValue next) =>
+      maxSourceLength == null ||
+      LengthLimitingTextInputFormatter(
+            maxSourceLength,
+            maxLengthEnforcement: MaxLengthEnforcement.enforced,
+          ).formatEditUpdate(value, next).text ==
+          next.text;
+
+  late final TextInputFormatter typingFormatter = _MarkdownTypingFormatter(
+    this,
+  );
+  Set<String>? _typingFormats;
+  String? _typingSource;
+  int? _typingCaret;
+
+  Set<String> get activeFormats {
+    if (_typingFormats != null &&
+        (_typingSource != text || _typingCaret != selection.extentOffset)) {
+      _typingFormats = null;
+    }
+    if (selection.isValid && !selection.isCollapsed) {
+      return _formatsInSelection(text, selection);
+    }
+    return _typingFormats ??
+        _inlineWrappersAt(
+          text,
+          selection.isValid ? selection.extentOffset : text.length,
+        ).expand((wrapper) => wrapper.formats).toSet();
+  }
+
+  bool isFormatActive(String marker) => activeFormats.contains(marker);
+
+  void format(
+    String marker, {
+    bool block = false,
+    bool numbered = false,
+    bool toggle = false,
+    String? closing,
+  }) {
+    if (!block && (!selection.isValid || selection.isCollapsed)) {
+      final formats = {...activeFormats};
+      if (!formats.remove(marker)) formats.add(marker);
+      _rememberTyping(value, formats);
+      notifyListeners();
+      return;
+    }
+    final pending = block && _typingFormats != null ? {...activeFormats} : null;
+    _typingFormats = null;
+    final next = formatMarkdown(
+      value,
+      marker,
+      block: block,
+      numbered: numbered,
+      toggle: toggle,
+      closing: closing,
+    );
+    if (_fitsSourceLimit(next)) value = next;
+    if (pending != null) _rememberTyping(value, pending);
+  }
+
+  void insertDivider() {
+    _typingFormats = null;
+    final next = insertMarkdownDivider(value);
+    if (_fitsSourceLimit(next)) value = next;
+  }
+
+  TextEditingValue _rememberTyping(TextEditingValue next, Set<String> formats) {
+    _typingFormats = formats;
+    _typingSource = next.text;
+    _typingCaret = next.selection.extentOffset;
+    return next;
+  }
 
   // TRB: keep the range-aware marker reveal available, but do not expose
   // Markdown syntax in the editor for now.
@@ -115,7 +198,10 @@ class LiveMarkdownController extends TextEditingController {
           TextSpan(
             text: '\n',
             style: collapsesDividerSpacing
-                ? (style ?? const TextStyle()).copyWith(fontSize: 0, height: 0)
+                ? (style ?? const TextStyle()).copyWith(
+                    fontSize: kHiddenMarkdownFontSize,
+                    height: 1,
+                  )
                 : style,
           ),
         );
@@ -131,8 +217,8 @@ TextSpan markdownDelimiter(String text, TextStyle style, bool hidden) =>
       text: text,
       style: hidden
           ? style.copyWith(
-              fontSize: 0,
-              height: 0,
+              fontSize: kHiddenMarkdownFontSize,
+              height: 1,
               letterSpacing: 0,
               wordSpacing: 0,
               color: Colors.transparent,
@@ -272,4 +358,230 @@ List<InlineSpan> markdownInlineSpans(
       sourceOffset: sourceOffset + end,
     ),
   ];
+}
+
+class _InlineWrapper {
+  const _InlineWrapper(this.open, this.close, this.formats);
+  final String open;
+  final String close;
+  final Set<String> formats;
+}
+
+const _inlineWrappers = {
+  '**': _InlineWrapper('**', '**', {'**'}),
+  '__': _InlineWrapper('__', '__', {'**'}),
+  '*': _InlineWrapper('*', '*', {'*'}),
+  '_': _InlineWrapper('_', '_', {'*'}),
+  '***': _InlineWrapper('***', '***', {'**', '*'}),
+  '___': _InlineWrapper('___', '___', {'**', '*'}),
+  '<u>': _InlineWrapper('<u>', '</u>', {'<u>'}),
+  '~~': _InlineWrapper('~~', '~~', {}),
+  '`': _InlineWrapper('`', '`', {}),
+};
+
+Set<String> _formatsInSelection(String text, TextSelection selection) {
+  Set<String>? common;
+  var offset = 0;
+  for (final line in text.split('\n')) {
+    final prefix = RegExp(r'^\s{0,3}(#{1,6}\s|[-*+]\s|•\s|\d+\.\s)')
+        .firstMatch(line);
+    final content = line.substring(prefix?.end ?? 0);
+    offset += prefix?.end ?? 0;
+    for (final span in markdownInlineSpans(
+      content,
+      const TextStyle(),
+    ).whereType<TextSpan>()) {
+      final source = span.text ?? '';
+      final end = offset + source.length;
+      if (span.style?.fontSize != kHiddenMarkdownFontSize &&
+          source.trim().isNotEmpty &&
+          offset < selection.end &&
+          end > selection.start) {
+        final formats = {
+          if (span.style?.fontWeight == FontWeight.bold) '**',
+          if (span.style?.fontStyle == FontStyle.italic) '*',
+          if (span.style?.decoration?.contains(TextDecoration.underline) ??
+              false)
+            '<u>',
+        };
+        common = common == null ? formats : common.intersection(formats);
+      }
+      offset = end;
+    }
+    offset++;
+  }
+  return common ?? {};
+}
+
+List<_InlineWrapper> _inlineWrappersAt(String text, int at) {
+  at = at.clamp(0, text.length);
+  final start = at == 0 ? 0 : text.lastIndexOf('\n', at - 1) + 1;
+  final end = text.indexOf('\n', at);
+  final line = text.substring(start, end < 0 ? text.length : end);
+  final stack = <_InlineWrapper>[];
+  var offset = start;
+  for (final span in markdownInlineSpans(
+    line,
+    const TextStyle(),
+  ).whereType<TextSpan>()) {
+    final source = span.text ?? '';
+    offset += source.length;
+    if (offset > at) break;
+    if (span.style?.fontSize == kHiddenMarkdownFontSize) {
+      if (stack.isNotEmpty && stack.last.close == source) {
+        stack.removeLast();
+      } else if (_inlineWrappers[source] case final wrapper?) {
+        stack.add(wrapper);
+      }
+    }
+  }
+  return stack;
+}
+
+String _closeInlinePrefix(String text, List<_InlineWrapper> wrappers) {
+  for (final wrapper in wrappers.reversed) {
+    text = text.endsWith(wrapper.open)
+        ? text.substring(0, text.length - wrapper.open.length)
+        : '$text${wrapper.close}';
+  }
+  return text;
+}
+
+String _openInlineSuffix(String text, List<_InlineWrapper> wrappers) {
+  for (final wrapper in wrappers.reversed) {
+    text = text.startsWith(wrapper.close)
+        ? text.substring(wrapper.close.length)
+        : '${wrapper.open}$text';
+  }
+  return text;
+}
+
+int _visibleContentEnd(String source) {
+  final start = source.lastIndexOf('\n') + 1;
+  var offset = start;
+  var end = start;
+  for (final span in markdownInlineSpans(
+    source.substring(start),
+    const TextStyle(),
+  ).whereType<TextSpan>()) {
+    offset += span.text?.length ?? 0;
+    if (span.style?.fontSize != kHiddenMarkdownFontSize &&
+        (span.text?.isNotEmpty ?? false)) {
+      end = offset;
+    }
+  }
+  return end;
+}
+
+class _MarkdownTypingFormatter extends TextInputFormatter {
+  _MarkdownTypingFormatter(this.controller);
+  final LiveMarkdownController controller;
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final pendingIsCurrent =
+        controller._typingFormats != null &&
+        controller._typingSource == oldValue.text &&
+        controller._typingCaret == oldValue.selection.extentOffset;
+    final formats = pendingIsCurrent
+        ? controller._typingFormats!
+        : _inlineWrappersAt(
+            oldValue.text,
+            oldValue.selection.isValid
+                ? oldValue.selection.extentOffset
+                : oldValue.text.length,
+          ).expand((wrapper) => wrapper.formats).toSet();
+    if (!pendingIsCurrent) controller._typingFormats = null;
+    TextEditingValue remember(TextEditingValue next) =>
+        controller._rememberTyping(
+          controller._fitsSourceLimit(next) ? next : oldValue,
+          formats,
+        );
+    if (newValue.isComposingRangeValid && !newValue.composing.isCollapsed) {
+      return remember(newValue);
+    }
+    var start = 0;
+    var oldEnd = oldValue.text.length;
+    var newEnd = newValue.text.length;
+    if (oldValue.isComposingRangeValid && !oldValue.composing.isCollapsed) {
+      start = oldValue.composing.start;
+      oldEnd = oldValue.composing.end;
+      newEnd = (oldEnd + newValue.text.length - oldValue.text.length).clamp(
+        start,
+        newValue.text.length,
+      );
+    } else {
+      if (oldValue.text == newValue.text) return newValue;
+      while (start < oldEnd &&
+          start < newEnd &&
+          oldValue.text[start] == newValue.text[start]) {
+        start++;
+      }
+      while (oldEnd > start &&
+          newEnd > start &&
+          oldValue.text[oldEnd - 1] == newValue.text[newEnd - 1]) {
+        oldEnd--;
+        newEnd--;
+      }
+    }
+    final inserted = newValue.text.substring(start, newEnd);
+    final before = _inlineWrappersAt(oldValue.text, start);
+    final after = _inlineWrappersAt(oldValue.text, oldEnd);
+    if (inserted.isEmpty) {
+      var left = oldValue.text.substring(0, start);
+      var right = oldValue.text.substring(oldEnd);
+      for (final wrapper in before.reversed) {
+        if (!left.endsWith(wrapper.open) || !right.startsWith(wrapper.close)) {
+          break;
+        }
+        left = left.substring(0, left.length - wrapper.open.length);
+        right = right.substring(wrapper.close.length);
+      }
+      return remember(
+        TextEditingValue(
+          text: '$left$right',
+          selection: TextSelection.collapsed(offset: left.length),
+        ),
+      );
+    }
+    final current = before.expand((wrapper) => wrapper.formats).toSet();
+    if (setEquals(current, formats) &&
+        before.map((wrapper) => wrapper.open).join() ==
+            after.map((wrapper) => wrapper.open).join() &&
+        !inserted.contains('\n') &&
+        inserted.trimRight() == inserted) {
+      return remember(newValue);
+    }
+    final prefix = _closeInlinePrefix(
+      oldValue.text.substring(0, start),
+      before,
+    );
+    final suffix = _openInlineSuffix(oldValue.text.substring(oldEnd), after);
+    var formatted = inserted;
+    for (final marker in ['**', '*', '<u>']) {
+      if (!formats.contains(marker)) continue;
+      formatted = formatMarkdown(
+        TextEditingValue(
+          text: formatted,
+          selection: TextSelection(
+            baseOffset: 0,
+            extentOffset: formatted.length,
+          ),
+        ),
+        marker,
+        closing: marker == '<u>' ? '</u>' : null,
+      ).text;
+    }
+    return remember(
+      TextEditingValue(
+        text: '$prefix$formatted$suffix',
+        selection: TextSelection.collapsed(
+          offset: prefix.length + _visibleContentEnd(formatted),
+        ),
+      ),
+    );
+  }
 }
