@@ -139,6 +139,7 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
           child: ResponsiveContent(
             child: AppRichTextPageLayout(
               toolbar: _toolbar(),
+              onToolbarShown: _revealSelection,
               backdrop: LogoWatermark(
                 scale: logoWatermarkScale(StarKind.unlit),
                 color: logoWatermarkColor(colors, StarKind.unlit),
@@ -206,4 +207,11 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
     editorKey: _editorKey,
     enabled: !_saving,
   );
+
+  void _revealSelection() {
+    final state = _editorKey.currentState;
+    if (state is RawEditorState) {
+      state.bringIntoView(_controller.selection.extent);
+    }
+  }
 }

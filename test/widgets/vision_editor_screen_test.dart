@@ -256,7 +256,7 @@ void main() {
     );
 
     testWidgets(
-      '$kind: mobile tools follow keyboard; footer and watermark stay fixed',
+      '$kind: mobile tools join keyboard; cursor stays visible and watermark stays in document',
       (tester) async {
         tester.view.physicalSize = const Size(360, 640);
         tester.view.devicePixelRatio = 1;
@@ -271,13 +271,24 @@ void main() {
         final share = find.text(s.starQuickLookShareAction.toUpperCase());
         final saveRect = tester.getRect(save);
         final shareRect = tester.getRect(share);
-        final watermarkRect = tester.getRect(find.byType(LogoWatermark));
         final headerRect = tester.getRect(find.byType(AreaSectionHeader));
+        final divider = find.byKey(const ValueKey('rich-text-editor-divider'));
+        final backdrop = find.byKey(
+          const ValueKey('rich-text-editor-backdrop'),
+        );
+        expect(
+          tester.getBottomLeft(find.byType(AreaSectionHeader)).dy,
+          lessThanOrEqualTo(tester.getTopLeft(divider).dy),
+        );
+        expect(
+          tester.getTopLeft(find.byType(LogoWatermark)).dy,
+          greaterThanOrEqualTo(tester.getTopLeft(backdrop).dy),
+        );
         tester.view.viewInsets = const FakeViewPadding(bottom: 120);
         await tester.pump();
         expect(find.byType(AppRichTextToolbar), findsNothing);
         await tester.pump(const Duration(milliseconds: 100));
-        expect(find.byType(AppRichTextToolbar), findsNothing);
+        expect(find.byType(AppRichTextToolbar), findsOneWidget);
         tester.view.viewInsets = const FakeViewPadding(bottom: 280);
         await type(tester, List.filled(80, 'Un paragrafo.\n').join());
         await tester.pump(const Duration(milliseconds: 200));
@@ -302,7 +313,6 @@ void main() {
         }
         expect(tester.getRect(save), saveRect);
         expect(tester.getRect(share), shareRect);
-        expect(tester.getRect(find.byType(LogoWatermark)), watermarkRect);
         expect(saveRect.top, greaterThan(360));
         expect(
           tester.getSize(find.byType(AppRichTextEditor)).height,
@@ -311,6 +321,21 @@ void main() {
         expect(
           tester.getBottomLeft(find.byType(AppRichTextToolbar)).dy,
           closeTo(360, 1),
+        );
+        final editorState =
+            body(tester).editorKey.currentState! as RawEditorState;
+        final caret = editorState.renderEditor.getLocalRectForCaret(
+          body(tester).controller.selection.extent,
+        );
+        final globalCaret = MatrixUtils.transformRect(
+          editorState.renderEditor.getTransformTo(null),
+          caret,
+        );
+        expect(
+          globalCaret.bottom,
+          lessThanOrEqualTo(
+            tester.getTopLeft(find.byType(AppRichTextToolbar)).dy,
+          ),
         );
         final raw = tester.widget<RawEditor>(find.byType(RawEditor));
         final gold = tester.element(find.byType(AppRichTextEditor)).colors.gold;
@@ -342,10 +367,10 @@ void main() {
         );
         tester.view.viewInsets = const FakeViewPadding(bottom: 200);
         await tester.pump();
-        expect(find.byType(AppRichTextToolbar), findsNothing);
+        expect(find.byType(AppRichTextToolbar), findsOneWidget);
         tester.view.viewInsets = const FakeViewPadding(bottom: 40);
         await tester.pump();
-        expect(find.byType(AppRichTextToolbar), findsNothing);
+        expect(find.byType(AppRichTextToolbar), findsOneWidget);
         expect(
           tester.getRect(find.byType(AppRichTextEditor)).bottom,
           lessThanOrEqualTo(saveRect.top),
@@ -354,7 +379,6 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byType(AppRichTextToolbar), findsNothing);
         expect(tester.getRect(save), saveRect);
-        expect(tester.getRect(find.byType(LogoWatermark)), watermarkRect);
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox());
       },

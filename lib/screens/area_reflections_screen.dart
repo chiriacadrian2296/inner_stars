@@ -1360,6 +1360,7 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
           child: ResponsiveContent(
             child: AppRichTextPageLayout(
               toolbar: _toolbar(),
+              onToolbarShown: _revealSelection,
               backdrop: LogoWatermark(
                 scale: logoWatermarkScale(StarKind.unlit),
                 color: logoWatermarkColor(colors, StarKind.unlit),
@@ -1480,6 +1481,13 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
         ),
       ),
     );
+  }
+
+  void _revealSelection() {
+    final state = _editorKey.currentState;
+    if (state is RawEditorState) {
+      state.bringIntoView(_body.selection.extent);
+    }
   }
 }
 

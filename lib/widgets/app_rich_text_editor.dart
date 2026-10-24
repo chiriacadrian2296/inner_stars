@@ -128,6 +128,7 @@ class AppRichTextPageLayout extends StatefulWidget {
     required this.toolbar,
     required this.actions,
     required this.backdrop,
+    this.onToolbarShown,
   });
 
   final Widget header;
@@ -135,13 +136,14 @@ class AppRichTextPageLayout extends StatefulWidget {
   final Widget toolbar;
   final Widget actions;
   final Widget backdrop;
+  final VoidCallback? onToolbarShown;
 
   @override
   State<AppRichTextPageLayout> createState() => _AppRichTextPageLayoutState();
 }
 
 class _AppRichTextPageLayoutState extends State<AppRichTextPageLayout> {
-  Timer? _keyboardSettled;
+  Timer? _toolbarEntrance;
   double _keyboard = 0;
   bool _showTools = false;
 
@@ -150,21 +152,27 @@ class _AppRichTextPageLayoutState extends State<AppRichTextPageLayout> {
     super.didChangeDependencies();
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     if (keyboard == _keyboard) return;
+    final keyboardWasClosed = _keyboard == 0;
     _keyboard = keyboard;
-    _keyboardSettled?.cancel();
-    // Any movement hides tools immediately, including the first closing frame.
-    // Repeated IME frames postpone showing them until the opening has settled.
-    _showTools = false;
-    if (keyboard > 0 && richTextToolbarAtBottom()) {
-      _keyboardSettled = Timer(const Duration(milliseconds: 180), () {
-        if (mounted) setState(() => _showTools = true);
+    if (keyboard == 0) {
+      _toolbarEntrance?.cancel();
+      _showTools = false;
+    } else if (keyboardWasClosed && richTextToolbarAtBottom()) {
+      // Start while the IME is still opening. Restarting this timer for every
+      // inset frame made the tools feel like a separate, delayed surface.
+      _toolbarEntrance = Timer(const Duration(milliseconds: 90), () {
+        if (!mounted) return;
+        setState(() => _showTools = true);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) widget.onToolbarShown?.call();
+        });
       });
     }
   }
 
   @override
   void dispose() {
-    _keyboardSettled?.cancel();
+    _toolbarEntrance?.cancel();
     super.dispose();
   }
 
@@ -183,7 +191,6 @@ class _AppRichTextPageLayoutState extends State<AppRichTextPageLayout> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        IgnorePointer(child: widget.backdrop),
         Positioned(
           left: 0,
           right: 0,
@@ -210,14 +217,54 @@ class _AppRichTextPageLayoutState extends State<AppRichTextPageLayout> {
                             160.0,
                             double.infinity,
                           ),
-                          child: widget.editor,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Divider(
+                                key: const ValueKey('rich-text-editor-divider'),
+                                height: 1,
+                                thickness: 0.75,
+                                indent: 20,
+                                endIndent: 20,
+                                color: context.colors.nightBorder,
+                              ),
+                              Expanded(
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    ClipRect(
+                                      child: IgnorePointer(
+                                        child: KeyedSubtree(
+                                          key: const ValueKey(
+                                            'rich-text-editor-backdrop',
+                                          ),
+                                          child: widget.backdrop,
+                                        ),
+                                      ),
+                                    ),
+                                    widget.editor,
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              if (nativeTools && _showTools) widget.toolbar,
+              if (nativeTools && _showTools)
+                TweenAnimationBuilder<double>(
+                  duration: const Duration(milliseconds: 140),
+                  curve: Curves.easeOutCubic,
+                  tween: Tween(begin: 0, end: 1),
+                  builder: (context, value, child) => Transform.translate(
+                    offset: Offset(0, (1 - value) * 18),
+                    child: Opacity(opacity: value, child: child),
+                  ),
+                  child: widget.toolbar,
+                ),
             ],
           ),
         ),
