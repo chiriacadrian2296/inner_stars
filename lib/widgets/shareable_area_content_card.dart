@@ -1,3 +1,5 @@
+import '../models/rich_text_document.dart';
+
 import 'package:flutter/material.dart';
 
 import 'area_icon.dart';
@@ -16,20 +18,19 @@ class ShareableVisionCard extends StatelessWidget {
     super.key,
     required this.area,
     required this.vision,
+    this.richText,
   });
 
   final LifeArea area;
   final String vision;
+  final RichTextDocument? richText;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final strings = context.strings;
     final arrangement = ShareArrangementScope.of(context);
-    final cleanVision = vision
-        .replaceAll(RegExp(r'[#*_>`]'), '')
-        .replaceAll(RegExp(r'<\/?u>'), '')
-        .trim();
+    final cleanVision = RichTextDocument.plainText(vision, richText).trim();
     return ColoredBox(
       color: colors.night,
       child: SafeArea(
@@ -62,7 +63,13 @@ class ShareableVisionCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                Flexible(child: VisionMarkdown(data: vision)),
+                Flexible(
+                  child: VisionMarkdown(
+                    data: vision,
+                    richText: richText,
+                    interactive: false,
+                  ),
+                ),
                 const Spacer(),
               ],
             ),
@@ -106,7 +113,13 @@ class ShareableVisionCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                Flexible(child: VisionMarkdown(data: vision)),
+                Flexible(
+                  child: VisionMarkdown(
+                    data: vision,
+                    richText: richText,
+                    interactive: false,
+                  ),
+                ),
               ],
             ),
             ShareArrangement.statement => Column(

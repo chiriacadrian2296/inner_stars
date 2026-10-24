@@ -247,6 +247,37 @@ class StringsIt implements AppStrings {
   @override
   String get visionPreview => 'Anteprima';
   @override
+  String get editorNormal => 'Testo Normale';
+  @override
+  String get editorStrike => 'Barrato';
+  @override
+  String get editorQuote => 'Citazione';
+  @override
+  String get editorLink => 'Link';
+  @override
+  String get editorRemoveLink => 'Rimuovi Link';
+  @override
+  String get editorOpenLink => 'Apri Link';
+  @override
+  String get editorCopyLink => 'Copia Link';
+  @override
+  String get editorLinkHint => 'Indirizzo del link';
+  @override
+  String get editorInvalidLink =>
+      'Inserisci un indirizzo http, https o mailto valido.';
+  @override
+  String get editorAlignment => 'Allineamento';
+  @override
+  String get editorAlignLeft => 'Sinistra';
+  @override
+  String get editorAlignCenter => 'Centro';
+  @override
+  String get editorAlignRight => 'Destra';
+  @override
+  String get editorAlignJustify => 'Giustificato';
+  @override
+  String get editorTooLong => 'Il testo supera il limite di caratteri.';
+  @override
   String get visionHeading => 'Titolo';
   @override
   String get visionSection => 'Sezione';

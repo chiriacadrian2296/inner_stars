@@ -1,3 +1,5 @@
+import '../support/rich_text_input.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hint_kit/hint_kit.dart';
@@ -129,11 +131,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('reflection-write-question')));
     await tester.pumpAndSettle();
-    await tester.enterText(
+    await enterEditorText(
+      tester,
       find.byKey(const ValueKey('reflection-title')),
       'Titolo della riflessione',
     );
-    await tester.enterText(
+    await enterEditorText(
+      tester,
       find.byKey(const ValueKey('reflection-body')),
       'Una risposta da conservare',
     );
@@ -171,11 +175,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text(const StringsIt().moodboardQuote.toUpperCase()));
     await tester.pumpAndSettle();
-    await tester.enterText(
+    await enterEditorText(
+      tester,
       find.byKey(const ValueKey('quote-text-field')),
       'A new direction',
     );
-    await tester.enterText(
+    await enterEditorText(
+      tester,
       find.byKey(const ValueKey('quote-author-field')),
       'Ursula K. Le Guin',
     );
@@ -203,7 +209,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Modifica'));
     await tester.pumpAndSettle();
-    await tester.enterText(
+    await enterEditorText(
+      tester,
       find.byKey(const ValueKey('quote-text-field')),
       'A clearer direction',
     );

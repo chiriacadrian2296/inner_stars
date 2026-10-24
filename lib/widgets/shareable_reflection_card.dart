@@ -6,6 +6,7 @@ import '../models/reflection.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import 'area_icon.dart';
+import 'vision_markdown.dart';
 import 'share_arrangement.dart';
 
 /// Sharing never alters the saved reflection. Long text is an excerpt in the card.
@@ -32,11 +33,6 @@ class ShareableReflectionCard extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, bounds) {
             final body = bodyOverride ?? reflection.body;
-            // Allocate a bounded excerpt even with very long titles or accessibility text.
-            final bodyLines = ((bounds.maxHeight - 250) / 27).floor().clamp(
-              1,
-              14,
-            );
             return Column(
               crossAxisAlignment: centered
                   ? CrossAxisAlignment.center
@@ -84,15 +80,14 @@ class ShareableReflectionCard extends StatelessWidget {
                 if (showBody && body.isNotEmpty) ...[
                   const SizedBox(height: 18),
                   Flexible(
-                    child: Text(
-                      body,
-                      maxLines: bodyLines,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: centered ? TextAlign.center : TextAlign.start,
-                      style: TextStyle(
-                        color: colors.text,
+                    child: ClipRect(
+                      child: VisionMarkdown(
+                        data: body,
+                        richText: bodyOverride == null
+                            ? reflection.richText
+                            : null,
                         fontSize: 17,
-                        height: 1.55,
+                        interactive: false,
                       ),
                     ),
                   ),

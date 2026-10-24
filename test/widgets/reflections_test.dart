@@ -1,3 +1,7 @@
+import '../support/rich_text_input.dart';
+
+import 'package:inner_stars/widgets/app_rich_text_editor.dart';
+import 'package:inner_stars/widgets/vision_markdown.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -40,7 +44,8 @@ void main() {
       app(AreaReflectionsScreen(area: LifeArea.physical, repository: repo)),
     );
     await startReflection(tester, suggested: false);
-    await tester.enterText(
+    await enterEditorText(
+      tester,
       find.byKey(const ValueKey('reflection-body')),
       'Un pensiero da ritrovare\nIl resto della riflessione',
     );
@@ -48,7 +53,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('reflection-save')));
     await tester.pump();
     expect(repo.getAll(), isEmpty);
-    await tester.enterText(
+    await enterEditorText(
+      tester,
       find.byKey(const ValueKey('reflection-title')),
       'Un pensiero da ritrovare',
     );
@@ -123,11 +129,13 @@ void main() {
     await tester.pumpAndSettle();
     final title = find.byKey(const ValueKey('reflection-title'));
     expect(tester.widget<TextField>(title).controller!.text, question);
-    await tester.enterText(
+    await enterEditorText(
+      tester,
       find.byKey(const ValueKey('reflection-title')),
       'Il mio titolo',
     );
-    await tester.enterText(
+    await enterEditorText(
+      tester,
       find.byKey(const ValueKey('reflection-body')),
       'La mia risposta',
     );
@@ -146,7 +154,8 @@ void main() {
     expect(find.text(question), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('reflection-edit')));
     await tester.pumpAndSettle();
-    await tester.enterText(
+    await enterEditorText(
+      tester,
       find.byKey(const ValueKey('reflection-title')),
       'Titolo rivisto',
     );
@@ -179,11 +188,11 @@ void main() {
     ).formatMonthYear(DateTime.now());
     expect(find.text(month), findsOneWidget);
     final search = find.byKey(const ValueKey('reflection-search'));
-    await tester.enterText(search, 'ENERGIA');
+    await enterEditorText(tester, search, 'ENERGIA');
     await tester.pumpAndSettle();
     expect(find.text('Pensiero 0'), findsOneWidget);
     expect(find.text('Pensiero 1'), findsNothing);
-    await tester.enterText(search, 'Pensiero 2');
+    await enterEditorText(tester, search, 'Pensiero 2');
     await tester.pumpAndSettle();
     expect(
       find
@@ -192,7 +201,7 @@ void main() {
           .where((element) => element.widget is Text),
       hasLength(1),
     );
-    await tester.enterText(search, 'inesistente');
+    await enterEditorText(tester, search, 'inesistente');
     await tester.pumpAndSettle();
     expect(find.text(strings.reflectionNoResults), findsOneWidget);
     await tester.tap(find.byTooltip(strings.clearSearchTooltip));
@@ -209,11 +218,13 @@ void main() {
       app(AreaReflectionsScreen(area: LifeArea.physical, repository: repo)),
     );
     await startReflection(tester, suggested: false);
-    await tester.enterText(
+    await enterEditorText(
+      tester,
       find.byKey(const ValueKey('reflection-title')),
       'Un passo concreto',
     );
-    await tester.enterText(
+    await enterEditorText(
+      tester,
       find.byKey(const ValueKey('reflection-body')),
       'Trasformo la riflessione in azione.',
     );
@@ -255,11 +266,13 @@ void main() {
       expect(find.text('Riflessione precedente'), findsOneWidget);
       await tester.tap(find.text(strings.reflectionWrite.toUpperCase()));
       await tester.pumpAndSettle();
-      await tester.enterText(
+      await enterEditorText(
+        tester,
         find.byKey(const ValueKey('reflection-title')),
         'Una nuova riflessione',
       );
-      await tester.enterText(
+      await enterEditorText(
+        tester,
         find.byKey(const ValueKey('reflection-body')),
         'Una nuova risposta',
       );
@@ -395,23 +408,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     final body = find.byKey(const ValueKey('reflection-body'));
-    await tester.enterText(body, 'Il mio testo resta qui');
+    await enterEditorText(tester, body, 'Il mio testo resta qui');
     tester.view.viewInsets = const FakeViewPadding(bottom: 280);
     await tester.pumpAndSettle();
     expect(find.text(strings.reflectionNew), findsNothing);
     expect(find.text(question), findsOneWidget);
     final field = body;
     expect(
-      tester.widget<TextField>(field).controller!.text,
+      tester.widget<AppRichTextEditor>(field).controller.plainText,
       'Il mio testo resta qui',
     );
-    expect(tester.widget<TextField>(field).focusNode!.hasFocus, isTrue);
+    expect(tester.widget<AppRichTextEditor>(field).focusNode.hasFocus, isTrue);
     expect(tester.takeException(), isNull);
     tester.view.resetViewInsets();
     await tester.pumpAndSettle();
     expect(find.text(question), findsOneWidget);
     expect(
-      tester.widget<TextField>(field).controller!.text,
+      tester.widget<AppRichTextEditor>(field).controller.plainText,
       'Il mio testo resta qui',
     );
     expect(tester.takeException(), isNull);
@@ -442,11 +455,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(repo.getAll(), isEmpty);
       expect(find.text(strings.reflectionRequired), findsNothing);
-      await tester.enterText(
+      await enterEditorText(
+        tester,
         find.byKey(const ValueKey('reflection-title')),
         'Un pensiero',
       );
-      await tester.enterText(
+      await enterEditorText(
+        tester,
         find.byKey(const ValueKey('reflection-body')),
         'Il mio testo',
       );
@@ -559,14 +574,18 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('reflection-edit')));
       await tester.pumpAndSettle();
-      await tester.enterText(
+      await enterEditorText(
+        tester,
         find.byKey(const ValueKey('reflection-body')),
         'Testo rivisto',
       );
       await tester.tap(find.byKey(const ValueKey('reflection-save')));
       await tester.pumpAndSettle();
       expect(repo.find(id)!.body, 'Testo rivisto');
-      expect(find.text('Testo rivisto'), findsOneWidget);
+      expect(
+        tester.widget<VisionMarkdown>(find.byType(VisionMarkdown)).data,
+        'Testo rivisto',
+      );
       await tester.tap(find.byKey(const ValueKey('reflection-delete')));
       await tester.pumpAndSettle();
       await tester.tap(find.text(strings.cancel.toUpperCase()).last);
@@ -611,7 +630,8 @@ void main() {
       app(AreaReflectionsScreen(area: LifeArea.physical, repository: repo)),
     );
     await startReflection(tester, suggested: false);
-    await tester.enterText(
+    await enterEditorText(
+      tester,
       find.byKey(const ValueKey('reflection-title')),
       'Draft',
     );
@@ -659,7 +679,10 @@ void main() {
           ),
         );
         expect(tester.takeException(), isNull);
-        expect(find.text(record.body), findsOneWidget);
+        expect(
+          tester.widget<VisionMarkdown>(find.byType(VisionMarkdown)).data,
+          record.body,
+        );
         await tester.pumpWidget(
           app(
             Center(

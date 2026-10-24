@@ -247,6 +247,37 @@ class StringsRo implements AppStrings {
   @override
   String get visionPreview => 'Previzualizare';
   @override
+  String get editorNormal => 'Text Normal';
+  @override
+  String get editorStrike => 'Tăiat';
+  @override
+  String get editorQuote => 'Citat';
+  @override
+  String get editorLink => 'Link';
+  @override
+  String get editorRemoveLink => 'Elimină Linkul';
+  @override
+  String get editorOpenLink => 'Deschide Linkul';
+  @override
+  String get editorCopyLink => 'Copiază Linkul';
+  @override
+  String get editorLinkHint => 'Adresa linkului';
+  @override
+  String get editorInvalidLink =>
+      'Introdu o adresă http, https sau mailto validă.';
+  @override
+  String get editorAlignment => 'Aliniere';
+  @override
+  String get editorAlignLeft => 'Stânga';
+  @override
+  String get editorAlignCenter => 'Centru';
+  @override
+  String get editorAlignRight => 'Dreapta';
+  @override
+  String get editorAlignJustify => 'Justificat';
+  @override
+  String get editorTooLong => 'Textul depășește limita de caractere.';
+  @override
   String get visionHeading => 'Titlu';
   @override
   String get visionSection => 'Secțiune';

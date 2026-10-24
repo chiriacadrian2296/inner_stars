@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/life_area.dart';
+import '../models/rich_text_document.dart';
 import '../models/sync_text_value.dart';
 import 'repository_write.dart';
 import '../sync/local_collection.dart';
@@ -57,7 +58,13 @@ class AreaVisionRepository extends ChangeNotifier with SyncableRepository {
 
   String getVision(LifeArea area) => getAll()[area.name]?.value ?? '';
 
-  Future<void> setVision(LifeArea area, String vision) async {
+  RichTextDocument? getRichText(LifeArea area) => getAll()[area.name]?.richText;
+
+  Future<void> setVision(
+    LifeArea area,
+    String vision, {
+    RichTextDocument? richText,
+  }) async {
     final all = _readAll();
     final next = {...all}..removeWhere((_, record) => record.deleted);
     final trimmed = vision.trim();
@@ -66,6 +73,7 @@ class AreaVisionRepository extends ChangeNotifier with SyncableRepository {
     } else {
       next[area.name] = SyncTextValue(
         value: trimmed,
+        richText: richText,
         updatedAt: DateTime.now(),
       );
     }

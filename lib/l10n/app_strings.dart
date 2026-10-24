@@ -80,6 +80,22 @@ abstract class AppStrings {
   String get visionRedo;
   String get visionWrite;
   String get visionPreview;
+  String get editorNormal;
+  String get editorStrike;
+  String get editorQuote;
+  String get editorLink;
+  String get editorOpenLink;
+  String get editorCopyLink;
+
+  String get editorRemoveLink;
+  String get editorLinkHint;
+  String get editorInvalidLink;
+  String get editorAlignment;
+  String get editorAlignLeft;
+  String get editorAlignCenter;
+  String get editorAlignRight;
+  String get editorAlignJustify;
+  String get editorTooLong;
   String get visionHeading;
   String get visionSection;
   String get visionBold;

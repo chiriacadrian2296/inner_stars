@@ -245,6 +245,37 @@ class StringsEn implements AppStrings {
   @override
   String get visionPreview => 'Preview';
   @override
+  String get editorNormal => 'Normal Text';
+  @override
+  String get editorStrike => 'Strikethrough';
+  @override
+  String get editorQuote => 'Quote';
+  @override
+  String get editorLink => 'Link';
+  @override
+  String get editorRemoveLink => 'Remove Link';
+  @override
+  String get editorOpenLink => 'Open Link';
+  @override
+  String get editorCopyLink => 'Copy Link';
+  @override
+  String get editorLinkHint => 'Link address';
+  @override
+  String get editorInvalidLink =>
+      'Enter a valid http, https or mailto address.';
+  @override
+  String get editorAlignment => 'Alignment';
+  @override
+  String get editorAlignLeft => 'Left';
+  @override
+  String get editorAlignCenter => 'Center';
+  @override
+  String get editorAlignRight => 'Right';
+  @override
+  String get editorAlignJustify => 'Justify';
+  @override
+  String get editorTooLong => 'The text exceeds the character limit.';
+  @override
   String get visionHeading => 'Heading';
   @override
   String get visionSection => 'Section';

@@ -1,3 +1,4 @@
+import '../models/rich_text_document.dart';
 import '../utils/area_section_icons.dart';
 import '../utils/entity_insights.dart';
 import '../widgets/entity_insights_scope.dart';
@@ -263,6 +264,9 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                             title: strings.areaCoverVisionTitle,
                                             icon: kAreaVisionIcon,
                                             preview: VisionMarkdown(
+                                              richText: widget
+                                                  .areaVisionRepository
+                                                  .getRichText(area),
                                               data: vision.trim().isEmpty
                                                   ? area.visionPlaceholder(
                                                       strings,
@@ -391,7 +395,10 @@ class _AreaDetailScreenState extends State<AreaDetailScreen> {
                                                   ),
                                                   const SizedBox(height: 6),
                                                   Text(
-                                                    reflection.body,
+                                                    RichTextDocument.plainText(
+                                                      reflection.body,
+                                                      reflection.richText,
+                                                    ),
                                                     maxLines: 2,
                                                     overflow:
                                                         TextOverflow.ellipsis,

@@ -1,3 +1,4 @@
+import 'rich_text_document.dart';
 import 'life_area.dart';
 
 enum ReflectionOrigin { free, suggested }
@@ -12,6 +13,7 @@ class Reflection {
     required this.origin,
     required this.createdAt,
     required this.updatedAt,
+    this.richText,
     this.questionId,
     this.questionText,
     this.deleted = false,
@@ -21,6 +23,7 @@ class Reflection {
   final LifeArea area;
   final String title;
   final String body;
+  final RichTextDocument? richText;
   final ReflectionOrigin origin;
   final String? questionId;
 
@@ -30,11 +33,16 @@ class Reflection {
   final DateTime updatedAt;
   final bool deleted;
 
-  Reflection edit({required String title, required String body}) => Reflection(
+  Reflection edit({
+    required String title,
+    required String body,
+    RichTextDocument? richText,
+  }) => Reflection(
     id: id,
     area: area,
     title: title,
     body: body,
+    richText: richText ?? (body == this.body ? this.richText : null),
     origin: origin,
     questionId: questionId,
     questionText: questionText,
@@ -48,6 +56,7 @@ class Reflection {
     area: LifeArea.values.byName(json['area'] as String),
     title: json['title'] as String,
     body: json['body'] as String,
+    richText: RichTextDocument.tryParse(json['richText']),
     origin: ReflectionOrigin.values.byName(json['origin'] as String),
     questionId: json['questionId'] as String?,
     questionText: json['questionText'] as String?,
@@ -61,6 +70,7 @@ class Reflection {
     'area': area.name,
     'title': title,
     'body': body,
+    if (richText != null) 'richText': richText!.toJson(),
     'origin': origin.name,
     'questionId': questionId,
     if (questionText != null) 'questionText': questionText,

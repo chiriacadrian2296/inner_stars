@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/life_area.dart';
+import '../models/rich_text_document.dart';
 import '../models/reflection.dart';
 import 'repository_write.dart';
 import '../sync/local_collection.dart';
@@ -52,6 +53,7 @@ class ReflectionRepository extends ChangeNotifier with SyncableRepository {
     required LifeArea area,
     required String title,
     required String body,
+    RichTextDocument? richText,
     ReflectionOrigin origin = ReflectionOrigin.free,
     String? questionId,
     String? questionText,
@@ -66,6 +68,7 @@ class ReflectionRepository extends ChangeNotifier with SyncableRepository {
       area: area,
       title: title.trim(),
       body: body.trim(),
+      richText: richText,
       origin: origin,
       questionId: questionId,
       questionText: questionText,
@@ -80,6 +83,7 @@ class ReflectionRepository extends ChangeNotifier with SyncableRepository {
     String id, {
     required String title,
     required String body,
+    RichTextDocument? richText,
   }) async {
     _validate(title, body);
     final existing = find(id);
@@ -87,7 +91,11 @@ class ReflectionRepository extends ChangeNotifier with SyncableRepository {
     final saved = await _save([
       for (final record in getAll())
         if (record.id == id)
-          existing.edit(title: title.trim(), body: body.trim())
+          existing.edit(
+            title: title.trim(),
+            body: body.trim(),
+            richText: richText,
+          )
         else
           record,
     ]);

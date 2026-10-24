@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hint_kit/hint_kit.dart';
-import 'package:markdown/markdown.dart' as markdown;
+
+import '../models/rich_text_document.dart';
 
 import '../data/area_vision_repository.dart';
 import '../data/project_repository.dart';
@@ -19,7 +20,6 @@ import '../tutorials/tutorial_replay.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/looping_hero_carousel.dart';
 import '../widgets/staggered_entrance.dart';
-import '../widgets/vision_markdown.dart';
 import 'area_detail_screen.dart';
 
 /// All 8 supernovas in one place, each showing the vision written for it —
@@ -164,6 +164,8 @@ class _VisionsScreenState extends State<VisionsScreen> {
                                       area: area,
                                       vision: widget.areaVisionRepository
                                           .getVision(area),
+                                      richText: widget.areaVisionRepository
+                                          .getRichText(area),
                                     ),
                                 ],
                               ),
@@ -217,10 +219,11 @@ class _VisionsScreenState extends State<VisionsScreen> {
 
 /// Artwork remains visible in the narrow previews beside the hero card.
 class _VisionCard extends StatelessWidget {
-  const _VisionCard({required this.area, required this.vision});
+  const _VisionCard({required this.area, required this.vision, this.richText});
 
   final LifeArea area;
   final String vision;
+  final RichTextDocument? richText;
 
   @override
   Widget build(BuildContext context) {
@@ -229,13 +232,7 @@ class _VisionCard extends StatelessWidget {
     final side = HeroCarouselEmphasis.sideOf(context);
     final preview = trimmed.isEmpty
         ? strings.visionEmptyLabel
-        : markdown.Document(
-                encodeHtml: false,
-                inlineSyntaxes: [VisionUnderlineSyntax()],
-              )
-              .parseLines(trimmed.split('\n'))
-              .map((node) => node.textContent)
-              .join('\n');
+        : RichTextDocument.plainText(vision, richText);
     return Semantics(
       label: area.displayName(strings),
       child: Stack(

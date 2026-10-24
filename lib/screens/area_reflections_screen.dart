@@ -1,6 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:fleather/fleather.dart';
+
+import '../models/rich_text_document.dart';
 
 import '../data/area_vision_repository.dart';
 import '../data/custom_constellation_repository.dart';
@@ -21,7 +24,7 @@ import '../utils/app_modals.dart';
 import '../utils/area_section_icons.dart';
 import '../widgets/app_field.dart';
 import '../widgets/area_section_header.dart';
-import '../widgets/live_markdown_controller.dart';
+import '../widgets/app_rich_text_editor.dart';
 import '../widgets/logo_watermark.dart';
 import '../widgets/responsive_content.dart';
 import '../widgets/shareable_reflection_card.dart';
@@ -204,7 +207,10 @@ class _AreaReflectionsScreenState extends State<AreaReflectionsScreen> {
           .where(
             (r) =>
                 r.title.toLowerCase().contains(query) ||
-                r.body.toLowerCase().contains(query),
+                RichTextDocument.plainText(
+                  r.body,
+                  r.richText,
+                ).toLowerCase().contains(query),
           )
           .toList();
       return _ReflectionPage(
@@ -506,7 +512,10 @@ class _ReflectionCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        record.body,
+                        RichTextDocument.plainText(
+                          record.body,
+                          record.richText,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -1172,6 +1181,7 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _focus.addListener(_syncFocus);
+    _body.addListener(_syncFocus);
   }
 
   // Closing the keyboard (back gesture) leaves the field focused; let go of
@@ -1188,12 +1198,13 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
   late final _initialTitle =
       widget.existing?.title ?? widget.suggestedTitle ?? '';
   late final _title = TextEditingController(text: _initialTitle);
-  late final _body = LiveMarkdownController(
-    text: widget.existing?.body ?? '',
-    maxSourceLength: kReflectionBodyMax,
+  late final _body = AppRichTextController(
+    legacy: widget.existing?.body ?? '',
+    richText: widget.existing?.richText,
   );
+  final _editorKey = GlobalKey<EditorState>();
   final _focus = FocusNode();
-  final _undo = UndoHistoryController();
+
   bool _busy = false;
   bool _canLeave = false;
   bool _asking = false;
@@ -1202,15 +1213,15 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _focus.removeListener(_syncFocus);
+    _body.removeListener(_syncFocus);
     _title.dispose();
     _body.dispose();
     _focus.dispose();
-    _undo.dispose();
+
     super.dispose();
   }
 
   void _syncFocus() {
-    _body.focused = _focus.hasFocus;
     if (mounted) setState(() {});
   }
 
@@ -1223,9 +1234,7 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
 
   Future<void> _leave() async {
     if (_busy || _asking) return;
-    final changed =
-        _title.text != _initialTitle ||
-        _body.text != (widget.existing?.body ?? '');
+    final changed = _title.text != _initialTitle || _body.hasChanges;
     if (changed) {
       _asking = true;
       final strings = context.strings;
@@ -1254,7 +1263,8 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
           ? await widget.repository.add(
               area: widget.area,
               title: title,
-              body: _body.text,
+              body: _body.snapshot.legacyText,
+              richText: _body.snapshot,
               origin: widget.questionId == null
                   ? ReflectionOrigin.free
                   : ReflectionOrigin.suggested,
@@ -1269,7 +1279,8 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
           : await widget.repository.update(
               existing.id,
               title: title,
-              body: _body.text,
+              body: _body.snapshot.legacyText,
+              richText: _body.snapshot,
             );
       if (mounted) _close(record);
     } catch (_) {
@@ -1289,7 +1300,8 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
           id: 'preview',
           area: widget.area,
           title: _title.text.trim(),
-          body: _body.text,
+          body: _body.snapshot.legacyText,
+          richText: _body.snapshot,
           origin: widget.questionId == null
               ? ReflectionOrigin.free
               : ReflectionOrigin.suggested,
@@ -1308,37 +1320,25 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
       content: ShareableReflectionCard(
         reflection: reflection.edit(
           title: _title.text.trim(),
-          body: _body.text,
+          body: _body.snapshot.legacyText,
+          richText: _body.snapshot,
         ),
       ),
       fileName: 'reflection_${reflection.id}.png',
     );
   }
 
-  void _format(
-    String marker, {
-    bool block = false,
-    bool numbered = false,
-    bool toggle = false,
-    String? closing,
-  }) {
-    _body.format(
-      marker,
-      block: block,
-      numbered: numbered,
-      toggle: toggle,
-      closing: closing,
-    );
-    _focus.requestFocus();
-  }
-
-  void _insertDivider() {
-    _body.insertDivider();
-    _focus.requestFocus();
-  }
-
   bool get _canSave =>
-      _title.text.trim().isNotEmpty && _body.text.trim().isNotEmpty;
+      _title.text.trim().isNotEmpty &&
+      !_body.isEmpty &&
+      _body.characterCount <= kReflectionBodyMax;
+
+  Widget _toolbar() => AppRichTextToolbar(
+    controller: _body,
+    focusNode: _focus,
+    editorKey: _editorKey,
+    enabled: !_busy,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -1348,25 +1348,6 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
     final suggested =
         widget.questionId != null ||
         widget.existing?.origin == ReflectionOrigin.suggested;
-    Widget tool(
-      IconData icon,
-      String label,
-      VoidCallback action, {
-      String? marker,
-    }) => ValueListenableBuilder<TextEditingValue>(
-      valueListenable: _body,
-      builder: (context, value, child) => IconButton(
-        tooltip: label,
-        isSelected: marker == null ? null : _body.isFormatActive(marker),
-        style: IconButton.styleFrom(
-          foregroundColor: colors.text,
-          disabledForegroundColor: colors.muted,
-        ),
-        icon: Icon(icon),
-        selectedIcon: Icon(icon, color: colors.gold),
-        onPressed: _busy ? null : action,
-      ),
-    );
     return PopScope(
       canPop: _canLeave,
       onPopInvokedWithResult: (didPop, result) {
@@ -1383,7 +1364,7 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
               children: [
                 AnimatedOpacity(
                   duration: kMotionFast,
-                  opacity: _focus.hasFocus ? 0.68 : 1,
+                  opacity: (_focus.hasFocus || _body.interacting) ? 0.68 : 1,
                   child: StaggeredEntrance(
                     index: 0,
                     child: Padding(
@@ -1454,212 +1435,27 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Center(
-                    child: TextFieldTapRegion(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            StaggeredEntrance(
-                              index: 1,
-                              axis: Axis.horizontal,
-                              child: PopupMenuButton<int>(
-                                requestFocus: false,
-                                tooltip: strings.visionHeading,
-                                enabled: !_busy,
-                                color: colors.nightPanel,
-                                surfaceTintColor: Colors.transparent,
-                                onSelected: (level) => _format(
-                                  '${'#' * level} ',
-                                  block: true,
-                                  toggle: true,
-                                ),
-                                itemBuilder: (context) => [
-                                  for (var level = 1; level <= 3; level++)
-                                    PopupMenuItem(
-                                      value: level,
-                                      padding: EdgeInsets.zero,
-                                      child: TextFieldTapRegion(
-                                        child: SizedBox(
-                                          width: double.infinity,
-                                          height: 48,
-                                          child: Center(
-                                            child: Text(
-                                              '${strings.visionHeading} $level',
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                color: colors.text,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                                child: SizedBox(
-                                  width: 48,
-                                  height: 48,
-                                  child: Center(
-                                    child: Text(
-                                      'H',
-                                      style: TextStyle(
-                                        color: colors.text,
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            _toolbarDivider(colors),
-                            tool(
-                              Icons.format_bold,
-                              strings.visionBold,
-                              () => _format('**', toggle: true),
-                              marker: '**',
-                            ),
-                            tool(
-                              Icons.format_italic,
-                              strings.visionItalic,
-                              () => _format('*', toggle: true),
-                              marker: '*',
-                            ),
-                            tool(
-                              Icons.format_underlined,
-                              strings.visionUnderline,
-                              () =>
-                                  _format('<u>', closing: '</u>', toggle: true),
-                              marker: '<u>',
-                            ),
-                            _toolbarDivider(colors),
-                            tool(
-                              Icons.format_list_bulleted,
-                              strings.visionBulletList,
-                              () => _format('• ', block: true, toggle: true),
-                            ),
-                            tool(
-                              Icons.format_list_numbered,
-                              strings.visionNumberedList,
-                              () => _format(
-                                '1. ',
-                                block: true,
-                                numbered: true,
-                                toggle: true,
-                              ),
-                            ),
-                            _toolbarDivider(colors),
-                            tool(
-                              Icons.horizontal_rule,
-                              strings.visionDivider,
-                              _insertDivider,
-                            ),
-                            _toolbarDivider(colors),
-                            ValueListenableBuilder<UndoHistoryValue>(
-                              valueListenable: _undo,
-                              builder: (context, value, _) => Row(
-                                children: [
-                                  IconButton(
-                                    tooltip: strings.visionUndo,
-                                    style: IconButton.styleFrom(
-                                      foregroundColor: colors.text,
-                                      disabledForegroundColor: colors.muted,
-                                    ),
-                                    icon: const Icon(Icons.undo),
-                                    onPressed: value.canUndo && !_busy
-                                        ? _undo.undo
-                                        : null,
-                                  ),
-                                  IconButton(
-                                    tooltip: strings.visionRedo,
-                                    style: IconButton.styleFrom(
-                                      foregroundColor: colors.text,
-                                      disabledForegroundColor: colors.muted,
-                                    ),
-                                    icon: const Icon(Icons.redo),
-                                    onPressed: value.canRedo && !_busy
-                                        ? _undo.redo
-                                        : null,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Divider(
-                    height: 1,
-                    thickness: 0.75,
-                    color: colors.nightBorder,
-                  ),
-                ),
+                if (!richTextToolbarAtBottom()) _toolbar(),
                 Expanded(
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
                       Positioned.fill(
-                        child: AnimatedOpacity(
-                          duration: kMotionFast,
-                          opacity: _focus.hasFocus ? 0.28 : 1,
+                        child: IgnorePointer(
                           child: LogoWatermark(
                             scale: logoWatermarkScale(StarKind.unlit),
                             color: logoWatermarkColor(colors, StarKind.unlit),
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                        child: StaggeredEntrance(
-                          index: 2,
-                          child: TextField(
-                            key: const ValueKey('reflection-body'),
-                            controller: _body,
-                            focusNode: _focus,
-                            undoController: _undo,
-                            inputFormatters: [_body.typingFormatter],
-                            strutStyle: const StrutStyle(
-                              fontFamily: kFontStarTitle,
-                              fontSize: 21,
-                              height: 1.6,
-                            ),
-                            readOnly: _busy,
-                            expands: true,
-                            minLines: null,
-                            maxLines: null,
-                            maxLength: kReflectionBodyMax,
-                            textAlignVertical: TextAlignVertical.top,
-                            keyboardType: TextInputType.multiline,
-                            textCapitalization: TextCapitalization.sentences,
-                            style: TextStyle(
-                              fontFamily: kFontStarTitle,
-                              color: colors.text,
-                              fontSize: 21,
-                              height: 1.6,
-                            ),
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              filled: false,
-                              counterText: '',
-                              hintText: strings.reflectionAnswerHint,
-                              contentPadding: EdgeInsets.symmetric(
-                                vertical: keyboardVisible ? 4 : 20,
-                              ),
-                            ),
-                          ),
-                        ),
+                      AppRichTextEditor(
+                        key: const ValueKey('reflection-body'),
+                        controller: _body,
+                        focusNode: _focus,
+                        editorKey: _editorKey,
+                        hint: strings.reflectionAnswerHint,
+                        readOnly: _busy,
+                        maxLength: kReflectionBodyMax,
                       ),
                     ],
                   ),
@@ -1707,6 +1503,7 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
                     ),
                   ),
                 ),
+                if (richTextToolbarAtBottom()) _toolbar(),
               ],
             ),
           ),
@@ -1714,18 +1511,8 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
       ),
     );
   }
-
-  Widget _toolbarDivider(AppColors colors) => SizedBox(
-    height: 24,
-    child: VerticalDivider(
-      width: 24,
-      thickness: 0.75,
-      color: colors.nightBorder,
-    ),
-  );
 }
 
-/// Keep room for titles saved by earlier versions, which used the prompt itself.
 const int kReflectionTitleMax = 200;
 const int kReflectionBodyMax = 5000;
 
@@ -1870,7 +1657,11 @@ class _ReflectionDetailScreenState extends State<ReflectionDetailScreen> {
             _QuestionContext(question: question),
             const SizedBox(height: 24),
           ],
-          VisionMarkdown(data: record.body, color: context.colors.text),
+          VisionMarkdown(
+            data: record.body,
+            richText: record.richText,
+            color: context.colors.text,
+          ),
           const SizedBox(height: 12),
         ],
       );
