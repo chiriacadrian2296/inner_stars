@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:fleather/fleather.dart';
@@ -7,6 +8,7 @@ import 'package:flutter/semantics.dart';
 import 'package:material_ui/material_ui.dart' as fleather_ui;
 import 'package:url_launcher/url_launcher.dart';
 
+import 'app_field.dart';
 import '../l10n/strings_scope.dart';
 import '../models/rich_text_document.dart';
 import '../theme/app_colors.dart';
@@ -118,7 +120,7 @@ bool richTextToolbarAtBottom() =>
 
 /// Keeps page actions and backdrop fixed while only the writing viewport avoids
 /// the keyboard. Native tools occupy that viewport only while the IME is open.
-class AppRichTextPageLayout extends StatelessWidget {
+class AppRichTextPageLayout extends StatefulWidget {
   const AppRichTextPageLayout({
     super.key,
     required this.header,
@@ -135,34 +137,87 @@ class AppRichTextPageLayout extends StatelessWidget {
   final Widget backdrop;
 
   @override
+  State<AppRichTextPageLayout> createState() => _AppRichTextPageLayoutState();
+}
+
+class _AppRichTextPageLayoutState extends State<AppRichTextPageLayout> {
+  Timer? _keyboardSettled;
+  double _keyboard = 0;
+  bool _showTools = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    if (keyboard == _keyboard) return;
+    _keyboard = keyboard;
+    _keyboardSettled?.cancel();
+    // Any movement hides tools immediately, including the first closing frame.
+    // Repeated IME frames postpone showing them until the opening has settled.
+    _showTools = false;
+    if (keyboard > 0 && richTextToolbarAtBottom()) {
+      _keyboardSettled = Timer(const Duration(milliseconds: 180), () {
+        if (mounted) setState(() => _showTools = true);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _keyboardSettled?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     const actionsHeight = 80.0;
     final media = MediaQuery.of(context);
     final keyboard = media.viewInsets.bottom;
     final bottom = keyboard > 0
-        ? (keyboard - media.viewPadding.bottom).clamp(0.0, double.infinity)
+        ? (keyboard - media.viewPadding.bottom).clamp(
+            actionsHeight,
+            double.infinity,
+          )
         : actionsHeight;
     final nativeTools = richTextToolbarAtBottom();
     return Stack(
       fit: StackFit.expand,
       children: [
-        IgnorePointer(child: backdrop),
+        IgnorePointer(child: widget.backdrop),
         Positioned(
           left: 0,
           right: 0,
           bottom: 0,
           height: actionsHeight,
-          child: actions,
+          child: widget.actions,
         ),
         Positioned.fill(
           bottom: bottom,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              header,
-              if (!nativeTools) toolbar,
-              Expanded(child: editor),
-              if (nativeTools && keyboard > 0) toolbar,
+              Expanded(
+                child: CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(child: widget.header),
+                    if (!nativeTools) SliverToBoxAdapter(child: widget.toolbar),
+                    SliverLayoutBuilder(
+                      builder: (context, constraints) => SliverToBoxAdapter(
+                        child: SizedBox(
+                          // Keep the complete header and let the page scroll
+                          // on short viewports instead of compacting its text.
+                          height: constraints.remainingPaintExtent.clamp(
+                            160.0,
+                            double.infinity,
+                          ),
+                          child: widget.editor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (nativeTools && _showTools) widget.toolbar,
             ],
           ),
         ),
@@ -462,14 +517,20 @@ class AppRichTextToolbar extends StatelessWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
           title: Text(strings.editorLink),
-          content: TextField(
-            controller: input,
-            autofocus: true,
-            keyboardType: TextInputType.url,
-            decoration: InputDecoration(
-              labelText: strings.editorLinkHint,
-              errorText: error,
-            ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AppFieldLabel(strings.editorLinkHint),
+              const SizedBox(height: kFieldLabelGap),
+              AppTextField(
+                controller: input,
+                autofocus: true,
+                keyboardType: TextInputType.url,
+                textCapitalization: TextCapitalization.none,
+                errorText: error,
+              ),
+            ],
           ),
           actions: [
             TextButton(

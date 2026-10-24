@@ -123,7 +123,6 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
     final strings = context.strings;
     final colors = context.colors;
     return PopScope(
@@ -147,14 +146,8 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
               header: StaggeredEntrance(
                 index: 0,
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    20,
-                    keyboardVisible ? 8 : 20,
-                    20,
-                    keyboardVisible ? 8 : 16,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                   child: AreaSectionHeader(
-                    compact: keyboardVisible,
                     title: widget.area.displayName(strings),
                     icon: kAreaVisionIcon,
                     description: strings.visionPageDescription,

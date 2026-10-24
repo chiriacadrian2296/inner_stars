@@ -286,6 +286,7 @@ class AppTextField extends StatefulWidget {
     this.showCounter = true,
     this.autofocus = false,
     this.textInputAction,
+    this.keyboardType,
     this.textCapitalization = TextCapitalization.sentences,
     this.onChanged,
     this.prefixIcon,
@@ -310,6 +311,7 @@ class AppTextField extends StatefulWidget {
   final bool showCounter;
   final bool autofocus;
   final TextInputAction? textInputAction;
+  final TextInputType? keyboardType;
 
   /// Keyboards start each field with a capital by default; raw URLs and
   /// search boxes opt out.
@@ -375,6 +377,7 @@ class _AppTextFieldState extends State<AppTextField> {
           maxLines: widget.expands ? null : widget.maxLines,
           maxLength: widget.maxLength,
           textInputAction: widget.textInputAction,
+          keyboardType: widget.keyboardType,
           textCapitalization: widget.textCapitalization,
           onChanged: widget.onChanged,
           onTapOutside: (_) => _focusNode.unfocus(),

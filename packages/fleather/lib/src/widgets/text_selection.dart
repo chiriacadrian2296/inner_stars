@@ -1095,8 +1095,14 @@ class SelectionOverlay {
       return;
     }
     _handles = <OverlayEntry>[
-      OverlayEntry(builder: _buildStartHandle),
-      OverlayEntry(builder: _buildEndHandle),
+      // Handles live in the root overlay; carry the editor's selection theme
+      // there instead of resolving the overlay's default purple material theme.
+      OverlayEntry(
+          builder: (overlayContext) => InheritedTheme.captureAll(
+              context, _buildStartHandle(overlayContext))),
+      OverlayEntry(
+          builder: (overlayContext) => InheritedTheme.captureAll(
+              context, _buildEndHandle(overlayContext))),
     ];
     Overlay.of(context, rootOverlay: true, debugRequiredFor: debugRequiredFor)
         .insertAll(_handles!);

@@ -383,9 +383,7 @@ void main() {
     expect(sawWriteOnly, isTrue);
   });
 
-  testWidgets('editor keeps text and focus when keyboard compacts the page', (
-    tester,
-  ) async {
+  testWidgets('editor preserves full header and focused text', (tester) async {
     tester.view.physicalSize = const Size(320, 640);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);

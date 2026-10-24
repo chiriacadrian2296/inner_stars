@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:material_ui/material_ui.dart' as fleather_ui;
 import 'package:inner_stars/theme/app_colors.dart';
 import 'package:inner_stars/widgets/logo_watermark.dart';
+import 'package:inner_stars/widgets/area_section_header.dart';
+import 'package:inner_stars/widgets/app_field.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -187,6 +189,18 @@ void main() {
         c.updateSelection(const TextSelection(baseOffset: 0, extentOffset: 12));
         await tool(tester, s.editorLink);
         await tester.pumpAndSettle();
+        expect(
+          find.descendant(
+            of: find.byType(AlertDialog),
+            matching: find.byType(AppTextField),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          tester.widget<AppTextField>(find.byType(AppTextField)).keyboardType,
+          TextInputType.url,
+        );
+        expect(find.text(s.editorLinkHint), findsOneWidget);
         await tester.enterText(
           find.descendant(
             of: find.byType(AlertDialog),
@@ -258,9 +272,34 @@ void main() {
         final saveRect = tester.getRect(save);
         final shareRect = tester.getRect(share);
         final watermarkRect = tester.getRect(find.byType(LogoWatermark));
+        final headerRect = tester.getRect(find.byType(AreaSectionHeader));
+        tester.view.viewInsets = const FakeViewPadding(bottom: 120);
+        await tester.pump();
+        expect(find.byType(AppRichTextToolbar), findsNothing);
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(find.byType(AppRichTextToolbar), findsNothing);
         tester.view.viewInsets = const FakeViewPadding(bottom: 280);
         await type(tester, List.filled(80, 'Un paragrafo.\n').join());
+        await tester.pump(const Duration(milliseconds: 200));
         await tester.pumpAndSettle();
+        expect(tester.getSize(find.byType(AreaSectionHeader)), headerRect.size);
+        expect(
+          tester
+              .widget<AreaSectionHeader>(find.byType(AreaSectionHeader))
+              .compact,
+          false,
+        );
+        if (reflection) {
+          expect(
+            tester
+                .widget<TextField>(
+                  find.byKey(const ValueKey('reflection-title')),
+                )
+                .maxLines,
+            3,
+          );
+          expect(find.text(s.reflectionTitleLabel), findsWidgets);
+        }
         expect(tester.getRect(save), saveRect);
         expect(tester.getRect(share), shareRect);
         expect(tester.getRect(find.byType(LogoWatermark)), watermarkRect);
@@ -300,6 +339,16 @@ void main() {
         expect(
           body(tester).controller.document.toJson().toString(),
           contains('heading: 2'),
+        );
+        tester.view.viewInsets = const FakeViewPadding(bottom: 200);
+        await tester.pump();
+        expect(find.byType(AppRichTextToolbar), findsNothing);
+        tester.view.viewInsets = const FakeViewPadding(bottom: 40);
+        await tester.pump();
+        expect(find.byType(AppRichTextToolbar), findsNothing);
+        expect(
+          tester.getRect(find.byType(AppRichTextEditor)).bottom,
+          lessThanOrEqualTo(saveRect.top),
         );
         tester.view.viewInsets = const FakeViewPadding();
         await tester.pumpAndSettle();
@@ -356,6 +405,34 @@ void main() {
       expect(editor.controller.plainText, 'Incollato\nSeconda riga');
     },
   );
+
+  testWidgets('mobile selection handles inherit gold inside the root overlay', (
+    tester,
+  ) async {
+    tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+    addTearDown(tester.view.resetViewInsets);
+    final repo = await AreaVisionRepository.create();
+    await tester.pumpWidget(
+      app(VisionEditorScreen(area: LifeArea.physical, repository: repo)),
+    );
+    await type(tester, 'Testo da selezionare');
+    await tester.pump(const Duration(milliseconds: 200));
+    final rect = tester.getRect(find.byType(AppRichTextEditor));
+    await tester.longPressAt(rect.topLeft + const Offset(50, 36));
+    await tester.pumpAndSettle();
+    final handles = find.byWidgetPredicate(
+      (widget) => widget.runtimeType.toString() == 'SelectionHandleOverlay',
+    );
+    expect(handles, findsNWidgets(2));
+    final gold = tester.element(find.byType(AppRichTextEditor)).colors.gold;
+    for (final element in handles.evaluate()) {
+      expect(
+        fleather_ui.TextSelectionTheme.of(element).selectionHandleColor,
+        gold,
+      );
+    }
+    await tester.pumpWidget(const SizedBox());
+  }, variant: TargetPlatformVariant.only(TargetPlatform.android));
 
   testDesktopWidgets(
     'divider handles a reverse selection without deleting surrounding text',

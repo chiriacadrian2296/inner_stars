@@ -1,7 +1,8 @@
 # Fleather compatibility patch
 
 Source: pub.dev fleather 1.28.0 (upstream lib and license preserved, except
-src/widgets/editor_input_client_mixin.dart and src/widgets/controller.dart). The local manifest removes the
+src/widgets/editor_input_client_mixin.dart, src/widgets/controller.dart and
+src/widgets/text_selection.dart). The local manifest removes the
 upstream development-only sibling override and absent screenshot, and disables
 publishing.
 
@@ -23,3 +24,8 @@ root test/widgets/rich_text_input_protocol_test.dart and the shared editor tests
 
 Remove this override when upstream Fleather/Flutter supports accessible delta
 input. Re-run the accessible web regression and browser smoke checks first.
+
+Selection handles capture the editor's inherited themes when entering the root
+Overlay. Without this, material_ui renders handles with its default purple even
+when the editor has an explicit gold TextSelectionTheme. The mobile editor tests
+check the actual overlay handle context, as well as cursor and selection colors.

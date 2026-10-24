@@ -1342,7 +1342,6 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
 
   @override
   Widget build(BuildContext context) {
-    final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
     final strings = context.strings;
     final colors = context.colors;
     final suggested =
@@ -1371,14 +1370,8 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
                 child: StaggeredEntrance(
                   index: 0,
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      20,
-                      keyboardVisible ? 8 : 20,
-                      20,
-                      keyboardVisible ? 8 : 16,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                     child: AreaSectionHeader(
-                      compact: keyboardVisible,
                       title: widget.area.displayName(strings),
                       icon: kAreaReflectionsIcon,
                       description: widget.existing == null
@@ -1387,23 +1380,22 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
                       descriptionChild: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (!keyboardVisible)
-                            Wrap(
-                              spacing: 10,
-                              runSpacing: 6,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                AppFieldLabel(strings.reflectionTitleLabel),
-                                _ReflectionOriginBadge(suggested: suggested),
-                              ],
-                            ),
-                          if (!keyboardVisible) const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 6,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              AppFieldLabel(strings.reflectionTitleLabel),
+                              _ReflectionOriginBadge(suggested: suggested),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
                           TextField(
                             key: const ValueKey('reflection-title'),
                             controller: _title,
                             enabled: !_busy,
                             minLines: 1,
-                            maxLines: keyboardVisible ? 1 : 3,
+                            maxLines: 3,
                             maxLength: kReflectionTitleMax,
                             textCapitalization: TextCapitalization.sentences,
                             textInputAction: TextInputAction.next,
