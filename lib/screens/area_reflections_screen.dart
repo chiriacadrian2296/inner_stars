@@ -18,6 +18,7 @@ import '../theme/app_fonts.dart';
 import '../theme/app_motion.dart';
 import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
+import '../utils/markdown_editing.dart';
 import '../utils/area_section_icons.dart';
 import '../widgets/app_field.dart';
 import '../widgets/area_section_header.dart';
@@ -80,7 +81,7 @@ class _AreaReflectionsScreenState extends State<AreaReflectionsScreen> {
     );
     if (record != null && context.mounted) {
       final nextStep = await _chooseNextStep(context);
-      if (!context.mounted) return;
+      if (!context.mounted || nextStep == null) return;
       await _openNextStep(context, nextStep);
       if (!context.mounted) return;
       await Navigator.of(context).push<void>(
@@ -115,12 +116,14 @@ class _AreaReflectionsScreenState extends State<AreaReflectionsScreen> {
               AppSheetTitle(strings.reflectionNew),
               const SizedBox(height: 20),
               AppSheetAction(
+                key: const ValueKey('reflection-new-free'),
                 icon: Icons.edit_outlined,
                 label: strings.reflectionFree,
                 onPressed: () => Navigator.pop(sheetContext, false),
               ),
               const SizedBox(height: 10),
               AppSheetAction(
+                key: const ValueKey('reflection-new-suggested'),
                 icon: Icons.lightbulb_outline,
                 label: strings.reflectionSuggested,
                 onPressed: () => Navigator.pop(sheetContext, true),
@@ -206,34 +209,28 @@ class _AreaReflectionsScreenState extends State<AreaReflectionsScreen> {
           )
           .toList();
       return _ReflectionPage(
-        actions: records.isEmpty
-            ? const []
-            : [
-                ElevatedButton(
-                  key: const ValueKey('reflection-new'),
-                  child: AppButtonLabel(strings.reflectAction),
-                  onPressed: () => _showNewReflectionChoices(context),
-                ),
-              ],
+        actions: [
+          ElevatedButton(
+            key: const ValueKey('reflection-new'),
+            child: AppButtonLabel(strings.reflectAction),
+            onPressed: () => _showNewReflectionChoices(context),
+          ),
+        ],
+        centeredChild: records.isEmpty
+            ? Text(
+                strings.reflectionEmpty,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: context.colors.muted, height: 1.6),
+              )
+            : null,
         children: [
           AreaSectionHeader(
-            title: strings.areaReflectionsTitle,
+            title: area.displayName(strings),
             icon: kAreaReflectionsIcon,
-            description: area.displayName(strings),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            strings.reflectionListDescription,
-            style: TextStyle(color: context.colors.muted, height: 1.5),
+            description: strings.reflectionListDescription,
           ),
           const SizedBox(height: 24),
-          if (records.isEmpty)
-            _EmptyReflections(
-              text: strings.reflectionEmpty,
-              onFree: () => _create(context, suggested: false),
-              onSuggested: () => _create(context, suggested: true),
-            )
-          else ...[
+          if (records.isNotEmpty) ...[
             if (records.length >= 6 || _search.text.isNotEmpty) ...[
               AppSearchField(
                 key: const ValueKey('reflection-search'),
@@ -398,10 +395,8 @@ bool _sameMonth(DateTime a, DateTime b) {
 /// Nothing written yet: the area's reflection glyph above a short line,
 /// centred, like the app's other empty states.
 class _EmptyReflections extends StatelessWidget {
-  const _EmptyReflections({required this.text, this.onFree, this.onSuggested});
+  const _EmptyReflections({required this.text});
   final String text;
-  final VoidCallback? onFree;
-  final VoidCallback? onSuggested;
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -416,26 +411,6 @@ class _EmptyReflections extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(color: colors.muted, height: 1.6),
           ),
-          if (onFree != null && onSuggested != null) ...[
-            const SizedBox(height: 28),
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 12,
-              runSpacing: 8,
-              children: [
-                TextButton(
-                  key: const ValueKey('reflection-new-free'),
-                  onPressed: onFree,
-                  child: AppButtonLabel(context.strings.reflectionFree),
-                ),
-                ElevatedButton(
-                  key: const ValueKey('reflection-new-suggested'),
-                  onPressed: onSuggested,
-                  child: AppButtonLabel(context.strings.reflectionSuggested),
-                ),
-              ],
-            ),
-          ],
         ],
       ),
     );
@@ -501,7 +476,10 @@ class _ReflectionCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 6,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Text(
                             date,
@@ -512,29 +490,7 @@ class _ReflectionCard extends StatelessWidget {
                               letterSpacing: 0.7,
                             ),
                           ),
-                          if (suggested) ...[
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                              ),
-                              child: Text(
-                                '·',
-                                style: TextStyle(color: colors.muted),
-                              ),
-                            ),
-                            Flexible(
-                              child: Text(
-                                context.strings.reflectionQuestionLabel,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: colors.muted,
-                                  fontSize: 11,
-                                  letterSpacing: 0.4,
-                                ),
-                              ),
-                            ),
-                          ],
+                          _ReflectionOriginBadge(suggested: suggested),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -668,6 +624,19 @@ class _ReflectionOriginBadge extends StatelessWidget {
   final bool suggested;
 
   @override
+  Widget build(BuildContext context) => _ReflectionTag(
+    label: suggested
+        ? context.strings.reflectionSuggestedBadge
+        : context.strings.reflectionFreeBadge,
+  );
+}
+
+class _ReflectionTag extends StatelessWidget {
+  const _ReflectionTag({required this.label});
+
+  final String label;
+
+  @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
     decoration: BoxDecoration(
@@ -679,9 +648,7 @@ class _ReflectionOriginBadge extends StatelessWidget {
       ),
     ),
     child: Text(
-      suggested
-          ? context.strings.reflectionSuggestedBadge
-          : context.strings.reflectionFreeBadge,
+      label,
       style: TextStyle(
         color: context.colors.gold,
         fontSize: 10,
@@ -761,12 +728,13 @@ class _ReflectionSuggestionsState extends State<_ReflectionSuggestions> {
       offset += group.questions.length;
       groups.add(
         Padding(
-          padding: const EdgeInsets.only(bottom: 2),
+          padding: const EdgeInsets.only(bottom: 12),
           child: Material(
-            color: Colors.transparent,
+            color: colors.nightPanel,
             clipBehavior: Clip.antiAlias,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(kRadiusField),
+              borderRadius: BorderRadius.circular(kRadiusCard),
+              side: BorderSide(color: colors.nightBorder, width: kBorderWidth),
             ),
             child: Theme(
               data: Theme.of(context)
@@ -779,8 +747,13 @@ class _ReflectionSuggestionsState extends State<_ReflectionSuggestions> {
                 onExpansionChanged: (expanded) => setState(
                   () => _expandedGroup = expanded ? groupIndex : null,
                 ),
-                tilePadding: const EdgeInsets.symmetric(horizontal: 4),
-                childrenPadding: const EdgeInsets.only(bottom: 12),
+                tilePadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
+                childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                shape: const Border(),
+                collapsedShape: const Border(),
                 iconColor: colors.gold,
                 collapsedIconColor: colors.muted,
                 title: Text(
@@ -796,7 +769,8 @@ class _ReflectionSuggestionsState extends State<_ReflectionSuggestions> {
                   style: TextStyle(color: colors.muted, fontSize: 12),
                 ),
                 children: [
-                  for (var i = 0; i < group.questions.length; i++)
+                  for (var i = 0; i < group.questions.length; i++) ...[
+                    if (i > 0) Divider(height: 1, color: colors.nightBorder),
                     _QuestionChoice(
                       question: group.questions[i],
                       selected: active == start + i,
@@ -807,6 +781,7 @@ class _ReflectionSuggestionsState extends State<_ReflectionSuggestions> {
                       onSelect: () => setState(() => _selected = start + i),
                       onRelated: () => _related(start + i, group.questions[i]),
                     ),
+                  ],
                 ],
               ),
             ),
@@ -817,9 +792,9 @@ class _ReflectionSuggestionsState extends State<_ReflectionSuggestions> {
     return _ReflectionPage(
       children: [
         AreaSectionHeader(
-          title: strings.reflectionSuggested,
+          title: area.displayName(strings),
           icon: kAreaReflectionsIcon,
-          description: area.displayName(strings),
+          description: strings.reflectionSuggestionsDescription,
         ),
         const SizedBox(height: 24),
         Container(
@@ -828,51 +803,96 @@ class _ReflectionSuggestionsState extends State<_ReflectionSuggestions> {
           padding: const EdgeInsets.all(22),
           decoration: panelDecoration(colors),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               AppFieldLabel(strings.reflectionQuestionOfMomentLabel),
-              const SizedBox(height: 12),
-              Text(
-                questions[active],
-                style: TextStyle(
-                  fontFamily: kFontStarTitle,
-                  color: colors.text,
-                  fontSize: 24,
-                  height: 1.35,
-                ),
+              const SizedBox(height: 8),
+              Visibility(
+                visible: answered.contains('$active'),
+                maintainSize: true,
+                maintainState: true,
+                maintainAnimation: true,
+                child: _ReflectionTag(label: strings.reflectionExplored),
               ),
-              if (answered.contains('$active')) ...[
-                const SizedBox(height: 10),
-                TextButton(
-                  onPressed: () => _related(active, questions[active]),
-                  child: AppButtonLabel(strings.reflectionExplored),
-                ),
-              ],
+              const SizedBox(height: 12),
+              _MomentQuestion(
+                question: questions[active],
+                questions: questions,
+              ),
               const SizedBox(height: 18),
               Center(
-                child: Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 12,
-                  runSpacing: 8,
-                  children: [
-                    TextButton(
-                      key: const ValueKey('reflection-another-question'),
-                      onPressed: () => setState(() {
-                        _sample =
-                            (active +
-                                1 +
-                                math.Random().nextInt(questions.length - 1)) %
-                            questions.length;
-                        _selected = null;
-                      }),
-                      child: AppButtonLabel(strings.reflectionAnotherQuestion),
-                    ),
-                    ElevatedButton(
-                      key: const ValueKey('reflection-write-question'),
-                      onPressed: () => _choose(active, questions[active]),
-                      child: AppButtonLabel(strings.reflectionWrite),
-                    ),
-                  ],
+                child: SizedBox(
+                  width: 280,
+                  child: Row(
+                    children: [
+                      IconButton(
+                        key: const ValueKey('reflection-previous-question'),
+                        tooltip: strings.reflectionPreviousQuestion,
+                        onPressed: () => setState(() {
+                          _selected = (active - 1) % questions.length;
+                        }),
+                        icon: Icon(Icons.chevron_left, color: colors.text),
+                      ),
+                      Expanded(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (answered.contains('$active')) ...[
+                              Flexible(
+                                child: TextButton(
+                                  key: const ValueKey(
+                                    'reflection-read-question',
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                  ),
+                                  onPressed: () =>
+                                      _related(active, questions[active]),
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: AppButtonLabel(
+                                      strings.reflectionReadAction,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            Flexible(
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                ),
+                                key: const ValueKey(
+                                  'reflection-write-question',
+                                ),
+                                onPressed: () =>
+                                    _choose(active, questions[active]),
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: AppButtonLabel(
+                                    strings.reflectionWrite,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        key: const ValueKey('reflection-next-question'),
+                        tooltip: strings.reflectionNextQuestion,
+                        onPressed: () => setState(() {
+                          _selected = (active + 1) % questions.length;
+                        }),
+                        icon: Icon(Icons.chevron_right, color: colors.text),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -881,6 +901,51 @@ class _ReflectionSuggestionsState extends State<_ReflectionSuggestions> {
         const SizedBox(height: 28),
         ...groups,
       ],
+    );
+  }
+}
+
+/// Reserve the same space for every prompt so navigation never moves.
+class _MomentQuestion extends StatelessWidget {
+  const _MomentQuestion({required this.question, required this.questions});
+
+  final String question;
+  final List<String> questions;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = DefaultTextStyle.of(context).style.merge(
+      TextStyle(
+        fontFamily: kFontStarTitle,
+        color: context.colors.text,
+        fontSize: 24,
+        height: 1.35,
+      ),
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double measure(String text) {
+          final painter = TextPainter(
+            text: TextSpan(text: text, style: style),
+            textDirection: Directionality.of(context),
+            textScaler: MediaQuery.textScalerOf(context),
+          )..layout(maxWidth: constraints.maxWidth);
+          final height = painter.height;
+          painter.dispose();
+          return height;
+        }
+
+        final height = questions.fold<double>(
+          measure('Ag\nAg'),
+          (height, text) => math.max(height, measure(text)),
+        );
+        return SizedBox(
+          height: height,
+          child: Center(
+            child: Text(question, textAlign: TextAlign.center, style: style),
+          ),
+        );
+      },
     );
   }
 }
@@ -915,7 +980,7 @@ class _QuestionChoice extends StatelessWidget {
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(kRadiusField),
             border: Border.all(
-              color: selected ? colors.gold : colors.nightBorder,
+              color: selected ? colors.gold : Colors.transparent,
               width: kBorderWidth,
             ),
           ),
@@ -929,7 +994,8 @@ class _QuestionChoice extends StatelessWidget {
                       question,
                       style: TextStyle(
                         color: colors.text,
-                        fontSize: 16,
+                        fontFamily: kFontStarTitle,
+                        fontSize: 18,
                         height: 1.45,
                       ),
                     ),
@@ -967,7 +1033,7 @@ class _QuestionChoice extends StatelessWidget {
               Icon(
                 selected
                     ? Icons.check_circle_outline_rounded
-                    : Icons.chevron_right_rounded,
+                    : Icons.radio_button_unchecked_rounded,
                 size: 20,
                 color: selected ? colors.gold : colors.muted,
               ),
@@ -1003,9 +1069,9 @@ class _RelatedReflections extends StatelessWidget {
       ],
       children: [
         AreaSectionHeader(
-          title: context.strings.reflectionRelated,
+          title: area.displayName(context.strings),
           icon: kAreaReflectionsIcon,
-          description: area.displayName(context.strings),
+          description: context.strings.reflectionRelatedDescription,
         ),
         const SizedBox(height: 20),
         _QuestionContext(question: question),
@@ -1063,7 +1129,7 @@ class _QuestionContext extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppFieldLabel(context.strings.reflectionQuestionLabel),
+        _ReflectionTag(label: context.strings.reflectionQuestionLabel),
         const SizedBox(height: 8),
         SelectableText(
           question,
@@ -1120,9 +1186,9 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
     _keyboardInset = inset;
   }
 
-  late final _title = TextEditingController(
-    text: widget.existing?.title ?? widget.suggestedTitle ?? '',
-  );
+  late final _initialTitle =
+      widget.existing?.title ?? widget.suggestedTitle ?? '';
+  late final _title = TextEditingController(text: _initialTitle);
   late final _body = LiveMarkdownController(text: widget.existing?.body ?? '');
   final _focus = FocusNode();
   final _undo = UndoHistoryController();
@@ -1156,7 +1222,7 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
   Future<void> _leave() async {
     if (_busy || _asking) return;
     final changed =
-        _title.text != (widget.existing?.title ?? '') ||
+        _title.text != _initialTitle ||
         _body.text != (widget.existing?.body ?? '');
     if (changed) {
       _asking = true;
@@ -1254,152 +1320,19 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
     bool toggle = false,
     String? closing,
   }) {
-    final value = _body.value;
-    final selection = value.selection.isValid
-        ? value.selection
-        : TextSelection.collapsed(offset: value.text.length);
-    if (!block && selection.isCollapsed) return;
-    var start = selection.start;
-    var end = selection.end;
-    final closingMarker = closing ?? marker;
-    String replacement;
-    int selectionStart;
-    int selectionEnd;
-    if (block) {
-      start = start == 0 ? 0 : value.text.lastIndexOf('\n', start - 1) + 1;
-      if (end > start && value.text[end - 1] == '\n') end--;
-      final lineEnd = value.text.indexOf('\n', end);
-      end = lineEnd < 0 ? value.text.length : lineEnd;
-      final lines = value.text.substring(start, end).split('\n');
-      final blockPrefix = RegExp(r'^\s{0,3}(#{1,6}\s|[-*+]\s|•\s|\d+\.\s)');
-      bool isDivider(String line) => RegExp(r'^\s*---+\s*$').hasMatch(line);
-      final applicableLines = lines.where((line) => !isDivider(line));
-      final alreadyApplied =
-          toggle &&
-          applicableLines.isNotEmpty &&
-          applicableLines.every(
-            numbered
-                ? (line) => RegExp(r'^\s{0,3}\d+\.\s').hasMatch(line)
-                : (line) => line.startsWith(marker),
-          );
-      replacement = lines.indexed
-          .map((entry) {
-            if (isDivider(entry.$2)) return entry.$2;
-            final content = entry.$2.replaceFirst(blockPrefix, '');
-            if (alreadyApplied) return content;
-            return '${numbered ? '${entry.$1 + 1}. ' : marker}$content';
-          })
-          .join('\n');
-      selectionStart = start + replacement.length;
-      selectionEnd = selectionStart;
-    } else {
-      if (toggle && !selection.isCollapsed) {
-        final selectedStart = start;
-        final selectedEnd = end;
-        for (final match in _inlinePattern(marker).allMatches(value.text)) {
-          if (match.start < selectedEnd && match.end > selectedStart) {
-            start = math.min(start, match.start);
-            end = math.max(end, match.end);
-          }
-        }
-      }
-      final selected = value.text.substring(start, end);
-      final lines = selected.split('\n');
-      final blockPrefix = RegExp(r'^\s{0,3}(#{1,6}\s|[-*+]\s|•\s|\d+\.\s)');
-      bool isDivider(String line) => RegExp(r'^\s*---+\s*$').hasMatch(line);
-      String contentOf(String line) => line.replaceFirst(blockPrefix, '');
-      bool wrapped(String line) {
-        final content = contentOf(line);
-        return content.startsWith(marker) &&
-            content.endsWith(closingMarker) &&
-            content.length >= marker.length + closingMarker.length;
-      }
-
-      final formattableLines = lines.where(
-        (line) => line.isNotEmpty && !isDivider(line),
-      );
-      final alreadyApplied =
-          toggle &&
-          formattableLines.isNotEmpty &&
-          formattableLines.every(wrapped);
-      replacement = lines
-          .map((line) {
-            if (line.isEmpty || isDivider(line)) return line;
-            final prefixMatch = blockPrefix.firstMatch(line);
-            final prefix = prefixMatch?[0] ?? '';
-            final lineContent = line.substring(prefix.length);
-            if (alreadyApplied) {
-              return '$prefix${lineContent.substring(marker.length, lineContent.length - closingMarker.length)}';
-            }
-            final content = toggle
-                ? _withoutInlineMarkers(lineContent, marker, closingMarker)
-                : lineContent;
-            return '$prefix$marker$content$closingMarker';
-          })
-          .join('\n');
-      selectionStart = start;
-      selectionEnd = start + replacement.length;
-    }
-    _body.value = TextEditingValue(
-      text: value.text.replaceRange(start, end, replacement),
-      selection: TextSelection(
-        baseOffset: selectionStart,
-        extentOffset: selectionEnd,
-      ),
+    _body.value = formatMarkdown(
+      _body.value,
+      marker,
+      block: block,
+      numbered: numbered,
+      toggle: toggle,
+      closing: closing,
     );
     _focus.requestFocus();
   }
 
-  String _withoutInlineMarkers(
-    String text,
-    String marker,
-    String closingMarker,
-  ) {
-    if (marker == '*') {
-      return text.replaceAll(RegExp(r'(?<!\*)\*(?!\*)'), '');
-    }
-    return text.replaceAll(marker, '').replaceAll(closingMarker, '');
-  }
-
-  RegExp _inlinePattern(String marker) => switch (marker) {
-    '**' => RegExp(r'\*\*(.+?)\*\*'),
-    '*' => RegExp(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)'),
-    '<u>' => RegExp(r'<u>(.+?)</u>'),
-    _ => RegExp('${RegExp.escape(marker)}(.+?)${RegExp.escape(marker)}'),
-  };
-
   void _insertDivider() {
-    final text = _body.text;
-    final selection = _body.selection;
-    final cursor = selection.isValid ? selection.end : text.length;
-    final lineStart = cursor == 0 ? 0 : text.lastIndexOf('\n', cursor - 1) + 1;
-    final lineEnd = text.indexOf('\n', cursor);
-    final at = lineEnd < 0 ? text.length : lineEnd;
-    final line = text.substring(lineStart, at);
-    final blockPrefix = RegExp(r'^\s{0,3}(#{1,6}\s|[-*+]\s|•\s|\d+\.\s)');
-    final content = line.replaceFirst(blockPrefix, '').trim();
-    if (RegExp(r'^\s*---+\s*$').hasMatch(line)) {
-      _body.value = TextEditingValue(
-        text: text.replaceRange(lineStart, at, ''),
-        selection: TextSelection.collapsed(offset: lineStart),
-      );
-      _focus.requestFocus();
-      return;
-    }
-    if (content.isEmpty) {
-      _body.value = TextEditingValue(
-        text: text.replaceRange(lineStart, at, '---'),
-        selection: TextSelection.collapsed(offset: lineStart + 3),
-      );
-      _focus.requestFocus();
-      return;
-    }
-    final replaceEnd = at < text.length && text[at] == '\n' ? at + 1 : at;
-    const rule = '\n\n---\n\n';
-    _body.value = TextEditingValue(
-      text: text.replaceRange(at, replaceEnd, rule),
-      selection: TextSelection.collapsed(offset: at + rule.length),
-    );
+    _body.value = insertMarkdownDivider(_body.value);
     _focus.requestFocus();
   }
 
@@ -1408,6 +1341,7 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
 
   @override
   Widget build(BuildContext context) {
+    final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
     final strings = context.strings;
     final colors = context.colors;
     final suggested =
@@ -1428,7 +1362,7 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
         if (!didPop) _leave();
       },
       child: Scaffold(
-        resizeToAvoidBottomInset: false,
+        resizeToAvoidBottomInset: true,
         backgroundColor: colors.night,
         body: SafeArea(
           maintainBottomViewPadding: true,
@@ -1442,33 +1376,39 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
                   child: StaggeredEntrance(
                     index: 0,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                      padding: EdgeInsets.fromLTRB(
+                        20,
+                        keyboardVisible ? 8 : 20,
+                        20,
+                        keyboardVisible ? 8 : 16,
+                      ),
                       child: AreaSectionHeader(
+                        compact: keyboardVisible,
                         title: widget.area.displayName(strings),
                         icon: kAreaReflectionsIcon,
+                        description: widget.existing == null
+                            ? strings.reflectionWriteDescription
+                            : strings.reflectionEditDescription,
                         descriptionChild: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Wrap(
-                              spacing: 10,
-                              runSpacing: 6,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                AppFieldLabel(
-                                  suggested
-                                      ? strings.reflectionQuestionLabel
-                                      : strings.reflectionTopicLabel,
-                                ),
-                                _ReflectionOriginBadge(suggested: suggested),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
+                            if (!keyboardVisible)
+                              Wrap(
+                                spacing: 10,
+                                runSpacing: 6,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  AppFieldLabel(strings.reflectionTitleLabel),
+                                  _ReflectionOriginBadge(suggested: suggested),
+                                ],
+                              ),
+                            if (!keyboardVisible) const SizedBox(height: 6),
                             TextField(
                               key: const ValueKey('reflection-title'),
                               controller: _title,
                               enabled: !_busy,
                               minLines: 1,
-                              maxLines: 3,
+                              maxLines: keyboardVisible ? 1 : 3,
                               maxLength: kReflectionTitleMax,
                               textCapitalization: TextCapitalization.sentences,
                               textInputAction: TextInputAction.next,
@@ -1681,8 +1621,8 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
                               filled: false,
                               counterText: '',
                               hintText: strings.reflectionAnswerHint,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 20,
+                              contentPadding: EdgeInsets.symmetric(
+                                vertical: keyboardVisible ? 4 : 20,
                               ),
                             ),
                           ),
@@ -1702,16 +1642,15 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
                       children: [
                         ListenableBuilder(
                           listenable: Listenable.merge([_title, _body]),
-                          builder: (context, _) => TextButton.icon(
+                          builder: (context, _) => TextButton(
                             onPressed: _busy || !_canSave ? null : _share,
                             style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 22,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: keyboardVisible ? 8 : 22,
                                 vertical: 14,
                               ),
                             ),
-                            icon: const Icon(Icons.share_outlined),
-                            label: AppButtonLabel(
+                            child: AppButtonLabel(
                               strings.starQuickLookShareAction,
                             ),
                           ),
@@ -1719,6 +1658,13 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
                         ListenableBuilder(
                           listenable: Listenable.merge([_title, _body]),
                           builder: (context, _) => ElevatedButton(
+                            style: keyboardVisible
+                                ? ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                  )
+                                : null,
                             key: const ValueKey('reflection-save'),
                             onPressed: _busy || !_canSave ? null : _save,
                             child: AppButtonLabel(strings.saveChanges),
@@ -1857,25 +1803,24 @@ class _ReflectionDetailScreenState extends State<ReflectionDetailScreen> {
         ],
         children: [
           AreaSectionHeader(
-            title: strings.areaReflectionsTitle,
+            title: record.area.displayName(strings),
             icon: kAreaReflectionsIcon,
-            description: record.area.displayName(strings),
-          ),
-          const SizedBox(height: 28),
-          Wrap(
-            spacing: 10,
-            runSpacing: 6,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _ReflectionOriginBadge(
-                suggested: record.origin == ReflectionOrigin.suggested,
-              ),
-              Text(
-                MaterialLocalizations.of(context)
-                    .formatMediumDate(record.createdAt.toLocal()),
-                style: TextStyle(color: context.colors.muted, fontSize: 12),
-              ),
-            ],
+            description: strings.reflectionReadDescription,
+            descriptionChild: Wrap(
+              spacing: 10,
+              runSpacing: 6,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                _ReflectionOriginBadge(
+                  suggested: record.origin == ReflectionOrigin.suggested,
+                ),
+                Text(
+                  MaterialLocalizations.of(context)
+                      .formatMediumDate(record.createdAt.toLocal()),
+                  style: TextStyle(color: context.colors.muted, fontSize: 12),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
           SelectableText(
@@ -1906,10 +1851,12 @@ class _ReflectionPage extends StatelessWidget {
     required this.children,
     this.actions = const [],
     this.separateLastActionOnCompact = false,
+    this.centeredChild,
   });
   final List<Widget> children;
   final List<Widget> actions;
   final bool separateLastActionOnCompact;
+  final Widget? centeredChild;
 
   Widget _buildActions(BoxConstraints constraints) {
     if (separateLastActionOnCompact &&
@@ -1950,21 +1897,25 @@ class _ReflectionPage extends StatelessWidget {
       child: Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: ResponsiveContent(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (var i = 0; i < children.length; i++)
-                      StaggeredEntrance(
-                        index: math.min(i, 5),
-                        child: children[i],
+            child: centeredChild == null
+                ? SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: ResponsiveContent(
+                      child: _ReflectionPageChildren(children: children),
+                    ),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: ResponsiveContent(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _ReflectionPageChildren(children: children),
+                          Expanded(child: Center(child: centeredChild)),
+                        ],
                       ),
-                  ],
-                ),
-              ),
-            ),
+                    ),
+                  ),
           ),
           if (actions.isNotEmpty)
             Padding(
@@ -1978,5 +1929,20 @@ class _ReflectionPage extends StatelessWidget {
         ],
       ),
     ),
+  );
+}
+
+class _ReflectionPageChildren extends StatelessWidget {
+  const _ReflectionPageChildren({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      for (var i = 0; i < children.length; i++)
+        StaggeredEntrance(index: math.min(i, 5), child: children[i]),
+    ],
   );
 }

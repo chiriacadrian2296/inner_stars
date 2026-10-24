@@ -18,6 +18,20 @@ Widget app(Widget home) => StringsScope(
   child: MaterialApp(theme: buildAppTheme(), home: home),
 );
 
+Future<void> startReflection(
+  WidgetTester tester, {
+  required bool suggested,
+}) async {
+  await tester.tap(find.byKey(const ValueKey('reflection-new')));
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find.byKey(
+      ValueKey(suggested ? 'reflection-new-suggested' : 'reflection-new-free'),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
   testWidgets('title and body are both required', (tester) async {
@@ -25,8 +39,7 @@ void main() {
     await tester.pumpWidget(
       app(AreaReflectionsScreen(area: LifeArea.physical, repository: repo)),
     );
-    await tester.tap(find.byKey(const ValueKey('reflection-new-free')));
-    await tester.pumpAndSettle();
+    await startReflection(tester, suggested: false);
     await tester.enterText(
       find.byKey(const ValueKey('reflection-body')),
       'Un pensiero da ritrovare\nIl resto della riflessione',
@@ -44,6 +57,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(repo.getAll().single.title, 'Un pensiero da ritrovare');
     expect(repo.getAll().single.origin, ReflectionOrigin.free);
+    await tester.tap(find.byKey(const ValueKey('reflection-next-not-now')));
+    await tester.pumpAndSettle();
+    expect(find.byType(ReflectionDetailScreen), findsNothing);
+    expect(find.byType(ReflectionEditorScreen), findsNothing);
+    expect(find.byKey(const ValueKey('reflection-new')), findsOneWidget);
+    expect(find.text(strings.reflectionNextStepTitle), findsNothing);
+    expect(find.text('Un pensiero da ritrovare'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -54,25 +74,21 @@ void main() {
     await tester.pumpWidget(
       app(AreaReflectionsScreen(area: LifeArea.physical, repository: repo)),
     );
-    await tester.tap(find.byKey(const ValueKey('reflection-new-suggested')));
-    await tester.pumpAndSettle();
+    await startReflection(tester, suggested: true);
     final immediate = find.byKey(
       const ValueKey('reflection-immediate-question'),
     );
     final immediateContainer = tester.widget<Container>(immediate);
     expect((immediateContainer.decoration! as BoxDecoration).gradient, isNull);
-    expect(
-      find.text(strings.reflectionAnotherQuestion.toUpperCase()),
-      findsOneWidget,
-    );
+    expect(find.byTooltip(strings.reflectionNextQuestion), findsOneWidget);
     final nextRect = tester.getRect(
-      find.byKey(const ValueKey('reflection-another-question')),
+      find.byKey(const ValueKey('reflection-next-question')),
     );
-    final writeRect = tester.getRect(
-      find.byKey(const ValueKey('reflection-write-question')),
+    final previousRect = tester.getRect(
+      find.byKey(const ValueKey('reflection-previous-question')),
     );
     expect(
-      (nextRect.left + writeRect.right) / 2,
+      (previousRect.left + nextRect.right) / 2,
       closeTo(tester.getCenter(immediate).dx, 0.1),
     );
     final questions = LifeArea.physical.reflectionQuestions(strings);
@@ -83,10 +99,26 @@ void main() {
           .isNotEmpty,
     );
     final first = selected();
-    await tester.tap(find.byKey(const ValueKey('reflection-another-question')));
+    await tester.tap(find.byKey(const ValueKey('reflection-next-question')));
     await tester.pumpAndSettle();
     final question = selected();
-    expect(question, isNot(first));
+    final firstIndex = questions.indexOf(first);
+    expect(question, questions[(firstIndex + 1) % questions.length]);
+    await tester.tap(
+      find.byKey(const ValueKey('reflection-previous-question')),
+    );
+    await tester.pumpAndSettle();
+    expect(selected(), first);
+    await tester.tap(
+      find.byKey(const ValueKey('reflection-previous-question')),
+    );
+    await tester.pumpAndSettle();
+    expect(selected(), questions[(firstIndex - 1) % questions.length]);
+    await tester.tap(find.byKey(const ValueKey('reflection-next-question')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('reflection-next-question')));
+    await tester.pumpAndSettle();
+    expect(selected(), question);
     await tester.tap(find.byKey(const ValueKey('reflection-write-question')));
     await tester.pumpAndSettle();
     final title = find.byKey(const ValueKey('reflection-title'));
@@ -108,6 +140,9 @@ void main() {
     final record = repo.getAll().single;
     expect(record.questionText, question);
     expect(record.questionId, '${questions.indexOf(question)}');
+    expect(find.byType(ReflectionDetailScreen), findsNothing);
+    await tester.tap(find.text('Il mio titolo'));
+    await tester.pumpAndSettle();
     expect(find.text(question), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('reflection-edit')));
     await tester.pumpAndSettle();
@@ -173,8 +208,7 @@ void main() {
     await tester.pumpWidget(
       app(AreaReflectionsScreen(area: LifeArea.physical, repository: repo)),
     );
-    await tester.tap(find.byKey(const ValueKey('reflection-new-free')));
-    await tester.pumpAndSettle();
+    await startReflection(tester, suggested: false);
     await tester.enterText(
       find.byKey(const ValueKey('reflection-title')),
       'Un passo concreto',
@@ -214,7 +248,7 @@ void main() {
       await tester.pumpAndSettle();
       final group = LifeArea.physical.reflectionGroups(strings).first;
       await tester.ensureVisible(find.text(group.title));
-      final explored = find.text(strings.reflectionExplored);
+      final explored = find.text(strings.reflectionExplored).last;
       await tester.ensureVisible(explored);
       await tester.tap(explored);
       await tester.pumpAndSettle();
@@ -237,6 +271,104 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('explored moment separates status from one row of actions', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repo = await ReflectionRepository.create();
+    final questions = LifeArea.physical.reflectionQuestions(strings);
+    for (var i = 0; i < questions.length; i++) {
+      await repo.add(
+        area: LifeArea.physical,
+        title: 'Riflessione $i',
+        body: 'Una risposta',
+        origin: ReflectionOrigin.suggested,
+        questionId: '$i',
+      );
+    }
+    await tester.pumpWidget(
+      app(AreaReflectionsScreen(area: LifeArea.physical, repository: repo)),
+    );
+    await startReflection(tester, suggested: true);
+    final panel = find.byKey(const ValueKey('reflection-immediate-question'));
+    final status = find.descendant(
+      of: panel,
+      matching: find.text(strings.reflectionExplored),
+    );
+    expect(status, findsOneWidget);
+    expect(
+      find.ancestor(of: status, matching: find.byType(TextButton)),
+      findsNothing,
+    );
+    final next = find.byKey(const ValueKey('reflection-next-question'));
+    final read = find.byKey(const ValueKey('reflection-read-question'));
+    final write = find.byKey(const ValueKey('reflection-write-question'));
+    expect(tester.getTopLeft(next).dy, tester.getTopLeft(read).dy);
+    expect(tester.getTopLeft(read).dy, tester.getTopLeft(write).dy);
+    expect(tester.takeException(), isNull);
+    await tester.ensureVisible(read);
+    await tester.tap(read);
+    await tester.pumpAndSettle();
+    expect(find.text(strings.reflectionRelatedDescription), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('question navigation stays fixed across lengths and actions', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 740);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repo = await ReflectionRepository.create();
+    await repo.add(
+      area: LifeArea.physical,
+      title: 'Una riflessione',
+      body: 'Una risposta',
+      origin: ReflectionOrigin.suggested,
+      questionId: '0',
+    );
+    await tester.pumpWidget(
+      app(AreaReflectionsScreen(area: LifeArea.physical, repository: repo)),
+    );
+    await startReflection(tester, suggested: true);
+    final panel = find.byKey(const ValueKey('reflection-immediate-question'));
+    final previous = find.byKey(const ValueKey('reflection-previous-question'));
+    final next = find.byKey(const ValueKey('reflection-next-question'));
+    final read = find.byKey(const ValueKey('reflection-read-question'));
+    final write = find.byKey(const ValueKey('reflection-write-question'));
+    await tester.ensureVisible(next);
+    await tester.pumpAndSettle();
+    final previousRect = tester.getRect(previous);
+    final nextRect = tester.getRect(next);
+    final panelSize = tester.getSize(panel);
+    var sawRead = false;
+    var sawWriteOnly = false;
+    final questions = LifeArea.physical.reflectionQuestions(strings);
+    for (var i = 0; i <= questions.length; i++) {
+      expect(tester.getRect(previous), previousRect);
+      expect(tester.getRect(next), nextRect);
+      expect(tester.getSize(panel), panelSize);
+      if (read.evaluate().isEmpty) {
+        sawWriteOnly = true;
+        expect(
+          tester.getCenter(write).dx,
+          closeTo(tester.getCenter(panel).dx, 0.1),
+        );
+      } else {
+        sawRead = true;
+      }
+      expect(tester.takeException(), isNull);
+      await tester.tap(next);
+      await tester.pumpAndSettle();
+    }
+    expect(sawRead, isTrue);
+    expect(sawWriteOnly, isTrue);
+  });
 
   testWidgets('editor keeps text and focus when keyboard compacts the page', (
     tester,
@@ -298,8 +430,14 @@ void main() {
       );
       expect(find.text(strings.reflectionEmpty), findsOneWidget);
       expect(find.byType(AppBar), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('reflection-new-free')));
-      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('reflection-new')), findsOneWidget);
+      expect(find.byIcon(Icons.auto_stories_outlined), findsOneWidget);
+      expect(find.byKey(const ValueKey('reflection-new-free')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('reflection-new-suggested')),
+        findsNothing,
+      );
+      await startReflection(tester, suggested: false);
       await tester.tap(find.byKey(const ValueKey('reflection-save')));
       await tester.pumpAndSettle();
       expect(repo.getAll(), isEmpty);
@@ -329,6 +467,10 @@ void main() {
         findsOneWidget,
       );
       await tester.tap(find.byKey(const ValueKey('reflection-next-not-now')));
+      await tester.pumpAndSettle();
+      expect(find.byType(ReflectionDetailScreen), findsNothing);
+      expect(find.byKey(const ValueKey('reflection-new')), findsOneWidget);
+      await tester.tap(find.text('Un pensiero'));
       await tester.pumpAndSettle();
       expect(find.byType(ReflectionDetailScreen), findsOneWidget);
       expect(repo.getAll().single.origin, ReflectionOrigin.free);
@@ -441,6 +583,26 @@ void main() {
     },
   );
 
+  testWidgets(
+    'untouched suggested reflection closes without a discard warning',
+    (tester) async {
+      final repo = await ReflectionRepository.create();
+      await tester.pumpWidget(
+        app(AreaReflectionsScreen(area: LifeArea.physical, repository: repo)),
+      );
+      await startReflection(tester, suggested: true);
+      await tester.tap(find.byKey(const ValueKey('reflection-write-question')));
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byType(ReflectionEditorScreen), findsNothing);
+      expect(find.byType(AreaReflectionsScreen), findsOneWidget);
+      expect(repo.getAll(), isEmpty);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('back asks before discarding an unsaved reflection', (
     tester,
   ) async {
@@ -448,8 +610,7 @@ void main() {
     await tester.pumpWidget(
       app(AreaReflectionsScreen(area: LifeArea.physical, repository: repo)),
     );
-    await tester.tap(find.byKey(const ValueKey('reflection-new-free')));
-    await tester.pumpAndSettle();
+    await startReflection(tester, suggested: false);
     await tester.enterText(
       find.byKey(const ValueKey('reflection-title')),
       'Draft',

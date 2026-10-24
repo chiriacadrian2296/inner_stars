@@ -12,7 +12,22 @@ class StringsRo implements AppStrings {
   String get reflectionFree => 'Începe de la Zero';
   @override
   String get reflectionListDescription =>
-      'Gândurile tale și răspunsurile tale la întrebările despre această zonă a vieții, într-un singur loc.';
+      'Revino la reflecțiile tale sau scrie un gând nou.';
+  @override
+  String get reflectionSuggestionsDescription =>
+      'Alege o întrebare de la care să pornești.';
+  @override
+  String get reflectionRelatedDescription =>
+      'Regăsește reflecțiile pornite de la această întrebare.';
+  @override
+  String get reflectionWriteDescription =>
+      'Scrie ce îți vine în minte, cu propriile cuvinte.';
+  @override
+  String get reflectionEditDescription =>
+      'Revino la gândul tău și dă-i o nouă formă.';
+  @override
+  String get reflectionReadDescription =>
+      'Recitește gândul tău și alege cum să continui.';
   @override
   String get reflectionSuggested => 'Alege o Sugestie';
   @override
@@ -20,8 +35,7 @@ class StringsRo implements AppStrings {
   @override
   String get reflectionBodyLabel => 'Reflecția Ta';
   @override
-  String get reflectionEmpty =>
-      'O întrebare sau un gând pot fi un început. Scrie prima ta reflecție.';
+  String get reflectionEmpty => 'Nicio reflecție încă.';
   @override
   String get reflectionRequired => 'Scrie atât un titlu, cât și o reflecție.';
   @override
@@ -48,6 +62,12 @@ class StringsRo implements AppStrings {
   @override
   String get reflectionWrite => 'Scrie';
   @override
+  String get reflectionPreviousQuestion => 'Întrebarea Anterioară';
+  @override
+  String get reflectionNextQuestion => 'Întrebarea Următoare';
+  @override
+  String get reflectionReadAction => 'Recitește';
+  @override
   String get reflectionSearchHint => 'Caută în Reflecții';
   @override
   String get reflectionNoResults => 'Nu s-au găsit reflecții.';
@@ -62,7 +82,7 @@ class StringsRo implements AppStrings {
   @override
   String get reflectionTopicLabel => 'Temă';
   @override
-  String get reflectionSuggestedBadge => 'Sugestie';
+  String get reflectionSuggestedBadge => 'Reflecție Inspirată';
   @override
   String get reflectionFreeBadge => 'Reflecție Liberă';
   @override

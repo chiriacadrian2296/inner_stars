@@ -12,7 +12,22 @@ class StringsEn implements AppStrings {
   String get reflectionFree => 'Start From Scratch';
   @override
   String get reflectionListDescription =>
-      'Your own thoughts and your answers to questions about this area of your life, kept in one place.';
+      'Revisit your reflections or write a new thought.';
+  @override
+  String get reflectionSuggestionsDescription =>
+      'Choose a question to start from.';
+  @override
+  String get reflectionRelatedDescription =>
+      'Revisit the reflections inspired by this question.';
+  @override
+  String get reflectionWriteDescription =>
+      'Put what comes to mind into your own words.';
+  @override
+  String get reflectionEditDescription =>
+      'Revisit your thought and give it new shape.';
+  @override
+  String get reflectionReadDescription =>
+      'Revisit your thought and choose what comes next.';
   @override
   String get reflectionSuggested => 'Choose a Suggestion';
   @override
@@ -20,8 +35,7 @@ class StringsEn implements AppStrings {
   @override
   String get reflectionBodyLabel => 'Your Reflection';
   @override
-  String get reflectionEmpty =>
-      'A question or a thought can be the beginning. Write your first reflection.';
+  String get reflectionEmpty => 'No reflections yet.';
   @override
   String get reflectionRequired => 'Write both a title and a reflection.';
   @override
@@ -48,6 +62,12 @@ class StringsEn implements AppStrings {
   @override
   String get reflectionWrite => 'Write';
   @override
+  String get reflectionPreviousQuestion => 'Previous Question';
+  @override
+  String get reflectionNextQuestion => 'Next Question';
+  @override
+  String get reflectionReadAction => 'Read';
+  @override
   String get reflectionSearchHint => 'Search Reflections';
   @override
   String get reflectionNoResults => 'No reflections found.';
@@ -62,7 +82,7 @@ class StringsEn implements AppStrings {
   @override
   String get reflectionTopicLabel => 'Topic';
   @override
-  String get reflectionSuggestedBadge => 'Suggested';
+  String get reflectionSuggestedBadge => 'Suggested Reflection';
   @override
   String get reflectionFreeBadge => 'Free Reflection';
   @override

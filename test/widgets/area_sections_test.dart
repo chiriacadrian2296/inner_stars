@@ -127,14 +127,7 @@ void main() {
       find.text(const StringsIt().reflectionSuggested.toUpperCase()),
     );
     await tester.pumpAndSettle();
-    final question = LifeArea.physical
-        .reflectionQuestions(const StringsIt())
-        .first;
-    final group = LifeArea.physical.reflectionGroups(const StringsIt()).first;
-    await tester.tap(find.text(group.title));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text(question).last);
-    await tester.tap(find.text(question).last);
+    await tester.tap(find.byKey(const ValueKey('reflection-write-question')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('reflection-title')),

@@ -1,7 +1,5 @@
 import '../utils/area_section_icons.dart';
 
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../data/area_vision_repository.dart';
@@ -12,6 +10,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_style.dart';
 import '../utils/app_modals.dart';
+import '../utils/markdown_editing.dart';
 import '../widgets/area_section_header.dart';
 import '../widgets/live_markdown_controller.dart';
 import '../widgets/logo_watermark.dart';
@@ -117,159 +116,25 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
     bool toggle = false,
     String? closing,
   }) {
-    final value = _controller.value;
-    final selection = value.selection.isValid
-        ? value.selection
-        : TextSelection.collapsed(offset: value.text.length);
-    // Inline formatting needs content to act on. Inserting an empty pair of
-    // Markdown delimiters would expose implementation syntax in the editor.
-    if (!block && selection.isCollapsed) return;
-    var start = selection.start;
-    var end = selection.end;
-    final closingMarker = closing ?? marker;
-    String replacement;
-    int selectionStart;
-    int selectionEnd;
-    if (block) {
-      start = start == 0 ? 0 : value.text.lastIndexOf('\n', start - 1) + 1;
-      if (end > start && value.text[end - 1] == '\n') end--;
-      final lineEnd = value.text.indexOf('\n', end);
-      end = lineEnd < 0 ? value.text.length : lineEnd;
-      final lines = value.text.substring(start, end).split('\n');
-      final blockPrefix = RegExp(r'^\s{0,3}(#{1,6}\s|[-*+]\s|•\s|\d+\.\s)');
-      bool isDivider(String line) => RegExp(r'^\s*---+\s*$').hasMatch(line);
-      final applicableLines = lines.where((line) => !isDivider(line));
-      final alreadyApplied =
-          toggle &&
-          applicableLines.isNotEmpty &&
-          applicableLines.every(
-            numbered
-                ? (line) => RegExp(r'^\s{0,3}\d+\.\s').hasMatch(line)
-                : (line) => line.startsWith(marker),
-          );
-      replacement = lines.indexed
-          .map((entry) {
-            if (isDivider(entry.$2)) return entry.$2;
-            final content = entry.$2.replaceFirst(blockPrefix, '');
-            if (alreadyApplied) return content;
-            return '${numbered ? '${entry.$1 + 1}. ' : marker}$content';
-          })
-          .join('\n');
-      selectionStart = start + replacement.length;
-      selectionEnd = selectionStart;
-    } else {
-      if (toggle && !selection.isCollapsed) {
-        final selectedStart = start;
-        final selectedEnd = end;
-        for (final match in _inlinePattern(marker).allMatches(value.text)) {
-          if (match.start < selectedEnd && match.end > selectedStart) {
-            start = math.min(start, match.start);
-            end = math.max(end, match.end);
-          }
-        }
-      }
-      final selected = value.text.substring(start, end);
-      final lines = selected.split('\n');
-      final blockPrefix = RegExp(r'^\s{0,3}(#{1,6}\s|[-*+]\s|•\s|\d+\.\s)');
-      bool isDivider(String line) => RegExp(r'^\s*---+\s*$').hasMatch(line);
-      String contentOf(String line) => line.replaceFirst(blockPrefix, '');
-      bool wrapped(String line) {
-        final content = contentOf(line);
-        return content.startsWith(marker) &&
-            content.endsWith(closingMarker) &&
-            content.length >= marker.length + closingMarker.length;
-      }
-
-      final formattableLines = lines.where(
-        (line) => line.isNotEmpty && !isDivider(line),
-      );
-      final alreadyApplied =
-          toggle &&
-          formattableLines.isNotEmpty &&
-          formattableLines.every(wrapped);
-      replacement = lines
-          .map((line) {
-            if (line.isEmpty || isDivider(line)) return line;
-            final prefixMatch = blockPrefix.firstMatch(line);
-            final prefix = prefixMatch?[0] ?? '';
-            final lineContent = line.substring(prefix.length);
-            if (alreadyApplied) {
-              return '$prefix${lineContent.substring(marker.length, lineContent.length - closingMarker.length)}';
-            }
-            final content = toggle
-                ? _withoutInlineMarkers(lineContent, marker, closingMarker)
-                : lineContent;
-            return '$prefix$marker$content$closingMarker';
-          })
-          .join('\n');
-      selectionStart = start;
-      selectionEnd = start + replacement.length;
-    }
-    _controller.value = TextEditingValue(
-      text: value.text.replaceRange(start, end, replacement),
-      selection: TextSelection(
-        baseOffset: selectionStart,
-        extentOffset: selectionEnd,
-      ),
+    _controller.value = formatMarkdown(
+      _controller.value,
+      marker,
+      block: block,
+      numbered: numbered,
+      toggle: toggle,
+      closing: closing,
     );
     _focus.requestFocus();
   }
 
-  String _withoutInlineMarkers(
-    String text,
-    String marker,
-    String closingMarker,
-  ) {
-    if (marker == '*') {
-      return text.replaceAll(RegExp(r'(?<!\*)\*(?!\*)'), '');
-    }
-    return text.replaceAll(marker, '').replaceAll(closingMarker, '');
-  }
-
-  RegExp _inlinePattern(String marker) => switch (marker) {
-    '**' => RegExp(r'\*\*(.+?)\*\*'),
-    '*' => RegExp(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)'),
-    '<u>' => RegExp(r'<u>(.+?)</u>'),
-    _ => RegExp('${RegExp.escape(marker)}(.+?)${RegExp.escape(marker)}'),
-  };
-
   void _insertDivider() {
-    final text = _controller.text;
-    final selection = _controller.selection;
-    final cursor = selection.isValid ? selection.end : text.length;
-    final lineStart = cursor == 0 ? 0 : text.lastIndexOf('\n', cursor - 1) + 1;
-    final lineEnd = text.indexOf('\n', cursor);
-    final at = lineEnd < 0 ? text.length : lineEnd;
-    final line = text.substring(lineStart, at);
-    final blockPrefix = RegExp(r'^\s{0,3}(#{1,6}\s|[-*+]\s|•\s|\d+\.\s)');
-    final content = line.replaceFirst(blockPrefix, '').trim();
-    if (RegExp(r'^\s*---+\s*$').hasMatch(line)) {
-      _controller.value = TextEditingValue(
-        text: text.replaceRange(lineStart, at, ''),
-        selection: TextSelection.collapsed(offset: lineStart),
-      );
-      _focus.requestFocus();
-      return;
-    }
-    if (content.isEmpty) {
-      _controller.value = TextEditingValue(
-        text: text.replaceRange(lineStart, at, '---'),
-        selection: TextSelection.collapsed(offset: lineStart + 3),
-      );
-      _focus.requestFocus();
-      return;
-    }
-    final replaceEnd = at < text.length && text[at] == '\n' ? at + 1 : at;
-    const rule = '\n\n---\n\n';
-    _controller.value = TextEditingValue(
-      text: text.replaceRange(at, replaceEnd, rule),
-      selection: TextSelection.collapsed(offset: at + rule.length),
-    );
+    _controller.value = insertMarkdownDivider(_controller.value);
     _focus.requestFocus();
   }
 
   @override
   Widget build(BuildContext context) {
+    final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
     final strings = context.strings;
     final colors = context.colors;
     Widget tool(IconData icon, String label, VoidCallback action) => IconButton(
@@ -287,10 +152,9 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
         if (!didPop) _leave();
       },
       child: Scaffold(
-        resizeToAvoidBottomInset: false,
+        resizeToAvoidBottomInset: true,
         backgroundColor: colors.night,
-        // Keeps the bottom inset (gesture bar) when the keyboard opens, so the
-        // page — and the watermark sized from it — doesn't change size.
+        // Preserve the gesture-bar inset while the editor resizes above the keyboard.
         body: SafeArea(
           maintainBottomViewPadding: true,
           child: ResponsiveContent(
@@ -300,8 +164,14 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                 StaggeredEntrance(
                   index: 0,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      keyboardVisible ? 8 : 20,
+                      20,
+                      keyboardVisible ? 8 : 16,
+                    ),
                     child: AreaSectionHeader(
+                      compact: keyboardVisible,
                       title: widget.area.displayName(strings),
                       icon: kAreaVisionIcon,
                       description: strings.visionPageDescription,
@@ -556,8 +426,8 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                               focusedBorder: InputBorder.none,
                               filled: false,
                               hintText: strings.visionEditorHint,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 20,
+                              contentPadding: EdgeInsets.symmetric(
+                                vertical: keyboardVisible ? 4 : 20,
                               ),
                             ),
                           ),
@@ -575,22 +445,28 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
                       spacing: 12,
                       runSpacing: 8,
                       children: [
-                        TextButton.icon(
+                        TextButton(
                           onPressed: _saving ? null : _share,
                           style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 22,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: keyboardVisible ? 8 : 22,
                               vertical: 14,
                             ),
                           ),
-                          icon: const Icon(Icons.share_outlined),
-                          label: AppButtonLabel(
+                          child: AppButtonLabel(
                             strings.starQuickLookShareAction,
                           ),
                         ),
                         ListenableBuilder(
                           listenable: _controller,
                           builder: (context, _) => ElevatedButton(
+                            style: keyboardVisible
+                                ? ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                  )
+                                : null,
                             onPressed: _saving || _controller.text == _initial
                                 ? null
                                 : _save,

@@ -11,6 +11,7 @@ class AreaSectionHeader extends StatelessWidget {
     this.icon,
     this.description,
     this.descriptionChild,
+    this.compact = false,
   }) : assert(description != null || descriptionChild != null);
 
   final String title;
@@ -19,6 +20,9 @@ class AreaSectionHeader extends StatelessWidget {
   final IconData? icon;
   final String? description;
   final Widget? descriptionChild;
+
+  /// Keep editing controls visible when the keyboard leaves little room.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -54,12 +58,29 @@ class AreaSectionHeader extends StatelessWidget {
             );
           },
         ),
-        const SizedBox(height: 10),
-        descriptionChild ??
-            Text(
+        if (!compact) const SizedBox(height: 10),
+        if (!compact && description != null) ...[
+          Center(
+            child: Text(
               description!,
-              style: TextStyle(color: colors.muted, fontSize: 15, height: 1.5),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: colors.text.withValues(alpha: 0.85),
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                height: 1.5,
+              ),
             ),
+          ),
+          const SizedBox(height: 24),
+        ],
+        if (descriptionChild != null) ...[
+          if (description != null) const SizedBox(height: 16),
+          KeyedSubtree(
+            key: const ValueKey('area-section-content'),
+            child: descriptionChild!,
+          ),
+        ],
       ],
     );
   }

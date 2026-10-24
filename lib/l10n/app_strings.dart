@@ -13,6 +13,11 @@ abstract class AppStrings {
   String get reflectAction;
   String get reflectionFree;
   String get reflectionListDescription;
+  String get reflectionSuggestionsDescription;
+  String get reflectionRelatedDescription;
+  String get reflectionWriteDescription;
+  String get reflectionEditDescription;
+  String get reflectionReadDescription;
   String get reflectionSuggested;
   String get reflectionTitleLabel;
   String get reflectionBodyLabel;
@@ -27,7 +32,10 @@ abstract class AppStrings {
   String get reflectionExplored;
   String get reflectionRelated;
   String get reflectionAnotherQuestion;
+  String get reflectionPreviousQuestion;
+  String get reflectionNextQuestion;
   String get reflectionWrite;
+  String get reflectionReadAction;
   String get reflectionSearchHint;
   String get reflectionNoResults;
   String get reflectionQuestionLabel;

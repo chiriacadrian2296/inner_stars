@@ -12,7 +12,22 @@ class StringsIt implements AppStrings {
   String get reflectionFree => 'Parti da Zero';
   @override
   String get reflectionListDescription =>
-      "I tuoi pensieri e le tue risposte alle domande su quest'area della vita, tutti in un posto.";
+      'Ritrova le tue riflessioni o scrivi un nuovo pensiero.';
+  @override
+  String get reflectionSuggestionsDescription =>
+      'Scegli una domanda da cui partire.';
+  @override
+  String get reflectionRelatedDescription =>
+      'Ritrova le riflessioni nate da questa domanda.';
+  @override
+  String get reflectionWriteDescription =>
+      'Scrivi ciò che emerge, con le tue parole.';
+  @override
+  String get reflectionEditDescription =>
+      'Riprendi il tuo pensiero e dagli nuova forma.';
+  @override
+  String get reflectionReadDescription =>
+      'Rileggi il tuo pensiero e scegli come proseguire.';
   @override
   String get reflectionSuggested => 'Scegli un Suggerimento';
   @override
@@ -20,8 +35,7 @@ class StringsIt implements AppStrings {
   @override
   String get reflectionBodyLabel => 'La Tua Riflessione';
   @override
-  String get reflectionEmpty =>
-      'Una domanda o un pensiero possono essere un inizio. Scrivi la tua prima riflessione.';
+  String get reflectionEmpty => 'Nessuna riflessione ancora.';
   @override
   String get reflectionRequired => 'Scrivi sia un titolo sia una riflessione.';
   @override
@@ -48,6 +62,12 @@ class StringsIt implements AppStrings {
   @override
   String get reflectionWrite => 'Scrivi';
   @override
+  String get reflectionPreviousQuestion => 'Domanda Precedente';
+  @override
+  String get reflectionNextQuestion => 'Domanda Successiva';
+  @override
+  String get reflectionReadAction => 'Rileggi';
+  @override
   String get reflectionSearchHint => 'Cerca nelle Riflessioni';
   @override
   String get reflectionNoResults => 'Nessuna riflessione trovata.';
@@ -62,7 +82,7 @@ class StringsIt implements AppStrings {
   @override
   String get reflectionTopicLabel => 'Tema';
   @override
-  String get reflectionSuggestedBadge => 'Suggerita';
+  String get reflectionSuggestedBadge => 'Riflessione Suggerita';
   @override
   String get reflectionFreeBadge => 'Riflessione Libera';
   @override
@@ -699,7 +719,7 @@ class StringsIt implements AppStrings {
   String get areaVisionHint =>
       'Che tipo di realtà vuoi per quest\'area? Verso cosa vuoi lavorare?';
   @override
-  String get visionPageTitle => 'Vision';
+  String get visionPageTitle => 'Visione';
   @override
   String get visionPageDescription =>
       'Definisci la realtà che desideri per quest’area della tua vita. Scrivi ciò verso cui vuoi muoverti e descrivilo con parole che possano guidare le tue scelte nel tempo.';
