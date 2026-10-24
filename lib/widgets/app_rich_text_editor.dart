@@ -4,6 +4,7 @@ import 'package:fleather/fleather.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:material_ui/material_ui.dart' as fleather_ui;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/strings_scope.dart';
@@ -114,6 +115,61 @@ bool richTextToolbarAtBottom() =>
     !kIsWeb &&
     (defaultTargetPlatform == TargetPlatform.android ||
         defaultTargetPlatform == TargetPlatform.iOS);
+
+/// Keeps page actions and backdrop fixed while only the writing viewport avoids
+/// the keyboard. Native tools occupy that viewport only while the IME is open.
+class AppRichTextPageLayout extends StatelessWidget {
+  const AppRichTextPageLayout({
+    super.key,
+    required this.header,
+    required this.editor,
+    required this.toolbar,
+    required this.actions,
+    required this.backdrop,
+  });
+
+  final Widget header;
+  final Widget editor;
+  final Widget toolbar;
+  final Widget actions;
+  final Widget backdrop;
+
+  @override
+  Widget build(BuildContext context) {
+    const actionsHeight = 80.0;
+    final media = MediaQuery.of(context);
+    final keyboard = media.viewInsets.bottom;
+    final bottom = keyboard > 0
+        ? (keyboard - media.viewPadding.bottom).clamp(0.0, double.infinity)
+        : actionsHeight;
+    final nativeTools = richTextToolbarAtBottom();
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        IgnorePointer(child: backdrop),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: actionsHeight,
+          child: actions,
+        ),
+        Positioned.fill(
+          bottom: bottom,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              header,
+              if (!nativeTools) toolbar,
+              Expanded(child: editor),
+              if (nativeTools && keyboard > 0) toolbar,
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 FleatherThemeData appDocumentTheme(
   BuildContext context, {
@@ -267,31 +323,40 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
                           ),
                         );
                       },
-                      child: FleatherEditor(
-                        controller: widget.controller,
-                        expands: true,
-                        focusNode: widget.focusNode,
-                        editorKey: widget.editorKey,
-                        readOnly: widget.readOnly,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 16,
+                      child: fleather_ui.TextSelectionTheme(
+                        data: fleather_ui.TextSelectionThemeData(
+                          cursorColor: context.colors.gold,
+                          selectionColor: context.colors.gold.withValues(
+                            alpha: 0.3,
+                          ),
+                          selectionHandleColor: context.colors.gold,
                         ),
-                        onLaunchUrl: launchDocumentLink,
-                        contextMenuBuilder: appDocumentContextMenu,
-                        linkActionPickerDelegate: (context, link) async {
-                          widget.controller.setInteracting(true);
-                          final result = await showDocumentLinkMenu(
-                            context,
-                            link,
-                            canRemove: !widget.readOnly,
-                          );
-                          if (mounted) {
-                            widget.editorKey.currentState?.requestKeyboard();
-                            widget.controller.setInteracting(false);
-                          }
-                          return result;
-                        },
+                        child: FleatherEditor(
+                          controller: widget.controller,
+                          expands: true,
+                          focusNode: widget.focusNode,
+                          editorKey: widget.editorKey,
+                          readOnly: widget.readOnly,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
+                          onLaunchUrl: launchDocumentLink,
+                          contextMenuBuilder: appDocumentContextMenu,
+                          linkActionPickerDelegate: (context, link) async {
+                            widget.controller.setInteracting(true);
+                            final result = await showDocumentLinkMenu(
+                              context,
+                              link,
+                              canRemove: !widget.readOnly,
+                            );
+                            if (mounted) {
+                              widget.editorKey.currentState?.requestKeyboard();
+                              widget.controller.setInteracting(false);
+                            }
+                            return result;
+                          },
+                        ),
                       ),
                     ),
                   ],
@@ -491,6 +556,23 @@ class AppRichTextToolbar extends StatelessWidget {
       List<(String, ParchmentAttribute)> items,
     ) => PopupMenuButton<int>(
       tooltip: label,
+      // Popup routes avoid safe-area padding, but not the keyboard inset.
+      // Anchor the complete menu above the native bottom toolbar instead.
+      offset:
+          richTextToolbarAtBottom() &&
+              MediaQuery.viewInsetsOf(context).bottom > 0
+          ? Offset(0, -(items.length * kMinInteractiveDimension + 16))
+          : Offset.zero,
+      constraints: MediaQuery.viewInsetsOf(context).bottom > 0
+          ? BoxConstraints(
+              maxHeight:
+                  (MediaQuery.sizeOf(context).height -
+                          MediaQuery.viewInsetsOf(context).bottom -
+                          MediaQuery.viewPaddingOf(context).top -
+                          24)
+                      .clamp(kMinInteractiveDimension, double.infinity),
+            )
+          : null,
       requestFocus: false,
       enabled: enabled,
       icon: Icon(icon),

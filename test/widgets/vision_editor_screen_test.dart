@@ -1,8 +1,10 @@
 import '../support/rich_text_input.dart';
 
 import 'package:fleather/fleather.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart' as fleather_ui;
+import 'package:inner_stars/theme/app_colors.dart';
+import 'package:inner_stars/widgets/logo_watermark.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -37,6 +39,13 @@ Future<void> tool(WidgetTester tester, String name) async {
   await tester.tap(finder);
   await tester.pump();
 }
+
+void testDesktopWidgets(String name, WidgetTesterCallback callback) =>
+    testWidgets(
+      name,
+      callback,
+      variant: TargetPlatformVariant.only(TargetPlatform.windows),
+    );
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -83,41 +92,45 @@ void main() {
       return (visions, reflections);
     }
 
-    testWidgets('$kind: keyboard typing composes B/I/U and turns them off', (
-      tester,
-    ) async {
-      final (visions, reflections) = await open(tester);
-      await type(tester, '');
-      final c = body(tester).controller;
-      for (final name in [s.visionBold, s.visionItalic, s.visionUnderline]) {
-        await tool(tester, name);
-        expect(body(tester).focusNode.hasFocus, true);
-      }
-      await enterRichText(tester, body(tester), 'asd');
-      await tester.pump();
-      for (final key in ['b', 'i', 'u']) {
-        expect(c.document.toDelta().first.attributes, containsPair(key, true));
-      }
-      for (final name in [s.visionBold, s.visionItalic, s.visionUnderline]) {
-        await tool(tester, name);
-      }
-      await enterRichText(tester, body(tester), ' normale', append: true);
-      await tester.pump();
-      expect(c.plainText, 'asd normale');
-      expect(c.document.collectStyle(4, 7).inlineAttributes, isEmpty);
-      final expected = c.document.toJson();
-      await tester.tap(find.text(s.saveChanges.toUpperCase()));
-      await tester.pumpAndSettle();
-      final saved = reflection
-          ? reflections.getAll().single.richText
-          : visions.getRichText(LifeArea.physical);
-      expect(saved, isNotNull);
-      expect(saved!.toParchment().toJson(), expected);
-      expect(find.text('Apri'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
+    testDesktopWidgets(
+      '$kind: keyboard typing composes B/I/U and turns them off',
+      (tester) async {
+        final (visions, reflections) = await open(tester);
+        await type(tester, '');
+        final c = body(tester).controller;
+        for (final name in [s.visionBold, s.visionItalic, s.visionUnderline]) {
+          await tool(tester, name);
+          expect(body(tester).focusNode.hasFocus, true);
+        }
+        await enterRichText(tester, body(tester), 'asd');
+        await tester.pump();
+        for (final key in ['b', 'i', 'u']) {
+          expect(
+            c.document.toDelta().first.attributes,
+            containsPair(key, true),
+          );
+        }
+        for (final name in [s.visionBold, s.visionItalic, s.visionUnderline]) {
+          await tool(tester, name);
+        }
+        await enterRichText(tester, body(tester), ' normale', append: true);
+        await tester.pump();
+        expect(c.plainText, 'asd normale');
+        expect(c.document.collectStyle(4, 7).inlineAttributes, isEmpty);
+        final expected = c.document.toJson();
+        await tester.tap(find.text(s.saveChanges.toUpperCase()));
+        await tester.pumpAndSettle();
+        final saved = reflection
+            ? reflections.getAll().single.richText
+            : visions.getRichText(LifeArea.physical);
+        expect(saved, isNotNull);
+        expect(saved!.toParchment().toJson(), expected);
+        expect(find.text('Apri'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets(
+    testDesktopWidgets(
       '$kind: repeated headings preserve content, selection and focus',
       (tester) async {
         await open(tester);
@@ -142,7 +155,7 @@ void main() {
       },
     );
 
-    testWidgets('$kind: undo and redo preserve content and formatting', (
+    testDesktopWidgets('$kind: undo and redo preserve content and formatting', (
       tester,
     ) async {
       await open(tester);
@@ -165,7 +178,7 @@ void main() {
       );
     });
 
-    testWidgets(
+    testDesktopWidgets(
       '$kind: link dialog retains selection and applies/removes link',
       (tester) async {
         await open(tester);
@@ -206,39 +219,52 @@ void main() {
       },
     );
 
-    testWidgets('$kind: formatting-only draft triggers discard confirmation', (
-      tester,
-    ) async {
-      await open(tester);
-      await type(tester, 'Testo iniziale');
-      final c = body(tester).controller;
-      c.updateSelection(const TextSelection(baseOffset: 0, extentOffset: 5));
-      await tool(tester, s.visionBold);
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-      expect(find.byType(AlertDialog), findsOneWidget);
-      await tester.tap(find.text(s.cancel.toUpperCase()));
-      await tester.pumpAndSettle();
-      expect(c.plainText, 'Testo iniziale');
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(s.discardChangesAction.toUpperCase()));
-      await tester.pumpAndSettle();
-      expect(find.text('Apri'), findsOneWidget);
-    });
+    testDesktopWidgets(
+      '$kind: formatting-only draft triggers discard confirmation',
+      (tester) async {
+        await open(tester);
+        await type(tester, 'Testo iniziale');
+        final c = body(tester).controller;
+        c.updateSelection(const TextSelection(baseOffset: 0, extentOffset: 5));
+        await tool(tester, s.visionBold);
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+        expect(find.byType(AlertDialog), findsOneWidget);
+        await tester.tap(find.text(s.cancel.toUpperCase()));
+        await tester.pumpAndSettle();
+        expect(c.plainText, 'Testo iniziale');
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(s.discardChangesAction.toUpperCase()));
+        await tester.pumpAndSettle();
+        expect(find.text('Apri'), findsOneWidget);
+      },
+    );
 
     testWidgets(
-      '$kind: narrow mobile keyboard leaves usable editor and bottom toolbar',
+      '$kind: mobile tools follow keyboard; footer and watermark stay fixed',
       (tester) async {
         tester.view.physicalSize = const Size(360, 640);
         tester.view.devicePixelRatio = 1;
-        tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+        tester.view.viewPadding = const FakeViewPadding(bottom: 24);
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
         addTearDown(tester.view.resetViewInsets);
+        addTearDown(tester.view.resetViewPadding);
         await open(tester);
+        expect(find.byType(AppRichTextToolbar), findsNothing);
+        final save = find.text(s.saveChanges.toUpperCase());
+        final share = find.text(s.starQuickLookShareAction.toUpperCase());
+        final saveRect = tester.getRect(save);
+        final shareRect = tester.getRect(share);
+        final watermarkRect = tester.getRect(find.byType(LogoWatermark));
+        tester.view.viewInsets = const FakeViewPadding(bottom: 280);
         await type(tester, List.filled(80, 'Un paragrafo.\n').join());
         await tester.pumpAndSettle();
+        expect(tester.getRect(save), saveRect);
+        expect(tester.getRect(share), shareRect);
+        expect(tester.getRect(find.byType(LogoWatermark)), watermarkRect);
+        expect(saveRect.top, greaterThan(360));
         expect(
           tester.getSize(find.byType(AppRichTextEditor)).height,
           greaterThan(40),
@@ -247,12 +273,47 @@ void main() {
           tester.getBottomLeft(find.byType(AppRichTextToolbar)).dy,
           closeTo(360, 1),
         );
+        final raw = tester.widget<RawEditor>(find.byType(RawEditor));
+        final gold = tester.element(find.byType(AppRichTextEditor)).colors.gold;
+        expect(raw.cursorStyle.color, gold);
+        expect(raw.selectionColor, gold.withValues(alpha: 0.3));
+        expect(
+          fleather_ui.TextSelectionTheme.of(
+            tester.element(find.byType(RawEditor)),
+          ).selectionHandleColor,
+          gold,
+        );
+        await tool(tester, s.visionHeading);
+        await tester.pumpAndSettle();
+        for (final label in [
+          s.editorNormal,
+          for (var i = 1; i <= 3; i++) '${s.visionHeading} $i',
+        ]) {
+          expect(
+            tester.getRect(find.text(label)).bottom,
+            lessThanOrEqualTo(360),
+          );
+        }
+        await tester.tap(find.text('${s.visionHeading} 2'));
+        await tester.pumpAndSettle();
+        expect(body(tester).focusNode.hasFocus, true);
+        expect(
+          body(tester).controller.document.toJson().toString(),
+          contains('heading: 2'),
+        );
+        tester.view.viewInsets = const FakeViewPadding();
+        await tester.pumpAndSettle();
+        expect(find.byType(AppRichTextToolbar), findsNothing);
+        expect(tester.getRect(save), saveRect);
+        expect(tester.getRect(find.byType(LogoWatermark)), watermarkRect);
         expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
       },
+      variant: TargetPlatformVariant.only(TargetPlatform.android),
     );
   }
 
-  testWidgets(
+  testDesktopWidgets(
     'touch selection shows the app context menu and clipboard paste works',
     (tester) async {
       var clipboard = 'Incollato\nSeconda riga';
@@ -296,7 +357,7 @@ void main() {
     },
   );
 
-  testWidgets(
+  testDesktopWidgets(
     'divider handles a reverse selection without deleting surrounding text',
     (tester) async {
       final repo = await AreaVisionRepository.create();
@@ -315,7 +376,7 @@ void main() {
     },
   );
 
-  testWidgets('blank space below the first line can focus the editor', (
+  testDesktopWidgets('blank space below the first line can focus the editor', (
     tester,
   ) async {
     final repo = await AreaVisionRepository.create();
@@ -329,7 +390,7 @@ void main() {
     expect(body(tester).focusNode.hasFocus, true);
   });
 
-  testWidgets('clearing a formatted vision removes the stored record', (
+  testDesktopWidgets('clearing a formatted vision removes the stored record', (
     tester,
   ) async {
     final repo = await AreaVisionRepository.create();
@@ -344,7 +405,7 @@ void main() {
     expect(repo.getRichText(LifeArea.physical), null);
   });
 
-  testWidgets(
+  testDesktopWidgets(
     'outside title click unfocuses editor; toolbar and link dialog keep editing appearance',
     (tester) async {
       final repo = await ReflectionRepository.create();
@@ -377,7 +438,7 @@ void main() {
     },
   );
 
-  testWidgets(
+  testDesktopWidgets(
     'reflection exceeding 5000 visible characters keeps text but disables save',
     (tester) async {
       final repo = await ReflectionRepository.create();
@@ -411,9 +472,9 @@ void main() {
     },
   );
 
-  testWidgets('desktop toolbar appears above the document', (tester) async {
-    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
-    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+  testDesktopWidgets('desktop toolbar appears above the document', (
+    tester,
+  ) async {
     final repo = await AreaVisionRepository.create();
     await tester.pumpWidget(
       app(VisionEditorScreen(area: LifeArea.physical, repository: repo)),
@@ -424,10 +485,9 @@ void main() {
     );
     expect(find.byType(AppBar), findsNothing);
     await tester.pumpWidget(const SizedBox());
-    debugDefaultTargetPlatformOverride = null;
   });
 
-  testWidgets(
+  testDesktopWidgets(
     'read-only document and long sharing card render without interactive controls',
     (tester) async {
       final c = AppRichTextController(

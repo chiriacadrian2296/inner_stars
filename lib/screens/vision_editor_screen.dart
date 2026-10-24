@@ -132,98 +132,74 @@ class _VisionEditorScreenState extends State<VisionEditorScreen> {
         if (!didPop) _leave();
       },
       child: Scaffold(
-        resizeToAvoidBottomInset: true,
+        resizeToAvoidBottomInset: false,
         backgroundColor: colors.night,
-        // Preserve the gesture-bar inset while the editor resizes above the keyboard.
+        // Keep page chrome behind the keyboard; only the editor viewport shrinks.
         body: SafeArea(
           maintainBottomViewPadding: true,
           child: ResponsiveContent(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                StaggeredEntrance(
-                  index: 0,
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      20,
-                      keyboardVisible ? 8 : 20,
-                      20,
-                      keyboardVisible ? 8 : 16,
-                    ),
-                    child: AreaSectionHeader(
-                      compact: keyboardVisible,
-                      title: widget.area.displayName(strings),
-                      icon: kAreaVisionIcon,
-                      description: strings.visionPageDescription,
-                    ),
+            child: AppRichTextPageLayout(
+              toolbar: _toolbar(),
+              backdrop: LogoWatermark(
+                scale: logoWatermarkScale(StarKind.unlit),
+                color: logoWatermarkColor(colors, StarKind.unlit),
+              ),
+              header: StaggeredEntrance(
+                index: 0,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    keyboardVisible ? 8 : 20,
+                    20,
+                    keyboardVisible ? 8 : 16,
+                  ),
+                  child: AreaSectionHeader(
+                    compact: keyboardVisible,
+                    title: widget.area.displayName(strings),
+                    icon: kAreaVisionIcon,
+                    description: strings.visionPageDescription,
                   ),
                 ),
-                if (!richTextToolbarAtBottom()) _toolbar(),
-                Expanded(
-                  child: Stack(
-                    fit: StackFit.expand,
+              ),
+              editor: AppRichTextEditor(
+                controller: _controller,
+                focusNode: _focus,
+                editorKey: _editorKey,
+                hint: strings.visionEditorHint,
+                readOnly: _saving,
+              ),
+              actions: StaggeredEntrance(
+                index: 3,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 12,
+                    runSpacing: 8,
                     children: [
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: LogoWatermark(
-                            scale: logoWatermarkScale(StarKind.unlit),
-                            color: logoWatermarkColor(colors, StarKind.unlit),
+                      TextButton(
+                        onPressed: _saving ? null : _share,
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 22,
+                            vertical: 14,
                           ),
                         ),
+                        child: AppButtonLabel(strings.starQuickLookShareAction),
                       ),
-                      AppRichTextEditor(
-                        controller: _controller,
-                        focusNode: _focus,
-                        editorKey: _editorKey,
-                        hint: strings.visionEditorHint,
-                        readOnly: _saving,
+                      ListenableBuilder(
+                        listenable: _controller,
+                        builder: (context, _) => ElevatedButton(
+                          onPressed: _saving || !_controller.hasChanges
+                              ? null
+                              : _save,
+                          child: AppButtonLabel(strings.saveChanges),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                StaggeredEntrance(
-                  index: 3,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                    child: Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 12,
-                      runSpacing: 8,
-                      children: [
-                        TextButton(
-                          onPressed: _saving ? null : _share,
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: keyboardVisible ? 8 : 22,
-                              vertical: 14,
-                            ),
-                          ),
-                          child: AppButtonLabel(
-                            strings.starQuickLookShareAction,
-                          ),
-                        ),
-                        ListenableBuilder(
-                          listenable: _controller,
-                          builder: (context, _) => ElevatedButton(
-                            style: keyboardVisible
-                                ? ElevatedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                    ),
-                                  )
-                                : null,
-                            onPressed: _saving || !_controller.hasChanges
-                                ? null
-                                : _save,
-                            child: AppButtonLabel(strings.saveChanges),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                if (richTextToolbarAtBottom()) _toolbar(),
-              ],
+              ),
             ),
           ),
         ),

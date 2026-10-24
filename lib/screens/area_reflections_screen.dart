@@ -1354,157 +1354,135 @@ class _ReflectionEditorScreenState extends State<ReflectionEditorScreen>
         if (!didPop) _leave();
       },
       child: Scaffold(
-        resizeToAvoidBottomInset: true,
+        resizeToAvoidBottomInset: false,
         backgroundColor: colors.night,
         body: SafeArea(
           maintainBottomViewPadding: true,
           child: ResponsiveContent(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                AnimatedOpacity(
-                  duration: kMotionFast,
-                  opacity: (_focus.hasFocus || _body.interacting) ? 0.68 : 1,
-                  child: StaggeredEntrance(
-                    index: 0,
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        20,
-                        keyboardVisible ? 8 : 20,
-                        20,
-                        keyboardVisible ? 8 : 16,
-                      ),
-                      child: AreaSectionHeader(
-                        compact: keyboardVisible,
-                        title: widget.area.displayName(strings),
-                        icon: kAreaReflectionsIcon,
-                        description: widget.existing == null
-                            ? strings.reflectionWriteDescription
-                            : strings.reflectionEditDescription,
-                        descriptionChild: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (!keyboardVisible)
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 6,
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: [
-                                  AppFieldLabel(strings.reflectionTitleLabel),
-                                  _ReflectionOriginBadge(suggested: suggested),
-                                ],
-                              ),
-                            if (!keyboardVisible) const SizedBox(height: 6),
-                            TextField(
-                              key: const ValueKey('reflection-title'),
-                              controller: _title,
-                              enabled: !_busy,
-                              minLines: 1,
-                              maxLines: keyboardVisible ? 1 : 3,
-                              maxLength: kReflectionTitleMax,
-                              textCapitalization: TextCapitalization.sentences,
-                              textInputAction: TextInputAction.next,
-                              onSubmitted: (_) => _focus.requestFocus(),
-                              style: TextStyle(
-                                color: colors.text,
+            child: AppRichTextPageLayout(
+              toolbar: _toolbar(),
+              backdrop: LogoWatermark(
+                scale: logoWatermarkScale(StarKind.unlit),
+                color: logoWatermarkColor(colors, StarKind.unlit),
+              ),
+              header: AnimatedOpacity(
+                duration: kMotionFast,
+                opacity: (_focus.hasFocus || _body.interacting) ? 0.68 : 1,
+                child: StaggeredEntrance(
+                  index: 0,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      keyboardVisible ? 8 : 20,
+                      20,
+                      keyboardVisible ? 8 : 16,
+                    ),
+                    child: AreaSectionHeader(
+                      compact: keyboardVisible,
+                      title: widget.area.displayName(strings),
+                      icon: kAreaReflectionsIcon,
+                      description: widget.existing == null
+                          ? strings.reflectionWriteDescription
+                          : strings.reflectionEditDescription,
+                      descriptionChild: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (!keyboardVisible)
+                            Wrap(
+                              spacing: 10,
+                              runSpacing: 6,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                AppFieldLabel(strings.reflectionTitleLabel),
+                                _ReflectionOriginBadge(suggested: suggested),
+                              ],
+                            ),
+                          if (!keyboardVisible) const SizedBox(height: 6),
+                          TextField(
+                            key: const ValueKey('reflection-title'),
+                            controller: _title,
+                            enabled: !_busy,
+                            minLines: 1,
+                            maxLines: keyboardVisible ? 1 : 3,
+                            maxLength: kReflectionTitleMax,
+                            textCapitalization: TextCapitalization.sentences,
+                            textInputAction: TextInputAction.next,
+                            onSubmitted: (_) => _focus.requestFocus(),
+                            style: TextStyle(
+                              color: colors.text,
+                              fontFamily: kFontStarTitle,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              height: 1.3,
+                            ),
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              filled: false,
+                              counterText: '',
+                              hintText: strings.reflectionTitleLabel,
+                              hintStyle: TextStyle(
+                                color: colors.muted,
                                 fontFamily: kFontStarTitle,
                                 fontSize: 24,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w600,
                                 height: 1.3,
                               ),
-                              decoration: InputDecoration(
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                filled: false,
-                                counterText: '',
-                                hintText: strings.reflectionTitleLabel,
-                                hintStyle: TextStyle(
-                                  color: colors.muted,
-                                  fontFamily: kFontStarTitle,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w600,
-                                  height: 1.3,
-                                ),
-                                contentPadding: EdgeInsets.zero,
-                              ),
+                              contentPadding: EdgeInsets.zero,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-                if (!richTextToolbarAtBottom()) _toolbar(),
-                Expanded(
-                  child: Stack(
-                    fit: StackFit.expand,
+              ),
+              editor: AppRichTextEditor(
+                key: const ValueKey('reflection-body'),
+                controller: _body,
+                focusNode: _focus,
+                editorKey: _editorKey,
+                hint: strings.reflectionAnswerHint,
+                readOnly: _busy,
+                maxLength: kReflectionBodyMax,
+              ),
+              actions: StaggeredEntrance(
+                index: 3,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 12,
+                    runSpacing: 8,
                     children: [
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: LogoWatermark(
-                            scale: logoWatermarkScale(StarKind.unlit),
-                            color: logoWatermarkColor(colors, StarKind.unlit),
+                      ListenableBuilder(
+                        listenable: Listenable.merge([_title, _body]),
+                        builder: (context, _) => TextButton(
+                          onPressed: _busy || !_canSave ? null : _share,
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 22,
+                              vertical: 14,
+                            ),
+                          ),
+                          child: AppButtonLabel(
+                            strings.starQuickLookShareAction,
                           ),
                         ),
                       ),
-                      AppRichTextEditor(
-                        key: const ValueKey('reflection-body'),
-                        controller: _body,
-                        focusNode: _focus,
-                        editorKey: _editorKey,
-                        hint: strings.reflectionAnswerHint,
-                        readOnly: _busy,
-                        maxLength: kReflectionBodyMax,
+                      ListenableBuilder(
+                        listenable: Listenable.merge([_title, _body]),
+                        builder: (context, _) => ElevatedButton(
+                          key: const ValueKey('reflection-save'),
+                          onPressed: _busy || !_canSave ? null : _save,
+                          child: AppButtonLabel(strings.saveChanges),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                StaggeredEntrance(
-                  index: 3,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                    child: Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 12,
-                      runSpacing: 8,
-                      children: [
-                        ListenableBuilder(
-                          listenable: Listenable.merge([_title, _body]),
-                          builder: (context, _) => TextButton(
-                            onPressed: _busy || !_canSave ? null : _share,
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: keyboardVisible ? 8 : 22,
-                                vertical: 14,
-                              ),
-                            ),
-                            child: AppButtonLabel(
-                              strings.starQuickLookShareAction,
-                            ),
-                          ),
-                        ),
-                        ListenableBuilder(
-                          listenable: Listenable.merge([_title, _body]),
-                          builder: (context, _) => ElevatedButton(
-                            style: keyboardVisible
-                                ? ElevatedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                    ),
-                                  )
-                                : null,
-                            key: const ValueKey('reflection-save'),
-                            onPressed: _busy || !_canSave ? null : _save,
-                            child: AppButtonLabel(strings.saveChanges),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                if (richTextToolbarAtBottom()) _toolbar(),
-              ],
+              ),
             ),
           ),
         ),
