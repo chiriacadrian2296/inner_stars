@@ -10,6 +10,12 @@ export const topicTitles = {
 };
 export const overviewSlugs: Record<Lang, string> = { it: 'scopri/', en: 'en/explore/' };
 export const homeSlugs: Record<SiteLang, string> = { it: '', en: 'en/', ro: 'ro/' };
+export const storyLinkLabels: Record<SiteLang, string> = {
+  it: 'La storia del progetto', en: 'The project story', ro: 'Povestea proiectului (EN)',
+};
+export function storyPath(base: string, lang: SiteLang) {
+  return `${base}${lang === 'it' ? 'storia/' : 'en/story/'}`;
+}
 export function pagePath(base: string, lang: SiteLang, topic?: Topic | 'overview') {
   const guide: Lang = lang === 'ro' ? 'en' : lang;
   return `${base}${topic === 'overview' ? overviewSlugs[guide] : topic ? topicSlugs[guide][topic] : homeSlugs[lang]}`;

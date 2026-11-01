@@ -7,9 +7,9 @@ import test from 'node:test';
 const dist = fileURLToPath(new URL('../dist/', import.meta.url));
 const html = path => readFileSync(resolve(dist, path, 'index.html'), 'utf8');
 const origin = 'https://chiriacadrian2296.github.io/inner_stars/';
-// Public pages: the three home languages, plus the unlisted classic pair.
+// Scan the home, story and unlisted classic pages for broken local links.
 const homes = [['', 'it'], ['en', 'en'], ['ro', 'ro']];
-const routes = [...homes, ['classic', 'it'], ['classic/en', 'en']];
+const routes = [...homes, ['classic', 'it'], ['classic/en', 'en'], ['storia', 'it'], ['en/story', 'en']];
 const publicRoutes = homes;
 const classicPair = ['classic', 'classic/en'];
 

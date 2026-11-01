@@ -24,6 +24,23 @@ Tests inspect the generated `dist` directory, so build before running them.
 `npm run preview -- --host 127.0.0.1` serves the production build locally.
 Neither command publishes the site.
 
+## Project story
+
+The visual case study lives at `storia/` and `en/story/`, independently of the
+hidden discover pages. Home footers link to the matching language; Romanian
+links to the English story with an explicit EN label.
+
+Edit the bilingual narrative in `src/i18n/story.ts`. Its `storyEvidence` references
+record the inspected `staging` snapshot (`6f9fa87`, 30 October 2026). The author's
+account supplies personal motivations and the division of work with AI; Git
+documents product changes, not human authorship of the code. Captions identify
+the existing demonstration captures and the earlier Nightlight screenshot.
+
+Regenerate the dedicated social previews with
+`node scripts/make-story-og-images.mjs`. For the root deployment, build with
+`CF_PAGES=1` and run `node --test tests/story.test.mjs` with the same environment;
+the normal `npm test` checks the default `/inner_stars/` build.
+
 ## Galaxy, current screenshots and branding
 
 `journey-nebula.ts` imports the actual `nebula_particles.glsl`,
