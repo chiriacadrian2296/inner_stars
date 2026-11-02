@@ -26,12 +26,11 @@ Neither command publishes the site.
 
 ## Project story
 
-The visual case study lives at `storia/` and `en/story/`, independently of the
-hidden discover pages. The persistent header links to the matching story;
-Romanian links to the English story with an explicit EN label. The header's
+The visual case study lives at `storia/`, `en/story/` and `ro/poveste/`, independently of the
+hidden discover pages. The persistent header links to the matching story in all three languages. The header's
 Try action goes to the home download section, where Android and web are offered.
 
-Edit the bilingual narrative in `src/i18n/story.ts`. Its `storyEvidence` references
+Edit the trilingual narrative in `src/i18n/story.ts`. Its `storyEvidence` references
 record the inspected `staging` snapshot (`6f9fa87`, 30 October 2026). The author's
 account supplies personal motivations and the division of work with AI; Git
 documents product changes, not human authorship of the code. Captions identify
@@ -112,7 +111,7 @@ preserved. App icons become visible after rebuilding and installing the app.
 
 ## Visual regression checklist
 
-- Italian and English, desktop, narrow portrait and landscape; no horizontal
+- Italian, English and Romanian, desktop, narrow portrait and landscape; no horizontal
   overflow or clipped controls.
 - Scroll through the reveal in both directions; use navigation and skip links
   with a keyboard.

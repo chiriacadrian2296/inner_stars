@@ -8,10 +8,10 @@ const dist = fileURLToPath(new URL('../dist/', import.meta.url));
 const rootDeployment = Boolean(process.env.CF_PAGES);
 const base = rootDeployment ? '/' : '/inner_stars/';
 const origin = rootDeployment ? 'https://innerstars.app' : 'https://chiriacadrian2296.github.io';
-const stories = [['storia', 'it'], ['en/story', 'en']];
+const stories = [['storia', 'it'], ['en/story', 'en'], ['ro/poveste', 'ro']];
 const html = path => readFileSync(resolve(dist, path, 'index.html'), 'utf8');
 
-test('both stories are independent, indexable pages with reciprocal metadata', () => {
+test('all three stories are independent, indexable pages with reciprocal metadata', () => {
   const sitemap = readFileSync(resolve(dist, 'sitemap-0.xml'), 'utf8');
   for (const [path, lang] of stories) {
     const page = html(path);
@@ -20,7 +20,6 @@ test('both stories are independent, indexable pages with reciprocal metadata', (
     assert.ok(page.includes(`<link rel="canonical" href="${url}">`));
     assert.ok(page.includes(`<meta property="og:url" content="${url}">`));
     assert.ok(page.includes('<meta property="og:type" content="article">'));
-    assert.ok(!page.includes('hreflang="ro"'));
     assert.ok(!page.includes('noindex'));
     assert.ok(!page.includes('SoftwareApplication') && !page.includes('FAQPage'));
     for (const [alternate, locale] of stories) {
@@ -41,7 +40,7 @@ test('the header promotes the matching story without repeating it in the footer 
   for (const [path, story, label] of [
     ['', 'storia/', 'La storia del progetto'],
     ['en', 'en/story/', 'The project story'],
-    ['ro', 'en/story/', 'Povestea proiectului (EN)'],
+    ['ro', 'ro/poveste/', 'Povestea proiectului'],
   ]) {
     const home = html(path);
     const header = home.match(/<header\b[^>]*>[\s\S]*?<\/header>/)[0];
@@ -51,11 +50,12 @@ test('the header promotes the matching story without repeating it in the footer 
     assert.ok(!footer.includes(`href="${base}${story}"`));
     assert.equal(home.split(`href="${base}${story}"`).length - 1, 1);
   }
-  assert.ok(html('ro').includes(`href="${base}en/story/" hreflang="en"`));
+  assert.ok(html('en').includes('>The Story</a>'));
+  assert.ok(html('ro').includes(`href="${base}ro/poveste/" hreflang="ro"`));
 });
 
 test('the header Try action offers the home download choice in every language, including from the story', () => {
-  for (const [path, target] of [['', '#download'], ['en', '#download'], ['ro', '#download'], ['storia', `${base}#download`], ['en/story', `${base}en/#download`]]) {
+  for (const [path, target] of [['', '#download'], ['en', '#download'], ['ro', '#download'], ['storia', `${base}#download`], ['en/story', `${base}en/#download`], ['ro/poveste', `${base}ro/#download`]]) {
     const page = html(path);
     const header = page.match(/<header\b[^>]*>[\s\S]*?<\/header>/)[0];
     assert.ok(header.includes(`class="nav-try" href="${target}"`), path);
@@ -86,8 +86,28 @@ test('the story, dated evidence and division of work are readable without JavaSc
   }
   assert.ok(html('storia').includes('Implementazione del codice e verifiche tecniche.'));
   assert.ok(html('en/story').includes('Code implementation and technical checks.'));
+  assert.ok(html('ro/poveste').includes('Implementarea codului și verificările tehnice.'));
   assert.ok(html('storia').includes('preparazione della versione successiva'));
   assert.ok(html('en/story').includes('preparation for the next version'));
+  assert.ok(html('ro/poveste').includes('pregătirea versiunii următoare'));
+});
+
+test('every home chapter after the opening offers a distinct return to the beginning', () => {
+  for (const path of ['', 'en', 'ro']) {
+    const page = html(path);
+    assert.equal((page.match(/class="nav-top" href="#hero"/g) || []).length, 6, path);
+    const hero = page.match(/<section class="chapter chapter-hero"[\s\S]*?<\/section>/)[0];
+    assert.ok(!hero.includes('nav-top'), path);
+  }
+});
+
+test('the narrow footer layout can pair the tagline with legal links below GitHub', () => {
+  for (const path of ['', 'en', 'ro']) {
+    const footer = html(path).match(/<footer class="journey-footer home-footer">[\s\S]*?<\/footer>/)[0];
+    assert.ok(footer.includes('class="footer-copy"'));
+    assert.ok(footer.includes('class="footer-github"'));
+    assert.ok(footer.includes('class="legal-links"'));
+  }
 });
 
 test('movement starts from a static poster and needs an explicit play action', () => {

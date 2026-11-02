@@ -20,9 +20,9 @@ const path = story ? storyPath(base, copy.lang) : legal ? legalPath(base, copy.l
 const canonical = site + path;
 const urlIt = site + (story ? storyPath(base, 'it') : legal ? legalPath(base, 'it', legal) : classic ? localeBase : pagePath(base,'it',topic));
 const urlEn = site + (story ? storyPath(base, 'en') : legal ? legalPath(base, 'en', legal) : classic ? `${localeBase}en/` : pagePath(base,'en',topic));
-const urlRo = site + (legal ? legalPath(base, 'ro', legal) : pagePath(base, 'ro', topic));
+const urlRo = site + (story ? storyPath(base, 'ro') : legal ? legalPath(base, 'ro', legal) : pagePath(base, 'ro', topic));
 // The legal pages exist in all three languages, like the home.
-const hasRo = !classic && !topic && !story;
+const hasRo = !classic && !topic;
 // One picture per language; bump the version when it changes so chat apps that
 // cached the old preview fetch the new one.
 const ogFile = story ? `og-story-${copy.lang}.png` : copy.lang === 'en' ? 'og-image-en.png' : copy.lang === 'ro' ? 'og-image-ro.png' : 'og-image.png';

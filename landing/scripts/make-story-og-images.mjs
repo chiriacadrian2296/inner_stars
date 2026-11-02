@@ -10,6 +10,7 @@ const logo = readFileSync(resolve(root, 'public/logo-mark.svg'));
 const labels = {
   it: { label: 'LA STORIA DEL PROGETTO', lines: ['Da un bisogno.', 'A un universo.'], method: 'Dall’idea al prodotto, con l’AI' },
   en: { label: 'THE PROJECT STORY', lines: ['From a need.', 'To a universe.'], method: 'From idea to product, with AI' },
+  ro: { label: 'POVESTEA PROIECTULUI', lines: ['De la o nevoie.', 'La un univers.'], method: 'De la idee la produs, cu AI' },
 };
 
 for (const [lang, c] of Object.entries(labels)) {
@@ -27,7 +28,8 @@ for (const [lang, c] of Object.entries(labels)) {
     <text x="64" y="558" font-family="Arial,sans-serif" font-size="18" fill="#b8c1d2">Adrian Chiriac</text>
     <text x="430" y="558" font-family="Arial,sans-serif" font-size="16" fill="#b8c1d2">innerstars.app</text>
   </svg>`;
-  const screen = await sharp(resolve(root, `src/assets/current/${lang}-reader.png`)).resize(222).png().toBuffer();
+  const screenLang = lang === 'ro' ? 'en' : lang;
+  const screen = await sharp(resolve(root, `src/assets/current/${screenLang}-reader.png`)).resize(222).png().toBuffer();
   const mask = Buffer.from('<svg width="222" height="481"><rect width="222" height="481" rx="18" fill="white"/></svg>');
   const rounded = await sharp(screen).composite([{ input: mask, blend: 'dest-in' }]).png().toBuffer();
   const frame = await sharp({ create: { width: 234, height: 493, channels: 4, background: '#30384b' } })

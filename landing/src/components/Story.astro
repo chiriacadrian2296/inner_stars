@@ -2,11 +2,11 @@
 import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import SiteHeader from './SiteHeader.astro';
-import { journeyIt, journeyEn } from '../i18n/journey';
+import { journeyIt, journeyEn, journeyRo } from '../i18n/journey';
 import { storyCopy } from '../i18n/story';
 import { pagePath } from '../i18n/routes';
 import { legal, legalPath } from '../i18n/legal';
-import type { Lang } from '../i18n/types';
+import type { SiteLang } from '../i18n/types';
 import itReader from '../assets/current/it-reader.png';
 import enReader from '../assets/current/en-reader.png';
 import itConstellation from '../assets/current/it-constellation.png';
@@ -17,10 +17,10 @@ import nightlight from '../assets/shots/nightlight.png';
 import '../styles/journey.css';
 import '../styles/story.css';
 
-interface Props { lang: Lang }
+interface Props { lang: SiteLang }
 const { lang } = Astro.props;
 const c = storyCopy[lang];
-const journey = lang === 'it' ? journeyIt : journeyEn;
+const journey = lang === 'it' ? journeyIt : lang === 'ro' ? journeyRo : journeyEn;
 const base = import.meta.env.BASE_URL;
 const reader = lang === 'it' ? itReader : enReader;
 const constellation = lang === 'it' ? itConstellation : enConstellation;
@@ -28,6 +28,9 @@ const activities = lang === 'it' ? itActivities : enActivities;
 const copy = { lang, title: c.title, description: c.description, faq: { items: [] } };
 const chapters = c.chapters;
 const anchors = ['percorso', 'scelte', 'metodo'];
+const pageNavLabel = lang === 'it' ? 'In questa pagina' : lang === 'ro' ? 'Pe această pagină' : 'On this page';
+const metaphorLabel = lang === 'it' ? 'La metafora del prodotto' : lang === 'ro' ? 'Metafora produsului' : 'The product metaphor';
+const closingEyebrow = lang === 'it' ? 'Cosa porto da questa esperienza' : lang === 'ro' ? 'Ce iau cu mine din această experiență' : 'What I take from this experience';
 ---
 <Base copy={copy} story faqSchema={false}>
   <div class="story-page">
@@ -65,7 +68,7 @@ const anchors = ['percorso', 'scelte', 'metodo'];
           <div><dt>{c.myRole}</dt><dd>{c.myWork}</dd></div>
           <div><dt>{c.aiRole}</dt><dd>{c.aiWork}</dd></div>
         </dl>
-        <nav class="story-index" aria-label={lang === 'it' ? 'In questa pagina' : 'On this page'}>
+        <nav class="story-index" aria-label={pageNavLabel}>
           {c.sections.map((title, i) => <a href={`#${anchors[i]}`}><span>0{i + 1}</span>{title}<span aria-hidden="true">↗</span></a>)}
         </nav>
       </div>
@@ -97,7 +100,7 @@ const anchors = ['percorso', 'scelte', 'metodo'];
                 <div class="story-clip-scene"><img src={`${base}clips/fly-poster.webp`} width="512" height="320" loading="lazy" alt={c.clipTitle} /></div>
                 <figcaption><p>{c.galaxyCaption}</p><button class="story-text-link" type="button" hidden aria-pressed="false" data-play={c.play} data-stop={c.stop}>{c.play}<span aria-hidden="true">▶</span></button></figcaption>
               </figure>
-              <ol class="story-metaphor" aria-label={lang === 'it' ? 'La metafora del prodotto' : 'The product metaphor'}>
+              <ol class="story-metaphor" aria-label={metaphorLabel}>
                 {c.metaphor.map((label, i) => <li>
                   <svg viewBox="0 0 100 80" fill="none" aria-hidden="true">
                     {i === 0 && <path d="M50 8 58 32 82 40 58 48 50 72 42 48 18 40 42 32Z" fill="currentColor" />}
@@ -156,7 +159,7 @@ const anchors = ['percorso', 'scelte', 'metodo'];
       <aside class="story-pareto story-wrap"><span class="story-quote-mark" aria-hidden="true">“</span><blockquote><p>{c.pareto}</p></blockquote><p class="story-pareto-note">{c.paretoNote}</p></aside>
 
       <section class="story-closing story-wrap" aria-labelledby="story-closing-title">
-        <p class="story-eyebrow">{lang === 'it' ? 'Cosa porto da questa esperienza' : 'What I take from this experience'}</p>
+        <p class="story-eyebrow">{closingEyebrow}</p>
         <div class="story-section-intro"><h2 id="story-closing-title">{c.closingTitle}</h2><p>{c.closingText}</p></div>
         <dl class="story-takeaways">{c.takeaways.map((item, i) => <div><dt><span aria-hidden="true">0{i + 1}</span>{item.title}</dt><dd>{item.text}</dd></div>)}</dl>
         <div class="story-actions"><a class="button-gold" href="https://my.innerstars.app/">{c.tryApp}</a><a class="story-text-link" href={pagePath(base, lang)}>{c.backHome}<span aria-hidden="true">↗</span></a></div>

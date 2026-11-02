@@ -11,13 +11,13 @@ export const topicTitles = {
 export const overviewSlugs: Record<Lang, string> = { it: 'scopri/', en: 'en/explore/' };
 export const homeSlugs: Record<SiteLang, string> = { it: '', en: 'en/', ro: 'ro/' };
 export const storyLinkLabels: Record<SiteLang, string> = {
-  it: 'La storia del progetto', en: 'The project story', ro: 'Povestea proiectului (EN)',
+  it: 'La storia del progetto', en: 'The project story', ro: 'Povestea proiectului',
 };
 export const storyNavLabels: Record<SiteLang, string> = {
-  it: 'La storia', en: 'The story', ro: 'Povestea (EN)',
+  it: 'La storia', en: 'The Story', ro: 'Povestea',
 };
 export function storyPath(base: string, lang: SiteLang) {
-  return `${base}${lang === 'it' ? 'storia/' : 'en/story/'}`;
+  return `${base}${lang === 'it' ? 'storia/' : lang === 'ro' ? 'ro/poveste/' : 'en/story/'}`;
 }
 export function pagePath(base: string, lang: SiteLang, topic?: Topic | 'overview') {
   const guide: Lang = lang === 'ro' ? 'en' : lang;

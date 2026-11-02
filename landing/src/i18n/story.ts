@@ -1,4 +1,4 @@
-import type { Lang } from './types';
+import type { SiteLang } from './types';
 
 // Editorial evidence, inspected on staging at 6f9fa87 (30 October 2026).
 // Personal origin, prioritisation and division of work: author's account, 1 Nov 2026.
@@ -66,7 +66,7 @@ interface StoryCopy {
   status: string;
 }
 
-export const storyCopy: Record<Lang, StoryCopy> = {
+export const storyCopy: Record<SiteLang, StoryCopy> = {
   it: {
     title: 'Inner Stars — Dall’idea al prodotto, con l’AI',
     description: 'Come ho trasformato un bisogno personale in Inner Stars: idee, priorità, confronto con l’AI e iterazioni nell’app. Un progetto di Adrian Chiriac.',
@@ -229,5 +229,88 @@ export const storyCopy: Record<Lang, StoryCopy> = {
     notesTitle: 'Sources and where the project stands',
     notes: 'This account draws on the project’s history and documentation, from 26 August to 30 October 2026, alongside my account of how I worked. Dates mark documented milestones, not separate phases. Screens have their own dates and show demonstration content; the historical Nightlight capture is identified separately.',
     status: 'The project is still evolving. The developments from 24–30 October described here belong to preparation for the next version and may not yet be available in the online app.',
+  },
+  ro: {
+    title: 'Inner Stars — De la idee la produs, cu AI',
+    description: 'Cum am transformat o nevoie personală în Inner Stars: idei, priorități, colaborare cu AI și iterații în aplicație. Un proiect de Adrian Chiriac.',
+    eyebrow: 'Povestea proiectului',
+    hero: ['De la o nevoie personală.', 'La un univers întreg.'],
+    intro: 'Când lucrurile devin dificile, uneori pierd din vedere ceea ce am depășit deja. Mi-am imaginat o aplicație care să păstreze acele victorii și să mi le arate din nou ca stele: un loc la care să mă întorc când am nevoie de curaj pentru a merge mai departe.',
+    byline: 'Adrian Chiriac · Proiect personal · August–octombrie 2026',
+    readStory: 'Urmărește parcursul',
+    myRole: 'Contribuția mea',
+    myWork: 'Ideea, prioritățile, experiența și evaluarea în aplicație.',
+    aiRole: 'Contribuția AI',
+    aiWork: 'Implementarea codului și verificările tehnice.',
+    sections: ['Parcursul', 'Deciziile', 'Metoda'],
+    timelineTitle: 'Câte o stea pe rând.',
+    timelineIntro: 'Am pornit de la ceva mic. Proiectul a crescut prin etape care se suprapun, priorități în schimbare și multe reveniri asupra lucrurilor deja construite.',
+    timeline: [
+      { date: '26–28 august', iso: '2026-08-26', title: 'Primul nucleu', text: 'Să înregistrez o victorie, să o păstrez pe dispozitiv și să o pot reciti.' },
+      { date: 'Sfârșit de august–septembrie', iso: '2026-08-31', title: 'Un univers de explorat', text: 'Zone, proiecte și constelații. Galaxy prinde formă, iar căutarea și filtrele evoluează în Sky.' },
+      { date: 'Septembrie–14 octombrie', iso: '2026-09-12', title: 'O experiență mai amplă', text: 'Obiective, obiceiuri, reflecții și Nightlight. Obiceiurile capătă cicluri și un moment de bilanț.' },
+      { date: '4–22 octombrie', iso: '2026-10-04', title: 'Dincolo de prototip', text: 'Landing page, distribuție web, conturi, sincronizare și fișiere media între dispozitive.' },
+      { date: '24–30 octombrie', iso: '2026-10-24', title: 'Munca continuă', text: 'Editorul, statisticile și parcursul Nightlight sunt reluate în pregătirea versiunii următoare.' },
+    ],
+    chapterLabels: ['Nevoie', 'Schimbare', 'Rezultat'],
+    chapters: [
+      {
+        label: 'Să dau formă ideii', title: 'O amintire poate deveni o stea.',
+        need: 'Voiam ca victoriile să redevină vizibile în momentele în care îmi este greu să mi le amintesc. Metafora stelelor mi-a oferit o direcție pentru identitatea aplicației.',
+        change: 'Jurnalul inițial a devenit un univers navigabil: activități ca stele, proiecte ca constelații, zone ale vieții ca supernove. Alături de Galaxy s-a dezvoltat Sky, pentru căutarea și gestionarea conținutului.',
+        outcome: 'Același parcurs poate fi explorat vizual sau regăsit prin căutare și filtre. Identitatea aplicației prinde formă și prin felul în care este folosită.',
+      },
+      {
+        label: 'Să dezvolt experiența', title: 'Să duc o intuiție mai departe.',
+        need: 'Pornind de la victorii, am explorat cum să fac loc proiectelor, lucrurilor care încă trebuie înfruntate și pașilor mici repetați în timp.',
+        change: 'Au urmat obiective, obiceiuri, reflecții și statistici. Nightlight a adăugat un parcurs de respirație și recitire a victoriilor. Obiceiurile au evoluat în cicluri, cu un moment de reflecție la final.',
+        outcome: 'Proiectul permite înregistrarea lucrurilor întâmplate, urmărirea activităților în timp și revenirea la propriile amintiri. În iterațiile următoare, Nightlight devine și o vizită ghidată la victoriile din Galaxy.',
+      },
+      {
+        label: 'Să ajung online', title: 'Produsul dincolo de ecran.',
+        need: 'Pentru ca aplicația să fie accesibilă online, munca trebuia să includă și autentificarea, datele și trecerea de la un dispozitiv la altul.',
+        change: 'Împreună cu AI am abordat landing page-ul, găzduirea, conturile Google, sincronizarea și fișierele media. AI s-a ocupat de implementare și verificările tehnice; eu am continuat să evaluez experiența în aplicație și să indic corecțiile.',
+        outcome: 'Proiectul a dobândit un landing page și distribuție web, cu o arhitectură care păstrează datele pe dispozitiv și le sincronizează cu cloudul. Munca a inclus și probleme concrete, precum transferul fotografiilor și înregistrărilor audio pe un alt dispozitiv.',
+      },
+    ],
+    readerAlt: 'O victorie demonstrativă în cititorul Inner Stars: Am făcut primul pas.',
+    skyAlt: 'Sky afișează activități demonstrative organizate în carduri, cu funcții de căutare și filtrare.',
+    constellationAlt: 'Un proiect demonstrativ ia forma unei constelații.',
+    demoCaption: 'Ecrane ale aplicației cu date demonstrative și interfață în engleză · Capturi din 18 octombrie 2026.',
+    galaxyCaption: 'Galaxy în mișcare, înregistrată cu sistemele de randare ale aplicației și date demonstrative · 18 octombrie 2026.',
+    clipTitle: 'De la o zonă a vieții la constelația ei',
+    play: 'Pornește mișcarea', stop: 'Oprește mișcarea',
+    metaphor: ['O victorie', 'Un proiect', 'O zonă a vieții'],
+    nightlightCaption: 'O versiune anterioară a Nightlight · Captură prezentă în proiect din 4 octombrie 2026, cu interfață în engleză.',
+    nightlightAlt: 'O versiune anterioară a Nightlight, cu un cer înstelat și alegerea inițială a parcursului.',
+    experienceCaption: 'De la înregistrare la recitire: trei momente care leagă diferitele părți ale experienței.',
+    experienceSteps: ['Înregistrează un pas', 'Dă-i un loc', 'Întoarce-te la el'],
+    delivery: ['Dispozitiv', 'Sincronizare', 'Alt dispozitiv'],
+    deliveryNote: 'Schema funcționării: date locale, o copie în cloud și actualizări între dispozitive. Implementarea tehnică a fost încredințată AI.',
+    scopeTitle: 'Să aleg și ce rămâne pentru mai târziu.',
+    scopeText: 'Planul primei versiuni limitează fișierele media sincronizate la fotografii, o notă vocală pentru fiecare victorie și imaginile din moodboard. Videoclipurile noi și mementourile web rămân în afara acestui perimetru. Și aceste alegeri de prioritate fac parte din parcurs.',
+    methodTitle: 'Eu dădeam direcția. Apoi deschideam aplicația.',
+    methodIntro: 'Uneori ceream direct realizarea unei idei. Alteori ceream o părere și comparam opțiunile. După implementare, deschideam aplicația ca să văd cum funcționa experiența și ce trebuia corectat.',
+    method: [
+      { title: 'O idee', text: 'Porneam de la o nevoie sau de la ceva de îmbunătățit.', owner: 'Eu' },
+      { title: 'O discuție', text: 'Propuneam o direcție sau exploram împreună opțiunile.', owner: 'Eu + AI' },
+      { title: 'Implementarea', text: 'AI scria codul și efectua verificările tehnice.', owner: 'AI' },
+      { title: 'Proba în aplicație', text: 'Priveam rezultatul și încercam ecranele și fluxurile.', owner: 'Eu' },
+      { title: 'Corecțiile', text: 'Descriam ce trebuia schimbat și reluam munca.', owner: 'Eu + AI' },
+    ],
+    loop: 'Și de acolo, încă o iterație.',
+    pareto: 'Care este cea mai importantă schimbare pe care o pot face acum?',
+    paretoNote: 'Principiul Pareto ca mod personal de stabilire a priorităților: să caut intervenția cu cel mai mare impact asupra produsului. O întrebare care m-a orientat pe parcursul dezvoltării.',
+    closingTitle: 'Un produs de arătat. Un mod de lucru de dus mai departe.',
+    closingText: 'Cu Inner Stars am învățat ce înseamnă să duc o idee mai departe: să aleg o direcție, să lucrez cu AI, să văd rezultatul și să revin asupra lui. Acesta este modul de a construi pe care vreau să îl dezvolt în continuare într-o echipă.',
+    takeaways: [
+      { title: 'Inițiativă', text: 'Să transform o problemă personală într-un proiect concret.' },
+      { title: 'Direcție', text: 'Să stabilesc priorități și să păstrez experiența recognoscibilă pe măsură ce crește.' },
+      { title: 'Iterație', text: 'Să evaluez în aplicație, să formulez corecții și să învăț din rezultat.' },
+    ],
+    tryApp: 'Încearcă Inner Stars', backHome: 'Înapoi la landing page',
+    notesTitle: 'Sursele și stadiul proiectului',
+    notes: 'Această poveste este reconstruită din istoricul și documentația proiectului, din 26 august până în 30 octombrie 2026, împreună cu relatarea mea despre modul de lucru. Datele marchează etape documentate, nu faze separate. Capturile au propriile date și prezintă conținut demonstrativ; captura istorică Nightlight este identificată separat.',
+    status: 'Proiectul continuă să evolueze. Noutățile din 24–30 octombrie descrise aici aparțin pregătirii versiunii următoare și este posibil să nu fie încă disponibile în aplicația online.',
   },
 };

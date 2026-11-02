@@ -15,7 +15,7 @@ export interface JourneyCopy {
   faq: { title: string; items: { q: string; a: string }[] };
   closing: { eyebrow: string; title: string; text: string; apk: string; web: string; platforms: string };
   footer: string;
-  ui: { prev: string; mainNav: string; try: string; discover: string; overline: { day: string; star: string; distant: string; reveal: string; whole: string }; wholeTitle: string; wholeText: string; wholeLink: string; next: { day: string; star: string; distant: string; reveal: string; whole: string } };
+  ui: { prev: string; top: string; mainNav: string; try: string; discover: string; overline: { day: string; star: string; distant: string; reveal: string; whole: string }; wholeTitle: string; wholeText: string; wholeLink: string; next: { day: string; star: string; distant: string; reveal: string; whole: string } };
 }
 
 export const journeyIt: JourneyCopy = {
@@ -46,7 +46,7 @@ export const journeyIt: JourneyCopy = {
   },
   closing: { eyebrow: 'IL PROSSIMO PASSO È TUO', title: '[[Accendi]] la tua prima [[stella.]]', text: 'Basta una cosa che hai affrontato, anche piccola. Il resto del cielo si costruisce un passo alla volta.', apk: 'Scarica per Android', web: 'Provala nel browser', platforms: 'Android · Web · iOS in arrivo' },
   footer: 'Ogni sforzo ha il suo posto.',
-  ui: { prev: 'Sezione precedente', mainNav: 'Navigazione principale', try: 'Prova Inner Stars', discover: 'Scopri l’app', overline: { day: 'QUANDO È DIFFICILE VEDERE', star: 'ATTIVITÀ · STELLA', distant: 'PROGETTO · COSTELLAZIONE', reveal: 'AREA · SUPERNOVA', whole: 'IL TUO CIELO INTERO' }, wholeTitle: '[[Sei molto di più]] del buio in cui ti puoi ritrovare a volte.', wholeText: 'Otto aree, tanti progetti, ancora più sforzi: un cielo intero che cresce insieme a te e che ti ricorda della luce che hai portato nella tua vita.', wholeLink: 'Dai un posto al tuo percorso', next: { day: 'AVVICINATI', star: 'UNA STELLA, POI UNA COSTELLAZIONE', distant: 'ALLARGA LO SGUARDO', reveal: 'GUARDA IL CIELO INTERO', whole: 'SCOPRI L’APP' } },
+  ui: { prev: 'Sezione precedente', top: 'Torna all’inizio', mainNav: 'Navigazione principale', try: 'Prova Inner Stars', discover: 'Scopri l’app', overline: { day: 'QUANDO È DIFFICILE VEDERE', star: 'ATTIVITÀ · STELLA', distant: 'PROGETTO · COSTELLAZIONE', reveal: 'AREA · SUPERNOVA', whole: 'IL TUO CIELO INTERO' }, wholeTitle: '[[Sei molto di più]] del buio in cui ti puoi ritrovare a volte.', wholeText: 'Otto aree, tanti progetti, ancora più sforzi: un cielo intero che cresce insieme a te e che ti ricorda della luce che hai portato nella tua vita.', wholeLink: 'Dai un posto al tuo percorso', next: { day: 'AVVICINATI', star: 'UNA STELLA, POI UNA COSTELLAZIONE', distant: 'ALLARGA LO SGUARDO', reveal: 'GUARDA IL CIELO INTERO', whole: 'SCOPRI L’APP' } },
 };
 
 export const journeyEn: JourneyCopy = {
@@ -77,7 +77,7 @@ export const journeyEn: JourneyCopy = {
   },
   closing: { eyebrow: 'THE NEXT STEP IS YOURS', title: '[[Light]] your first [[star.]]', text: 'One thing you faced is enough, however small. The rest of the sky is built one step at a time.', apk: 'Download for Android', web: 'Try it in your browser', platforms: 'Android · Web · iOS coming soon' },
   footer: 'Every effort has its place.',
-  ui: { prev: 'Previous section', mainNav: 'Main navigation', try: 'Try Inner Stars', discover: 'Discover the app', overline: { day: 'WHEN IT’S HARD TO SEE', star: 'ACTIVITY · STAR', distant: 'PROJECT · CONSTELLATION', reveal: 'AREA · SUPERNOVA', whole: 'YOUR WHOLE SKY' }, wholeTitle: '[[You are far more]] than the darkness you may find yourself in at times.', wholeText: 'Eight areas, many projects, even more efforts: a whole sky that grows with you and reminds you of the light you have brought into your life.', wholeLink: 'Give your journey a home', next: { day: 'COME CLOSER', star: 'FROM A STAR TO A CONSTELLATION', distant: 'WIDEN YOUR VIEW', reveal: 'SEE THE WHOLE SKY', whole: 'DISCOVER THE APP' } },
+  ui: { prev: 'Previous section', top: 'Back to the beginning', mainNav: 'Main navigation', try: 'Try Inner Stars', discover: 'Discover the app', overline: { day: 'WHEN IT’S HARD TO SEE', star: 'ACTIVITY · STAR', distant: 'PROJECT · CONSTELLATION', reveal: 'AREA · SUPERNOVA', whole: 'YOUR WHOLE SKY' }, wholeTitle: '[[You are far more]] than the darkness you may find yourself in at times.', wholeText: 'Eight areas, many projects, even more efforts: a whole sky that grows with you and reminds you of the light you have brought into your life.', wholeLink: 'Give your journey a home', next: { day: 'COME CLOSER', star: 'FROM A STAR TO A CONSTELLATION', distant: 'WIDEN YOUR VIEW', reveal: 'SEE THE WHOLE SKY', whole: 'DISCOVER THE APP' } },
 };
 
 export const journeyRo: JourneyCopy = {
@@ -108,5 +108,5 @@ export const journeyRo: JourneyCopy = {
   },
   closing: { eyebrow: 'URMĂTORUL PAS ESTE AL TĂU', title: '[[Aprinde]] prima ta [[stea.]]', text: 'E de ajuns un lucru cu care te-ai confruntat, oricât de mic. Restul cerului se construiește pas cu pas.', apk: 'Descarcă pentru Android', web: 'Încearc-o în browser', platforms: 'Android · Web · iOS în curând' },
   footer: 'Fiecare efort are locul lui.',
-  ui: { prev: 'Secțiunea anterioară', mainNav: 'Navigare principală', try: 'Încearcă Inner Stars', discover: 'Descoperă aplicația', overline: { day: 'CÂND E GREU SĂ VEZI', star: 'ACTIVITATE · STEA', distant: 'PROIECT · CONSTELAȚIE', reveal: 'ZONĂ · SUPERNOVĂ', whole: 'CERUL TĂU ÎNTREG' }, wholeTitle: '[[Ești mult mai mult]] decât întunericul în care te poți regăsi uneori.', wholeText: 'Opt zone, multe proiecte, și mai multe eforturi: un cer întreg care crește odată cu tine și care îți amintește de lumina pe care ai adus-o în viața ta.', wholeLink: 'Dă un loc drumului tău', next: { day: 'APROPIE-TE', star: 'DE LA O STEA LA O CONSTELAȚIE', distant: 'LARGEȘTE PRIVIREA', reveal: 'PRIVEȘTE CERUL ÎNTREG', whole: 'DESCOPERĂ APLICAȚIA' } },
+  ui: { prev: 'Secțiunea anterioară', top: 'Înapoi la început', mainNav: 'Navigare principală', try: 'Încearcă Inner Stars', discover: 'Descoperă aplicația', overline: { day: 'CÂND E GREU SĂ VEZI', star: 'ACTIVITATE · STEA', distant: 'PROIECT · CONSTELAȚIE', reveal: 'ZONĂ · SUPERNOVĂ', whole: 'CERUL TĂU ÎNTREG' }, wholeTitle: '[[Ești mult mai mult]] decât întunericul în care te poți regăsi uneori.', wholeText: 'Opt zone, multe proiecte, și mai multe eforturi: un cer întreg care crește odată cu tine și care îți amintește de lumina pe care ai adus-o în viața ta.', wholeLink: 'Dă un loc drumului tău', next: { day: 'APROPIE-TE', star: 'DE LA O STEA LA O CONSTELAȚIE', distant: 'LARGEȘTE PRIVIREA', reveal: 'PRIVEȘTE CERUL ÎNTREG', whole: 'DESCOPERĂ APLICAȚIA' } },
 };

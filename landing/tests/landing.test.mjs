@@ -9,7 +9,7 @@ const html = path => readFileSync(resolve(dist, path, 'index.html'), 'utf8');
 const origin = 'https://chiriacadrian2296.github.io/inner_stars/';
 // Scan the home, story and unlisted classic pages for broken local links.
 const homes = [['', 'it'], ['en', 'en'], ['ro', 'ro']];
-const routes = [...homes, ['classic', 'it'], ['classic/en', 'en'], ['storia', 'it'], ['en/story', 'en']];
+const routes = [...homes, ['classic', 'it'], ['classic/en', 'en'], ['storia', 'it'], ['en/story', 'en'], ['ro/poveste', 'ro']];
 const publicRoutes = homes;
 const classicPair = ['classic', 'classic/en'];
 
