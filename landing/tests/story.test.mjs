@@ -75,6 +75,9 @@ test('the header Try action offers the home download choice in every language, i
   for (const path of ['', 'en', 'ro']) {
     const page = html(path);
     const downloads = page.match(/<div class="download-actions">[\s\S]*?<\/div>/)[0];
+    assert.equal((downloads.match(/class="download-action-icon"/g) || []).length, 2, path);
+    assert.ok(downloads.includes('M19 9h-4V3H9v6H5l7 7 7-7z'), path);
+    assert.ok(downloads.includes('M19 19H5V5h7V3H5'), path);
     assert.ok(downloads.includes('inner-stars.apk'));
     assert.ok(downloads.includes('href="https://my.innerstars.app/"'));
   }

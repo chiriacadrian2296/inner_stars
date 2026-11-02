@@ -183,6 +183,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
 .closing-copy>p:not(.overline):not(.platform-note) { max-width: 420px; margin: 30px auto; font-size: 18px; line-height: 1.75; color: #98a2bb; }
 .download-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
 .button-gold,.button-outline { display: inline-flex; justify-content: center; align-items: center; gap: 25px; padding: 13px 23px; border-radius: 50px; font-size: 12px; font-weight: 700; border: 1px solid var(--gold); }
+.download-action-icon { width: 16px; height: 16px; flex: none; }
 .button-gold { background: var(--gold); color: var(--on-gold); }
 .button-outline { background: var(--night); color: var(--gold); }
 .platform-note { color: var(--muted); font-size: 10px; margin-top: 20px; }
