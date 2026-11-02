@@ -1,0 +1,45 @@
+---
+interface Item {
+  title: string;
+  text: string;
+  detail?: string;
+  date?: string;
+  iso?: string;
+  commits?: readonly string[];
+}
+interface Props { items: readonly Item[]; sourcesLabel?: string }
+const { items, sourcesLabel } = Astro.props;
+---
+<div class="compact-accordion">
+  {items.map((item, i) => <details>
+    <summary>
+      <span class="accordion-number" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+      <span class="accordion-heading">{item.date && <time datetime={item.iso}>{item.date}</time>}<span>{item.title}</span></span>
+      <span class="accordion-toggle" aria-hidden="true">+</span>
+    </summary>
+    <div class="accordion-body">
+      <p>{item.text}</p>
+      {item.detail && <p>{item.detail}</p>}
+      {item.commits && <div class="accordion-sources"><span>{sourcesLabel}</span>{item.commits.map(commit => <a href={`https://github.com/chiriacadrian2296/inner_stars/commit/${commit}`}><code>{commit}</code></a>)}</div>}
+    </div>
+  </details>)}
+</div>
+<style>
+  .compact-accordion { border-top: 1px solid var(--border); }
+  details { border-bottom: 1px solid var(--border); }
+  summary { display: flex; align-items: center; gap: 18px; min-height: 64px; padding: 18px 0; cursor: pointer; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 5px; border-radius: 3px; }
+  .accordion-number { color: var(--gold); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .accordion-heading { flex: 1; font-size: clamp(15px, 2vw, 18px); line-height: 1.5; color: var(--text); }
+  time { display: block; color: #a4adbd; font-size: 11px; margin-bottom: 3px; }
+  .accordion-toggle { color: var(--gold); font-size: 24px; line-height: 1; transition: transform .2s; }
+  details[open] .accordion-toggle { transform: rotate(45deg); }
+  .accordion-body { max-width: 760px; padding: 0 36px 26px; }
+  .accordion-body p { color: #b8c0ce; font-size: 15px; line-height: 1.85; margin: 0; }
+  .accordion-body p + p { margin-top: 12px; }
+  .accordion-sources { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 20px; color: #a4adbd; font-size: 11px; }
+  .accordion-sources a { color: var(--gold); text-underline-offset: 4px; }
+  @media(max-width:600px) { summary { gap: 12px; } .accordion-body { padding-inline: 0 12px; } }
+  @media(prefers-reduced-motion:reduce) { .accordion-toggle { transition: none; } }
+</style>

@@ -12,6 +12,33 @@ const stories = [['storia', 'it'], ['en/story', 'en'], ['ro/poveste', 'ro']];
 const html = path => readFileSync(resolve(dist, path, 'index.html'), 'utf8');
 const journeyCss = readFileSync(fileURLToPath(new URL('../src/styles/journey.css', import.meta.url)), 'utf8');
 
+test('home exploration is compact and readable without JavaScript in every language', () => {
+  for (const path of ['', 'en', 'ro']) {
+    const section = html(path).match(/<section class="home-explore"[\s\S]*?<\/section>/)?.[0];
+    assert.ok(section, path);
+    assert.equal((section.match(/<details\b/g) || []).length, 6, path);
+    assert.equal((section.match(/<summary\b/g) || []).length, 6, path);
+    assert.ok(!/<details[^>]*\sopen(?:\s|>|=)/.test(section), path);
+    for (const name of ['Galaxy', 'Sky', 'Nightlight']) assert.ok(section.includes(name), `${path}: ${name}`);
+    assert.ok(section.includes('href="#download"'), path);
+  }
+});
+
+test('expanded history keeps dated sources inside initially closed chapters in every language', () => {
+  for (const [path] of stories) {
+    const section = html(path).match(/<div class="story-history"[\s\S]*?<\/section>/)?.[0];
+    assert.ok(section, path);
+    assert.equal((section.match(/<details\b/g) || []).length, 16, path);
+    assert.ok(!/<details[^>]*\sopen(?:\s|>|=)/.test(section), path);
+    const entries = [...section.matchAll(/<details\b[\s\S]*?<\/details>/g)];
+    for (const [entry] of entries) {
+      assert.ok(/<time datetime="2026-\d\d-\d\d"/.test(entry), path);
+      assert.ok(entry.includes('https://github.com/chiriacadrian2296/inner_stars/commit/'), path);
+      assert.equal((entry.match(/<p\b/g) || []).length, 2, path);
+    }
+  }
+});
+
 test('all three stories are independent, indexable pages with reciprocal metadata', () => {
   const sitemap = readFileSync(resolve(dist, 'sitemap-0.xml'), 'utf8');
   for (const [path, lang] of stories) {

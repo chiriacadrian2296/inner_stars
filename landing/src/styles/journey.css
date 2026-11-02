@@ -17,6 +17,11 @@ html { scroll-behavior: smooth; scroll-padding-top: 110px; }
 /* Cinematic chapters: scrolling settles on a chapter (the home script toggles .journey-snap). */
 html.journey-snap { scroll-snap-type: y mandatory; scroll-padding-top: 0; }
 .chapter,.journey-closing { scroll-snap-align: start; }
+.home-explore { scroll-snap-align: start; background: var(--night); padding: 100px 7%; }
+.home-explore-wrap { max-width: 860px; margin-inline: auto; }
+.home-explore h2 { font-family: var(--brand); font-weight: 400; font-size: clamp(30px, 5vw, 48px); line-height: 1.2; }
+.home-explore-intro { color: #a4adbd; font-size: 15px; margin: 20px 0 32px; }
+.home-explore-next { display: flex; justify-content: space-between; color: var(--gold); font-size: 14px; padding-block: 28px 0; }
 .chapter { scroll-snap-stop: always; }
 html.journey-snap .journey-footer { scroll-snap-align: end; }
 body { margin: 0; background: var(--night); color: var(--text); font: 15px/1.7 var(--sans); -webkit-font-smoothing: antialiased; }

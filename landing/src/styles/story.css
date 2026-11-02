@@ -3,6 +3,9 @@
 .story-page .journey-nav { background: linear-gradient(#0d1220f7, #0d1220ed 72%, #0d122000); padding-bottom: 28px; }
 .story-page .journey-nav::before { display: none; }
 .story-wrap { width: min(1240px, 88%); margin-inline: auto; }
+.story-history { max-width: 860px; margin: 64px auto 0; }
+.story-page .story-history h3 { font-family: var(--personal); font-weight: 450; font-size: clamp(25px, 4vw, 36px); }
+.history-intro { color: var(--story-muted); max-width: 700px; font-size: 14px; line-height: 1.8; margin: 16px 0 28px; }
 .story-page main { outline: none; }
 .story-page section[id], .story-decisions[id] { scroll-margin-top: 108px; }
 .story-page h1, .story-page h2 { font-family: var(--personal); font-weight: 450; letter-spacing: -.035em; line-height: 1.05; }

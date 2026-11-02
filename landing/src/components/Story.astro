@@ -2,6 +2,8 @@
 import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import SiteHeader from './SiteHeader.astro';
+import CompactAccordion from './CompactAccordion.astro';
+import { historyCopy } from '../i18n/history';
 import { journeyIt, journeyEn, journeyRo } from '../i18n/journey';
 import { storyCopy } from '../i18n/story';
 import { pagePath } from '../i18n/routes';
@@ -20,6 +22,7 @@ import '../styles/story.css';
 interface Props { lang: SiteLang }
 const { lang } = Astro.props;
 const c = storyCopy[lang];
+const history = historyCopy(lang);
 const journey = lang === 'it' ? journeyIt : lang === 'ro' ? journeyRo : journeyEn;
 const base = import.meta.env.BASE_URL;
 const reader = lang === 'it' ? itReader : enReader;
@@ -85,6 +88,11 @@ const closingEyebrow = lang === 'it' ? 'Cosa porto da questa esperienza' : lang 
             <time datetime={step.iso}>{step.date}</time><h3>{step.title}</h3><p>{step.text}</p>
           </li>)}
         </ol>
+        <div class="story-history" id="tappe" aria-labelledby="history-title">
+          <h3 id="history-title">{history.title}</h3>
+          <p class="history-intro">{history.intro}</p>
+          <CompactAccordion items={history.items} sourcesLabel={history.sources} />
+        </div>
       </section>
 
       <div class="story-decisions story-wrap" id="scelte">

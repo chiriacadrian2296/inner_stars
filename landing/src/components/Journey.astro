@@ -2,6 +2,8 @@
 import Base from '../layouts/Base.astro';
 import Galaxy from './JourneyGalaxy';
 import SiteHeader from './SiteHeader.astro';
+import CompactAccordion from './CompactAccordion.astro';
+import { exploreCopy } from '../i18n/explore';
 import { pagePath } from '../i18n/routes';
 import type { JourneyCopy } from '../i18n/journey';
 import { legal, legalPath } from '../i18n/legal';
@@ -13,6 +15,7 @@ const base = import.meta.env.BASE_URL;
 const apk = 'https://github.com/chiriacadrian2296/inner_stars/releases/latest/download/inner-stars.apk';
 const web = 'https://my.innerstars.app/';
 const ui=c.ui;
+const explore = exploreCopy[c.lang];
 const esc = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 // [[double brackets]] mark the part of a headline that goes gold
 const gold = (text: string) => esc(text).replace(/\[\[(.+?)\]\]/g, '<em>$1</em>');
@@ -56,9 +59,18 @@ const gold = (text: string) => esc(text).replace(/\[\[(.+?)\]\]/g, '<em>$1</em>'
           <h2 id="universe-title" set:html={gold(ui.wholeTitle)} />
           <p class="chapter-text">{ui.wholeText}</p>
         </div>
-      <nav class="chapter-nav chapter-nav-wide" aria-label={ui.mainNav}><a class="nav-up" href="#perspective" aria-label={ui.prev}><span aria-hidden="true">↑</span></a><a class="nav-down" href="#download"><span class="nav-label">{ui.next.whole}</span><span aria-hidden="true">↓</span></a><a class="nav-top" href="#hero" aria-label={ui.top}><span aria-hidden="true">✦</span><span class="nav-top-label">{ui.top}</span><span aria-hidden="true">↑</span></a></nav>
+      <nav class="chapter-nav chapter-nav-wide" aria-label={ui.mainNav}><a class="nav-up" href="#perspective" aria-label={ui.prev}><span aria-hidden="true">↑</span></a><a class="nav-down" href="#explore-app"><span class="nav-label">{ui.next.whole}</span><span aria-hidden="true">↓</span></a><a class="nav-top" href="#hero" aria-label={ui.top}><span aria-hidden="true">✦</span><span class="nav-top-label">{ui.top}</span><span aria-hidden="true">↑</span></a></nav>
       </section>
     </div>
+    <section class="home-explore" id="explore-app" aria-labelledby="explore-title">
+      <div class="home-explore-wrap">
+        <p class="overline">{explore.eyebrow}</p>
+        <h2 id="explore-title">{explore.title}</h2>
+        <p class="home-explore-intro">{explore.intro}</p>
+        <CompactAccordion items={explore.items} />
+        <a class="home-explore-next" href="#download">{explore.next} <span aria-hidden="true">↓</span></a>
+      </div>
+    </section>
     <section class="journey-closing" id="download" aria-labelledby="closing-title">
       <nav class="chapter-nav chapter-nav-wide" aria-label={ui.mainNav}><a class="nav-up" href="#whole-sky" aria-label={ui.prev}><span aria-hidden="true">↑</span></a><a class="nav-top" href="#hero" aria-label={ui.top}><span aria-hidden="true">✦</span><span class="nav-top-label">{ui.top}</span><span aria-hidden="true">↑</span></a></nav>
       <div class="closing-copy"><p class="overline">{c.closing.eyebrow}</p><h2 id="closing-title" set:html={gold(c.closing.title)} /><p>{c.closing.text}</p><div class="download-actions"><a class="button-gold" href={apk}>{c.closing.apk} <svg class="download-action-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" /></svg></a><a class="button-outline" href={web}>{c.closing.web} <svg class="download-action-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" /></svg></a></div><p class="platform-note">{c.closing.platforms}</p></div>
@@ -70,8 +82,15 @@ const gold = (text: string) => esc(text).replace(/\[\[(.+?)\]\]/g, '<em>$1</em>'
   // Chapter-by-chapter scrolling through the whole home: journey, closing and footer.
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
   const root = document.documentElement;
-  const sync = () => root.classList.toggle('journey-snap', !reduce.matches);
+  const exploreSection = document.querySelector<HTMLElement>('.home-explore');
+  const exploring = () => {
+    if (!exploreSection) return false;
+    const bounds = exploreSection.getBoundingClientRect();
+    return bounds.top < innerHeight * 0.5 && bounds.bottom > innerHeight * 0.5;
+  };
+  const sync = () => root.classList.toggle('journey-snap', !reduce.matches && !exploring());
   sync();
+  addEventListener('scroll', () => { if (!gliding()) sync(); }, { passive: true });
   reduce.addEventListener('change', sync);
 
   // One eased, cinematic glide shared by the chapter buttons and the mouse wheel. Snapping is
@@ -96,7 +115,7 @@ const gold = (text: string) => esc(text).replace(/\[\[(.+?)\]\]/g, '<em>$1</em>'
     requestAnimationFrame(step);
   };
   for (const type of ['touchstart', 'keydown']) addEventListener(type, () => { if (gliding()) stopGlide(); }, { passive: true });
-  document.querySelectorAll<HTMLAnchorElement>('.chapter-nav a, .site-header .nav-try').forEach(link => link.addEventListener('click', event => {
+  document.querySelectorAll<HTMLAnchorElement>('.chapter-nav a, .site-header .nav-try, .home-explore-next').forEach(link => link.addEventListener('click', event => {
     const target = document.querySelector(link.getAttribute('href') ?? '');
     if (!target) return;
     event.preventDefault();
@@ -106,12 +125,13 @@ const gold = (text: string) => esc(text).replace(/\[\[(.+?)\]\]/g, '<em>$1</em>'
   // The mouse wheel moves one chapter per gesture with the same glide. A gesture ends after a quiet
   // moment, so a trackpad's trailing momentum cannot start a second glide.
   const stops = () => {
-    const tops = [...document.querySelectorAll<HTMLElement>('.chapter, .journey-closing')].map(el => Math.round(el.getBoundingClientRect().top + scrollY));
+    const tops = [...document.querySelectorAll<HTMLElement>('.chapter, .home-explore, .journey-closing')].map(el => Math.round(el.getBoundingClientRect().top + scrollY));
     return [...tops, Math.max(0, root.scrollHeight - innerHeight)].filter((top, i, all) => i === 0 || top > all[i - 1] + 1);
   };
   let lastWheel = 0;
   addEventListener('wheel', event => {
     if (event.ctrlKey || reduce.matches || Math.abs(event.deltaY) < Math.abs(event.deltaX)) return;
+    if (exploring() && !gliding()) return;
     event.preventDefault();
     const now = performance.now(), quiet = now - lastWheel > 140;
     lastWheel = now;
