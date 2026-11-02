@@ -28,11 +28,11 @@ const gold = (text: string) => esc(text).replace(/\[\[(.+?)\]\]/g, '<em>$1</em>'
           <h1 id="hero-title">{c.hero.before}<br /><em>{c.hero.accent}</em><br />{c.hero.after}</h1>
           <p class="chapter-text">{c.hero.text}</p>
         </div>
-        <nav class="chapter-nav" aria-label={ui.mainNav}><a class="nav-down" href="#day">{c.hero.scroll}<span aria-hidden="true">↓</span></a></nav>
+        <nav class="chapter-nav" aria-label={ui.mainNav}><a class="nav-down" href="#day"><span class="nav-label">{c.hero.scroll}</span><span aria-hidden="true">↓</span></a></nav>
       </section>
-      <section class="chapter chapter-day" id="day" aria-labelledby="day-title"><div class="chapter-copy"><p class="overline"><span class="tiny-star" aria-hidden="true">✦</span> 01 / {ui.overline.day}</p><h2 id="day-title">{c.day.before} <em>{c.day.accent}</em> {c.day.after}</h2><p class="chapter-text">{c.day.text}</p></div><nav class="chapter-nav chapter-nav-wide" aria-label={ui.mainNav}><a class="nav-up" href="#hero" aria-label={ui.prev}><span aria-hidden="true">↑</span></a><a class="nav-down" href="#star">{ui.next.day}<span aria-hidden="true">↓</span></a><a class="nav-top" href="#hero" aria-label={ui.top}><span aria-hidden="true">✦</span><span class="nav-top-label">{ui.top}</span><span aria-hidden="true">↑</span></a></nav>
+      <section class="chapter chapter-day" id="day" aria-labelledby="day-title"><div class="chapter-copy"><p class="overline"><span class="tiny-star" aria-hidden="true">✦</span> 01 / {ui.overline.day}</p><h2 id="day-title">{c.day.before} <em>{c.day.accent}</em> {c.day.after}</h2><p class="chapter-text">{c.day.text}</p></div><nav class="chapter-nav chapter-nav-wide" aria-label={ui.mainNav}><a class="nav-up" href="#hero" aria-label={ui.prev}><span aria-hidden="true">↑</span></a><a class="nav-down" href="#star"><span class="nav-label">{ui.next.day}</span><span aria-hidden="true">↓</span></a><a class="nav-top" href="#hero" aria-label={ui.top}><span aria-hidden="true">✦</span><span class="nav-top-label">{ui.top}</span><span aria-hidden="true">↑</span></a></nav>
       </section>
-      <section class="chapter chapter-star" id="star" aria-labelledby="star-title"><div class="chapter-copy"><p class="overline"><span class="tiny-star" aria-hidden="true">✦</span> 02 / {ui.overline.star}</p><h2 id="star-title">{c.star.before} <em>{c.star.accent}</em></h2><p class="chapter-text">{c.star.text}</p></div><nav class="chapter-nav chapter-nav-wide" aria-label={ui.mainNav}><a class="nav-up" href="#day" aria-label={ui.prev}><span aria-hidden="true">↑</span></a><a class="nav-down" href="#distant">{ui.next.star}<span aria-hidden="true">↓</span></a><a class="nav-top" href="#hero" aria-label={ui.top}><span aria-hidden="true">✦</span><span class="nav-top-label">{ui.top}</span><span aria-hidden="true">↑</span></a></nav>
+      <section class="chapter chapter-star" id="star" aria-labelledby="star-title"><div class="chapter-copy"><p class="overline"><span class="tiny-star" aria-hidden="true">✦</span> 02 / {ui.overline.star}</p><h2 id="star-title">{c.star.before} <em>{c.star.accent}</em></h2><p class="chapter-text">{c.star.text}</p></div><nav class="chapter-nav chapter-nav-wide" aria-label={ui.mainNav}><a class="nav-up" href="#day" aria-label={ui.prev}><span aria-hidden="true">↑</span></a><a class="nav-down" href="#distant"><span class="nav-label">{ui.next.star}</span><span aria-hidden="true">↓</span></a><a class="nav-top" href="#hero" aria-label={ui.top}><span aria-hidden="true">✦</span><span class="nav-top-label">{ui.top}</span><span aria-hidden="true">↑</span></a></nav>
       </section>
       <section class="chapter chapter-distant" id="distant" aria-labelledby="distant-title">
         <div class="chapter-copy">
@@ -40,7 +40,7 @@ const gold = (text: string) => esc(text).replace(/\[\[(.+?)\]\]/g, '<em>$1</em>'
           <h2 id="distant-title">{c.distant.before} <em>{c.distant.accent}</em></h2>
           <p class="chapter-text">{c.distant.text}</p>
         </div>
-      <nav class="chapter-nav chapter-nav-wide" aria-label={ui.mainNav}><a class="nav-up" href="#star" aria-label={ui.prev}><span aria-hidden="true">↑</span></a><a class="nav-down" href="#perspective">{ui.next.distant}<span aria-hidden="true">↓</span></a><a class="nav-top" href="#hero" aria-label={ui.top}><span aria-hidden="true">✦</span><span class="nav-top-label">{ui.top}</span><span aria-hidden="true">↑</span></a></nav>
+      <nav class="chapter-nav chapter-nav-wide" aria-label={ui.mainNav}><a class="nav-up" href="#star" aria-label={ui.prev}><span aria-hidden="true">↑</span></a><a class="nav-down" href="#perspective"><span class="nav-label">{ui.next.distant}</span><span aria-hidden="true">↓</span></a><a class="nav-top" href="#hero" aria-label={ui.top}><span aria-hidden="true">✦</span><span class="nav-top-label">{ui.top}</span><span aria-hidden="true">↑</span></a></nav>
       </section>
       <section class="chapter chapter-reveal" id="perspective" aria-labelledby="reveal-title">
         <div class="chapter-copy">
@@ -48,7 +48,7 @@ const gold = (text: string) => esc(text).replace(/\[\[(.+?)\]\]/g, '<em>$1</em>'
           <h2 id="reveal-title">{c.reveal.before} <em>{c.reveal.accent}</em></h2>
           <p class="chapter-text">{c.reveal.text}</p>
         </div>
-      <nav class="chapter-nav chapter-nav-wide" aria-label={ui.mainNav}><a class="nav-up" href="#distant" aria-label={ui.prev}><span aria-hidden="true">↑</span></a><a class="nav-down" href="#whole-sky">{ui.next.reveal}<span aria-hidden="true">↓</span></a><a class="nav-top" href="#hero" aria-label={ui.top}><span aria-hidden="true">✦</span><span class="nav-top-label">{ui.top}</span><span aria-hidden="true">↑</span></a></nav>
+      <nav class="chapter-nav chapter-nav-wide" aria-label={ui.mainNav}><a class="nav-up" href="#distant" aria-label={ui.prev}><span aria-hidden="true">↑</span></a><a class="nav-down" href="#whole-sky"><span class="nav-label">{ui.next.reveal}</span><span aria-hidden="true">↓</span></a><a class="nav-top" href="#hero" aria-label={ui.top}><span aria-hidden="true">✦</span><span class="nav-top-label">{ui.top}</span><span aria-hidden="true">↑</span></a></nav>
       </section>
       <section class="chapter chapter-universe" id="whole-sky" aria-labelledby="universe-title">
         <div class="chapter-copy">
@@ -56,7 +56,7 @@ const gold = (text: string) => esc(text).replace(/\[\[(.+?)\]\]/g, '<em>$1</em>'
           <h2 id="universe-title" set:html={gold(ui.wholeTitle)} />
           <p class="chapter-text">{ui.wholeText}</p>
         </div>
-      <nav class="chapter-nav chapter-nav-wide" aria-label={ui.mainNav}><a class="nav-up" href="#perspective" aria-label={ui.prev}><span aria-hidden="true">↑</span></a><a class="nav-down" href="#download">{ui.next.whole}<span aria-hidden="true">↓</span></a><a class="nav-top" href="#hero" aria-label={ui.top}><span aria-hidden="true">✦</span><span class="nav-top-label">{ui.top}</span><span aria-hidden="true">↑</span></a></nav>
+      <nav class="chapter-nav chapter-nav-wide" aria-label={ui.mainNav}><a class="nav-up" href="#perspective" aria-label={ui.prev}><span aria-hidden="true">↑</span></a><a class="nav-down" href="#download"><span class="nav-label">{ui.next.whole}</span><span aria-hidden="true">↓</span></a><a class="nav-top" href="#hero" aria-label={ui.top}><span aria-hidden="true">✦</span><span class="nav-top-label">{ui.top}</span><span aria-hidden="true">↑</span></a></nav>
       </section>
     </div>
     <section class="journey-closing" id="download" aria-labelledby="closing-title">

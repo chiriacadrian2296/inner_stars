@@ -107,9 +107,12 @@ test('every home chapter after the opening offers a distinct return to the begin
   for (const path of ['', 'en', 'ro']) {
     const page = html(path);
     assert.equal((page.match(/class="nav-top" href="#hero"/g) || []).length, 6, path);
+    assert.ok(page.includes('class="nav-label"'), path);
     const hero = page.match(/<section class="chapter chapter-hero"[\s\S]*?<\/section>/)[0];
     assert.ok(!hero.includes('nav-top'), path);
   }
+  assert.ok(!journeyCss.includes("content: '00'"));
+  assert.ok(journeyCss.includes('transform: translateY(2px) rotate(225deg)'));
 });
 
 test('the narrow footer layout can pair the tagline with legal links below GitHub', () => {
