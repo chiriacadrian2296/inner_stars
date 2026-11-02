@@ -10,6 +10,7 @@ const base = rootDeployment ? '/' : '/inner_stars/';
 const origin = rootDeployment ? 'https://innerstars.app' : 'https://chiriacadrian2296.github.io';
 const stories = [['storia', 'it'], ['en/story', 'en'], ['ro/poveste', 'ro']];
 const html = path => readFileSync(resolve(dist, path, 'index.html'), 'utf8');
+const journeyCss = readFileSync(fileURLToPath(new URL('../src/styles/journey.css', import.meta.url)), 'utf8');
 
 test('all three stories are independent, indexable pages with reciprocal metadata', () => {
   const sitemap = readFileSync(resolve(dist, 'sitemap-0.xml'), 'utf8');
@@ -52,6 +53,16 @@ test('the header promotes the matching story without repeating it in the footer 
   }
   assert.ok(html('en').includes('>The Story</a>'));
   assert.ok(html('ro').includes(`href="${base}ro/poveste/" hreflang="ro"`));
+});
+
+test('the compact language menu shows only the current language until opened', () => {
+  for (const [path, current] of [['', 'IT'], ['en', 'EN'], ['ro', 'RO'], ...stories.map(([path, lang]) => [path, lang.toUpperCase()])]) {
+    const header = html(path).match(/<header\b[^>]*>[\s\S]*?<\/header>/)[0];
+    assert.equal((header.match(/class="locale-menu header-menu"/g) || []).length, 1, path);
+    assert.ok(header.includes(`<summary aria-label=`) && header.includes(`<span>${current}</span>`), path);
+    assert.ok(!header.includes('IT</a><span aria-hidden="true">/'));
+    for (const locale of ['it', 'en', 'ro']) assert.ok(header.includes(`lang="${locale}" hreflang="${locale}"`), `${path}: ${locale}`);
+  }
 });
 
 test('the header Try action offers the home download choice in every language, including from the story', () => {
@@ -108,6 +119,9 @@ test('the narrow footer layout can pair the tagline with legal links below GitHu
     assert.ok(footer.includes('class="footer-github"'));
     assert.ok(footer.includes('class="legal-links"'));
   }
+  assert.ok(journeyCss.includes('.footer-github:hover { color: var(--text); }'));
+  assert.ok(journeyCss.includes('.nav-top::after'));
+  assert.ok(journeyCss.includes('.nav-top>span:first-child,.nav-top>span:last-child { display: none; }'));
 });
 
 test('movement starts from a static poster and needs an explicit play action', () => {
