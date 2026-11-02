@@ -48,7 +48,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
 .journey-nav a:focus-visible,.journey-nav summary:focus-visible { outline-color: var(--gold); }
 .journey-nav .brand:focus-visible,.journey-nav .nav-try:focus-visible { outline-offset: 3px; }
 .brand em { font: inherit; color: inherit; }
-.journey-nav nav { display: flex; gap: 28px; align-items: center; font-size: 12px; font-weight: 600; }
+.journey-nav nav { display: flex; gap: 20px; align-items: center; font-size: 12px; font-weight: 600; }
 .nav-story { height: 38px; padding: 0 17px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--gold); border-radius: 50px; background: #0d1220b8; color: var(--gold); font-weight: 650; white-space: nowrap; }
 .nav-story:hover { background: #f2b84b16; color: var(--text); }
 .nav-story[aria-current=page] { background: #f2b84b20; color: var(--gold); }
@@ -234,7 +234,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
 .shape-controls button[aria-pressed=true] { color: var(--gold); border-color: var(--gold); }
 .shape-note { color: var(--muted); font-size: 10px; text-align: center; margin-top: 16px; }
 @media(max-width:900px) {
-  .journey-nav nav { gap: 20px; }
+  .journey-nav nav { gap: 14px; }
   .chapter-copy { width: 58%; }
   .chapter h1 { font-size: 56px; }
   .chapter h2 { font-size: 46px; }
