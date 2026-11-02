@@ -112,7 +112,8 @@ test('every home chapter after the opening offers a distinct return to the begin
     assert.ok(!hero.includes('nav-top'), path);
   }
   assert.ok(!journeyCss.includes("content: '00'"));
-  assert.ok(journeyCss.includes('transform: translateY(2px) rotate(225deg)'));
+  assert.ok(journeyCss.includes('.locale-menu[open] .locale-chevron { top: 1px; transform: rotate(225deg); }'));
+  assert.ok(journeyCss.includes(".nav-top::after { content: '↑';"));
 });
 
 test('the narrow footer layout can pair the tagline with legal links below GitHub', () => {

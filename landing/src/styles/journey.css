@@ -59,8 +59,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
 .locale-menu summary { min-width: 44px; height: 34px; padding: 0 10px; display: flex; align-items: center; justify-content: center; gap: 7px; list-style: none; cursor: pointer; border: 0; border-radius: 50px; background: #ffffff14; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: var(--text); font-size: 9px; font-weight: 700; line-height: 1; }
 .locale-menu summary:hover { background: #ffffff24; }
 .locale-menu summary::-webkit-details-marker { display: none; }
-.locale-chevron { position: relative; top: -2px; width: 6px; height: 6px; border: solid var(--gold); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); transition: transform .18s; }
-.locale-menu[open] .locale-chevron { transform: rotate(225deg); }
+.locale-chevron { position: relative; top: -1px; width: 5px; height: 5px; border: solid var(--gold); border-width: 0 1.25px 1.25px 0; transform: rotate(45deg); transition: transform .18s, top .18s; }
+.locale-menu[open] .locale-chevron { top: 1px; transform: rotate(225deg); }
 .locale-menu>div { position: absolute; top: calc(100% + 11px); left: 0; width: 142px; padding: 7px; border: 1px solid #ffffff1f; border-radius: 13px; background: #161d30f5; color: var(--text); box-shadow: 0 16px 38px -18px #000; }
 .locale-menu>div a { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 10px; border-radius: 8px; font-size: 11px; font-weight: 550; }
 .locale-menu>div a small { color: var(--muted); font-size: 8px; letter-spacing: .1em; }
@@ -114,7 +114,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
 .nav-top { margin-left: auto; min-height: 44px; padding: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: var(--text); font-size: 9px; font-weight: 700; letter-spacing: .08em; }
 .nav-top:hover { color: var(--gold); }
 .nav-top>span:first-child,.nav-top>span:last-child { display: none; }
-.nav-top::after { content: ''; width: 7px; height: 7px; border: solid var(--gold); border-width: 0 1.7px 1.7px 0; transform: translateY(2px) rotate(225deg); }
+.nav-top::after { content: '↑'; width: 18px; height: 18px; display: grid; place-items: center; border-top: 1px solid var(--gold); color: var(--gold); font-size: 15px; line-height: 1; }
 .chapter-coordinate { position: absolute; right: 5%; bottom: 44px; font-size: 9px; letter-spacing: .1em; color: var(--gold); }
 .chapter-coordinate span { margin-left: 24px; color: var(--muted); }
 .sky-caption { position: absolute; right: 7%; bottom: 5%; font-size: 9px; max-width: 270px; text-align: right; padding: 8px 12px; background: #0d1220b3; border-radius: 8px; }
