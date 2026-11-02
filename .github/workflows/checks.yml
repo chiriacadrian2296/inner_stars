@@ -1,8 +1,9 @@
 name: Checks
 
-# App checks run only when app code can have changed. Landing and security
-# rules have their own path-filtered workflows, so a copy or colour change on
-# the website never starts the full Flutter suite. Nothing here publishes.
+# App branches get static analysis only. Development already runs targeted
+# tests for the files changed; the full suite runs once, as the production
+# gate in deploy-app-cloudflare.yml. Landing and security rules have their own
+# path-filtered workflows. Nothing here publishes.
 
 on:
   push:
@@ -45,7 +46,7 @@ concurrency:
 
 jobs:
   app:
-    name: App (analyze and test)
+    name: App (analyze)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -58,4 +59,3 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter analyze --no-pub
-      - run: flutter test --no-pub
