@@ -1,0 +1,44 @@
+name: Landing checks
+
+# Website-only changes stay independent from the Flutter app and its large
+# test suite. Main is published by Cloudflare Pages instead of this workflow.
+
+on:
+  push:
+    branches-ignore: [main]
+    paths:
+      - 'landing/**'
+      - '.github/workflows/checks-landing.yml'
+  pull_request:
+    paths:
+      - 'landing/**'
+      - '.github/workflows/checks-landing.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: landing-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  landing:
+    name: Landing (typecheck, build, test)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: landing
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: landing/package-lock.json
+      - run: npm ci
+      # The types Astro generates (.astro/) are not in the repository.
+      - run: npx astro sync
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test

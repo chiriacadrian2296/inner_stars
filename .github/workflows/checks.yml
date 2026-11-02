@@ -1,20 +1,46 @@
 name: Checks
 
-# Runs on every branch except main (main's own deploys run the same checks
-# first) and on pull requests: analysis and tests for the app, typecheck,
-# build and tests for the landing. Nothing here publishes anything.
+# App checks run only when app code can have changed. Landing and security
+# rules have their own path-filtered workflows, so a copy or colour change on
+# the website never starts the full Flutter suite. Nothing here publishes.
 
 on:
   push:
     branches-ignore: [main]
+    paths-ignore:
+      - 'landing/**'
+      - 'docs/**'
+      - 'tools/**'
+      - 'firestore.rules'
+      - 'storage.rules'
+      - 'firebase.json'
+      - '*.md'
+      - 'LICENSE'
+      - '.claude/**'
+      - '.agents/**'
+      - '.github/workflows/checks-landing.yml'
+      - '.github/workflows/checks-rules.yml'
   pull_request:
+    paths-ignore:
+      - 'landing/**'
+      - 'docs/**'
+      - 'tools/**'
+      - 'firestore.rules'
+      - 'storage.rules'
+      - 'firebase.json'
+      - '*.md'
+      - 'LICENSE'
+      - '.claude/**'
+      - '.agents/**'
+      - '.github/workflows/checks-landing.yml'
+      - '.github/workflows/checks-rules.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: checks-${{ github.ref }}
+  group: app-checks-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -33,45 +59,3 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze --no-pub
       - run: flutter test --no-pub
-
-  landing:
-    name: Landing (typecheck, build, test)
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: landing
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: landing/package-lock.json
-      - run: npm ci
-      # The types Astro generates (.astro/) are not in the repository.
-      - run: npx astro sync
-      - run: npm run typecheck
-      - run: npm run build
-      - run: npm test
-
-  rules:
-    name: Security rules (Firestore and Storage)
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: tools/rules-tests
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: tools/rules-tests/package-lock.json
-      - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 21
-      - run: npm ci
-      # Starts the Firestore and Storage emulators, runs the tests against
-      # firestore.rules and storage.rules, and shuts them down.
-      - run: npm test
