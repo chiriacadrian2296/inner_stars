@@ -14,7 +14,7 @@ const tryHref = story || topic ? `${home}#download` : '#download';
   <a class="brand" href={home} aria-label="Inner Stars"><img src={`${base}logo-mark.svg`} width="26" height="36" alt=""/><span>Inner <em>Stars</em></span></a>
   <nav aria-label={c.ui.mainNav}>
     <details class="locale-menu header-menu">
-      <summary aria-label={`${c.nav.language}: ${localeNames[c.lang]}`}><span>{c.lang.toUpperCase()}</span><span class="locale-chevron" aria-hidden="true"></span></summary>
+      <summary aria-label={`${c.nav.language}: ${localeNames[c.lang]}`}><span>{c.lang.toUpperCase()}</span></summary>
       <div>{locales.map(l => <a href={story ? storyPath(base,l) : pagePath(base,l,topic)} lang={l} hreflang={l} aria-label={localeNames[l]} aria-current={c.lang===l?'page':undefined}><span>{localeNames[l]}</span><small>{l.toUpperCase()}</small></a>)}</div>
     </details>
     <a class="nav-story" href={storyPath(base,c.lang)} hreflang={c.lang} aria-label={storyLinkLabels[c.lang]} aria-current={story ? 'page' : undefined}>{storyNavLabels[c.lang]}</a>

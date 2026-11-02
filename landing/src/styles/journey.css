@@ -56,11 +56,9 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
 .nav-try { display: inline-flex; align-items: center; gap: 8px; }
 .nav-try-icon { flex: none; }
 .locale-menu { position: relative; flex: none; }
-.locale-menu summary { min-width: 44px; height: 34px; padding: 0 10px; display: flex; align-items: center; justify-content: center; gap: 7px; list-style: none; cursor: pointer; border: 0; border-radius: 50px; background: #ffffff14; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: var(--text); font-size: 9px; font-weight: 700; line-height: 1; }
+.locale-menu summary { min-width: 44px; height: 34px; padding: 0 10px; display: flex; align-items: center; justify-content: center; list-style: none; cursor: pointer; border: 0; border-radius: 50px; background: #ffffff14; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: var(--text); font-size: 9px; font-weight: 700; line-height: 1; }
 .locale-menu summary:hover { background: #ffffff24; }
 .locale-menu summary::-webkit-details-marker { display: none; }
-.locale-chevron { position: relative; top: -1px; width: 5px; height: 5px; border: solid var(--gold); border-width: 0 1.25px 1.25px 0; transform: rotate(45deg); transition: transform .18s, top .18s; }
-.locale-menu[open] .locale-chevron { top: 1px; transform: rotate(225deg); }
 .locale-menu>div { position: absolute; top: calc(100% + 11px); left: 0; width: 142px; padding: 7px; border: 1px solid #ffffff1f; border-radius: 13px; background: #161d30f5; color: var(--text); box-shadow: 0 16px 38px -18px #000; }
 .locale-menu>div a { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 10px; border-radius: 8px; font-size: 11px; font-weight: 550; }
 .locale-menu>div a small { color: var(--muted); font-size: 8px; letter-spacing: .1em; }
@@ -258,7 +256,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
   .site-header { padding-block: 10px; }
   .site-header nav { gap: 8px; }
   .site-header .nav-story { height: 36px; padding-inline: 13px; font-size: 10px; }
-  .locale-menu summary { min-width: 40px; height: 32px; padding-inline: 9px; gap: 6px; }
+  .locale-menu summary { min-width: 40px; height: 32px; padding-inline: 9px; }
   .locale-menu>div { left: auto; right: 0; }
   .discover-menu summary { font-size: 0; }
   .discover-menu summary { min-width: 32px; min-height: 44px; display: grid; place-items: center; }
