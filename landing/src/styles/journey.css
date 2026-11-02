@@ -49,7 +49,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
 .journey-nav .brand:focus-visible,.journey-nav .nav-try:focus-visible { outline-offset: 3px; }
 .brand em { font: inherit; color: inherit; }
 .journey-nav nav { display: flex; gap: 28px; align-items: center; font-size: 12px; font-weight: 600; }
-.nav-story { color: #a4adbd; }
+.nav-story { color: var(--text); font-weight: 600; white-space: nowrap; }
+.nav-story:hover, .nav-story[aria-current=page] { color: var(--gold); }
 .nav-try { padding: 10px 22px; border: 0; border-radius: 50px; color: var(--on-gold); background: var(--gold); white-space: nowrap; flex-shrink: 0; }
 .nav-try { display: inline-flex; align-items: center; gap: 8px; }
 .nav-try-icon { flex: none; }
@@ -221,7 +222,6 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
 .shape-note { color: var(--muted); font-size: 10px; text-align: center; margin-top: 16px; }
 @media(max-width:900px) {
   .journey-nav nav { gap: 20px; }
-  .nav-story { display: none; }
   .chapter-copy { width: 58%; }
   .chapter h1 { font-size: 56px; }
   .chapter h2 { font-size: 46px; }
@@ -240,6 +240,13 @@ a:focus-visible,button:focus-visible,summary:focus-visible { outline: 2px solid 
   .nav-try { padding: 8px 12px; font-size: 10px; }
   .nav-try span { margin-left: 7px; }
   .locale { gap: 5px; font-size: 9px; }
+  /* Keep the story, language choice and primary action reachable on phones. */
+  .site-header { display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; padding-block: 10px; }
+  .site-header nav { display: contents; }
+  .site-header .brand { grid-column: 1; grid-row: 1; justify-self: start; }
+  .site-header .locale { grid-column: 2; grid-row: 1; justify-self: end; }
+  .site-header .nav-story { grid-column: 1; grid-row: 2; justify-self: start; display: inline-flex; align-items: center; min-height: 36px; font-size: 12px; }
+  .site-header .nav-try { grid-column: 2; grid-row: 2; justify-self: end; }
   .discover-menu summary { font-size: 0; }
   .discover-menu summary { min-width: 32px; min-height: 44px; display: grid; place-items: center; }
   .discover-menu summary::before { content: '☰'; font-size: 20px; color: var(--gold); }

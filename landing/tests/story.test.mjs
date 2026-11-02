@@ -37,17 +37,36 @@ test('both stories are independent, indexable pages with reciprocal metadata', (
   }
 });
 
-test('the home footers lead to the matching story, with a labelled English fallback for Romanian', () => {
+test('the header promotes the matching story without repeating it in the footer or download section', () => {
   for (const [path, story, label] of [
     ['', 'storia/', 'La storia del progetto'],
     ['en', 'en/story/', 'The project story'],
     ['ro', 'en/story/', 'Povestea proiectului (EN)'],
   ]) {
     const home = html(path);
-    assert.ok(home.includes(`href="${base}${story}"`));
-    assert.ok(home.includes(label));
+    const header = home.match(/<header\b[^>]*>[\s\S]*?<\/header>/)[0];
+    const footer = home.match(/<footer\b[^>]*>[\s\S]*?<\/footer>/)[0];
+    assert.ok(header.includes(`href="${base}${story}"`));
+    assert.ok(header.includes(label));
+    assert.ok(!footer.includes(`href="${base}${story}"`));
+    assert.equal(home.split(`href="${base}${story}"`).length - 1, 1);
   }
-  assert.ok(html('ro').includes(`href="${base}en/story/" lang="en"`));
+  assert.ok(html('ro').includes(`href="${base}en/story/" hreflang="en"`));
+});
+
+test('the header Try action offers the home download choice in every language, including from the story', () => {
+  for (const [path, target] of [['', '#download'], ['en', '#download'], ['ro', '#download'], ['storia', `${base}#download`], ['en/story', `${base}en/#download`]]) {
+    const page = html(path);
+    const header = page.match(/<header\b[^>]*>[\s\S]*?<\/header>/)[0];
+    assert.ok(header.includes(`class="nav-try" href="${target}"`), path);
+    assert.ok(!header.includes('href="https://my.innerstars.app/"'), path);
+  }
+  for (const path of ['', 'en', 'ro']) {
+    const page = html(path);
+    const downloads = page.match(/<div class="download-actions">[\s\S]*?<\/div>/)[0];
+    assert.ok(downloads.includes('inner-stars.apk'));
+    assert.ok(downloads.includes('href="https://my.innerstars.app/"'));
+  }
 });
 
 test('the story, dated evidence and division of work are readable without JavaScript', () => {

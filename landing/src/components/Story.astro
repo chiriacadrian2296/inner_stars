@@ -4,7 +4,7 @@ import Base from '../layouts/Base.astro';
 import SiteHeader from './SiteHeader.astro';
 import { journeyIt, journeyEn } from '../i18n/journey';
 import { storyCopy } from '../i18n/story';
-import { pagePath, storyPath, storyLinkLabels } from '../i18n/routes';
+import { pagePath } from '../i18n/routes';
 import { legal, legalPath } from '../i18n/legal';
 import type { Lang } from '../i18n/types';
 import itReader from '../assets/current/it-reader.png';
@@ -166,7 +166,7 @@ const anchors = ['percorso', 'scelte', 'metodo'];
     <footer class="journey-footer">
       <a class="brand" href={pagePath(base, lang)}><img src={`${base}logo-mark.svg`} width="24" height="30" alt="" /><span>Inner <em>Stars</em></span></a>
       <span>Adrian Chiriac · 2026</span>
-      <span class="legal-links"><a href={storyPath(base, lang)} aria-current="page">{storyLinkLabels[lang]}</a> · <a href={legalPath(base, lang, 'privacy')}>{legal[lang].privacyLink}</a> · <a href={legalPath(base, lang, 'terms')}>{legal[lang].termsLink}</a></span>
+      <span class="legal-links"><a href={legalPath(base, lang, 'privacy')}>{legal[lang].privacyLink}</a> · <a href={legalPath(base, lang, 'terms')}>{legal[lang].termsLink}</a></span>
     </footer>
   </div>
 </Base>

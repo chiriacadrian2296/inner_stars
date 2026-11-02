@@ -27,8 +27,9 @@ Neither command publishes the site.
 ## Project story
 
 The visual case study lives at `storia/` and `en/story/`, independently of the
-hidden discover pages. Home footers link to the matching language; Romanian
-links to the English story with an explicit EN label.
+hidden discover pages. The persistent header links to the matching story;
+Romanian links to the English story with an explicit EN label. The header's
+Try action goes to the home download section, where Android and web are offered.
 
 Edit the bilingual narrative in `src/i18n/story.ts`. Its `storyEvidence` references
 record the inspected `staging` snapshot (`6f9fa87`, 30 October 2026). The author's

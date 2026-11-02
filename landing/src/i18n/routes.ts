@@ -13,6 +13,9 @@ export const homeSlugs: Record<SiteLang, string> = { it: '', en: 'en/', ro: 'ro/
 export const storyLinkLabels: Record<SiteLang, string> = {
   it: 'La storia del progetto', en: 'The project story', ro: 'Povestea proiectului (EN)',
 };
+export const storyNavLabels: Record<SiteLang, string> = {
+  it: 'La storia', en: 'The story', ro: 'Povestea (EN)',
+};
 export function storyPath(base: string, lang: SiteLang) {
   return `${base}${lang === 'it' ? 'storia/' : 'en/story/'}`;
 }
