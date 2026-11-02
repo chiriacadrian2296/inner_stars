@@ -1007,7 +1007,12 @@ void main() {
       );
       expect(find.byIcon(Icons.bolt_rounded), findsWidgets);
       // Both victories (intensity 3 each) make the light.
-      expect(find.text('6'), findsOneWidget);
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('light-total-value')))
+            .data,
+        '6',
+      );
 
       // Down: the physical area, then back up to everything.
       await tester.ensureVisible(
@@ -1034,7 +1039,12 @@ void main() {
       expect(find.text('3'), findsWidgets);
       await tester.tap(find.bySemanticsLabel(strings.lightScopeAll));
       await tester.pumpAndSettle();
-      expect(find.text('6'), findsOneWidget);
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('light-total-value')))
+            .data,
+        '6',
+      );
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
       c.dispose();
