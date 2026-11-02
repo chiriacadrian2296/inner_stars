@@ -1,0 +1,210 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import SiteHeader from './SiteHeader.astro';
+import { journeyIt, journeyEn, journeyRo } from '../i18n/journey';
+import { storyCopy } from '../i18n/story';
+import { pagePath } from '../i18n/routes';
+import { legal, legalPath } from '../i18n/legal';
+import type { SiteLang } from '../i18n/types';
+import itReader from '../assets/current/it-reader.png';
+import enReader from '../assets/current/en-reader.png';
+import itConstellation from '../assets/current/it-constellation.png';
+import enConstellation from '../assets/current/en-constellation.png';
+import itActivities from '../assets/current/it-activities.png';
+import enActivities from '../assets/current/en-activities.png';
+import nightlight from '../assets/shots/nightlight.png';
+import '../styles/journey.css';
+import '../styles/story.css';
+
+interface Props { lang: SiteLang }
+const { lang } = Astro.props;
+const c = storyCopy[lang];
+const journey = lang === 'it' ? journeyIt : lang === 'ro' ? journeyRo : journeyEn;
+const base = import.meta.env.BASE_URL;
+const reader = lang === 'it' ? itReader : enReader;
+const constellation = lang === 'it' ? itConstellation : enConstellation;
+const activities = lang === 'it' ? itActivities : enActivities;
+const copy = { lang, title: c.title, description: c.description, faq: { items: [] } };
+const chapters = c.chapters;
+const anchors = ['percorso', 'scelte', 'metodo'];
+const pageNavLabel = lang === 'it' ? 'In questa pagina' : lang === 'ro' ? 'Pe această pagină' : 'On this page';
+const metaphorLabel = lang === 'it' ? 'La metafora del prodotto' : lang === 'ro' ? 'Metafora produsului' : 'The product metaphor';
+const closingEyebrow = lang === 'it' ? 'Cosa porto da questa esperienza' : lang === 'ro' ? 'Ce iau cu mine din această experiență' : 'What I take from this experience';
+---
+<Base copy={copy} story faqSchema={false}>
+  <div class="story-page">
+    <a class="skip-link" href="#storia">{journey.nav.skip}</a>
+    <SiteHeader copy={journey} story />
+    <main id="storia" tabindex="-1">
+      <section class="story-hero story-wrap" aria-labelledby="story-title">
+        <div class="story-hero-copy">
+          <p class="story-eyebrow"><span aria-hidden="true">✦</span> {c.eyebrow}</p>
+          <h1 id="story-title">{c.hero[0]}<br /><em>{c.hero[1]}</em></h1>
+          <p class="story-lead">{c.intro}</p>
+          <p class="story-byline">{c.byline}</p>
+          <a class="story-text-link" href="#percorso">{c.readStory}<span aria-hidden="true">↓</span></a>
+        </div>
+        <figure class="story-hero-figure">
+          <div class="story-orbit" aria-hidden="true"></div>
+          <svg class="story-hero-trails" viewBox="0 0 600 620" fill="none" aria-hidden="true">
+            <path d="M32 470 90 305 240 110 440 80 560 270 510 490 330 570 32 470" stroke="currentColor" stroke-dasharray="2 9" />
+            <path d="m240 110 90 460m110-490L90 305l420 185" stroke="currentColor" opacity=".25" />
+            <g fill="currentColor"><circle cx="32" cy="470" r="3" /><circle cx="240" cy="110" r="4" /><circle cx="440" cy="80" r="3" /><circle cx="560" cy="270" r="4" /><circle cx="330" cy="570" r="3" /></g>
+          </svg>
+          <div class="story-device story-device-back">
+            <Image src={constellation} alt={c.constellationAlt} width={360} format="webp" quality={85} loading="eager" />
+          </div>
+          <div class="story-device story-device-front">
+            <Image src={reader} alt={c.readerAlt} width={430} format="webp" quality={85} loading="eager" />
+          </div>
+          <span class="story-hero-star" aria-hidden="true">✦</span>
+          <figcaption>{c.demoCaption}</figcaption>
+        </figure>
+      </section>
+
+      <div class="story-wrap">
+        <dl class="story-roles">
+          <div><dt>{c.myRole}</dt><dd>{c.myWork}</dd></div>
+          <div><dt>{c.aiRole}</dt><dd>{c.aiWork}</dd></div>
+        </dl>
+        <nav class="story-index" aria-label={pageNavLabel}>
+          {c.sections.map((title, i) => <a href={`#${anchors[i]}`}><span>0{i + 1}</span>{title}<span aria-hidden="true">↗</span></a>)}
+        </nav>
+      </div>
+
+      <section class="story-timeline story-wrap story-section" id="percorso" aria-labelledby="timeline-title">
+        <p class="story-eyebrow">01 / {c.sections[0]}</p>
+        <div class="story-section-intro">
+          <h2 id="timeline-title">{c.timelineTitle}</h2>
+          <p>{c.timelineIntro}</p>
+        </div>
+        <ol class="story-milestones">
+          {c.timeline.map((step, i) => <li>
+            <span class="story-milestone-point" aria-hidden="true">{i === 4 ? '✧' : '✦'}</span>
+            <time datetime={step.iso}>{step.date}</time><h3>{step.title}</h3><p>{step.text}</p>
+          </li>)}
+        </ol>
+      </section>
+
+      <div class="story-decisions story-wrap" id="scelte">
+        <p class="story-eyebrow">02 / {c.sections[1]}</p>
+        <section class="story-chapter" aria-labelledby="chapter-one">
+          <div class="story-chapter-heading"><span class="story-chapter-number" aria-hidden="true">01</span><div><p class="story-eyebrow">{chapters[0].label}</p><h2 id="chapter-one">{chapters[0].title}</h2></div></div>
+          <div class="story-feature">
+            <dl class="story-decision-copy">
+              {(['need', 'change', 'outcome'] as const).map((key, i) => <div><dt>{c.chapterLabels[i]}</dt><dd>{chapters[0][key]}</dd></div>)}
+            </dl>
+            <div class="story-universe">
+              <figure class="story-clip" data-story-clip data-poster={`${base}clips/fly-poster.webp`} data-animation={`${base}clips/fly.webp`}>
+                <div class="story-clip-scene"><img src={`${base}clips/fly-poster.webp`} width="512" height="320" loading="lazy" alt={c.clipTitle} /></div>
+                <figcaption><p>{c.galaxyCaption}</p><button class="story-text-link" type="button" hidden aria-pressed="false" data-play={c.play} data-stop={c.stop}>{c.play}<span aria-hidden="true">▶</span></button></figcaption>
+              </figure>
+              <ol class="story-metaphor" aria-label={metaphorLabel}>
+                {c.metaphor.map((label, i) => <li>
+                  <svg viewBox="0 0 100 80" fill="none" aria-hidden="true">
+                    {i === 0 && <path d="M50 8 58 32 82 40 58 48 50 72 42 48 18 40 42 32Z" fill="currentColor" />}
+                    {i === 1 && <><path d="m18 56 25-37 38 13-16 32-47-8m25-37 22 45" stroke="currentColor" /><g fill="currentColor"><circle cx="18" cy="56" r="4" /><circle cx="43" cy="19" r="5" /><circle cx="81" cy="32" r="4" /><circle cx="65" cy="64" r="5" /></g></>}
+                    {i === 2 && <><circle cx="50" cy="40" r="23" stroke="currentColor" /><circle cx="50" cy="40" r="32" stroke="currentColor" opacity=".35" /><path d="M50 11v58M21 40h58M30 20l40 40M30 60l40-40" stroke="currentColor" /><circle cx="50" cy="40" r="8" fill="currentColor" /></>}
+                  </svg><span>{label}</span>
+                </li>)}
+              </ol>
+            </div>
+          </div>
+        </section>
+
+        <section class="story-chapter" aria-labelledby="chapter-two">
+          <div class="story-chapter-heading"><span class="story-chapter-number" aria-hidden="true">02</span><div><p class="story-eyebrow">{chapters[1].label}</p><h2 id="chapter-two">{chapters[1].title}</h2></div></div>
+          <div class="story-feature story-feature-reverse">
+            <div class="story-experience">
+              <figure class="story-nightlight"><Image src={nightlight} width={300} format="webp" quality={85} alt={c.nightlightAlt} loading="lazy" /><figcaption>{c.nightlightCaption}</figcaption></figure>
+              <figure class="story-sky-image"><Image src={activities} width={300} format="webp" quality={85} alt={c.skyAlt} loading="lazy" /><figcaption>{c.demoCaption}</figcaption></figure>
+              <div class="story-experience-path"><ol>{c.experienceSteps.map((step, i) => <li><span aria-hidden="true">0{i + 1}</span>{step}</li>)}</ol><p>{c.experienceCaption}</p></div>
+            </div>
+            <dl class="story-decision-copy">
+              {(['need', 'change', 'outcome'] as const).map((key, i) => <div><dt>{c.chapterLabels[i]}</dt><dd>{chapters[1][key]}</dd></div>)}
+            </dl>
+          </div>
+        </section>
+
+        <section class="story-chapter" aria-labelledby="chapter-three">
+          <div class="story-chapter-heading"><span class="story-chapter-number" aria-hidden="true">03</span><div><p class="story-eyebrow">{chapters[2].label}</p><h2 id="chapter-three">{chapters[2].title}</h2></div></div>
+          <dl class="story-delivery-copy story-decision-copy">
+            {(['need', 'change', 'outcome'] as const).map((key, i) => <div><dt>{c.chapterLabels[i]}</dt><dd>{chapters[2][key]}</dd></div>)}
+          </dl>
+          <figure class="story-delivery">
+            <ol>{c.delivery.map((label, i) => <li>
+              <svg viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                {i === 0 && <><rect x="36" y="10" width="48" height="80" rx="9" /><path d="M51 18h18M54 81h12" /><path d="m60 36 4 12 12 4-12 4-4 12-4-12-12-4 12-4Z" fill="currentColor" stroke="none" /></>}
+                {i === 1 && <><path d="M33 72a19 19 0 0 1-4-38 30 30 0 0 1 56-5 22 22 0 0 1 4 43H33Z" /><path d="m48 41-7 8 7 8m24-8 7 8-7 8M41 49h29m9 8H50" /></>}
+                {i === 2 && <><rect x="13" y="17" width="94" height="61" rx="5" /><path d="M5 87h110M47 78l-4 9m30-9 4 9" /><path d="m60 30 4 12 12 4-12 4-4 12-4-12-12-4 12-4Z" fill="currentColor" stroke="none" /></>}
+              </svg><span>{label}</span>
+            </li>)}</ol><figcaption>{c.deliveryNote}</figcaption>
+          </figure>
+          <aside class="story-scope"><span aria-hidden="true">✧</span><div><h3>{c.scopeTitle}</h3><p>{c.scopeText}</p></div></aside>
+        </section>
+      </div>
+
+      <section class="story-method" id="metodo" aria-labelledby="method-title">
+        <div class="story-wrap">
+          <p class="story-eyebrow">03 / {c.sections[2]}</p>
+          <div class="story-section-intro"><h2 id="method-title">{c.methodTitle}</h2><p>{c.methodIntro}</p></div>
+          <ol class="story-process">
+            {c.method.map((step, i) => <li class:list={[{ 'story-process-ai': i === 2 }]}><span class="story-process-owner">{step.owner}</span><span class="story-process-number" aria-hidden="true">0{i + 1}</span><h3>{step.title}</h3><p>{step.text}</p></li>)}
+          </ol>
+          <p class="story-loop"><span aria-hidden="true">↶</span>{c.loop}</p>
+        </div>
+      </section>
+
+      <aside class="story-pareto story-wrap"><span class="story-quote-mark" aria-hidden="true">“</span><blockquote><p>{c.pareto}</p></blockquote><p class="story-pareto-note">{c.paretoNote}</p></aside>
+
+      <section class="story-closing story-wrap" aria-labelledby="story-closing-title">
+        <p class="story-eyebrow">{closingEyebrow}</p>
+        <div class="story-section-intro"><h2 id="story-closing-title">{c.closingTitle}</h2><p>{c.closingText}</p></div>
+        <dl class="story-takeaways">{c.takeaways.map((item, i) => <div><dt><span aria-hidden="true">0{i + 1}</span>{item.title}</dt><dd>{item.text}</dd></div>)}</dl>
+        <div class="story-actions"><a class="button-gold" href="https://my.innerstars.app/">{c.tryApp}</a><a class="story-text-link" href={pagePath(base, lang)}>{c.backHome}<span aria-hidden="true">↗</span></a></div>
+        <details class="story-notes"><summary>{c.notesTitle}</summary><p>{c.notes}</p><p>{c.status}</p></details>
+      </section>
+    </main>
+    <footer class="journey-footer">
+      <a class="brand" href={pagePath(base, lang)}><img src={`${base}logo-mark.svg`} width="24" height="30" alt="" /><span>Inner <em>Stars</em></span></a>
+      <span>Adrian Chiriac · 2026</span>
+      <span class="legal-links"><a href={legalPath(base, lang, 'privacy')}>{legal[lang].privacyLink}</a> · <a href={legalPath(base, lang, 'terms')}>{legal[lang].termsLink}</a></span>
+    </footer>
+  </div>
+</Base>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-story-clip]').forEach(clip => {
+    const image = clip.querySelector('img')!;
+    const button = clip.querySelector<HTMLButtonElement>('button')!;
+    let playing = false;
+    const label = () => {
+      button.setAttribute('aria-pressed', String(playing));
+      button.replaceChildren(document.createTextNode(`${playing ? button.dataset.stop : button.dataset.play} `));
+      const icon = document.createElement('span');
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = playing ? '■' : '▶';
+      button.append(icon);
+    };
+    const stop = () => {
+      playing = false;
+      image.src = clip.dataset.poster!;
+      label();
+    };
+    button.hidden = false;
+    button.addEventListener('click', () => {
+      if (playing) { stop(); return; }
+      playing = true;
+      image.src = clip.dataset.animation!;
+      label();
+    });
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+    reduced.addEventListener('change', () => { if (playing) stop(); });
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(([entry]) => { if (!entry.isIntersecting && playing) stop(); }).observe(clip);
+    }
+    document.addEventListener('visibilitychange', () => { if (document.hidden && playing) stop(); });
+    image.addEventListener('error', () => { if (playing) stop(); else button.hidden = true; });
+  });
+</script>

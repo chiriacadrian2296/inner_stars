@@ -1138,6 +1138,7 @@ class _LightHero extends StatelessWidget {
               const SizedBox(width: kSpaceSm),
               Text(
                 '$value',
+                key: const ValueKey('light-total-value'),
                 style: context.typography.immersivePageTitle.copyWith(
                   fontFamily: kFontMono,
                   fontSize: 44,

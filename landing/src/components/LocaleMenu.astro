@@ -1,0 +1,76 @@
+---
+import type { SiteLang } from '../i18n/types';
+
+interface Props {
+  lang: SiteLang;
+  label: string;
+  paths: Record<SiteLang, string>;
+}
+
+const { lang, label, paths } = Astro.props;
+const locales = ['it', 'en', 'ro'] as const;
+const localeNames = { it: 'Italiano', en: 'English', ro: 'Română' } as const;
+---
+<details class="locale-menu header-menu">
+  <summary aria-label={`${label}: ${localeNames[lang]}`}><span>{lang.toUpperCase()}</span></summary>
+  <div>{locales.map(locale => <a href={paths[locale]} lang={locale} hreflang={locale} data-language-link aria-label={localeNames[locale]} aria-current={lang === locale ? 'page' : undefined}><span>{localeNames[locale]}</span><small>{locale.toUpperCase()}</small></a>)}</div>
+</details>
+<script>
+  const scrollStateKey = 'inner-stars:language-scroll';
+
+  const pageSections = () => Array.from(document.querySelectorAll<HTMLElement>('main section[id], main div[id]'));
+
+  document.querySelectorAll<HTMLDetailsElement>('.locale-menu').forEach(menu => {
+    document.addEventListener('click', event => {
+      if (event.target instanceof Node && !menu.contains(event.target)) menu.open = false;
+    });
+    menu.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && menu.open) {
+        menu.open = false;
+        menu.querySelector('summary')?.focus();
+      }
+    });
+    menu.addEventListener('focusout', event => {
+      if (event.relatedTarget instanceof Node && !menu.contains(event.relatedTarget)) menu.open = false;
+    });
+  });
+
+  document.querySelectorAll<HTMLAnchorElement>('[data-language-link]').forEach(link => {
+    link.addEventListener('click', () => {
+      const maxScroll = Math.max(0, document.documentElement.scrollHeight - innerHeight);
+      const section = pageSections().reduce<HTMLElement | null>((closest, candidate) => {
+        const distance = Math.abs(candidate.getBoundingClientRect().top - 110);
+        return !closest || distance < Math.abs(closest.getBoundingClientRect().top - 110) ? candidate : closest;
+      }, null);
+      try {
+        sessionStorage.setItem(scrollStateKey, JSON.stringify({
+          pathname: new URL(link.href).pathname,
+          section: section?.id,
+          offset: section ? scrollY - section.offsetTop : 0,
+          ratio: maxScroll ? scrollY / maxScroll : 0,
+        }));
+      } catch { /* Navigation still works when storage is unavailable. */ }
+    });
+  });
+
+  const restoreLanguagePosition = () => {
+    let state: { pathname?: string; section?: string; offset?: number; ratio?: number } | undefined;
+    try {
+      state = JSON.parse(sessionStorage.getItem(scrollStateKey) || 'null') || undefined;
+      sessionStorage.removeItem(scrollStateKey);
+    } catch { return; }
+    if (!state || state.pathname !== location.pathname) return;
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const section = state.section ? document.getElementById(state.section) : null;
+      const maxScroll = Math.max(0, document.documentElement.scrollHeight - innerHeight);
+      const top = section
+        ? section.offsetTop + (state.offset || 0)
+        : maxScroll * Math.min(1, Math.max(0, state.ratio || 0));
+      scrollTo({ top: Math.min(maxScroll, Math.max(0, top)), behavior: 'instant' });
+    }));
+  };
+
+  if (document.readyState === 'complete') restoreLanguagePosition();
+  else addEventListener('load', restoreLanguagePosition, { once: true });
+</script>

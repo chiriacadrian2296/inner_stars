@@ -1,6 +1,6 @@
 ---
 import type { SiteLang } from '../i18n/types';
-import { pagePath, type Topic } from '../i18n/routes';
+import { pagePath, storyPath, type Topic } from '../i18n/routes';
 import { legalPath } from '../i18n/legal';
 
 interface Props {
@@ -9,23 +9,24 @@ interface Props {
   topic?: Topic | 'overview';
   legal?: 'privacy' | 'terms';
   faqSchema?: boolean;
+  story?: boolean;
 }
-const { copy, classic = false, topic, legal, faqSchema = true } = Astro.props;
+const { copy, classic = false, topic, legal, faqSchema = true, story = false } = Astro.props;
 
 const base = import.meta.env.BASE_URL; // '/inner_stars/'
 const site = Astro.site!.origin;
 const localeBase = `${base}${classic ? 'classic/' : ''}`;
-const path = legal ? legalPath(base, copy.lang, legal) : classic ? (copy.lang === 'it' ? localeBase : `${localeBase}en/`) : pagePath(base,copy.lang,topic);
+const path = story ? storyPath(base, copy.lang) : legal ? legalPath(base, copy.lang, legal) : classic ? (copy.lang === 'it' ? localeBase : `${localeBase}en/`) : pagePath(base,copy.lang,topic);
 const canonical = site + path;
-const urlIt = site + (legal ? legalPath(base, 'it', legal) : classic ? localeBase : pagePath(base,'it',topic));
-const urlEn = site + (legal ? legalPath(base, 'en', legal) : classic ? `${localeBase}en/` : pagePath(base,'en',topic));
-const urlRo = site + (legal ? legalPath(base, 'ro', legal) : pagePath(base, 'ro', topic));
+const urlIt = site + (story ? storyPath(base, 'it') : legal ? legalPath(base, 'it', legal) : classic ? localeBase : pagePath(base,'it',topic));
+const urlEn = site + (story ? storyPath(base, 'en') : legal ? legalPath(base, 'en', legal) : classic ? `${localeBase}en/` : pagePath(base,'en',topic));
+const urlRo = site + (story ? storyPath(base, 'ro') : legal ? legalPath(base, 'ro', legal) : pagePath(base, 'ro', topic));
 // The legal pages exist in all three languages, like the home.
 const hasRo = !classic && !topic;
 // One picture per language; bump the version when it changes so chat apps that
 // cached the old preview fetch the new one.
-const ogFile = copy.lang === 'en' ? 'og-image-en.png' : copy.lang === 'ro' ? 'og-image-ro.png' : 'og-image.png';
-const ogImage = `${site}${base}${ogFile}?v=2`;
+const ogFile = story ? `og-story-${copy.lang}.png` : copy.lang === 'en' ? 'og-image-en.png' : copy.lang === 'ro' ? 'og-image-ro.png' : 'og-image.png';
+const ogImage = `${site}${base}${ogFile}?v=${story ? '1' : '2'}`;
 
 const faqLd = {
   '@context': 'https://schema.org',
@@ -66,7 +67,7 @@ const jsonLd = {
     <link rel="icon" type="image/png" href={`${base}favicon.png?v=gold2-20261018`} />
     <link rel="apple-touch-icon" href={`${base}apple-touch-icon.png?v=gold2-20261018`} />
 
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={story ? 'article' : 'website'} />
     <meta property="og:title" content={copy.title} />
     <meta property="og:description" content={copy.description} />
     <meta property="og:url" content={canonical} />
@@ -92,8 +93,8 @@ const jsonLd = {
       @font-face{font-family:'Newsreader';font-style:italic;src:url('${base}fonts/Newsreader-Italic.ttf');font-weight:200 800;font-display:swap}
     `}
     />
-    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
-    {faqSchema && <script type="application/ld+json" set:html={JSON.stringify(faqLd)} />}
+    {!story && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+    {!story && faqSchema && <script type="application/ld+json" set:html={JSON.stringify(faqLd)} />}
   </head>
   <body>
     <slot />

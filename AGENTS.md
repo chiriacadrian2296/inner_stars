@@ -57,18 +57,21 @@
   editing. Commit and push on that branch, and merge the whole branch into
   `main` only when the user says it is finished and tested. Do not
   cherry-pick individual commits.
-- Pushing a branch only runs the `Checks` workflow (analyze and tests); it
-  publishes nothing. The web deploy also runs analyze and tests first.
+- Branch workflows are path-scoped and publish nothing. App changes run
+  analysis only; landing changes run the landing checks; security-rule changes
+  run the emulator tests. A production app deploy from `main` runs analysis
+  and the complete Flutter suite before it builds or publishes anything.
 - **Local checks are targeted, not the whole suite.** After an edit run
   `flutter analyze --no-pub` and `flutter test <the test files for the code you
   touched>` (tests named after the file, or the tests that import it). Do not
-  run the full suite (600+ tests) or web/APK builds for small or UI-only
-  changes: the `Checks` workflow runs everything on every branch push and before
-  every deploy. Run the full suite locally only when you touch shared code that
-  can break things far away (models, sync, theme, repositories) or when the
-  user asks. Say which tests you ran. Localization strings do not need the full
-  suite: `flutter analyze` catches a missing translation, and when you change
-  the text of an existing string, search `test` for it and run those tests.
+  run the full suite (600+ tests) or web/APK builds during development. For
+  shared code that can break things far away (models, sync, theme,
+  repositories), select a broader relevant group of tests instead. The full
+  suite is the production-deploy gate on `main`; run it locally only when the
+  user explicitly asks. Say which tests you ran. Localization strings do not
+  need the full suite: `flutter analyze` catches a missing translation, and
+  when you change the text of an existing string, search `test` for it and run
+  those tests.
 - **Keep each change lean.** Fewer steps per edit means less waiting: format
   and analyze only the files you touched (`dart format <files>`,
   `flutter analyze --no-pub <files>`), not all of `lib`; prefer small targeted
