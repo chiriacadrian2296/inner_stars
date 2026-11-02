@@ -124,6 +124,10 @@ test('privacy and terms exist in every language, linked from the home footer', (
       assert.ok(page.includes(`<link rel="canonical" href="${url}">`), url);
       assert.ok(page.includes('privacy@innerstars.app'), url);
       assert.ok(page.includes('Mihai Adrian Chiriac'), url);
+      const header = page.match(/<header\b[^>]*>[\s\S]*?<\/header>/)[0];
+      assert.equal((header.match(/class="locale-menu header-menu"/g) || []).length, 1, url);
+      assert.ok(header.includes(`<summary aria-label=`) && header.includes(`<span>${lang.toUpperCase()}</span>`), url);
+      assert.equal((header.match(/<a\b[^>]*data-language-link/g) || []).length, 3, url);
       for (const [alt] of homes) assert.ok(page.includes(`href="${origin}${alt ? `${alt}/` : ''}${kind}/"`), url);
     }
     const home = html(prefix.replace(/\/$/, ''));

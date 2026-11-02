@@ -3,20 +3,17 @@ import { pagePath, storyPath, storyLinkLabels, storyNavLabels, topicSlugs, topic
 import { showDiscoverPages } from '../features';
 import type { Lang } from '../i18n/types';
 import type { JourneyCopy } from '../i18n/journey';
+import LocaleMenu from './LocaleMenu.astro';
 interface Props { copy:JourneyCopy; topic?:Topic|'overview'; story?: boolean }
 const { copy:c, topic, story = false }=Astro.props;
 const base=import.meta.env.BASE_URL,home=pagePath(base,c.lang),guideLang:Lang=c.lang==='ro'?'en':c.lang;
-const locales = ['it','en','ro'] as const;
-const localeNames = { it: 'Italiano', en: 'English', ro: 'Română' } as const;
 const tryHref = story || topic ? `${home}#download` : '#download';
+const localePaths = Object.fromEntries((['it','en','ro'] as const).map(lang => [lang, story ? storyPath(base,lang) : pagePath(base,lang,topic)])) as Record<'it'|'en'|'ro',string>;
 ---
 <header class="journey-nav site-header">
   <a class="brand" href={home} aria-label="Inner Stars"><img src={`${base}logo-mark.svg`} width="26" height="36" alt=""/><span>Inner <em>Stars</em></span></a>
   <nav aria-label={c.ui.mainNav}>
-    <details class="locale-menu header-menu">
-      <summary aria-label={`${c.nav.language}: ${localeNames[c.lang]}`}><span>{c.lang.toUpperCase()}</span></summary>
-      <div>{locales.map(l => <a href={story ? storyPath(base,l) : pagePath(base,l,topic)} lang={l} hreflang={l} aria-label={localeNames[l]} aria-current={c.lang===l?'page':undefined}><span>{localeNames[l]}</span><small>{l.toUpperCase()}</small></a>)}</div>
-    </details>
+    <LocaleMenu lang={c.lang} label={c.nav.language} paths={localePaths}/>
     <a class="nav-story" href={storyPath(base,c.lang)} hreflang={c.lang} aria-label={storyLinkLabels[c.lang]} aria-current={story ? 'page' : undefined}>{storyNavLabels[c.lang]}</a>
     {showDiscoverPages &&     <details class="discover-menu"><summary>{c.lang==='it'?'Scopri l’app':'Explore the app'} <span aria-hidden="true">⌄</span></summary><div><a href={pagePath(base,c.lang,'overview')} aria-current={topic==='overview'?'page':undefined}>{c.lang==='it'?'Panoramica':'Overview'}</a>{Object.entries(topicSlugs[guideLang]).map(([key,slug])=><a href={`${base}${slug}`} aria-current={topic===key?'page':undefined}>{topicTitles[guideLang][key as Topic]}</a>)}</div></details>}
     <a class="nav-try" href={tryHref}>{c.nav.try} <svg class="nav-try-icon" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path fill="currentColor" d="M9.19 6.35c-2.04 2.29-3.44 5.58-3.57 5.89L2 10.69l4.05-4.05c.47-.47 1.15-.68 1.81-.55l1.33.26zM11.17 17s3.74-1.55 5.89-3.7c5.4-5.4 4.5-9.62 4.21-10.57-.95-.3-5.17-1.19-10.57 4.21C8.55 9.09 7 12.83 7 12.83L11.17 17zm6.48-2.19c-2.29 2.04-5.58 3.44-5.89 3.57L13.31 22l4.05-4.05c.47-.47.68-1.15.55-1.81l-.26-1.33zM9 18c0 .83-.34 1.58-.88 2.12C6.94 21.3 2 22 2 22s.7-4.94 1.88-6.12C4.42 15.34 5.17 15 6 15c1.66 0 3 1.34 3 3zM13 9c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z"/></svg></a>
@@ -24,7 +21,7 @@ const tryHref = story || topic ? `${home}#download` : '#download';
 </header>
 <script>
 
-  document.querySelectorAll<HTMLDetailsElement>('.discover-menu, .header-menu').forEach(menu => {
+  document.querySelectorAll<HTMLDetailsElement>('.discover-menu').forEach(menu => {
     document.addEventListener('click', event => {
       if (event.target instanceof Node && !menu.contains(event.target)) menu.open = false;
     });
